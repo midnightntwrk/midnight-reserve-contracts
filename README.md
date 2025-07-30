@@ -1,72 +1,65 @@
-# Midnight Template Repository
+# reserve
 
-This GitHub repository should be used as a template when creating a new Midnight GitHub repository.
-The template is configured with default repository settings and a set of default files that are expected to exist in all Midnight GitHub repositories.
+Write validators in the `validators` folder, and supporting functions in the `lib` folder using `.ak` as a file extension.
 
-### LICENSE
+```aiken
+validator my_first_validator {
+  spend(_datum: Option<Data>, _redeemer: Data, _output_reference: Data, _context: Data) {
+    True
+  }
+}
+```
 
-Apache 2.0.
+## Building
 
-### README.md
+```sh
+aiken build
+```
 
-Provides a brief description for users and developers who want to understand the purpose, setup, and usage of the repository.
+## Configuring
 
-### SECURITY.md
+**aiken.toml**
+```toml
+[config.default]
+network_id = 41
+```
 
-Provides a brief description of the Midnight Foundation's security policy and how to properly disclose security issues.
+Or, alternatively, write conditional environment modules under `env`.
 
-### CONTRIBUTING.md
+## Testing
 
-Provides guidelines for how people can contribute to the Midnight project.
+You can write tests in any module using the `test` keyword. For example:
 
-### CODEOWNERS
+```aiken
+use config
 
-Defines repository ownership rules.
+test foo() {
+  config.network_id + 1 == 42
+}
+```
 
-### ISSUE_TEMPLATE
+To run all tests, simply do:
 
-Provides templates for reporting various types of issues, such as: bug report, documentation improvement and feature request.
+```sh
+aiken check
+```
 
-### PULL_REQUEST_TEMPLATE
+To run only tests matching the string `foo`, do:
 
-Provides a template for a pull request.
+```sh
+aiken check -m foo
+```
 
-### CLA Assistant
+## Documentation
 
-The Midnight Foundation appreciates contributions, and like many other open source projects asks contributors to sign a contributor
-License Agreement before accepting contributions. We use CLA assistant (https://github.com/cla-assistant/cla-assistant) to streamline the CLA
-signing process, enabling contributors to sign our CLAs directly within a GitHub pull request.
+If you're writing a library, you might want to generate an HTML documentation for it.
 
-### Dependabot
+Use:
 
-The Midnight Foundation uses GitHub Dependabot feature to keep our projects dependencies up-to-date and address potential security vulnerabilities. 
+```sh
+aiken docs
+```
 
-### Checkmarx
+## Resources
 
-The Midnight Foundation uses Checkmarx for application security (AppSec) to identify and fix security vulnerabilities.
-All repositories are scanned with Checkmarx's suite of tools including: Static Application Security Testing (SAST), Infrastructure as Code (IaC), Software Composition Analysis (SCA), API Security, Container Security and Supply Chain Scans (SCS).
-
-### Unito
-
-Facilitates two-way data synchronization, automated workflows and streamline processes between: Jira, GitHub issues and Github project Kanban board. 
-
-# TODO - New Repo Owner
-
-### Software Package Data Exchange (SPDX)
-Include the following Software Package Data Exchange (SPDX) short-form identifier in a comment at the top headers of each source code file.
-
-
- <I>// This file is part of <B>REPLACE WITH REPO-NAME</B>.<BR>
- // Copyright (C) 2025 Midnight Foundation<BR>
- // SPDX-License-Identifier: Apache-2.0<BR>
- // Licensed under the Apache License, Version 2.0 (the "License");<BR>
- // You may not use this file except in compliance with the License.<BR>
- // You may obtain a copy of the License at<BR>
- //<BR>
- //	http://www.apache.org/licenses/LICENSE-2.0<BR>
- //<BR>
- // Unless required by applicable law or agreed to in writing, software<BR>
- // distributed under the License is distributed on an "AS IS" BASIS,<BR>
- // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<BR>
- // See the License for the specific language governing permissions and<BR>
- // limitations under the License.</I>
+Find more on the [Aiken's user manual](https://aiken-lang.org).
