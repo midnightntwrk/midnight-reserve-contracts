@@ -72,3 +72,6 @@ aiken docs
 ## Resources
 
 Find more on the [Aiken's user manual](https://aiken-lang.org).
+
+## Signature Scheme
+If using multisig then make sure to use the Ed25519 Signature Scheme.
