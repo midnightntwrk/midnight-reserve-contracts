@@ -26,6 +26,15 @@ network_id = 41
 
 Or, alternatively, write conditional environment modules under `env`.
 
+## Generating Blueprints
+To expose the contract code to the offchain simply run `just build-validators`
+
+Then the validators, datum types, and redeemer types are accessible via
+```ts
+import { MyDatum, HelloWorldHelloWorldSpend } from "../../utils/contracts";
+````
+
+
 ## Testing
 
 You can write tests in any module using the `test` keyword. For example:
