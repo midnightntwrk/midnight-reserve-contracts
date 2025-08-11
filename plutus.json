@@ -1,0 +1,145 @@
+{
+  "preamble": {
+    "title": "midnight/reserve",
+    "description": "Aiken contracts for project 'midnight/reserve'",
+    "version": "0.0.0",
+    "plutusVersion": "v3",
+    "compiler": {
+      "name": "Aiken",
+      "version": "v1.1.19+e525483"
+    },
+    "license": "Apache-2.0"
+  },
+  "validators": [
+    {
+      "title": "hello_world.hello_world.spend",
+      "datum": {
+        "title": "datum",
+        "schema": {
+          "$ref": "#/definitions/hello_world~1MyDatum"
+        }
+      },
+      "redeemer": {
+        "title": "redeemer",
+        "schema": {
+          "$ref": "#/definitions/Int"
+        }
+      },
+      "compiledCode": "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009",
+      "hash": "5b7e059453488d25906a7920dfe4b750ff4bd8c0afb6fecf8721b050"
+    },
+    {
+      "title": "hello_world.hello_world.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "compiledCode": "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009",
+      "hash": "5b7e059453488d25906a7920dfe4b750ff4bd8c0afb6fecf8721b050"
+    },
+    {
+      "title": "placeholder.placeholder.mint",
+      "redeemer": {
+        "title": "_redeemer",
+        "schema": {
+          "$ref": "#/definitions/Data"
+        }
+      },
+      "compiledCode": "58d001010029800aba2aba1aab9eaab9dab9a48888966002646465300130053754003300700398038012444b30013370e9000001c4c98dd7180518049baa0048acc004cdc3a400400713233226300b001300b300c0013009375400915980099b874801000e264c601460126ea80122b30013370e9003001c4c8cc898dd698058009805980600098049baa0048acc004cdc3a40100071326300a3009375400913233226375a60160026016601800260126ea8011007200e401c80390070c018c01c004c018004c00cdd5003452689b2b20021",
+      "hash": "f2388d136606a27c4a531d0040c3e12e07eb95cd5011793c160707dc"
+    },
+    {
+      "title": "placeholder.placeholder.spend",
+      "datum": {
+        "title": "_datum",
+        "schema": {
+          "$ref": "#/definitions/Data"
+        }
+      },
+      "redeemer": {
+        "title": "_redeemer",
+        "schema": {
+          "$ref": "#/definitions/Data"
+        }
+      },
+      "compiledCode": "58d001010029800aba2aba1aab9eaab9dab9a48888966002646465300130053754003300700398038012444b30013370e9000001c4c98dd7180518049baa0048acc004cdc3a400400713233226300b001300b300c0013009375400915980099b874801000e264c601460126ea80122b30013370e9003001c4c8cc898dd698058009805980600098049baa0048acc004cdc3a40100071326300a3009375400913233226375a60160026016601800260126ea8011007200e401c80390070c018c01c004c018004c00cdd5003452689b2b20021",
+      "hash": "f2388d136606a27c4a531d0040c3e12e07eb95cd5011793c160707dc"
+    },
+    {
+      "title": "placeholder.placeholder.withdraw",
+      "redeemer": {
+        "title": "_redeemer",
+        "schema": {
+          "$ref": "#/definitions/Data"
+        }
+      },
+      "compiledCode": "58d001010029800aba2aba1aab9eaab9dab9a48888966002646465300130053754003300700398038012444b30013370e9000001c4c98dd7180518049baa0048acc004cdc3a400400713233226300b001300b300c0013009375400915980099b874801000e264c601460126ea80122b30013370e9003001c4c8cc898dd698058009805980600098049baa0048acc004cdc3a40100071326300a3009375400913233226375a60160026016601800260126ea8011007200e401c80390070c018c01c004c018004c00cdd5003452689b2b20021",
+      "hash": "f2388d136606a27c4a531d0040c3e12e07eb95cd5011793c160707dc"
+    },
+    {
+      "title": "placeholder.placeholder.publish",
+      "redeemer": {
+        "title": "_redeemer",
+        "schema": {
+          "$ref": "#/definitions/Data"
+        }
+      },
+      "compiledCode": "58d001010029800aba2aba1aab9eaab9dab9a48888966002646465300130053754003300700398038012444b30013370e9000001c4c98dd7180518049baa0048acc004cdc3a400400713233226300b001300b300c0013009375400915980099b874801000e264c601460126ea80122b30013370e9003001c4c8cc898dd698058009805980600098049baa0048acc004cdc3a40100071326300a3009375400913233226375a60160026016601800260126ea8011007200e401c80390070c018c01c004c018004c00cdd5003452689b2b20021",
+      "hash": "f2388d136606a27c4a531d0040c3e12e07eb95cd5011793c160707dc"
+    },
+    {
+      "title": "placeholder.placeholder.vote",
+      "redeemer": {
+        "title": "_redeemer",
+        "schema": {
+          "$ref": "#/definitions/Data"
+        }
+      },
+      "compiledCode": "58d001010029800aba2aba1aab9eaab9dab9a48888966002646465300130053754003300700398038012444b30013370e9000001c4c98dd7180518049baa0048acc004cdc3a400400713233226300b001300b300c0013009375400915980099b874801000e264c601460126ea80122b30013370e9003001c4c8cc898dd698058009805980600098049baa0048acc004cdc3a40100071326300a3009375400913233226375a60160026016601800260126ea8011007200e401c80390070c018c01c004c018004c00cdd5003452689b2b20021",
+      "hash": "f2388d136606a27c4a531d0040c3e12e07eb95cd5011793c160707dc"
+    },
+    {
+      "title": "placeholder.placeholder.propose",
+      "redeemer": {
+        "title": "_redeemer",
+        "schema": {
+          "$ref": "#/definitions/Data"
+        }
+      },
+      "compiledCode": "58d001010029800aba2aba1aab9eaab9dab9a48888966002646465300130053754003300700398038012444b30013370e9000001c4c98dd7180518049baa0048acc004cdc3a400400713233226300b001300b300c0013009375400915980099b874801000e264c601460126ea80122b30013370e9003001c4c8cc898dd698058009805980600098049baa0048acc004cdc3a40100071326300a3009375400913233226375a60160026016601800260126ea8011007200e401c80390070c018c01c004c018004c00cdd5003452689b2b20021",
+      "hash": "f2388d136606a27c4a531d0040c3e12e07eb95cd5011793c160707dc"
+    },
+    {
+      "title": "placeholder.placeholder.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "compiledCode": "58d001010029800aba2aba1aab9eaab9dab9a48888966002646465300130053754003300700398038012444b30013370e9000001c4c98dd7180518049baa0048acc004cdc3a400400713233226300b001300b300c0013009375400915980099b874801000e264c601460126ea80122b30013370e9003001c4c8cc898dd698058009805980600098049baa0048acc004cdc3a40100071326300a3009375400913233226375a60160026016601800260126ea8011007200e401c80390070c018c01c004c018004c00cdd5003452689b2b20021",
+      "hash": "f2388d136606a27c4a531d0040c3e12e07eb95cd5011793c160707dc"
+    }
+  ],
+  "definitions": {
+    "Data": {
+      "title": "Data",
+      "description": "Any Plutus data."
+    },
+    "Int": {
+      "dataType": "integer"
+    },
+    "hello_world/MyDatum": {
+      "title": "MyDatum",
+      "anyOf": [
+        {
+          "title": "MyDatum",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "thing",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

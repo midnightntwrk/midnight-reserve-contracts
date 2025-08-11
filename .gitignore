@@ -1,6 +1,18 @@
-# Aiken compilation artifacts
-artifacts/
-# Aiken's project working directory
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+coverage/
+.vscode/
+.idea/
+
+# Aiken artifacts
 build/
-# Aiken's default documentation export
+artifacts/
 docs/
+
+# Test artifacts
+test-results/
+*.tmp
