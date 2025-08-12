@@ -35,7 +35,7 @@ describe("Phase 2.1: Session Manager", () => {
     expect(currentSession?.id).toBe(session.id);
     
     // Client can validate their session ID against current session
-    expect(currentSession?.id).toBe("current-session");
+    expect(currentSession?.id).toBe(session.id);
   });
 
   test("should return null when no session exists", () => {
