@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, test, expect } from 'bun:test';
 import {
   ErrorCode,
   BaseError,
@@ -11,7 +11,7 @@ import {
 } from '../../errors';
 
 describe('Phase 0.2: Error Handling Foundation', () => {
-  it('should have all error codes defined', () => {
+  test('should have all error codes defined', () => {
     expect(ErrorCode.SESSION_NOT_FOUND).toBeDefined();
     expect(ErrorCode.WALLET_NOT_FOUND).toBeDefined();
     expect(ErrorCode.CONTRACT_NOT_FOUND).toBeDefined();
@@ -21,7 +21,7 @@ describe('Phase 0.2: Error Handling Foundation', () => {
     console.log('✓ Error codes enum defined with', Object.keys(ErrorCode).length, 'codes');
   });
 
-  it('should create custom error instances correctly', () => {
+  test('should create custom error instances correctly', () => {
     const sessionError = new SessionError(
       ErrorCode.SESSION_NOT_FOUND,
       'Session not found',
@@ -39,7 +39,7 @@ describe('Phase 0.2: Error Handling Foundation', () => {
     console.log('✓ Custom error classes work correctly');
   });
 
-  it('should format errors consistently', () => {
+  test('should format errors consistently', () => {
     const error = new WalletError(
       ErrorCode.INSUFFICIENT_BALANCE,
       'Not enough ADA',
@@ -59,7 +59,7 @@ describe('Phase 0.2: Error Handling Foundation', () => {
     console.log('✓ Error formatter produces consistent format');
   });
 
-  it('should handle standard errors', () => {
+  test('should handle standard errors', () => {
     const standardError = new Error('Something went wrong');
     const formatted = formatError(standardError);
     
@@ -70,7 +70,7 @@ describe('Phase 0.2: Error Handling Foundation', () => {
     console.log('✓ Standard errors are handled gracefully');
   });
 
-  it('should handle unknown errors', () => {
+  test('should handle unknown errors', () => {
     const unknownError = 'This is not an error object';
     const formatted = formatError(unknownError);
     
@@ -81,7 +81,7 @@ describe('Phase 0.2: Error Handling Foundation', () => {
     console.log('✓ Unknown errors are handled safely');
   });
 
-  it('should serialize errors to JSON', () => {
+  test('should serialize errors to JSON', () => {
     const error = new ContractError(
       ErrorCode.CONTRACT_COMPILATION_FAILED,
       'Aiken compilation failed',
@@ -97,7 +97,7 @@ describe('Phase 0.2: Error Handling Foundation', () => {
     console.log('✓ Errors serialize to JSON correctly');
   });
 
-  it('should capture stack traces', () => {
+  test('should capture stack traces', () => {
     const error = new TransactionError(
       ErrorCode.TRANSACTION_BUILD_FAILED,
       'Failed to build transaction'

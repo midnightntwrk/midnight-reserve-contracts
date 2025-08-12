@@ -16,10 +16,10 @@ Developing and demonstrating Cardano smart contracts is currently expensive and 
 ## The Solution
 
 A server that acts as both **wallet backend** and **Cardano network**, providing:
-- **Isolated sessions**: Each demo gets its own blockchain state
+- **Single demo session**: One active blockchain state at a time
 - **Rapid setup**: Pre-configured wallets and contracts
 - **Realistic interactions**: Actual transaction execution with state changes
-- **Easy cleanup**: Sessions are ephemeral and disposable
+- **Easy reset**: Simple session replacement for fresh demos
 - **Reproducible scenarios**: Save and replay complex setups
 
 ## Key Use Cases
@@ -61,7 +61,7 @@ The server plays **multiple roles** to simplify client development:
 **🎯 Wallet Backend**: Generates keys, manages balances, signs transactions
 **🌐 Cardano Network**: Provides blockchain state, validates transactions  
 **📦 Contract Registry**: Deploys and manages available contracts
-**🗄️ Session Manager**: Isolates scenarios, enables rapid reset
+**🗄️ Session Manager**: Manages current demo session, enables rapid reset
 
 This allows clients to focus on **business logic** rather than infrastructure.
 
@@ -90,7 +90,7 @@ The backend provides **native reference script support** using Blaze SDK:
 ### Purpose
 - Provide wallet services using Blaze SDK's natural patterns
 - Provide network services (transaction submission, state queries)
-- Run isolated Cardano emulator instances (Blaze) for each session
+- Run single Cardano emulator instance (Blaze) for current demo session
 - Support realistic transaction building workflow
 - **Contract Registry**: Automatically compile and load Aiken contracts from the `contracts/` directory at startup
 
@@ -98,31 +98,28 @@ The backend provides **native reference script support** using Blaze SDK:
 
 #### Session Management
 ```
-POST /api/sessions/create
-{
-  "name": "demo-session-1",
-  "description": "Hello world contract demo"
-}
-
+POST /api/session/new
 Response:
 {
   "success": true,
   "sessionId": "sess_abc123",
-  "name": "demo-session-1",
   "createdAt": "2024-01-15T10:30:00Z"
 }
 ```
 
-```
-GET /api/sessions
-GET /api/sessions/{sessionId}
-DELETE /api/sessions/{sessionId}
-```
+**Session Lifecycle:**
+- Only one active session at a time
+- Creating new session destroys any existing session
+- All operations require valid session ID
+- Invalid/expired session IDs return error responses
+- No public endpoint to retrieve current session - clients must remember their session ID
+- If client loses session ID, they must create a new session
 
 #### Wallet Services (Blaze-Native)
 ```
-POST /api/sessions/{sessionId}/wallet/register
+POST /api/wallet/register
 {
+  "sessionId": "sess_abc123",
   "name": "alice",
   "initialBalance": "100000000" // 100 ADA in lovelace
 }
@@ -137,8 +134,8 @@ Response:
 ```
 
 ```
-GET /api/sessions/{sessionId}/wallet/{walletName}/balance
-GET /api/sessions/{sessionId}/wallet/{walletName}/utxos
+GET /api/wallet/{walletName}/balance?sessionId=sess_abc123
+GET /api/wallet/{walletName}/utxos?sessionId=sess_abc123
 ```
 
 #### Network Services

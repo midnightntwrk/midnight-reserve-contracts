@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, test, expect } from 'bun:test';
 import { execSync } from 'child_process';
 import { config, validateConfig } from '../../config';
 import { logger } from '../../utils/logger';
 
 describe('Phase 0.1: Prerequisites', () => {
-  it('should have Node.js version >= 18.0.0', () => {
+  test('should have Node.js version >= 18.0.0', () => {
     const nodeVersion = process.version;
     const majorVersion = parseInt(nodeVersion.split('.')[0].substring(1));
     
@@ -12,7 +12,7 @@ describe('Phase 0.1: Prerequisites', () => {
     console.log('✓ Node.js version:', nodeVersion);
   });
 
-  it('should have Aiken CLI installed', () => {
+  test('should have Aiken CLI installed', () => {
     try {
       // Try the user's aiken installation first
       const aikenPath = 'aiken';
@@ -29,7 +29,7 @@ describe('Phase 0.1: Prerequisites', () => {
     }
   });
 
-  it('should load configuration from environment', () => {
+  test('should load configuration from environment', () => {
     expect(config).toBeDefined();
     expect(config.port).toBeDefined();
     expect(config.logLevel).toBeDefined();
@@ -43,7 +43,7 @@ describe('Phase 0.1: Prerequisites', () => {
     console.log('  - Max sessions:', config.maxSessions);
   });
 
-  it('should initialize logger', () => {
+  test('should initialize logger', () => {
     expect(logger).toBeDefined();
     
     // Test logging at different levels
@@ -54,7 +54,7 @@ describe('Phase 0.1: Prerequisites', () => {
     console.log('✓ Logger initialized with level:', config.logLevel);
   });
 
-  it('should have correct project structure', () => {
+  test('should have correct project structure', () => {
     const fs = require('fs');
     const path = require('path');
     

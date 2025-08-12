@@ -64,28 +64,26 @@ This plan prioritizes the most challenging technical aspects first, ensuring we 
 - **Test File**: `src/tests/phase1/test-1.3-contract-deployment.test.ts`
 
 ## Phase 2: Session Management Layer
-**Goal**: Add multi-session isolation with robustness
+**Goal**: Add single-session management for demo scenarios
 
-### Test 2.1: Session Manager ⬜
-- [ ] Create SessionManager class with emulator instances
-- [ ] Test creating/destroying sessions
-- [ ] Test session isolation (separate blockchain states)
-- [ ] Implement session timeout and cleanup
-- [ ] Test concurrent session operations
-- [ ] Measure memory usage per session
-- [ ] Implement session recovery from crash
-- **Success Criteria**: Multiple isolated sessions work, handle concurrent access
-- **Test File**: `src/tests/phase2/test-2.1-session-manager.ts`
+### Test 2.1: Session Manager ✅
+- [x] Create SessionManager class with single emulator instance
+- [x] Test creating sessions with unique IDs
+- [x] Test session retrieval and validation
+- [x] Implement singleton pattern (one active session)
+- [x] Test session replacement (new session destroys old)
+- **Success Criteria**: Single session management works, handles session validation
+- **Test File**: `src/tests/phase2/test-2.1-session-manager.test.ts`
 
 ### Test 2.2: Wallet Service ⬜
 - [ ] Implement WalletService using emulator.register()
-- [ ] Test wallet creation across sessions
+- [ ] Test wallet creation in current session
 - [ ] Test wallet signing capabilities
 - [ ] Implement secure key storage (even for demo)
-- [ ] Test concurrent wallet operations
+- [ ] Test wallet operations in single session
 - [ ] Add wallet operation audit logging
-- **Success Criteria**: Wallets work per session, thread-safe operations
-- **Test File**: `src/tests/phase2/test-2.2-wallet-service.ts`
+- **Success Criteria**: Wallets work in current session, proper validation
+- **Test File**: `src/tests/phase2/test-2.2-wallet-service.test.ts`
 
 
 ## Phase 3: Contract Services
@@ -112,28 +110,28 @@ This plan prioritizes the most challenging technical aspects first, ensuring we 
 - **Test File**: `src/tests/phase3/test-3.2-contract-instantiation.ts`
 
 ## Phase 4: REST API Layer
-**Goal**: HTTP interface for all services with proper error handling
+**Goal**: HTTP interface for single-session demo tool with proper error handling
 
 ### Test 4.1: Core Endpoints ⬜
-- [ ] Session management endpoints
-- [ ] Wallet endpoints
-- [ ] Network query endpoints
+- [ ] Session creation endpoint (POST /api/session/new)
+- [ ] Session validation middleware
+- [ ] Wallet endpoints with session validation
+- [ ] Network query endpoints with session validation
 - [ ] Input validation middleware
-- [ ] Rate limiting implementation
+- [ ] Error responses for invalid session IDs
 - [ ] API documentation (OpenAPI/Swagger)
-- [ ] Test error responses for invalid inputs
-- **Success Criteria**: Basic API works with proper validation
-- **Test File**: `src/tests/phase4/test-4.1-core-endpoints.ts`
+- **Success Criteria**: Basic API works with session validation
+- **Test File**: `src/tests/phase4/test-4.1-core-endpoints.test.ts`
 
 ### Test 4.2: Transaction Endpoints ⬜
-- [ ] Sign transaction endpoint
-- [ ] Sign and submit endpoint
-- [ ] Fee estimation endpoint
+- [ ] Sign transaction endpoint with session validation
+- [ ] Sign and submit endpoint with session validation
+- [ ] Fee estimation endpoint with session validation
 - [ ] Transaction validation before submission
-- [ ] Test concurrent transaction submissions
+- [ ] Test transaction submissions in single session
 - [ ] Add transaction status tracking
-- **Success Criteria**: Can build/sign/submit via API safely
-- **Test File**: `src/tests/phase4/test-4.2-transaction-endpoints.ts`
+- **Success Criteria**: Can build/sign/submit via API safely with session validation
+- **Test File**: `src/tests/phase4/test-4.2-transaction-endpoints.test.ts`
 
 ### Test 4.3: API Error Handling ⬜
 - [ ] Test all error scenarios
@@ -180,10 +178,10 @@ This plan prioritizes the most challenging technical aspects first, ensuring we 
 ## Key Technical Challenges (Front-loaded)
 1. **Blaze/Aiken Integration**: Ensuring compiled Aiken contracts work with Blaze emulator
 2. **Transaction Building**: Correct script witness construction
-3. **Session Isolation**: Managing multiple emulator instances
+3. **Session Management**: Managing single emulator instance with validation
 4. **Contract Parameterization**: Dynamic validator instantiation
-5. **Concurrency Management**: Preventing race conditions in session state
-6. **Resource Management**: Controlling memory usage with multiple emulators
+5. **Session Validation**: Ensuring proper session ID validation across all endpoints
+6. **Resource Management**: Controlling memory usage with single emulator
 7. **Error Recovery**: Handling emulator crashes gracefully
 
 ## Testing Strategy
@@ -212,7 +210,7 @@ npm run test:phase2
 # etc...
 
 # Run specific test file
-npx vitest run src/tests/phase1/test-1.1-emulator-setup.ts
+bun test src/tests/phase1/test-1.1-emulator-setup.test.ts
 ```
 
 ## Notes
