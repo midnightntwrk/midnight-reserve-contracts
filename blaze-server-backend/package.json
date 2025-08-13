@@ -9,7 +9,8 @@
     "test:phase1": "bun test src/tests/phase1",
     "test:phase2": "bun test src/tests/phase2",
     "test:phase4": "bun test src/tests/phase4",
-    "test": "bun test"
+    "test": "bun test src/tests --exclude='exploration/**'",
+    "test:exploration": "bun test exploration/tests"
   },
   "keywords": ["cardano", "aiken", "blaze", "emulator"],
   "author": "",

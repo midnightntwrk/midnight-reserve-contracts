@@ -2,8 +2,8 @@ import { describe, test, expect } from "bun:test";
 import { Emulator } from "@blaze-cardano/emulator";
 import { makeValue, Core } from "@blaze-cardano/sdk";
 import * as Data from "@blaze-cardano/data";
-import { MyDatum, HelloWorldHelloWorldSpend } from "../../utils/contracts";
-import { basicProtocolParameters } from "../../utils/protocol-params";
+import { MyDatum, HelloWorldHelloWorldSpend } from "../../src/utils/contracts";
+import { basicProtocolParameters } from "../../src/utils/protocol-params";
 import { createHash } from "crypto";
 
 // Utility function to extract transaction ID from transaction builder

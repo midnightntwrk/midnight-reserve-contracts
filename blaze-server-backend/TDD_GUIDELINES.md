@@ -1,5 +1,24 @@
 # TDD Guidelines for This Project
 
+## MANDATORY FIRST STEPS (Before Any New Development)
+
+### Step 0: Always Check Current State
+- **NEVER** propose new tests without running existing tests first
+- **ALWAYS** report current test status before suggesting new work  
+- **NEVER** assume the codebase is in a working state
+- **ALWAYS** run `bun test` as the first action in any TDD session
+
+### Step 1: Fix Existing Failures
+- **ALWAYS** fix failing tests before adding new features
+- **NEVER** proceed with new development when tests are red
+- **ALWAYS** achieve "Green phase" before moving forward
+- **NEVER** ignore or skip failing tests regardless of their location (core, exploration, etc.)
+
+### Step 2: Only Then Suggest New Work
+- **ONLY** when all tests pass: suggest new red tests
+- **ALWAYS** verify green state before Red-Green-Refactor cycle
+- **NEVER** mix fixing existing failures with adding new features
+
 ## Core TDD Principles (User Preferences)
 
 ### 1. **STRICT Red-Green-Refactor Cycle**

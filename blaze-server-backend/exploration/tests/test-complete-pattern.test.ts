@@ -1,7 +1,7 @@
 import { describe, test, expect } from "bun:test";
 import { Emulator } from "@blaze-cardano/emulator";
 import { makeValue, Core } from "@blaze-cardano/sdk";
-import { basicProtocolParameters } from "../../utils/protocol-params";
+import { basicProtocolParameters } from "../../src/utils/protocol-params";
 
 describe("Transaction Complete Pattern", () => {
   test("explore transaction builder complete() pattern", async () => {
