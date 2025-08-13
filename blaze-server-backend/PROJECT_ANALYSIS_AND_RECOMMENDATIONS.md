@@ -150,29 +150,97 @@ await emulator.expectValidTransaction(blaze, txBuilder);
 - Validated for transfers, contract locking, and contract unlocking
 
 ### Complex Transaction Building
+
+Based on Blaze API analysis, the transaction builder supports these operations:
+
+**Inputs (Consuming UTXOs):**
+- **Spend Inputs**: `blaze.newTransaction().addInput(utxo, redeemer?)`
+- **Contract Unlock Inputs**: `blaze.newTransaction().addInput(scriptUtxo, redeemer).provideScript(script)`
+
+**Outputs (Creating UTXOs):**
+- **Pay-to-Address**: `blaze.newTransaction().addOutput(new Core.TransactionOutput(address, amount))`
+- **Pay-to-Contract**: `blaze.newTransaction().lockAssets(scriptAddress, amount, datum)`
+
+**Proposed Endpoint Structure:**
+```typescript
+POST /api/transaction/build-and-submit
+{
+  "sessionId": "...",
+  "signerWallet": "alice",
+  "inputs": [
+    {
+      "type": "spend",
+      "utxo": "txHash#index" // or let server find available UTXOs
+    },
+    {
+      "type": "contract-unlock", 
+      "contractAddress": "addr_test1...",
+      "redeemer": 42,
+      "scriptHash": "5b7e0594..." // or let server look it up
+    }
+  ],
+  "outputs": [
+    {
+      "type": "pay-to-address",
+      "address": "addr_test1...",
+      "amount": "1000000"
+    },
+    {
+      "type": "pay-to-contract",
+      "contractAddress": "addr_test1...", 
+      "amount": "2000000",
+      "datum": 100
+    }
+  ]
+}
+```
+
+**Implementation Pattern:**
 ```typescript
 await emulator.as(walletName, async (blaze, addr) => {
   let tx = blaze.newTransaction();
   
-  // Add multiple operations
-  for (const op of operations) {
-    switch(op.type) {
-      case 'transfer':
-        tx = tx.addOutput(new Core.TransactionOutput(toAddr, amount));
+  // Process inputs
+  for (const input of inputs) {
+    switch(input.type) {
+      case 'spend':
+        tx = tx.addInput(input.utxo);
         break;
       case 'contract-unlock':
-        tx = tx.addInput(utxo, redeemer).provideScript(script);
-        break;
-      case 'contract-lock':
-        tx = tx.lockAssets(scriptAddr, amount, datum);
+        const script = getScriptFromHash(input.scriptHash);
+        tx = tx.addInput(input.utxo, redeemer).provideScript(script);
         break;
     }
   }
   
-  const result = await emulator.expectValidTransaction(blaze, tx);
-  // Extract and return real tx hash
+  // Process outputs  
+  for (const output of outputs) {
+    switch(output.type) {
+      case 'pay-to-address':
+        tx = tx.addOutput(new Core.TransactionOutput(output.address, amount));
+        break;
+      case 'pay-to-contract':
+        tx = tx.lockAssets(output.contractAddress, amount, output.datum);
+        break;
+    }
+  }
+  
+  // Extract real transaction ID before submission
+  const realTransactionId = await getTransactionId(tx);
+  
+  // Submit transaction
+  await emulator.expectValidTransaction(blaze, tx);
+  
+  return realTransactionId;
 });
 ```
+
+This approach:
+- **Mirrors real Cardano transactions** with clear inputs/outputs structure
+- **Uses Blaze's native API** for all operations
+- **Supports atomic multi-operation transactions**
+- **Returns real transaction hashes** using the proven extraction method
+- **Eliminates the "function-like" API problem** that undermines credibility
 
 ## Why This Minimal Approach is Correct
 
