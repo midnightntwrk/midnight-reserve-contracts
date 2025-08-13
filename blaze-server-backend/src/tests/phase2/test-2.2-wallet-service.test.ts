@@ -8,7 +8,7 @@ describe("Phase 2.2: Wallet Service", () => {
 
   beforeAll(async () => {
     sessionManager = new SessionManager();
-    server = createServer(sessionManager);
+    server = await createServer(sessionManager);
   });
 
   afterAll(async () => {
@@ -22,7 +22,12 @@ describe("Phase 2.2: Wallet Service", () => {
     const createSessionResponse = await fetch("http://localhost:3001/api/session/new", {
       method: "POST",
     });
-    const sessionData = await createSessionResponse.json();
+    
+    expect(createSessionResponse.status).toBe(200);
+    const sessionData: any = await createSessionResponse.json();
+    expect(sessionData.success).toBe(true);
+    expect(sessionData.sessionId).toBeDefined();
+    
     const sessionId = sessionData.sessionId;
 
     // Then register a wallet with valid session ID
@@ -39,7 +44,7 @@ describe("Phase 2.2: Wallet Service", () => {
     });
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data: any = await response.json();
     expect(data.success).toBe(true);
     expect(data.walletName).toBe("alice");
     expect(data.balance).toBe("100000000");
@@ -54,7 +59,12 @@ describe("Phase 2.2: Wallet Service", () => {
     const createSessionResponse = await fetch("http://localhost:3001/api/session/new", {
       method: "POST",
     });
+    
+    expect(createSessionResponse.status).toBe(200);
     const sessionData: any = await createSessionResponse.json();
+    expect(sessionData.success).toBe(true);
+    expect(sessionData.sessionId).toBeDefined();
+    
     const sessionId = sessionData.sessionId;
 
     // Register "alice" first time
@@ -94,7 +104,12 @@ describe("Phase 2.2: Wallet Service", () => {
     const createSessionResponse = await fetch("http://localhost:3001/api/session/new", {
       method: "POST",
     });
+    
+    expect(createSessionResponse.status).toBe(200);
     const sessionData: any = await createSessionResponse.json();
+    expect(sessionData.success).toBe(true);
+    expect(sessionData.sessionId).toBeDefined();
+    
     const sessionId = sessionData.sessionId;
 
     // Register "alice" with 100 ADA

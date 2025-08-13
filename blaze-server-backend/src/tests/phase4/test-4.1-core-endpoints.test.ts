@@ -8,7 +8,7 @@ describe("Phase 4.1: Core Endpoints", () => {
 
   beforeAll(async () => {
     sessionManager = new SessionManager();
-    server = createServer(sessionManager);
+    server = await createServer(sessionManager);
   });
 
   afterAll(async () => {

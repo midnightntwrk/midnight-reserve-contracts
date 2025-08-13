@@ -20,7 +20,8 @@ export class SessionManager {
     
     this.currentSession = {
       id: randomUUID(),
-      emulator
+      emulator,
+      deployedContracts: new Map() // Store contract address -> compiled code mapping
     };
     
     return this.currentSession;

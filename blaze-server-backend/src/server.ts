@@ -2,6 +2,9 @@ import express from "express";
 import { SessionManager } from "./utils/session-manager";
 import { makeValue } from "@blaze-cardano/sdk";
 import * as Core from "@blaze-cardano/core";
+import { cborToScript } from "@blaze-cardano/uplc";
+import * as Data from "@blaze-cardano/data";
+import { MyDatum } from "./utils/contracts";
 
 export function createServer(sessionManager: SessionManager) {
   const app = express();
@@ -170,6 +173,254 @@ export function createServer(sessionManager: SessionManager) {
     }
   });
 
-  const server = app.listen(3001);
-  return server;
+  app.post("/api/contract/deploy", async (req, res) => {
+    const { sessionId, deployerWallet, compiledCode, datumSchema, redeemerSchema } = req.body;
+
+    // Validate session ID
+    const currentSession = sessionManager.getCurrentSession();
+    if (!currentSession || currentSession.id !== sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid session ID"
+      });
+    }
+
+    // Validate that deployer wallet exists
+    if (!currentSession.emulator.mockedWallets.has(deployerWallet)) {
+      return res.status(400).json({
+        success: false,
+        error: `Deployer wallet '${deployerWallet}' does not exist`
+      });
+    }
+
+    try {
+      // Create script from compiled code
+      const script = cborToScript(compiledCode, "PlutusV3");
+      const scriptAddress = Core.addressFromValidator(Core.NetworkId.Testnet, script);
+
+      // Store the compiled code for later use
+      currentSession.deployedContracts.set(scriptAddress.toBech32(), compiledCode);
+
+      res.json({
+        success: true,
+        contractId: script.hash(),
+        contractAddress: scriptAddress.toBech32(),
+        deployedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.log("Contract deployment error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to deploy contract"
+      });
+    }
+  });
+
+  app.post("/api/contract/lock", async (req, res) => {
+    const { sessionId, fromWallet, contractAddress, amount, datum } = req.body;
+
+    // Validate session ID
+    const currentSession = sessionManager.getCurrentSession();
+    if (!currentSession || currentSession.id !== sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid session ID"
+      });
+    }
+
+    // Validate that from wallet exists
+    if (!currentSession.emulator.mockedWallets.has(fromWallet)) {
+      return res.status(400).json({
+        success: false,
+        error: `Wallet '${fromWallet}' does not exist`
+      });
+    }
+
+    try {
+      // Get the script address from the contract address
+      const scriptAddress = Core.addressFromBech32(contractAddress);
+      
+      // Execute the contract locking transaction
+      await currentSession.emulator.as(fromWallet, async (blaze: any, addr: any) => {
+        await currentSession.emulator.expectValidTransaction(
+          blaze,
+          blaze.newTransaction().lockAssets(
+            scriptAddress,
+            makeValue(BigInt(amount)),
+            Data.serialize(MyDatum, { thing: BigInt(datum) })
+          )
+        );
+      });
+
+      res.json({
+        success: true,
+        fromWallet,
+        contractAddress,
+        amount,
+        datum,
+        transactionId: "lock-tx-" + Date.now()
+      });
+    } catch (error) {
+      console.log("Contract lock error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to lock funds to contract"
+      });
+    }
+  });
+
+  app.post("/api/contract/invoke", async (req, res) => {
+    const { sessionId, fromWallet, contractAddress, redeemer } = req.body;
+
+    // Validate session ID
+    const currentSession = sessionManager.getCurrentSession();
+    if (!currentSession || currentSession.id !== sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid session ID"
+      });
+    }
+
+    // Validate that from wallet exists
+    if (!currentSession.emulator.mockedWallets.has(fromWallet)) {
+      return res.status(400).json({
+        success: false,
+        error: `Wallet '${fromWallet}' does not exist`
+      });
+    }
+
+    try {
+      // Get the compiled code for this contract
+      const compiledCode = currentSession.deployedContracts.get(contractAddress);
+      if (!compiledCode) {
+        return res.status(400).json({
+          success: false,
+          error: `Contract at address '${contractAddress}' not found`
+        });
+      }
+
+      // Recreate the script from the compiled code
+      const script = cborToScript(compiledCode, "PlutusV3");
+      const scriptAddress = Core.addressFromBech32(contractAddress);
+      
+      // Find UTXOs at the contract address
+      let scriptUtxos: any[] = [];
+      await currentSession.emulator.as(fromWallet, async (blaze: any, addr: any) => {
+        scriptUtxos = await blaze.provider.getUnspentOutputs(scriptAddress);
+      });
+
+      // Debug log the UTXOs to see their structure
+      console.log("=== UTXO DEBUG INFO ===");
+      console.log("Contract address:", contractAddress);
+      console.log("Number of UTXOs found:", scriptUtxos.length);
+      scriptUtxos.forEach((utxo: any, index: number) => {
+        console.log(`UTXO ${index}:`, {
+          input: utxo.input(),
+          output: {
+            address: utxo.output().address(),
+            amount: utxo.output().amount(),
+            datum: utxo.output().datum()
+          }
+        });
+      });
+      console.log("=== END UTXO DEBUG ===");
+
+      // Check if there are UTXOs to spend
+      if (scriptUtxos.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "No UTXOs found at contract address"
+        });
+      }
+
+      // Try each UTXO until one works with the redeemer
+      let success = false;
+      let lastError = null;
+
+      for (const utxo of scriptUtxos) {
+        try {
+          await currentSession.emulator.as(fromWallet, async (blaze: any, addr: any) => {
+            await currentSession.emulator.expectValidTransaction(
+              blaze,
+              blaze.newTransaction()
+                .addInput(utxo, Data.serialize(Data.BigInt(), BigInt(redeemer)))
+                .provideScript(script)
+            );
+          });
+          success = true;
+          break;
+        } catch (error) {
+          lastError = error;
+          // Continue to next UTXO
+        }
+      }
+
+      if (!success) {
+        return res.status(400).json({
+          success: false,
+          error: `No UTXO found that accepts redeemer '${redeemer}'`
+        });
+      }
+
+      res.json({
+        success: true,
+        fromWallet,
+        contractAddress,
+        redeemer,
+        utxoConsumed: true,
+        transactionId: "invoke-tx-" + Date.now()
+      });
+    } catch (error) {
+      console.log("Contract call error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to call contract"
+      });
+    }
+  });
+
+  app.post("/api/contract/invoke", async (req, res) => {
+    const { sessionId, invokerWallet, contractAddress, redeemer } = req.body;
+
+    // Validate session ID
+    const currentSession = sessionManager.getCurrentSession();
+    if (!currentSession || currentSession.id !== sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid session ID"
+      });
+    }
+
+    // Validate that invoker wallet exists
+    if (!currentSession.emulator.mockedWallets.has(invokerWallet)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invoker wallet '${invokerWallet}' does not exist`
+      });
+    }
+
+    try {
+      // For now, just return success with a dummy transaction ID
+      // We'll implement actual contract invocation logic next
+      res.json({
+        success: true,
+        invokerWallet,
+        contractAddress,
+        redeemer,
+        transactionId: "tx-" + Date.now()
+      });
+    } catch (error) {
+      console.log("Contract invocation error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to invoke contract"
+      });
+    }
+  });
+
+  return new Promise((resolve) => {
+    const server = app.listen(3001, () => {
+      resolve(server);
+    });
+  });
 }
