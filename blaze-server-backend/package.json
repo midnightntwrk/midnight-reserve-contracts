@@ -4,12 +4,12 @@
   "description": "Backend server for testing and demoing Aiken smart contracts",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
     "dev": "bun run --watch src/server.ts",
-    "start": "node dist/server.js",
     "test:phase0": "bun test src/tests/phase0",
     "test:phase1": "bun test src/tests/phase1",
-    "clean": "rm -rf dist"
+    "test:phase2": "bun test src/tests/phase2",
+    "test:phase4": "bun test src/tests/phase4",
+    "test": "bun test"
   },
   "keywords": ["cardano", "aiken", "blaze", "emulator"],
   "author": "",

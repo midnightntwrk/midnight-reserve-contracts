@@ -1,0 +1,1 @@
+- that wasn't a "good catch" it was the most basic step: when preparing a commit comment, run 'git status' and make sure you account for everything

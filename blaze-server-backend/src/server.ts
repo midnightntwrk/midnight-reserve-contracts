@@ -379,45 +379,6 @@ export function createServer(sessionManager: SessionManager) {
     }
   });
 
-  app.post("/api/contract/invoke", async (req, res) => {
-    const { sessionId, invokerWallet, contractAddress, redeemer } = req.body;
-
-    // Validate session ID
-    const currentSession = sessionManager.getCurrentSession();
-    if (!currentSession || currentSession.id !== sessionId) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid session ID"
-      });
-    }
-
-    // Validate that invoker wallet exists
-    if (!currentSession.emulator.mockedWallets.has(invokerWallet)) {
-      return res.status(400).json({
-        success: false,
-        error: `Invoker wallet '${invokerWallet}' does not exist`
-      });
-    }
-
-    try {
-      // For now, just return success with a dummy transaction ID
-      // We'll implement actual contract invocation logic next
-      res.json({
-        success: true,
-        invokerWallet,
-        contractAddress,
-        redeemer,
-        transactionId: "tx-" + Date.now()
-      });
-    } catch (error) {
-      console.log("Contract invocation error:", error);
-      res.status(500).json({
-        success: false,
-        error: "Failed to invoke contract"
-      });
-    }
-  });
-
   return new Promise((resolve) => {
     const server = app.listen(3001, () => {
       resolve(server);
