@@ -9,8 +9,8 @@
     "test:phase1": "bun test src/tests/phase1",
     "test:phase2": "bun test src/tests/phase2",
     "test:phase4": "bun test src/tests/phase4",
-    "test": "bun test src/tests --exclude='exploration/**'",
-    "test:exploration": "bun test exploration/tests"
+    "test": "bun test src/tests",
+    "test:exploration": "bun test ./exploration/tests/*.exploration.ts ./exploration/unfakeable-transaction-ids/tests/phase3/*.exploration.ts"
   },
   "keywords": ["cardano", "aiken", "blaze", "emulator"],
   "author": "",
