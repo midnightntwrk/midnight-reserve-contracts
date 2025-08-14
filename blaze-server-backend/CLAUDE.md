@@ -10,7 +10,11 @@ Before ANY development work, you MUST:
 This is MANDATORY and NON-NEGOTIABLE.
 
 ## Git Workflow Reminders
-- when preparing a commit comment, run 'git status' and make sure you account for everything
+- CRITICAL: Only stage and commit files within the blaze-server-backend directory
+- NEVER use `git add -A` from the project root - it captures unrelated folders
+- ALWAYS check `pwd` before git operations to ensure you're in /blaze-server-backend
+- When preparing a commit, run 'git status' and verify ONLY relevant files are staged
+- If you see ../demo-client/ or other parent directory files, DO NOT commit them
 
 ## Reference Script Implementation (CIP-33) - Key Idioms
 
