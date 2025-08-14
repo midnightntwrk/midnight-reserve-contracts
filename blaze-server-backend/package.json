@@ -2,15 +2,31 @@
   "name": "aiken-demo-backend",
   "version": "0.1.0",
   "description": "Backend server for testing and demoing Aiken smart contracts",
-  "main": "dist/server.js",
+  "main": "dist/index.js",
+  "bin": {
+    "blaze-server": "dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "API_DOCUMENTATION.md"
+  ],
   "scripts": {
-    "dev": "bun run --watch src/server.ts",
+    "dev": "bun run --watch src/index.ts",
+    "build": "npm run clean && npm run compile && npm run copy-assets",
+    "clean": "rm -rf dist",
+    "compile": "tsc",
+    "copy-assets": "echo 'No additional assets to copy'",
+    "start": "node dist/index.js",
+    "prepare": "npm run build",
     "test:phase0": "bun test src/tests/phase0",
     "test:phase1": "bun test src/tests/phase1",
     "test:phase2": "bun test src/tests/phase2",
     "test:phase4": "bun test src/tests/phase4",
     "test": "bun test src/tests",
-    "test:exploration": "bun test ./exploration/tests/*.exploration.ts ./exploration/unfakeable-transaction-ids/tests/phase3/*.exploration.ts"
+    "test:exploration": "bun test ./exploration/tests/*.exploration.ts ./exploration/unfakeable-transaction-ids/tests/phase3/*.exploration.ts",
+    "pack": "npm run build && npm pack",
+    "publish:npm": "npm run build && npm publish"
   },
   "keywords": ["cardano", "aiken", "blaze", "emulator"],
   "author": "",

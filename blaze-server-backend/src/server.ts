@@ -51,7 +51,7 @@ export function createServer(sessionManager: SessionManager) {
       
       // Verify the actual balance by querying the emulator using the correct pattern
       let actualBalance = 0n;
-      await currentSession.emulator.as(name, async (blaze, addr) => {
+      await currentSession.emulator.as(name, async (blaze: any, addr: any) => {
         const utxos = await blaze.provider.getUnspentOutputs(addr);
         actualBalance = utxos.reduce((total: bigint, utxo: any) => total + utxo.output().amount().coin(), 0n);
       });
@@ -105,7 +105,7 @@ export function createServer(sessionManager: SessionManager) {
       });
 
               // Execute the transfer from source wallet
-        let realTransactionId: string;
+        let realTransactionId: string = "";
         await currentSession.emulator.as(fromWallet, async (blaze: any, addr: any) => {
           // Create a proper TransactionOutput object
           const output = new Core.TransactionOutput(toAddress, makeValue(BigInt(amount)));
@@ -251,7 +251,7 @@ export function createServer(sessionManager: SessionManager) {
       const scriptAddress = Core.addressFromBech32(contractAddress);
       
       // Execute the contract locking transaction
-      let realTransactionId: string;
+      let realTransactionId: string = "";
       await currentSession.emulator.as(fromWallet, async (blaze: any, addr: any) => {
         const tx = blaze.newTransaction().lockAssets(
           scriptAddress,
@@ -357,7 +357,7 @@ export function createServer(sessionManager: SessionManager) {
 
       // Try each UTXO until one works with the redeemer
       let success = false;
-      let realTransactionId: string;
+      let realTransactionId: string = "";
       let lastError = null;
 
       for (const utxo of scriptUtxos) {
@@ -430,7 +430,7 @@ export function createServer(sessionManager: SessionManager) {
     try {
       // Use existing balance calculation pattern from register endpoint
       let actualBalance = 0n;
-      await currentSession.emulator.as(walletName, async (blaze, addr) => {
+      await currentSession.emulator.as(walletName, async (blaze: any, addr: any) => {
         const utxos = await blaze.provider.getUnspentOutputs(addr);
         actualBalance = utxos.reduce((total: bigint, utxo: any) => total + utxo.output().amount().coin(), 0n);
       });
@@ -477,7 +477,7 @@ export function createServer(sessionManager: SessionManager) {
       const walletName = Array.from(currentSession.emulator.mockedWallets.keys())[0];
       let contractBalance = 0n;
       
-      await currentSession.emulator.as(walletName, async (blaze, addr) => {
+      await currentSession.emulator.as(walletName, async (blaze: any, addr: any) => {
         const utxos = await blaze.provider.getUnspentOutputs(contractAddress);
         contractBalance = utxos.reduce((total: bigint, utxo: any) => total + utxo.output().amount().coin(), 0n);
       });
@@ -557,7 +557,7 @@ export function createServer(sessionManager: SessionManager) {
 
     try {
       // Execute real transaction using Blaze
-      await currentSession.emulator.as(signerWallet, async (blaze, addr) => {
+      await currentSession.emulator.as(signerWallet, async (blaze: any, addr: any) => {
         let tx = blaze.newTransaction();
 
         // Process each operation
@@ -577,7 +577,7 @@ export function createServer(sessionManager: SessionManager) {
 
             case "unlock-utxo":
               // Find contract UTXO and unlock it with redeemer
-              const contractAddresses = Array.from(currentSession.deployedContracts.values()).map(info => info.address);
+              const contractAddresses = Array.from(currentSession.deployedContracts.values()).map((info: any) => info.address);
               const scriptUtxo = await findUtxo(blaze, operation.txHash, operation.outputIndex, contractAddresses);
               
               // Get the script for this UTXO based on its address
@@ -600,7 +600,7 @@ export function createServer(sessionManager: SessionManager) {
               
             case "pay-to-contract":
               // Get contract info by name
-              const contractInfo = currentSession.deployedContracts.get(operation.contractAddress);
+              const contractInfo: any = currentSession.deployedContracts.get(operation.contractAddress);
               if (!contractInfo) {
                 throw new Error(`Contract '${operation.contractAddress}' not found`);
               }
@@ -666,10 +666,10 @@ export function createServer(sessionManager: SessionManager) {
     }
     
     try {
-      await currentSession.emulator.as(walletName, async (blaze, addr) => {
+      await currentSession.emulator.as(walletName, async (blaze: any, addr: any) => {
         const utxos = await blaze.provider.getUnspentOutputs(addr);
         
-        const formattedUtxos = utxos.map(utxo => ({
+        const formattedUtxos = utxos.map((utxo: any) => ({
           txHash: utxo.input().transactionId().toString(),
           outputIndex: Number(utxo.input().index()),
           address: utxo.output().address().toBech32(),
@@ -709,10 +709,10 @@ export function createServer(sessionManager: SessionManager) {
       
       // Use any wallet to query the contract address
       const walletName = Array.from(currentSession.emulator.mockedWallets.keys())[0];
-      await currentSession.emulator.as(walletName, async (blaze, addr) => {
+      await currentSession.emulator.as(walletName, async (blaze: any, addr: any) => {
         const utxos = await blaze.provider.getUnspentOutputs(scriptAddress);
         
-        const formattedUtxos = utxos.map(utxo => {
+        const formattedUtxos = utxos.map((utxo: any) => {
           const output = utxo.output();
           const datum = output.datum();
           

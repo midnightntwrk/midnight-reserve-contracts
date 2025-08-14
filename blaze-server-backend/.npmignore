@@ -1,0 +1,51 @@
+# Source files
+src/
+
+# Tests and exploration
+src/tests/
+exploration/
+**/*.test.ts
+**/*.spec.ts
+**/*.exploration.ts
+test-setup.ts
+bunfig.toml
+
+# Development files
+.env*
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Documentation that's not needed in distribution
+TDD_GUIDELINES.md
+DEVELOPMENT_*.md
+PROJECT_ANALYSIS_*.md
+AIKEN_*.md
+TRANSACTION_*.md
+*PRD.md
+CLAUDE.md
+Justfile
+
+# Build artifacts that shouldn't be distributed
+*.tsbuildinfo
+tsconfig.json
+
+# Dependencies
+node_modules/
+
+# Git
+.git/
+.gitignore
+
+# Lock files (consumers should use their own)
+bun.lock
+package-lock.json
+yarn.lock
+
+# Aiken source and build artifacts (no contract code in distribution)
+build/
+aiken.lock
+aiken.toml
+validators/
+plutus.json
