@@ -94,7 +94,6 @@ describe("Phase 3.4: Contract UTXO Discovery - Two Approaches", () => {
     const lockData = await lockResp.json();
     expect(lockData.success).toBe(true);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Test UTXO discovery by contract address (Bech32)
     const utxosByScriptHashResponse = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
@@ -214,7 +213,6 @@ describe("Phase 3.4: Contract UTXO Discovery - Two Approaches", () => {
     const lockData = await lockResp.json();
     expect(lockData.success).toBe(true);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Test UTXO discovery by contract address (Bech32)
     const utxosByScriptHashResponse = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);

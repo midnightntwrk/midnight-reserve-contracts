@@ -89,7 +89,6 @@ describe("Phase 3.5: UTXO Helper Functions - Two Approaches", () => {
     const lockData = await lockResp.json();
     expect(lockData.success).toBe(true);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Test getting wallet UTXOs (helper function)
     const walletUtxosResponse = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -222,7 +221,6 @@ describe("Phase 3.5: UTXO Helper Functions - Two Approaches", () => {
     const lockData = await lockResp.json();
     expect(lockData.success).toBe(true);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Test getting wallet UTXOs (helper function)
     const walletUtxosResponse = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);

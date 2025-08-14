@@ -137,7 +137,6 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
     expect(claimedTransactionId).toMatch(/^[a-f0-9]{64}$/); // Should be real 64-char hex
 
     // Step 5: Wait for transaction processing
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Step 6: Verify Alice's state AFTER locking
     const aliceBalanceAfterResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);
@@ -313,7 +312,6 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
     expect(claimedTransactionId).toMatch(/^[a-f0-9]{64}$/); // Should be real 64-char hex
 
     // Step 5: Wait for transaction processing
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Step 6: Verify Alice's state AFTER locking
     const aliceBalanceAfterResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);

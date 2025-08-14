@@ -94,7 +94,6 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
     const lockData = await lockResp.json();
     expect(lockData.success).toBe(true);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Test contract balance after locking funds
     const contractBalanceResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
@@ -199,7 +198,6 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
     const lockData = await lockResp.json();
     expect(lockData.success).toBe(true);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Test contract balance after locking funds
     const contractBalanceResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);

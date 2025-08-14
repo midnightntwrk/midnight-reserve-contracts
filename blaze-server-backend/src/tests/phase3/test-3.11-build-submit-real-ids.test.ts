@@ -107,7 +107,6 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
     expect(buildSubmitData.operationsExecuted).toBe(2);
 
     // Step 3: Wait for transaction processing
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Step 4: Verify Alice's state changed correctly
     const aliceBalanceAfterResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);
@@ -270,7 +269,6 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
     const lockData = await lockResp.json();
     expect(lockData.success).toBe(true);
     
-    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Get the locked UTXO details
     const contractUtxosResponse = await fetch(`${baseUrl}/api/contract/${refContractAddress}/utxos?sessionId=${sessionId}`);
@@ -316,7 +314,6 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
     expect(claimedTransactionId).toMatch(/^[a-f0-9]{64}$/);
 
     // Wait for processing
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify the contract UTXO was consumed
     const contractUtxosAfterResponse = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
@@ -432,7 +429,6 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
     const lockData = await lockResp.json();
     expect(lockData.success).toBe(true);
     
-    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Get the locked UTXO details
     const contractUtxosResponse = await fetch(`${baseUrl}/api/contract/${inlineContractAddress}/utxos?sessionId=${sessionId}`);
@@ -477,7 +473,6 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
     expect(claimedTransactionId).toMatch(/^[a-f0-9]{64}$/);
 
     // Wait for processing
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify the contract UTXO was consumed
     const contractUtxosAfterResponse = await fetch(`${baseUrl}/api/contract/${inlineContractAddress}/utxos?sessionId=${sessionId}`);

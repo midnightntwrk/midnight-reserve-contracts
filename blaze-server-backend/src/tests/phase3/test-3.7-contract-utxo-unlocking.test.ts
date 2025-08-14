@@ -100,7 +100,6 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
     expect(lockData.success).toBe(true);
 
     // Wait for lock transaction
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Get the locked UTXO details
     const contractUtxosResp = await fetch(`${baseUrl}/api/contract/${refContractAddress}/utxos?sessionId=${sessionId}`);
@@ -147,7 +146,6 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
     expect(claimedTransactionId).toMatch(/^[a-f0-9]{64}$/);
     expect(unlockResult.operationsExecuted).toBe(2);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify contract UTXO was consumed
     const contractUtxosAfterResp = await fetch(`${baseUrl}/api/contract/${refContractAddress}/utxos?sessionId=${sessionId}`);
@@ -253,7 +251,6 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
     expect(lockData.success).toBe(true);
 
     // Wait for lock transaction
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Get the locked UTXO details
     const contractUtxosResp = await fetch(`${baseUrl}/api/contract/${inlineContractAddress}/utxos?sessionId=${sessionId}`);
@@ -292,7 +289,6 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
     expect(claimedTransactionId).toMatch(/^[a-f0-9]{64}$/);
     expect(unlockResult.operationsExecuted).toBe(2);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify contract UTXO was consumed
     const contractUtxosAfterResp = await fetch(`${baseUrl}/api/contract/${inlineContractAddress}/utxos?sessionId=${sessionId}`);

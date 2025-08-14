@@ -88,7 +88,6 @@ describe("Phase 3.8: Unfakeable Transaction ID Verification", () => {
     expect(claimedTransactionId).toMatch(/^[a-f0-9]{64}$/);
 
     // Step 5: Wait a moment for the transaction to be processed
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Step 6: Verify Alice's state AFTER transfer
     const aliceBalanceAfterResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);

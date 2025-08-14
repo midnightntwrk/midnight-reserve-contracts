@@ -113,7 +113,6 @@ describe("Phase 3.1: Multi-Input Contract Transactions - Two Approaches", () => 
     expect(data.transactionId).toMatch(/^[a-f0-9]{64}$/);
     expect(data.operationsExecuted).toBe(3); // 1 spend + 2 contract outputs
 
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify balance decreased
     const aliceAfterResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);
@@ -228,7 +227,6 @@ describe("Phase 3.1: Multi-Input Contract Transactions - Two Approaches", () => 
     expect(data.transactionId).toMatch(/^[a-f0-9]{64}$/);
     expect(data.operationsExecuted).toBe(3); // 1 spend + 2 contract outputs
 
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify balance decreased
     const aliceAfterResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);
