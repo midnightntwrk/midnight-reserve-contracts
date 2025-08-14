@@ -16,3 +16,6 @@ docs/
 # Test artifacts
 test-results/
 *.tmp
+
+# Research code repositories (cloned for local study)
+.gitignored-repos/

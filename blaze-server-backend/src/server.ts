@@ -536,7 +536,7 @@ export function createServer(sessionManager: SessionManager) {
   }
 
   app.post("/api/transaction/build-and-submit", async (req, res) => {
-    const { sessionId, signerWallet, operations } = req.body;
+    const { sessionId, signerWallet, operations, collateralUtxos } = req.body;
     
     // Validate session ID
     const currentSession = sessionManager.getCurrentSession();
@@ -559,6 +559,16 @@ export function createServer(sessionManager: SessionManager) {
       // Execute real transaction using Blaze
       await currentSession.emulator.as(signerWallet, async (blaze: any, addr: any) => {
         let tx = blaze.newTransaction();
+        
+        // Add specific collateral UTXOs if provided (following SundaeSwap pattern)
+        if (collateralUtxos && Array.isArray(collateralUtxos)) {
+          const collateralList = [];
+          for (const collateralRef of collateralUtxos) {
+            const collateralUtxo = await findUtxo(blaze, collateralRef.txHash, collateralRef.outputIndex);
+            collateralList.push(collateralUtxo);
+          }
+          tx = tx.provideCollateral(collateralList);
+        }
 
         // Process each operation
         for (const operation of operations) {
@@ -567,6 +577,16 @@ export function createServer(sessionManager: SessionManager) {
               // Add specific wallet as input source (Blaze will handle UTXO selection)
               // For now, we'll let Blaze automatically select UTXOs from the signer wallet
               // The amount specification helps with validation but Blaze handles the actual selection
+              break;
+
+            case "spend-specific-utxos":
+              // Following SundaeSwap pattern: manually select specific UTXOs instead of automatic coin selection
+              if (operation.utxos && Array.isArray(operation.utxos)) {
+                for (const utxoRef of operation.utxos) {
+                  const specificUtxo = await findUtxo(blaze, utxoRef.txHash, utxoRef.outputIndex);
+                  tx = tx.addInput(specificUtxo);
+                }
+              }
               break;
 
             case "spend-utxo":
@@ -580,22 +600,53 @@ export function createServer(sessionManager: SessionManager) {
               const contractAddresses = Array.from(currentSession.deployedContracts.values()).map((info: any) => info.address);
               const scriptUtxo = await findUtxo(blaze, operation.txHash, operation.outputIndex, contractAddresses);
               
-              // Get the script for this UTXO based on its address
-              const utxoAddress = scriptUtxo.output().address().toBech32();
-              const script = getScriptForAddress(utxoAddress, currentSession.deployedContracts);
+              // Add input with redeemer
+              tx = tx.addInput(scriptUtxo, Data.serialize(Data.BigInt(), BigInt(operation.redeemer)));
               
-              // Add input with redeemer and provide script
-              tx = tx.addInput(scriptUtxo, Data.serialize(Data.BigInt(), BigInt(operation.redeemer)))
-                     .provideScript(script);
+              // Handle script reference: either reference script OR inline script (CIP-33)
+              if (operation.referenceScriptUtxo) {
+                // Use reference script from another UTXO (true CIP-33)
+                // Following SundaeSwap pattern: find the UTXO but add as reference input only
+                const refScriptUtxo = await findUtxo(blaze, operation.referenceScriptUtxo.txHash, operation.referenceScriptUtxo.outputIndex);
+                
+                // Add reference input - this provides the script WITHOUT consuming the UTXO
+                tx = tx.addReferenceInput(refScriptUtxo);
+                
+                // CRITICAL: Do NOT call provideScript when using reference scripts
+                // The reference input provides the script automatically for validation
+                
+              } else if (operation.script) {
+                // Use inline script (backward compatibility)
+                const script = cborToScript(operation.script, "PlutusV3");
+                tx = tx.provideScript(script);
+              } else {
+                // Fallback: Get script from contract address (existing behavior)
+                const utxoAddress = scriptUtxo.output().address().toBech32();
+                const script = getScriptForAddress(utxoAddress, currentSession.deployedContracts);
+                tx = tx.provideScript(script);
+              }
               break;
               
             case "pay-to-address":
-              // Create output to specific address
-              const output = new Core.TransactionOutput(
-                Core.addressFromBech32(operation.address),
-                makeValue(BigInt(operation.amount))
-              );
-              tx = tx.addOutput(output);
+              if (operation.referenceScript) {
+                // Create output with reference script using setScriptRef method
+                const script = cborToScript(operation.referenceScript, "PlutusV3");
+                const address = Core.addressFromBech32(operation.address);
+                const amount = makeValue(BigInt(operation.amount));
+                
+                // Create output first, then attach script reference
+                const output = new Core.TransactionOutput(address, amount);
+                output.setScriptRef(script);
+                
+                tx = tx.addOutput(output);
+              } else {
+                // Regular output without reference script
+                const output = new Core.TransactionOutput(
+                  Core.addressFromBech32(operation.address),
+                  makeValue(BigInt(operation.amount))
+                );
+                tx = tx.addOutput(output);
+              }
               break;
               
             case "pay-to-contract":
@@ -612,10 +663,17 @@ export function createServer(sessionManager: SessionManager) {
                 serializedDatum = Data.serialize(MyDatum, { thing: BigInt(operation.datum) });
               }
               
+              // Support reference script for pay-to-contract
+              let referenceScript = undefined;
+              if (operation.referenceScript) {
+                referenceScript = cborToScript(operation.referenceScript, "PlutusV3");
+              }
+              
               tx = tx.lockAssets(
                 contractInfo.address,
                 makeValue(BigInt(operation.amount)),
-                serializedDatum
+                serializedDatum,
+                referenceScript // Reference script as 4th parameter
               );
               break;
               
@@ -628,13 +686,24 @@ export function createServer(sessionManager: SessionManager) {
         const completed = await tx.complete();
         const realTransactionId = completed.getId();
 
+        // Extract created UTXOs for reference
+        const coreTransaction = completed.toCore();
+        const outputs = coreTransaction.body.outputs;
+        const createdUtxos = outputs.map((output: any, index: number) => ({
+          txHash: realTransactionId,
+          outputIndex: index,
+          address: output.address, // Already in bech32 format
+          amount: output.value.coins.toString() // Convert bigint to string
+        }));
+
         // Submit the transaction to emulator
         await currentSession.emulator.expectValidTransaction(blaze, tx);
 
         res.json({
           success: true,
           transactionId: realTransactionId,
-          operationsExecuted: operations.length
+          operationsExecuted: operations.length,
+          createdUtxos // Add UTXO references for direct use
         });
       });
     } catch (error) {
