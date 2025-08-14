@@ -4,7 +4,7 @@ describe("Phase 4.1: Core Endpoints", () => {
   // Note: Using shared server and SessionManager from global test setup
 
   test("should create new session via HTTP endpoint", async () => {
-    const response = await fetch("http://localhost:3001/api/session/new", {
+    const response = await fetch("http://localhost:3031/api/session/new", {
       method: "POST",
     });
 
@@ -16,7 +16,7 @@ describe("Phase 4.1: Core Endpoints", () => {
   });
 
   test("should reject requests with invalid session ID", async () => {
-    const response = await fetch("http://localhost:3001/api/wallet/register", {
+    const response = await fetch("http://localhost:3031/api/wallet/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -36,14 +36,14 @@ describe("Phase 4.1: Core Endpoints", () => {
 
   test("should get network tip with valid session ID", async () => {
     // First create a session
-    const createResponse = await fetch("http://localhost:3001/api/session/new", {
+    const createResponse = await fetch("http://localhost:3031/api/session/new", {
       method: "POST",
     });
     const createData = await createResponse.json();
     const sessionId = createData.sessionId;
 
     // Then get network tip with valid session ID
-    const response = await fetch(`http://localhost:3001/api/network/tip?sessionId=${sessionId}`);
+    const response = await fetch(`http://localhost:3031/api/network/tip?sessionId=${sessionId}`);
     
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -54,7 +54,7 @@ describe("Phase 4.1: Core Endpoints", () => {
 
   test("should handle client with no session trying to make requests", async () => {
     // Client tries to use network tip without creating session first
-    const response = await fetch("http://localhost:3001/api/network/tip?sessionId=some-old-id");
+    const response = await fetch("http://localhost:3031/api/network/tip?sessionId=some-old-id");
     
     expect(response.status).toBe(400);
     const data = await response.json();
@@ -64,19 +64,19 @@ describe("Phase 4.1: Core Endpoints", () => {
 
   test("should handle client with expired session ID", async () => {
     // Create first session
-    const createResponse1 = await fetch("http://localhost:3001/api/session/new", {
+    const createResponse1 = await fetch("http://localhost:3031/api/session/new", {
       method: "POST",
     });
     const session1Data = await createResponse1.json();
     const oldSessionId = session1Data.sessionId;
 
     // Create new session (destroys old one)
-    await fetch("http://localhost:3001/api/session/new", {
+    await fetch("http://localhost:3031/api/session/new", {
       method: "POST",
     });
 
     // Client tries to use old session ID
-    const response = await fetch(`http://localhost:3001/api/network/tip?sessionId=${oldSessionId}`);
+    const response = await fetch(`http://localhost:3031/api/network/tip?sessionId=${oldSessionId}`);
     
     expect(response.status).toBe(400);
     const data = await response.json();

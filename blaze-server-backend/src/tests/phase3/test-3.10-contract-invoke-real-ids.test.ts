@@ -1,7 +1,8 @@
 import { describe, it, expect } from "bun:test";
+import { computeScriptInfo } from "../../utils/script-utils";
 
 describe("Phase 3.10: Contract Invoke Real Transaction IDs - Two Approaches", () => {
-  const baseUrl = "http://localhost:3001";
+  const baseUrl = "http://localhost:3031";
 
   // Note: Using shared server and SessionManager from global test setup
   // No beforeAll/afterAll needed - handled by test-setup.ts
@@ -34,22 +35,12 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs - Two Approaches", ()
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
     
-    // Deploy contract in fresh session (but will use reference scripts for unlock)
-    const deployResp = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
+    // Compute contract info directly (no deployment needed for pay-to-contract)
+    const { scriptHash: contractScriptHash, contractAddress } = computeScriptInfo(compiledCode);
     
-    expect(deployResp.status).toBe(200);
-    const deployData = await deployResp.json();
-    expect(deployData.success).toBe(true);
-    const refContractAddress = deployData.contractAddress;
-    const refContractScriptHash = deployData.contractId;
+    // Modern approach: No deployment needed - using compiledCode for unlock operations
+    const refContractAddress = contractAddress;
+    const refContractScriptHash = contractScriptHash;
     
     // Step 1: Create reference script UTXO and ensure we have multiple UTXOs for coin selection
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -106,6 +97,7 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs - Two Approaches", ()
         }, {
           type: "pay-to-contract",
           contractAddress: refContractScriptHash, // Use script hash from fresh session
+          compiledCode: compiledCode,
           amount: "3000000", // 3 ADA
           datum: 42
         }]
@@ -158,6 +150,7 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs - Two Approaches", ()
           txHash: lockedUtxo.txHash,
           outputIndex: lockedUtxo.outputIndex,
           redeemer: 42,
+          compiledCode: compiledCode, // Needed for UTXO discovery
           referenceScriptUtxo: {
             txHash: refScriptUtxo.txHash,
             outputIndex: refScriptUtxo.outputIndex
@@ -237,22 +230,10 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs - Two Approaches", ()
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
     
-    // Deploy contract in fresh session (for script hash only - no reference scripts needed)
-    const deployResp = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
+    // Compute contract info directly (no deployment needed for pay-to-contract)
+    const { scriptHash: inlineContractScriptHash, contractAddress: inlineContractAddress } = computeScriptInfo(compiledCode);
     
-    expect(deployResp.status).toBe(200);
-    const deployData = await deployResp.json();
-    expect(deployData.success).toBe(true);
-    const inlineContractAddress = deployData.contractAddress;
-    const inlineContractScriptHash = deployData.contractId;
+    // Modern approach: No deployment needed - using compiledCode for unlock operations
     
     // Step 1: Create substantial UTXOs for spending (no reference scripts needed)
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -298,7 +279,8 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs - Two Approaches", ()
           utxos: [{ txHash: spendingUtxo.txHash, outputIndex: spendingUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: inlineContractScriptHash,
+          contractAddress: inlineContractScriptHash, // Use computed script hash
+          compiledCode: compiledCode,
           amount: "3000000", // 3 ADA
           datum: 42
         }]
@@ -336,7 +318,7 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs - Two Approaches", ()
           txHash: lockedUtxo.txHash,
           outputIndex: lockedUtxo.outputIndex,
           redeemer: 42,
-          script: compiledCode // Inline script - Alonzo-era approach
+          compiledCode: compiledCode // Modern approach - script provided directly
         }]
       })
     });

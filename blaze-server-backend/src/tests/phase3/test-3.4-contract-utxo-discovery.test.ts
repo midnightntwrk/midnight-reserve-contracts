@@ -1,7 +1,8 @@
 import { describe, it, expect } from "bun:test";
+import { computeScriptInfo } from "../../utils/script-utils";
 
 describe("Phase 3.4: Contract UTXO Discovery - Two Approaches", () => {
-  const baseUrl = "http://localhost:3001";
+  const baseUrl = "http://localhost:3031";
 
   it("should discover contract UTXOs correctly (Babbage reference scripts)", async () => {
     // Create fresh session
@@ -24,19 +25,8 @@ describe("Phase 3.4: Contract UTXO Discovery - Two Approaches", () => {
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
 
-    // Deploy contract and get its address
-    const deployResponse = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
-    const deployData = await deployResponse.json();
-    const contractAddress = deployData.contractAddress;
-    const contractScriptHash = deployData.contractId;
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: contractScriptHash, contractAddress } = computeScriptInfo(compiledCode);
 
     // Setup reference scripts and UTXOs
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -79,11 +69,13 @@ describe("Phase 3.4: Contract UTXO Discovery - Two Approaches", () => {
         }, {
           type: "pay-to-contract",
           contractAddress: contractScriptHash,
+          compiledCode: compiledCode, // Include script bytes for address computation
           amount: "2000000", // 2 ADA
           datum: 42
         }, {
           type: "pay-to-contract",
           contractAddress: contractScriptHash,
+          compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA  
           datum: 99
         }]
@@ -149,19 +141,8 @@ describe("Phase 3.4: Contract UTXO Discovery - Two Approaches", () => {
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
 
-    // Deploy contract and get its address
-    const deployResponse = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
-    const deployData = await deployResponse.json();
-    const contractAddress = deployData.contractAddress;
-    const contractScriptHash = deployData.contractId;
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: contractScriptHash, contractAddress } = computeScriptInfo(compiledCode);
 
     // Setup spending UTXO (no reference scripts)
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -198,11 +179,13 @@ describe("Phase 3.4: Contract UTXO Discovery - Two Approaches", () => {
         }, {
           type: "pay-to-contract",
           contractAddress: contractScriptHash,
+          compiledCode: compiledCode, // Include script bytes for address computation
           amount: "2000000", // 2 ADA
           datum: 42
         }, {
           type: "pay-to-contract",
           contractAddress: contractScriptHash,
+          compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA  
           datum: 99
         }]

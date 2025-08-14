@@ -5,6 +5,7 @@ import * as Core from "@blaze-cardano/core";
 import { cborToScript } from "@blaze-cardano/uplc";
 import * as Data from "@blaze-cardano/data";
 import { MyDatum } from "./utils/contracts";
+import { computeScriptInfo } from "./utils/script-utils";
 
 export function createServer(sessionManager: SessionManager) {
   const app = express();
@@ -178,233 +179,14 @@ export function createServer(sessionManager: SessionManager) {
     }
   });
 
-  app.post("/api/contract/deploy", async (req, res) => {
-    const { sessionId, deployerWallet, compiledCode, datumSchema, redeemerSchema } = req.body;
+  // ✅ DEPRECATED ENDPOINT REMOVED: /api/contract/deploy
+  // Modern approach: Use computeScriptInfo() utility and build-and-submit transactions
 
-    // Validate session ID
-    const currentSession = sessionManager.getCurrentSession();
-    if (!currentSession || currentSession.id !== sessionId) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid session ID"
-      });
-    }
+  // ✅ DEPRECATED ENDPOINT REMOVED: /api/contract/lock
+  // Modern approach: Use pay-to-contract operation in build-and-submit transactions
 
-    // Validate that deployer wallet exists
-    if (!currentSession.emulator.mockedWallets.has(deployerWallet)) {
-      return res.status(400).json({
-        success: false,
-        error: `Deployer wallet '${deployerWallet}' does not exist`
-      });
-    }
-
-    try {
-      // Create script from compiled code
-      const script = cborToScript(compiledCode, "PlutusV3");
-      const scriptAddress = Core.addressFromValidator(Core.NetworkId.Testnet, script);
-
-      // Store the contract info using script hash as key (Cardano standard)
-      const scriptHash = script.hash();
-      currentSession.deployedContracts.set(scriptHash, {
-        address: scriptAddress,
-        compiledCode: compiledCode,
-        scriptHash: scriptHash
-      });
-
-      res.json({
-        success: true,
-        contractId: script.hash(),
-        contractAddress: scriptAddress.toBech32(),
-        deployedAt: new Date().toISOString()
-      });
-    } catch (error) {
-      console.log("Contract deployment error:", error);
-      res.status(500).json({
-        success: false,
-        error: "Failed to deploy contract"
-      });
-    }
-  });
-
-  app.post("/api/contract/lock", async (req, res) => {
-    const { sessionId, fromWallet, contractAddress, amount, datum } = req.body;
-
-    // Validate session ID
-    const currentSession = sessionManager.getCurrentSession();
-    if (!currentSession || currentSession.id !== sessionId) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid session ID"
-      });
-    }
-
-    // Validate that from wallet exists
-    if (!currentSession.emulator.mockedWallets.has(fromWallet)) {
-      return res.status(400).json({
-        success: false,
-        error: `Wallet '${fromWallet}' does not exist`
-      });
-    }
-
-    try {
-      // Get the script address from the contract address
-      const scriptAddress = Core.addressFromBech32(contractAddress);
-      
-      // Execute the contract locking transaction
-      let realTransactionId: string = "";
-      await currentSession.emulator.as(fromWallet, async (blaze: any, addr: any) => {
-        const tx = blaze.newTransaction().lockAssets(
-          scriptAddress,
-          makeValue(BigInt(amount)),
-          Data.serialize(MyDatum, { thing: BigInt(datum) })
-        );
-        
-        // Extract real transaction ID before submission
-        const completed = await tx.complete();
-        realTransactionId = completed.getId();
-        
-        // Submit the transaction to emulator
-        await currentSession.emulator.expectValidTransaction(blaze, tx);
-      });
-
-      res.json({
-        success: true,
-        fromWallet,
-        contractAddress,
-        amount,
-        datum,
-        transactionId: realTransactionId
-      });
-    } catch (error) {
-      console.log("Contract lock error:", error);
-      res.status(500).json({
-        success: false,
-        error: "Failed to lock funds to contract"
-      });
-    }
-  });
-
-  app.post("/api/contract/invoke", async (req, res) => {
-    const { sessionId, fromWallet, contractAddress, redeemer } = req.body;
-
-    // Validate session ID
-    const currentSession = sessionManager.getCurrentSession();
-    if (!currentSession || currentSession.id !== sessionId) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid session ID"
-      });
-    }
-
-    // Validate that from wallet exists
-    if (!currentSession.emulator.mockedWallets.has(fromWallet)) {
-      return res.status(400).json({
-        success: false,
-        error: `Wallet '${fromWallet}' does not exist`
-      });
-    }
-
-    try {
-      // Find the contract info by address (contracts are stored by script hash)
-      let contractInfo = null;
-      for (const [scriptHash, info] of currentSession.deployedContracts.entries()) {
-        if (info.address.toBech32() === contractAddress) {
-          contractInfo = info;
-          break;
-        }
-      }
-      
-      if (!contractInfo) {
-        return res.status(400).json({
-          success: false,
-          error: `Contract at address '${contractAddress}' not found in deployed contracts`
-        });
-      }
-
-      // Recreate the script from the compiled code
-      const script = cborToScript(contractInfo.compiledCode, "PlutusV3");
-      const scriptAddress = Core.addressFromBech32(contractAddress);
-      
-      // Find UTXOs at the contract address
-      let scriptUtxos: any[] = [];
-      await currentSession.emulator.as(fromWallet, async (blaze: any, addr: any) => {
-        scriptUtxos = await blaze.provider.getUnspentOutputs(scriptAddress);
-      });
-
-      // Debug log the UTXOs to see their structure
-      console.log("=== UTXO DEBUG INFO ===");
-      console.log("Contract address:", contractAddress);
-      console.log("Number of UTXOs found:", scriptUtxos.length);
-      scriptUtxos.forEach((utxo: any, index: number) => {
-        console.log(`UTXO ${index}:`, {
-          input: utxo.input(),
-          output: {
-            address: utxo.output().address(),
-            amount: utxo.output().amount(),
-            datum: utxo.output().datum()
-          }
-        });
-      });
-      console.log("=== END UTXO DEBUG ===");
-
-      // Check if there are UTXOs to spend
-      if (scriptUtxos.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: "No UTXOs found at contract address"
-        });
-      }
-
-      // Try each UTXO until one works with the redeemer
-      let success = false;
-      let realTransactionId: string = "";
-      let lastError = null;
-
-      for (const utxo of scriptUtxos) {
-        try {
-          await currentSession.emulator.as(fromWallet, async (blaze: any, addr: any) => {
-            const tx = blaze.newTransaction()
-              .addInput(utxo, Data.serialize(Data.BigInt(), BigInt(redeemer)))
-              .provideScript(script);
-            
-            // Extract real transaction ID before submission
-            const completed = await tx.complete();
-            realTransactionId = completed.getId();
-            
-            // Submit the transaction to emulator
-            await currentSession.emulator.expectValidTransaction(blaze, tx);
-          });
-          success = true;
-          break;
-        } catch (error) {
-          lastError = error;
-          // Continue to next UTXO
-        }
-      }
-
-      if (!success) {
-        return res.status(400).json({
-          success: false,
-          error: `No UTXO found that accepts redeemer '${redeemer}'`
-        });
-      }
-
-      res.json({
-        success: true,
-        fromWallet,
-        contractAddress,
-        redeemer,
-        utxoConsumed: true,
-        transactionId: realTransactionId
-      });
-    } catch (error) {
-      console.log("Contract call error:", error);
-      res.status(500).json({
-        success: false,
-        error: "Failed to call contract"
-      });
-    }
-  });
+  // ✅ DEPRECATED ENDPOINT REMOVED: /api/contract/invoke
+  // Modern approach: Use unlock-utxo operation in build-and-submit transactions
 
   app.get("/api/wallet/:walletName/balance", async (req, res) => {
     const { walletName } = req.params;
@@ -461,17 +243,22 @@ export function createServer(sessionManager: SessionManager) {
       });
     }
 
-    // Check if contract exists in deployed contracts
-    if (!currentSession.deployedContracts.has(scriptHash)) {
-      return res.status(400).json({
-        success: false,
-        error: `Contract with script hash '${scriptHash}' has not been deployed`
-      });
-    }
-
     try {
-      const contractInfo = currentSession.deployedContracts.get(scriptHash);
-      const contractAddress = contractInfo.address;
+      let contractAddress: any;
+      
+      if (currentSession.deployedContracts.has(scriptHash)) {
+        // Legacy approach: use deployed contract
+        const contractInfo = currentSession.deployedContracts.get(scriptHash);
+        contractAddress = contractInfo.address;
+      } else {
+        // Modern approach: compute address directly from script hash
+        // We need to recreate the script to get the address
+        // For now, return error since we can't compute address without compiled code
+        return res.status(400).json({
+          success: false,
+          error: `Cannot query balance for script hash '${scriptHash}' without compiled code. Either deploy the contract first or use a different endpoint that provides compiled code.`
+        });
+      }
 
       // Use any wallet to query the contract address
       const walletName = Array.from(currentSession.emulator.mockedWallets.keys())[0];
@@ -597,7 +384,16 @@ export function createServer(sessionManager: SessionManager) {
 
             case "unlock-utxo":
               // Find contract UTXO and unlock it with redeemer
-              const contractAddresses = Array.from(currentSession.deployedContracts.values()).map((info: any) => info.address);
+              let contractAddresses = Array.from(currentSession.deployedContracts.values()).map((info: any) => info.address);
+              
+              // If compiledCode is provided, add the computed script address for UTXO discovery
+              if (operation.compiledCode) {
+                // Use efficient script lookup that leverages blueprint cache
+                const { script } = computeScriptInfo(operation.compiledCode);
+                const scriptAddress = Core.addressFromValidator(Core.NetworkId.Testnet, script);
+                contractAddresses.push(scriptAddress);
+              }
+              
               const scriptUtxo = await findUtxo(blaze, operation.txHash, operation.outputIndex, contractAddresses);
               
               // Add input with redeemer
@@ -618,6 +414,10 @@ export function createServer(sessionManager: SessionManager) {
               } else if (operation.script) {
                 // Use inline script (backward compatibility)
                 const script = cborToScript(operation.script, "PlutusV3");
+                tx = tx.provideScript(script);
+              } else if (operation.compiledCode) {
+                // Modern approach: use compiled code directly (following pay-to-contract pattern)
+                const script = cborToScript(operation.compiledCode, "PlutusV3");
                 tx = tx.provideScript(script);
               } else {
                 // Fallback: Get script from contract address (existing behavior)
@@ -650,10 +450,34 @@ export function createServer(sessionManager: SessionManager) {
               break;
               
             case "pay-to-contract":
-              // Get contract info by name
-              const contractInfo: any = currentSession.deployedContracts.get(operation.contractAddress);
-              if (!contractInfo) {
-                throw new Error(`Contract '${operation.contractAddress}' not found`);
+              // Modern approach: compute script address directly from script hash (following SundaeSwap pattern)
+              // This eliminates the need for artificial "deployment" - true to Cardano's design
+              
+              let scriptAddress: any;
+              
+              if (currentSession.deployedContracts.has(operation.contractAddress)) {
+                // Legacy compatibility: use deployed contract if available
+                const contractInfo: any = currentSession.deployedContracts.get(operation.contractAddress);
+                scriptAddress = contractInfo.address;
+              } else {
+                // Modern approach: operation.contractAddress is a script hash hex string
+                // We need to reconstruct the script to get the proper address (following existing deploy pattern)
+                // This requires the compiled code to be passed in the operation
+                
+                if (!operation.compiledCode) {
+                  throw new Error(`Script hash provided without compiled code. Either use deployed contract or provide compiledCode in operation.`);
+                }
+                
+                // Use efficient script lookup that leverages blueprint cache
+                const { script, scriptHash: computedScriptHash, contractAddress: computedAddress } = computeScriptInfo(operation.compiledCode);
+                
+                // Verify the provided script hash matches the computed one
+                if (computedScriptHash !== operation.contractAddress) {
+                  throw new Error(`Script hash mismatch. Provided: ${operation.contractAddress}, Computed: ${computedScriptHash}`);
+                }
+                
+                // Use precomputed address from blueprint cache
+                scriptAddress = Core.addressFromBech32(computedAddress);
               }
               
               // Lock assets to contract address with datum
@@ -670,7 +494,7 @@ export function createServer(sessionManager: SessionManager) {
               }
               
               tx = tx.lockAssets(
-                contractInfo.address,
+                scriptAddress,
                 makeValue(BigInt(operation.amount)),
                 serializedDatum,
                 referenceScript // Reference script as 4th parameter
@@ -897,7 +721,7 @@ export function createServer(sessionManager: SessionManager) {
   }
 
   return new Promise((resolve) => {
-    const server = app.listen(3001, () => {
+    const server = app.listen(3031, () => {
       resolve(server);
     });
   });

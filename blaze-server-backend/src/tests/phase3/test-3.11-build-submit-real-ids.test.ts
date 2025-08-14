@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeEach } from "bun:test";
+import { computeScriptInfo } from "../../utils/script-utils";
 
 describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
   // Note: Using shared server and SessionManager from global test setup
 
-  const baseUrl = "http://localhost:3001";
+  const baseUrl = "http://localhost:3031";
   let sessionId: string;
   let contractAddress: string;
   let contractScriptHash: string;
+  let compiledCode: string;
 
 
   beforeEach(async () => {
@@ -38,19 +40,14 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
       })
     });
 
-    // Deploy contract
-    const deployResponse = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode: "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009"
-      })
-    });
-    const deployData = await deployResponse.json();
-    contractAddress = deployData.contractAddress;
-    contractScriptHash = deployData.contractId;
+    compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
+    
+    // Compute contract info directly
+    const contractInfo = computeScriptInfo(compiledCode);
+    contractAddress = contractInfo.contractAddress;
+    contractScriptHash = contractInfo.scriptHash;
+    
+    // Modern approach: No deployment needed - using computeScriptInfo for contract addresses
   });
 
   it("should prove build-and-submit transaction IDs are real and unfakeable", async () => {
@@ -69,9 +66,10 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
     const bobBalanceBefore = await bobBalanceBeforeResponse.json();
     const bobBalanceBeforeAmount = BigInt(bobBalanceBefore.balance);
     
-    const contractBalanceBeforeResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
-    const contractBalanceBefore = await contractBalanceBeforeResponse.json();
-    const contractBalanceBeforeAmount = BigInt(contractBalanceBefore.balance);
+    // Get contract balance by fetching UTXOs and calculating total
+    const contractUtxosBeforeResponse = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
+    const contractUtxosBefore = await contractUtxosBeforeResponse.json();
+    const contractBalanceBeforeAmount = BigInt(contractUtxosBefore.utxos.reduce((sum: number, utxo: any) => sum + parseInt(utxo.amount), 0));
     
     // Step 2: Build and submit a complex transaction with multiple operations
     const buildSubmitResponse = await fetch(`${baseUrl}/api/transaction/build-and-submit`, {
@@ -91,6 +89,7 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
           {
             type: "pay-to-contract",
             contractAddress: contractScriptHash,
+            compiledCode: compiledCode,
             amount: "2000000", // 2 ADA to contract
             datum: 77 // Simple integer datum
           }
@@ -151,9 +150,10 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
     expect(bobReceivedUtxo.txHash).toBe(claimedTransactionId);
     
     // Step 6: Verify contract received its funds
-    const contractBalanceAfterResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
-    const contractBalanceAfter = await contractBalanceAfterResponse.json();
-    const contractBalanceAfterAmount = BigInt(contractBalanceAfter.balance);
+    // Get contract balance by fetching UTXOs and calculating total  
+    const contractUtxosAfterForBalanceResponse = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
+    const contractUtxosAfterForBalance = await contractUtxosAfterForBalanceResponse.json();
+    const contractBalanceAfterAmount = BigInt(contractUtxosAfterForBalance.utxos.reduce((sum: number, utxo: any) => sum + parseInt(utxo.amount), 0));
     
     // Contract balance should have increased by exactly 2 ADA
     const contractBalanceIncrease = contractBalanceAfterAmount - contractBalanceBeforeAmount;
@@ -203,20 +203,8 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
     
-    // Deploy contract for script hash
-    const deployResp = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
-    
-    const deployData = await deployResp.json();
-    const refContractAddress = deployData.contractAddress;
-    const refContractScriptHash = deployData.contractId;
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: refContractScriptHash, contractAddress: refContractAddress } = computeScriptInfo(compiledCode);
     
     // Create reference script UTXO and setup UTXOs
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -259,6 +247,7 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
         }, {
           type: "pay-to-contract",
           contractAddress: refContractScriptHash,
+          compiledCode: compiledCode,
           amount: "3000000", // 3 ADA
           datum: 99
         }]
@@ -293,7 +282,12 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
             type: "unlock-utxo",
             txHash: lockedUtxo.txHash,
             outputIndex: lockedUtxo.outputIndex,
-            redeemer: 99 // Matching redeemer to unlock
+            redeemer: 99, // Matching redeemer to unlock
+            compiledCode: compiledCode, // Needed for UTXO discovery
+            referenceScriptUtxo: {
+              txHash: refScriptUtxo.txHash,
+              outputIndex: refScriptUtxo.outputIndex
+            }
           },
           {
             type: "pay-to-address",
@@ -369,20 +363,8 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
     
-    // Deploy contract for script hash
-    const deployResp = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
-    
-    const deployData = await deployResp.json();
-    const inlineContractAddress = deployData.contractAddress;
-    const inlineContractScriptHash = deployData.contractId;
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: inlineContractScriptHash, contractAddress: inlineContractAddress } = computeScriptInfo(compiledCode);
     
     // Create substantial UTXO for spending
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -419,6 +401,7 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
         }, {
           type: "pay-to-contract",
           contractAddress: inlineContractScriptHash,
+          compiledCode: compiledCode,
           amount: "3000000", // 3 ADA
           datum: 99
         }]
@@ -454,7 +437,7 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
             txHash: lockedUtxo.txHash,
             outputIndex: lockedUtxo.outputIndex,
             redeemer: 99, // Matching redeemer to unlock
-            script: compiledCode // Inline script - Alonzo approach
+            compiledCode: compiledCode // Modern approach - script provided directly
           },
           {
             type: "pay-to-address",

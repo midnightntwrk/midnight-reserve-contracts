@@ -11,7 +11,7 @@ npm install aiken-demo-backend
 
 # Start server
 npm start
-# Server runs on http://localhost:3001
+# Server runs on http://localhost:3031
 
 # Or use CLI
 npx blaze-server
@@ -20,11 +20,11 @@ npx blaze-server
 ### Client Example
 ```javascript
 // 1. Create session (destroys any existing session)
-const session = await fetch('http://localhost:3001/api/session/new', {method: 'POST'});
+const session = await fetch('http://localhost:3031/api/session/new', {method: 'POST'});
 const {sessionId} = await session.json();
 
 // 2. Register wallet with initial funds
-await fetch('http://localhost:3001/api/wallet/register', {
+await fetch('http://localhost:3031/api/wallet/register', {
   method: 'POST',
   headers: {'Content-Type': 'application/json'},
   body: JSON.stringify({
@@ -35,7 +35,7 @@ await fetch('http://localhost:3001/api/wallet/register', {
 });
 
 // 3. Deploy smart contract
-const deployResp = await fetch('http://localhost:3001/api/contract/deploy', {
+const deployResp = await fetch('http://localhost:3031/api/contract/deploy', {
   method: 'POST',
   headers: {'Content-Type': 'application/json'},
   body: JSON.stringify({

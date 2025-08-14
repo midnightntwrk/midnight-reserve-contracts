@@ -1,7 +1,8 @@
 import { describe, it, expect } from "bun:test";
+import { computeScriptInfo } from "../../utils/script-utils";
 
 describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () => {
-  const baseUrl = "http://localhost:3001";
+  const baseUrl = "http://localhost:3031";
 
   // Note: Using shared server and SessionManager from global test setup
   // No beforeAll/afterAll needed - handled by test-setup.ts
@@ -34,22 +35,10 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
     
-    // Deploy contract in fresh session (for script hash only - using reference scripts for lock)
-    const deployResp = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
-    
-    expect(deployResp.status).toBe(200);
-    const deployData = await deployResp.json();
-    expect(deployData.success).toBe(true);
-    const refContractAddress = deployData.contractAddress;
-    const refContractScriptHash = deployData.contractId;
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: contractScriptHash, contractAddress } = computeScriptInfo(compiledCode);
+    const refContractAddress = contractAddress;
+    const refContractScriptHash = contractScriptHash;
     
     // Step 1: Create reference script UTXO and ensure we have multiple UTXOs for spending
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -98,12 +87,9 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
     const aliceUtxosBeforeTxHashes = aliceUtxosBefore.utxos.map((u: any) => u.txHash);
     
     // Step 3: Get contract state BEFORE locking
-    const contractBalanceBeforeResponse = await fetch(`${baseUrl}/api/contract/${refContractScriptHash}/balance?sessionId=${sessionId}`);
-    const contractBalanceBefore = await contractBalanceBeforeResponse.json();
-    const contractBalanceBeforeAmount = BigInt(contractBalanceBefore.balance);
-    
     const contractUtxosBeforeResponse = await fetch(`${baseUrl}/api/contract/${refContractAddress}/utxos?sessionId=${sessionId}`);
     const contractUtxosBefore = await contractUtxosBeforeResponse.json();
+    const contractBalanceBeforeAmount = BigInt(contractUtxosBefore.utxos.reduce((sum: number, utxo: any) => sum + parseInt(utxo.amount), 0));
     const contractUtxosBeforeCount = contractUtxosBefore.utxos.length;
     
     // Step 4: Lock funds to contract using manual UTXO selection (following SundaeSwap pattern)
@@ -123,6 +109,7 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
         }, {
           type: "pay-to-contract",
           contractAddress: refContractScriptHash,
+          compiledCode: compiledCode,
           amount: "2000000", // 2 ADA
           datum: 42
         }]
@@ -160,17 +147,15 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
     expect(aliceChangeUtxo.txHash).toBe(claimedTransactionId);
     
     // Step 8: Verify contract received the locked funds
-    const contractBalanceAfterResponse = await fetch(`${baseUrl}/api/contract/${refContractScriptHash}/balance?sessionId=${sessionId}`);
-    const contractBalanceAfter = await contractBalanceAfterResponse.json();
-    const contractBalanceAfterAmount = BigInt(contractBalanceAfter.balance);
+    const contractUtxosAfterResponse = await fetch(`${baseUrl}/api/contract/${refContractAddress}/utxos?sessionId=${sessionId}`);
+    const contractUtxosAfter = await contractUtxosAfterResponse.json();
+    const contractBalanceAfterAmount = BigInt(contractUtxosAfter.utxos.reduce((sum: number, utxo: any) => sum + parseInt(utxo.amount), 0));
     
     // Contract balance should have increased by exactly 2 ADA
     const contractBalanceIncrease = contractBalanceAfterAmount - contractBalanceBeforeAmount;
     expect(contractBalanceIncrease).toBe(2000000n);
     
     // Step 9: Verify contract has new UTXO with our transaction ID
-    const contractUtxosAfterResponse = await fetch(`${baseUrl}/api/contract/${refContractAddress}/utxos?sessionId=${sessionId}`);
-    const contractUtxosAfter = await contractUtxosAfterResponse.json();
     expect(contractUtxosAfter.utxos.length).toBe(contractUtxosBeforeCount + 1);
     
     // Find the UTXO that was created by our contract lock transaction
@@ -219,22 +204,8 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
     
-    // Deploy contract in fresh session (for script hash only - no reference scripts needed)
-    const deployResp = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
-    
-    expect(deployResp.status).toBe(200);
-    const deployData = await deployResp.json();
-    expect(deployData.success).toBe(true);
-    const inlineContractAddress = deployData.contractAddress;
-    const inlineContractScriptHash = deployData.contractId;
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: inlineContractScriptHash, contractAddress: inlineContractAddress } = computeScriptInfo(compiledCode);
     
     // Step 1: Create substantial UTXOs for spending (no reference scripts needed)
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -277,12 +248,9 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
     const aliceUtxosBeforeTxHashes = aliceUtxosBefore.utxos.map((u: any) => u.txHash);
     
     // Step 3: Get contract state BEFORE locking
-    const contractBalanceBeforeResponse = await fetch(`${baseUrl}/api/contract/${inlineContractScriptHash}/balance?sessionId=${sessionId}`);
-    const contractBalanceBefore = await contractBalanceBeforeResponse.json();
-    const contractBalanceBeforeAmount = BigInt(contractBalanceBefore.balance);
-    
     const contractUtxosBeforeResponse = await fetch(`${baseUrl}/api/contract/${inlineContractAddress}/utxos?sessionId=${sessionId}`);
     const contractUtxosBefore = await contractUtxosBeforeResponse.json();
+    const contractBalanceBeforeAmount = BigInt(contractUtxosBefore.utxos.reduce((sum: number, utxo: any) => sum + parseInt(utxo.amount), 0));
     const contractUtxosBeforeCount = contractUtxosBefore.utxos.length;
     
     // Step 4: Lock funds to contract using manual UTXO selection
@@ -298,6 +266,7 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
         }, {
           type: "pay-to-contract",
           contractAddress: inlineContractScriptHash,
+          compiledCode: compiledCode,
           amount: "2000000", // 2 ADA
           datum: 42
         }]
@@ -335,17 +304,15 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
     expect(aliceChangeUtxo.txHash).toBe(claimedTransactionId);
     
     // Step 8: Verify contract received the locked funds
-    const contractBalanceAfterResponse = await fetch(`${baseUrl}/api/contract/${inlineContractScriptHash}/balance?sessionId=${sessionId}`);
-    const contractBalanceAfter = await contractBalanceAfterResponse.json();
-    const contractBalanceAfterAmount = BigInt(contractBalanceAfter.balance);
+    const contractUtxosAfterResponse = await fetch(`${baseUrl}/api/contract/${inlineContractAddress}/utxos?sessionId=${sessionId}`);
+    const contractUtxosAfter = await contractUtxosAfterResponse.json();
+    const contractBalanceAfterAmount = BigInt(contractUtxosAfter.utxos.reduce((sum: number, utxo: any) => sum + parseInt(utxo.amount), 0));
     
     // Contract balance should have increased by exactly 2 ADA
     const contractBalanceIncrease = contractBalanceAfterAmount - contractBalanceBeforeAmount;
     expect(contractBalanceIncrease).toBe(2000000n);
     
     // Step 9: Verify contract has new UTXO with our transaction ID
-    const contractUtxosAfterResponse = await fetch(`${baseUrl}/api/contract/${inlineContractAddress}/utxos?sessionId=${sessionId}`);
-    const contractUtxosAfter = await contractUtxosAfterResponse.json();
     expect(contractUtxosAfter.utxos.length).toBe(contractUtxosBeforeCount + 1);
     
     // Find the UTXO that was created by our contract lock transaction

@@ -1,7 +1,8 @@
 import { describe, it, expect } from "bun:test";
+import { computeScriptInfo } from "../../utils/script-utils";
 
 describe("Phase 3.2: Balance Query API - Two Approaches", () => {
-  const baseUrl = "http://localhost:3001";
+  const baseUrl = "http://localhost:3031";
 
   it("should query wallet and contract balances correctly (Babbage reference scripts)", async () => {
     // Create fresh session
@@ -24,18 +25,8 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
 
-    // Deploy contract for contract balance tests
-    const deployResponse = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
-    const deployData = await deployResponse.json();
-    const contractScriptHash = deployData.contractId;
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: contractScriptHash, contractAddress } = computeScriptInfo(compiledCode);
 
     // Test initial wallet balance
     const initialBalanceResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);
@@ -84,6 +75,7 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
         }, {
           type: "pay-to-contract",
           contractAddress: contractScriptHash,
+          compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 123
         }]
@@ -95,11 +87,14 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
     expect(lockData.success).toBe(true);
 
 
-    // Test contract balance after locking funds
-    const contractBalanceResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
-    expect(contractBalanceResponse.status).toBe(200);
-    const contractBalanceData = await contractBalanceResponse.json();
-    expect(contractBalanceData.balance).toBe("3000000"); // Should have the 3 ADA we locked
+    // Test contract balance after locking funds (using UTXOs endpoint to calculate balance)
+    const contractUtxosResponse = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
+    expect(contractUtxosResponse.status).toBe(200);
+    const contractUtxosData = await contractUtxosResponse.json();
+    
+    // Calculate total balance from UTXOs
+    const totalBalance = contractUtxosData.utxos.reduce((sum: number, utxo: any) => sum + parseInt(utxo.amount), 0);
+    expect(totalBalance).toBe(3000000); // Should have the 3 ADA we locked
 
     // Test wallet balance decreased
     const updatedBalanceResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);
@@ -109,7 +104,7 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
     expect(updatedBalance).toBeLessThan(20000000n); // Should be less than initial balance
 
     console.log(`✅ BABBAGE BALANCE QUERY PROOF: Balance queries work correctly with reference scripts`);
-    console.log(`✅ Contract balance: ${contractBalanceData.balance} lovelace`);
+    console.log(`✅ Contract balance: ${totalBalance} lovelace`);
     console.log(`✅ Alice balance: ${updatedBalanceData.balance} lovelace`);
   });
 
@@ -134,18 +129,8 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
 
-    // Deploy contract for contract balance tests
-    const deployResponse = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
-    const deployData = await deployResponse.json();
-    const contractScriptHash = deployData.contractId;
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: contractScriptHash, contractAddress } = computeScriptInfo(compiledCode);
 
     // Test initial wallet balance
     const initialBalanceResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);
@@ -188,6 +173,7 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
         }, {
           type: "pay-to-contract",
           contractAddress: contractScriptHash,
+          compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 123
         }]
@@ -199,11 +185,14 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
     expect(lockData.success).toBe(true);
 
 
-    // Test contract balance after locking funds
-    const contractBalanceResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
-    expect(contractBalanceResponse.status).toBe(200);
-    const contractBalanceData = await contractBalanceResponse.json();
-    expect(contractBalanceData.balance).toBe("3000000"); // Should have the 3 ADA we locked
+    // Test contract balance after locking funds (using UTXOs endpoint to calculate balance)
+    const contractUtxosResponse = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
+    expect(contractUtxosResponse.status).toBe(200);
+    const contractUtxosData = await contractUtxosResponse.json();
+    
+    // Calculate total balance from UTXOs
+    const totalBalance = contractUtxosData.utxos.reduce((sum: number, utxo: any) => sum + parseInt(utxo.amount), 0);
+    expect(totalBalance).toBe(3000000); // Should have the 3 ADA we locked
 
     // Test wallet balance decreased
     const updatedBalanceResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);
@@ -213,7 +202,7 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
     expect(updatedBalance).toBeLessThan(20000000n); // Should be less than initial balance
 
     console.log(`✅ ALONZO BALANCE QUERY PROOF: Balance queries work correctly with inline scripts`);
-    console.log(`✅ Contract balance: ${contractBalanceData.balance} lovelace`);
+    console.log(`✅ Contract balance: ${totalBalance} lovelace`);
     console.log(`✅ Alice balance: ${updatedBalanceData.balance} lovelace`);
   });
 });

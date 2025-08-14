@@ -38,12 +38,12 @@ beforeAll(async () => {
   
   // Check if port is already in use and clean up
   try {
-    const response = await fetch("http://localhost:3001/api/session/new", {
+    const response = await fetch("http://localhost:3031/api/session/new", {
       method: "POST",
       signal: AbortSignal.timeout(1000)
     });
     if (response.ok) {
-      console.log("🌍 GLOBAL SETUP: Port 3001 appears to be in use, attempting cleanup");
+      console.log("🌍 GLOBAL SETUP: Port 3031 appears to be in use, attempting cleanup");
       // Port is in use, try to clean up
       await gracefulShutdown();
       // Wait a moment for cleanup
@@ -64,7 +64,7 @@ beforeAll(async () => {
     (global as any).testServer = globalServer;
     (global as any).testSessionManager = globalSessionManager;
     
-    console.log("🌍 GLOBAL SETUP: Shared server started on localhost:3001");
+    console.log("🌍 GLOBAL SETUP: Shared server started on localhost:3031");
   } catch (error) {
     console.error("🌍 GLOBAL SETUP: Failed to start server:", error);
     await gracefulShutdown();

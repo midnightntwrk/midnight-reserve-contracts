@@ -1,7 +1,8 @@
 import { describe, it, expect } from "bun:test";
+import { computeScriptInfo } from "../../utils/script-utils";
 
 describe("Phase 3.5: UTXO Helper Functions - Two Approaches", () => {
-  const baseUrl = "http://localhost:3001";
+  const baseUrl = "http://localhost:3031";
 
   it("should test UTXO helper functions correctly (Babbage reference scripts)", async () => {
     // Create fresh session
@@ -24,19 +25,8 @@ describe("Phase 3.5: UTXO Helper Functions - Two Approaches", () => {
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
 
-    // Deploy contract
-    const deployResponse = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
-    const deployData = await deployResponse.json();
-    const contractAddress = deployData.contractAddress;
-    const contractScriptHash = deployData.contractId;
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: contractScriptHash, contractAddress } = computeScriptInfo(compiledCode);
 
     // Setup reference scripts and UTXOs
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -79,6 +69,7 @@ describe("Phase 3.5: UTXO Helper Functions - Two Approaches", () => {
         }, {
           type: "pay-to-contract",
           contractAddress: contractScriptHash,
+          compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 42
         }]
@@ -129,15 +120,18 @@ describe("Phase 3.5: UTXO Helper Functions - Two Approaches", () => {
     const balance = BigInt(walletBalanceData.balance);
     expect(balance).toBeGreaterThan(0n);
 
-    // Test contract balance helper
-    const contractBalanceResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
-    expect(contractBalanceResponse.status).toBe(200);
-    const contractBalanceData = await contractBalanceResponse.json();
-    expect(contractBalanceData).toHaveProperty('balance');
-    expect(contractBalanceData.balance).toBe("3000000"); // Should match our locked amount
+    // Test contract balance helper (using UTXOs endpoint to calculate balance)
+    const contractUtxosForBalance = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
+    expect(contractUtxosForBalance.status).toBe(200);
+    const contractUtxosForBalanceData = await contractUtxosForBalance.json();
+    expect(contractUtxosForBalanceData).toHaveProperty('utxos');
+    
+    // Calculate total balance from UTXOs
+    const contractTotalBalance = contractUtxosForBalanceData.utxos.reduce((sum: number, utxo: any) => sum + parseInt(utxo.amount), 0);
+    expect(contractTotalBalance).toBe(3000000); // Should match our locked amount
 
     console.log(`✅ BABBAGE UTXO HELPERS PROOF: All helper functions work correctly with reference scripts`);
-    console.log(`✅ Wallet balance: ${walletBalanceData.balance}, Contract balance: ${contractBalanceData.balance}`);
+    console.log(`✅ Wallet balance: ${walletBalanceData.balance}, Contract balance: ${contractTotalBalance}`);
     console.log(`✅ Found ${walletUtxosData.utxos.length} wallet UTXOs, ${contractUtxosData.utxos.length} contract UTXOs`);
   });
 
@@ -162,19 +156,8 @@ describe("Phase 3.5: UTXO Helper Functions - Two Approaches", () => {
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
 
-    // Deploy contract
-    const deployResponse = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
-    const deployData = await deployResponse.json();
-    const contractAddress = deployData.contractAddress;
-    const contractScriptHash = deployData.contractId;
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: contractScriptHash, contractAddress } = computeScriptInfo(compiledCode);
 
     // Setup spending UTXO (no reference scripts)
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -211,6 +194,7 @@ describe("Phase 3.5: UTXO Helper Functions - Two Approaches", () => {
         }, {
           type: "pay-to-contract",
           contractAddress: contractScriptHash,
+          compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 42
         }]
@@ -261,15 +245,18 @@ describe("Phase 3.5: UTXO Helper Functions - Two Approaches", () => {
     const balance = BigInt(walletBalanceData.balance);
     expect(balance).toBeGreaterThan(0n);
 
-    // Test contract balance helper
-    const contractBalanceResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
-    expect(contractBalanceResponse.status).toBe(200);
-    const contractBalanceData = await contractBalanceResponse.json();
-    expect(contractBalanceData).toHaveProperty('balance');
-    expect(contractBalanceData.balance).toBe("3000000"); // Should match our locked amount
+    // Test contract balance helper (using UTXOs endpoint to calculate balance)
+    const contractUtxosForBalance = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
+    expect(contractUtxosForBalance.status).toBe(200);
+    const contractUtxosForBalanceData = await contractUtxosForBalance.json();
+    expect(contractUtxosForBalanceData).toHaveProperty('utxos');
+    
+    // Calculate total balance from UTXOs
+    const contractTotalBalance = contractUtxosForBalanceData.utxos.reduce((sum: number, utxo: any) => sum + parseInt(utxo.amount), 0);
+    expect(contractTotalBalance).toBe(3000000); // Should match our locked amount
 
     console.log(`✅ ALONZO UTXO HELPERS PROOF: All helper functions work correctly with inline scripts`);
-    console.log(`✅ Wallet balance: ${walletBalanceData.balance}, Contract balance: ${contractBalanceData.balance}`);
+    console.log(`✅ Wallet balance: ${walletBalanceData.balance}, Contract balance: ${contractTotalBalance}`);
     console.log(`✅ Found ${walletUtxosData.utxos.length} wallet UTXOs, ${contractUtxosData.utxos.length} contract UTXOs`);
   });
 });

@@ -457,7 +457,7 @@ pub fn hello_world(datum: Int, redeemer: Int, context: ScriptContext) -> Bool {
 import { AikenDemoClient } from './client';
 
 async function demoHelloWorld() {
-  const client = new AikenDemoClient('http://localhost:3001');
+  const client = new AikenDemoClient('http://localhost:3031');
   
   // Create a new session (isolated blockchain)
   const session = await client.createSession('hello-world-demo', 'Testing hello world contract');

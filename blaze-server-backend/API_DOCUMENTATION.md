@@ -38,7 +38,7 @@ npm start
 npx blaze-server
 ```
 
-Server runs on `http://localhost:3001` by default.
+Server runs on `http://localhost:3031` by default.
 
 ## API Reference
 

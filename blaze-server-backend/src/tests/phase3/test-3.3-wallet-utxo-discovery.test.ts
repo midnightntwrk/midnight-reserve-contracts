@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach } from "bun:test";
 describe("Phase 3.3: Wallet UTXO Discovery", () => {
   // Note: Using shared server and SessionManager from global test setup
 
-  const baseUrl = "http://localhost:3001";
+  const baseUrl = "http://localhost:3031";
   let sessionId: string;
 
 

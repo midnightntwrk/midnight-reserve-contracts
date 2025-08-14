@@ -4,7 +4,7 @@ import { createHash } from "crypto";
 describe("Phase 3.8: Unfakeable Transaction ID Verification", () => {
   // Note: Using shared server and SessionManager from global test setup
 
-  const baseUrl = "http://localhost:3001";
+  const baseUrl = "http://localhost:3031";
   let sessionId: string;
 
 

@@ -57,7 +57,7 @@ function getEnvBoolean(key: string, defaultValue: boolean): boolean {
 
 export const config: Config = {
   // Server
-  port: getEnvNumber('PORT', 3001),
+  port: getEnvNumber('PORT', 3031),
   nodeEnv: getEnvVar('NODE_ENV', 'development'),
   
   // Logging

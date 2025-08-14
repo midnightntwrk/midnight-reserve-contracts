@@ -1,7 +1,8 @@
 import { describe, it, expect } from "bun:test";
+import { computeScriptInfo } from "../../utils/script-utils";
 
 describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
-  const baseUrl = "http://localhost:3001";
+  const baseUrl = "http://localhost:3031";
 
   // Note: Using shared server and SessionManager from global test setup
   // No beforeAll/afterAll needed - handled by test-setup.ts
@@ -34,20 +35,10 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
     
-    // Deploy contract for script hash
-    const deployResp = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: refContractScriptHash, contractAddress: refContractAddress } = computeScriptInfo(compiledCode);
     
-    const deployData = await deployResp.json();
-    const refContractAddress = deployData.contractAddress;
-    const refContractScriptHash = deployData.contractId;
+    // Modern approach: No deployment needed - using compiledCode for unlock operations
     
     // Create reference script UTXO and setup UTXOs
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -90,6 +81,7 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
         }, {
           type: "pay-to-contract",
           contractAddress: refContractScriptHash,
+          compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 42 // Redeemer that unlocks this UTXO
         }]
@@ -126,6 +118,7 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
           txHash: lockedUtxo.txHash,
           outputIndex: lockedUtxo.outputIndex,
           redeemer: 42, // This should match the datum locked in the contract
+          compiledCode: compiledCode, // Needed for UTXO discovery
           referenceScriptUtxo: {
             txHash: refScriptUtxo.txHash,
             outputIndex: refScriptUtxo.outputIndex
@@ -191,20 +184,8 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
     
     const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
     
-    // Deploy contract for script hash
-    const deployResp = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode
-      })
-    });
-    
-    const deployData = await deployResp.json();
-    const inlineContractAddress = deployData.contractAddress;
-    const inlineContractScriptHash = deployData.contractId;
+    // Compute contract info directly (no deployment needed)
+    const { scriptHash: inlineContractScriptHash, contractAddress: inlineContractAddress } = computeScriptInfo(compiledCode);
     
     // Create substantial UTXO for spending
     const aliceUtxosResp = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
@@ -241,6 +222,7 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
         }, {
           type: "pay-to-contract",
           contractAddress: inlineContractScriptHash,
+          compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 42 // Redeemer that unlocks this UTXO
         }]
@@ -272,7 +254,7 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
           txHash: lockedUtxo.txHash,
           outputIndex: lockedUtxo.outputIndex,
           redeemer: 42, // This should match the datum locked in the contract
-          script: compiledCode // Inline script - Alonzo approach
+          compiledCode: compiledCode // Modern approach - script provided directly
         }, {
           type: "pay-to-address",
           address: aliceAddress, // Alice's actual address
