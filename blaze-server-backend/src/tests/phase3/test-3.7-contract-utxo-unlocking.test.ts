@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { computeScriptInfo } from "../../utils/script-utils";
+import { computeScriptInfo, HELLO_WORLD_COMPILED_CODE } from "../../utils/script-utils";
 
 describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
   const baseUrl = "http://localhost:3031";
@@ -33,7 +33,7 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
       })
     });
     
-    const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
+    const compiledCode = HELLO_WORLD_COMPILED_CODE;
     
     // Compute contract info directly (no deployment needed)
     const { scriptHash: refContractScriptHash, contractAddress: refContractAddress } = computeScriptInfo(compiledCode);
@@ -182,7 +182,7 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
       })
     });
     
-    const compiledCode = "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009";
+    const compiledCode = HELLO_WORLD_COMPILED_CODE;
     
     // Compute contract info directly (no deployment needed)
     const { scriptHash: inlineContractScriptHash, contractAddress: inlineContractAddress } = computeScriptInfo(compiledCode);
