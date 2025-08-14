@@ -179,6 +179,73 @@ export function createServer(sessionManager: SessionManager) {
     }
   });
 
+  app.get("/api/emulator/current-time", async (req, res) => {
+    const { sessionId } = req.query;
+    
+    // Validate session ID
+    const currentSession = sessionManager.getCurrentSession();
+    if (!currentSession || currentSession.id !== sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid session ID"
+      });
+    }
+    
+    try {
+      const emulator = currentSession.emulator;
+      const currentSlot = emulator.clock.slot;
+      
+      // Get emulator's actual time state (not real system time)
+      const currentUnixTime = emulator.slotToUnix(currentSlot);
+      
+      res.json({
+        success: true,
+        currentSlot: currentSlot,
+        currentUnixTime: currentUnixTime
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Failed to get current time"
+      });
+    }
+  });
+
+  app.post("/api/emulator/advance-time", async (req, res) => {
+    const { sessionId, targetUnixTime } = req.body;
+    
+    // Validate session ID
+    const currentSession = sessionManager.getCurrentSession();
+    if (!currentSession || currentSession.id !== sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid session ID"
+      });
+    }
+    
+    try {
+      const emulator = currentSession.emulator;
+      const initialSlot = emulator.clock.slot;
+      
+      // Use direct time advancement (efficient approach)
+      emulator.stepForwardToUnix(targetUnixTime);
+      
+      const finalSlot = emulator.clock.slot;
+      const slotsAdvanced = finalSlot - initialSlot;
+      
+      res.json({
+        success: true,
+        newSlot: finalSlot,
+        slotsAdvanced: slotsAdvanced
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Failed to advance time"
+      });
+    }
+  });
+
   // ✅ DEPRECATED ENDPOINT REMOVED: /api/contract/deploy
   // Modern approach: Use computeScriptInfo() utility and build-and-submit transactions
 

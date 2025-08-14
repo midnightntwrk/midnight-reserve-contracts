@@ -64,3 +64,28 @@ When blocked on Cardano/Blaze implementation details:
    - `/offchain/cli/treasury/fund.ts` - CLI UTXO selection
 
 This approach revealed the critical insight that SundaeSwap uses manual UTXO selection with substantial UTXOs rather than fighting automatic coin selection algorithms.
+
+## Code Flow Tracing Instructions
+
+When I ask for a trace, this is what you will do:
+
+Walk me through the code flow by printing a trace with indentation/outdentation to show the call/return stack. For each trace entry, include:
+- The actual code line being executed
+- The filename and line number in format `filename:line-num`
+- Proper indentation to show the call depth (indent on call, outdent on return)
+
+## Example format:
+```
+main() {
+  console.log("Starting");                    // main.js:5
+  helperFunction();                           // main.js:6
+    function helperFunction() {               // utils.js:12
+      console.log("Helper called");           // utils.js:13
+      nestedFunction();                       // utils.js:14
+        function nestedFunction() {           // utils.js:18
+          console.log("Nested");              // utils.js:19
+      console.log("Helper returning");        // utils.js:15
+  console.log("Finished");                    // main.js:7
+```
+
+Show me exactly how the code flows from entry point to completion with proper stack visualization.
