@@ -118,6 +118,12 @@ export function createServer(sessionManager: SessionManager) {
           
           // Submit the transaction to emulator
           await currentSession.emulator.expectValidTransaction(blaze, tx);
+        
+        // Mark session as having processed transactions
+        currentSession.hasProcessedTransactions = true;
+          
+          // Mark session as having processed transactions
+          currentSession.hasProcessedTransactions = true;
         });
 
       res.json({
@@ -242,6 +248,78 @@ export function createServer(sessionManager: SessionManager) {
       res.status(500).json({
         success: false,
         error: "Failed to advance time"
+      });
+    }
+  });
+
+  app.post("/api/utxo/create", async (req, res) => {
+    const { sessionId, address, amount, datum, referenceScript } = req.body;
+    
+    // Validate session ID
+    const currentSession = sessionManager.getCurrentSession();
+    if (!currentSession || currentSession.id !== sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid session ID"
+      });
+    }
+    
+    // Check phase: can only create UTXOs before transactions
+    if (currentSession.hasProcessedTransactions) {
+      return res.status(400).json({
+        success: false,
+        error: "Cannot create UTXOs after transactions have been processed"
+      });
+    }
+    
+    try {
+      const emulator = currentSession.emulator;
+      
+      // Follow SundaeSwap pattern exactly (use unique transaction IDs to avoid conflicts)
+      const utxoCount = emulator.utxos().length;
+      const txId = Core.TransactionId(utxoCount.toString().repeat(64).substring(0, 64));
+      const outputIndex = 0n;
+      
+      const output = new Core.TransactionOutput(
+        Core.Address.fromBech32(address),
+        makeValue(BigInt(amount))
+      );
+      
+      // Add datum if provided (simple integer datum serialized properly)
+      if (datum !== undefined) {
+        // Use Data.serialize with BigInt type for proper datum serialization (following SundaeSwap pattern)
+        output.setDatum(Core.Datum.newInlineData(Data.serialize(Data.BigInt(), BigInt(datum))));
+      }
+      
+      // Add reference script if provided
+      if (referenceScript) {
+        const { cborToScript } = require("@blaze-cardano/uplc");
+        const script = cborToScript(referenceScript, "PlutusV3");
+        output.setScriptReference(script);
+      }
+      
+      const utxo = new Core.TransactionUnspentOutput(
+        new Core.TransactionInput(txId, outputIndex),
+        output
+      );
+      
+      emulator.addUtxo(utxo);
+      
+      res.json({
+        success: true,
+        utxo: {
+          txHash: txId.toString(),
+          outputIndex: Number(outputIndex),
+          address: address,
+          amount: amount,
+          datum: datum
+        }
+      });
+    } catch (error) {
+      console.error("UTXO creation error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to create UTXO: " + error.message
       });
     }
   });
@@ -589,6 +667,9 @@ export function createServer(sessionManager: SessionManager) {
 
         // Submit the transaction to emulator
         await currentSession.emulator.expectValidTransaction(blaze, tx);
+        
+        // Mark session as having processed transactions
+        currentSession.hasProcessedTransactions = true;
 
         res.json({
           success: true,
@@ -708,6 +789,41 @@ export function createServer(sessionManager: SessionManager) {
     try {
       if (datum.kind() === 1) { // Check if it's inline data
         const inlineData = datum.asInlineData();
+        
+        // Try as direct bytes first (Data.serialize creates bytes representation)
+        if (inlineData.getKind() === 3) { // Bytes
+          const cbor = inlineData.toCbor();
+          
+          // CBOR decoding for unsigned integers:
+          // 0x00-0x17: Small integers 0-23 (direct encoding)
+          // 0x18 + byte: Integers 24-255
+          // 0x19 + 2 bytes: Integers 256-65535
+          // 0x1a + 4 bytes: Integers 65536-4294967295
+          
+          if (cbor.length === 2) {
+            // Single byte integer (0-23)
+            const value = parseInt(cbor, 16);
+            if (value >= 0 && value <= 23) {
+              return value;
+            }
+          } else if (cbor.length === 4 && cbor.startsWith("18")) {
+            // 0x18 followed by 1-byte value (24-255)
+            const value = parseInt(cbor.substring(2), 16);
+            return value;
+          } else if (cbor.length === 6 && cbor.startsWith("19")) {
+            // 0x19 followed by 2-byte value (256-65535)
+            const value = parseInt(cbor.substring(2), 16);
+            return value;
+          } else if (cbor.length === 10 && cbor.startsWith("1a")) {
+            // 0x1a followed by 4-byte value
+            const value = parseInt(cbor.substring(2), 16);
+            return value;
+          }
+          
+          // Unsupported CBOR format
+          console.log("Unsupported CBOR format for datum:", cbor);
+          return null;
+        }
         
         // Try to extract as constructor data (our MyDatum is a record/constructor)
         if (inlineData.getKind() === 0) { // Constructor

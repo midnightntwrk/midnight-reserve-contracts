@@ -21,7 +21,8 @@ export class SessionManager {
     this.currentSession = {
       id: randomUUID(),
       emulator,
-      deployedContracts: new Map() // Store contract address -> compiled code mapping
+      deployedContracts: new Map(), // Store contract address -> compiled code mapping
+      hasProcessedTransactions: false // Track if session has moved to transaction phase
     };
     
     return this.currentSession;

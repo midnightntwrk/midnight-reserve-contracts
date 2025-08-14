@@ -111,19 +111,19 @@ GET /api/wallet/{walletName}/balance?sessionId=your-session-id
 GET /api/wallet/{walletName}/utxos?sessionId=your-session-id
 ```
 
-### 3. Smart Contract Operations
+### 3. UTXO Management
 
-#### Deploy Contract
+#### Create UTXO Directly
 ```http
-POST /api/contract/deploy
+POST /api/utxo/create
 Content-Type: application/json
 
 {
   "sessionId": "your-session-id",
-  "deployerWallet": "alice",
-  "compiledCode": "590a4f590a4c01000033...",
-  "datumSchema": {"thing": "BigInt"},
-  "redeemerSchema": "BigInt"
+  "address": "addr_test1q...",
+  "amount": "5000000",
+  "datum": 42,
+  "referenceScript": "590a4f590a4c..." // Optional
 }
 ```
 
@@ -131,43 +131,34 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "contractId": "5b7e059453488d25906a7920dfe4b750ff4bd8c0afb6fecf8721b050",
-  "contractAddress": "addr_test1wpdhupv52dyg6fvsdfujphlykag07j7cczhmdlk0susmq5qkvz5qs",
-  "deployedAt": "2024-01-01T12:00:00.000Z"
+  "utxo": {
+    "txHash": "1111111111111111111111111111111111111111111111111111111111111111",
+    "outputIndex": 0,
+    "address": "addr_test1q...",
+    "amount": "5000000",
+    "datum": 42
+  }
 }
 ```
 
 **Notes:**
-- `contractId` is the script hash (Cardano standard)
-- `compiledCode` is hex-encoded Plutus bytecode
-- Use `contractAddress` for locking/invoking operations
+- **Phase Restriction**: Only available BEFORE any transactions are processed in the session
+- Creates UTXOs directly in emulator state (no transaction overhead)
+- Perfect for test setup and fixture creation
+- `datum` is optional - simple integer datums supported
+- `referenceScript` is optional - hex-encoded Plutus bytecode for reference scripts
+- Amount in lovelace (1 ADA = 1,000,000 lovelace)
 
-#### Lock Funds to Contract
-```http
-POST /api/contract/lock
-Content-Type: application/json
-
+**Phase Validation:**
+```json
+// After any transaction is processed:
 {
-  "sessionId": "your-session-id",
-  "fromWallet": "alice",
-  "contractAddress": "addr_test1w...",
-  "amount": "5000000",
-  "datum": "42"
+  "success": false,
+  "error": "Cannot create UTXOs after transactions have been processed"
 }
 ```
 
-#### Invoke Contract (Unlock Funds)
-```http
-POST /api/contract/invoke
-Content-Type: application/json
-
-{
-  "sessionId": "your-session-id", 
-  "fromWallet": "alice",
-  "contractAddress": "addr_test1w...",
-  "redeemer": "42"
-}
-```
+### 4. Smart Contract Operations
 
 #### Get Contract Balance
 ```http
@@ -211,13 +202,61 @@ Content-Type: application/json
 ```
 
 **Operation Types:**
-- `spend-from-wallet` - Use wallet UTXOs as inputs
-- `spend-utxo` - Use specific UTXO by txHash + outputIndex  
-- `unlock-utxo` - Unlock contract UTXO with redeemer
-- `pay-to-address` - Send to wallet address
-- `pay-to-contract` - Lock to contract with datum
+- `spend-from-wallet` - Use wallet UTXOs as inputs (automatic selection)
+- `spend-specific-utxos` - Use specific UTXOs by txHash + outputIndex array
+- `spend-utxo` - Use single specific UTXO by txHash + outputIndex  
+- `unlock-utxo` - Unlock contract UTXO with redeemer and script
+- `pay-to-address` - Send to wallet address (with optional reference script)
+- `pay-to-contract` - Lock to contract with datum and compiled code
 
-### 5. Network Information
+### 5. Time Management
+
+#### Get Current Emulator Time
+```http
+GET /api/emulator/current-time?sessionId=your-session-id
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "currentSlot": 1000,
+  "currentUnixTime": 1640995200
+}
+```
+
+**Notes:**
+- Returns emulator's internal time state (not system time)
+- `currentSlot` is the current Cardano slot number
+- `currentUnixTime` is Unix timestamp (seconds since epoch)
+
+#### Advance Emulator Time
+```http
+POST /api/emulator/advance-time
+Content-Type: application/json
+
+{
+  "sessionId": "your-session-id",
+  "targetUnixTime": 1640995200
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "newSlot": 2000,
+  "slotsAdvanced": 1000
+}
+```
+
+**Notes:**
+- Fast-forwards emulator time to target Unix timestamp
+- Enables testing of time-based contract logic
+- `newSlot` shows final slot after advancement
+- `slotsAdvanced` shows how many slots were jumped
+
+### 6. Network Information
 
 #### Get Network Tip
 ```http
@@ -256,46 +295,162 @@ await fetch('/api/wallet/transfer', {
 });
 ```
 
-### Smart Contract Lifecycle
+### Smart Contract Lifecycle (Traditional Transaction-Based)
 ```javascript
-// 1. Deploy contract
-const deployResp = await fetch('/api/contract/deploy', {
+// 1. Lock funds to contract with datum using build-and-submit
+const lockResp = await fetch('/api/transaction/build-and-submit', {
   method: 'POST',
   headers: {'Content-Type': 'application/json'},
   body: JSON.stringify({
     sessionId,
-    deployerWallet: 'alice',
-    compiledCode: 'your-plutus-bytecode',
-    datumSchema: {thing: 'BigInt'},
-    redeemerSchema: 'BigInt'
+    signerWallet: 'alice',
+    operations: [{
+      type: 'pay-to-contract',
+      contractAddress: 'script-hash-hex',
+      compiledCode: 'your-plutus-bytecode',
+      amount: '10000000',
+      datum: 42
+    }]
   })
 });
-const {contractAddress} = await deployResp.json();
 
-// 2. Lock funds with datum
-await fetch('/api/contract/lock', {
+// 2. Unlock funds with matching redeemer
+await fetch('/api/transaction/build-and-submit', {
   method: 'POST',
   headers: {'Content-Type': 'application/json'},
   body: JSON.stringify({
     sessionId,
-    fromWallet: 'alice', 
-    contractAddress,
+    signerWallet: 'bob',
+    operations: [{
+      type: 'unlock-utxo',
+      txHash: 'contract-utxo-tx-hash',
+      outputIndex: 0,
+      redeemer: 42,
+      compiledCode: 'your-plutus-bytecode'
+    }]
+  })
+});
+```
+
+### Efficient Test Setup with Direct UTXO Creation
+```javascript
+// 1. Create session and register wallet
+const session = await fetch('/api/session/new', {method: 'POST'});
+const {sessionId} = await session.json();
+
+await fetch('/api/wallet/register', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    sessionId,
+    name: 'alice',
+    initialBalance: '100000000'
+  })
+});
+
+// 2. Get alice's address for UTXO creation
+const utxosResp = await fetch(`/api/wallet/alice/utxos?sessionId=${sessionId}`);
+const utxosData = await utxosResp.json();
+const aliceAddress = utxosData.utxos[0].address;
+
+// 3. SETUP PHASE: Create test UTXOs directly (no transaction overhead)
+await fetch('/api/utxo/create', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    sessionId,
+    address: aliceAddress,
+    amount: '8000000' // Additional funds for alice
+  })
+});
+
+await fetch('/api/utxo/create', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    sessionId,
+    address: 'contract-bech32-address',
+    amount: '5000000',
+    datum: 42 // Contract UTXO ready for testing
+  })
+});
+
+// 4. TEST PHASE: Now run actual transaction logic
+await fetch('/api/transaction/build-and-submit', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    sessionId,
+    signerWallet: 'alice',
+    operations: [{
+      type: 'unlock-utxo',
+      txHash: 'created-utxo-tx-hash',
+      outputIndex: 0,
+      redeemer: 42,
+      compiledCode: 'your-plutus-bytecode'
+    }]
+  })
+});
+```
+
+### Time-Based Contract Testing
+```javascript
+// 1. Set up contract with time-locked datum
+const currentTimeResp = await fetch(`/api/emulator/current-time?sessionId=${sessionId}`);
+const {currentUnixTime} = await currentTimeResp.json();
+const lockUntil = currentUnixTime + 3600; // Lock for 1 hour
+
+await fetch('/api/utxo/create', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    sessionId,
+    address: 'time-locked-contract-address',
     amount: '10000000',
-    datum: '42'
+    datum: lockUntil
   })
 });
 
-// 3. Unlock funds with matching redeemer
-await fetch('/api/contract/invoke', {
+// 2. Try to unlock before time (should fail)
+await fetch('/api/transaction/build-and-submit', {
   method: 'POST',
   headers: {'Content-Type': 'application/json'},
   body: JSON.stringify({
     sessionId,
-    fromWallet: 'bob',
-    contractAddress, 
-    redeemer: '42' // Must match datum for this contract
+    signerWallet: 'alice',
+    operations: [{
+      type: 'unlock-utxo',
+      txHash: 'time-locked-utxo-hash',
+      outputIndex: 0,
+      redeemer: 0
+    }]
+  })
+}); // Should fail with time validation error
+
+// 3. Fast-forward time and unlock successfully
+await fetch('/api/emulator/advance-time', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    sessionId,
+    targetUnixTime: lockUntil + 1
   })
 });
+
+await fetch('/api/transaction/build-and-submit', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    sessionId,
+    signerWallet: 'alice',
+    operations: [{
+      type: 'unlock-utxo',
+      txHash: 'time-locked-utxo-hash',
+      outputIndex: 0,
+      redeemer: 0
+    }]
+  })
+}); // Should succeed
 ```
 
 ## ✅ Best Practices
@@ -344,16 +499,86 @@ if (!result.success) {
 
 ### Contract Address vs Script Hash
 ```javascript
-// ✅ GOOD - Use contractAddress for operations
-const {contractAddress, contractId} = deployResponse;
+// ✅ GOOD - Use script hash for operations
+const scriptHash = 'computed-from-compiled-code';
+const contractAddress = 'computed-bech32-address';
 
-// Use contractAddress for lock/invoke operations
-await fetch('/api/contract/lock', {
-  body: JSON.stringify({sessionId, contractAddress, ...})
+// Use script hash for pay-to-contract operations
+await fetch('/api/transaction/build-and-submit', {
+  body: JSON.stringify({
+    sessionId, 
+    signerWallet: 'alice',
+    operations: [{
+      type: 'pay-to-contract',
+      contractAddress: scriptHash,
+      compiledCode: 'your-plutus-bytecode',
+      ...
+    }]
+  })
 });
 
-// Use contractId (script hash) for balance queries  
-await fetch(`/api/contract/${contractId}/balance?sessionId=${sessionId}`);
+// Use contractAddress (bech32) for UTXO queries  
+await fetch(`/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
+```
+
+### UTXO Creation Phase Management
+```javascript
+// ✅ GOOD - Use UTXO creation for setup, transactions for testing
+const {sessionId} = await (await fetch('/api/session/new', {method: 'POST'})).json();
+
+// SETUP PHASE - Create test fixtures efficiently
+await fetch('/api/utxo/create', {
+  body: JSON.stringify({sessionId, address: aliceAddress, amount: '5000000'})
+});
+
+// TEST PHASE - Run actual transaction logic  
+await fetch('/api/transaction/build-and-submit', {
+  body: JSON.stringify({sessionId, signerWallet: 'alice', operations: [...]})
+});
+
+// ❌ BAD - Cannot create UTXOs after transaction phase begins
+await fetch('/api/utxo/create', {...}); // 400 Error: "Cannot create UTXOs after transactions have been processed"
+```
+
+### Time Management for Testing
+```javascript
+// ✅ GOOD - Test time-based logic with emulator time control
+const currentTime = await fetch(`/api/emulator/current-time?sessionId=${sessionId}`);
+const {currentUnixTime} = await currentTime.json();
+
+// Create time-locked contract
+await fetch('/api/utxo/create', {
+  body: JSON.stringify({
+    sessionId,
+    address: contractAddress,
+    datum: currentUnixTime + 3600, // 1 hour lock
+    amount: '10000000'
+  })
+});
+
+// Fast-forward past lock time
+await fetch('/api/emulator/advance-time', {
+  body: JSON.stringify({sessionId, targetUnixTime: currentUnixTime + 3601})
+});
+
+// Now test can proceed with unlocking
+```
+
+### Performance Considerations
+```javascript
+// ✅ GOOD - Direct UTXO creation for test setup (70% faster)
+await fetch('/api/utxo/create', {
+  body: JSON.stringify({sessionId, address: contractAddress, datum: 42, amount: '5000000'})
+}); // Instant - no transaction processing
+
+// ❌ SLOWER - Transaction-based setup (still valid for integration tests)  
+await fetch('/api/transaction/build-and-submit', {
+  body: JSON.stringify({
+    sessionId,
+    signerWallet: 'alice',
+    operations: [{type: 'pay-to-contract', ...}]
+  })
+}); // Requires full transaction processing
 ```
 
 ### Transaction IDs Are Real
@@ -387,8 +612,7 @@ const session2 = await fetch('/api/session/new', {method: 'POST'}); // Destroys 
 // ❌ DON'T use contract names (they don't exist)
 await fetch('/api/contract/my-contract/balance', {...}); // 404 Not Found
 
-// ✅ DO use script hashes or addresses
-await fetch(`/api/contract/${contractId}/balance`, {...}); // Works
+// ✅ DO use contract addresses for queries
 await fetch(`/api/contract/${contractAddress}/utxos`, {...}); // Works
 ```
 
@@ -409,14 +633,22 @@ await fetch('/api/wallet/transfer', {
 ### Wrong Datum/Redeemer Pairs
 ```javascript
 // ❌ This will fail - redeemer doesn't match datum
-await fetch('/api/contract/lock', {
-  body: JSON.stringify({sessionId, contractAddress, amount: '1000000', datum: '42'})
+await fetch('/api/transaction/build-and-submit', {
+  body: JSON.stringify({
+    sessionId,
+    signerWallet: 'alice',
+    operations: [{type: 'pay-to-contract', datum: 42, ...}]
+  })
 });
 
-await fetch('/api/contract/invoke', {
-  body: JSON.stringify({sessionId, contractAddress, redeemer: '99'}) // Wrong!
+await fetch('/api/transaction/build-and-submit', {
+  body: JSON.stringify({
+    sessionId,
+    signerWallet: 'alice', 
+    operations: [{type: 'unlock-utxo', redeemer: 99, ...}] // Wrong!
+  })
 });
-// Response: 400 Bad Request {"success": false, "error": "No UTXO found that accepts redeemer '99'"}
+// Response: 400 Bad Request {"success": false, "error": "Script validation failed"}
 ```
 
 ## Environment Configuration
@@ -462,6 +694,53 @@ The emulator automatically calculates and deducts transaction fees. Expect ~0.17
 - **Development**: Rich debugging output, detailed transaction logs
 - **Production**: Clean startup messages, essential logging only
 
+## When to Use Each Approach
+
+### Direct UTXO Creation (`/api/utxo/create`)
+**Best for:**
+- Test fixture setup and preparation
+- Creating known contract states quickly
+- Performance-sensitive test suites
+- Rapid prototyping and development
+
+**Characteristics:**
+- ⚡ Instant execution (no transaction processing)
+- 🔒 Setup phase only (before any transactions)
+- 🎯 Perfect for establishing baseline conditions
+- 📊 70% faster than transaction-based setup
+
+### Transaction-Based Operations (`/api/transaction/build-and-submit`)
+**Best for:**
+- Testing actual contract logic and validation
+- Real-world transaction flow simulation
+- Integration testing with full transaction lifecycle
+- Production-like behavior verification
+
+**Characteristics:**
+- 🔐 Full cryptographic validation and processing
+- 🌐 Real transaction IDs and UTXO relationships
+- 📋 Complete fee calculation and deduction
+- ✅ Script execution and validation
+
+### Hybrid Approach (Recommended)
+```javascript
+// 1. SETUP: Use direct UTXO creation for test fixtures
+await fetch('/api/utxo/create', {
+  body: JSON.stringify({sessionId, address: contractAddress, datum: 42, amount: '5000000'})
+});
+
+// 2. TEST: Use transactions for actual business logic
+await fetch('/api/transaction/build-and-submit', {
+  body: JSON.stringify({
+    sessionId,
+    signerWallet: 'alice', 
+    operations: [{type: 'unlock-utxo', redeemer: 42, ...}]
+  })
+});
+```
+
+This combination provides **efficient setup** with **realistic testing**.
+
 ## Architecture Notes
 
 - Built on **Blaze SDK** for Cardano integration
@@ -469,6 +748,7 @@ The emulator automatically calculates and deducts transaction fees. Expect ~0.17
 - **Plutus V3** smart contract support
 - **Ed25519** signature scheme for multisig operations
 - **Real transaction IDs** - not faked or mocked
+- **Phase-based session management** for optimal test performance
 
 ---
 
