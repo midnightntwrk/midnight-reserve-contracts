@@ -1,24 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "bun:test";
-import { createServer } from "../../server";
-import { SessionManager } from "../../utils/session-manager";
+import { describe, it, expect, beforeEach } from "bun:test";
 import { createHash } from "crypto";
 
 describe("Phase 3.8: Unfakeable Transaction ID Verification", () => {
+  // Note: Using shared server and SessionManager from global test setup
+
   const baseUrl = "http://localhost:3001";
-  let server: any;
-  let sessionManager: SessionManager;
   let sessionId: string;
 
-  beforeAll(async () => {
-    sessionManager = new SessionManager();
-    server = await createServer(sessionManager);
-  });
-
-  afterAll(async () => {
-    if (server) {
-      await server.close();
-    }
-  });
 
   beforeEach(async () => {
     // Create fresh session

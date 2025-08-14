@@ -1,24 +1,13 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "bun:test";
-import { createServer } from "../../server";
-import { SessionManager } from "../../utils/session-manager";
+import { describe, it, expect, beforeEach } from "bun:test";
 
 describe("Phase 3.10: Contract Invoke Real Transaction IDs", () => {
   const baseUrl = "http://localhost:3001";
-  let server: any;
-  let sessionManager: SessionManager;
   let sessionId: string;
   let contractAddress: string;
+  let contractScriptHash: string;
 
-  beforeAll(async () => {
-    sessionManager = new SessionManager();
-    server = await createServer(sessionManager);
-  });
-
-  afterAll(async () => {
-    if (server) {
-      await server.close();
-    }
-  });
+  // Note: Using shared server and SessionManager from global test setup
+  // No beforeAll/afterAll needed - handled by test-setup.ts
 
   beforeEach(async () => {
     // Create fresh session
@@ -46,15 +35,21 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs", () => {
       body: JSON.stringify({
         sessionId,
         deployerWallet: "alice",
-        contractName: "hello_world",
         compiledCode: "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009"
       })
     });
+    // Validate contract deployment succeeded
+    expect(deployResponse.status).toBe(200);
     const deployData = await deployResponse.json();
+    expect(deployData.success).toBe(true);
+    expect(deployData.contractAddress).toBeDefined();
+    expect(deployData.contractId).toBeDefined();
+    
     contractAddress = deployData.contractAddress;
+    contractScriptHash = deployData.contractId;
 
     // Lock funds to contract first (needed for invoke to have something to unlock)
-    await fetch(`${baseUrl}/api/contract/lock`, {
+    const lockResponse = await fetch(`${baseUrl}/api/contract/lock`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -65,10 +60,21 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs", () => {
         datum: 42 // This redeemer will unlock the UTXO
       })
     });
+    
+    // Validate contract lock succeeded
+    expect(lockResponse.status).toBe(200);
+    const lockData = await lockResponse.json();
+    expect(lockData.success).toBe(true);
+    expect(lockData.transactionId).toBeDefined();
   });
 
   it("should prove contract invoke transaction IDs are real and unfakeable", async () => {
     // TDD Red Phase: Test that will FAIL if /api/contract/invoke returns fake transaction IDs
+    
+    // Step 0: Validate session and contract state
+    expect(sessionId).toBeDefined();
+    expect(contractAddress).toBeDefined();
+    expect(contractScriptHash).toBeDefined();
     
     // Step 1: First check contract has the locked UTXO before invoking
     const contractUtxosBeforeResponse = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
@@ -94,11 +100,16 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs", () => {
     });
 
     if (invokeResponse.status !== 200) {
-      const errorData = await invokeResponse.json();
-      console.log("Invoke error:", errorData);
+      const errorText = await invokeResponse.text();
+      console.log(`❌ Contract invoke failed with status ${invokeResponse.status}: ${errorText}`);
+      console.log(`❌ Request details: sessionId=${sessionId}, fromWallet=alice, contractAddress=${contractAddress}, redeemer=42`);
     }
     expect(invokeResponse.status).toBe(200);
+    
     const invokeData = await invokeResponse.json();
+    if (!invokeData.success) {
+      console.log(`❌ Contract invoke returned error:`, invokeData);
+    }
     expect(invokeData.success).toBe(true);
     
     const claimedTransactionId = invokeData.transactionId;

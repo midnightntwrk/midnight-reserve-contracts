@@ -1,23 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "bun:test";
-import { createServer } from "../../server";
-import { SessionManager } from "../../utils/session-manager";
+import { describe, it, expect, beforeEach } from "bun:test";
 
 describe("Phase 3.2: Balance Query API", () => {
   const baseUrl = "http://localhost:3001";
-  let server: any;
-  let sessionManager: SessionManager;
   let sessionId: string;
+  let contractScriptHash: string;
 
-  beforeAll(async () => {
-    sessionManager = new SessionManager();
-    server = await createServer(sessionManager);
-  });
-
-  afterAll(async () => {
-    if (server) {
-      await server.close();
-    }
-  });
+  // Note: Using shared server and SessionManager from global test setup
 
   beforeEach(async () => {
     // Create fresh session
@@ -39,16 +27,17 @@ describe("Phase 3.2: Balance Query API", () => {
     });
 
     // Deploy contract for contract balance tests
-    await fetch(`${baseUrl}/api/contract/deploy`, {
+    const deployResponse = await fetch(`${baseUrl}/api/contract/deploy`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         sessionId,
         deployerWallet: "alice",
-        contractName: "hello_world",
         compiledCode: "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009"
       })
     });
+    const deployData = await deployResponse.json();
+    contractScriptHash = deployData.contractId;
   });
 
   it("should query wallet balance", async () => {
@@ -80,8 +69,8 @@ describe("Phase 3.2: Balance Query API", () => {
   });
 
   it("should query contract balance", async () => {
-    // Query contract balance using contract name (should be 0 initially)
-    const response = await fetch(`${baseUrl}/api/contract/hello_world/balance?sessionId=${sessionId}`);
+    // Query contract balance using script hash (should be 0 initially)
+    const response = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
     
     expect(response.status).toBe(200);
     const data = await response.json();

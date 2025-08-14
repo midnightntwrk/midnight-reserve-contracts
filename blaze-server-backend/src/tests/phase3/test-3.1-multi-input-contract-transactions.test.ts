@@ -1,23 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "bun:test";
-import { createServer } from "../../server";
-import { SessionManager } from "../../utils/session-manager";
+import { describe, it, expect, beforeEach } from "bun:test";
 
 describe("Phase 3: Multi-Input Contract Transactions", () => {
   const baseUrl = "http://localhost:3001";
-  let server: any;
-  let sessionManager: SessionManager;
   let sessionId: string;
+  let contractScriptHash: string;
 
-  beforeAll(async () => {
-    sessionManager = new SessionManager();
-    server = await createServer(sessionManager);
-  });
-
-  afterAll(async () => {
-    if (server) {
-      await server.close();
-    }
-  });
+  // Note: Using shared server and SessionManager from global test setup
 
   beforeEach(async () => {
     // Create fresh session
@@ -49,16 +37,17 @@ describe("Phase 3: Multi-Input Contract Transactions", () => {
     });
 
     // Deploy contract for output destination
-    await fetch(`${baseUrl}/api/contract/deploy`, {
+    const deployResponse = await fetch(`${baseUrl}/api/contract/deploy`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         sessionId,
         deployerWallet: "alice",
-        contractName: "hello_world",
         compiledCode: "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009"
       })
     });
+    const deployData = await deployResponse.json();
+    contractScriptHash = deployData.contractId;
   });
 
   it("should consume from multiple wallets and create 50/50 split outputs at contract", async () => {
@@ -71,7 +60,7 @@ describe("Phase 3: Multi-Input Contract Transactions", () => {
     const bobBeforeData = await bobBeforeResponse.json();
     const bobBalanceBefore = BigInt(bobBeforeData.balance);
 
-    const contractBeforeResponse = await fetch(`${baseUrl}/api/contract/hello_world/balance?sessionId=${sessionId}`);
+    const contractBeforeResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
     const contractBeforeData = await contractBeforeResponse.json();
     const contractBalanceBefore = BigInt(contractBeforeData.balance);
 
@@ -91,13 +80,13 @@ describe("Phase 3: Multi-Input Contract Transactions", () => {
           },
           {
             type: "pay-to-contract",
-            contractAddress: "hello_world",
+            contractAddress: contractScriptHash,
             amount: "3000000", // 3 ADA (50% of 6 ADA)
             datum: 100
           },
           {
             type: "pay-to-contract",
-            contractAddress: "hello_world", 
+            contractAddress: contractScriptHash, 
             amount: "3000000", // 3 ADA (50% of 6 ADA)
             datum: 200
           }
@@ -124,7 +113,7 @@ describe("Phase 3: Multi-Input Contract Transactions", () => {
     expect(bobBalanceAfter).toBe(bobBalanceBefore);
 
     // Verify contract received exactly 6 ADA total (3 + 3)
-    const contractAfterResponse = await fetch(`${baseUrl}/api/contract/hello_world/balance?sessionId=${sessionId}`);
+    const contractAfterResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
     const contractAfterData = await contractAfterResponse.json();
     const contractBalanceAfter = BigInt(contractAfterData.balance);
     expect(contractBalanceAfter).toBe(contractBalanceBefore + 6000000n);

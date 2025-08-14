@@ -1,24 +1,13 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "bun:test";
-import { createServer } from "../../server";
-import { SessionManager } from "../../utils/session-manager";
+import { describe, it, expect, beforeEach } from "bun:test";
 
 describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
+  // Note: Using shared server and SessionManager from global test setup
+
   const baseUrl = "http://localhost:3001";
-  let server: any;
-  let sessionManager: SessionManager;
   let sessionId: string;
   let contractAddress: string;
+  let contractScriptHash: string;
 
-  beforeAll(async () => {
-    sessionManager = new SessionManager();
-    server = await createServer(sessionManager);
-  });
-
-  afterAll(async () => {
-    if (server) {
-      await server.close();
-    }
-  });
 
   beforeEach(async () => {
     // Create fresh session
@@ -56,12 +45,12 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
       body: JSON.stringify({
         sessionId,
         deployerWallet: "alice",
-        contractName: "test_contract",
         compiledCode: "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009"
       })
     });
     const deployData = await deployResponse.json();
     contractAddress = deployData.contractAddress;
+    contractScriptHash = deployData.contractId;
   });
 
   it("should prove build-and-submit transaction IDs are real and unfakeable", async () => {
@@ -80,7 +69,7 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
     const bobBalanceBefore = await bobBalanceBeforeResponse.json();
     const bobBalanceBeforeAmount = BigInt(bobBalanceBefore.balance);
     
-    const contractBalanceBeforeResponse = await fetch(`${baseUrl}/api/contract/test_contract/balance?sessionId=${sessionId}`);
+    const contractBalanceBeforeResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
     const contractBalanceBefore = await contractBalanceBeforeResponse.json();
     const contractBalanceBeforeAmount = BigInt(contractBalanceBefore.balance);
     
@@ -101,7 +90,7 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
           },
           {
             type: "pay-to-contract",
-            contractAddress: "test_contract",
+            contractAddress: contractScriptHash,
             amount: "2000000", // 2 ADA to contract
             datum: 77 // Simple integer datum
           }
@@ -163,7 +152,7 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
     expect(bobReceivedUtxo.txHash).toBe(claimedTransactionId);
     
     // Step 6: Verify contract received its funds
-    const contractBalanceAfterResponse = await fetch(`${baseUrl}/api/contract/test_contract/balance?sessionId=${sessionId}`);
+    const contractBalanceAfterResponse = await fetch(`${baseUrl}/api/contract/${contractScriptHash}/balance?sessionId=${sessionId}`);
     const contractBalanceAfter = await contractBalanceAfterResponse.json();
     const contractBalanceAfterAmount = BigInt(contractBalanceAfter.balance);
     

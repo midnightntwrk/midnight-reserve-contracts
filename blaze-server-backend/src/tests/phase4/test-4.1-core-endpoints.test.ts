@@ -1,21 +1,7 @@
-import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { createServer } from "../../server";
-import { SessionManager } from "../../utils/session-manager";
+import { describe, test, expect } from "bun:test";
 
 describe("Phase 4.1: Core Endpoints", () => {
-  let server: any;
-  let sessionManager: SessionManager;
-
-  beforeAll(async () => {
-    sessionManager = new SessionManager();
-    server = await createServer(sessionManager);
-  });
-
-  afterAll(async () => {
-    if (server) {
-      await server.close();
-    }
-  });
+  // Note: Using shared server and SessionManager from global test setup
 
   test("should create new session via HTTP endpoint", async () => {
     const response = await fetch("http://localhost:3001/api/session/new", {

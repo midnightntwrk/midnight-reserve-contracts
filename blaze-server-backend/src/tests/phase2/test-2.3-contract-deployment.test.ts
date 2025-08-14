@@ -1,34 +1,29 @@
-import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { createServer } from "../../server";
-import { SessionManager } from "../../utils/session-manager";
+import { describe, test, expect, beforeAll } from "bun:test";
 import fs from "fs";
 import path from "path";
 
 describe("Phase 2.3: Dynamic Contract Deployment", () => {
-  let server: any;
-  let sessionManager: SessionManager;
+  // Note: Using shared server and SessionManager from global test setup
+
   let compiledCode: string;
 
-  beforeAll(async () => {
-    // Load compiled contract from plutus.json
+  beforeAll(() => {
+    // Load compiled contract code from plutus.json
     const plutusJsonPath = path.join(process.cwd(), "plutus.json");
-    const plutusJson = JSON.parse(fs.readFileSync(plutusJsonPath, "utf-8"));
+    const plutusJson = JSON.parse(fs.readFileSync(plutusJsonPath, "utf8"));
     
-    const helloWorldValidator = plutusJson.validators.find(
-      (v: any) => v.title.includes("hello_world") && v.title.includes("spend"),
+    // Find the spend validator for hello_world
+    const spendValidator = plutusJson.validators.find(
+      (v: any) => v.title === "hello_world.hello_world.spend"
     );
     
-    compiledCode = helloWorldValidator.compiledCode;
+    if (!spendValidator) {
+      throw new Error("Could not find hello_world.spend validator in plutus.json");
+    }
     
-    sessionManager = new SessionManager();
-    server = await createServer(sessionManager);
+    compiledCode = spendValidator.compiledCode;
   });
 
-  afterAll(async () => {
-    if (server) {
-      await server.close();
-    }
-  });
 
   test("should deploy hello_world contract via HTTP endpoint", async () => {
     // First create a session

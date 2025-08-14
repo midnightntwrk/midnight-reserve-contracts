@@ -1,21 +1,9 @@
-import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { createServer } from "../../server";
-import { SessionManager } from "../../utils/session-manager";
+import { describe, test, expect } from "bun:test";
 
 describe("Phase 2.2: Wallet Service", () => {
-  let server: any;
-  let sessionManager: SessionManager;
+  // Note: Using shared server and SessionManager from global test setup
 
-  beforeAll(async () => {
-    sessionManager = new SessionManager();
-    server = await createServer(sessionManager);
-  });
 
-  afterAll(async () => {
-    if (server) {
-      await server.close();
-    }
-  });
 
   test("should successfully register wallet via HTTP endpoint", async () => {
     // First create a session

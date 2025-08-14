@@ -179,7 +179,7 @@ export function createServer(sessionManager: SessionManager) {
   });
 
   app.post("/api/contract/deploy", async (req, res) => {
-    const { sessionId, deployerWallet, contractName, compiledCode, datumSchema, redeemerSchema } = req.body;
+    const { sessionId, deployerWallet, compiledCode, datumSchema, redeemerSchema } = req.body;
 
     // Validate session ID
     const currentSession = sessionManager.getCurrentSession();
@@ -203,13 +203,12 @@ export function createServer(sessionManager: SessionManager) {
       const script = cborToScript(compiledCode, "PlutusV3");
       const scriptAddress = Core.addressFromValidator(Core.NetworkId.Testnet, script);
 
-      // Store the contract info for later use
-      // Use contractName if provided, otherwise use script address as key
-      const contractKey = contractName || scriptAddress.toBech32();
-      currentSession.deployedContracts.set(contractKey, {
+      // Store the contract info using script hash as key (Cardano standard)
+      const scriptHash = script.hash();
+      currentSession.deployedContracts.set(scriptHash, {
         address: scriptAddress,
         compiledCode: compiledCode,
-        scriptHash: script.hash()
+        scriptHash: scriptHash
       });
 
       res.json({
@@ -306,9 +305,9 @@ export function createServer(sessionManager: SessionManager) {
     }
 
     try {
-      // Find the contract info by address (contracts are stored by name, not address)
+      // Find the contract info by address (contracts are stored by script hash)
       let contractInfo = null;
-      for (const [name, info] of currentSession.deployedContracts.entries()) {
+      for (const [scriptHash, info] of currentSession.deployedContracts.entries()) {
         if (info.address.toBech32() === contractAddress) {
           contractInfo = info;
           break;
@@ -318,7 +317,7 @@ export function createServer(sessionManager: SessionManager) {
       if (!contractInfo) {
         return res.status(400).json({
           success: false,
-          error: `Contract at address '${contractAddress}' not found`
+          error: `Contract at address '${contractAddress}' not found in deployed contracts`
         });
       }
 
@@ -449,8 +448,8 @@ export function createServer(sessionManager: SessionManager) {
     }
   });
 
-  app.get("/api/contract/:contractName/balance", async (req, res) => {
-    const { contractName } = req.params;
+  app.get("/api/contract/:scriptHash/balance", async (req, res) => {
+    const { scriptHash } = req.params;
     const { sessionId } = req.query;
     
     // Validate session ID
@@ -463,15 +462,15 @@ export function createServer(sessionManager: SessionManager) {
     }
 
     // Check if contract exists in deployed contracts
-    if (!currentSession.deployedContracts.has(contractName)) {
+    if (!currentSession.deployedContracts.has(scriptHash)) {
       return res.status(400).json({
         success: false,
-        error: `Contract '${contractName}' has not been deployed`
+        error: `Contract with script hash '${scriptHash}' has not been deployed`
       });
     }
 
     try {
-      const contractInfo = currentSession.deployedContracts.get(contractName);
+      const contractInfo = currentSession.deployedContracts.get(scriptHash);
       const contractAddress = contractInfo.address;
 
       // Use any wallet to query the contract address

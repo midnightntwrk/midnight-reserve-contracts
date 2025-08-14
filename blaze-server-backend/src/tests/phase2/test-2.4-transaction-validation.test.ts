@@ -1,34 +1,12 @@
-import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { createServer } from "../../server";
-import { SessionManager } from "../../utils/session-manager";
+import { describe, test, expect } from "bun:test";
 import fs from "fs";
 import path from "path";
 
 describe("Phase 2.4: Transaction ID Validation (TECHNICAL DEBT - DISABLED)", () => {
-  let server: any;
-  let sessionManager: SessionManager;
+  // Note: Using shared server and SessionManager from global test setup
+
   let compiledCode: string;
 
-  beforeAll(async () => {
-    // Load compiled contract from plutus.json
-    const plutusJsonPath = path.join(process.cwd(), "plutus.json");
-    const plutusJson = JSON.parse(fs.readFileSync(plutusJsonPath, "utf-8"));
-
-    const helloWorldValidator = plutusJson.validators.find(
-      (v: any) => v.title.includes("hello_world") && v.title.includes("spend"),
-    );
-
-    compiledCode = helloWorldValidator.compiledCode;
-
-    sessionManager = new SessionManager();
-    server = await createServer(sessionManager);
-  });
-
-  afterAll(async () => {
-    if (server) {
-      await server.close();
-    }
-  });
 
   test.skip("should return real transaction IDs for wallet transfers (TECHNICAL DEBT: Need to research how to get transaction hashes from Blaze emulator)", async () => {
     // Create a session
