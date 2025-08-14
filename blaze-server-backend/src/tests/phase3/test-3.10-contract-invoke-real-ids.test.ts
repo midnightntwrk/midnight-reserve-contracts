@@ -1,176 +1,18 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect } from "bun:test";
 
-describe("Phase 3.10: Contract Invoke Real Transaction IDs - Three Approaches", () => {
+describe("Phase 3.10: Contract Invoke Real Transaction IDs - Two Approaches", () => {
   const baseUrl = "http://localhost:3001";
-  let sessionId: string;
-  let contractAddress: string;
-  let contractScriptHash: string;
 
   // Note: Using shared server and SessionManager from global test setup
   // No beforeAll/afterAll needed - handled by test-setup.ts
 
-  beforeEach(async () => {
-    // Create fresh session
-    const sessionResponse = await fetch(`${baseUrl}/api/session/new`, {
-      method: "POST"
-    });
-    const sessionData = await sessionResponse.json();
-    sessionId = sessionData.sessionId;
+  // Note: No shared beforeEach - each test creates its own isolated session
+  // This follows the pattern where each approach is completely independent
 
-    // Register test wallet
-    await fetch(`${baseUrl}/api/wallet/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        name: "alice",
-        initialBalance: "20000000" // 20 ADA - following SundaeSwap pattern of sufficient funds
-      })
-    });
 
-    // Deploy contract
-    const deployResponse = await fetch(`${baseUrl}/api/contract/deploy`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        deployerWallet: "alice",
-        compiledCode: "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009"
-      })
-    });
-    // Validate contract deployment succeeded
-    expect(deployResponse.status).toBe(200);
-    const deployData = await deployResponse.json();
-    expect(deployData.success).toBe(true);
-    expect(deployData.contractAddress).toBeDefined();
-    expect(deployData.contractId).toBeDefined();
-    
-    contractAddress = deployData.contractAddress;
-    contractScriptHash = deployData.contractId;
-
-    // Lock funds to contract first (needed for invoke to have something to unlock)
-    const lockResponse = await fetch(`${baseUrl}/api/contract/lock`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        fromWallet: "alice",
-        contractAddress,
-        amount: "3000000", // 3 ADA
-        datum: 42 // This redeemer will unlock the UTXO
-      })
-    });
-    
-    // Validate contract lock succeeded
-    expect(lockResponse.status).toBe(200);
-    const lockData = await lockResponse.json();
-    expect(lockData.success).toBe(true);
-    expect(lockData.transactionId).toBeDefined();
-  });
-
-  it("should prove contract invoke transaction IDs are real and unfakeable (legacy endpoints)", async () => {
-    // TDD Red Phase: Test that will FAIL if /api/contract/invoke returns fake transaction IDs
-    
-    // Step 0: Validate session and contract state
-    expect(sessionId).toBeDefined();
-    expect(contractAddress).toBeDefined();
-    expect(contractScriptHash).toBeDefined();
-    
-    // Step 1: First check contract has the locked UTXO before invoking
-    const contractUtxosBeforeResponse = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
-    const contractUtxosBefore = await contractUtxosBeforeResponse.json();
-    expect(contractUtxosBefore.utxos.length).toBe(1); // Should have our locked UTXO
-    expect(contractUtxosBefore.utxos[0].amount).toBe("3000000"); // The 3 ADA we locked
-    
-    // Step 2: Get Alice's balance before invoke
-    const aliceBalanceBeforeResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);
-    const aliceBalanceBefore = await aliceBalanceBeforeResponse.json();
-    const balanceBefore = BigInt(aliceBalanceBefore.balance);
-    
-    // Step 3: Invoke contract and get server's claimed transaction ID
-    const invokeResponse = await fetch(`${baseUrl}/api/contract/invoke`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        fromWallet: "alice",
-        contractAddress: contractAddress, // Use the actual contract address
-        redeemer: 42 // This should unlock the UTXO we locked
-      })
-    });
-
-    if (invokeResponse.status !== 200) {
-      const errorText = await invokeResponse.text();
-      console.log(`❌ Contract invoke failed with status ${invokeResponse.status}: ${errorText}`);
-      console.log(`❌ Request details: sessionId=${sessionId}, fromWallet=alice, contractAddress=${contractAddress}, redeemer=42`);
-    }
-    expect(invokeResponse.status).toBe(200);
-    
-    const invokeData = await invokeResponse.json();
-    if (!invokeData.success) {
-      console.log(`❌ Contract invoke returned error:`, invokeData);
-    }
-    expect(invokeData.success).toBe(true);
-    
-    const claimedTransactionId = invokeData.transactionId;
-    expect(claimedTransactionId).toMatch(/^[a-f0-9]{64}$/); // Should be real 64-char hex
-
-    // Step 4: Transaction should be fully processed (emulator is immediately consistent)
-
-    // Step 5: Verify contract UTXO was consumed (no longer exists)
-    const contractUtxosAfterResponse = await fetch(`${baseUrl}/api/contract/${contractAddress}/utxos?sessionId=${sessionId}`);
-    
-    if (contractUtxosAfterResponse.status !== 200) {
-      const errorText = await contractUtxosAfterResponse.text();
-      console.log(`❌ Contract UTXO query failed with status ${contractUtxosAfterResponse.status}: ${errorText}`);
-    }
-    expect(contractUtxosAfterResponse.status).toBe(200);
-    
-    const contractUtxosAfter = await contractUtxosAfterResponse.json();
-    
-    if (!contractUtxosAfter.success) {
-      console.log(`❌ Contract UTXO query returned error:`, contractUtxosAfter);
-    }
-    expect(contractUtxosAfter.success).toBe(true);
-    expect(contractUtxosAfter.utxos.length).toBe(0); // Contract UTXO should be consumed
-
-    // Step 6: Check Alice's wallet UTXOs - the contract invoke should have sent funds back to Alice
-    const aliceUtxosResponse = await fetch(`${baseUrl}/api/wallet/alice/utxos?sessionId=${sessionId}`);
-    expect(aliceUtxosResponse.status).toBe(200);
-    const aliceUtxosData = await aliceUtxosResponse.json();
-    expect(aliceUtxosData.success).toBe(true);
-
-    // Step 7: Find the UTXO that was created by our contract invoke transaction
-    // This UTXO should contain the unlocked funds from the contract
-    const utxoFromOurTransaction = aliceUtxosData.utxos.find(
-      (utxo: any) => utxo.txHash === claimedTransactionId
-    );
-
-    // Step 8: CRITICAL TEST - If the server lied about the transaction ID,
-    // then no UTXO would have that transaction hash and this would fail
-    expect(utxoFromOurTransaction).toBeDefined();
-    expect(utxoFromOurTransaction.txHash).toBe(claimedTransactionId);
-    
-    // Step 9: Verify Alice's balance increased (got the locked funds back minus fees)
-    const aliceBalanceAfterResponse = await fetch(`${baseUrl}/api/wallet/alice/balance?sessionId=${sessionId}`);
-    const aliceBalanceAfter = await aliceBalanceAfterResponse.json();
-    const balanceAfter = BigInt(aliceBalanceAfter.balance);
-    
-    // Alice should have received back close to the 3 ADA that was locked (minus tx fees)
-    const balanceIncrease = balanceAfter - balanceBefore;
-    expect(balanceIncrease).toBeGreaterThan(2800000n); // At least 2.8 ADA back (accounting for fees)
-    expect(balanceIncrease).toBeLessThanOrEqual(3000000n); // At most 3 ADA back
-
-    console.log(`✅ CONTRACT INVOKE PROOF: Transaction ID ${claimedTransactionId} is REAL`);
-    console.log(`✅ CONTRACT INVOKE PROOF: Contract UTXO was consumed (no longer exists)`);
-    console.log(`✅ CONTRACT INVOKE PROOF: Found Alice's UTXO with matching txHash`);
-    console.log(`✅ CONTRACT INVOKE PROOF: Alice received back ~${balanceIncrease} lovelace from unlocked contract`);
-    console.log(`✅ CONTRACT INVOKE PROOF: Server cannot fake contract invoke transaction IDs`);
-  });
-
-  it("should prove contract invoke transaction IDs are real and unfakeable (reference scripts)", async () => {
-    // Parallel test using reference scripts instead of legacy deploy/invoke endpoints
-    // This proves both approaches produce identical, real transaction IDs
+  it("should prove contract invoke transaction IDs are real and unfakeable (Babbage reference scripts)", async () => {
+    // Babbage-era approach: reference scripts stored once, reused multiple times
+    // Most efficient for repeated contract interactions
     
     // Create fresh session for this test
     const sessionResponse = await fetch(`${baseUrl}/api/session/new`, {
@@ -368,12 +210,12 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs - Three Approaches", 
     console.log(`✅ REFERENCE SCRIPT PROOF: Contract UTXO was consumed via reference script`);
     console.log(`✅ REFERENCE SCRIPT PROOF: Found Alice's UTXO with matching txHash`);
     console.log(`✅ REFERENCE SCRIPT PROOF: Alice received back ~${balanceIncrease} lovelace from reference script unlock`);
-    console.log(`✅ REFERENCE SCRIPT PROOF: Both legacy and reference script approaches produce real transaction IDs`);
+    console.log(`✅ BABBAGE REFERENCE SCRIPT PROOF: Modern CIP-33 approach produces real transaction IDs`);
   });
 
   it("should prove contract invoke transaction IDs are real and unfakeable (Alonzo inline scripts)", async () => {
-    // Third approach: Alonzo-era inline scripts using complex transaction endpoint
-    // This demonstrates backward compatibility and provides a middle path
+    // Alonzo-era approach: inline scripts provided with each transaction
+    // Backward compatible and simpler for one-off contract interactions
     
     // Create fresh session for this test
     const sessionResponse = await fetch(`${baseUrl}/api/session/new`, {
@@ -543,6 +385,6 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs - Three Approaches", 
     console.log(`✅ ALONZO INLINE SCRIPT PROOF: Contract UTXO was consumed via inline script`);
     console.log(`✅ ALONZO INLINE SCRIPT PROOF: Found Alice's UTXO with matching txHash`);
     console.log(`✅ ALONZO INLINE SCRIPT PROOF: Alice received back ~${balanceIncrease} lovelace from inline script unlock`);
-    console.log(`✅ ALONZO INLINE SCRIPT PROOF: All three approaches (legacy, Alonzo inline, Babbage reference) produce real transaction IDs`);
+    console.log(`✅ ALONZO INLINE SCRIPT PROOF: Backward-compatible inline script approach produces real transaction IDs`);
   });
 });

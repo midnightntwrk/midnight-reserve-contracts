@@ -2,7 +2,7 @@ import { describe, test, expect } from "bun:test";
 import fs from "fs";
 import path from "path";
 
-describe("Phase 2.4: Transaction ID Validation (TECHNICAL DEBT - DISABLED)", () => {
+describe("Phase 2.4: Transaction ID Validation - Two Approaches (TECHNICAL DEBT - DISABLED)", () => {
   // Note: Using shared server and SessionManager from global test setup
 
   let compiledCode: string;
