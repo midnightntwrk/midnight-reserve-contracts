@@ -105,13 +105,18 @@ export function createServer(sessionManager: SessionManager) {
       });
 
               // Execute the transfer from source wallet
+        let realTransactionId: string;
         await currentSession.emulator.as(fromWallet, async (blaze: any, addr: any) => {
           // Create a proper TransactionOutput object
           const output = new Core.TransactionOutput(toAddress, makeValue(BigInt(amount)));
-          await currentSession.emulator.expectValidTransaction(
-            blaze,
-            blaze.newTransaction().addOutput(output)
-          );
+          const tx = blaze.newTransaction().addOutput(output);
+          
+          // Extract real transaction ID before submission
+          const completed = await tx.complete();
+          realTransactionId = completed.getId();
+          
+          // Submit the transaction to emulator
+          await currentSession.emulator.expectValidTransaction(blaze, tx);
         });
 
       res.json({
@@ -119,7 +124,7 @@ export function createServer(sessionManager: SessionManager) {
         fromWallet,
         toWallet,
         amount,
-        transactionId: "tx-" + Date.now()
+        transactionId: realTransactionId
       });
     } catch (error) {
       // Only log unexpected errors, not insufficient funds
@@ -247,15 +252,20 @@ export function createServer(sessionManager: SessionManager) {
       const scriptAddress = Core.addressFromBech32(contractAddress);
       
       // Execute the contract locking transaction
+      let realTransactionId: string;
       await currentSession.emulator.as(fromWallet, async (blaze: any, addr: any) => {
-        await currentSession.emulator.expectValidTransaction(
-          blaze,
-          blaze.newTransaction().lockAssets(
-            scriptAddress,
-            makeValue(BigInt(amount)),
-            Data.serialize(MyDatum, { thing: BigInt(datum) })
-          )
+        const tx = blaze.newTransaction().lockAssets(
+          scriptAddress,
+          makeValue(BigInt(amount)),
+          Data.serialize(MyDatum, { thing: BigInt(datum) })
         );
+        
+        // Extract real transaction ID before submission
+        const completed = await tx.complete();
+        realTransactionId = completed.getId();
+        
+        // Submit the transaction to emulator
+        await currentSession.emulator.expectValidTransaction(blaze, tx);
       });
 
       res.json({
@@ -264,7 +274,7 @@ export function createServer(sessionManager: SessionManager) {
         contractAddress,
         amount,
         datum,
-        transactionId: "lock-tx-" + Date.now()
+        transactionId: realTransactionId
       });
     } catch (error) {
       console.log("Contract lock error:", error);
@@ -296,8 +306,15 @@ export function createServer(sessionManager: SessionManager) {
     }
 
     try {
-      // Get the contract info for this contract
-      const contractInfo = currentSession.deployedContracts.get(contractAddress);
+      // Find the contract info by address (contracts are stored by name, not address)
+      let contractInfo = null;
+      for (const [name, info] of currentSession.deployedContracts.entries()) {
+        if (info.address.toBech32() === contractAddress) {
+          contractInfo = info;
+          break;
+        }
+      }
+      
       if (!contractInfo) {
         return res.status(400).json({
           success: false,
@@ -341,17 +358,22 @@ export function createServer(sessionManager: SessionManager) {
 
       // Try each UTXO until one works with the redeemer
       let success = false;
+      let realTransactionId: string;
       let lastError = null;
 
       for (const utxo of scriptUtxos) {
         try {
           await currentSession.emulator.as(fromWallet, async (blaze: any, addr: any) => {
-            await currentSession.emulator.expectValidTransaction(
-              blaze,
-              blaze.newTransaction()
-                .addInput(utxo, Data.serialize(Data.BigInt(), BigInt(redeemer)))
-                .provideScript(script)
-            );
+            const tx = blaze.newTransaction()
+              .addInput(utxo, Data.serialize(Data.BigInt(), BigInt(redeemer)))
+              .provideScript(script);
+            
+            // Extract real transaction ID before submission
+            const completed = await tx.complete();
+            realTransactionId = completed.getId();
+            
+            // Submit the transaction to emulator
+            await currentSession.emulator.expectValidTransaction(blaze, tx);
           });
           success = true;
           break;
@@ -374,7 +396,7 @@ export function createServer(sessionManager: SessionManager) {
         contractAddress,
         redeemer,
         utxoConsumed: true,
-        transactionId: "invoke-tx-" + Date.now()
+        transactionId: realTransactionId
       });
     } catch (error) {
       console.log("Contract call error:", error);
@@ -585,10 +607,16 @@ export function createServer(sessionManager: SessionManager) {
               }
               
               // Lock assets to contract address with datum
+              // If datum is a number, serialize it as MyDatum
+              let serializedDatum = operation.datum;
+              if (typeof operation.datum === 'number') {
+                serializedDatum = Data.serialize(MyDatum, { thing: BigInt(operation.datum) });
+              }
+              
               tx = tx.lockAssets(
                 contractInfo.address,
                 makeValue(BigInt(operation.amount)),
-                operation.datum
+                serializedDatum
               );
               break;
               
@@ -733,16 +761,36 @@ export function createServer(sessionManager: SessionManager) {
               const integer = firstField.asInteger();
               return Number(integer.asPositive());
             } else if (firstField.getKind() === 3) { // Bytes 
-              // CBOR hex 187b = decimal 123 encoded as bytes
               const cbor = firstField.toCbor();
               
-              // Simple CBOR decode for small integers
-              // 187b in hex = 0x18 (integer with 1-byte value) + 0x7b (123 in decimal)
-              if (cbor === "187b") {
-                return 123;
+              // CBOR decoding for unsigned integers:
+              // 0x00-0x17: Small integers 0-23 (direct encoding)
+              // 0x18 + byte: Integers 24-255
+              // 0x19 + 2 bytes: Integers 256-65535
+              // 0x1a + 4 bytes: Integers 65536-4294967295
+              
+              if (cbor.length === 2) {
+                // Single byte integer (0-23)
+                const value = parseInt(cbor, 16);
+                if (value >= 0 && value <= 23) {
+                  return value;
+                }
+              } else if (cbor.length === 4 && cbor.startsWith("18")) {
+                // 0x18 followed by 1-byte value (24-255)
+                const value = parseInt(cbor.substring(2), 16);
+                return value;
+              } else if (cbor.length === 6 && cbor.startsWith("19")) {
+                // 0x19 followed by 2-byte value (256-65535)
+                const value = parseInt(cbor.substring(2), 16);
+                return value;
+              } else if (cbor.length === 10 && cbor.startsWith("1a")) {
+                // 0x1a followed by 4-byte value
+                const value = parseInt(cbor.substring(2), 16);
+                return value;
               }
               
-              // For other values, we'd need proper CBOR parsing
+              // Unsupported CBOR format
+              console.log("Unsupported CBOR format for datum:", cbor);
               return null;
             }
           }
