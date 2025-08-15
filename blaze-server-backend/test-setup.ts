@@ -8,49 +8,63 @@ let globalSessionManager: SessionManager | null = null;
 
 // Graceful shutdown handler
 async function gracefulShutdown() {
-  console.log("🌍 EMERGENCY SHUTDOWN: Forcefully cleaning up resources");
+  console.log("🌍 EMERGENCY SHUTDOWN: Starting cleanup...");
   
   if (globalServer) {
+    console.log("🌍 EMERGENCY SHUTDOWN: Found globalServer, attempting to close...");
     try {
+      console.log("🌍 EMERGENCY SHUTDOWN: Calling globalServer.close() with 2s timeout...");
       await Promise.race([
         globalServer.close(),
         new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2000))
       ]);
+      console.log("🌍 EMERGENCY SHUTDOWN: globalServer.close() completed successfully");
     } catch (error) {
-      console.log("🌍 EMERGENCY SHUTDOWN: Force closing server");
+      console.log("🌍 EMERGENCY SHUTDOWN: globalServer.close() failed or timed out:", error);
+      console.log("🌍 EMERGENCY SHUTDOWN: Attempting force close...");
       try {
         globalServer.closeAllConnections?.();
         globalServer.unref?.();
+        console.log("🌍 EMERGENCY SHUTDOWN: Force close methods called");
       } catch (e) {
-        // Force exit if nothing else works
+        console.log("🌍 EMERGENCY SHUTDOWN: Force close methods failed:", e);
       }
     }
     globalServer = null;
+    console.log("🌍 EMERGENCY SHUTDOWN: globalServer set to null");
+  } else {
+    console.log("🌍 EMERGENCY SHUTDOWN: No globalServer found");
   }
   
   globalSessionManager = null;
   (global as any).testServer = null;
   (global as any).testSessionManager = null;
+  console.log("🌍 EMERGENCY SHUTDOWN: Cleanup completed");
 }
 
 beforeAll(async () => {
   console.log("🌍 GLOBAL SETUP: Starting shared server for all tests");
   
-  // Check if port is already in use and clean up
+  // Check if port is already in use - if so, fail immediately
+  console.log("🌍 GLOBAL SETUP: Checking if port 3031 is in use...");
   try {
+    console.log("🌍 GLOBAL SETUP: Attempting to connect to existing server...");
     const response = await fetch("http://localhost:3031/api/session/new", {
       method: "POST",
       signal: AbortSignal.timeout(1000)
     });
+    console.log("🌍 GLOBAL SETUP: Got response:", response.status, response.ok);
     if (response.ok) {
-      console.log("🌍 GLOBAL SETUP: Port 3031 appears to be in use, attempting cleanup");
-      // Port is in use, try to clean up
-      await gracefulShutdown();
-      // Wait a moment for cleanup
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.error("🌍 GLOBAL SETUP: ERROR - Port 3031 is already in use by another process");
+      console.error("🌍 GLOBAL SETUP: Please stop the development server (bun run --watch) before running tests");
+      throw new Error("Port 3031 is already in use. Cannot run tests while development server is running.");
     }
-  } catch (error) {
-    // Expected if port is free - this is good
+  } catch (error: any) {
+    if (error.message && error.message.includes("Port 3031 is already in use")) {
+      throw error; // Re-throw our specific error
+    }
+    // Otherwise, port is free (connection failed) - this is what we want
+    console.log("🌍 GLOBAL SETUP: Port 3031 is free, proceeding with test server setup");
   }
   
   // Create single SessionManager instance shared across all tests

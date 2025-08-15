@@ -295,7 +295,7 @@ export function createServer(sessionManager: SessionManager) {
       if (referenceScript) {
         const { cborToScript } = require("@blaze-cardano/uplc");
         const script = cborToScript(referenceScript, "PlutusV3");
-        output.setScriptReference(script);
+        output.setScriptRef(script);
       }
       
       const utxo = new Core.TransactionUnspentOutput(
@@ -319,7 +319,7 @@ export function createServer(sessionManager: SessionManager) {
       console.error("UTXO creation error:", error);
       res.status(500).json({
         success: false,
-        error: "Failed to create UTXO: " + error.message
+        error: "Failed to create UTXO: " + (error as Error).message
       });
     }
   });
@@ -903,9 +903,18 @@ export function createServer(sessionManager: SessionManager) {
     }
   }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const server = app.listen(3031, () => {
       resolve(server);
+    });
+    
+    // Handle port-in-use and other server errors
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        reject(new Error('Port 3031 is already in use'));
+      } else {
+        reject(err);
+      }
     });
   });
 }
