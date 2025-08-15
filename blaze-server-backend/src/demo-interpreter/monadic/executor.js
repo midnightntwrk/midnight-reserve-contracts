@@ -45,20 +45,8 @@ class NotebookExecutor {
       // Execute each stanza
       for (let i = 0; i < notebook.stanzas.length; i++) {
         const stanza = notebook.stanzas[i];
-        
-        // If it's a markdown stanza, display it and pause before the next stanza if interactive
-        if (stanza.type === 'markdown') {
-          const result = await this.executeStanza(stanza, i);
-          this.outputs.push(result);
-          
-          // If the next stanza is code and we're in interactive mode, pause
-          if (this.interactive && i + 1 < notebook.stanzas.length && notebook.stanzas[i + 1].type === 'code') {
-            await this.waitForEnter();
-          }
-        } else {
-          const result = await this.executeStanza(stanza, i);
-          this.outputs.push(result);
-        }
+        const result = await this.executeStanza(stanza, i);
+        this.outputs.push(result);
       }
 
       return {
@@ -84,7 +72,7 @@ class NotebookExecutor {
    * Set up flat execution environment with monadic functions
    */
   setupExecutionScope() {
-    // Clear and populate execution scope with monadic functions
+    // Just use the original functions - we'll handle async in execution
     this.executionScope = { ...demoFunctions };
     
     // Ensure global runtime is available
@@ -130,6 +118,17 @@ class NotebookExecutor {
     }
 
     if (stanza.type === 'code') {
+      // Display code block if interactive
+      if (this.interactive) {
+        console.log(`\n[${result.name}]`);
+        console.log('─'.repeat(60));
+        console.log(stanza.content.join('\n'));
+        console.log('─'.repeat(60));
+        
+        // Pause before execution
+        await this.waitForEnter();
+      }
+
       // Set current step for error messages
       this.runtime.setCurrentStep(result.name);
 

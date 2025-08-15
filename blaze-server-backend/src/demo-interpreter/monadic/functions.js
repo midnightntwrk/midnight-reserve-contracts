@@ -10,10 +10,10 @@
  * Create a new wallet with initial balance
  * @param {string} name - Wallet name
  * @param {number} initialBalance - Initial balance in lovelace
- * @returns {Promise<{address: string, balance: string, name: string}>}
+ * @returns {object} {name: string, balance: string}
  */
-async function createWallet(name, initialBalance) {
-  // Runtime will intercept this call and handle HTTP
+function createWallet(name, initialBalance) {
+  // Runtime will intercept this call and handle HTTP asynchronously
   return global.__demoRuntime.createWallet(name, initialBalance);
 }
 
@@ -22,7 +22,7 @@ async function createWallet(name, initialBalance) {
  * @param {string} name - Wallet name
  * @returns {Promise<string>} Balance in lovelace
  */
-async function getBalance(name) {
+function getBalance(name) {
   return global.__demoRuntime.getBalance(name);
 }
 
@@ -33,7 +33,7 @@ async function getBalance(name) {
  * @param {number} amount - Amount in lovelace
  * @returns {Promise<{txId: string}>}
  */
-async function transfer(from, to, amount) {
+function transfer(from, to, amount) {
   return global.__demoRuntime.transfer(from, to, amount);
 }
 
@@ -43,7 +43,7 @@ async function transfer(from, to, amount) {
  * @param {object} params - Contract parameters
  * @returns {Promise<{address: string, scriptHash: string}>}
  */
-async function deployContract(name, params = {}) {
+function deployContract(name, params = {}) {
   return global.__demoRuntime.deployContract(name, params);
 }
 
@@ -54,7 +54,7 @@ async function deployContract(name, params = {}) {
  * @param {object} params - Action parameters
  * @returns {Promise<{txId: string, result: any}>}
  */
-async function contractAction(address, action, params) {
+function contractAction(address, action, params) {
   return global.__demoRuntime.contractAction(address, action, params);
 }
 
@@ -63,7 +63,7 @@ async function contractAction(address, action, params) {
  * @param {string} address - Contract address
  * @returns {Promise<object>} Contract state/UTXOs
  */
-async function getContractState(address) {
+function getContractState(address) {
   return global.__demoRuntime.getContractState(address);
 }
 
@@ -72,7 +72,7 @@ async function getContractState(address) {
  * @param {number} seconds - Seconds to advance
  * @returns {Promise<{newTime: number}>}
  */
-async function advanceTime(seconds) {
+function advanceTime(seconds) {
   return global.__demoRuntime.advanceTime(seconds);
 }
 
@@ -82,26 +82,26 @@ async function advanceTime(seconds) {
  * @param {number} timeout - Maximum wait time in milliseconds
  * @returns {Promise<void>}
  */
-async function waitFor(condition, timeout = 30000) {
+function waitFor(condition, timeout = 30000) {
   return global.__demoRuntime.waitFor(condition, timeout);
 }
 
 // Failure-expecting variants
 // These expect the operation to fail and will throw if it succeeds
 
-async function createWalletExpectFailure(name, initialBalance) {
+function createWalletExpectFailure(name, initialBalance) {
   return global.__demoRuntime.createWalletExpectFailure(name, initialBalance);
 }
 
-async function transferExpectFailure(from, to, amount) {
+function transferExpectFailure(from, to, amount) {
   return global.__demoRuntime.transferExpectFailure(from, to, amount);
 }
 
-async function deployContractExpectFailure(name, params = {}) {
+function deployContractExpectFailure(name, params = {}) {
   return global.__demoRuntime.deployContractExpectFailure(name, params);
 }
 
-async function contractActionExpectFailure(address, action, params) {
+function contractActionExpectFailure(address, action, params) {
   return global.__demoRuntime.contractActionExpectFailure(address, action, params);
 }
 
