@@ -25,28 +25,39 @@
     "test:phase4": "bun test src/tests/phase4",
     "test": "bun test src/tests",
     "test:exploration": "bun test ./exploration/tests/*.exploration.ts ./exploration/unfakeable-transaction-ids/tests/phase3/*.exploration.ts",
+    "demo": "bun src/demo-interpreter/cli/demo-runner.ts",
+    "demo:run": "node src/demo-interpreter/monadic/test-runner.js",
+    "demo:serve": "bunx http-server -p 8080 -c-1",
     "pack": "npm run build && npm pack",
     "publish:npm": "npm run build && npm publish"
   },
-  "keywords": ["cardano", "aiken", "blaze", "emulator"],
+  "keywords": [
+    "cardano",
+    "aiken",
+    "blaze",
+    "emulator"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@blaze-cardano/sdk": "^0.2.33",
     "@blaze-cardano/emulator": "^0.3.29",
-    "express": "^4.18.2",
+    "@blaze-cardano/sdk": "^0.2.33",
     "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "js-yaml": "^4.1.0",
+    "pegjs": "^0.10.0",
     "uuid": "^9.0.1",
-    "winston": "^3.11.0",
-    "dotenv": "^16.3.1"
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.11.0",
     "@types/uuid": "^9.0.7",
-    "typescript": "^5.3.3",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }
