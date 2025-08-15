@@ -19,3 +19,7 @@ test-results/
 
 # Research code repositories (cloned for local study)
 .gitignored-repos/
+
+# Lock files (dependency management)
+bun.lock
+package-lock.json
