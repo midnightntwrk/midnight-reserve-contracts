@@ -9,6 +9,7 @@
 const { NotebookExecutor, parseNotebook } = require('./executor.js');
 const { readFileSync } = require('fs');
 const { resolve } = require('path');
+const readline = require('readline');
 
 async function main() {
   const args = process.argv.slice(2);
@@ -35,15 +36,17 @@ async function main() {
 
     // Create executor with config from notebook
     const config = {
-      baseUrl: notebook.config?.baseUrl || 'http://localhost:3032',
+      baseUrl: notebook.config?.baseUrl || 'http://localhost:3031',
       contracts: notebook.config?.contracts || {},
-      debug: true
+      debug: true,
+      interactive: true
     };
     
     const executor = new NotebookExecutor(config);
     
     // Execute notebook
     console.log('Starting execution...\n');
+    
     const result = await executor.execute(notebook);
     
     if (result.success) {
@@ -98,6 +101,23 @@ async function main() {
     console.error(error.stack);
     process.exit(1);
   }
+}
+
+/**
+ * Wait for user to press Enter
+ */
+function waitForEnter() {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    rl.question('Press Enter to continue...', () => {
+      rl.close();
+      resolve();
+    });
+  });
 }
 
 // Run if called directly

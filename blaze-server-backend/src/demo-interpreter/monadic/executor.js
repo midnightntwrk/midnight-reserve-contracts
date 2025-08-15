@@ -10,6 +10,7 @@
 
 const { MonadicRuntime } = require('./runtime.js');
 const demoFunctions = require('./functions.js');
+const readline = require('readline');
 
 class NotebookExecutor {
   constructor(config = {}) {
@@ -18,6 +19,7 @@ class NotebookExecutor {
     this.outputs = [];
     this.isRunning = false;
     this.executionScope = {}; // Shared scope for all stanzas
+    this.interactive = config.interactive || false;
   }
 
   /**
@@ -43,8 +45,20 @@ class NotebookExecutor {
       // Execute each stanza
       for (let i = 0; i < notebook.stanzas.length; i++) {
         const stanza = notebook.stanzas[i];
-        const result = await this.executeStanza(stanza, i);
-        this.outputs.push(result);
+        
+        // If it's a markdown stanza, display it and pause before the next stanza if interactive
+        if (stanza.type === 'markdown') {
+          const result = await this.executeStanza(stanza, i);
+          this.outputs.push(result);
+          
+          // If the next stanza is code and we're in interactive mode, pause
+          if (this.interactive && i + 1 < notebook.stanzas.length && notebook.stanzas[i + 1].type === 'code') {
+            await this.waitForEnter();
+          }
+        } else {
+          const result = await this.executeStanza(stanza, i);
+          this.outputs.push(result);
+        }
       }
 
       return {
@@ -103,8 +117,15 @@ class NotebookExecutor {
     };
 
     if (stanza.type === 'markdown') {
-      // Markdown stanzas are just displayed, not executed
-      result.rendered = stanza.content.join('\n');
+      // Markdown stanzas are displayed
+      const rendered = stanza.content.join('\n');
+      result.rendered = rendered;
+      
+      // Display markdown if interactive
+      if (this.interactive) {
+        console.log('\n' + rendered + '\n');
+      }
+      
       return result;
     }
 
@@ -176,6 +197,23 @@ class NotebookExecutor {
   getContext() {
     // Return the actual execution scope where variables are stored
     return { ...this.executionScope };
+  }
+
+  /**
+   * Wait for user to press Enter
+   */
+  async waitForEnter() {
+    return new Promise((resolve) => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+      
+      rl.question('Press Enter to continue...', () => {
+        rl.close();
+        resolve();
+      });
+    });
   }
 
   /**
