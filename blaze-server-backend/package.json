@@ -28,6 +28,7 @@
     "demo": "bun src/demo-interpreter/cli/demo-runner.ts",
     "demo:run": "node src/demo-interpreter/monadic/test-runner.js",
     "demo:serve": "bunx http-server -p 8080 -c-1",
+    "demo:web": "bunx http-server -p 8080 -c-1 -o /src/demo-interpreter/browser/progressive.html",
     "pack": "npm run build && npm pack",
     "publish:npm": "npm run build && npm publish"
   },

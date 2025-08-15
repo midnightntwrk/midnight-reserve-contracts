@@ -10,15 +10,18 @@ dotenv.config();
 const PORT = process.env.PORT || 3031;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
+let globalServer: any = null;
+let globalSessionManager: SessionManager | null = null;
+
 async function startServer() {
   try {
     console.log(`🚀 Starting Blaze Server Backend in ${NODE_ENV} mode...`);
     
     // Initialize session manager
-    const sessionManager = new SessionManager();
+    globalSessionManager = new SessionManager();
     
     // Create and start server
-    const server = await createServer(sessionManager) as any;
+    globalServer = await createServer(globalSessionManager) as any;
     
     console.log(`✅ Server running on http://localhost:${PORT}`);
     console.log(`📋 API Documentation: http://localhost:${PORT}/api`);
@@ -26,23 +29,33 @@ async function startServer() {
     // Graceful shutdown
     process.on('SIGTERM', () => {
       console.log('🛑 Received SIGTERM, shutting down gracefully...');
-      server.close(() => {
-        console.log('✅ Server closed');
-        process.exit(0);
-      });
+      stopServer();
     });
     
     process.on('SIGINT', () => {
       console.log('🛑 Received SIGINT, shutting down gracefully...');
-      server.close(() => {
-        console.log('✅ Server closed');
-        process.exit(0);
-      });
+      stopServer();
     });
+    
+    return `http://localhost:${PORT}`;
     
   } catch (error) {
     console.error('❌ Failed to start server:', error);
-    process.exit(1);
+    throw error;
+  }
+}
+
+async function stopServer() {
+  if (globalServer) {
+    console.log('🛑 Shutting down server...');
+    return new Promise<void>((resolve) => {
+      globalServer.close(() => {
+        console.log('✅ Server closed');
+        globalServer = null;
+        globalSessionManager = null;
+        resolve();
+      });
+    });
   }
 }
 
@@ -51,4 +64,4 @@ if (require.main === module) {
   startServer();
 }
 
-export { startServer };
+export { startServer, stopServer };

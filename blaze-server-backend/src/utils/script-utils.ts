@@ -23,7 +23,7 @@ const BLUEPRINT_SCRIPTS = {
  */
 export function computeScriptInfo(compiledCode: string) {
   // Check if we have blueprint info for this script (performance optimization)
-  const blueprintInfo = BLUEPRINT_SCRIPTS[compiledCode];
+  const blueprintInfo = (BLUEPRINT_SCRIPTS as any)[compiledCode];
   if (blueprintInfo) {
     return {
       scriptHash: blueprintInfo.hash,
