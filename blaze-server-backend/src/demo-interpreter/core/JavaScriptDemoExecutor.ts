@@ -1,6 +1,7 @@
 import { IntegratedDemoExecutor } from './IntegratedDemoExecutor';
 
 export interface JavaScriptDemoStanza {
+  name: string;
   type: 'markdown' | 'code';
   content: string;
 }
@@ -68,18 +69,33 @@ export class JavaScriptDemoExecutor {
       for (let i = 0; i < this.demo.stanzas.length; i++) {
         const stanza = this.demo.stanzas[i];
         
-        console.log(`--- Stanza ${i + 1}: ${stanza.type.toUpperCase()} ---`);
+        console.log(`--- Stanza ${i + 1}: ${stanza.name} (${stanza.type.toUpperCase()}) ---`);
         if (stanza.type === 'markdown') {
           console.log(stanza.content);
           console.log('---\n');
+          
+          // Add markdown stanza to results
+          const markdownResult: DemoExecutionResult = {
+            stanzaIndex: i,
+            stanzaType: stanza.type,
+            operationType: 'markdown',
+            result: null,
+            scope: this.executor.getScope()
+          };
+          results.push(markdownResult);
           continue;
         }
 
         // Execute code stanza
         console.log('Code:');
-        stanza.content.split('\n').forEach(line => {
+        // Handle multi-line content by splitting and joining
+        const codeLines = stanza.content.split('\n');
+        codeLines.forEach(line => {
           if (line.trim()) console.log(`  ${line}`);
         });
+
+        // Convert multi-line content to single string for execution
+        const codeContent = codeLines.join('\n');
 
         const { result, operationType, isPartial } = await this.executor.executeStanza(codeBlockIndex);
         

@@ -13,10 +13,12 @@ describe('Cascading Values Edge Case', () => {
       description: 'Test query result used in transaction within same code block',
       stanzas: [
         {
+          name: 'setup_intro',
           type: 'markdown',
           content: 'Create wallets and test cascading values'
         },
         {
+          name: 'create_wallets',
           type: 'code',
           content: `
 // Create wallets first
@@ -25,10 +27,12 @@ alice = await createWallet('alice', 0);
           `
         },
         {
+          name: 'edge_case_intro',
           type: 'markdown',
           content: 'Test the edge case: query then use result in transaction'
         },
         {
+          name: 'cascading_values',
           type: 'code',
           content: `
 // This is the edge case: query then use result in transaction

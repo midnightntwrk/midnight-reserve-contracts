@@ -1,409 +1,230 @@
 const { describe, test, expect } = require("bun:test");
-const { DryRuntime } = require("../../demo-interpreter/monadic/dry-runtime.js");
-const { MonadicRuntime } = require("../../demo-interpreter/monadic/runtime.js");
-const { ScopeManager } = require("../../demo-interpreter/core/ScopeManager.js");
-const { createWallet, getBalance, transfer, deployContract, contractAction, getContractState, advanceTime } = require("../../demo-interpreter/monadic/functions.js");
+const { JavaScriptDemoExecutor } = require("../../demo-interpreter/core/JavaScriptDemoExecutor.js");
 
 describe("Phase 4.10: Integrated DryRuntime with Scope Persistence Tests", () => {
   
-  // Simulate the web interface's scope persistence mechanism
-  class IntegratedDemoExecutor {
-    constructor(baseUrl = 'http://localhost:3031') {
-      // Initialize scope manager with monadic functions
-      const monadicFunctions = {
-        createWallet,
-        getBalance,
-        transfer,
-        deployContract,
-        contractAction,
-        getContractState,
-        advanceTime
-      };
-      this.scopeManager = new ScopeManager(monadicFunctions);
-      this.dryRuntime = new DryRuntime({ baseUrl });
-      this.realRuntime = new MonadicRuntime({ baseUrl });
-      this.codeBlocks = []; // Store all code blocks for two-pass processing
-      this.rewrittenBlocks = []; // Store rewritten code blocks (computed once)
-    }
-    
-    async initialize() {
-      await this.realRuntime.initialize();
-    }
-    
-    // Set all code blocks upfront and do rewrite once
-    setCodeBlocks(codeBlocks) {
-      this.codeBlocks = codeBlocks;
-      // Do the rewrite (phases 1 and 2) exactly once
-      this.rewrittenBlocks = this.scopeManager.processCodeBlocks(this.codeBlocks);
-    }
-    
-    async cleanup() {
-      await this.realRuntime.cleanup();
-    }
-    
-    // Execute a code block with proper scope management
-    async executeCodeBlock(blockIndex) {
-      // Get the pre-rewritten code for this block
-      const rewrittenCode = this.rewrittenBlocks[blockIndex];
-      
-      // Execute the rewritten code with the scope
-      const asyncFunction = new Function('scope', `
-        return (async (scope) => {
-          ${rewrittenCode}
-        })(scope);
-      `);
-      
-      const result = await asyncFunction(this.scopeManager.getScope());
-      
-      // Debug: Check what variables are in scope
-      console.log('Variables in scope after execution:', Object.keys(this.scopeManager.getScope()));
-      
-      return result;
-    }
-    
-    // Execute a stanza and maintain scope
-    async executeStanza(blockIndex) {
-      // STEP 1: Dry Runtime Analysis (with cloned scope)
-      const dryRuntime = new DryRuntime({ baseUrl: this.dryRuntime.baseUrl });
-      await dryRuntime.initialize();
-      
-      // Get a fresh clone of the current main scope for dry run
-      const currentScope = this.scopeManager.getScope();
-      const clonedScope = { ...currentScope };
-      // Deep clone the values while preserving functions
-      for (const [key, value] of Object.entries(currentScope)) {
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-          clonedScope[key] = { ...value };
-        } else if (Array.isArray(value)) {
-          clonedScope[key] = [...value];
-        } else {
-          clonedScope[key] = value;
-        }
-      }
-      
-      // Debug: Check what's in the current scope before cloning
-      console.log('Current scope before dry run:', Object.keys(currentScope));
-      console.log('Current scope values:', Object.entries(currentScope).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`));
-      console.log('Cloned scope for dry run:', Object.keys(clonedScope));
-      console.log('Cloned scope values:', Object.entries(clonedScope).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`));
-      
-      // Override fetch to use dry runtime for operation detection
-      const originalFetch = globalThis.fetch;
-      globalThis.fetch = (url, options) => dryRuntime.fetch(url, options);
-      
-      // Set up global runtime for monadic functions
-      global.__demoRuntime = dryRuntime;
-      
-      let operationType = 'unknown';
-      try {
-        // Execute in the cloned scope for analysis
-        await this.executeCodeBlockWithScope(blockIndex, clonedScope);
-        
-        // Get operation type from dry runtime
-        operationType = dryRuntime.getOperationType();
-      } finally {
-        // Restore original fetch
-        globalThis.fetch = originalFetch;
-        delete global.__demoRuntime;
-        await dryRuntime.cleanup();
-      }
-      
-      // STEP 2: Real Execution (with persistent scope)
-      // Use the real runtime for actual execution against the test server
-      global.__demoRuntime = this.realRuntime;
-      
-      try {
-        // Execute in the real persistent scope
-        const result = await this.executeCodeBlock(blockIndex);
-        
-        return { result, operationType };
-      } finally {
-        delete global.__demoRuntime;
-      }
-    }
-    
-    // Helper method to execute with a specific scope (for dry run)
-    async executeCodeBlockWithScope(blockIndex, scope) {
-      // Get the pre-rewritten code for this block
-      const rewrittenCode = this.rewrittenBlocks[blockIndex];
-      
-      // Debug: Check what's in the scope before execution
-      console.log('Dry run scope before execution:', Object.keys(scope));
-      console.log('Rewritten code:', rewrittenCode);
-      
-      // Execute the rewritten code with the provided scope
-      const asyncFunction = new Function('scope', `
-        return (async (scope) => {
-          ${rewrittenCode}
-        })(scope);
-      `);
-      
-      return await asyncFunction(scope);
-    }
-    
-    // Get current scope for inspection
-    getScope() {
-      return { ...this.scopeManager.getScope() };
-    }
-    
-    // Reset scope for testing
-    resetScope() {
-      this.executionScope = {};
-      this.dryRuntime = new DryRuntime({ baseUrl: this.dryRuntime.baseUrl });
-    }
-  }
-  
   test("should demonstrate integrated DryRuntime with scope persistence across stanzas", async () => {
-    const executor = new IntegratedDemoExecutor();
-    await executor.initialize();
+    console.log("Testing integrated DryRuntime with scope persistence...\n");
     
     // Simulate a realistic demo notebook with multiple stanzas
-    const stanzas = [
-      {
-        name: "Create Wallet",
-        content: [
-          "// Create a wallet for testing",
-          "jeff = await createWallet('jeff', 50_000_000);",
-          "console.log('Wallet created:', jeff);"
-        ]
-      },
-      {
-        name: "Check Balance",
-        content: [
-          "// Check the balance of the wallet we just created",
-          "balance = await getBalance(jeff.name);",
-          "console.log('Balance:', balance);"
-        ]
-      },
-      {
-        name: "Create Destination Wallet and Transfer",
-        content: [
-          "// Create destination wallet first",
-          "alice = await createWallet('alice', 0);",
-          "console.log('Alice wallet created:', alice);",
-          "",
-          "// Use the monadic transfer function with variables from previous stanzas",
-          "transferResult = await transfer(jeff.name, alice.name, 10_000_000);",
-          "console.log('Transfer completed:', transferResult);"
-        ]
-      },
-      {
-        name: "Check Final Balances",
-        content: [
-          "// Check final balances of all wallets",
-          "jeffFinalBalance = await getBalance(jeff.name);",
-          "aliceFinalBalance = await getBalance(alice.name);",
-          "console.log('Jeff final balance:', jeffFinalBalance);",
-          "console.log('Alice final balance:', aliceFinalBalance);"
-        ]
-      }
-    ];
+    const demo = {
+      name: "Scope Persistence Test",
+      description: "Test scope persistence across multiple stanzas",
+      stanzas: [
+        { name: 'introduction', type: 'markdown', content: 'Create wallets and demonstrate scope persistence' },
+        { name: 'create_wallets', type: 'code', content: `
+// Create wallets using monadic functions
+jeff = await createWallet('jeff', 50_000_000);
+alice = await createWallet('alice', 25_000_000);
+console.log('Wallets created successfully');
+        ` },
+        { name: 'query_balances', type: 'markdown', content: 'Query balances and demonstrate variable persistence' },
+        { name: 'get_balances', type: 'code', content: `
+// Query balances using variables from previous stanza
+jeffBalance = await getBalance('jeff');
+aliceBalance = await getBalance('alice');
+console.log('Jeff balance:', jeffBalance);
+console.log('Alice balance:', aliceBalance);
+        ` },
+        { name: 'perform_transfer', type: 'markdown', content: 'Perform transfer using persisted variables' },
+        { name: 'transfer_funds', type: 'code', content: `
+// Use the monadic transfer function with variables from previous stanzas
+transferAmount = 10_000_000;
+transferResult = await transfer('jeff', 'alice', transferAmount);
+console.log('Transfer completed:', transferResult);
+        ` },
+        { name: 'verify_results', type: 'markdown', content: 'Verify final balances' },
+        { name: 'check_final_balances', type: 'code', content: `
+// Verify the transfer worked by checking final balances
+finalJeffBalance = await getBalance('jeff');
+finalAliceBalance = await getBalance('alice');
+console.log('Final Jeff balance:', finalJeffBalance);
+console.log('Final Alice balance:', finalAliceBalance);
+        ` }
+      ]
+    };
     
-    console.log("=== Integrated DryRuntime with Scope Persistence Test ===");
     console.log("Simulating web interface with multiple stanzas that share scope...\n");
     
-    // Set all code blocks upfront and do rewrite once
-    const allCodeBlocks = stanzas.map(stanza => stanza.content.join('\n'));
-    executor.setCodeBlocks(allCodeBlocks);
-    
-    const results = [];
-    
-    for (let i = 0; i < stanzas.length; i++) {
-      const stanza = stanzas[i];
-      console.log(`--- Stanza ${i + 1}: ${stanza.name} ---`);
-      console.log("Code:");
-      stanza.content.forEach(line => console.log(`  ${line}`));
-      
-      // Execute the stanza by index
-      const { result, operationType } = await executor.executeStanza(i);
-      
-      console.log(`\nOperation Type: ${operationType}`);
-      console.log("Current Scope Variables:", Object.keys(executor.getScope()));
-      console.log("---\n");
-      
-      results.push({ stanza: stanza.name, operationType, scope: executor.getScope() });
-    }
-    
-    // Verify the results
-    expect(results[0].operationType).toBe('transaction'); // createWallet
-    expect(results[1].operationType).toBe('query'); // getBalance
-    expect(results[2].operationType).toBe('transaction'); // createWallet + transfer
-    expect(results[3].operationType).toBe('query'); // getBalance calls
-    
-    // Verify scope persistence
-    const finalScope = executor.getScope();
-    expect(finalScope).toHaveProperty('jeff');
-    expect(finalScope).toHaveProperty('balance');
-    expect(finalScope).toHaveProperty('alice');
-    expect(finalScope).toHaveProperty('transferResult');
-    expect(finalScope).toHaveProperty('jeffFinalBalance');
-    expect(finalScope).toHaveProperty('aliceFinalBalance');
-    
-    console.log("✅ All tests passed! DryRuntime correctly detected operations with scope persistence.");
-    
-    await executor.cleanup();
-  });
-  
-  test("should demonstrate DryRuntime with complex function composition and scope", async () => {
-    const executor = new IntegratedDemoExecutor();
+    const executor = new JavaScriptDemoExecutor(demo);
     await executor.initialize();
     
-    const complexStanzas = [
-      {
-        name: "Create Multiple Wallets",
-        content: [
-          "// Create multiple wallets using monadic functions",
-          "wallet1 = await createWallet('wallet1', 10_000_000);",
-          "wallet2 = await createWallet('wallet2', 20_000_000);",
-          "console.log('Wallets created:', wallet1, wallet2);"
-        ]
-      },
-      {
-        name: "Use Monadic Functions",
-        content: [
-          "// Use monadic functions instead of raw HTTP calls",
-          "bob = await createWallet('bob', 30_000_000);",
-          "console.log('Bob wallet created:', bob);"
-        ]
-      },
-      {
-        name: "Query and Transfer with Monadic Functions",
-        content: [
-          "// Query using monadic function",
-          "bobBalance = await getBalance(bob.name);",
-          "console.log('Bob balance:', bobBalance);",
-          "",
-          "// Create destination wallet first",
-          "charlie = await createWallet('charlie', 0);",
-          "console.log('Charlie wallet created:', charlie);",
-          "",
-          "// Transfer using monadic function",
-          "transferResult2 = await transfer(bob.name, charlie.name, 5_000_000);",
-          "console.log('Transfer completed:', transferResult2);"
-        ]
-      }
-    ];
-    
-    console.log("=== Complex Function Composition with Scope Test ===");
-    console.log("Testing DryRuntime with factory pattern and scope persistence...\n");
-    
-    // Set all code blocks upfront and do rewrite once
-    const allCodeBlocks = complexStanzas.map(stanza => stanza.content.join('\n'));
-    executor.setCodeBlocks(allCodeBlocks);
-    
-    const results = [];
-    
-    for (let i = 0; i < complexStanzas.length; i++) {
-      const stanza = complexStanzas[i];
-      console.log(`--- Stanza ${i + 1}: ${stanza.name} ---`);
-      console.log("Code:");
-      stanza.content.forEach(line => console.log(`  ${line}`));
+    try {
+      const results = await executor.executeDemo();
       
-      // Execute the stanza by index
-      const { result, operationType } = await executor.executeStanza(i);
+      // Verify results
+      expect(results.length).toBe(8); // 4 markdown + 4 code stanzas
       
-      console.log(`\nOperation Type: ${operationType}`);
-      console.log("Current Scope Variables:", Object.keys(executor.getScope()));
-      console.log("---\n");
+      // Check operation types (only code stanzas have operation types)
+      expect(results[1].operationType).toBe('transaction'); // createWallet calls
+      expect(results[3].operationType).toBe('query'); // getBalance calls
+      expect(results[5].operationType).toBe('transaction'); // transfer calls
+      expect(results[7].operationType).toBe('query'); // getBalance calls
       
-      results.push({ stanza: stanza.name, operationType, scope: executor.getScope() });
+      // Check that scope persistence worked
+      const finalScope = executor.getScope();
+      expect(finalScope.jeff).toBeDefined();
+      expect(finalScope.alice).toBeDefined();
+      expect(finalScope.jeffBalance).toBeDefined();
+      expect(finalScope.aliceBalance).toBeDefined();
+      expect(finalScope.transferResult).toBeDefined();
+      expect(finalScope.finalJeffBalance).toBeDefined();
+      expect(finalScope.finalAliceBalance).toBeDefined();
+      
+      console.log("✅ Scope persistence test passed!");
+      console.log("Final scope variables:", Object.keys(finalScope));
+      
+    } finally {
+      await executor.cleanup();
     }
+  });
+  
+  test("should demonstrate complex scope scenarios with conditional logic", async () => {
+    console.log("Testing complex scope scenarios...\n");
     
-    // Verify the results
-    expect(results[0].operationType).toBe('transaction'); // createWallet calls
-    expect(results[1].operationType).toBe('transaction'); // createWallet calls
-    expect(results[2].operationType).toBe('mixed'); // getBalance + createWallet + transfer
+    const demo = {
+      name: "Complex Scope Test",
+      description: "Test scope persistence with conditional logic and complex operations",
+      stanzas: [
+        { name: 'setup_intro', type: 'markdown', content: 'Setup with conditional logic' },
+        { name: 'conditional_wallets', type: 'code', content: `
+// Setup wallets with conditional creation
+shouldCreateWallets = true;
+if (shouldCreateWallets) {
+  wallet1 = await createWallet('wallet1', 30_000_000);
+  wallet2 = await createWallet('wallet2', 20_000_000);
+  console.log('Wallets created conditionally');
+} else {
+  console.log('Skipping wallet creation');
+}
+        ` },
+        { name: 'complex_operations', type: 'markdown', content: 'Complex operations with multiple variables' },
+        { name: 'multi_variable_ops', type: 'code', content: `
+// Complex operations using multiple variables
+if (wallet1 && wallet2) {
+  balance1 = await getBalance('wallet1');
+  balance2 = await getBalance('wallet2');
+  totalBalance = balance1 + balance2;
+  console.log('Total balance:', totalBalance);
+  
+  // Transfer between wallets
+  transferAmount = Math.min(balance1, 5_000_000);
+  transferResult = await transfer('wallet1', 'wallet2', transferAmount);
+  console.log('Transfer result:', transferResult);
+}
+        ` },
+        { name: 'final_verification', type: 'markdown', content: 'Final verification' },
+        { name: 'verify_final_balances', type: 'code', content: `
+// Final verification using all persisted variables
+if (wallet1 && wallet2) {
+  finalBalance1 = await getBalance('wallet1');
+  finalBalance2 = await getBalance('wallet2');
+  console.log('Final balances - Wallet1:', finalBalance1, 'Wallet2:', finalBalance2);
+}
+        ` }
+      ]
+    };
     
-    // Verify scope persistence with complex objects
-    const finalScope = executor.getScope();
-    expect(finalScope).toHaveProperty('wallet1');
-    expect(finalScope).toHaveProperty('wallet2');
-    expect(finalScope).toHaveProperty('bob');
-    expect(finalScope).toHaveProperty('bobBalance');
-    expect(finalScope).toHaveProperty('charlie');
-    expect(finalScope).toHaveProperty('transferResult2');
+    const executor = new JavaScriptDemoExecutor(demo);
+    await executor.initialize();
     
-    console.log("✅ Complex function composition test passed! DryRuntime handles factory patterns correctly.");
-    
-    await executor.cleanup();
+    try {
+      const results = await executor.executeDemo();
+      
+      // Verify results
+      expect(results.length).toBe(6); // 3 markdown + 3 code stanzas
+      
+      // Check operation types (only code stanzas have operation types)
+      expect(results[1].operationType).toBe('transaction'); // createWallet calls
+      expect(results[3].operationType).toBe('mixed'); // getBalance + transfer calls
+      expect(results[5].operationType).toBe('query'); // getBalance calls
+      
+      // Check scope persistence
+      const finalScope = executor.getScope();
+      expect(finalScope.shouldCreateWallets).toBe(true);
+      expect(finalScope.wallet1).toBeDefined();
+      expect(finalScope.wallet2).toBeDefined();
+      expect(finalScope.balance1).toBeDefined();
+      expect(finalScope.balance2).toBeDefined();
+      expect(finalScope.totalBalance).toBeDefined();
+      expect(finalScope.transferAmount).toBeDefined();
+      expect(finalScope.transferResult).toBeDefined();
+      expect(finalScope.finalBalance1).toBeDefined();
+      expect(finalScope.finalBalance2).toBeDefined();
+      
+      console.log("✅ Complex scope test passed!");
+      
+    } finally {
+      await executor.cleanup();
+    }
   });
   
   test("should demonstrate DryRuntime edge cases with scope variables", async () => {
-    const executor = new IntegratedDemoExecutor();
+    console.log("Testing DryRuntime edge cases...\n");
+    
+    const demo = {
+      name: "Edge Cases Test",
+      description: "Test edge cases in DryRuntime with scope variables",
+      stanzas: [
+        { name: 'comments_test', type: 'markdown', content: 'Test edge case: function names in comments' },
+        { name: 'no_http_calls', type: 'code', content: `
+// This stanza has createWallet in comments but no actual calls
+walletName = 'test-wallet';
+// createWallet(walletName, 1000000); // commented out call
+console.log('No HTTP operations here');
+        ` },
+        { name: 'conditional_test', type: 'markdown', content: 'Test edge case: conditional operations' },
+        { name: 'conditional_ops', type: 'code', content: `
+// Conditional operations that may or may not execute
+shouldMakeCall = false;
+if (shouldMakeCall) {
+  balanceData = await getBalance('test-wallet');
+  console.log('Conditional call made:', balanceData);
+} else {
+  console.log('No conditional call made');
+}
+        ` },
+        { name: 'actual_ops_test', type: 'markdown', content: 'Test edge case: actual operations' },
+        { name: 'create_test_wallet', type: 'code', content: `
+// Actual operations that should be detected
+testWallet = await createWallet('test-wallet', 1_000_000);
+console.log('Test wallet created:', testWallet);
+        ` },
+        { name: 'mixed_ops_test', type: 'markdown', content: 'Test edge case: mixed operations' },
+        { name: 'query_balance', type: 'code', content: `
+// Mixed operations: query then transaction
+balance = await getBalance('test-wallet');
+console.log('Current balance:', balance);
+        ` }
+      ]
+    };
+    
+    const executor = new JavaScriptDemoExecutor(demo);
     await executor.initialize();
     
-    const edgeCaseStanzas = [
-      {
-        name: "Variables in Comments and Strings",
-        content: [
-          "// This stanza has createWallet in comments but no actual calls",
-          "walletName = 'test-wallet';",
-          "// createWallet(walletName, 1000000); // commented out call",
-          "console.log('No HTTP operations here');"
-        ]
-      },
-      {
-        name: "Create Wallet with Monadic Function",
-        content: [
-          "// Create wallet using monadic function",
-          "testWallet = await createWallet(walletName, 1_000_000);",
-          "console.log('Test wallet created:', testWallet);"
-        ]
-      },
-      {
-        name: "Conditional Balance Check",
-        content: [
-          "// Conditional balance check using monadic function",
-          "shouldMakeCall = true;",
-          "if (shouldMakeCall) {",
-          "  balanceData = await getBalance(testWallet.name);",
-          "  console.log('Conditional balance check:', balanceData);",
-          "} else {",
-          "  console.log('No HTTP call made');",
-          "}"
-        ]
-      }
-    ];
-    
-    console.log("=== Edge Cases with Scope Variables Test ===");
-    console.log("Testing DryRuntime with edge cases and scope variables...\n");
-    
-    // Set all code blocks upfront and do rewrite once
-    const allCodeBlocks = edgeCaseStanzas.map(stanza => stanza.content.join('\n'));
-    executor.setCodeBlocks(allCodeBlocks);
-    
-    const results = [];
-    
-    for (let i = 0; i < edgeCaseStanzas.length; i++) {
-      const stanza = edgeCaseStanzas[i];
-      console.log(`--- Stanza ${i + 1}: ${stanza.name} ---`);
-      console.log("Code:");
-      stanza.content.forEach(line => console.log(`  ${line}`));
+    try {
+      const results = await executor.executeDemo();
       
-      // Execute the stanza by index
-      const { result, operationType } = await executor.executeStanza(i);
+      // Verify results
+      expect(results.length).toBe(8); // 4 markdown + 4 code stanzas
       
-      console.log(`\nOperation Type: ${operationType}`);
-      console.log("Current Scope Variables:", Object.keys(executor.getScope()));
-      console.log("---\n");
+      // Check operation types (only code stanzas have operation types)
+      expect(results[1].operationType).toBe('unknown'); // No HTTP calls
+      expect(results[3].operationType).toBe('unknown'); // Conditional call not made
+      expect(results[5].operationType).toBe('transaction'); // createWallet call
+      expect(results[7].operationType).toBe('query'); // getBalance call
       
-      results.push({ stanza: stanza.name, operationType, scope: executor.getScope() });
+      // Check scope persistence
+      const finalScope = executor.getScope();
+      expect(finalScope.walletName).toBe('test-wallet');
+      expect(finalScope.shouldMakeCall).toBe(false);
+      expect(finalScope.testWallet).toBeDefined();
+      expect(finalScope.balance).toBeDefined();
+      
+      console.log("✅ Edge cases test passed! DryRuntime handles complex scope scenarios correctly.");
+      
+    } finally {
+      await executor.cleanup();
     }
-    
-    // Verify the results
-    expect(results[0].operationType).toBe('unknown'); // No actual HTTP calls
-    expect(results[1].operationType).toBe('transaction'); // createWallet operation
-    expect(results[2].operationType).toBe('query'); // getBalance operation
-    
-    // Verify scope persistence
-    const finalScope = executor.getScope();
-    expect(finalScope).toHaveProperty('walletName');
-    expect(finalScope).toHaveProperty('testWallet');
-    expect(finalScope).toHaveProperty('shouldMakeCall');
-    expect(finalScope).toHaveProperty('balanceData');
-    
-    console.log("✅ Edge cases test passed! DryRuntime handles complex scope scenarios correctly.");
-    
-    await executor.cleanup();
   });
 });
