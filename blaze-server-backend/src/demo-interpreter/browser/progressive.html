@@ -114,6 +114,7 @@
 
     .notebook {
       margin-bottom: 30px;
+      padding-bottom: 60vh; /* Always maintain viewport space at bottom */
     }
 
     .stanza {
@@ -415,8 +416,8 @@
         // Auto-advance to next stanza after markdown
         currentStanzaIndex++;
         setTimeout(() => {
-          // Scroll to the new stanza
-          stanzaDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Scroll so new stanza appears with space below
+          stanzaDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
           showNextStanza();
         }, 200);
         
@@ -448,9 +449,9 @@
 
         notebookDiv.appendChild(stanzaDiv);
         
-        // Scroll to the new code stanza immediately
+        // Scroll so code stanza appears with space below for output
         setTimeout(() => {
-          stanzaDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          stanzaDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 50);
       }
     }
@@ -491,6 +492,11 @@
         stanzaDiv.appendChild(outputDiv);
         executeBtn.textContent = '✓ Executed';
         
+        // Scroll to show the output with space below
+        setTimeout(() => {
+          outputDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+        
         // Move to next stanza and increment completed code count
         completedCodeStanzas++;
         currentStanzaIndex++;
@@ -511,8 +517,7 @@
 
     // Simulate execution (replace with real monadic runtime)
     async function simulateExecution(code) {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+      // No artificial delay - emulated blockchain should be instant
       
       // Mock some outputs based on code content
       if (code.includes('createWallet')) {
