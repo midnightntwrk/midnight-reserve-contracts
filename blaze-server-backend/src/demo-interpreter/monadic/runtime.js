@@ -92,8 +92,8 @@ class MonadicRuntime {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sessionId: this.sessionId,
-        from,
-        to,
+        fromWallet: from,
+        toWallet: to,
         amount: amount.toString()
       })
     });

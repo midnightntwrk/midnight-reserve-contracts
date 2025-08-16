@@ -110,6 +110,34 @@
       ]
     },
     {
+      "name": "scope_test",
+      "type": "markdown",
+      "content": [
+        "## Scope Persistence Test",
+        "",
+        "This block will test that variables from previous stanzas are still accessible.",
+        "It should be classified as 'query' since it only reads data."
+      ]
+    },
+    {
+      "name": "scope_verification",
+      "type": "code",
+      "content": [
+        "// Testing scope persistence - variables from earlier blocks should be accessible",
+        "console.log('\\n=== Scope Persistence Test ===');",
+        "console.log('Jeff object:', jeff);",
+        "console.log('Nancy object:', nancy);", 
+        "console.log('Jeff ADA balance:', jeffAda);",
+        "console.log('Nancy ADA balance:', nancyAda);",
+        "",
+        "// Verify we can call getBalance using the wallet names from scope",
+        "currentJeffBalance = await getBalance(jeff.name);",
+        "currentNancyBalance = await getBalance(nancy.name);",
+        "console.log('Current Jeff balance:', currentJeffBalance);",
+        "console.log('Current Nancy balance:', currentNancyBalance);"
+      ]
+    },
+    {
       "name": "final_summary",
       "type": "code",
       "content": [
