@@ -12,6 +12,8 @@ class DryRuntime extends MonadicRuntime {
     super(config);
     this.operations = [];
     this.isDryRun = true;
+    this.hasError = false;
+    this.errorMessage = null;
   }
 
   /**
@@ -66,6 +68,28 @@ class DryRuntime extends MonadicRuntime {
   }
 
   /**
+   * Record an error during dry run execution
+   */
+  recordError(error) {
+    this.hasError = true;
+    this.errorMessage = error.message;
+  }
+
+  /**
+   * Check if dry run encountered an error
+   */
+  hasPartialExecution() {
+    return this.hasError;
+  }
+
+  /**
+   * Get error message if any
+   */
+  getErrorMessage() {
+    return this.errorMessage;
+  }
+
+  /**
    * Analyze recorded operations to determine type
    */
   getOperationType() {
@@ -90,7 +114,7 @@ class DryRuntime extends MonadicRuntime {
   }
 
   /**
-   * Get detailed operation summary
+   * Get detailed operation summary with partial flag
    */
   getOperationSummary() {
     const posts = this.operations.filter(op => op.method === 'POST');
@@ -98,6 +122,8 @@ class DryRuntime extends MonadicRuntime {
     
     return {
       type: this.getOperationType(),
+      isPartial: this.hasError,
+      errorMessage: this.errorMessage,
       totalOperations: this.operations.length,
       transactions: posts.length,
       queries: gets.length,
