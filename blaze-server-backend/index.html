@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progressive Demo Notebook</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .header h1 {
+      color: #2c3e50;
+      margin-bottom: 15px;
+      font-size: 2em;
+    }
+
+    .header p {
+      color: #7f8c8d;
+      font-size: 1.1em;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+      align-items: center;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    button:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .file-input-wrapper input[type="file"] {
+      display: none;
+    }
+
+    .file-input-label {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #9b59b6;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    .file-input-label:hover {
+      background: #8e44ad;
+    }
+
+    .config-section {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .config-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ecf0f1;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+
+    .config-input:focus {
+      outline: none;
+      border-color: #3498db;
+    }
+
+    .notebook {
+      margin-bottom: 30px;
+      padding-bottom: 60vh; /* Always maintain viewport space at bottom */
+    }
+
+    .stanza {
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .stanza.markdown {
+      padding: 30px;
+    }
+
+    .stanza.code {
+      border: 2px solid #e74c3c;
+    }
+    
+    .stanza.code.transaction {
+      border-color: #e74c3c; /* Red for transactions */
+    }
+    
+    .stanza.code.query {
+      border-color: #3498db; /* Blue for queries */
+    }
+    
+    .stanza.code.mixed {
+      border-color: #f39c12; /* Orange for mixed */
+    }
+    
+    .stanza.code.unknown {
+      border-color: #7f8c8d; /* Gray for unknown */
+    }
+
+    .stanza.executed {
+      border-color: #27ae60;
+    }
+
+    .stanza.executing {
+      border-color: #f39c12;
+    }
+
+    .markdown-content h1 {
+      color: #2c3e50;
+      font-size: 1.8em;
+      margin-bottom: 20px;
+      border-bottom: 3px solid #3498db;
+      padding-bottom: 10px;
+    }
+
+    .markdown-content h2 {
+      color: #34495e;
+      font-size: 1.4em;
+      margin: 25px 0 15px 0;
+    }
+
+    .markdown-content p {
+      margin-bottom: 15px;
+    }
+
+    .markdown-content ul, .markdown-content ol {
+      margin-left: 30px;
+      margin-bottom: 15px;
+    }
+
+    .code-header {
+      background: #2c3e50;
+      color: white;
+      padding: 15px 20px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .code-content {
+      padding: 20px;
+      background: #2c3e50;
+      color: #ecf0f1;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      border-bottom: 1px solid #34495e;
+    }
+
+    .code-actions {
+      padding: 15px 20px;
+      background: #34495e;
+      text-align: center;
+    }
+
+    .execute-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    
+    .execute-btn.transaction {
+      background: #e74c3c; /* Red for transactions */
+    }
+    
+    .execute-btn.transaction:hover {
+      background: #c0392b;
+      transform: translateY(-2px);
+    }
+    
+    .execute-btn.query {
+      background: #3498db; /* Blue for queries */
+    }
+    
+    .execute-btn.query:hover {
+      background: #2980b9;
+      transform: translateY(-2px);
+    }
+    
+    .execute-btn.mixed {
+      background: #f39c12; /* Orange for mixed */
+    }
+    
+    .execute-btn.mixed:hover {
+      background: #e67e22;
+      transform: translateY(-2px);
+    }
+    
+    .execute-btn.unknown {
+      background: #7f8c8d; /* Gray for unknown */
+    }
+    
+    .execute-btn.unknown:hover {
+      background: #5d6d7e;
+      transform: translateY(-2px);
+    }
+
+    .execute-btn:disabled {
+      background: #7f8c8d;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .output-panel {
+      background: #1a1a1a;
+      color: #00ff00;
+      padding: 20px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 13px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-height: 300px;
+      overflow-y: auto;
+      border-top: 1px solid #34495e;
+    }
+
+    .output-panel.error {
+      color: #ff6b6b;
+      background: #2d1b1b;
+    }
+
+    .status {
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .status.success {
+      background: #d5f4e6;
+      color: #27ae60;
+    }
+
+    .status.error {
+      background: #fadbd8;
+      color: #e74c3c;
+    }
+
+    .status.info {
+      background: #d6eaf8;
+      color: #3498db;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 50px;
+      color: #7f8c8d;
+      font-size: 18px;
+    }
+
+    .progress-indicator {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #ecf0f1;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #3498db;
+      transition: width 0.3s;
+    }
+
+    .progress-text {
+      text-align: center;
+      margin-top: 10px;
+      color: #7f8c8d;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Progressive Demo Notebook</h1>
+      <p>Step through blockchain demos with guided execution</p>
+    </div>
+
+    <div class="config-section">
+      <h3>Configuration</h3>
+      <input type="text" class="config-input" id="baseUrl" placeholder="Server URL" value="http://localhost:3031">
+    </div>
+
+    <div class="controls">
+      <div class="file-input-wrapper">
+        <label for="fileInput" class="file-input-label">Load Notebook</label>
+        <input type="file" id="fileInput" accept=".demonb,.json">
+      </div>
+      <button id="reset">Reset</button>
+    </div>
+
+    <div id="status" class="status" style="display: none;"></div>
+    
+    <div id="progressSection" style="display: none;">
+      <div class="progress-indicator">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Ready to begin</div>
+      </div>
+    </div>
+
+    <div id="notebook" class="notebook">
+      <div class="loading">Load a notebook file to begin...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import the monadic system (this will need to be adapted for browser)
+    // For now, we'll simulate the functionality
+    
+    let currentNotebook = null;
+    let currentStanzaIndex = 0;
+    let completedCodeStanzas = 0;
+    let executor = null;
+    let isExecuting = false;
+    let executionScope = {}; // Track execution scope for dry-run analysis
+
+    // UI Elements
+    const fileInput = document.getElementById('fileInput');
+    const resetBtn = document.getElementById('reset');
+    const statusDiv = document.getElementById('status');
+    const notebookDiv = document.getElementById('notebook');
+    const baseUrlInput = document.getElementById('baseUrl');
+    const progressSection = document.getElementById('progressSection');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+
+    // Load notebook file
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        currentNotebook = JSON.parse(text);
+        startNotebook();
+        showStatus('Notebook loaded successfully', 'success');
+      } catch (error) {
+        showStatus(`Error loading notebook: ${error.message}`, 'error');
+      }
+    });
+
+    // Reset notebook
+    resetBtn.addEventListener('click', () => {
+      currentNotebook = null;
+      currentStanzaIndex = 0;
+      completedCodeStanzas = 0;
+      notebookDiv.innerHTML = '<div class="loading">Load a notebook file to begin...</div>';
+      progressSection.style.display = 'none';
+      hideStatus();
+    });
+
+    // Start notebook execution
+    function startNotebook() {
+      currentStanzaIndex = 0;
+      completedCodeStanzas = 0;
+      notebookDiv.innerHTML = '';
+      progressSection.style.display = 'block';
+      updateProgress();
+      
+      // Show first stanza
+      showNextStanza();
+    }
+
+    // Analyze code to determine operation type
+    function analyzeCodeOperation(code) {
+      // Simple heuristic analysis based on function names
+      // In a real implementation, this would use the DryRuntime
+      const codeStr = code.join('\n').toLowerCase();
+      
+      const transactionKeywords = [
+        'createwallet', 'transfer', 'deploycontract', 
+        'contractaction', 'advancetime'
+      ];
+      
+      const queryKeywords = [
+        'getbalance', 'getcontractstate'
+      ];
+      
+      let hasTransaction = false;
+      let hasQuery = false;
+      
+      transactionKeywords.forEach(keyword => {
+        if (codeStr.includes(keyword)) hasTransaction = true;
+      });
+      
+      queryKeywords.forEach(keyword => {
+        if (codeStr.includes(keyword)) hasQuery = true;
+      });
+      
+      if (hasTransaction && hasQuery) return 'mixed';
+      if (hasTransaction) return 'transaction';
+      if (hasQuery) return 'query';
+      return 'unknown';
+    }
+    
+    // Get button text based on operation type
+    function getButtonText(operationType) {
+      switch(operationType) {
+        case 'transaction': return '⚡ Submit Transaction';
+        case 'query': return '🔍 Query Data';
+        case 'mixed': return '⚠️ Execute (Modifies State)';
+        default: return '▶ Execute';
+      }
+    }
+
+    // Show next stanza
+    function showNextStanza() {
+      if (currentStanzaIndex >= currentNotebook.stanzas.length) {
+        showStatus('Notebook completed successfully!', 'success');
+        updateProgress();
+        return;
+      }
+
+      const stanza = currentNotebook.stanzas[currentStanzaIndex];
+      renderStanza(stanza, currentStanzaIndex);
+      updateProgress();
+    }
+
+    // Render a stanza
+    function renderStanza(stanza, index) {
+      const stanzaDiv = document.createElement('div');
+      stanzaDiv.className = `stanza ${stanza.type}`;
+      stanzaDiv.id = `stanza-${index}`;
+
+      if (stanza.type === 'markdown') {
+        const content = document.createElement('div');
+        content.className = 'markdown-content';
+        content.innerHTML = renderMarkdown(stanza.content.join('\n'));
+        stanzaDiv.appendChild(content);
+        
+        notebookDiv.appendChild(stanzaDiv);
+        
+        // Auto-advance to next stanza after markdown
+        currentStanzaIndex++;
+        setTimeout(() => {
+          // Scroll so new stanza appears with space below
+          stanzaDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showNextStanza();
+        }, 200);
+        
+      } else if (stanza.type === 'code') {
+        // Analyze operation type
+        const operationType = analyzeCodeOperation(stanza.content);
+        stanzaDiv.classList.add(operationType);
+        
+        // Header with operation type indicator
+        const header = document.createElement('div');
+        header.className = 'code-header';
+        const statusText = operationType === 'transaction' ? 'Transaction' :
+                          operationType === 'query' ? 'Query' :
+                          operationType === 'mixed' ? 'Mixed Operations' :
+                          'Ready to execute';
+        header.innerHTML = `
+          <span>${stanza.name || `Code Cell ${index}`}</span>
+          <span>${statusText}</span>
+        `;
+        stanzaDiv.appendChild(header);
+
+        // Code content
+        const codeDiv = document.createElement('div');
+        codeDiv.className = 'code-content';
+        codeDiv.textContent = stanza.content.join('\n');
+        stanzaDiv.appendChild(codeDiv);
+
+        // Actions with appropriate button
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'code-actions';
+        const executeBtn = document.createElement('button');
+        executeBtn.className = `execute-btn ${operationType}`;
+        executeBtn.textContent = getButtonText(operationType);
+        executeBtn.onclick = () => executeStanza(index, stanza, stanzaDiv);
+        actionsDiv.appendChild(executeBtn);
+        stanzaDiv.appendChild(actionsDiv);
+
+        notebookDiv.appendChild(stanzaDiv);
+        
+        // Scroll so code stanza appears with space below for output
+        setTimeout(() => {
+          stanzaDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
+      }
+    }
+
+    // Execute a code stanza
+    async function executeStanza(index, stanza, stanzaDiv) {
+      if (isExecuting) return;
+      
+      isExecuting = true;
+      stanzaDiv.classList.add('executing');
+      
+      const executeBtn = stanzaDiv.querySelector('.execute-btn');
+      const header = stanzaDiv.querySelector('.code-header span:last-child');
+      
+      executeBtn.disabled = true;
+      executeBtn.textContent = '⏳ Executing...';
+      header.textContent = 'Executing...';
+
+      try {
+        // Simulate execution (replace with actual monadic runtime call)
+        const result = await simulateExecution(stanza.content.join('\n'));
+        
+        // Create output panel
+        const outputDiv = document.createElement('div');
+        outputDiv.className = 'output-panel';
+        
+        if (result.success) {
+          outputDiv.textContent = result.output || '(execution completed)';
+          stanzaDiv.classList.remove('executing');
+          stanzaDiv.classList.add('executed');
+          header.textContent = 'Completed successfully';
+        } else {
+          outputDiv.className += ' error';
+          outputDiv.textContent = `Error: ${result.error}`;
+          header.textContent = 'Failed';
+        }
+        
+        stanzaDiv.appendChild(outputDiv);
+        executeBtn.textContent = '✓ Executed';
+        
+        // Scroll to show the output with space below
+        setTimeout(() => {
+          outputDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+        
+        // Move to next stanza and increment completed code count
+        completedCodeStanzas++;
+        currentStanzaIndex++;
+        setTimeout(() => showNextStanza(), 1000);
+        
+      } catch (error) {
+        const outputDiv = document.createElement('div');
+        outputDiv.className = 'output-panel error';
+        outputDiv.textContent = `Error: ${error.message}`;
+        stanzaDiv.appendChild(outputDiv);
+        
+        executeBtn.textContent = '✗ Failed';
+        header.textContent = 'Failed';
+      } finally {
+        isExecuting = false;
+      }
+    }
+
+    // Simulate execution (replace with real monadic runtime)
+    async function simulateExecution(code) {
+      // No artificial delay - emulated blockchain should be instant
+      
+      // Update execution scope with simulated variables
+      // This helps future stanzas have proper context for analysis
+      if (code.includes('jeff = ')) {
+        executionScope.jeff = { name: 'jeff', balance: '50000000' };
+      }
+      if (code.includes('nancy = ')) {
+        executionScope.nancy = { name: 'nancy', balance: '75000000' };
+      }
+      if (code.includes('jeffBalance = ')) {
+        executionScope.jeffBalance = '50000000';
+      }
+      if (code.includes('nancyBalance = ')) {
+        executionScope.nancyBalance = '75000000';
+      }
+      
+      // Mock some outputs based on code content
+      if (code.includes('createWallet')) {
+        return {
+          success: true,
+          output: "Jeff's wallet created!\nWallet name: jeff\nInitial balance: 50000000 lovelace"
+        };
+      } else if (code.includes('getBalance')) {
+        return {
+          success: true,
+          output: "Jeff's current balance: 50000000 lovelace\nThat's 50 ADA"
+        };
+      } else if (code.includes('Final Summary')) {
+        return {
+          success: true,
+          output: "=== Final Summary ===\nJeff's wallet: jeff\n  Balance: 50 ADA\nNancy's wallet: nancy\n  Balance: 75 ADA\n✅ Demo completed successfully!"
+        };
+      } else {
+        return {
+          success: true,
+          output: "Code executed successfully"
+        };
+      }
+    }
+
+    // Update progress indicator
+    function updateProgress() {
+      const totalCodeStanzas = currentNotebook ? currentNotebook.stanzas.filter(s => s.type === 'code').length : 0;
+      const percentage = totalCodeStanzas > 0 ? (completedCodeStanzas / totalCodeStanzas) * 100 : 0;
+      
+      progressFill.style.width = `${percentage}%`;
+      progressText.textContent = `${completedCodeStanzas} of ${totalCodeStanzas} code stanzas completed`;
+    }
+
+    // Simple markdown renderer
+    function renderMarkdown(text) {
+      return text
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/^\* (.+)/gim, '<li>$1</li>')
+        .replace(/^\d+\. (.+)/gim, '<li>$1</li>')
+        .replace(/\n\n/gim, '</p><p>')
+        .replace(/^/gim, '<p>')
+        .replace(/$/gim, '</p>')
+        .replace(/<p><\/p>/g, '')
+        .replace(/<p><h/g, '<h')
+        .replace(/<\/h(\d)><\/p>/g, '</h$1>')
+        .replace(/<li>/g, '<ul><li>')
+        .replace(/<\/li>(?![\s]*<li>)/g, '</li></ul>');
+    }
+
+    // Show status message
+    function showStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = `status ${type}`;
+      statusDiv.style.display = 'block';
+      
+      if (type === 'success') {
+        setTimeout(hideStatus, 3000);
+      }
+    }
+
+    function hideStatus() {
+      statusDiv.style.display = 'none';
+    }
+
+    // Try to load example notebook on page load
+    window.addEventListener('load', async () => {
+      try {
+        const response = await fetch('/demo-flows/simple-wallet-test.demonb');
+        if (response.ok) {
+          const text = await response.text();
+          currentNotebook = JSON.parse(text);
+          startNotebook();
+          showStatus('Example notebook loaded', 'success');
+        }
+      } catch (error) {
+        // Ignore - example not available
+      }
+    });
+  </script>
+</body>
+</html>
