@@ -132,6 +132,22 @@
     .stanza.code {
       border: 2px solid #e74c3c;
     }
+    
+    .stanza.code.transaction {
+      border-color: #e74c3c; /* Red for transactions */
+    }
+    
+    .stanza.code.query {
+      border-color: #3498db; /* Blue for queries */
+    }
+    
+    .stanza.code.mixed {
+      border-color: #f39c12; /* Orange for mixed */
+    }
+    
+    .stanza.code.unknown {
+      border-color: #7f8c8d; /* Gray for unknown */
+    }
 
     .stanza.executed {
       border-color: #27ae60;
@@ -202,9 +218,40 @@
       font-weight: bold;
       transition: all 0.3s;
     }
-
-    .execute-btn:hover {
+    
+    .execute-btn.transaction {
+      background: #e74c3c; /* Red for transactions */
+    }
+    
+    .execute-btn.transaction:hover {
       background: #c0392b;
+      transform: translateY(-2px);
+    }
+    
+    .execute-btn.query {
+      background: #3498db; /* Blue for queries */
+    }
+    
+    .execute-btn.query:hover {
+      background: #2980b9;
+      transform: translateY(-2px);
+    }
+    
+    .execute-btn.mixed {
+      background: #f39c12; /* Orange for mixed */
+    }
+    
+    .execute-btn.mixed:hover {
+      background: #e67e22;
+      transform: translateY(-2px);
+    }
+    
+    .execute-btn.unknown {
+      background: #7f8c8d; /* Gray for unknown */
+    }
+    
+    .execute-btn.unknown:hover {
+      background: #5d6d7e;
       transform: translateY(-2px);
     }
 
@@ -338,6 +385,7 @@
     let completedCodeStanzas = 0;
     let executor = null;
     let isExecuting = false;
+    let executionScope = {}; // Track execution scope for dry-run analysis
 
     // UI Elements
     const fileInput = document.getElementById('fileInput');
@@ -386,6 +434,48 @@
       showNextStanza();
     }
 
+    // Analyze code to determine operation type
+    function analyzeCodeOperation(code) {
+      // Simple heuristic analysis based on function names
+      // In a real implementation, this would use the DryRuntime
+      const codeStr = code.join('\n').toLowerCase();
+      
+      const transactionKeywords = [
+        'createwallet', 'transfer', 'deploycontract', 
+        'contractaction', 'advancetime'
+      ];
+      
+      const queryKeywords = [
+        'getbalance', 'getcontractstate'
+      ];
+      
+      let hasTransaction = false;
+      let hasQuery = false;
+      
+      transactionKeywords.forEach(keyword => {
+        if (codeStr.includes(keyword)) hasTransaction = true;
+      });
+      
+      queryKeywords.forEach(keyword => {
+        if (codeStr.includes(keyword)) hasQuery = true;
+      });
+      
+      if (hasTransaction && hasQuery) return 'mixed';
+      if (hasTransaction) return 'transaction';
+      if (hasQuery) return 'query';
+      return 'unknown';
+    }
+    
+    // Get button text based on operation type
+    function getButtonText(operationType) {
+      switch(operationType) {
+        case 'transaction': return '⚡ Submit Transaction';
+        case 'query': return '🔍 Query Data';
+        case 'mixed': return '⚠️ Execute (Modifies State)';
+        default: return '▶ Execute';
+      }
+    }
+
     // Show next stanza
     function showNextStanza() {
       if (currentStanzaIndex >= currentNotebook.stanzas.length) {
@@ -422,12 +512,20 @@
         }, 200);
         
       } else if (stanza.type === 'code') {
-        // Header
+        // Analyze operation type
+        const operationType = analyzeCodeOperation(stanza.content);
+        stanzaDiv.classList.add(operationType);
+        
+        // Header with operation type indicator
         const header = document.createElement('div');
         header.className = 'code-header';
+        const statusText = operationType === 'transaction' ? 'Transaction' :
+                          operationType === 'query' ? 'Query' :
+                          operationType === 'mixed' ? 'Mixed Operations' :
+                          'Ready to execute';
         header.innerHTML = `
           <span>${stanza.name || `Code Cell ${index}`}</span>
-          <span>Ready to execute</span>
+          <span>${statusText}</span>
         `;
         stanzaDiv.appendChild(header);
 
@@ -437,12 +535,12 @@
         codeDiv.textContent = stanza.content.join('\n');
         stanzaDiv.appendChild(codeDiv);
 
-        // Actions
+        // Actions with appropriate button
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'code-actions';
         const executeBtn = document.createElement('button');
-        executeBtn.className = 'execute-btn';
-        executeBtn.textContent = '▶ Execute';
+        executeBtn.className = `execute-btn ${operationType}`;
+        executeBtn.textContent = getButtonText(operationType);
         executeBtn.onclick = () => executeStanza(index, stanza, stanzaDiv);
         actionsDiv.appendChild(executeBtn);
         stanzaDiv.appendChild(actionsDiv);
@@ -518,6 +616,21 @@
     // Simulate execution (replace with real monadic runtime)
     async function simulateExecution(code) {
       // No artificial delay - emulated blockchain should be instant
+      
+      // Update execution scope with simulated variables
+      // This helps future stanzas have proper context for analysis
+      if (code.includes('jeff = ')) {
+        executionScope.jeff = { name: 'jeff', balance: '50000000' };
+      }
+      if (code.includes('nancy = ')) {
+        executionScope.nancy = { name: 'nancy', balance: '75000000' };
+      }
+      if (code.includes('jeffBalance = ')) {
+        executionScope.jeffBalance = '50000000';
+      }
+      if (code.includes('nancyBalance = ')) {
+        executionScope.nancyBalance = '75000000';
+      }
       
       // Mock some outputs based on code content
       if (code.includes('createWallet')) {
