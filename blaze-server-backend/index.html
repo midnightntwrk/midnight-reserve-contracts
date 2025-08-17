@@ -405,10 +405,6 @@
     </div>
 
     <div id="content">
-      <div class="loading" id="initialLoading">
-        <div class="loading-spinner"></div>
-        Select a demo file to begin...
-      </div>
     </div>
   </div>
 
@@ -471,28 +467,8 @@
           }
         } catch (error) {
           console.warn('Could not load demo files list:', error);
-          // Fallback to hardcoded list
-          this.populateDemoFilesFallback();
+          // No fallback - only show files that actually exist on the filesystem
         }
-      }
-
-      populateDemoFilesFallback() {
-        const selector = document.getElementById('demoSelector');
-        const fallbackFiles = [
-          'simple-wallet-test.demonb',
-          'scope-persistence-test.demonb',
-          'simple-wallet-test.js',
-          '01-session-management.yaml',
-          '02-utxo-creation.yaml',
-          '03-working-utxo-demo.yaml'
-        ];
-        
-        fallbackFiles.forEach(file => {
-          const option = document.createElement('option');
-          option.value = file;
-          option.textContent = file;
-          selector.appendChild(option);
-        });
       }
 
       async loadDemoFromFile(file) {
@@ -545,6 +521,10 @@
         if (initialLoading) {
           initialLoading.style.display = 'none';
         }
+        
+        // Clear any loading state from showLoading method
+        const content = document.getElementById('content');
+        content.innerHTML = '';
         
         this.showNextStanza();
       }
