@@ -379,15 +379,7 @@
       overflow: hidden;
     }
 
-    .code-header {
-      background: #e9ecef;
-      padding: 8px 12px;
-      border-bottom: 1px solid #dee2e6;
-      font-size: 12px;
-      font-weight: 500;
-      color: #495057;
-      text-transform: uppercase;
-    }
+
 
     .code-body {
       padding: 16px;
@@ -765,6 +757,10 @@
         const content = document.getElementById('content');
         content.innerHTML = '';
         
+        // Clear watchers when initializing a new demo
+        this.watchersInfo = [];
+        this.updateWatcherPanel();
+        
         this.showNextStanza();
       }
 
@@ -910,15 +906,10 @@
           const codeContent = document.createElement('div');
           codeContent.className = 'code-content';
           
-          const codeHeader = document.createElement('div');
-          codeHeader.className = 'code-header';
-          codeHeader.textContent = block.language || 'javascript';
-          
           const codeBody = document.createElement('div');
           codeBody.className = 'code-body';
           codeBody.textContent = block.content.join('\n');
           
-          codeContent.appendChild(codeHeader);
           codeContent.appendChild(codeBody);
           blockElement.appendChild(codeContent);
         }

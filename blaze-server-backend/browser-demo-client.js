@@ -66,9 +66,20 @@ class DemoClient {
       const result = await response.json();
       this.sessionId = result.sessionId;
       console.log('Created new session:', this.sessionId);
+      
+      // Clear any existing watchers when starting a new session
+      this.clearWatchers();
     } catch (error) {
       console.error('Error initializing session:', error);
       throw error;
+    }
+  }
+
+  clearWatchers() {
+    // Clear watchers from the frontend
+    if (window.demoUI) {
+      window.demoUI.watchersInfo = [];
+      window.demoUI.updateWatcherPanel();
     }
   }
 
