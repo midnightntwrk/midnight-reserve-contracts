@@ -12,6 +12,8 @@ class MonadicRuntime {
     this.contracts = config.contracts || {};
     this.currentStepLabel = '';
     this.debug = config.debug || false;
+    this.watchers = new Map();
+    this.watchResults = new Map();
   }
 
   setCurrentStep(label) {
@@ -103,7 +105,14 @@ class MonadicRuntime {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error during transfer: ${response.status}`);
+      let errorDetails = '';
+      try {
+        const errorBody = await response.text();
+        errorDetails = ` - ${errorBody}`;
+      } catch (e) {
+        errorDetails = ' - Could not read error response';
+      }
+      throw new Error(`HTTP error during transfer: ${response.status}${errorDetails}`);
     }
 
     const body = await response.json();
@@ -111,7 +120,7 @@ class MonadicRuntime {
       throw new Error(`Transfer failed: ${body.error || body.message || 'unknown'}`);
     }
 
-    return { txId: body.txId };
+    return { transactionId: body.transactionId };
   }
 
   // Contract operations
@@ -278,6 +287,188 @@ class MonadicRuntime {
     }
   }
 
+  // Watch functionality
+
+  async watchBalance(walletName, formatter = null) {
+    console.log(`[Runtime] Setting up balance watcher for ${walletName}`);
+    const defaultFormatter = (data) => `${walletName}: ${data.balance} lovelace`;
+    try {
+      const result = await this.watch(walletName, { type: 'balance', wallet: walletName }, formatter || defaultFormatter);
+      console.log(`[Runtime] Balance watcher setup successful for ${walletName}`);
+      return result;
+    } catch (error) {
+      console.error(`[Runtime] Balance watcher setup failed for ${walletName}:`, error);
+      throw error;
+    }
+  }
+
+  async watchContractState(address, formatter = null) {
+    const defaultFormatter = (data) => `Contract ${address.slice(0, 8)}...: ${JSON.stringify(data)}`;
+    return this.watch(`contract-${address.slice(0, 8)}`, { type: 'contract-state', address }, formatter || defaultFormatter);
+  }
+
+  async watchWalletUtxos(walletName, formatter = null) {
+    console.log(`[Runtime] Setting up UTXO watcher for ${walletName}`);
+    const defaultFormatter = (data) => `${walletName} UTXOs: ${data.utxos.length} total`;
+    try {
+      const result = await this.watch(`${walletName}-utxos`, { type: 'wallet-utxos', wallet: walletName }, formatter || defaultFormatter);
+      console.log(`[Runtime] UTXO watcher setup successful for ${walletName}`);
+      return result;
+    } catch (error) {
+      console.error(`[Runtime] UTXO watcher setup failed for ${walletName}:`, error);
+      throw error;
+    }
+  }
+
+  async watchCustom(name, endpoint, formatter, options = {}) {
+    return this.watch(name, {
+      type: 'custom',
+      endpoint,
+      method: options.method || 'GET',
+      body: options.body
+    }, formatter);
+  }
+
+  async watch(name, query, formatter) {
+    const httpRequest = this.convertQueryToHttpRequest(query);
+    
+    const watcher = {
+      name,
+      query: httpRequest,
+      formatter: formatter,
+      lastResult: null,
+      lastRun: null
+    };
+
+    this.watchers.set(name, watcher);
+    
+    // Execute immediately
+    await this.executeWatcher(watcher);
+    
+    return { name, status: 'active' };
+  }
+
+  convertQueryToHttpRequest(query) {
+    switch (query.type) {
+      case 'balance':
+        return {
+          endpoint: `/api/wallet/${query.wallet}/balance`,
+          method: 'GET',
+          params: { sessionId: this.sessionId }
+        };
+      
+      case 'contract-state':
+        return {
+          endpoint: `/api/contract/${query.address}/state`,
+          method: 'GET',
+          params: { sessionId: this.sessionId }
+        };
+      
+      case 'wallet-utxos':
+        return {
+          endpoint: `/api/wallet/${query.wallet}/utxos`,
+          method: 'GET',
+          params: { sessionId: this.sessionId }
+        };
+      
+      case 'custom':
+        return {
+          endpoint: query.endpoint,
+          method: query.method || 'GET',
+          params: { ...query.params, sessionId: this.sessionId },
+          body: query.body
+        };
+      
+      default:
+        throw new Error(`Unknown query type: ${query.type}`);
+    }
+  }
+
+  async executeWatcher(watcher) {
+    try {
+      const url = new URL(`${this.baseUrl}${watcher.query.endpoint}`);
+      if (watcher.query.params) {
+        Object.entries(watcher.query.params).forEach(([key, value]) => {
+          url.searchParams.append(key, value);
+        });
+      }
+
+      const response = await fetch(url.toString(), {
+        method: watcher.query.method,
+        headers: { 'Content-Type': 'application/json' },
+        body: watcher.query.body ? JSON.stringify(watcher.query.body) : undefined
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Apply formatter
+      let formattedResult;
+      if (typeof watcher.formatter === 'string') {
+        formattedResult = this.applyStringFormatter(watcher.formatter, data);
+      } else {
+        formattedResult = this.applyFunctionFormatter(watcher.formatter, data);
+      }
+
+      watcher.lastResult = formattedResult;
+      watcher.lastRun = Date.now();
+      this.watchResults.set(watcher.name, formattedResult);
+
+      if (this.debug) {
+        console.log(`[Runtime] Watcher ${watcher.name}: ${formattedResult}`);
+      }
+
+      return formattedResult;
+    } catch (error) {
+      console.error(`Watcher ${watcher.name} failed:`, error);
+      watcher.lastResult = `Error: ${error.message}`;
+      watcher.lastRun = Date.now();
+      this.watchResults.set(watcher.name, watcher.lastResult);
+      return watcher.lastResult;
+    }
+  }
+
+  applyStringFormatter(formatter, data) {
+    // Simple string template replacement
+    return formatter.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+      return data[key] || match;
+    });
+  }
+
+  applyFunctionFormatter(formatter, data) {
+    // Execute the formatter function directly
+    try {
+      return formatter(data);
+    } catch (error) {
+      console.error('Formatter function error:', error);
+      return `Formatter error: ${error.message}`;
+    }
+  }
+
+  async executeAllWatchers() {
+    const promises = Array.from(this.watchers.values())
+      .map(w => this.executeWatcher(w));
+    
+    return Promise.allSettled(promises);
+  }
+
+  getWatchResults() {
+    return Object.fromEntries(this.watchResults);
+  }
+
+  stopWatcher(name) {
+    this.watchers.delete(name);
+    this.watchResults.delete(name);
+  }
+
+  stopAllWatchers() {
+    this.watchers.clear();
+    this.watchResults.clear();
+  }
+
   // Cleanup
 
   async cleanup() {
@@ -285,6 +476,7 @@ class MonadicRuntime {
       console.log(`[Runtime] Cleaning up session: ${this.sessionId}`);
     }
     this.sessionId = null;
+    this.stopAllWatchers();
   }
 }
 

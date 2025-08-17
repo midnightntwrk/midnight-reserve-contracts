@@ -38,6 +38,9 @@ export class JavaScriptDemoExecutor {
   private demo: JavaScriptDemo;
 
   constructor(demo: JavaScriptDemo, baseUrl: string = 'http://localhost:3031') {
+    console.log(`[JavaScriptDemoExecutor] Constructor called with demo: ${demo.name}`);
+    console.log(`[JavaScriptDemoExecutor] Demo has ${demo.stanzas.length} stanzas`);
+    console.log(`[JavaScriptDemoExecutor] First stanza: ${demo.stanzas[0]?.name}`);
     this.demo = demo;
     this.executor = new IntegratedDemoExecutor(baseUrl);
   }
@@ -233,6 +236,17 @@ export class JavaScriptDemoExecutor {
     }
 
     return results;
+  }
+
+  /**
+   * Execute all watchers and return their results
+   */
+  async executeWatchers(): Promise<Record<string, any>> {
+    console.log('[JavaScriptDemoExecutor] Executing all watchers');
+    await this.executor.executeAllWatchers();
+    const watchResults = this.executor.getWatchResults();
+    console.log('[JavaScriptDemoExecutor] Watch results:', watchResults);
+    return watchResults;
   }
 
   /**

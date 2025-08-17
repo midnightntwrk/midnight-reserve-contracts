@@ -23,6 +23,11 @@ app.post('/demo/init', async (req, res) => {
 
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    console.log(`[Demo Server] Creating new session ${sessionId} for demo: ${demo.name}`);
+    console.log(`[Demo Server] Demo has ${demo.stanzas.length} stanzas`);
+    console.log(`[Demo Server] First stanza name: ${demo.stanzas[0]?.name}`);
+    console.log(`[Demo Server] Demo stanzas: ${demo.stanzas.map(s => s.name).join(', ')}`);
+    
     // Create the full executor with all the core functionality
     const executor = new JavaScriptDemoExecutor(demo, baseUrl);
     await executor.initialize();
@@ -33,6 +38,9 @@ app.post('/demo/init', async (req, res) => {
       currentStanzaIndex: 0,
       results: []
     });
+
+    console.log(`[Demo Server] Session ${sessionId} created successfully`);
+    console.log(`[Demo Server] Active sessions: ${sessions.size}`);
 
     res.json({
       success: true,
@@ -54,10 +62,16 @@ app.post('/demo/execute-stanza', async (req, res) => {
   try {
     const { sessionId, stanzaIndex } = req.body;
     
+    console.log(`[Demo Server] Executing stanza ${stanzaIndex} for session ${sessionId}`);
+    
     const session = sessions.get(sessionId);
     if (!session) {
+      console.log(`[Demo Server] Session ${sessionId} not found. Available sessions: ${Array.from(sessions.keys()).join(', ')}`);
       return res.status(404).json({ error: 'Session not found' });
     }
+
+    console.log(`[Demo Server] Session demo name: ${session.demo.name}`);
+    console.log(`[Demo Server] Executing stanza: ${session.demo.stanzas[stanzaIndex]?.name}`);
 
     if (stanzaIndex < 0 || stanzaIndex >= session.demo.stanzas.length) {
       return res.status(400).json({ error: 'Invalid stanza index' });
@@ -69,6 +83,9 @@ app.post('/demo/execute-stanza', async (req, res) => {
     // Store results
     session.results.push(...results);
     session.currentStanzaIndex = stanzaIndex + 1;
+
+    console.log(`[Demo Server] Stanza execution completed. Results: ${results.length}`);
+    console.log(`[Demo Server] Results structure:`, JSON.stringify(results, null, 2));
 
     res.json({
       success: true,
@@ -169,6 +186,37 @@ app.post('/demo/reset/:sessionId', async (req, res) => {
     console.error('Reset error:', error);
     res.status(500).json({ 
       error: 'Failed to reset session', 
+      message: error.message 
+    });
+  }
+});
+
+// Execute watchers for a session
+app.post('/demo/execute-watchers', async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    
+    console.log(`[Demo Server] Executing watchers for session ${sessionId}`);
+    
+    const session = sessions.get(sessionId);
+    if (!session) {
+      console.log(`[Demo Server] Session ${sessionId} not found. Available sessions: ${Array.from(sessions.keys()).join(', ')}`);
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Execute all watchers and get results
+    const watchResults = await session.executor.executeWatchers();
+    
+    console.log(`[Demo Server] Watcher execution completed. Results:`, watchResults);
+
+    res.json({
+      success: true,
+      watchResults
+    });
+  } catch (error) {
+    console.error('Watcher execution error:', error);
+    res.status(500).json({ 
+      error: 'Failed to execute watchers', 
       message: error.message 
     });
   }

@@ -277,6 +277,39 @@
       font-weight: 600;
     }
 
+    .watch-result {
+      background: #f8f9fa;
+      border-left: 3px solid #007bff;
+      padding: 8px 12px;
+      margin: 8px 0;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9em;
+      border-radius: 0 4px 4px 0;
+      color: #495057;
+    }
+
+    .watch-result.error {
+      border-left-color: #dc3545;
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .watch-results-container {
+      margin-top: 20px;
+      padding: 16px;
+      background: #e3f2fd;
+      border: 1px solid #2196f3;
+      border-radius: 8px;
+      border-left: 4px solid #2196f3;
+    }
+
+    .watch-results-container h4 {
+      margin: 0 0 12px 0;
+      color: #1976d2;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
     .block-output {
       margin-bottom: 12px;
     }
@@ -417,6 +450,7 @@
         this.completedCodeStanzas = 0;
         this.totalCodeStanzas = 0;
         this.demoClient = null;
+        this.lastWatchResults = {};
         this.init();
       }
 
@@ -435,6 +469,8 @@
         });
 
         document.getElementById('demoSelector').addEventListener('change', (e) => {
+          console.log(`[UI] Dropdown changed to: ${e.target.value}`);
+          console.log(`[UI] Event timestamp: ${Date.now()}`);
           if (e.target.value) {
             this.updateFilePath(e.target.value);
             this.loadDemo(e.target.value);
@@ -449,10 +485,12 @@
 
       async populateDemoFiles() {
         try {
+          console.log('[UI] Populating demo files dropdown...');
           // Get available demo files from the demo server
           const response = await fetch('http://localhost:3042/api/demo-files');
           if (response.ok) {
             const files = await response.json();
+            console.log('[UI] Available demo files:', files);
             const selector = document.getElementById('demoSelector');
             
             // Clear existing options except the first one
@@ -464,6 +502,7 @@
               option.textContent = file;
               selector.appendChild(option);
             });
+            console.log('[UI] Dropdown populated with', files.length, 'files');
           }
         } catch (error) {
           console.warn('Could not load demo files list:', error);
@@ -473,6 +512,7 @@
 
       async loadDemoFromFile(file) {
         try {
+          console.log(`[UI] Loading demo from file: ${file.name}`);
           this.showLoading('Loading demo from file...');
           
           const fileContent = await this.readFileContent(file);
@@ -496,6 +536,7 @@
 
       async loadDemo(filePath) {
         try {
+          console.log(`[UI] Loading demo from path: ${filePath}`);
           this.showLoading('Loading demo...');
           
           this.demoClient = new DemoClient();
@@ -742,8 +783,9 @@
         statusElement.textContent = 'Executing';
         
         try {
-          const results = await this.demoClient.executeStanza(this.currentStanzaIndex);
-          this.updateStanzaResult(results);
+          const response = await this.demoClient.executeStanza(this.currentStanzaIndex);
+          this.lastWatchResults = response.watchResults || {};
+          this.updateStanzaResult(response.results);
           
           // Update progress
           this.completedCodeStanzas++;
@@ -845,6 +887,29 @@
         
         resultContainer.innerHTML = resultHtml;
         
+        // Create separate watch results container
+        let watchContainer = content.querySelector('.watch-results-container');
+        if (!watchContainer) {
+          watchContainer = document.createElement('div');
+          watchContainer.className = 'watch-results-container';
+          content.appendChild(watchContainer);
+        }
+        
+        // Clear previous watch results
+        watchContainer.innerHTML = '';
+        
+        // Add watch results if available (in separate DOM element)
+        console.log('[Frontend] Looking for watch results in response');
+        if (this.lastWatchResults && Object.keys(this.lastWatchResults).length > 0) {
+          console.log('[Frontend] Displaying watch results:', this.lastWatchResults);
+          watchContainer.innerHTML = '<h4>Watch Results:</h4>';
+          Object.entries(this.lastWatchResults).forEach(([name, result]) => {
+            watchContainer.innerHTML += `<div class="watch-result" data-watcher="${name}">${result}</div>`;
+          });
+        } else {
+          console.log('[Frontend] No watch results found');
+        }
+        
         // Smart scroll to show output without hiding the code block
         setTimeout(() => {
           const codeBlock = resultContainer.closest('.stanza').querySelector('.code-content');
@@ -879,12 +944,26 @@
       }
 
       showError(message) {
+        // Show error in a non-destructive way - add to top of content instead of clearing
         const content = document.getElementById('content');
-        content.innerHTML = `
-          <div class="error-message">
-            <strong>Error:</strong> ${message}
-          </div>
-        `;
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.innerHTML = `<strong>Error:</strong> ${message}`;
+        errorDiv.style.cssText = 'background: #f8d7da; color: #721c24; padding: 12px; margin: 8px 0; border: 1px solid #f5c6cb; border-radius: 4px;';
+        
+        // Insert at the top of content
+        if (content.firstChild) {
+          content.insertBefore(errorDiv, content.firstChild);
+        } else {
+          content.appendChild(errorDiv);
+        }
+        
+        // Auto-remove error after 5 seconds
+        setTimeout(() => {
+          if (errorDiv.parentNode) {
+            errorDiv.remove();
+          }
+        }, 5000);
       }
 
       showCompletion() {

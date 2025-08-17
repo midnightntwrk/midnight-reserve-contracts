@@ -105,6 +105,59 @@ function contractActionExpectFailure(address, action, params) {
   return global.__demoRuntime.contractActionExpectFailure(address, action, params);
 }
 
+/**
+ * Watch wallet balance
+ * @param {string} walletName - Wallet name to watch
+ * @param {Function} formatter - Optional formatter function
+ * @returns {Promise<{name: string, status: string}>}
+ */
+function watchBalance(walletName, formatter = null) {
+  return global.__demoRuntime.watchBalance(walletName, formatter);
+}
+
+/**
+ * Watch contract state
+ * @param {string} address - Contract address to watch
+ * @param {Function} formatter - Optional formatter function
+ * @returns {Promise<{name: string, status: string}>}
+ */
+function watchContractState(address, formatter = null) {
+  return global.__demoRuntime.watchContractState(address, formatter);
+}
+
+/**
+ * Watch wallet UTXOs
+ * @param {string} walletName - Wallet name to watch
+ * @param {Function} formatter - Optional formatter function
+ * @returns {Promise<{name: string, status: string}>}
+ */
+function watchWalletUtxos(walletName, formatter = null) {
+  return global.__demoRuntime.watchWalletUtxos(walletName, formatter);
+}
+
+/**
+ * Watch custom endpoint
+ * @param {string} name - Watcher name
+ * @param {string} endpoint - API endpoint to watch
+ * @param {Function} formatter - Formatter function
+ * @param {object} options - Optional configuration
+ * @returns {Promise<{name: string, status: string}>}
+ */
+function watchCustom(name, endpoint, formatter, options = {}) {
+  return global.__demoRuntime.watchCustom(name, endpoint, formatter, options);
+}
+
+/**
+ * Generic watch function
+ * @param {string} name - Watcher name
+ * @param {object} query - Query specification
+ * @param {Function} formatter - Formatter function
+ * @returns {Promise<{name: string, status: string}>}
+ */
+function watch(name, query, formatter) {
+  return global.__demoRuntime.watch(name, query, formatter);
+}
+
 module.exports = {
   createWallet,
   getBalance,
@@ -117,5 +170,10 @@ module.exports = {
   createWalletExpectFailure,
   transferExpectFailure,
   deployContractExpectFailure,
-  contractActionExpectFailure
+  contractActionExpectFailure,
+  watchBalance,
+  watchContractState,
+  watchWalletUtxos,
+  watchCustom,
+  watch
 };

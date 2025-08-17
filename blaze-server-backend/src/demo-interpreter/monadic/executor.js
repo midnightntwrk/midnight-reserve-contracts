@@ -157,6 +157,23 @@ class NotebookExecutor {
         // Restore console
         console.log = originalLog;
 
+        // Execute all active watchers after successful code execution
+        console.log('[Executor] About to execute watchers after code block');
+        if (result.success !== false) {
+          try {
+            console.log('[Executor] Calling executeAllWatchers()');
+            await this.runtime.executeAllWatchers();
+            console.log('[Executor] Getting watch results');
+            result.watchResults = this.runtime.getWatchResults();
+            console.log('[Executor] Watch results:', result.watchResults);
+          } catch (watchError) {
+            console.error('Watcher execution failed:', watchError);
+            result.watchError = watchError.message;
+          }
+        } else {
+          console.log('[Executor] Skipping watcher execution due to failure');
+        }
+
         result.success = true;
         result.output = consoleOutput;
         result.returnValue = returnValue;

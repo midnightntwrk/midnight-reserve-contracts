@@ -1,13 +1,14 @@
 const { DryRuntime } = require("../monadic/dry-runtime.js");
 const { MonadicRuntime } = require("../monadic/runtime.js");
 const { ScopeManager } = require("./ScopeManager.js");
-const { createWallet, getBalance, transfer, deployContract, contractAction, getContractState, advanceTime } = require("../monadic/functions.js");
+const { createWallet, getBalance, transfer, deployContract, contractAction, getContractState, advanceTime, watchBalance, watchContractState, watchWalletUtxos, watchCustom, watch } = require("../monadic/functions.js");
 
 export interface ExecutionResult {
   result: any;
   operationType: string;
   isPartial: boolean;
   consoleOutput?: string[];
+  watchResults?: Record<string, any>;
 }
 
 // Reusable utility for executing demo scripts with scope persistence and operation detection
@@ -27,7 +28,12 @@ export class IntegratedDemoExecutor {
       deployContract,
       contractAction,
       getContractState,
-      advanceTime
+      advanceTime,
+      watchBalance,
+      watchContractState,
+      watchWalletUtxos,
+      watchCustom,
+      watch
     };
     this.scopeManager = new ScopeManager(monadicFunctions);
     this.dryRuntime = new DryRuntime({ baseUrl });
@@ -187,6 +193,26 @@ export class IntegratedDemoExecutor {
       // Execute in the real persistent scope
       const result = await this.executeCodeBlock(blockIndex);
       
+      // Execute all active watchers after successful code execution
+      console.log('[IntegratedDemoExecutor] About to execute watchers after code block');
+      try {
+        console.log('[IntegratedDemoExecutor] Calling executeAllWatchers()');
+        await this.realRuntime.executeAllWatchers();
+        console.log('[IntegratedDemoExecutor] Getting watch results');
+        const watchResults = this.realRuntime.getWatchResults();
+        console.log('[IntegratedDemoExecutor] Watch results:', watchResults);
+        
+        return { 
+          result, 
+          operationType, 
+          isPartial: dryRuntime.hasPartialExecution(),
+          watchResults: watchResults && Object.keys(watchResults).length > 0 ? watchResults : undefined
+        };
+      } catch (watchError) {
+        console.error('[IntegratedDemoExecutor] Watcher execution failed:', watchError);
+        result.watchError = (watchError as Error).message;
+      }
+      
       return { result, operationType, isPartial: dryRuntime.hasPartialExecution() };
     } finally {
       delete (global as any).__demoRuntime;
@@ -208,6 +234,16 @@ export class IntegratedDemoExecutor {
     return await asyncFunction(scope);
   }
   
+  // Execute all watchers and return their results
+  async executeAllWatchers(): Promise<void> {
+    await this.realRuntime.executeAllWatchers();
+  }
+
+  // Get watch results from the runtime
+  getWatchResults(): Record<string, any> {
+    return this.realRuntime.getWatchResults();
+  }
+
   // Get current scope for inspection
   getScope(): Record<string, any> {
     return { ...this.scopeManager.getScope() };

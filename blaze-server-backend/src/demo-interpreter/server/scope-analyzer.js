@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { ScopeManager } = require('../core/ScopeManager.js');
-const { createWallet, getBalance, transfer, deployContract, contractAction, getContractState, advanceTime } = require('../monadic/functions.js');
+const { createWallet, getBalance, transfer, deployContract, contractAction, getContractState, advanceTime, watchBalance, watchContractState, watchWalletUtxos, watchCustom, watch } = require('../monadic/functions.js');
 const { MonadicRuntime } = require('../monadic/runtime.js');
 const { DryRuntime } = require('../monadic/dry-runtime.js');
 
@@ -19,7 +19,12 @@ const monadicFunctions = {
   deployContract,
   contractAction,
   getContractState,
-  advanceTime
+  advanceTime,
+  watchBalance,
+  watchContractState,
+  watchWalletUtxos,
+  watchCustom,
+  watch
 };
 
 const scopeManager = new ScopeManager(monadicFunctions);

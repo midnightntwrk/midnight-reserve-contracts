@@ -11,13 +11,20 @@ class DemoClient {
 
   async loadDemo(demoName) {
     try {
+      console.log(`[DemoClient] Loading demo: ${demoName}`);
       // Load demo content from file
       const response = await fetch(`/demo-flows/${demoName}`);
       if (!response.ok) {
         throw new Error(`Failed to load demo: ${response.statusText}`);
       }
       const demoContent = await response.text();
-      return JSON.parse(demoContent);
+      console.log(`[DemoClient] Successfully loaded demo: ${demoName}`);
+      const demo = JSON.parse(demoContent);
+      
+      // Initialize session with the loaded demo
+      await this.initializeSessionWithDemo(demo);
+      
+      return demo;
     } catch (error) {
       console.error('Error loading demo:', error);
       throw error;
@@ -70,11 +77,40 @@ class DemoClient {
     return 'transaction';
   }
 
+  async executeWatchers() {
+    try {
+      if (!this.sessionId) {
+        throw new Error('No active session. Please load a demo first.');
+      }
+
+      const response = await fetch(`${this.serverUrl}/demo/execute-watchers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: this.sessionId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to execute watchers: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result.watchResults;
+    } catch (error) {
+      console.error('Error executing watchers:', error);
+      throw error;
+    }
+  }
+
   async executeStanza(stanzaIndex) {
     try {
-      // Initialize session if needed
+      // Check if session exists
       if (!this.sessionId) {
-        await this.initializeSession();
+        throw new Error('No active session. Please load a demo first.');
       }
 
       const response = await fetch(`${this.serverUrl}/demo/execute-stanza`, {
@@ -94,7 +130,19 @@ class DemoClient {
       }
 
       const result = await response.json();
-      return result.results;
+      
+      // Execute watchers after successful stanza execution
+      let watchResults = {};
+      try {
+        watchResults = await this.executeWatchers();
+      } catch (watchError) {
+        console.error('Watcher execution failed:', watchError);
+      }
+      
+      return {
+        results: result.results,
+        watchResults
+      };
     } catch (error) {
       console.error('Error executing stanza:', error);
       
@@ -110,9 +158,9 @@ class DemoClient {
 
   async initializeSession() {
     try {
-      // Load the demo first
-      const demo = await this.loadDemo('simple-wallet-test.demonb');
-      await this.initializeSessionWithDemo(demo);
+      // This method should not be called directly anymore
+      // Sessions should be initialized with specific demo content via initializeSessionWithDemo()
+      throw new Error('Session must be initialized with specific demo content. Use initializeSessionWithDemo() instead.');
     } catch (error) {
       console.error('Error initializing session:', error);
       throw error;
