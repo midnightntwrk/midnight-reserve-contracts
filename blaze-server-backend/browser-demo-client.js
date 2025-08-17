@@ -99,7 +99,10 @@ class DemoClient {
       }
 
       const result = await response.json();
-      return result.watchResults;
+      return {
+        watchResults: result.watchResults,
+        watchersInfo: result.watchersInfo
+      };
     } catch (error) {
       console.error('Error executing watchers:', error);
       throw error;
@@ -133,15 +136,19 @@ class DemoClient {
       
       // Execute watchers after successful stanza execution
       let watchResults = {};
+      let watchersInfo = [];
       try {
-        watchResults = await this.executeWatchers();
+        const watcherResponse = await this.executeWatchers();
+        watchResults = watcherResponse.watchResults || {};
+        watchersInfo = watcherResponse.watchersInfo || [];
       } catch (watchError) {
         console.error('Watcher execution failed:', watchError);
       }
       
       return {
         results: result.results,
-        watchResults
+        watchResults,
+        watchersInfo
       };
     } catch (error) {
       console.error('Error executing stanza:', error);

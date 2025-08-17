@@ -250,6 +250,20 @@ export class JavaScriptDemoExecutor {
   }
 
   /**
+   * Get watchers info from the runtime
+   */
+  async getWatchersInfo(): Promise<any[]> {
+    return this.executor.getWatchersInfo();
+  }
+
+  /**
+   * Clear watcher changes
+   */
+  async clearWatcherChanges(): Promise<void> {
+    this.executor.clearWatcherChanges();
+  }
+
+  /**
    * Get current scope state
    */
   getScope(): Record<string, any> {

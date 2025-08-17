@@ -15,12 +15,41 @@
             "# Watch Function Test",
             "",
             "This demo demonstrates wallet operations with automatic watch functionality:",
-            "1. Creating wallets with initial funds",
-            "2. Setting up watchers to monitor balances and UTXOs",
+            "1. Setting up watchers to monitor balances and UTXOs",
+            "2. Creating wallets with initial funds",
             "3. Transferring funds and seeing automatic updates",
             "4. Checking wallet balances",
             "",
-            "We'll create two wallets for Jeff and Nancy, set up watchers, and perform transfers."
+            "We'll set up watchers first, then create two wallets for Jeff and Nancy, and perform transfers."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "setup_watchers",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Setting Up Watchers",
+            "",
+            "First, let's set up watchers to monitor balances and UTXOs automatically. These will track changes as we create wallets and perform transfers."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Watch Jeff's balance with custom formatter",
+            "await watchBalance('jeff', (data) => `💰 Jeff: ${data.balance} lovelace`);",
+            "",
+            "// Watch Nancy's balance with default formatter",
+            "await watchBalance('nancy');",
+            "",
+            "// Watch Jeff's UTXOs",
+            "await watchWalletUtxos('jeff', (data) => `📦 Jeff UTXOs: ${data.utxos.length} total`);",
+            "",
+            "console.log('Watchers set up successfully!');"
           ]
         }
       ]
@@ -33,7 +62,7 @@
           "content": [
             "## Creating Jeff's Wallet",
             "",
-            "First, we'll create a wallet for Jeff with an initial balance of 50 ADA (50,000,000 lovelace)."
+            "Now we'll create a wallet for Jeff with an initial balance of 50 ADA (50,000,000 lovelace). The watchers will automatically detect this new wallet."
           ]
         },
         {
@@ -56,7 +85,7 @@
           "content": [
             "## Creating Nancy's Wallet",
             "",
-            "Now we'll create a wallet for Nancy with a larger initial balance of 75 ADA."
+            "Now we'll create a wallet for Nancy with a larger initial balance of 75 ADA. The watchers will detect this new wallet too."
           ]
         },
         {
@@ -67,35 +96,6 @@
             "console.log(`Nancy's wallet created!`);",
             "console.log(`Wallet name: ${nancy.name}`);",
             "console.log(`Initial balance: ${nancy.balance} lovelace`);"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "setup_watchers",
-      "blocks": [
-        {
-          "type": "markdown",
-          "content": [
-            "## Setting Up Watchers",
-            "",
-            "Now let's set up watchers to monitor their balances and UTXOs automatically."
-          ]
-        },
-        {
-          "type": "code",
-          "language": "javascript",
-          "content": [
-            "// Watch Jeff's balance with custom formatter",
-            "await watchBalance('jeff', (data) => `💰 Jeff: ${data.balance} lovelace`);",
-            "",
-            "// Watch Nancy's balance with default formatter",
-            "await watchBalance('nancy');",
-            "",
-            "// Watch Jeff's UTXOs",
-            "await watchWalletUtxos('jeff', (data) => `📦 Jeff UTXOs: ${data.utxos.length} total`);",
-            "",
-            "console.log('Watchers set up successfully!');"
           ]
         }
       ]

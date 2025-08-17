@@ -206,13 +206,19 @@ app.post('/demo/execute-watchers', async (req, res) => {
 
     // Execute all watchers and get results
     const watchResults = await session.executor.executeWatchers();
+    const watchersInfo = await session.executor.getWatchersInfo();
     
     console.log(`[Demo Server] Watcher execution completed. Results:`, watchResults);
+    console.log(`[Demo Server] Watchers info:`, watchersInfo);
 
     res.json({
       success: true,
-      watchResults
+      watchResults,
+      watchersInfo
     });
+
+    // Clear changed state after response is sent
+    await session.executor.clearWatcherChanges();
   } catch (error) {
     console.error('Watcher execution error:', error);
     res.status(500).json({ 

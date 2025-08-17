@@ -193,26 +193,6 @@ export class IntegratedDemoExecutor {
       // Execute in the real persistent scope
       const result = await this.executeCodeBlock(blockIndex);
       
-      // Execute all active watchers after successful code execution
-      console.log('[IntegratedDemoExecutor] About to execute watchers after code block');
-      try {
-        console.log('[IntegratedDemoExecutor] Calling executeAllWatchers()');
-        await this.realRuntime.executeAllWatchers();
-        console.log('[IntegratedDemoExecutor] Getting watch results');
-        const watchResults = this.realRuntime.getWatchResults();
-        console.log('[IntegratedDemoExecutor] Watch results:', watchResults);
-        
-        return { 
-          result, 
-          operationType, 
-          isPartial: dryRuntime.hasPartialExecution(),
-          watchResults: watchResults && Object.keys(watchResults).length > 0 ? watchResults : undefined
-        };
-      } catch (watchError) {
-        console.error('[IntegratedDemoExecutor] Watcher execution failed:', watchError);
-        result.watchError = (watchError as Error).message;
-      }
-      
       return { result, operationType, isPartial: dryRuntime.hasPartialExecution() };
     } finally {
       delete (global as any).__demoRuntime;
@@ -242,6 +222,16 @@ export class IntegratedDemoExecutor {
   // Get watch results from the runtime
   getWatchResults(): Record<string, any> {
     return this.realRuntime.getWatchResults();
+  }
+
+  // Get watchers info from the runtime
+  getWatchersInfo(): any[] {
+    return this.realRuntime.getWatchersInfo();
+  }
+
+  // Clear watcher changes
+  clearWatcherChanges(): void {
+    this.realRuntime.clearChangedState();
   }
 
   // Get current scope for inspection

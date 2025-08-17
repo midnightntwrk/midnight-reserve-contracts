@@ -19,11 +19,154 @@
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
       padding: 20px;
       min-height: 100vh;
       padding-bottom: 60vh; /* Pre-scrolling space */
+    }
+
+    .main-content {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    #content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .watcher-panel {
+      width: 300px;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 100px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+    }
+
+    .watcher-panel.hidden {
+      display: none;
+    }
+
+    .watcher-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #dee2e6;
+      background: #e9ecef;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .watcher-panel-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .toggle-button {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: #6c757d;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+
+    .toggle-button:hover {
+      background: #dee2e6;
+    }
+
+    .watcher-list {
+      padding: 12px;
+    }
+
+    .watcher-cell {
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .watcher-cell.changed {
+      border-color: #28a745;
+      background: #d4edda;
+      box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.3);
+      transform: scale(1.02);
+    }
+
+    .watcher-cell.changed .watcher-name {
+      color: #155724;
+      font-weight: 600;
+    }
+
+    .watcher-cell.changed .watcher-result {
+      color: #155724;
+      font-weight: 500;
+    }
+
+    .watcher-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #495057;
+      margin-bottom: 6px;
+    }
+
+    .watcher-result {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 12px;
+      color: #6c757d;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+
+    .server-offline-warning {
+      background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+      border: 2px solid #f39c12;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 20px 0;
+      box-shadow: 0 4px 12px rgba(243, 156, 18, 0.2);
+      text-align: center;
+    }
+
+    .server-offline-warning h2 {
+      color: #d68910;
+      margin: 0 0 16px 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .server-offline-warning p {
+      color: #856404;
+      margin: 12px 0;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .command-box {
+      background: #2c3e50;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      display: inline-block;
+    }
+
+    .command-box code {
+      color: #ecf0f1;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 14px;
+      font-weight: 500;
     }
 
     .header {
@@ -437,7 +580,18 @@
       </div>
     </div>
 
-    <div id="content">
+    <div class="main-content">
+      <div id="content">
+      </div>
+      <div id="watcher-panel" class="watcher-panel hidden">
+        <div class="watcher-panel-header">
+          <h3>Watchers</h3>
+          <button id="toggle-watcher-panel" class="toggle-button">×</button>
+        </div>
+        <div id="watcher-list" class="watcher-list">
+          <!-- Watcher cells will be inserted here -->
+        </div>
+      </div>
     </div>
   </div>
 
@@ -451,6 +605,7 @@
         this.totalCodeStanzas = 0;
         this.demoClient = null;
         this.lastWatchResults = {};
+        this.watchersInfo = [];
         this.init();
       }
 
@@ -475,6 +630,10 @@
             this.updateFilePath(e.target.value);
             this.loadDemo(e.target.value);
           }
+        });
+
+        document.getElementById('toggle-watcher-panel').addEventListener('click', () => {
+          this.toggleWatcherPanel();
         });
       }
 
@@ -503,10 +662,49 @@
               selector.appendChild(option);
             });
             console.log('[UI] Dropdown populated with', files.length, 'files');
+            
+            // Hide server offline warning if it exists
+            this.hideServerOfflineWarning();
           }
         } catch (error) {
           console.warn('Could not load demo files list:', error);
-          // No fallback - only show files that actually exist on the filesystem
+          this.showServerOfflineWarning();
+        }
+      }
+
+      showServerOfflineWarning() {
+        const content = document.getElementById('content');
+        
+        // Check if warning already exists
+        if (content.querySelector('.server-offline-warning')) {
+          return;
+        }
+        
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'server-offline-warning';
+        warningDiv.innerHTML = `
+          <div class="warning-content">
+            <h2>⚠️ Demo Server Offline</h2>
+            <p>The demo server is not running. Please start it with:</p>
+            <div class="command-box">
+              <code>bun run demo:start</code>
+            </div>
+            <p>Then refresh this page to continue.</p>
+          </div>
+        `;
+        
+        // Insert at the top of content
+        if (content.firstChild) {
+          content.insertBefore(warningDiv, content.firstChild);
+        } else {
+          content.appendChild(warningDiv);
+        }
+      }
+
+      hideServerOfflineWarning() {
+        const warning = document.querySelector('.server-offline-warning');
+        if (warning) {
+          warning.remove();
         }
       }
 
@@ -785,7 +983,9 @@
         try {
           const response = await this.demoClient.executeStanza(this.currentStanzaIndex);
           this.lastWatchResults = response.watchResults || {};
+          this.watchersInfo = response.watchersInfo || [];
           this.updateStanzaResult(response.results);
+          this.updateWatcherPanel();
           
           // Update progress
           this.completedCodeStanzas++;
@@ -887,29 +1087,6 @@
         
         resultContainer.innerHTML = resultHtml;
         
-        // Create separate watch results container
-        let watchContainer = content.querySelector('.watch-results-container');
-        if (!watchContainer) {
-          watchContainer = document.createElement('div');
-          watchContainer.className = 'watch-results-container';
-          content.appendChild(watchContainer);
-        }
-        
-        // Clear previous watch results
-        watchContainer.innerHTML = '';
-        
-        // Add watch results if available (in separate DOM element)
-        console.log('[Frontend] Looking for watch results in response');
-        if (this.lastWatchResults && Object.keys(this.lastWatchResults).length > 0) {
-          console.log('[Frontend] Displaying watch results:', this.lastWatchResults);
-          watchContainer.innerHTML = '<h4>Watch Results:</h4>';
-          Object.entries(this.lastWatchResults).forEach(([name, result]) => {
-            watchContainer.innerHTML += `<div class="watch-result" data-watcher="${name}">${result}</div>`;
-          });
-        } else {
-          console.log('[Frontend] No watch results found');
-        }
-        
         // Smart scroll to show output without hiding the code block
         setTimeout(() => {
           const codeBlock = resultContainer.closest('.stanza').querySelector('.code-content');
@@ -964,6 +1141,50 @@
             errorDiv.remove();
           }
         }, 5000);
+      }
+
+      toggleWatcherPanel() {
+        const panel = document.getElementById('watcher-panel');
+        panel.classList.toggle('hidden');
+      }
+
+      updateWatcherPanel() {
+        const watcherList = document.getElementById('watcher-list');
+        const panel = document.getElementById('watcher-panel');
+        
+        console.log('[UI] Updating watcher panel with:', this.watchersInfo);
+        
+        // Show panel if we have watchers
+        if (this.watchersInfo.length > 0) {
+          panel.classList.remove('hidden');
+        }
+        
+        // Clear existing watcher cells
+        watcherList.innerHTML = '';
+        
+        // Create watcher cells
+        this.watchersInfo.forEach(watcher => {
+          console.log(`[UI] Creating watcher cell for ${watcher.name}, hasChanged: ${watcher.hasChanged}`);
+          
+          const cell = document.createElement('div');
+          cell.className = 'watcher-cell';
+          cell.dataset.watcherId = watcher.id;
+          
+          if (watcher.hasChanged) {
+            cell.classList.add('changed');
+            console.log(`[UI] Added 'changed' class to watcher ${watcher.name}`);
+          }
+          
+          cell.innerHTML = `
+            <div class="watcher-name">${watcher.name}</div>
+            <div class="watcher-result">${watcher.result || 'No data'}</div>
+          `;
+          
+          watcherList.appendChild(cell);
+        });
+        
+        // Note: Server clears changed state after returning results, so highlighting will persist
+        // until the next execution cycle
       }
 
       showCompletion() {

@@ -14,6 +14,8 @@ class MonadicRuntime {
     this.debug = config.debug || false;
     this.watchers = new Map();
     this.watchResults = new Map();
+    this.watcherCounter = 0;
+    this.changedWatchers = new Set();
   }
 
   setCurrentStep(label) {
@@ -332,20 +334,25 @@ class MonadicRuntime {
   async watch(name, query, formatter) {
     const httpRequest = this.convertQueryToHttpRequest(query);
     
+    // Generate unique ID for this watcher
+    const watcherId = `watcher_${++this.watcherCounter}_${Date.now()}`;
+    
     const watcher = {
+      id: watcherId,
       name,
       query: httpRequest,
       formatter: formatter,
       lastResult: null,
-      lastRun: null
+      lastRun: null,
+      hasChanged: false
     };
 
-    this.watchers.set(name, watcher);
+    this.watchers.set(watcherId, watcher);
     
     // Execute immediately
     await this.executeWatcher(watcher);
     
-    return { name, status: 'active' };
+    return { id: watcherId, name, status: 'active' };
   }
 
   convertQueryToHttpRequest(query) {
@@ -413,9 +420,20 @@ class MonadicRuntime {
         formattedResult = this.applyFunctionFormatter(watcher.formatter, data);
       }
 
+      // Check if result has changed
+      const hasChanged = watcher.lastResult !== formattedResult;
+      watcher.hasChanged = hasChanged;
+      
+      console.log(`[Runtime] Watcher ${watcher.name}: lastResult="${watcher.lastResult}", newResult="${formattedResult}", hasChanged=${hasChanged}`);
+      
+      if (hasChanged) {
+        this.changedWatchers.add(watcher.id);
+        console.log(`[Runtime] Added ${watcher.id} to changed watchers`);
+      }
+      
       watcher.lastResult = formattedResult;
       watcher.lastRun = Date.now();
-      this.watchResults.set(watcher.name, formattedResult);
+      this.watchResults.set(watcher.id, formattedResult);
 
       if (this.debug) {
         console.log(`[Runtime] Watcher ${watcher.name}: ${formattedResult}`);
@@ -424,10 +442,35 @@ class MonadicRuntime {
       return formattedResult;
     } catch (error) {
       console.error(`Watcher ${watcher.name} failed:`, error);
-      watcher.lastResult = `Error: ${error.message}`;
+      
+      // Provide friendly error messages for common cases
+      let friendlyMessage;
+      if (error.message.includes('HTTP 400') || error.message.includes('HTTP 404')) {
+        if (watcher.name.includes('balance')) {
+          friendlyMessage = 'Wallet not created yet';
+        } else if (watcher.name.includes('utxo')) {
+          friendlyMessage = 'Wallet not created yet';
+        } else {
+          friendlyMessage = 'Resource not available yet';
+        }
+      } else {
+        friendlyMessage = error.message;
+      }
+      
+      const result = `⏳ ${friendlyMessage}`;
+      
+      // Check if result has changed (even for errors)
+      const hasChanged = watcher.lastResult !== result;
+      watcher.hasChanged = hasChanged;
+      
+      if (hasChanged) {
+        this.changedWatchers.add(watcher.id);
+      }
+      
+      watcher.lastResult = result;
       watcher.lastRun = Date.now();
-      this.watchResults.set(watcher.name, watcher.lastResult);
-      return watcher.lastResult;
+      this.watchResults.set(watcher.id, result);
+      return result;
     }
   }
 
@@ -449,6 +492,8 @@ class MonadicRuntime {
   }
 
   async executeAllWatchers() {
+    console.log('[Runtime] Executing all watchers...');
+    
     const promises = Array.from(this.watchers.values())
       .map(w => this.executeWatcher(w));
     
@@ -457,6 +502,30 @@ class MonadicRuntime {
 
   getWatchResults() {
     return Object.fromEntries(this.watchResults);
+  }
+
+  getWatchersInfo() {
+    const watchers = [];
+    for (const [id, watcher] of this.watchers) {
+      const watcherInfo = {
+        id: watcher.id,
+        name: watcher.name,
+        result: this.watchResults.get(id),
+        hasChanged: watcher.hasChanged,
+        lastRun: watcher.lastRun
+      };
+      console.log(`[Runtime] Watcher info for ${watcher.name}:`, watcherInfo);
+      watchers.push(watcherInfo);
+    }
+    return watchers;
+  }
+
+  clearChangedState() {
+    console.log('[Runtime] Clearing changed state for all watchers');
+    this.changedWatchers.clear();
+    for (const watcher of this.watchers.values()) {
+      watcher.hasChanged = false;
+    }
   }
 
   stopWatcher(name) {
