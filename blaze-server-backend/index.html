@@ -19,206 +19,106 @@
     }
 
     .container {
-      max-width: 800px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 20px;
+      min-height: 100vh;
+      padding-bottom: 60vh; /* Pre-scrolling space */
     }
 
     .header {
       background: white;
-      padding: 30px;
-      border-radius: 12px;
-      margin-bottom: 30px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-
-    .header h1 {
-      color: #2c3e50;
-      margin-bottom: 15px;
-      font-size: 2em;
-    }
-
-    .header p {
-      color: #7f8c8d;
-      font-size: 1.1em;
-    }
-
-    .controls {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 30px;
-      align-items: center;
-    }
-
-    button {
-      padding: 10px 20px;
-      background: #3498db;
-      color: white;
-      border: none;
+      padding: 8px 16px;
       border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.3s;
-    }
-
-    button:hover {
-      background: #2980b9;
-    }
-
-    button:disabled {
-      background: #bdc3c7;
-      cursor: not-allowed;
-    }
-
-    .file-input-wrapper input[type="file"] {
-      display: none;
-    }
-
-    .file-input-label {
-      display: inline-block;
-      padding: 10px 20px;
-      background: #9b59b6;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.3s;
-    }
-
-    .file-input-label:hover {
-      background: #8e44ad;
-    }
-
-    .config-section {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 30px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-
-    .config-section h3 {
-      margin-bottom: 15px;
-      color: #2c3e50;
-    }
-
-    .config-row {
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 16px;
+      position: sticky;
+      top: 20px;
+      z-index: 100;
       display: flex;
-      gap: 15px;
       align-items: center;
-      margin-bottom: 10px;
+      justify-content: flex-start;
     }
 
-    .config-row label {
-      min-width: 120px;
-      font-weight: 500;
-    }
-
-    .config-row input {
-      flex: 1;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
+    .demo-selector select {
+      padding: 6px 12px;
+      border: 1px solid #007bff;
       border-radius: 4px;
-      font-size: 14px;
-    }
-
-    .demo-content {
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      overflow: hidden;
+      font-size: 14px;
+      cursor: pointer;
     }
 
     .stanza {
-      border-bottom: 1px solid #eee;
-      transition: background 0.3s;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateY(20px);
     }
 
-    .stanza:last-child {
-      border-bottom: none;
+    .stanza.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .stanza-header {
-      padding: 20px;
+      padding: 16px 20px;
       background: #f8f9fa;
-      cursor: pointer;
+      border-bottom: 1px solid #dee2e6;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: background 0.3s;
     }
 
-    .stanza-header:hover {
-      background: #e9ecef;
-    }
-
-    .stanza-header h3 {
-      margin: 0;
-      color: #2c3e50;
-      font-size: 1.1em;
+    .stanza-name {
+      font-weight: 600;
+      color: #495057;
+      text-transform: capitalize;
     }
 
     .stanza-status {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .status-indicator {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #bdc3c7;
-    }
-
-    .status-indicator.pending {
-      background: #f39c12;
-    }
-
-    .status-indicator.running {
-      background: #3498db;
-      animation: pulse 1.5s infinite;
-    }
-
-    .status-indicator.completed {
-      background: #27ae60;
-    }
-
-    .status-indicator.error {
-      background: #e74c3c;
-    }
-
-    .operation-type {
-      font-size: 12px;
-      padding: 4px 8px;
+      padding: 4px 12px;
       border-radius: 12px;
-      background: #ecf0f1;
-      color: #7f8c8d;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .operation-type.transaction {
-      background: #e8f5e8;
-      color: #27ae60;
+    .stanza-status.pending {
+      background: #fff3cd;
+      color: #856404;
     }
 
-    .operation-type.query {
-      background: #e8f4fd;
-      color: #3498db;
+    .stanza-status.executing {
+      background: #fff3cd;
+      color: #856404;
     }
 
-    .operation-type.mixed {
-      background: #fef9e7;
-      color: #f39c12;
+    .stanza-status.completed {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .stanza-status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .stanza-footer {
+      padding: 16px 20px;
+      background: #f8f9fa;
+      border-top: 1px solid #dee2e6;
+      display: flex;
+      justify-content: flex-end;
     }
 
     .stanza-content {
       padding: 20px;
-      display: none;
-    }
-
-    .stanza-content.expanded {
-      display: block;
     }
 
     .block {
@@ -233,276 +133,332 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
-    .block-type {
-      font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 12px;
-      background: #ecf0f1;
-      color: #7f8c8d;
-    }
-
-    .block-type.markdown {
-      background: #e8f4fd;
-      color: #3498db;
-    }
-
-    .block-type.code {
-      background: #e8f5e8;
-      color: #27ae60;
-    }
-
-    .block-content {
-      background: #f8f9fa;
+    .markdown-block {
+      background: #ffffff;
+      border: 1px solid #e1e4e8;
       border-radius: 6px;
-      padding: 15px;
+    }
+
+    .code-block {
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .execute-button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 8px;
+    }
+
+    .execute-button.transaction {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .execute-button.transaction:hover {
+      background: #c0392b;
+    }
+
+    .execute-button.query {
+      background: #007bff;
+      color: white;
+    }
+
+    .execute-button.query:hover {
+      background: #0056b3;
+    }
+
+    .execute-button.mixed {
+      background: #fd7e14;
+      color: white;
+    }
+
+    .execute-button.mixed:hover {
+      background: #e55a00;
+    }
+
+    .execute-button.unknown {
+      background: #6c757d;
+      color: white;
+    }
+
+    .execute-button.unknown:hover {
+      background: #545b62;
+    }
+
+    .execute-button:disabled {
+      background: #6c757d;
+      color: #adb5bd;
+      cursor: not-allowed;
+    }
+
+    .execute-button.completed {
+      background: #f8f9fa;
+      color: #6c757d;
+      border: 1px solid #dee2e6;
+      cursor: not-allowed;
+    }
+
+    .markdown-content {
+      padding: 16px;
+    }
+
+    .markdown-content h1,
+    .markdown-content h2,
+    .markdown-content h3 {
+      margin-bottom: 12px;
+      color: #212529;
+    }
+
+    .markdown-content p {
+      margin-bottom: 8px;
+    }
+
+    .markdown-content ul,
+    .markdown-content ol {
+      margin-left: 20px;
+      margin-bottom: 8px;
+    }
+
+    .code-content {
+      overflow: hidden;
+    }
+
+    .code-header {
+      background: #e9ecef;
+      padding: 8px 12px;
+      border-bottom: 1px solid #dee2e6;
+      font-size: 12px;
+      font-weight: 500;
+      color: #495057;
+      text-transform: uppercase;
+    }
+
+    .code-body {
+      padding: 16px;
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      font-size: 13px;
+      font-size: 14px;
       line-height: 1.5;
       white-space: pre-wrap;
-      overflow-x: auto;
-    }
-
-    .block-content.markdown {
-      background: white;
-      border: 1px solid #e9ecef;
-      font-family: inherit;
+      color: #212529;
     }
 
     .execution-result {
-      margin-top: 15px;
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 6px;
-      border-left: 4px solid #3498db;
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 0;
+      background: #000000;
+      color: #ffa500;
     }
 
     .execution-result.success {
-      border-left-color: #27ae60;
-      background: #e8f5e8;
+      border: 1px solid #00ff00;
     }
 
     .execution-result.error {
-      border-left-color: #e74c3c;
-      background: #fdf2f2;
+      border: 1px solid #ff0000;
     }
 
-    .scope-info {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #7f8c8d;
+    .execution-result h4 {
+      margin-bottom: 12px;
+      font-size: 16px;
+      font-weight: 600;
     }
 
-    .scope-variables {
+    .block-output {
+      margin-bottom: 12px;
+    }
+
+    .console-line {
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      background: #ecf0f1;
-      padding: 5px 8px;
-      border-radius: 4px;
-      margin-top: 5px;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
-
-    .progress-bar {
-      width: 100%;
-      height: 4px;
-      background: #ecf0f1;
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 20px;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: #3498db;
-      transition: width 0.3s ease;
-      width: 0%;
-    }
-
-    .error-message {
-      background: #fdf2f2;
-      border: 1px solid #f5c6cb;
-      color: #721c24;
-      padding: 15px;
-      border-radius: 6px;
-      margin-top: 20px;
+      font-size: 14px;
+      line-height: 1.4;
+      margin-bottom: 2px;
+      padding: 2px 4px;
+      background: #000000;
+      color: #ffa500;
+      border-radius: 0;
     }
 
     .loading {
       text-align: center;
       padding: 40px;
-      color: #7f8c8d;
+      color: #6c757d;
     }
 
-    .loading::after {
-      content: '';
+    .loading-spinner {
       display: inline-block;
       width: 20px;
       height: 20px;
-      border: 2px solid #bdc3c7;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #007bff;
       border-radius: 50%;
-      border-top-color: #3498db;
-      animation: spin 1s ease-in-out infinite;
-      margin-left: 10px;
-    }
-
-    .execute-btn {
-      background: #27ae60;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      margin-top: 10px;
-      transition: background 0.3s;
-    }
-
-    .execute-btn:hover {
-      background: #229954;
-    }
-
-    .execute-btn:disabled {
-      background: #bdc3c7;
-      cursor: not-allowed;
+      animation: spin 1s linear infinite;
+      margin-right: 12px;
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
-    .console-line {
-      font-family: 'Courier New', monospace;
-      background-color: #f8f9fa;
-      padding: 4px 8px;
-      margin: 2px 0;
-      border-radius: 3px;
-      border-left: 3px solid #007bff;
-      white-space: pre-wrap;
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 16px;
+      border-radius: 6px;
+      border-left: 4px solid #dc3545;
+      margin-bottom: 20px;
     }
-    
-    .block-output {
-      margin: 10px 0;
-      padding: 10px;
-      background-color: #f8f9fa;
-      border-radius: 5px;
-      border: 1px solid #e9ecef;
+
+    .demo-selector {
+      margin-bottom: 20px;
+    }
+
+    .demo-selector select {
+      padding: 8px 12px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>Progressive Demo Notebook</h1>
-      <p>Execute demo notebooks with TypeScript-powered execution engine</p>
-    </div>
-
-    <div class="controls">
-      <div class="file-input-wrapper">
-        <input type="file" id="demoFile" accept=".demonb,.json" />
-        <label for="demoFile" class="file-input-label">Load Demo Notebook</label>
-      </div>
-      
-      <button id="runAllBtn" disabled>Run All</button>
-      <button id="runNextBtn" disabled>Run Next</button>
-      <button id="resetBtn" disabled>Reset</button>
-    </div>
-
-    <div class="config-section">
-      <h3>Configuration</h3>
-      <div class="config-row">
-        <label for="baseUrl">Base URL:</label>
-        <input type="text" id="baseUrl" value="http://localhost:3031" />
+      <div class="demo-selector">
+        <select id="demoSelector">
+          <option value="">Select a demo...</option>
+          <option value="simple-wallet-test.demonb">Simple Wallet Demo</option>
+        </select>
       </div>
     </div>
 
-    <div class="progress-bar">
-      <div class="progress-fill" id="progressFill"></div>
-    </div>
-
-    <div id="demoContent" class="demo-content">
-      <div class="loading">Load a demo notebook to get started</div>
+    <div id="content">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        Select a demo to begin...
+      </div>
     </div>
   </div>
 
-  <script src="./browser-demo-client.js"></script>
+  <script src="browser-demo-client.js"></script>
   <script>
-
     class ProgressiveDemoUI {
       constructor() {
         this.currentDemo = null;
-        this.executor = null;
         this.currentStanzaIndex = 0;
-        this.isExecuting = false;
-        
-        this.initializeEventListeners();
+        this.completedCodeStanzas = 0;
+        this.totalCodeStanzas = 0;
+        this.demoClient = null;
+        this.init();
       }
 
-      initializeEventListeners() {
-        document.getElementById('demoFile').addEventListener('change', (e) => this.loadDemoFile(e));
-        document.getElementById('runAllBtn').addEventListener('click', () => this.runAll());
-        document.getElementById('runNextBtn').addEventListener('click', () => this.runNext());
-        document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+      init() {
+        this.setupEventListeners();
       }
 
-      async loadDemoFile(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        try {
-          const content = await file.text();
-          const demo = JSON.parse(content);
-          
-          // Validate demo format
-          if (!demo.name || !demo.stanzas) {
-            throw new Error('Invalid demo format: missing name or stanzas');
+      setupEventListeners() {
+        document.getElementById('demoSelector').addEventListener('change', (e) => {
+          if (e.target.value) {
+            this.loadDemo(e.target.value);
           }
-
-          this.currentDemo = demo;
-          this.renderDemo();
-          this.enableControls();
-          
-          console.log('Demo loaded:', demo.name);
-        } catch (error) {
-          this.showError('Failed to load demo file: ' + error.message);
-        }
-      }
-
-      renderDemo() {
-        const container = document.getElementById('demoContent');
-        container.innerHTML = '';
-
-        this.currentDemo.stanzas.forEach((stanza, index) => {
-          const stanzaElement = this.createStanzaElement(stanza, index);
-          container.appendChild(stanzaElement);
         });
       }
 
-      createStanzaElement(stanza, index) {
-        const stanzaDiv = document.createElement('div');
-        stanzaDiv.className = 'stanza';
-        stanzaDiv.dataset.stanzaIndex = index;
+      async loadDemo(demoName) {
+        try {
+          this.showLoading('Loading demo...');
+          
+          this.demoClient = new DemoClient();
+          this.currentDemo = await this.demoClient.loadDemo(demoName);
+          
+          // Count total code stanzas for progress tracking
+          this.totalCodeStanzas = this.currentDemo.stanzas.filter(stanza => 
+            stanza.blocks.some(block => block.type === 'code')
+          ).length;
+          
+          this.currentStanzaIndex = 0;
+          this.completedCodeStanzas = 0;
+          this.showNextStanza();
+          
+        } catch (error) {
+          this.showError(`Failed to load demo: ${error.message}`);
+        }
+      }
 
+
+
+      showNextStanza() {
+        if (this.currentStanzaIndex >= this.currentDemo.stanzas.length) {
+          this.showCompletion();
+          return;
+        }
+
+        const stanza = this.currentDemo.stanzas[this.currentStanzaIndex];
+        const stanzaElement = this.createStanzaElement(stanza, this.currentStanzaIndex);
+        
+        // Clear previous content and add new stanza
+        const content = document.getElementById('content');
+        
+        // Add new stanza (append-only, like building a notebook)
+        content.appendChild(stanzaElement);
+        
+        // Make stanza visible with animation
+        setTimeout(() => {
+          stanzaElement.classList.add('visible');
+        }, 50);
+        
+        // Auto-scroll to show the new stanza
+        setTimeout(() => {
+          const headerHeight = document.querySelector('.header')?.offsetHeight || 0;
+          const stanzaTop = stanzaElement.offsetTop;
+          window.scrollTo({
+            top: stanzaTop - headerHeight - 20, // 20px padding
+            behavior: 'smooth'
+          });
+        }, 100);
+      }
+
+      createStanzaElement(stanza, index) {
+        const stanzaElement = document.createElement('div');
+        stanzaElement.className = 'stanza';
+        stanzaElement.id = `stanza-${index}`;
+        
+        // Stanza header
         const header = document.createElement('div');
         header.className = 'stanza-header';
-        header.innerHTML = `
-          <h3>${stanza.name}</h3>
-          <div class="stanza-status">
-            <div class="status-indicator" id="status-${index}"></div>
-            <span class="operation-type" id="operation-${index}">-</span>
-          </div>
-        `;
-
+        
+        const name = document.createElement('div');
+        name.className = 'stanza-name';
+        name.textContent = stanza.name.replace(/_/g, ' ');
+        
+        const status = document.createElement('div');
+        status.className = 'stanza-status pending';
+        status.textContent = 'Pending';
+        status.id = `stanza-status-${index}`;
+        
+        header.appendChild(name);
+        header.appendChild(status);
+        
+        // Stanza content
         const content = document.createElement('div');
         content.className = 'stanza-content';
-        content.id = `content-${index}`;
-
+        
         // Render blocks within the stanza
         let globalBlockIndex = 0;
         for (let i = 0; i < index; i++) {
@@ -510,222 +466,229 @@
         }
         
         stanza.blocks.forEach((block, localBlockIndex) => {
-          const blockElement = this.createBlockElement(block, globalBlockIndex + localBlockIndex);
+          const blockElement = this.createBlockElement(block, globalBlockIndex + localBlockIndex, stanza);
           content.appendChild(blockElement);
         });
-
-        // Add execution result container
-        const resultContainer = document.createElement('div');
-        resultContainer.className = 'execution-result';
-        resultContainer.id = `result-${index}`;
-        resultContainer.style.display = 'none';
-        content.appendChild(resultContainer);
-
-        header.addEventListener('click', () => this.toggleStanza(index));
-        stanzaDiv.appendChild(header);
-        stanzaDiv.appendChild(content);
-
-        return stanzaDiv;
+        
+        stanzaElement.appendChild(header);
+        stanzaElement.appendChild(content);
+        
+        // Add footer with Next button (initially hidden for code stanzas)
+        const footer = document.createElement('div');
+        footer.className = 'stanza-footer';
+        footer.style.display = 'none'; // Hidden by default
+        
+        const nextButton = document.createElement('button');
+        nextButton.className = 'execute-button query';
+        nextButton.textContent = 'Next';
+        nextButton.onclick = () => this.advanceToNextStanza();
+        nextButton.id = `next-stanza-${index}`;
+        
+        // Check if this stanza has code blocks
+        const hasCodeBlocks = stanza.blocks.some(b => b.type === 'code');
+        if (hasCodeBlocks) {
+          nextButton.disabled = true;
+          nextButton.textContent = 'Execute Code First';
+          nextButton.className = 'execute-button unknown';
+        } else {
+          // For markdown-only stanzas, show the Next button immediately
+          footer.style.display = 'flex';
+        }
+        
+        footer.appendChild(nextButton);
+        stanzaElement.appendChild(footer);
+        
+        // Store reference to footer for later use
+        stanzaElement.dataset.footerId = `footer-${index}`;
+        
+        // Track execution state for this stanza
+        stanzaElement.dataset.executedBlocks = '0';
+        stanzaElement.dataset.totalCodeBlocks = stanza.blocks.filter(b => b.type === 'code').length.toString();
+        
+        return stanzaElement;
       }
 
-      createBlockElement(block, blockIndex) {
-        const blockDiv = document.createElement('div');
-        blockDiv.className = 'block';
-
-        const header = document.createElement('div');
-        header.className = 'block-header';
-        header.innerHTML = `
-          <span class="block-type ${block.type}">${block.type}</span>
-          ${block.language ? `<span class="block-language">${block.language}</span>` : ''}
-        `;
-
-        const content = document.createElement('div');
-        content.className = `block-content ${block.type}`;
-        content.textContent = block.content.join('\n');
-
-        blockDiv.appendChild(header);
-        blockDiv.appendChild(content);
-
-        // Add execution button for code blocks
+      createBlockElement(block, blockIndex, stanza) {
+        const blockElement = document.createElement('div');
+        blockElement.className = `block ${block.type}-block`;
+        
+        const blockHeader = document.createElement('div');
+        blockHeader.className = 'block-header';
+        
         if (block.type === 'code') {
-          const executeBtn = document.createElement('button');
-          executeBtn.className = 'execute-btn';
-          executeBtn.textContent = '▶ Execute';
-          executeBtn.onclick = () => {
-            console.log('Execute button clicked for block:', blockIndex);
-            this.executeBlock(blockIndex);
-          };
-          blockDiv.appendChild(executeBtn);
-        }
-
-        return blockDiv;
-      }
-
-      toggleStanza(index) {
-        const content = document.getElementById(`content-${index}`);
-        content.classList.toggle('expanded');
-      }
-
-      enableControls() {
-        document.getElementById('runAllBtn').disabled = false;
-        document.getElementById('runNextBtn').disabled = false;
-        document.getElementById('resetBtn').disabled = false;
-      }
-
-      async runAll() {
-        if (this.isExecuting) return;
-        
-        this.isExecuting = true;
-        this.resetAllStatuses();
-        
-        try {
-          const baseUrl = document.getElementById('baseUrl').value;
-          const results = await executeDemo(this.currentDemo, baseUrl);
+          // Add spacer to push button to the right
+          const spacer = document.createElement('div');
+          spacer.style.flex = '1';
+          blockHeader.appendChild(spacer);
           
-          this.updateProgress(100);
-          this.updateResults(results);
-          console.log('Demo execution completed:', results);
+          const executeButton = document.createElement('button');
+          executeButton.className = 'execute-button unknown';
+          executeButton.textContent = 'Execute';
+          executeButton.onclick = () => this.executeBlock(blockIndex);
+          executeButton.id = `execute-${blockIndex}`;
+          blockHeader.appendChild(executeButton);
+          
+          // Analyze operation type for button styling
+          this.analyzeOperationType(block, executeButton);
+        }
+        
+        blockElement.appendChild(blockHeader);
+        
+        if (block.type === 'markdown') {
+          const markdownContent = document.createElement('div');
+          markdownContent.className = 'markdown-content';
+          markdownContent.innerHTML = this.renderMarkdown(block.content);
+          blockElement.appendChild(markdownContent);
+        } else if (block.type === 'code') {
+          const codeContent = document.createElement('div');
+          codeContent.className = 'code-content';
+          
+          const codeHeader = document.createElement('div');
+          codeHeader.className = 'code-header';
+          codeHeader.textContent = block.language || 'javascript';
+          
+          const codeBody = document.createElement('div');
+          codeBody.className = 'code-body';
+          codeBody.textContent = block.content.join('\n');
+          
+          codeContent.appendChild(codeHeader);
+          codeContent.appendChild(codeBody);
+          blockElement.appendChild(codeContent);
+        }
+        
+        return blockElement;
+      }
+
+      async analyzeOperationType(block, button) {
+        try {
+          const operationType = await this.demoClient.analyzeOperationType(block);
+          
+          // Update button styling based on operation type
+          button.className = `execute-button ${operationType}`;
+          
+          // Update button text based on operation type
+          switch (operationType) {
+            case 'transaction':
+              button.textContent = 'Execute';
+              break;
+            case 'query':
+              button.textContent = 'Execute';
+              break;
+            case 'mixed':
+              button.textContent = 'Execute';
+              break;
+            default:
+              button.textContent = 'Execute';
+          }
         } catch (error) {
-          this.showError('Demo execution failed: ' + error.message);
-        } finally {
-          this.isExecuting = false;
+          console.warn('Failed to analyze operation type:', error);
         }
       }
 
-      async runNext() {
-        if (this.isExecuting || this.currentStanzaIndex >= this.currentDemo.stanzas.length) return;
-        
-        this.isExecuting = true;
-        this.updateStanzaStatus(this.currentStanzaIndex, 'running');
-        
-        try {
-          // Initialize client only once
-          if (!this.client) {
-            this.client = new DemoClient();
-            await this.client.initDemo(this.currentDemo, document.getElementById('baseUrl').value);
-            console.log('Created new client with session ID:', this.client.sessionId);
+      renderMarkdown(content) {
+        return content.map(line => {
+          if (line.startsWith('# ')) {
+            return `<h1>${line.substring(2)}</h1>`;
+          } else if (line.startsWith('## ')) {
+            return `<h2>${line.substring(3)}</h2>`;
+          } else if (line.startsWith('### ')) {
+            return `<h3>${line.substring(4)}</h3>`;
+          } else if (line.startsWith('- ')) {
+            return `<li>${line.substring(2)}</li>`;
+          } else if (line.trim() === '') {
+            return '<br>';
           } else {
-            console.log('Reusing existing client with session ID:', this.client.sessionId);
+            return `<p>${line}</p>`;
           }
-
-          const result = await this.client.executeStanza(this.currentStanzaIndex);
-          const results = result.results;
-          this.updateStanzaResult(this.currentStanzaIndex, results);
-          this.currentStanzaIndex++;
-          
-          const progress = (this.currentStanzaIndex / this.currentDemo.stanzas.length) * 100;
-          this.updateProgress(progress);
-          
-          if (this.currentStanzaIndex >= this.currentDemo.stanzas.length) {
-            console.log('All stanzas completed');
-          }
-        } catch (error) {
-          this.updateStanzaStatus(this.currentStanzaIndex, 'error');
-          this.showError(`Stanza ${this.currentStanzaIndex + 1} failed: ${error.message}`);
-        } finally {
-          this.isExecuting = false;
-        }
+        }).join('');
       }
 
       async executeBlock(blockIndex) {
-        if (this.isExecuting) return;
+        const button = document.getElementById(`execute-${blockIndex}`);
+        const statusElement = document.getElementById(`stanza-status-${this.currentStanzaIndex}`);
         
-        this.isExecuting = true;
+        // Update UI state
+        button.disabled = true;
+        button.textContent = 'Executing...';
+        statusElement.className = 'stanza-status executing';
+        statusElement.textContent = 'Executing';
         
         try {
-          // Always create a fresh client if we don't have one or if the session is invalid
-          if (!this.client || !this.client.sessionId) {
-            this.client = new DemoClient();
-            await this.client.initDemo(this.currentDemo, document.getElementById('baseUrl').value);
-            console.log('Created new client with session ID:', this.client.sessionId);
-          } else {
-            console.log('Reusing existing client with session ID:', this.client.sessionId);
-          }
-
-          // Find which stanza contains this block
-          let currentBlockCount = 0;
-          let targetStanzaIndex = -1;
+          const results = await this.demoClient.executeStanza(this.currentStanzaIndex);
+          this.updateStanzaResult(results);
           
-          for (let i = 0; i < this.currentDemo.stanzas.length; i++) {
-            const stanza = this.currentDemo.stanzas[i];
-            const stanzaBlockCount = stanza.blocks.length;
+          // Update progress
+          this.completedCodeStanzas++;
+          
+          // Update stanza status
+          statusElement.className = 'stanza-status completed';
+          statusElement.textContent = 'Completed';
+          
+          // Track execution progress for this stanza
+          const stanzaElement = document.getElementById(`stanza-${this.currentStanzaIndex}`);
+          const executedBlocks = parseInt(stanzaElement.dataset.executedBlocks || '0') + 1;
+          const totalCodeBlocks = parseInt(stanzaElement.dataset.totalCodeBlocks || '0');
+          
+          stanzaElement.dataset.executedBlocks = executedBlocks.toString();
+          
+          // Only show the Next button after ALL code blocks are executed
+          if (executedBlocks >= totalCodeBlocks) {
+            const footer = stanzaElement.querySelector('.stanza-footer');
+            const nextButton = footer.querySelector('button');
             
-            // Check if this block is within this stanza
-            if (blockIndex >= currentBlockCount && blockIndex < currentBlockCount + stanzaBlockCount) {
-              targetStanzaIndex = i;
-              break;
+            if (footer && nextButton) {
+              footer.style.display = 'flex';
+              nextButton.disabled = false;
+              nextButton.textContent = 'Next';
+              nextButton.className = 'execute-button query';
             }
-            
-            currentBlockCount += stanzaBlockCount;
           }
-
-          if (targetStanzaIndex === -1) {
-            throw new Error(`Could not find stanza for block ${blockIndex}`);
-          }
-
-          console.log(`Executing stanza ${targetStanzaIndex} which contains block ${blockIndex}`);
-
-          // Execute the stanza containing this block
-          const result = await this.client.executeStanza(targetStanzaIndex);
-          const results = result.results;
           
-          // Debug: Log the results structure
-          console.log('Results from server:', results);
-          results.forEach((r, i) => {
-            console.log(`Result ${i}:`, r);
-            if (r.consoleOutput) {
-              console.log(`  Console output:`, r.consoleOutput);
-            }
-          });
+          // Mark the execute button as completed (one-shot execution)
+          button.disabled = true;
+          button.textContent = 'Completed';
+          button.className = 'execute-button completed';
           
-          // Update the specific stanza result
-          this.updateStanzaResult(targetStanzaIndex, results);
+
           
-          console.log(`Stanza ${targetStanzaIndex} executed successfully`);
+          // Don't auto-advance - let user choose when to move on
+          
         } catch (error) {
-          console.error('Execute block error:', error);
-          // If there's a session error, clear the client so we create a fresh one next time
-          if (error.message.includes('No active session') || error.message.includes('Session not found')) {
-            this.client = null;
-          }
-          this.showError(`Block ${blockIndex} failed: ${error.message}`);
+          this.showError(`Execution failed: ${error.message}`);
+          statusElement.className = 'stanza-status error';
+          statusElement.textContent = 'Error';
+          button.disabled = false;
+          button.textContent = 'Retry';
         } finally {
-          this.isExecuting = false;
+          // Always reset button state if it's still in executing state
+          if (button.textContent === 'Executing...') {
+            button.disabled = false;
+            button.textContent = 'Execute';
+          }
         }
       }
 
-      async reset() {
-        if (this.client) {
-          await this.client.reset();
+      advanceToNextStanza() {
+        this.currentStanzaIndex++;
+        if (this.currentStanzaIndex < this.currentDemo.stanzas.length) {
+          this.showNextStanza();
+        } else {
+          this.showCompletion();
         }
-        this.currentStanzaIndex = 0;
-        this.client = null;
-        this.resetAllStatuses();
-        this.updateProgress(0);
-        this.clearResults();
       }
 
-      resetAllStatuses() {
-        this.currentDemo.stanzas.forEach((_, index) => {
-          this.updateStanzaStatus(index, 'pending');
-        });
-      }
-
-      updateStanzaStatus(index, status) {
-        const indicator = document.getElementById(`status-${index}`);
-        indicator.className = `status-indicator ${status}`;
-      }
-
-      updateStanzaResult(index, results) {
-        this.updateStanzaStatus(index, 'completed');
+      updateStanzaResult(results) {
+        const stanzaElement = document.getElementById(`stanza-${this.currentStanzaIndex}`);
+        const content = stanzaElement.querySelector('.stanza-content');
         
-        const operationType = results.length > 0 ? results[results.length - 1].operationType : 'unknown';
-        const operationElement = document.getElementById(`operation-${index}`);
-        operationElement.textContent = operationType;
-        operationElement.className = `operation-type ${operationType}`;
-
-        const resultContainer = document.getElementById(`result-${index}`);
-        resultContainer.style.display = 'block';
+        // Find the result container or create one
+        let resultContainer = content.querySelector('.execution-result');
+        if (!resultContainer) {
+          resultContainer = document.createElement('div');
+          resultContainer.className = 'execution-result success';
+          content.appendChild(resultContainer);
+        }
+        
         resultContainer.className = 'execution-result success';
         
         let resultHtml = '<h4>Output:</h4>';
@@ -753,38 +716,58 @@
         }
         
         resultContainer.innerHTML = resultHtml;
-      }
-
-      updateResults(results) {
-        results.forEach((result, index) => {
-          this.updateStanzaStatus(index, 'completed');
+        
+        // Smart scroll to show output without hiding the code block
+        setTimeout(() => {
+          const codeBlock = resultContainer.closest('.stanza').querySelector('.code-content');
+          const codeBlockTop = codeBlock.offsetTop;
+          const resultContainerBottom = resultContainer.offsetTop + resultContainer.offsetHeight;
+          const viewportHeight = window.innerHeight;
+          const currentScrollTop = window.pageYOffset;
           
-          const operationElement = document.getElementById(`operation-${index}`);
-          operationElement.textContent = result.operationType;
-          operationElement.className = `operation-type ${result.operationType}`;
-        });
+          // Calculate how much we need to scroll to show the bottom of the result
+          const scrollNeeded = resultContainerBottom - currentScrollTop - viewportHeight + 20; // 20px padding
+          
+          // Only scroll if it won't hide the code block
+          if (scrollNeeded > 0 && (currentScrollTop + scrollNeeded) < codeBlockTop) {
+            window.scrollTo({
+              top: currentScrollTop + scrollNeeded,
+              behavior: 'smooth'
+            });
+          }
+        }, 100);
       }
 
-      updateProgress(percentage) {
-        document.getElementById('progressFill').style.width = `${percentage}%`;
-      }
 
-      clearResults() {
-        this.currentDemo.stanzas.forEach((_, index) => {
-          const resultContainer = document.getElementById(`result-${index}`);
-          resultContainer.style.display = 'none';
-        });
+
+      showLoading(message) {
+        const content = document.getElementById('content');
+        content.innerHTML = `
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            ${message}
+          </div>
+        `;
       }
 
       showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.textContent = message;
-        
-        const container = document.getElementById('demoContent');
-        container.insertBefore(errorDiv, container.firstChild);
-        
-        setTimeout(() => errorDiv.remove(), 5000);
+        const content = document.getElementById('content');
+        content.innerHTML = `
+          <div class="error-message">
+            <strong>Error:</strong> ${message}
+          </div>
+        `;
+      }
+
+      showCompletion() {
+        const content = document.getElementById('content');
+        content.innerHTML = `
+          <div class="loading">
+            <h2>🎉 Demo Completed!</h2>
+            <p>All stanzas have been executed successfully.</p>
+            <p>Completed ${this.completedCodeStanzas} code stanzas.</p>
+          </div>
+        `;
       }
     }
 
