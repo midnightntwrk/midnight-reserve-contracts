@@ -153,6 +153,94 @@
       position: relative;
     }
 
+    .utxo-container {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .utxo-summary {
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .utxo-item {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 6px;
+    }
+
+    .utxo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .utxo-index {
+      font-size: 11px;
+      color: #6c757d;
+      font-weight: 500;
+    }
+
+    .utxo-amount {
+      font-weight: 600;
+      color: #28a745;
+      font-size: 12px;
+    }
+
+    .utxo-details {
+      font-size: 11px;
+      color: #495057;
+    }
+
+    .utxo-address {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      margin-bottom: 2px;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 3px;
+      transition: background-color 0.2s ease;
+    }
+
+    .utxo-address:hover {
+      background-color: #e9ecef;
+    }
+
+    .utxo-datum {
+      font-style: italic;
+      color: #6c757d;
+    }
+
+    .utxo-empty {
+      text-align: center;
+      color: #6c757d;
+      font-style: italic;
+      padding: 12px;
+    }
+
+    .balance-detail {
+      text-align: center;
+      padding: 8px;
+    }
+
+    .balance-amount {
+      font-size: 16px;
+      font-weight: 600;
+      color: #28a745;
+      margin-bottom: 4px;
+    }
+
+    .balance-lovelace {
+      font-size: 12px;
+      color: #6c757d;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    }
+
     .server-offline-warning {
       background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
       border: 2px solid #f39c12;
@@ -1192,7 +1280,7 @@
           const toggleButton = document.createElement('button');
           toggleButton.className = 'watcher-toggle';
           toggleButton.textContent = '📊';
-          toggleButton.title = 'Toggle between formatted and raw data';
+          toggleButton.title = 'Toggle between formatted, detailed, and raw data';
           toggleButton.onclick = () => this.toggleWatcherView(watcher.id);
           
           const nameDiv = document.createElement('div');
@@ -1223,7 +1311,16 @@
         if (!resultDiv || !watcher) return;
         
         const currentMode = resultDiv.dataset.viewMode;
-        const newMode = currentMode === 'formatted' ? 'raw' : 'formatted';
+        let newMode;
+        
+        // Cycle through: formatted -> detailed -> raw
+        if (currentMode === 'formatted') {
+          newMode = 'detailed';
+        } else if (currentMode === 'detailed') {
+          newMode = 'raw';
+        } else {
+          newMode = 'formatted';
+        }
         
         resultDiv.dataset.viewMode = newMode;
         
@@ -1232,12 +1329,86 @@
           resultDiv.style.fontFamily = 'monospace';
           resultDiv.style.fontSize = '0.8em';
           resultDiv.style.whiteSpace = 'pre-wrap';
+        } else if (newMode === 'detailed') {
+          resultDiv.innerHTML = this.renderDetailedView(watcher);
+          resultDiv.style.fontFamily = '';
+          resultDiv.style.fontSize = '';
+          resultDiv.style.whiteSpace = '';
         } else {
           resultDiv.textContent = watcher.result || 'No data';
           resultDiv.style.fontFamily = '';
           resultDiv.style.fontSize = '';
           resultDiv.style.whiteSpace = '';
         }
+      }
+
+      renderDetailedView(watcher) {
+        if (!watcher.rawData) return 'No data available';
+        
+        // Check if this looks like UTXO data
+        if (watcher.rawData.utxos && Array.isArray(watcher.rawData.utxos)) {
+          return this.renderUtxoView(watcher.rawData.utxos);
+        }
+        
+        // Check if this looks like balance data
+        if (watcher.rawData.balance !== undefined) {
+          return this.renderBalanceView(watcher.rawData);
+        }
+        
+        // Default to formatted JSON for other data types
+        return `<pre>${JSON.stringify(watcher.rawData, null, 2)}</pre>`;
+      }
+
+      renderUtxoView(utxos) {
+        if (!utxos || utxos.length === 0) {
+          return '<div class="utxo-empty">No UTXOs found</div>';
+        }
+
+        const utxoElements = utxos.map((utxo, index) => {
+          const amount = utxo.amount || 0;
+          const lovelace = amount / 1000000; // Convert to ADA
+          const address = utxo.address || 'Unknown address';
+          const datum = utxo.datum ? 'Has datum' : 'No datum';
+          
+          return `
+            <div class="utxo-item">
+              <div class="utxo-header">
+                <span class="utxo-index">#${index + 1}</span>
+                <span class="utxo-amount">${lovelace.toFixed(6)} ADA</span>
+              </div>
+              <div class="utxo-details">
+                <div class="utxo-address" title="${address}" onclick="this.textContent = this.textContent === '${this.truncateAddress(address)}' ? '${address}' : '${this.truncateAddress(address)}'">
+                  ${this.truncateAddress(address)}
+                </div>
+                <div class="utxo-datum">${datum}</div>
+              </div>
+            </div>
+          `;
+        });
+
+        return `
+          <div class="utxo-container">
+            <div class="utxo-summary">${utxos.length} UTXO${utxos.length !== 1 ? 's' : ''}</div>
+            ${utxoElements.join('')}
+          </div>
+        `;
+      }
+
+      renderBalanceView(balanceData) {
+        const balance = balanceData.balance || 0;
+        const lovelace = balance / 1000000; // Convert to ADA
+        
+        return `
+          <div class="balance-detail">
+            <div class="balance-amount">${lovelace.toFixed(6)} ADA</div>
+            <div class="balance-lovelace">${balance.toLocaleString()} lovelace</div>
+          </div>
+        `;
+      }
+
+      truncateAddress(address) {
+        if (address.length <= 20) return address;
+        return address.substring(0, 10) + '...' + address.substring(address.length - 10);
       }
 
       showCompletion() {
