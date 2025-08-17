@@ -412,6 +412,9 @@ class MonadicRuntime {
 
       const data = await response.json();
       
+      // Store raw data
+      watcher.rawData = data;
+      
       // Apply formatter
       let formattedResult;
       if (typeof watcher.formatter === 'string') {
@@ -511,6 +514,7 @@ class MonadicRuntime {
         id: watcher.id,
         name: watcher.name,
         result: this.watchResults.get(id),
+        rawData: watcher.rawData,
         hasChanged: watcher.hasChanged,
         lastRun: watcher.lastRun
       };

@@ -130,6 +130,29 @@
       line-height: 1.3;
     }
 
+    .watcher-toggle {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 6px;
+      font-size: 10px;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s ease;
+    }
+
+    .watcher-toggle:hover {
+      opacity: 1;
+    }
+
+    .watcher-cell {
+      position: relative;
+    }
+
     .server-offline-warning {
       background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
       border: 2px solid #f39c12;
@@ -1166,16 +1189,55 @@
             console.log(`[UI] Added 'changed' class to watcher ${watcher.name}`);
           }
           
-          cell.innerHTML = `
-            <div class="watcher-name">${watcher.name}</div>
-            <div class="watcher-result">${watcher.result || 'No data'}</div>
-          `;
+          const toggleButton = document.createElement('button');
+          toggleButton.className = 'watcher-toggle';
+          toggleButton.textContent = '📊';
+          toggleButton.title = 'Toggle between formatted and raw data';
+          toggleButton.onclick = () => this.toggleWatcherView(watcher.id);
+          
+          const nameDiv = document.createElement('div');
+          nameDiv.className = 'watcher-name';
+          nameDiv.textContent = watcher.name;
+          
+          const resultDiv = document.createElement('div');
+          resultDiv.className = 'watcher-result';
+          resultDiv.dataset.watcherId = watcher.id;
+          resultDiv.dataset.viewMode = 'formatted';
+          resultDiv.textContent = watcher.result || 'No data';
+          
+          cell.appendChild(toggleButton);
+          cell.appendChild(nameDiv);
+          cell.appendChild(resultDiv);
           
           watcherList.appendChild(cell);
         });
         
         // Note: Server clears changed state after returning results, so highlighting will persist
         // until the next execution cycle
+      }
+
+      toggleWatcherView(watcherId) {
+        const resultDiv = document.querySelector(`.watcher-result[data-watcher-id="${watcherId}"]`);
+        const watcher = this.watchersInfo.find(w => w.id === watcherId);
+        
+        if (!resultDiv || !watcher) return;
+        
+        const currentMode = resultDiv.dataset.viewMode;
+        const newMode = currentMode === 'formatted' ? 'raw' : 'formatted';
+        
+        resultDiv.dataset.viewMode = newMode;
+        
+        if (newMode === 'raw') {
+          resultDiv.textContent = JSON.stringify(watcher.rawData, null, 2);
+          resultDiv.style.fontFamily = 'monospace';
+          resultDiv.style.fontSize = '0.8em';
+          resultDiv.style.whiteSpace = 'pre-wrap';
+        } else {
+          resultDiv.textContent = watcher.result || 'No data';
+          resultDiv.style.fontFamily = '';
+          resultDiv.style.fontSize = '';
+          resultDiv.style.whiteSpace = '';
+        }
       }
 
       showCompletion() {
