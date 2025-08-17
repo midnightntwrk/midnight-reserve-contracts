@@ -9,100 +9,118 @@ class DemoClient {
     this.sessionId = null;
   }
 
-  async initDemo(demo, baseUrl = 'http://localhost:3031') {
-    const response = await fetch(`${this.serverUrl}/demo/init`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ demo, baseUrl })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to initialize demo: ${response.status}`);
+  async loadDemo(demoName) {
+    try {
+      // Load demo content from file
+      const response = await fetch(`/demo-flows/${demoName}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load demo: ${response.statusText}`);
+      }
+      const demoContent = await response.text();
+      return JSON.parse(demoContent);
+    } catch (error) {
+      console.error('Error loading demo:', error);
+      throw error;
     }
+  }
 
-    const data = await response.json();
-    this.sessionId = data.sessionId;
-    return data;
+  async loadDemoFromContent(content, fileName) {
+    try {
+      // Parse the content as JSON
+      const demo = JSON.parse(content);
+      
+      // Initialize session with the parsed demo
+      await this.initializeSessionWithDemo(demo);
+      
+      return demo;
+    } catch (error) {
+      console.error('Error loading demo from content:', error);
+      throw error;
+    }
+  }
+
+  async initializeSessionWithDemo(demo) {
+    try {
+      const response = await fetch(`${this.serverUrl}/demo/init`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          demo,
+          baseUrl: 'http://localhost:3031'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create session: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      this.sessionId = result.sessionId;
+      console.log('Created new session:', this.sessionId);
+    } catch (error) {
+      console.error('Error initializing session:', error);
+      throw error;
+    }
+  }
+
+  async analyzeOperationType(block) {
+    // For now, return a default type - this can be enhanced later
+    return 'transaction';
   }
 
   async executeStanza(stanzaIndex) {
-    if (!this.sessionId) {
-      throw new Error('No active session');
+    try {
+      // Initialize session if needed
+      if (!this.sessionId) {
+        await this.initializeSession();
+      }
+
+      const response = await fetch(`${this.serverUrl}/demo/execute-stanza`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: this.sessionId,
+          stanzaIndex
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to execute stanza: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result.results;
+    } catch (error) {
+      console.error('Error executing stanza:', error);
+      
+      // If session error, clear session and retry once
+      if (error.message.includes('session') || error.message.includes('Session')) {
+        this.sessionId = null;
+        throw new Error('Session expired. Please try again.');
+      }
+      
+      throw error;
     }
-
-    const response = await fetch(`${this.serverUrl}/demo/execute-stanza`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: this.sessionId, stanzaIndex })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to execute stanza: ${response.status}`);
-    }
-
-    return await response.json();
   }
 
-  async executeAll() {
-    if (!this.sessionId) {
-      throw new Error('No active session');
+  async initializeSession() {
+    try {
+      // Load the demo first
+      const demo = await this.loadDemo('simple-wallet-test.demonb');
+      await this.initializeSessionWithDemo(demo);
+    } catch (error) {
+      console.error('Error initializing session:', error);
+      throw error;
     }
-
-    const response = await fetch(`${this.serverUrl}/demo/execute-all`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: this.sessionId })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to execute all: ${response.status}`);
-    }
-
-    return await response.json();
-  }
-
-  async getSession() {
-    if (!this.sessionId) {
-      throw new Error('No active session');
-    }
-
-    const response = await fetch(`${this.serverUrl}/demo/session/${this.sessionId}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to get session: ${response.status}`);
-    }
-
-    return await response.json();
   }
 
   async reset() {
-    if (!this.sessionId) {
-      throw new Error('No active session');
-    }
-
-    const response = await fetch(`${this.serverUrl}/demo/reset/${this.sessionId}`, {
-      method: 'POST'
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to reset: ${response.status}`);
-    }
-
-    return await response.json();
-  }
-
-  async cleanup() {
-    if (this.sessionId) {
-      await fetch(`${this.serverUrl}/demo/session/${this.sessionId}`, {
-        method: 'DELETE'
-      });
-      this.sessionId = null;
-    }
-  }
-
-  async health() {
-    const response = await fetch(`${this.serverUrl}/health`);
-    return await response.json();
+    this.sessionId = null;
   }
 }
 

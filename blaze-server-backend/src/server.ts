@@ -9,6 +9,7 @@ import { computeScriptInfo } from "./utils/script-utils";
 
 export function createServer(sessionManager: SessionManager) {
   const app = express();
+  
   app.use(express.json());
 
   // Logging state management
@@ -960,6 +961,8 @@ export function createServer(sessionManager: SessionManager) {
       return null;
     }
   }
+
+
 
   return new Promise((resolve, reject) => {
     const server = app.listen(3031, () => {

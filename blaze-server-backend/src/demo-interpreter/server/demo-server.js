@@ -195,6 +195,30 @@ app.delete('/demo/session/:sessionId', async (req, res) => {
   }
 });
 
+// Demo files endpoint
+app.get('/api/demo-files', (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    
+    const demoFlowsDir = path.join(__dirname, '../../../demo-flows');
+    const files = fs.readdirSync(demoFlowsDir)
+      .filter(file => {
+        const ext = path.extname(file).toLowerCase();
+        return ['.demonb', '.js', '.yaml', '.json'].includes(ext);
+      })
+      .sort();
+    
+    res.json(files);
+  } catch (error) {
+    console.error('Error reading demo files:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to read demo files"
+    });
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ 
