@@ -1,9 +1,14 @@
 import { IntegratedDemoExecutor } from './IntegratedDemoExecutor';
 
+export interface DemoBlock {
+  type: 'markdown' | 'code';
+  language?: string; // Required for code blocks
+  content: string[];
+}
+
 export interface JavaScriptDemoStanza {
   name: string;
-  type: 'markdown' | 'code';
-  content: string;
+  blocks: DemoBlock[];
 }
 
 export interface JavaScriptDemo {
@@ -14,7 +19,9 @@ export interface JavaScriptDemo {
 
 export interface DemoExecutionResult {
   stanzaIndex: number;
-  stanzaType: string;
+  stanzaName: string;
+  blockIndex: number;
+  blockType: string;
   operationType: string;
   isPartial?: boolean;
   result: any;
@@ -53,31 +60,42 @@ export class JavaScriptDemoExecutor {
     console.log(`Total stanzas: ${this.demo.stanzas.length}\n`);
 
     const results: DemoExecutionResult[] = [];
+    let codeBlockIndex = 0;
 
-    try {
-      // Extract all code blocks for upfront processing
-      const codeBlocks = this.demo.stanzas
-        .filter(stanza => stanza.type === 'code')
-        .map(stanza => stanza.content);
+    // Extract all code blocks for upfront processing
+    const codeBlocks: string[] = [];
+    for (const stanza of this.demo.stanzas) {
+      for (const block of stanza.blocks) {
+        if (block.type === 'code') {
+          codeBlocks.push(block.content.join('\n'));
+        }
+      }
+    }
 
-      // Set all code blocks upfront for scope management
-      this.executor.setCodeBlocks(codeBlocks);
+    // Set all code blocks upfront for scope management
+    this.executor.setCodeBlocks(codeBlocks);
 
-      let codeBlockIndex = 0;
-
-      // Execute each stanza
-      for (let i = 0; i < this.demo.stanzas.length; i++) {
-        const stanza = this.demo.stanzas[i];
+    for (let stanzaIndex = 0; stanzaIndex < this.demo.stanzas.length; stanzaIndex++) {
+      const stanza = this.demo.stanzas[stanzaIndex];
+      console.log(`--- Stanza ${stanzaIndex + 1}: ${stanza.name} ---`);
+      
+      // Iterate through blocks within this stanza
+      for (let blockIndex = 0; blockIndex < stanza.blocks.length; blockIndex++) {
+        const block = stanza.blocks[blockIndex];
         
-        console.log(`--- Stanza ${i + 1}: ${stanza.name} (${stanza.type.toUpperCase()}) ---`);
-        if (stanza.type === 'markdown') {
-          console.log(stanza.content);
+        if (block.type === 'markdown') {
+          console.log('Markdown:');
+          block.content.forEach(line => {
+            if (line.trim()) console.log(`  ${line}`);
+          });
           console.log('---\n');
           
-          // Add markdown stanza to results
+          // Add markdown block to results
           const markdownResult: DemoExecutionResult = {
-            stanzaIndex: i,
-            stanzaType: stanza.type,
+            stanzaIndex,
+            stanzaName: stanza.name,
+            blockIndex,
+            blockType: block.type,
             operationType: 'markdown',
             result: null,
             scope: this.executor.getScope()
@@ -86,84 +104,108 @@ export class JavaScriptDemoExecutor {
           continue;
         }
 
-        // Execute code stanza
+        // Execute code block
         console.log('Code:');
-        // Handle multi-line content by splitting and joining
-        const codeLines = stanza.content.split('\n');
-        codeLines.forEach(line => {
+        block.content.forEach(line => {
           if (line.trim()) console.log(`  ${line}`);
         });
 
-        // Convert multi-line content to single string for execution
-        const codeContent = codeLines.join('\n');
-
         const { result, operationType, isPartial } = await this.executor.executeStanza(codeBlockIndex);
         
-        const scope = this.executor.getScope();
+        console.log(`\nOperation Type: ${operationType}`);
+        console.log(`Current Scope Variables: [${Object.keys(this.executor.getScope()).join(', ')}]`);
+        console.log('---\n');
+
         const executionResult: DemoExecutionResult = {
-          stanzaIndex: i,
-          stanzaType: stanza.type,
+          stanzaIndex,
+          stanzaName: stanza.name,
+          blockIndex,
+          blockType: block.type,
           operationType,
           isPartial,
           result,
-          scope: { ...scope }
+          scope: this.executor.getScope()
         };
-
         results.push(executionResult);
-
-        console.log(`\nOperation Type: ${operationType}`);
-        console.log('Current Scope Variables:', Object.keys(scope));
-        console.log('---\n');
-
         codeBlockIndex++;
       }
-
-      console.log('✅ Demo completed successfully!');
-      return results;
-
-    } catch (error) {
-      console.error('\n=== DEMO FAILED ===');
-      console.error(`Error: ${(error as Error).message}\n`);
-      throw error;
     }
+
+    console.log('✅ Demo completed successfully!');
+    return results;
   }
 
   /**
    * Execute a single stanza by index
    */
-  async executeStanza(stanzaIndex: number): Promise<DemoExecutionResult> {
-    if (stanzaIndex >= this.demo.stanzas.length) {
-      throw new Error(`Stanza index ${stanzaIndex} out of range`);
+  async executeStanza(stanzaIndex: number): Promise<DemoExecutionResult[]> {
+    if (stanzaIndex < 0 || stanzaIndex >= this.demo.stanzas.length) {
+      throw new Error(`Invalid stanza index: ${stanzaIndex}`);
     }
 
     const stanza = this.demo.stanzas[stanzaIndex];
+    console.log(`\n=== Executing Stanza: ${stanza.name} ===`);
     
-    if (stanza.type === 'markdown') {
-      return {
+    const results: DemoExecutionResult[] = [];
+    let codeBlockIndex = 0;
+
+    // Iterate through blocks within this stanza
+    for (let blockIndex = 0; blockIndex < stanza.blocks.length; blockIndex++) {
+      const block = stanza.blocks[blockIndex];
+      
+      if (block.type === 'markdown') {
+        console.log('Markdown:');
+        block.content.forEach(line => {
+          if (line.trim()) console.log(`  ${line}`);
+        });
+        console.log('---\n');
+        
+        const markdownResult: DemoExecutionResult = {
+          stanzaIndex,
+          stanzaName: stanza.name,
+          blockIndex,
+          blockType: block.type,
+          operationType: 'markdown',
+          result: null,
+          scope: this.executor.getScope()
+        };
+        results.push(markdownResult);
+        continue;
+      }
+
+      // Execute code block
+      console.log('Code:');
+      block.content.forEach(line => {
+        if (line.trim()) console.log(`  ${line}`);
+      });
+
+      // Convert multi-line content to single string for execution
+      const codeContent = block.content.join('\n');
+
+      // Set the code block for execution
+      this.executor.setCodeBlocks([codeContent]);
+
+      const { result, operationType, isPartial } = await this.executor.executeStanza(codeBlockIndex);
+      
+      console.log(`\nOperation Type: ${operationType}`);
+      console.log(`Current Scope Variables: [${Object.keys(this.executor.getScope()).join(', ')}]`);
+      console.log('---\n');
+
+      const executionResult: DemoExecutionResult = {
         stanzaIndex,
-        stanzaType: stanza.type,
-        operationType: 'markdown',
-        result: null,
+        stanzaName: stanza.name,
+        blockIndex,
+        blockType: block.type,
+        operationType,
+        isPartial,
+        result,
         scope: this.executor.getScope()
       };
+      results.push(executionResult);
+      codeBlockIndex++;
     }
 
-    // Find the code block index for this stanza
-    const codeBlockIndex = this.demo.stanzas
-      .slice(0, stanzaIndex + 1)
-      .filter(s => s.type === 'code')
-      .length - 1;
-
-    const { result, operationType, isPartial } = await this.executor.executeStanza(codeBlockIndex);
-    
-    return {
-      stanzaIndex,
-      stanzaType: stanza.type,
-      operationType,
-      isPartial,
-      result,
-      scope: this.executor.getScope()
-    };
+    return results;
   }
 
   /**

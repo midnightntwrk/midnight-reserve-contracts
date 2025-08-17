@@ -9,36 +9,48 @@ describe('Cascading Values Edge Case', () => {
     // within the same code block - the edge case we're investigating
     
     const demo = {
-      name: 'Cascading Values Test',
-      description: 'Test query result used in transaction within same code block',
+      name: "Cascading Values Test",
+      description: "Test query result used in transaction within same code block",
       stanzas: [
         {
-          name: 'setup_intro',
-          type: 'markdown',
-          content: 'Create wallets and test cascading values'
+          name: 'setup',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Create wallets and test cascading values'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// Create wallets first',
+                'jeff = await createWallet(\'jeff\', 50_000_000);',
+                'alice = await createWallet(\'alice\', 0);'
+              ]
+            }
+          ]
         },
         {
-          name: 'create_wallets',
-          type: 'code',
-          content: `
-// Create wallets first
-jeff = await createWallet('jeff', 50_000_000);
-alice = await createWallet('alice', 0);
-          `
-        },
-        {
-          name: 'edge_case_intro',
-          type: 'markdown',
-          content: 'Test the edge case: query then use result in transaction'
-        },
-        {
-          name: 'cascading_values',
-          type: 'code',
-          content: `
-// This is the edge case: query then use result in transaction
-balance = await getBalance('jeff');
-transferResult = await transfer('jeff', 'alice', balance);
-          `
+          name: 'cascading_values_test',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Test the edge case: query then use result in transaction'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// This is the edge case: query then use result in transaction',
+                'balance = await getBalance(\'jeff\');',
+                'transferResult = await transfer(\'jeff\', \'alice\', balance);'
+              ]
+            }
+          ]
         }
       ]
     };
@@ -51,14 +63,14 @@ transferResult = await transfer('jeff', 'alice', balance);
       const results = await executor.executeDemo();
       
       // Verify the results
-      expect(results.length).toBe(4); // 2 markdown + 2 code stanzas
+      expect(results.length).toBe(4); // 2 stanzas, each with 2 blocks (markdown + code)
       
-      // Check that the first code stanza was a transaction (createWallet)
+      // Check that the first code block was a transaction (createWallet)
       expect(results[1].operationType).toBe('transaction');
       expect(results[1].isPartial).toBeFalsy(); // Should not be partial
       
-      // Check that the second code stanza was mixed (query + transaction)
-      // This might be partial due to the cascading values issue
+      // Check that the second code block was mixed (query + transaction)
+      // The dry run should detect both operations correctly
       expect(results[3].operationType).toBe('mixed');
       
       // Check that scope values are preserved

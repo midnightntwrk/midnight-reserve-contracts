@@ -11,36 +11,92 @@ describe("Phase 4.10: Integrated DryRuntime with Scope Persistence Tests", () =>
       name: "Scope Persistence Test",
       description: "Test scope persistence across multiple stanzas",
       stanzas: [
-        { name: 'introduction', type: 'markdown', content: 'Create wallets and demonstrate scope persistence' },
-        { name: 'create_wallets', type: 'code', content: `
-// Create wallets using monadic functions
-jeff = await createWallet('jeff', 50_000_000);
-alice = await createWallet('alice', 25_000_000);
-console.log('Wallets created successfully');
-        ` },
-        { name: 'query_balances', type: 'markdown', content: 'Query balances and demonstrate variable persistence' },
-        { name: 'get_balances', type: 'code', content: `
-// Query balances using variables from previous stanza
-jeffBalance = await getBalance('jeff');
-aliceBalance = await getBalance('alice');
-console.log('Jeff balance:', jeffBalance);
-console.log('Alice balance:', aliceBalance);
-        ` },
-        { name: 'perform_transfer', type: 'markdown', content: 'Perform transfer using persisted variables' },
-        { name: 'transfer_funds', type: 'code', content: `
-// Use the monadic transfer function with variables from previous stanzas
-transferAmount = 10_000_000;
-transferResult = await transfer('jeff', 'alice', transferAmount);
-console.log('Transfer completed:', transferResult);
-        ` },
-        { name: 'verify_results', type: 'markdown', content: 'Verify final balances' },
-        { name: 'check_final_balances', type: 'code', content: `
-// Verify the transfer worked by checking final balances
-finalJeffBalance = await getBalance('jeff');
-finalAliceBalance = await getBalance('alice');
-console.log('Final Jeff balance:', finalJeffBalance);
-console.log('Final Alice balance:', finalAliceBalance);
-        ` }
+        {
+          name: 'wallet_creation',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Create wallets and demonstrate scope persistence'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// Create wallets using monadic functions',
+                'jeff = await createWallet(\'jeff\', 50_000_000);',
+                'alice = await createWallet(\'alice\', 25_000_000);',
+                'console.log(\'Wallets created successfully\');'
+              ]
+            }
+          ]
+        },
+        {
+          name: 'balance_queries',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Query balances and demonstrate variable persistence'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// Query balances using variables from previous stanza',
+                'jeffBalance = await getBalance(\'jeff\');',
+                'aliceBalance = await getBalance(\'alice\');',
+                'console.log(\'Jeff balance:\', jeffBalance);',
+                'console.log(\'Alice balance:\', aliceBalance);'
+              ]
+            }
+          ]
+        },
+        {
+          name: 'fund_transfer',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Perform transfer using persisted variables'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// Use the monadic transfer function with variables from previous stanzas',
+                'transferAmount = 10_000_000;',
+                'transferResult = await transfer(\'jeff\', \'alice\', transferAmount);',
+                'console.log(\'Transfer completed:\', transferResult);'
+              ]
+            }
+          ]
+        },
+        {
+          name: 'final_verification',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Verify final balances'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// Verify the transfer worked by checking final balances',
+                'finalJeffBalance = await getBalance(\'jeff\');',
+                'finalAliceBalance = await getBalance(\'alice\');',
+                'console.log(\'Final Jeff balance:\', finalJeffBalance);',
+                'console.log(\'Final Alice balance:\', finalAliceBalance);'
+              ]
+            }
+          ]
+        }
       ]
     };
     
@@ -53,9 +109,9 @@ console.log('Final Alice balance:', finalAliceBalance);
       const results = await executor.executeDemo();
       
       // Verify results
-      expect(results.length).toBe(8); // 4 markdown + 4 code stanzas
+      expect(results.length).toBe(8); // 4 stanzas, each with 2 blocks (markdown + code)
       
-      // Check operation types (only code stanzas have operation types)
+      // Check operation types (only code blocks have operation types)
       expect(results[1].operationType).toBe('transaction'); // createWallet calls
       expect(results[3].operationType).toBe('query'); // getBalance calls
       expect(results[5].operationType).toBe('transaction'); // transfer calls
@@ -86,42 +142,84 @@ console.log('Final Alice balance:', finalAliceBalance);
       name: "Complex Scope Test",
       description: "Test scope persistence with conditional logic and complex operations",
       stanzas: [
-        { name: 'setup_intro', type: 'markdown', content: 'Setup with conditional logic' },
-        { name: 'conditional_wallets', type: 'code', content: `
-// Setup wallets with conditional creation
-shouldCreateWallets = true;
-if (shouldCreateWallets) {
-  wallet1 = await createWallet('wallet1', 30_000_000);
-  wallet2 = await createWallet('wallet2', 20_000_000);
-  console.log('Wallets created conditionally');
-} else {
-  console.log('Skipping wallet creation');
-}
-        ` },
-        { name: 'complex_operations', type: 'markdown', content: 'Complex operations with multiple variables' },
-        { name: 'multi_variable_ops', type: 'code', content: `
-// Complex operations using multiple variables
-if (wallet1 && wallet2) {
-  balance1 = await getBalance('wallet1');
-  balance2 = await getBalance('wallet2');
-  totalBalance = balance1 + balance2;
-  console.log('Total balance:', totalBalance);
-  
-  // Transfer between wallets
-  transferAmount = Math.min(balance1, 5_000_000);
-  transferResult = await transfer('wallet1', 'wallet2', transferAmount);
-  console.log('Transfer result:', transferResult);
-}
-        ` },
-        { name: 'final_verification', type: 'markdown', content: 'Final verification' },
-        { name: 'verify_final_balances', type: 'code', content: `
-// Final verification using all persisted variables
-if (wallet1 && wallet2) {
-  finalBalance1 = await getBalance('wallet1');
-  finalBalance2 = await getBalance('wallet2');
-  console.log('Final balances - Wallet1:', finalBalance1, 'Wallet2:', finalBalance2);
-}
-        ` }
+        {
+          name: 'conditional_setup',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Setup with conditional logic'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// Setup wallets with conditional creation',
+                'shouldCreateWallets = true;',
+                'if (shouldCreateWallets) {',
+                '  wallet1 = await createWallet(\'wallet1\', 30_000_000);',
+                '  wallet2 = await createWallet(\'wallet2\', 20_000_000);',
+                '  console.log(\'Wallets created conditionally\');',
+                '} else {',
+                '  console.log(\'Skipping wallet creation\');',
+                '}'
+              ]
+            }
+          ]
+        },
+        {
+          name: 'complex_operations',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Complex operations with multiple variables'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// Complex operations using multiple variables',
+                'if (wallet1 && wallet2) {',
+                '  balance1 = await getBalance(\'wallet1\');',
+                '  balance2 = await getBalance(\'wallet2\');',
+                '  totalBalance = balance1 + balance2;',
+                '  console.log(\'Total balance:\', totalBalance);',
+                '  ',
+                '  // Transfer between wallets',
+                '  transferAmount = Math.min(balance1, 5_000_000);',
+                '  transferResult = await transfer(\'wallet1\', \'wallet2\', transferAmount);',
+                '  console.log(\'Transfer result:\', transferResult);',
+                '}'
+              ]
+            }
+          ]
+        },
+        {
+          name: 'final_verification',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Final verification'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// Final verification using all persisted variables',
+                'if (wallet1 && wallet2) {',
+                '  finalBalance1 = await getBalance(\'wallet1\');',
+                '  finalBalance2 = await getBalance(\'wallet2\');',
+                '  console.log(\'Final balances - Wallet1:\', finalBalance1, \'Wallet2:\', finalBalance2);',
+                '}'
+              ]
+            }
+          ]
+        }
       ]
     };
     
@@ -132,9 +230,9 @@ if (wallet1 && wallet2) {
       const results = await executor.executeDemo();
       
       // Verify results
-      expect(results.length).toBe(6); // 3 markdown + 3 code stanzas
+      expect(results.length).toBe(6); // 3 stanzas, each with 2 blocks (markdown + code)
       
-      // Check operation types (only code stanzas have operation types)
+      // Check operation types (only code blocks have operation types)
       expect(results[1].operationType).toBe('transaction'); // createWallet calls
       expect(results[3].operationType).toBe('mixed'); // getBalance + transfer calls
       expect(results[5].operationType).toBe('query'); // getBalance calls
@@ -166,36 +264,92 @@ if (wallet1 && wallet2) {
       name: "Edge Cases Test",
       description: "Test edge cases in DryRuntime with scope variables",
       stanzas: [
-        { name: 'comments_test', type: 'markdown', content: 'Test edge case: function names in comments' },
-        { name: 'no_http_calls', type: 'code', content: `
-// This stanza has createWallet in comments but no actual calls
-walletName = 'test-wallet';
-// createWallet(walletName, 1000000); // commented out call
-console.log('No HTTP operations here');
-        ` },
-        { name: 'conditional_test', type: 'markdown', content: 'Test edge case: conditional operations' },
-        { name: 'conditional_ops', type: 'code', content: `
-// Conditional operations that may or may not execute
-shouldMakeCall = false;
-if (shouldMakeCall) {
-  balanceData = await getBalance('test-wallet');
-  console.log('Conditional call made:', balanceData);
-} else {
-  console.log('No conditional call made');
-}
-        ` },
-        { name: 'actual_ops_test', type: 'markdown', content: 'Test edge case: actual operations' },
-        { name: 'create_test_wallet', type: 'code', content: `
-// Actual operations that should be detected
-testWallet = await createWallet('test-wallet', 1_000_000);
-console.log('Test wallet created:', testWallet);
-        ` },
-        { name: 'mixed_ops_test', type: 'markdown', content: 'Test edge case: mixed operations' },
-        { name: 'query_balance', type: 'code', content: `
-// Mixed operations: query then transaction
-balance = await getBalance('test-wallet');
-console.log('Current balance:', balance);
-        ` }
+        {
+          name: 'comments_test',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Test edge case: function names in comments'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// This stanza has createWallet in comments but no actual calls',
+                'walletName = \'test-wallet\';',
+                '// createWallet(walletName, 1000000); // commented out call',
+                'console.log(\'No HTTP operations here\');'
+              ]
+            }
+          ]
+        },
+        {
+          name: 'conditional_test',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Test edge case: conditional operations'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// Conditional operations that may or may not execute',
+                'shouldMakeCall = false;',
+                'if (shouldMakeCall) {',
+                '  balanceData = await getBalance(\'test-wallet\');',
+                '  console.log(\'Conditional call made:\', balanceData);',
+                '} else {',
+                '  console.log(\'No conditional call made\');',
+                '}'
+              ]
+            }
+          ]
+        },
+        {
+          name: 'actual_operations',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Test edge case: actual operations'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// Actual operations that should be detected',
+                'testWallet = await createWallet(\'test-wallet\', 1_000_000);',
+                'console.log(\'Test wallet created:\', testWallet);'
+              ]
+            }
+          ]
+        },
+        {
+          name: 'mixed_operations',
+          blocks: [
+            {
+              type: 'markdown',
+              content: [
+                'Test edge case: mixed operations'
+              ]
+            },
+            {
+              type: 'code',
+              language: 'javascript',
+              content: [
+                '// Mixed operations: query then transaction',
+                'balance = await getBalance(\'test-wallet\');',
+                'console.log(\'Current balance:\', balance);'
+              ]
+            }
+          ]
+        }
       ]
     };
     
@@ -206,9 +360,9 @@ console.log('Current balance:', balance);
       const results = await executor.executeDemo();
       
       // Verify results
-      expect(results.length).toBe(8); // 4 markdown + 4 code stanzas
+      expect(results.length).toBe(8); // 4 stanzas, each with 2 blocks (markdown + code)
       
-      // Check operation types (only code stanzas have operation types)
+      // Check operation types (only code blocks have operation types)
       expect(results[1].operationType).toBe('unknown'); // No HTTP calls
       expect(results[3].operationType).toBe('unknown'); // Conditional call not made
       expect(results[5].operationType).toBe('transaction'); // createWallet call

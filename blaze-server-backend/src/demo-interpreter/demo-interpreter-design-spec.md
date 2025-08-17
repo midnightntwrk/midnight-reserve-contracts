@@ -29,24 +29,52 @@ The system uses a JSON-based format for demo notebooks with the following struct
   "stanzas": [
     {
       "name": "stanza_name",
-      "type": "markdown|code",
-      "content": ["line1", "line2", ...]
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": ["line1", "line2", ...]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": ["const x = 1;", "console.log(x);"]
+        }
+      ]
     }
   ]
 }
 ```
 
-#### Stanza Types
+#### Architecture Overview
+
+**Demo Structure:**
+- **Demo** = Sequence of stanzas
+- **Stanza** = Named sequence of blocks (markdown, code, etc.)
+- **Block** = Individual content elements (markdown block, code block, etc.)
+
+#### Block Types
 
 - **Markdown**: Human-readable descriptions and explanations
-- **Code**: Executable JavaScript code blocks
+- **Code**: Executable code blocks with specified language (e.g., "javascript")
+
+#### Stanza Schema
+
+Each stanza has the following structure:
+- `name`: String identifier for the stanza (e.g., "introduction", "create_wallet_jeff")
+- `blocks`: Array of block objects
+
+Each block has the following structure:
+- `type`: Either "markdown" or "code"
+- `language`: Required for code blocks, specifies the programming language (e.g., "javascript")
+- `content`: Array of strings representing the block content (one string per line)
 
 #### Execution Semantics
 
-- Markdown stanzas are displayed for reading
-- Code stanzas are executed in a shared scope where variables persist across stanza boundaries
-- Errors reference stanza names for better diagnostics
-- All code stanzas run in an async context to support blockchain operations
+- Markdown blocks are displayed for reading
+- Code blocks are executed in a shared scope where variables persist across stanza boundaries
+- Errors reference stanza names and block types for better diagnostics
+- All code blocks run in an async context to support blockchain operations
+- Stanzas provide logical grouping of related blocks
 
 ### 2. Monadic Function Interface
 
@@ -217,38 +245,65 @@ HTTP/error handling remains hidden in runtime functions, maintaining the monadic
   "stanzas": [
     {
       "name": "introduction",
-      "type": "markdown",
-      "content": [
-        "# Simple Wallet Demo",
-        "",
-        "This demo demonstrates basic wallet operations in the blockchain emulator:",
-        "1. Creating wallets with initial funds",
-        "2. Checking wallet balances",
-        "3. Basic wallet management"
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "# Simple Wallet Demo",
+            "",
+            "This demo demonstrates basic wallet operations in the blockchain emulator:",
+            "1. Creating wallets with initial funds",
+            "2. Checking wallet balances",
+            "3. Basic wallet management"
+          ]
+        }
       ]
     },
     {
       "name": "create_jeff_wallet",
-      "type": "code",
-      "content": [
-        "jeff = await createWallet('jeff', 50_000_000);",
-        "console.log(`Jeff's wallet created!`);",
-        "console.log(`Wallet name: ${jeff.name}`);",
-        "console.log(`Initial balance: ${jeff.balance} lovelace`);"
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "Let's create a wallet for Jeff with an initial balance."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "jeff = await createWallet('jeff', 50_000_000);",
+            "console.log(`Jeff's wallet created!`);",
+            "console.log(`Wallet name: ${jeff.name}`);",
+            "console.log(`Initial balance: ${jeff.balance} lovelace`);"
+          ]
+        }
       ]
     },
     {
       "name": "check_jeff_balance",
-      "type": "code", 
-      "content": [
-        "jeffBalance = await getBalance('jeff');",
-        "jeffAda = parseInt(jeffBalance) / 1_000_000;",
-        "console.log(`Jeff's current balance: ${jeffBalance} lovelace`);",
-        "console.log(`That's ${jeffAda} ADA`);"
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "Now let's check Jeff's current balance and convert it to ADA."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "jeffBalance = await getBalance('jeff');",
+            "jeffAda = parseInt(jeffBalance) / 1_000_000;",
+            "console.log(`Jeff's current balance: ${jeffBalance} lovelace`);",
+            "console.log(`That's ${jeffAda} ADA`);"
+          ]
+        }
       ]
     }
   ]
 }
+```
 ```
 
 ## Non-Functional Requirements
