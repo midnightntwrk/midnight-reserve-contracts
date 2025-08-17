@@ -4,7 +4,7 @@
  */
 
 class DemoClient {
-  constructor(serverUrl = 'http://localhost:3032') {
+  constructor(serverUrl = 'http://localhost:3042') {
     this.serverUrl = serverUrl;
     this.sessionId = null;
   }
@@ -48,7 +48,7 @@ class DemoClient {
         },
         body: JSON.stringify({ 
           demo,
-          baseUrl: 'http://localhost:3031'
+          baseUrl: 'http://localhost:3041'
         })
       });
 
@@ -125,7 +125,7 @@ class DemoClient {
 }
 
 // Convenience function
-async function executeDemo(demo, baseUrl = 'http://localhost:3031', serverUrl = 'http://localhost:3032') {
+async function executeDemo(demo, baseUrl = 'http://localhost:3041', serverUrl = 'http://localhost:3042') {
   const client = new DemoClient(serverUrl);
   
   try {

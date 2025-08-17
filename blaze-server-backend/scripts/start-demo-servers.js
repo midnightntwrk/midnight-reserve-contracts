@@ -9,8 +9,8 @@ const execAsync = promisify(exec);
 class DemoServerManager {
   constructor() {
     this.servers = {
-      blaze: { port: 3031, process: null, name: 'Blaze Backend' },
-      demo: { port: 3032, process: null, name: 'Demo Server' },
+      blaze: { port: 3041, process: null, name: 'Blaze Backend' },
+      demo: { port: 3042, process: null, name: 'Demo Server' },
       web: { port: 8080, process: null, name: 'Web Server' }
     };
     this.isShuttingDown = false;
@@ -80,13 +80,15 @@ class DemoServerManager {
     // Start Blaze backend server
     this.servers.blaze.process = spawn('bun', ['run', 'dev'], {
       stdio: 'pipe',
-      shell: true
+      shell: true,
+      env: { ...process.env, PORT: this.servers.blaze.port.toString() }
     });
     
     // Start Demo server
     this.servers.demo.process = spawn('node', ['src/demo-interpreter/server/demo-server.js'], {
       stdio: 'pipe',
-      shell: true
+      shell: true,
+      env: { ...process.env, PORT: this.servers.demo.port.toString() }
     });
     
     // Start Web server
@@ -183,56 +185,103 @@ class DemoServerManager {
 
   async checkServerHealth(port, name) {
     return new Promise((resolve) => {
+      let resolved = false;
+      
+      const cleanup = () => {
+        if (!resolved) {
+          resolved = true;
+        }
+      };
+      
       // Web server (http-server) doesn't have a /health endpoint, so just check if it's listening
-      if (port === 8080) {
+      if (port === this.servers.web.port) {
         const req = http.get(`http://localhost:${port}`, (res) => {
-          // Any response means the server is up
-          console.log(`   [${name}] Health check successful - status ${res.statusCode}`);
-          resolve(true);
+          if (!resolved) {
+            console.log(`   [${name}] Health check successful - status ${res.statusCode}`);
+            resolved = true;
+            resolve(true);
+          }
         });
         
         req.on('error', (error) => {
-          console.log(`   [${name}] Health check failed: ${error.message}`);
-          resolve(false);
+          if (!resolved) {
+            console.log(`   [${name}] Health check failed: ${error.message}`);
+            resolved = true;
+            resolve(false);
+          }
         });
         
         req.setTimeout(3000, () => {
-          req.destroy();
-          console.log(`   [${name}] Health check timeout`);
-          resolve(false);
+          if (!resolved) {
+            req.destroy();
+            console.log(`   [${name}] Health check timeout`);
+            resolved = true;
+            resolve(false);
+          }
         });
-      } else if (port === 3031) {
+      } else if (port === this.servers.blaze.port) {
         // Blaze Backend uses /api/logging endpoint for health check
         const req = http.get(`http://localhost:${port}/api/logging`, (res) => {
-          if (res.statusCode === 200) {
-            console.log(`   [${name}] Health check successful - status ${res.statusCode}`);
-            resolve(true);
-          } else {
-            console.log(`   [${name}] Health check returned status ${res.statusCode}`);
+          if (!resolved) {
+            if (res.statusCode === 200) {
+              console.log(`   [${name}] Health check successful - status ${res.statusCode}`);
+              resolved = true;
+              resolve(true);
+            } else {
+              console.log(`   [${name}] Health check returned status ${res.statusCode}`);
+              resolved = true;
+              resolve(false);
+            }
+          }
+        });
+        
+        req.on('error', (error) => {
+          if (!resolved) {
+            console.log(`   [${name}] Health check failed: ${error.message}`);
+            resolved = true;
+            resolve(false);
+          }
+        });
+        
+        req.setTimeout(3000, () => {
+          if (!resolved) {
+            req.destroy();
+            console.log(`   [${name}] Health check timeout`);
+            resolved = true;
             resolve(false);
           }
         });
       } else {
         // Demo server has /health endpoint
         const req = http.get(`http://localhost:${port}/health`, (res) => {
-          if (res.statusCode === 200) {
-            console.log(`   [${name}] Health check successful - status ${res.statusCode}`);
-            resolve(true);
-          } else {
-            console.log(`   [${name}] Health check returned status ${res.statusCode}`);
-            resolve(false);
+          if (!resolved) {
+            if (res.statusCode === 200) {
+              console.log(`   [${name}] Health check successful - status ${res.statusCode}`);
+              resolved = true;
+              resolve(true);
+            } else {
+              console.log(`   [${name}] Health check returned status ${res.statusCode}`);
+              resolved = true;
+              resolve(false);
+            }
           }
         });
         
         req.on('error', (error) => {
-          console.log(`   [${name}] Health check failed: ${error.message}`);
-          resolve(false);
+          if (!resolved) {
+            console.log(`   [${name}] Health check failed: ${error.message}`);
+            resolved = true;
+            resolve(false);
+          }
         });
         
         req.setTimeout(3000, () => {
-          req.destroy();
-          console.log(`   [${name}] Health check timeout`);
-          resolve(false);
+          if (!resolved) {
+            req.destroy();
+            console.log(`   [${name}] Health check timeout`);
+            resolved = true;
+            resolve(false);
+          }
         });
       }
     });
@@ -242,9 +291,9 @@ class DemoServerManager {
     console.log('🏥 Performing health check...');
     
     const healthResults = await Promise.allSettled([
-      this.checkServerHealth(3031, 'Blaze Backend'),
-      this.checkServerHealth(3032, 'Demo Server'),
-      this.checkServerHealth(8080, 'Web Server')
+      this.checkServerHealth(this.servers.blaze.port, 'Blaze Backend'),
+      this.checkServerHealth(this.servers.demo.port, 'Demo Server'),
+      this.checkServerHealth(this.servers.web.port, 'Web Server')
     ]);
     
     const allHealthy = healthResults.every(result => 
@@ -254,10 +303,10 @@ class DemoServerManager {
     if (allHealthy) {
       console.log('✅ All servers are healthy!');
       console.log('\n🌐 Demo Environment is ready:');
-      console.log('   • Blaze Backend: http://localhost:3031');
-      console.log('   • Demo Server:   http://localhost:3032');
-      console.log('   • Web Interface: http://localhost:8080');
-      console.log('\n📖 API Documentation: http://localhost:3031/api');
+      console.log(`   • Blaze Backend: http://localhost:${this.servers.blaze.port}`);
+      console.log(`   • Demo Server:   http://localhost:${this.servers.demo.port}`);
+      console.log(`   • Web Interface: http://localhost:${this.servers.web.port}`);
+      console.log(`\n📖 API Documentation: http://localhost:${this.servers.blaze.port}/api`);
       console.log('\n💡 Press Ctrl+C to stop all servers\n');
     } else {
       throw new Error('Some servers failed health check');

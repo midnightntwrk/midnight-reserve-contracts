@@ -454,7 +454,7 @@
       async populateDemoFiles() {
         try {
           // Get available demo files from the demo server
-          const response = await fetch('http://localhost:3032/api/demo-files');
+          const response = await fetch('http://localhost:3042/api/demo-files');
           if (response.ok) {
             const files = await response.json();
             const selector = document.getElementById('demoSelector');

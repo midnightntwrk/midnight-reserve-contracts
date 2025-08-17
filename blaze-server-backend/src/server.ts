@@ -965,14 +965,15 @@ export function createServer(sessionManager: SessionManager) {
 
 
   return new Promise((resolve, reject) => {
-    const server = app.listen(3031, () => {
+    const port = process.env.PORT || 3031;
+    const server = app.listen(port, () => {
       resolve(server);
     });
     
     // Handle port-in-use and other server errors
     server.on('error', (err: any) => {
       if (err.code === 'EADDRINUSE') {
-        reject(new Error('Port 3031 is already in use'));
+        reject(new Error(`Port ${port} is already in use`));
       } else {
         reject(err);
       }

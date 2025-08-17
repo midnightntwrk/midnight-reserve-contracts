@@ -4,7 +4,7 @@ const { IntegratedDemoExecutor } = require('../../../dist/demo-interpreter/core/
 const { JavaScriptDemoExecutor } = require('../../../dist/demo-interpreter/core/JavaScriptDemoExecutor.js');
 
 const app = express();
-const port = 3032;
+const port = process.env.PORT || 3032;
 
 app.use(cors());
 app.use(express.json());
