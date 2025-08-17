@@ -8,145 +8,173 @@
   "stanzas": [
     {
       "name": "introduction",
-      "type": "markdown",
-      "content": [
-        "# Simple Wallet Demo",
-        "",
-        "This demo demonstrates basic wallet operations in the blockchain emulator:",
-        "1. Creating wallets with initial funds",
-        "2. Checking wallet balances",
-        "3. Basic wallet management",
-        "",
-        "We'll create two wallets for Jeff and Nancy, each with different initial balances."
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "# Simple Wallet Demo",
+            "",
+            "This demo demonstrates basic wallet operations in the blockchain emulator:",
+            "1. Creating wallets with initial funds",
+            "2. Checking wallet balances",
+            "3. Basic wallet management",
+            "",
+            "We'll create two wallets for Jeff and Nancy, each with different initial balances."
+          ]
+        }
       ]
     },
     {
-      "name": "create_jeff_wallet",
-      "type": "markdown",
-      "content": [
-        "## Creating Jeff's Wallet",
-        "",
-        "First, we'll create a wallet for Jeff with an initial balance of 50 ADA (50,000,000 lovelace)."
-      ]
-    },
-    {
-      "name": "jeff_wallet_creation",
-      "type": "code",
-      "content": [
-        "jeff = await createWallet('jeff', 50_000_000);",
-        "console.log(`Jeff's wallet created!`);",
-        "console.log(`Wallet name: ${jeff.name}`);",
-        "console.log(`Initial balance: ${jeff.balance} lovelace`);"
-      ]
-    },
-    {
-      "name": "check_jeff_balance",
-      "type": "markdown",
-      "content": [
-        "## Verifying Jeff's Balance",
-        "",
-        "Let's verify Jeff's balance using the getBalance function."
+      "name": "jeff_wallet_setup",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Creating Jeff's Wallet",
+            "",
+            "First, we'll create a wallet for Jeff with an initial balance of 50 ADA (50,000,000 lovelace)."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "jeff = await createWallet('jeff', 50_000_000);",
+            "console.log(`Jeff's wallet created!`);",
+            "console.log(`Wallet name: ${jeff.name}`);",
+            "console.log(`Initial balance: ${jeff.balance} lovelace`);"
+          ]
+        }
       ]
     },
     {
       "name": "jeff_balance_check",
-      "type": "code",
-      "content": [
-        "jeffBalance = await getBalance('jeff');",
-        "jeffAda = parseInt(jeffBalance) / 1_000_000;",
-        "console.log(`Jeff's current balance: ${jeffBalance} lovelace`);",
-        "console.log(`That's ${jeffAda} ADA`);"
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Verifying Jeff's Balance",
+            "",
+            "Let's verify Jeff's balance using the getBalance function."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "jeffBalance = await getBalance('jeff');",
+            "jeffAda = parseInt(jeffBalance) / 1_000_000;",
+            "console.log(`Jeff's current balance: ${jeffBalance} lovelace`);",
+            "console.log(`That's ${jeffAda} ADA`);"
+          ]
+        }
       ]
     },
     {
-      "name": "create_nancy_wallet",
-      "type": "markdown",
-      "content": [
-        "## Creating Nancy's Wallet",
-        "",
-        "Now we'll create a wallet for Nancy with a larger initial balance of 75 ADA."
-      ]
-    },
-    {
-      "name": "nancy_wallet_creation",
-      "type": "code",
-      "content": [
-        "nancy = await createWallet('nancy', 75_000_000);",
-        "console.log(`Nancy's wallet created!`);",
-        "console.log(`Wallet name: ${nancy.name}`);",
-        "console.log(`Initial balance: ${nancy.balance} lovelace`);"
-      ]
-    },
-    {
-      "name": "check_nancy_balance",
-      "type": "markdown",
-      "content": [
-        "## Verifying Nancy's Balance",
-        "",
-        "Finally, let's check Nancy's balance."
+      "name": "nancy_wallet_setup",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Creating Nancy's Wallet",
+            "",
+            "Now we'll create a wallet for Nancy with a larger initial balance of 75 ADA."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "nancy = await createWallet('nancy', 75_000_000);",
+            "console.log(`Nancy's wallet created!`);",
+            "console.log(`Wallet name: ${nancy.name}`);",
+            "console.log(`Initial balance: ${nancy.balance} lovelace`);"
+          ]
+        }
       ]
     },
     {
       "name": "nancy_balance_check",
-      "type": "code",
-      "content": [
-        "nancyBalance = await getBalance('nancy');",
-        "nancyAda = parseInt(nancyBalance) / 1_000_000;",
-        "console.log(`Nancy's current balance: ${nancyBalance} lovelace`);",
-        "console.log(`That's ${nancyAda} ADA`);"
-      ]
-    },
-    {
-      "name": "summary",
-      "type": "markdown",
-      "content": [
-        "## Summary",
-        "",
-        "We've successfully created two wallets and verified their balances:",
-        "- Jeff's wallet with 50 ADA",
-        "- Nancy's wallet with 75 ADA",
-        "",
-        "Both wallets are now ready for transactions and other blockchain operations."
-      ]
-    },
-    {
-      "name": "scope_test",
-      "type": "markdown",
-      "content": [
-        "## Scope Persistence Test",
-        "",
-        "This block will test that variables from previous stanzas are still accessible.",
-        "It should be classified as 'query' since it only reads data."
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Verifying Nancy's Balance",
+            "",
+            "Finally, let's check Nancy's balance."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "nancyBalance = await getBalance('nancy');",
+            "nancyAda = parseInt(nancyBalance) / 1_000_000;",
+            "console.log(`Nancy's current balance: ${nancyBalance} lovelace`);",
+            "console.log(`That's ${nancyAda} ADA`);"
+          ]
+        }
       ]
     },
     {
       "name": "scope_verification",
-      "type": "code",
-      "content": [
-        "// Testing scope persistence - variables from earlier blocks should be accessible",
-        "console.log('\\n=== Scope Persistence Test ===');",
-        "console.log('Jeff object:', jeff);",
-        "console.log('Nancy object:', nancy);", 
-        "console.log('Jeff ADA balance:', jeffAda);",
-        "console.log('Nancy ADA balance:', nancyAda);",
-        "",
-        "// Verify we can call getBalance using the wallet names from scope",
-        "currentJeffBalance = await getBalance(jeff.name);",
-        "currentNancyBalance = await getBalance(nancy.name);",
-        "console.log('Current Jeff balance:', currentJeffBalance);",
-        "console.log('Current Nancy balance:', currentNancyBalance);"
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Scope Persistence Test",
+            "",
+            "This block will test that variables from previous stanzas are still accessible.",
+            "It should be classified as 'query' since it only reads data."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Testing scope persistence - variables from earlier blocks should be accessible",
+            "console.log('\\n=== Scope Persistence Test ===');",
+            "console.log('Jeff object:', jeff);",
+            "console.log('Nancy object:', nancy);", 
+            "console.log('Jeff ADA balance:', jeffAda);",
+            "console.log('Nancy ADA balance:', nancyAda);",
+            "",
+            "// Verify we can call getBalance using the wallet names from scope",
+            "currentJeffBalance = await getBalance(jeff.name);",
+            "currentNancyBalance = await getBalance(nancy.name);",
+            "console.log('Current Jeff balance:', currentJeffBalance);",
+            "console.log('Current Nancy balance:', currentNancyBalance);"
+          ]
+        }
       ]
     },
     {
       "name": "final_summary",
-      "type": "code",
-      "content": [
-        "console.log('\\n=== Final Summary ===');",
-        "console.log(`Jeff's wallet: ${jeff.name}`);",
-        "console.log(`  Balance: ${jeffAda} ADA`);",
-        "console.log(`Nancy's wallet: ${nancy.name}`);",
-        "console.log(`  Balance: ${nancyAda} ADA`);",
-        "console.log('✅ Demo completed successfully!');"
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Summary",
+            "",
+            "We've successfully created two wallets and verified their balances:",
+            "- Jeff's wallet with 50 ADA",
+            "- Nancy's wallet with 75 ADA",
+            "",
+            "Both wallets are now ready for transactions and other blockchain operations."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "console.log('\\n=== Final Summary ===');",
+            "console.log(`Jeff's wallet: ${jeff.name}`);",
+            "console.log(`  Balance: ${jeffAda} ADA`);",
+            "console.log(`Nancy's wallet: ${nancy.name}`);",
+            "console.log(`  Balance: ${nancyAda} ADA`);",
+            "console.log('✅ Demo completed successfully!');"
+          ]
+        }
       ]
     }
   ]

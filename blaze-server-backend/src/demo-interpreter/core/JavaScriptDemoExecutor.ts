@@ -1,4 +1,4 @@
-import { IntegratedDemoExecutor } from './IntegratedDemoExecutor';
+import { IntegratedDemoExecutor, ExecutionResult } from './IntegratedDemoExecutor';
 
 export interface DemoBlock {
   type: 'markdown' | 'code';
@@ -26,6 +26,7 @@ export interface DemoExecutionResult {
   isPartial?: boolean;
   result: any;
   scope: Record<string, any>;
+  consoleOutput?: string[]; // Added for console output
 }
 
 /**
@@ -41,8 +42,30 @@ export class JavaScriptDemoExecutor {
     this.executor = new IntegratedDemoExecutor(baseUrl);
   }
 
+  /**
+   * Initialize the demo executor with the full demo scope
+   */
   async initialize(): Promise<void> {
+    console.log(`\n🚀 Initializing Demo: ${this.demo.name}`);
+    
+    // Initialize the integrated executor
     await this.executor.initialize();
+    
+    // Extract all code blocks from all stanzas for full scope analysis
+    const allCodeBlocks: string[] = [];
+    this.demo.stanzas.forEach(stanza => {
+      stanza.blocks.forEach(block => {
+        if (block.type === 'code') {
+          allCodeBlocks.push(block.content.join('\n'));
+        }
+      });
+    });
+    
+    // Set up the full demo scope with all code blocks for analysis
+    this.executor.setCodeBlocks(allCodeBlocks);
+    
+    console.log(`📊 Total code blocks for analysis: ${allCodeBlocks.length}`);
+    console.log('✅ Demo initialized successfully!\n');
   }
 
   async cleanup(): Promise<void> {
@@ -110,7 +133,13 @@ export class JavaScriptDemoExecutor {
           if (line.trim()) console.log(`  ${line}`);
         });
 
-        const { result, operationType, isPartial } = await this.executor.executeStanza(codeBlockIndex);
+        // Convert multi-line content to single string for execution
+        const codeContent = block.content.join('\n');
+
+        // Set the code block for execution
+        this.executor.setCodeBlocks([codeContent]);
+
+        const { result, operationType, isPartial } = await this.executor.executeStanza(0);
         
         console.log(`\nOperation Type: ${operationType}`);
         console.log(`Current Scope Variables: [${Object.keys(this.executor.getScope()).join(', ')}]`);
@@ -149,6 +178,17 @@ export class JavaScriptDemoExecutor {
     const results: DemoExecutionResult[] = [];
     let codeBlockIndex = 0;
 
+    // Find the starting block index for this stanza in the full demo scope
+    let stanzaStartBlockIndex = 0;
+    for (let i = 0; i < stanzaIndex; i++) {
+      const prevStanza = this.demo.stanzas[i];
+      prevStanza.blocks.forEach(block => {
+        if (block.type === 'code') {
+          stanzaStartBlockIndex++;
+        }
+      });
+    }
+
     // Iterate through blocks within this stanza
     for (let blockIndex = 0; blockIndex < stanza.blocks.length; blockIndex++) {
       const block = stanza.blocks[blockIndex];
@@ -160,16 +200,7 @@ export class JavaScriptDemoExecutor {
         });
         console.log('---\n');
         
-        const markdownResult: DemoExecutionResult = {
-          stanzaIndex,
-          stanzaName: stanza.name,
-          blockIndex,
-          blockType: block.type,
-          operationType: 'markdown',
-          result: null,
-          scope: this.executor.getScope()
-        };
-        results.push(markdownResult);
+        // Skip markdown blocks - no output needed
         continue;
       }
 
@@ -179,13 +210,8 @@ export class JavaScriptDemoExecutor {
         if (line.trim()) console.log(`  ${line}`);
       });
 
-      // Convert multi-line content to single string for execution
-      const codeContent = block.content.join('\n');
-
-      // Set the code block for execution
-      this.executor.setCodeBlocks([codeContent]);
-
-      const { result, operationType, isPartial } = await this.executor.executeStanza(codeBlockIndex);
+      // Execute the code block using its index in the full demo scope
+      const { result, operationType, isPartial, consoleOutput } = await this.executor.executeStanza(stanzaStartBlockIndex + codeBlockIndex);
       
       console.log(`\nOperation Type: ${operationType}`);
       console.log(`Current Scope Variables: [${Object.keys(this.executor.getScope()).join(', ')}]`);
@@ -199,7 +225,8 @@ export class JavaScriptDemoExecutor {
         operationType,
         isPartial,
         result,
-        scope: this.executor.getScope()
+        scope: this.executor.getScope(),
+        consoleOutput: consoleOutput || result.consoleOutput || []
       };
       results.push(executionResult);
       codeBlockIndex++;

@@ -11,6 +11,64 @@ export function createServer(sessionManager: SessionManager) {
   const app = express();
   app.use(express.json());
 
+  // Logging state management
+  let loggingEnabled = false;
+
+  // Logging middleware for all HTTP requests/responses
+  app.use((req, res, next) => {
+    if (!loggingEnabled) {
+      return next();
+    }
+
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] [BlazeBackend] ${req.method} ${req.path}`, {
+      query: req.query,
+      body: req.body,
+      sessionId: req.body?.sessionId || req.query?.sessionId
+    });
+
+    // Capture the original send method
+    const originalSend = res.send;
+    res.send = function(data) {
+      const responseTimestamp = new Date().toISOString();
+      console.log(`[${responseTimestamp}] [BlazeBackend] ${req.method} ${req.path} -> ${res.statusCode}`, {
+        statusCode: res.statusCode,
+        responseData: typeof data === 'string' ? data.substring(0, 200) + '...' : data
+      });
+      return originalSend.call(this, data);
+    };
+
+    next();
+  });
+
+  // Logging control endpoint
+  app.post("/api/logging", (req, res) => {
+    const { enabled } = req.body;
+    
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: "enabled must be a boolean"
+      });
+    }
+
+    loggingEnabled = enabled;
+    
+    res.json({
+      success: true,
+      loggingEnabled,
+      message: `Logging ${enabled ? 'enabled' : 'disabled'}`
+    });
+  });
+
+  // Get logging status endpoint
+  app.get("/api/logging", (req, res) => {
+    res.json({
+      success: true,
+      loggingEnabled
+    });
+  });
+
   app.post("/api/session/new", async (req, res) => {
     try {
       const session = await sessionManager.createSession();

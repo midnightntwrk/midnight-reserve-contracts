@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo Notebook Viewer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 8px 16px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    button:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+
+    button.stop {
+      background: #e74c3c;
+    }
+
+    button.stop:hover {
+      background: #c0392b;
+    }
+
+    .notebook {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .stanza {
+      border-bottom: 1px solid #ecf0f1;
+      position: relative;
+    }
+
+    .stanza:last-child {
+      border-bottom: none;
+    }
+
+    .stanza.markdown {
+      padding: 20px;
+      background: #fafafa;
+    }
+
+    .stanza.code {
+      background: white;
+    }
+
+    .stanza-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #ecf0f1;
+      font-size: 12px;
+      color: #7f8c8d;
+    }
+
+    .code-content {
+      padding: 15px 20px;
+      background: #f8f9fa;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 14px;
+      overflow-x: auto;
+      white-space: pre;
+      border-left: 3px solid #3498db;
+    }
+
+    .code-output {
+      padding: 15px 20px;
+      background: #2c3e50;
+      color: #ecf0f1;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .code-output.error {
+      background: #c0392b;
+      color: white;
+    }
+
+    .code-output:empty {
+      display: none;
+    }
+
+    .markdown-content h1 {
+      font-size: 28px;
+      color: #2c3e50;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 10px;
+    }
+
+    .markdown-content h2 {
+      font-size: 22px;
+      color: #34495e;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+
+    .markdown-content p {
+      margin-bottom: 10px;
+    }
+
+    .markdown-content ol, .markdown-content ul {
+      margin-left: 30px;
+      margin-bottom: 10px;
+    }
+
+    .status {
+      padding: 10px 20px;
+      background: #f39c12;
+      color: white;
+      text-align: center;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    .status.success {
+      background: #27ae60;
+    }
+
+    .status.error {
+      background: #e74c3c;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #7f8c8d;
+    }
+
+    .run-button {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      padding: 4px 8px;
+      font-size: 12px;
+      background: #27ae60;
+    }
+
+    .run-button:hover {
+      background: #229954;
+    }
+
+    .file-input-wrapper {
+      margin-bottom: 20px;
+    }
+
+    .file-input-wrapper input[type="file"] {
+      display: none;
+    }
+
+    .file-input-label {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #9b59b6;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    .file-input-label:hover {
+      background: #8e44ad;
+    }
+
+    .config-section {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .config-section h3 {
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+
+    .config-input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: monospace;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Demo Notebook Viewer</h1>
+      <p>Execute blockchain demo notebooks with monadic runtime</p>
+    </div>
+
+    <div class="config-section">
+      <h3>Configuration</h3>
+      <input type="text" class="config-input" id="baseUrl" placeholder="Server URL (default: http://localhost:3031)" value="http://localhost:3031">
+    </div>
+
+    <div class="controls">
+      <div class="file-input-wrapper">
+        <label for="fileInput" class="file-input-label">Load Notebook</label>
+        <input type="file" id="fileInput" accept=".demonb,.json">
+      </div>
+      <button id="runAll">Run All</button>
+      <button id="reset">Reset</button>
+      <button id="stop" class="stop" style="display: none;">Stop</button>
+    </div>
+
+    <div id="status" class="status" style="display: none;"></div>
+    
+    <div id="notebook" class="notebook">
+      <div class="loading">Load a notebook file to begin...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import the monadic system
+    import { NotebookExecutor, parseNotebook } from '../monadic/executor.js';
+    
+    let executor = null;
+    let currentNotebook = null;
+    let isRunning = false;
+
+    // UI Elements
+    const fileInput = document.getElementById('fileInput');
+    const runAllBtn = document.getElementById('runAll');
+    const resetBtn = document.getElementById('reset');
+    const stopBtn = document.getElementById('stop');
+    const statusDiv = document.getElementById('status');
+    const notebookDiv = document.getElementById('notebook');
+    const baseUrlInput = document.getElementById('baseUrl');
+
+    // Load notebook file
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        currentNotebook = parseNotebook(text);
+        renderNotebook(currentNotebook);
+        showStatus('Notebook loaded successfully', 'success');
+      } catch (error) {
+        showStatus(`Error loading notebook: ${error.message}`, 'error');
+      }
+    });
+
+    // Run all stanzas
+    runAllBtn.addEventListener('click', async () => {
+      if (!currentNotebook) {
+        showStatus('Please load a notebook first', 'error');
+        return;
+      }
+
+      if (isRunning) return;
+
+      isRunning = true;
+      runAllBtn.disabled = true;
+      stopBtn.style.display = 'inline-block';
+      clearOutputs();
+
+      try {
+        const config = {
+          baseUrl: baseUrlInput.value || 'http://localhost:3031',
+          debug: true
+        };
+
+        executor = new NotebookExecutor(config);
+        showStatus('Executing notebook...', '');
+
+        // Execute each stanza sequentially
+        for (let i = 0; i < currentNotebook.stanzas.length; i++) {
+          const stanza = currentNotebook.stanzas[i];
+          
+          if (!isRunning) break; // Check if stopped
+          
+          if (stanza.type === 'code') {
+            await executeStanza(i);
+          }
+        }
+
+        if (isRunning) {
+          showStatus('Notebook executed successfully', 'success');
+        }
+      } catch (error) {
+        showStatus(`Execution error: ${error.message}`, 'error');
+      } finally {
+        isRunning = false;
+        runAllBtn.disabled = false;
+        stopBtn.style.display = 'none';
+      }
+    });
+
+    // Reset notebook
+    resetBtn.addEventListener('click', async () => {
+      if (executor) {
+        await executor.reset();
+        executor = null;
+      }
+      clearOutputs();
+      showStatus('Notebook reset', 'success');
+    });
+
+    // Stop execution
+    stopBtn.addEventListener('click', () => {
+      isRunning = false;
+      showStatus('Execution stopped', 'error');
+    });
+
+    // Execute individual stanza
+    async function executeStanza(index) {
+      const stanza = currentNotebook.stanzas[index];
+      const outputDiv = document.querySelector(`#output-${index}`);
+      
+      if (!outputDiv) return;
+
+      outputDiv.textContent = 'Executing...';
+      outputDiv.classList.remove('error');
+
+      try {
+        const result = await executor.executeSingle(stanza);
+        
+        if (result.success) {
+          const output = result.output ? result.output.join('\n') : '';
+          outputDiv.textContent = output || '(no output)';
+        } else {
+          outputDiv.textContent = `Error: ${result.error}`;
+          outputDiv.classList.add('error');
+        }
+      } catch (error) {
+        outputDiv.textContent = `Error: ${error.message}`;
+        outputDiv.classList.add('error');
+      }
+    }
+
+    // Render notebook
+    function renderNotebook(notebook) {
+      notebookDiv.innerHTML = '';
+
+      notebook.stanzas.forEach((stanza, index) => {
+        const stanzaDiv = document.createElement('div');
+        stanzaDiv.className = `stanza ${stanza.type}`;
+        stanzaDiv.id = `stanza-${index}`;
+
+        if (stanza.type === 'markdown') {
+          const content = document.createElement('div');
+          content.className = 'markdown-content';
+          content.innerHTML = renderMarkdown(stanza.content.join('\n'));
+          stanzaDiv.appendChild(content);
+        } else if (stanza.type === 'code') {
+          // Header
+          const header = document.createElement('div');
+          header.className = 'stanza-header';
+          header.innerHTML = `
+            <span>${stanza.name || `Code Cell ${index}`}</span>
+            <button class="run-button" data-index="${index}">Run</button>
+          `;
+          stanzaDiv.appendChild(header);
+
+          // Code content
+          const codeDiv = document.createElement('div');
+          codeDiv.className = 'code-content';
+          codeDiv.textContent = stanza.content.join('\n');
+          stanzaDiv.appendChild(codeDiv);
+
+          // Output area
+          const outputDiv = document.createElement('div');
+          outputDiv.className = 'code-output';
+          outputDiv.id = `output-${index}`;
+          stanzaDiv.appendChild(outputDiv);
+        }
+
+        notebookDiv.appendChild(stanzaDiv);
+      });
+
+      // Add click handlers for run buttons
+      document.querySelectorAll('.run-button').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const index = parseInt(btn.dataset.index);
+          
+          if (!executor) {
+                    const config = {
+          baseUrl: baseUrlInput.value || 'http://localhost:3031',
+          debug: true
+        };
+        executor = new NotebookExecutor(config);
+          }
+          
+          await executeStanza(index);
+        });
+      });
+    }
+
+    // Simple markdown renderer
+    function renderMarkdown(text) {
+      return text
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/^\* (.+)/gim, '<li>$1</li>')
+        .replace(/^\d+\. (.+)/gim, '<li>$1</li>')
+        .replace(/\n\n/gim, '</p><p>')
+        .replace(/^/gim, '<p>')
+        .replace(/$/gim, '</p>')
+        .replace(/<p><\/p>/g, '')
+        .replace(/<p><h/g, '<h')
+        .replace(/<\/h(\d)><\/p>/g, '</h$1>')
+        .replace(/<li>/g, '<ul><li>')
+        .replace(/<\/li>(?![\s]*<li>)/g, '</li></ul>');
+    }
+
+    // Clear all outputs
+    function clearOutputs() {
+      document.querySelectorAll('.code-output').forEach(div => {
+        div.textContent = '';
+        div.classList.remove('error');
+      });
+    }
+
+    // Show status message
+    function showStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = `status ${type}`;
+      statusDiv.style.display = 'block';
+      
+      if (type === 'success' || type === 'error') {
+        setTimeout(() => {
+          statusDiv.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    // Load example notebook on page load (if available)
+    window.addEventListener('load', async () => {
+      try {
+        const response = await fetch('/demo-flows/simple-wallet-test.demonb');
+        if (response.ok) {
+          const text = await response.text();
+          currentNotebook = parseNotebook(text);
+          renderNotebook(currentNotebook);
+          showStatus('Example notebook loaded', 'success');
+        }
+      } catch (error) {
+        // Ignore - example not available
+      }
+    });
+  </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Progressive Demo Notebook</title>
+  <title>Progressive Demo Notebook - TypeScript</title>
   <style>
     * {
       margin: 0;
@@ -98,245 +98,301 @@
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 
-    .config-input {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #ecf0f1;
-      border-radius: 6px;
-      font-family: monospace;
+    .config-section h3 {
+      margin-bottom: 15px;
+      color: #2c3e50;
+    }
+
+    .config-row {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .config-row label {
+      min-width: 120px;
+      font-weight: 500;
+    }
+
+    .config-row input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
       font-size: 14px;
     }
 
-    .config-input:focus {
-      outline: none;
-      border-color: #3498db;
-    }
-
-    .notebook {
-      margin-bottom: 30px;
-      padding-bottom: 60vh; /* Always maintain viewport space at bottom */
-    }
-
-    .stanza {
+    .demo-content {
       background: white;
       border-radius: 12px;
-      margin-bottom: 20px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       overflow: hidden;
     }
 
-    .stanza.markdown {
-      padding: 30px;
+    .stanza {
+      border-bottom: 1px solid #eee;
+      transition: background 0.3s;
     }
 
-    .stanza.code {
-      border: 2px solid #e74c3c;
-    }
-    
-    .stanza.code.transaction {
-      border-color: #e74c3c; /* Red for transactions */
-    }
-    
-    .stanza.code.query {
-      border-color: #3498db; /* Blue for queries */
-    }
-    
-    .stanza.code.mixed {
-      border-color: #f39c12; /* Orange for mixed */
-    }
-    
-    .stanza.code.unknown {
-      border-color: #7f8c8d; /* Gray for unknown */
+    .stanza:last-child {
+      border-bottom: none;
     }
 
-    .stanza.executed {
-      border-color: #27ae60;
-    }
-
-    .stanza.executing {
-      border-color: #f39c12;
-    }
-
-    .markdown-content h1 {
-      color: #2c3e50;
-      font-size: 1.8em;
-      margin-bottom: 20px;
-      border-bottom: 3px solid #3498db;
-      padding-bottom: 10px;
-    }
-
-    .markdown-content h2 {
-      color: #34495e;
-      font-size: 1.4em;
-      margin: 25px 0 15px 0;
-    }
-
-    .markdown-content p {
-      margin-bottom: 15px;
-    }
-
-    .markdown-content ul, .markdown-content ol {
-      margin-left: 30px;
-      margin-bottom: 15px;
-    }
-
-    .code-header {
-      background: #2c3e50;
-      color: white;
-      padding: 15px 20px;
-      font-weight: bold;
+    .stanza-header {
+      padding: 20px;
+      background: #f8f9fa;
+      cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      transition: background 0.3s;
     }
 
-    .code-content {
-      padding: 20px;
-      background: #2c3e50;
-      color: #ecf0f1;
-      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      font-size: 14px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      border-bottom: 1px solid #34495e;
+    .stanza-header:hover {
+      background: #e9ecef;
     }
 
-    .code-actions {
-      padding: 15px 20px;
-      background: #34495e;
-      text-align: center;
+    .stanza-header h3 {
+      margin: 0;
+      color: #2c3e50;
+      font-size: 1.1em;
     }
 
-    .execute-btn {
+    .stanza-status {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #bdc3c7;
+    }
+
+    .status-indicator.pending {
+      background: #f39c12;
+    }
+
+    .status-indicator.running {
+      background: #3498db;
+      animation: pulse 1.5s infinite;
+    }
+
+    .status-indicator.completed {
+      background: #27ae60;
+    }
+
+    .status-indicator.error {
       background: #e74c3c;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: bold;
-      transition: all 0.3s;
-    }
-    
-    .execute-btn.transaction {
-      background: #e74c3c; /* Red for transactions */
-    }
-    
-    .execute-btn.transaction:hover {
-      background: #c0392b;
-      transform: translateY(-2px);
-    }
-    
-    .execute-btn.query {
-      background: #3498db; /* Blue for queries */
-    }
-    
-    .execute-btn.query:hover {
-      background: #2980b9;
-      transform: translateY(-2px);
-    }
-    
-    .execute-btn.mixed {
-      background: #f39c12; /* Orange for mixed */
-    }
-    
-    .execute-btn.mixed:hover {
-      background: #e67e22;
-      transform: translateY(-2px);
-    }
-    
-    .execute-btn.unknown {
-      background: #7f8c8d; /* Gray for unknown */
-    }
-    
-    .execute-btn.unknown:hover {
-      background: #5d6d7e;
-      transform: translateY(-2px);
     }
 
-    .execute-btn:disabled {
-      background: #7f8c8d;
-      cursor: not-allowed;
-      transform: none;
+    .operation-type {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      background: #ecf0f1;
+      color: #7f8c8d;
     }
 
-    .output-panel {
-      background: #1a1a1a;
-      color: #00ff00;
-      padding: 20px;
-      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      font-size: 13px;
-      line-height: 1.4;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      max-height: 300px;
-      overflow-y: auto;
-      border-top: 1px solid #34495e;
-    }
-
-    .output-panel.error {
-      color: #ff6b6b;
-      background: #2d1b1b;
-    }
-
-    .status {
-      padding: 15px;
-      border-radius: 6px;
-      margin-bottom: 20px;
-      text-align: center;
-      font-weight: bold;
-    }
-
-    .status.success {
-      background: #d5f4e6;
+    .operation-type.transaction {
+      background: #e8f5e8;
       color: #27ae60;
     }
 
-    .status.error {
-      background: #fadbd8;
-      color: #e74c3c;
-    }
-
-    .status.info {
-      background: #d6eaf8;
+    .operation-type.query {
+      background: #e8f4fd;
       color: #3498db;
     }
 
-    .loading {
-      text-align: center;
-      padding: 50px;
-      color: #7f8c8d;
-      font-size: 18px;
+    .operation-type.mixed {
+      background: #fef9e7;
+      color: #f39c12;
     }
 
-    .progress-indicator {
-      margin-bottom: 30px;
+    .stanza-content {
       padding: 20px;
-      background: white;
+      display: none;
+    }
+
+    .stanza-content.expanded {
+      display: block;
+    }
+
+    .block {
+      margin-bottom: 20px;
+    }
+
+    .block:last-child {
+      margin-bottom: 0;
+    }
+
+    .block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .block-type {
+      font-size: 12px;
+      padding: 4px 8px;
       border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      background: #ecf0f1;
+      color: #7f8c8d;
+    }
+
+    .block-type.markdown {
+      background: #e8f4fd;
+      color: #3498db;
+    }
+
+    .block-type.code {
+      background: #e8f5e8;
+      color: #27ae60;
+    }
+
+    .block-content {
+      background: #f8f9fa;
+      border-radius: 6px;
+      padding: 15px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    .block-content.markdown {
+      background: white;
+      border: 1px solid #e9ecef;
+      font-family: inherit;
+    }
+
+    .execution-result {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border-left: 4px solid #3498db;
+    }
+
+    .execution-result.success {
+      border-left-color: #27ae60;
+      background: #e8f5e8;
+    }
+
+    .execution-result.error {
+      border-left-color: #e74c3c;
+      background: #fdf2f2;
+    }
+
+    .scope-info {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #7f8c8d;
+    }
+
+    .scope-variables {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      background: #ecf0f1;
+      padding: 5px 8px;
+      border-radius: 4px;
+      margin-top: 5px;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
     }
 
     .progress-bar {
       width: 100%;
-      height: 8px;
+      height: 4px;
       background: #ecf0f1;
-      border-radius: 4px;
+      border-radius: 2px;
       overflow: hidden;
+      margin-top: 20px;
     }
 
     .progress-fill {
       height: 100%;
       background: #3498db;
-      transition: width 0.3s;
+      transition: width 0.3s ease;
+      width: 0%;
     }
 
-    .progress-text {
+    .error-message {
+      background: #fdf2f2;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+    }
+
+    .loading {
       text-align: center;
-      margin-top: 10px;
+      padding: 40px;
       color: #7f8c8d;
-      font-size: 14px;
+    }
+
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #bdc3c7;
+      border-radius: 50%;
+      border-top-color: #3498db;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 10px;
+    }
+
+    .execute-btn {
+      background: #27ae60;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-top: 10px;
+      transition: background 0.3s;
+    }
+
+    .execute-btn:hover {
+      background: #229954;
+    }
+
+    .execute-btn:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .console-line {
+      font-family: 'Courier New', monospace;
+      background-color: #f8f9fa;
+      padding: 4px 8px;
+      margin: 2px 0;
+      border-radius: 3px;
+      border-left: 3px solid #007bff;
+      white-space: pre-wrap;
+    }
+    
+    .block-output {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      border: 1px solid #e9ecef;
     }
   </style>
 </head>
@@ -344,525 +400,397 @@
   <div class="container">
     <div class="header">
       <h1>Progressive Demo Notebook</h1>
-      <p>Step through blockchain demos with real execution</p>
-    </div>
-
-    <div class="config-section">
-      <h3>Configuration</h3>
-      <input type="text" class="config-input" id="baseUrl" placeholder="Server URL" value="http://localhost:3031">
+      <p>Execute demo notebooks with TypeScript-powered execution engine</p>
     </div>
 
     <div class="controls">
       <div class="file-input-wrapper">
-        <label for="fileInput" class="file-input-label">Load Notebook</label>
-        <input type="file" id="fileInput" accept=".demonb,.json">
+        <input type="file" id="demoFile" accept=".demonb,.json" />
+        <label for="demoFile" class="file-input-label">Load Demo Notebook</label>
       </div>
-      <button id="reset">Reset</button>
+      
+      <button id="runAllBtn" disabled>Run All</button>
+      <button id="runNextBtn" disabled>Run Next</button>
+      <button id="resetBtn" disabled>Reset</button>
     </div>
 
-    <div id="status" class="status" style="display: none;"></div>
-    
-    <div id="progressSection" style="display: none;">
-      <div class="progress-indicator">
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
-        <div class="progress-text" id="progressText">Ready to begin</div>
+    <div class="config-section">
+      <h3>Configuration</h3>
+      <div class="config-row">
+        <label for="baseUrl">Base URL:</label>
+        <input type="text" id="baseUrl" value="http://localhost:3031" />
       </div>
     </div>
 
-    <div id="notebook" class="notebook">
-      <div class="loading">Load a notebook file to begin...</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div id="demoContent" class="demo-content">
+      <div class="loading">Load a demo notebook to get started</div>
     </div>
   </div>
 
-  <script type="module">
-    // MonadicRuntime implementation for browser
-    class MonadicRuntime {
-      constructor(config = {}) {
-        this.baseUrl = config.baseUrl || 'http://localhost:3031';
-        this.sessionId = null;
-        this.contracts = config.contracts || {};
-        this.currentStepLabel = '';
-        this.debug = config.debug || false;
+  <script src="./browser-demo-client.js"></script>
+  <script>
+
+    class ProgressiveDemoUI {
+      constructor() {
+        this.currentDemo = null;
+        this.executor = null;
+        this.currentStanzaIndex = 0;
+        this.isExecuting = false;
+        
+        this.initializeEventListeners();
       }
 
-      async initialize() {
-        try {
-          const response = await fetch(`${this.baseUrl}/api/session/new`, {
-            method: 'POST'
-          });
+      initializeEventListeners() {
+        document.getElementById('demoFile').addEventListener('change', (e) => this.loadDemoFile(e));
+        document.getElementById('runAllBtn').addEventListener('click', () => this.runAll());
+        document.getElementById('runNextBtn').addEventListener('click', () => this.runNext());
+        document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+      }
 
-          if (!response.ok) {
-            throw new Error(`Failed to create session: ${response.status}`);
+      async loadDemoFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+          const content = await file.text();
+          const demo = JSON.parse(content);
+          
+          // Validate demo format
+          if (!demo.name || !demo.stanzas) {
+            throw new Error('Invalid demo format: missing name or stanzas');
           }
 
-          const data = await response.json();
-          this.sessionId = data.sessionId;
+          this.currentDemo = demo;
+          this.renderDemo();
+          this.enableControls();
           
-          if (this.debug) {
-            console.log(`[Runtime] Session created: ${this.sessionId}`);
-          }
+          console.log('Demo loaded:', demo.name);
         } catch (error) {
-          throw new Error(`Failed to connect to server at ${this.baseUrl}: ${error.message}`);
+          this.showError('Failed to load demo file: ' + error.message);
         }
       }
 
-      async createWallet(name, initialBalance) {
-        const response = await fetch(`${this.baseUrl}/api/wallet/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: this.sessionId,
-            name,
-            initialBalance: initialBalance.toString()
-          })
+      renderDemo() {
+        const container = document.getElementById('demoContent');
+        container.innerHTML = '';
+
+        this.currentDemo.stanzas.forEach((stanza, index) => {
+          const stanzaElement = this.createStanzaElement(stanza, index);
+          container.appendChild(stanzaElement);
         });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error during wallet creation: ${response.status}`);
-        }
-
-        const body = await response.json();
-        if (!body.success) {
-          throw new Error(`Server error during wallet creation: ${body.error || 'unknown'}`);
-        }
-
-        return { 
-          name: body.walletName,
-          balance: body.balance
-        };
       }
 
-      async getBalance(name) {
-        const response = await fetch(
-          `${this.baseUrl}/api/wallet/${name}/balance?sessionId=${this.sessionId}`
-        );
+      createStanzaElement(stanza, index) {
+        const stanzaDiv = document.createElement('div');
+        stanzaDiv.className = 'stanza';
+        stanzaDiv.dataset.stanzaIndex = index;
 
-        if (!response.ok) {
-          throw new Error(`HTTP error getting balance for ${name}: ${response.status}`);
-        }
-
-        const body = await response.json();
-        if (!body.success) {
-          throw new Error(`Server error getting balance: ${body.error || 'unknown'}`);
-        }
-
-        return body.balance;
-      }
-
-      async transfer(from, to, amount) {
-        const response = await fetch(`${this.baseUrl}/api/wallet/transfer`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: this.sessionId,
-            from,
-            to,
-            amount: amount.toString()
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error during transfer: ${response.status}`);
-        }
-
-        const body = await response.json();
-        if (!body.success) {
-          throw new Error(`Transfer failed: ${body.error || body.message || 'unknown'}`);
-        }
-
-        return { txId: body.txId };
-      }
-
-      async advanceTime(seconds) {
-        const response = await fetch(`${this.baseUrl}/api/emulator/advance-time`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: this.sessionId,
-            seconds
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error advancing time: ${response.status}`);
-        }
-
-        const body = await response.json();
-        if (!body.ok) {
-          throw new Error(`Failed to advance time: ${body.error || 'unknown'}`);
-        }
-
-        return { newTime: body.newTime };
-      }
-
-      async cleanup() {
-        if (this.sessionId && this.debug) {
-          console.log(`[Runtime] Cleaning up session: ${this.sessionId}`);
-        }
-        this.sessionId = null;
-      }
-    }
-
-    // Application state
-    let currentNotebook = null;
-    let currentStanzaIndex = 0;
-    let completedCodeStanzas = 0;
-    let isExecuting = false;
-    let executionScope = {}; // Track variables across stanzas
-    let monadicRuntime = null;
-
-    // UI Elements
-    const fileInput = document.getElementById('fileInput');
-    const resetBtn = document.getElementById('reset');
-    const statusDiv = document.getElementById('status');
-    const notebookDiv = document.getElementById('notebook');
-    const baseUrlInput = document.getElementById('baseUrl');
-    const progressSection = document.getElementById('progressSection');
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-
-    // Load notebook file
-    fileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      try {
-        const text = await file.text();
-        currentNotebook = JSON.parse(text);
-        startNotebook();
-        showStatus('Notebook loaded successfully', 'success');
-      } catch (error) {
-        showStatus(`Error loading notebook: ${error.message}`, 'error');
-      }
-    });
-
-    // Reset notebook
-    resetBtn.addEventListener('click', async () => {
-      if (monadicRuntime) {
-        await monadicRuntime.cleanup();
-        monadicRuntime = null;
-      }
-      currentNotebook = null;
-      currentStanzaIndex = 0;
-      completedCodeStanzas = 0;
-      executionScope = {};
-      notebookDiv.innerHTML = '<div class="loading">Load a notebook file to begin...</div>';
-      progressSection.style.display = 'none';
-      hideStatus();
-    });
-
-    // Initialize runtime
-    async function initializeRuntime() {
-      if (!monadicRuntime) {
-        const baseUrl = baseUrlInput.value || 'http://localhost:3031';
-        monadicRuntime = new MonadicRuntime({ baseUrl, debug: true });
-        await monadicRuntime.initialize();
-        
-        // Add runtime functions to execution scope
-        executionScope.createWallet = monadicRuntime.createWallet.bind(monadicRuntime);
-        executionScope.getBalance = monadicRuntime.getBalance.bind(monadicRuntime);
-        executionScope.transfer = monadicRuntime.transfer.bind(monadicRuntime);
-        executionScope.advanceTime = monadicRuntime.advanceTime.bind(monadicRuntime);
-        
-        console.log('Runtime initialized and functions added to scope');
-      }
-    }
-
-    // Start notebook execution
-    async function startNotebook() {
-      currentStanzaIndex = 0;
-      completedCodeStanzas = 0;
-      executionScope = {};
-      notebookDiv.innerHTML = '';
-      progressSection.style.display = 'block';
-      updateProgress();
-      
-      await initializeRuntime();
-      await showNextStanza();
-    }
-
-    // Analyze code using DryRuntime for accurate operation detection
-    async function analyzeCodeOperation(code) {
-      try {
-        // Import DryRuntime dynamically (CommonJS module)
-        const dryRuntimeModule = await import('./src/demo-interpreter/monadic/dry-runtime.js');
-        const { DryRuntime } = dryRuntimeModule;
-        
-        // Create a dry runtime instance
-        const dryRuntime = new DryRuntime({ baseUrl: 'http://localhost:3031' });
-        await dryRuntime.initialize();
-        
-        // Create a sandboxed execution environment
-        const codeStr = code.join('\n');
-        const sandboxedCode = `
-          // Import monadic functions into sandbox
-          const { createWallet, transfer, deployContract, contractAction, advanceTime, getBalance, getContractState } = await import('./src/demo-interpreter/monadic/functions.js');
-          
-          // Execute the code with dry runtime
-          ${codeStr}
-        `;
-        
-        // Execute in sandboxed environment with dry runtime
-        const sandboxedFunction = new Function('dryRuntime', 'fetch', sandboxedCode);
-        
-        // Override fetch to use dry runtime
-        const originalFetch = window.fetch;
-        window.fetch = (url, options) => dryRuntime.fetch(url, options);
-        
-        try {
-          await sandboxedFunction(dryRuntime, window.fetch);
-        } catch (error) {
-          // Expected - code might fail in dry run, but we captured the operations
-          console.log('Dry run execution completed (errors expected):', error.message);
-        } finally {
-          // Restore original fetch
-          window.fetch = originalFetch;
-          await dryRuntime.cleanup();
-        }
-        
-        // Analyze the recorded operations
-        return dryRuntime.getOperationType();
-        
-      } catch (error) {
-        console.error('DryRuntime analysis failed, falling back to keyword analysis:', error);
-        
-        // Fallback to keyword analysis if DryRuntime fails
-        const codeStr = code.join('\n').toLowerCase();
-        
-        const transactionKeywords = [
-          'createwallet', 'transfer', 'deploycontract', 
-          'contractaction', 'advancetime'
-        ];
-        
-        const queryKeywords = [
-          'getbalance', 'getcontractstate'
-        ];
-        
-        let hasTransaction = false;
-        let hasQuery = false;
-        
-        transactionKeywords.forEach(keyword => {
-          if (codeStr.includes(keyword)) hasTransaction = true;
-        });
-        
-        queryKeywords.forEach(keyword => {
-          if (codeStr.includes(keyword)) hasQuery = true;
-        });
-        
-        if (hasTransaction && hasQuery) return 'mixed';
-        if (hasTransaction) return 'transaction';
-        if (hasQuery) return 'query';
-        return 'unknown';
-      }
-    }
-    
-    // Get button text based on operation type
-    function getButtonText(operationType) {
-      switch(operationType) {
-        case 'transaction': return '⚡ Submit Transaction';
-        case 'query': return '🔍 Query Data';
-        case 'mixed': return '⚠️ Execute (Modifies State)';
-        default: return '▶ Execute';
-      }
-    }
-
-    // Show next stanza
-    async function showNextStanza() {
-      if (currentStanzaIndex >= currentNotebook.stanzas.length) {
-        showStatus('Notebook completed successfully!', 'success');
-        updateProgress();
-        return;
-      }
-
-      const stanza = currentNotebook.stanzas[currentStanzaIndex];
-      await renderStanza(stanza, currentStanzaIndex);
-      updateProgress();
-    }
-
-    // Render a stanza
-    async function renderStanza(stanza, index) {
-      const stanzaDiv = document.createElement('div');
-      stanzaDiv.className = `stanza ${stanza.type}`;
-      stanzaDiv.id = `stanza-${index}`;
-
-      if (stanza.type === 'markdown') {
-        const content = document.createElement('div');
-        content.className = 'markdown-content';
-        content.innerHTML = renderMarkdown(stanza.content.join('\n'));
-        stanzaDiv.appendChild(content);
-        
-        notebookDiv.appendChild(stanzaDiv);
-        
-        // Auto-advance to next stanza after markdown
-        currentStanzaIndex++;
-        setTimeout(async () => {
-          stanzaDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          await showNextStanza();
-        }, 200);
-        
-      } else if (stanza.type === 'code') {
-        // Analyze operation type using DryRuntime
-        const operationType = await analyzeCodeOperation(stanza.content);
-        stanzaDiv.classList.add(operationType);
-        
-        // Header with operation type indicator
         const header = document.createElement('div');
-        header.className = 'code-header';
-        const statusText = operationType === 'transaction' ? 'Transaction' :
-                          operationType === 'query' ? 'Query' :
-                          operationType === 'mixed' ? 'Mixed Operations' :
-                          'Ready to execute';
+        header.className = 'stanza-header';
         header.innerHTML = `
-          <span>${stanza.name || `Code Cell ${index}`}</span>
-          <span>${statusText}</span>
+          <h3>${stanza.name}</h3>
+          <div class="stanza-status">
+            <div class="status-indicator" id="status-${index}"></div>
+            <span class="operation-type" id="operation-${index}">-</span>
+          </div>
         `;
-        stanzaDiv.appendChild(header);
 
-        // Code content
-        const codeDiv = document.createElement('div');
-        codeDiv.className = 'code-content';
-        codeDiv.textContent = stanza.content.join('\n');
-        stanzaDiv.appendChild(codeDiv);
+        const content = document.createElement('div');
+        content.className = 'stanza-content';
+        content.id = `content-${index}`;
 
-        // Actions with appropriate button
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'code-actions';
-        const executeBtn = document.createElement('button');
-        executeBtn.className = `execute-btn ${operationType}`;
-        executeBtn.textContent = getButtonText(operationType);
-        executeBtn.onclick = () => executeStanza(index, stanza, stanzaDiv);
-        actionsDiv.appendChild(executeBtn);
-        stanzaDiv.appendChild(actionsDiv);
-
-        notebookDiv.appendChild(stanzaDiv);
-        
-        // Scroll so code stanza appears with space below for output
-        setTimeout(() => {
-          stanzaDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 50);
-      }
-    }
-
-    // Execute a code stanza with real blockchain operations
-    async function executeStanza(index, stanza, stanzaDiv) {
-      if (isExecuting) return;
-      
-      isExecuting = true;
-      stanzaDiv.classList.add('executing');
-      
-      const executeBtn = stanzaDiv.querySelector('.execute-btn');
-      const header = stanzaDiv.querySelector('.code-header span:last-child');
-      
-      executeBtn.disabled = true;
-      executeBtn.textContent = '⏳ Executing...';
-      header.textContent = 'Executing...';
-
-      try {
-        await initializeRuntime();
-        
-        // Execute code in real scope with real runtime
-        const code = stanza.content.join('\n');
-        const asyncCode = `(async () => { 
-          ${code} 
-        })()`;
-        
-        const result = await new Function('scope', `
-          with (scope) {
-            return eval(arguments[1]);
-          }
-        `)(executionScope, asyncCode);
-        
-        // Create output panel
-        const outputDiv = document.createElement('div');
-        outputDiv.className = 'output-panel';
-        outputDiv.textContent = result ? JSON.stringify(result, null, 2) : '(execution completed)';
-        
-        stanzaDiv.classList.remove('executing');
-        stanzaDiv.classList.add('executed');
-        header.textContent = 'Completed successfully';
-        stanzaDiv.appendChild(outputDiv);
-        executeBtn.textContent = '✓ Executed';
-        
-        // Scroll to show the output with space below
-        setTimeout(() => {
-          outputDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-        
-        // Move to next stanza and increment completed code count
-        completedCodeStanzas++;
-        currentStanzaIndex++;
-        setTimeout(async () => await showNextStanza(), 1000);
-        
-      } catch (error) {
-        const outputDiv = document.createElement('div');
-        outputDiv.className = 'output-panel error';
-        outputDiv.textContent = `Error: ${error.message}`;
-        stanzaDiv.appendChild(outputDiv);
-        
-        executeBtn.textContent = '✗ Failed';
-        header.textContent = 'Failed';
-      } finally {
-        isExecuting = false;
-      }
-    }
-
-    // Update progress indicator
-    function updateProgress() {
-      const totalCodeStanzas = currentNotebook ? currentNotebook.stanzas.filter(s => s.type === 'code').length : 0;
-      const percentage = totalCodeStanzas > 0 ? (completedCodeStanzas / totalCodeStanzas) * 100 : 0;
-      
-      progressFill.style.width = `${percentage}%`;
-      progressText.textContent = `${completedCodeStanzas} of ${totalCodeStanzas} code stanzas completed`;
-    }
-
-    // Simple markdown renderer
-    function renderMarkdown(text) {
-      return text
-        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-        .replace(/^\* (.+)/gim, '<li>$1</li>')
-        .replace(/^\d+\. (.+)/gim, '<li>$1</li>')
-        .replace(/\n\n/gim, '</p><p>')
-        .replace(/^/gim, '<p>')
-        .replace(/$/gim, '</p>')
-        .replace(/<p><\/p>/g, '')
-        .replace(/<p><h/g, '<h')
-        .replace(/<\/h(\d)><\/p>/g, '</h$1>')
-        .replace(/<li>/g, '<ul><li>')
-        .replace(/<\/li>(?![\s]*<li>)/g, '</li></ul>');
-    }
-
-    // Show status message
-    function showStatus(message, type) {
-      statusDiv.textContent = message;
-      statusDiv.className = `status ${type}`;
-      statusDiv.style.display = 'block';
-      
-      if (type === 'success') {
-        setTimeout(hideStatus, 3000);
-      }
-    }
-
-    function hideStatus() {
-      statusDiv.style.display = 'none';
-    }
-
-    // Try to load example notebook on page load
-    window.addEventListener('load', async () => {
-      try {
-        const response = await fetch('/demo-flows/simple-wallet-test.demonb');
-        if (response.ok) {
-          const text = await response.text();
-          currentNotebook = JSON.parse(text);
-          startNotebook();
-          showStatus('Example notebook loaded', 'success');
+        // Render blocks within the stanza
+        let globalBlockIndex = 0;
+        for (let i = 0; i < index; i++) {
+          globalBlockIndex += this.currentDemo.stanzas[i].blocks.length;
         }
-      } catch (error) {
-        // Ignore - example not available
+        
+        stanza.blocks.forEach((block, localBlockIndex) => {
+          const blockElement = this.createBlockElement(block, globalBlockIndex + localBlockIndex);
+          content.appendChild(blockElement);
+        });
+
+        // Add execution result container
+        const resultContainer = document.createElement('div');
+        resultContainer.className = 'execution-result';
+        resultContainer.id = `result-${index}`;
+        resultContainer.style.display = 'none';
+        content.appendChild(resultContainer);
+
+        header.addEventListener('click', () => this.toggleStanza(index));
+        stanzaDiv.appendChild(header);
+        stanzaDiv.appendChild(content);
+
+        return stanzaDiv;
       }
+
+      createBlockElement(block, blockIndex) {
+        const blockDiv = document.createElement('div');
+        blockDiv.className = 'block';
+
+        const header = document.createElement('div');
+        header.className = 'block-header';
+        header.innerHTML = `
+          <span class="block-type ${block.type}">${block.type}</span>
+          ${block.language ? `<span class="block-language">${block.language}</span>` : ''}
+        `;
+
+        const content = document.createElement('div');
+        content.className = `block-content ${block.type}`;
+        content.textContent = block.content.join('\n');
+
+        blockDiv.appendChild(header);
+        blockDiv.appendChild(content);
+
+        // Add execution button for code blocks
+        if (block.type === 'code') {
+          const executeBtn = document.createElement('button');
+          executeBtn.className = 'execute-btn';
+          executeBtn.textContent = '▶ Execute';
+          executeBtn.onclick = () => {
+            console.log('Execute button clicked for block:', blockIndex);
+            this.executeBlock(blockIndex);
+          };
+          blockDiv.appendChild(executeBtn);
+        }
+
+        return blockDiv;
+      }
+
+      toggleStanza(index) {
+        const content = document.getElementById(`content-${index}`);
+        content.classList.toggle('expanded');
+      }
+
+      enableControls() {
+        document.getElementById('runAllBtn').disabled = false;
+        document.getElementById('runNextBtn').disabled = false;
+        document.getElementById('resetBtn').disabled = false;
+      }
+
+      async runAll() {
+        if (this.isExecuting) return;
+        
+        this.isExecuting = true;
+        this.resetAllStatuses();
+        
+        try {
+          const baseUrl = document.getElementById('baseUrl').value;
+          const results = await executeDemo(this.currentDemo, baseUrl);
+          
+          this.updateProgress(100);
+          this.updateResults(results);
+          console.log('Demo execution completed:', results);
+        } catch (error) {
+          this.showError('Demo execution failed: ' + error.message);
+        } finally {
+          this.isExecuting = false;
+        }
+      }
+
+      async runNext() {
+        if (this.isExecuting || this.currentStanzaIndex >= this.currentDemo.stanzas.length) return;
+        
+        this.isExecuting = true;
+        this.updateStanzaStatus(this.currentStanzaIndex, 'running');
+        
+        try {
+          // Initialize client only once
+          if (!this.client) {
+            this.client = new DemoClient();
+            await this.client.initDemo(this.currentDemo, document.getElementById('baseUrl').value);
+            console.log('Created new client with session ID:', this.client.sessionId);
+          } else {
+            console.log('Reusing existing client with session ID:', this.client.sessionId);
+          }
+
+          const result = await this.client.executeStanza(this.currentStanzaIndex);
+          const results = result.results;
+          this.updateStanzaResult(this.currentStanzaIndex, results);
+          this.currentStanzaIndex++;
+          
+          const progress = (this.currentStanzaIndex / this.currentDemo.stanzas.length) * 100;
+          this.updateProgress(progress);
+          
+          if (this.currentStanzaIndex >= this.currentDemo.stanzas.length) {
+            console.log('All stanzas completed');
+          }
+        } catch (error) {
+          this.updateStanzaStatus(this.currentStanzaIndex, 'error');
+          this.showError(`Stanza ${this.currentStanzaIndex + 1} failed: ${error.message}`);
+        } finally {
+          this.isExecuting = false;
+        }
+      }
+
+      async executeBlock(blockIndex) {
+        if (this.isExecuting) return;
+        
+        this.isExecuting = true;
+        
+        try {
+          // Always create a fresh client if we don't have one or if the session is invalid
+          if (!this.client || !this.client.sessionId) {
+            this.client = new DemoClient();
+            await this.client.initDemo(this.currentDemo, document.getElementById('baseUrl').value);
+            console.log('Created new client with session ID:', this.client.sessionId);
+          } else {
+            console.log('Reusing existing client with session ID:', this.client.sessionId);
+          }
+
+          // Find which stanza contains this block
+          let currentBlockCount = 0;
+          let targetStanzaIndex = -1;
+          
+          for (let i = 0; i < this.currentDemo.stanzas.length; i++) {
+            const stanza = this.currentDemo.stanzas[i];
+            const stanzaBlockCount = stanza.blocks.length;
+            
+            // Check if this block is within this stanza
+            if (blockIndex >= currentBlockCount && blockIndex < currentBlockCount + stanzaBlockCount) {
+              targetStanzaIndex = i;
+              break;
+            }
+            
+            currentBlockCount += stanzaBlockCount;
+          }
+
+          if (targetStanzaIndex === -1) {
+            throw new Error(`Could not find stanza for block ${blockIndex}`);
+          }
+
+          console.log(`Executing stanza ${targetStanzaIndex} which contains block ${blockIndex}`);
+
+          // Execute the stanza containing this block
+          const result = await this.client.executeStanza(targetStanzaIndex);
+          const results = result.results;
+          
+          // Debug: Log the results structure
+          console.log('Results from server:', results);
+          results.forEach((r, i) => {
+            console.log(`Result ${i}:`, r);
+            if (r.consoleOutput) {
+              console.log(`  Console output:`, r.consoleOutput);
+            }
+          });
+          
+          // Update the specific stanza result
+          this.updateStanzaResult(targetStanzaIndex, results);
+          
+          console.log(`Stanza ${targetStanzaIndex} executed successfully`);
+        } catch (error) {
+          console.error('Execute block error:', error);
+          // If there's a session error, clear the client so we create a fresh one next time
+          if (error.message.includes('No active session') || error.message.includes('Session not found')) {
+            this.client = null;
+          }
+          this.showError(`Block ${blockIndex} failed: ${error.message}`);
+        } finally {
+          this.isExecuting = false;
+        }
+      }
+
+      async reset() {
+        if (this.client) {
+          await this.client.reset();
+        }
+        this.currentStanzaIndex = 0;
+        this.client = null;
+        this.resetAllStatuses();
+        this.updateProgress(0);
+        this.clearResults();
+      }
+
+      resetAllStatuses() {
+        this.currentDemo.stanzas.forEach((_, index) => {
+          this.updateStanzaStatus(index, 'pending');
+        });
+      }
+
+      updateStanzaStatus(index, status) {
+        const indicator = document.getElementById(`status-${index}`);
+        indicator.className = `status-indicator ${status}`;
+      }
+
+      updateStanzaResult(index, results) {
+        this.updateStanzaStatus(index, 'completed');
+        
+        const operationType = results.length > 0 ? results[results.length - 1].operationType : 'unknown';
+        const operationElement = document.getElementById(`operation-${index}`);
+        operationElement.textContent = operationType;
+        operationElement.className = `operation-type ${operationType}`;
+
+        const resultContainer = document.getElementById(`result-${index}`);
+        resultContainer.style.display = 'block';
+        resultContainer.className = 'execution-result success';
+        
+        let resultHtml = '<h4>Output:</h4>';
+        
+        // Only show results for code blocks (skip markdown)
+        const codeBlockResults = results.filter(result => result.blockType === 'code');
+        
+        if (codeBlockResults.length === 0) {
+          resultHtml += '<p><em>No executable code in this stanza.</em></p>';
+        } else {
+          codeBlockResults.forEach((result, blockIndex) => {
+            resultHtml += `<div class="block-output">`;
+            
+            // Show console output if available
+            if (result.consoleOutput && result.consoleOutput.length > 0) {
+              result.consoleOutput.forEach(line => {
+                resultHtml += `<div class="console-line">${line}</div>`;
+              });
+            } else {
+              resultHtml += `<div class="console-line"><em>No output</em></div>`;
+            }
+            
+            resultHtml += `</div>`;
+          });
+        }
+        
+        resultContainer.innerHTML = resultHtml;
+      }
+
+      updateResults(results) {
+        results.forEach((result, index) => {
+          this.updateStanzaStatus(index, 'completed');
+          
+          const operationElement = document.getElementById(`operation-${index}`);
+          operationElement.textContent = result.operationType;
+          operationElement.className = `operation-type ${result.operationType}`;
+        });
+      }
+
+      updateProgress(percentage) {
+        document.getElementById('progressFill').style.width = `${percentage}%`;
+      }
+
+      clearResults() {
+        this.currentDemo.stanzas.forEach((_, index) => {
+          const resultContainer = document.getElementById(`result-${index}`);
+          resultContainer.style.display = 'none';
+        });
+      }
+
+      showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.textContent = message;
+        
+        const container = document.getElementById('demoContent');
+        container.insertBefore(errorDiv, container.firstChild);
+        
+        setTimeout(() => errorDiv.remove(), 5000);
+      }
+    }
+
+    // Initialize the UI when the page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      new ProgressiveDemoUI();
     });
   </script>
 </body>

@@ -43,6 +43,8 @@ class MonadicRuntime {
   // Core wallet operations
 
   async createWallet(name, initialBalance) {
+    console.log(`[MonadicRuntime] Making HTTP call to ${this.baseUrl}/api/wallet/register for wallet: ${name}`);
+    
     const response = await fetch(`${this.baseUrl}/api/wallet/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -61,6 +63,8 @@ class MonadicRuntime {
     if (!body.success) {
       throw new Error(`Server error during ${this.currentStepLabel}: ${body.error || 'unknown'}`);
     }
+
+    console.log(`[MonadicRuntime] Wallet created successfully: ${body.walletName} with balance ${body.balance}`);
 
     // API returns walletName and balance only - no address
     return { 

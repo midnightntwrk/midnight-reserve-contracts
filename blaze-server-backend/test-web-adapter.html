@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web Adapter Test</title>
+</head>
+<body>
+    <h1>Web Adapter Test</h1>
+    <div id="output"></div>
+    
+    <script type="module">
+        import './src/demo-interpreter/browser/web-adapter.js';
+        
+        // Test the adapter
+        const testDemo = {
+            name: "Test Demo",
+            description: "Test demo for web adapter",
+            stanzas: [
+                {
+                    name: "test_stanza",
+                    blocks: [
+                        {
+                            type: "markdown",
+                            content: ["# Test Markdown"]
+                        },
+                        {
+                            type: "code",
+                            language: "javascript",
+                            content: ["console.log('Hello from web adapter!');"]
+                        }
+                    ]
+                }
+            ]
+        };
+        
+        async function testAdapter() {
+            try {
+                const executor = new WebDemoExecutor({
+                    baseUrl: 'http://localhost:3031',
+                    debug: true
+                });
+                
+                await executor.initialize(testDemo);
+                document.getElementById('output').innerHTML = '<p>✅ Web adapter initialized successfully!</p>';
+                
+                // Test single execution
+                const result = await executor.executeSingle(testDemo.stanzas[0]);
+                document.getElementById('output').innerHTML += `<p>✅ Single execution result: ${JSON.stringify(result)}</p>`;
+                
+            } catch (error) {
+                document.getElementById('output').innerHTML = `<p>❌ Error: ${error.message}</p>`;
+                console.error('Test error:', error);
+            }
+        }
+        
+        testAdapter();
+    </script>
+</body>
+</html>

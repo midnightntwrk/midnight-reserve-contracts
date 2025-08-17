@@ -16,7 +16,7 @@
     "build": "npm run clean && npm run compile && npm run copy-assets",
     "clean": "rm -rf dist",
     "compile": "tsc",
-    "copy-assets": "echo 'No additional assets to copy'",
+    "copy-assets": "cp -r src/demo-interpreter/monadic dist/demo-interpreter/ && cp -r src/demo-interpreter/core/*.js dist/demo-interpreter/core/",
     "start": "node dist/index.js",
     "prepare": "npm run build",
     "test:phase0": "bun test src/tests/phase0",
@@ -27,7 +27,8 @@
     "test:exploration": "bun test ./exploration/tests/*.exploration.ts ./exploration/unfakeable-transaction-ids/tests/phase3/*.exploration.ts",
     "demo": "bun src/demo-interpreter/cli/demo-runner.ts",
     "demo:run": "node src/demo-interpreter/monadic/test-runner.js",
-    "demo:serve": "bunx http-server -p 8080 -c-1",
+            "demo:serve": "bunx http-server -p 8080 -c-1",
+        "demo:server": "node src/demo-interpreter/server/demo-server.js",
     "demo:web": "bunx http-server -p 8080 -c-1 -o",
     "pack": "npm run build && npm pack",
     "publish:npm": "npm run build && npm publish"

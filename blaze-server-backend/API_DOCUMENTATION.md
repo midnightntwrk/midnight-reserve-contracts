@@ -263,6 +263,81 @@ Content-Type: application/json
 GET /api/network/tip?sessionId=your-session-id
 ```
 
+### 7. Logging Control
+
+#### Get Logging Status
+```http
+GET /api/logging
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "enabled": false
+}
+```
+
+#### Enable/Disable Logging
+```http
+POST /api/logging
+Content-Type: application/json
+
+{
+  "enabled": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "enabled": true,
+  "message": "Logging enabled"
+}
+```
+
+**Notes:**
+- **Default**: Logging is disabled by default to reduce noise in unit tests
+- **Scope**: Controls HTTP request/response logging for all endpoints
+- **Format**: When enabled, logs include timestamps and request/response details
+- **Persistence**: Logging state persists for the server's runtime
+- **Use Case**: Enable for debugging web app interactions, disable for clean test output
+
+**Example Usage:**
+```javascript
+// Enable logging for debugging
+await fetch('/api/logging', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({enabled: true})
+});
+
+// Check current status
+const status = await fetch('/api/logging');
+const {enabled} = await status.json();
+
+// Disable logging for clean tests
+await fetch('/api/logging', {
+  method: 'POST', 
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({enabled: false})
+});
+```
+
+**Log Output Format (when enabled):**
+```
+[2024-01-15T10:30:45.123Z] [BlazeBackend] POST /api/wallet/register {
+  "query": {},
+  "body": {"sessionId": "session_123", "name": "alice", "initialBalance": "10000000"},
+  "sessionId": "session_123"
+}
+[2024-01-15T10:30:45.456Z] [BlazeBackend] POST /api/wallet/register -> 200 {
+  "statusCode": 200,
+  "responseData": "{\"success\":true,\"walletName\":\"alice\",\"balance\":\"10000000\"}"
+}
+```
+
 ## Example Workflows
 
 ### Basic Wallet Operations
@@ -579,6 +654,56 @@ await fetch('/api/transaction/build-and-submit', {
     operations: [{type: 'pay-to-contract', ...}]
   })
 }); // Requires full transaction processing
+```
+
+### Logging Management
+```javascript
+// ✅ GOOD - Disable logging for unit tests
+await fetch('/api/logging', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({enabled: false})
+});
+
+// Run tests with clean output
+await fetch('/api/wallet/register', {...}); // No logging noise
+
+// ✅ GOOD - Enable logging for debugging web app interactions
+await fetch('/api/logging', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({enabled: true})
+});
+
+// Debug with detailed request/response logs
+await fetch('/api/wallet/register', {...}); // Full logging output
+```
+
+```javascript
+// ✅ GOOD - Check logging status before enabling
+const status = await fetch('/api/logging');
+const {enabled} = await status.json();
+
+if (!enabled) {
+  await fetch('/api/logging', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({enabled: true})
+  });
+}
+```
+
+```javascript
+// ❌ BAD - Don't leave logging enabled in production tests
+// This creates excessive noise and slows down test execution
+await fetch('/api/logging', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({enabled: true})
+});
+
+// Run all tests with verbose logging...
+// Results in thousands of log lines and slower execution
 ```
 
 ### Transaction IDs Are Real
