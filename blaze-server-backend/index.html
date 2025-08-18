@@ -1368,7 +1368,7 @@
           const amount = utxo.amount || 0;
           const lovelace = amount / 1000000; // Convert to ADA
           const address = utxo.address || 'Unknown address';
-          const datum = utxo.datum ? 'Has datum' : 'No datum';
+          const datum = utxo.datum !== undefined && utxo.datum !== null ? `datum: ${utxo.datum}` : 'No datum';
           
           return `
             <div class="utxo-item">

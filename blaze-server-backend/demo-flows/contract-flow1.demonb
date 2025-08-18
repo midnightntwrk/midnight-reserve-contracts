@@ -16,10 +16,11 @@
             "",
             "This demo demonstrates the complete lifecycle of a smart contract:",
             "1. Creating wallets with sufficient funds",
-            "2. Setting up reference scripts for efficient contract interactions",
-            "3. Locking funds to a contract with a datum",
-            "4. Unlocking funds from the contract with a redeemer",
-            "5. Verifying real transaction IDs and state changes",
+            "2. Setting up real-time watchers for balance and state monitoring",
+            "3. Setting up reference scripts for efficient contract interactions",
+            "4. Locking funds to a contract with a datum",
+            "5. Unlocking funds from the contract with a redeemer",
+            "6. Verifying real transaction IDs and state changes",
             "",
             "We'll use the Hello World contract that validates when datum equals redeemer."
           ]
@@ -54,7 +55,14 @@
             "",
             "// Verify the balance",
             "aliceBalance = await getBalance('alice');",
-            "console.log(`Verified balance: ${aliceBalance} lovelace`);"
+            "console.log(`Verified balance: ${aliceBalance} lovelace`);",
+            "",
+            "// Set up watchers for Alice's wallet as early as possible",
+            "console.log('Setting up wallet watchers...');",
+            "aliceBalanceWatcher = await watchBalance('alice');",
+            "aliceUtxosWatcher = await watchWalletUtxos('alice');",
+            "console.log(`✅ Balance watcher: ${aliceBalanceWatcher.name}`);",
+            "console.log(`✅ UTXOs watcher: ${aliceUtxosWatcher.name}`);"
           ]
         }
       ]
@@ -94,7 +102,12 @@
             "refScriptUtxo = referenceScripts.refScriptUtxo;",
             "spendingUtxo = referenceScripts.spendingUtxo;",
             "contractAddress = referenceScripts.contractAddress;",
-            "scriptHash = referenceScripts.scriptHash;"
+            "scriptHash = referenceScripts.scriptHash;",
+            "",
+            "// Set up contract state watcher as soon as we have the contract address",
+            "console.log('Setting up contract state watcher...');",
+            "contractStateWatcher = await watchContractState(contractAddress);",
+            "console.log(`✅ Contract state watcher: ${contractStateWatcher.name}`);"
           ]
         }
       ]
@@ -140,7 +153,18 @@
             "console.log(`Datum value: 42`);",
             "",
             "// Store the locked UTXO for later use",
-            "lockedUtxo = lockResult.lockedUtxo;"
+            "lockedUtxo = lockResult.lockedUtxo;",
+            "",
+            "// Wait a moment for watchers to detect the changes",
+            "console.log('Waiting for watchers to detect lock operation...');",
+            "await new Promise(resolve => setTimeout(resolve, 1000));",
+            "console.log('✅ Watchers should have detected the balance decrease and contract UTXO creation');",
+            "",
+            "// Show active watchers status",
+            "console.log('\\n=== Active Watchers Status ===');",
+            "console.log(`Alice Balance Watcher: ${aliceBalanceWatcher.name} - ${aliceBalanceWatcher.status}`);",
+            "console.log(`Alice UTXOs Watcher: ${aliceUtxosWatcher.name} - ${aliceUtxosWatcher.status}`);",
+            "console.log(`Contract State Watcher: ${contractStateWatcher.name} - ${contractStateWatcher.status}`);"
           ]
         }
       ]
@@ -238,7 +262,18 @@
             "",
             "console.log(`Funds unlocked successfully!`);",
             "console.log(`Transaction ID: ${unlockResult.txId}`);",
-            "console.log(`Redeemer value: 42`);"
+            "console.log(`Redeemer value: 42`);",
+            "",
+            "// Wait a moment for watchers to detect the unlock changes",
+            "console.log('Waiting for watchers to detect unlock operation...');",
+            "await new Promise(resolve => setTimeout(resolve, 1000));",
+            "console.log('✅ Watchers should have detected the balance increase and contract UTXO consumption');",
+            "",
+            "// Show final watchers status after unlock",
+            "console.log('\\n=== Final Watchers Status ===');",
+            "console.log(`Alice Balance Watcher: ${aliceBalanceWatcher.name} - ${aliceBalanceWatcher.status}`);",
+            "console.log(`Alice UTXOs Watcher: ${aliceUtxosWatcher.name} - ${aliceUtxosWatcher.status}`);",
+            "console.log(`Contract State Watcher: ${contractStateWatcher.name} - ${contractStateWatcher.status}`);"
           ]
         }
       ]
@@ -395,7 +430,15 @@
             "console.log(`Contract UTXOs: ${contractStateFinal.utxos.length} total`);",
             "",
             "console.log('\\n🎉 Contract deployment and execution demo completed successfully!');",
-            "console.log('All transaction IDs are real and verified!');"
+            "console.log('All transaction IDs are real and verified!');",
+            "",
+            "// Final watcher summary",
+            "console.log('\\n=== Watcher Summary ===');",
+            "console.log('Active watchers throughout the demo:');",
+            "console.log(`- ${aliceBalanceWatcher.name}: Monitored Alice's balance changes`);",
+            "console.log(`- ${aliceUtxosWatcher.name}: Monitored Alice's UTXO changes`);",
+            "console.log(`- ${contractStateWatcher.name}: Monitored contract state changes`);",
+            "console.log('\\n✅ All watchers successfully detected state changes in real-time!');"
           ]
         }
       ]

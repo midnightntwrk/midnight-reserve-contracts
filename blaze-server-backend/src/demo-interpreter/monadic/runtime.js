@@ -607,7 +607,10 @@ class MonadicRuntime {
 
   async watchBalance(walletName, formatter = null) {
     console.log(`[Runtime] Setting up balance watcher for ${walletName}`);
-    const defaultFormatter = (data) => `${walletName}: ${data.balance} lovelace`;
+    const defaultFormatter = (data) => {
+      const balance = parseInt(data.balance || '0');
+      return `${walletName}: ${(balance/1000000).toFixed(6)} ADA`;
+    };
     try {
       const result = await this.watch(walletName, { type: 'balance', wallet: walletName }, formatter || defaultFormatter);
       console.log(`[Runtime] Balance watcher setup successful for ${walletName}`);
@@ -619,13 +622,28 @@ class MonadicRuntime {
   }
 
   async watchContractState(address, formatter = null) {
-    const defaultFormatter = (data) => `Contract ${address.slice(0, 8)}...: ${JSON.stringify(data)}`;
+    const defaultFormatter = (data) => {
+      const utxos = data.utxos || [];
+      const totalValue = utxos.reduce((sum, utxo) => sum + parseInt(utxo.amount || '0'), 0);
+      
+      // Show datum info if available
+      let datumInfo = '';
+      if (utxos.length > 0 && utxos[0].datum !== undefined) {
+        datumInfo = `, datum: ${utxos[0].datum}`;
+      }
+      
+      return `Contract: ${utxos.length} UTXOs, ${(totalValue/1000000).toFixed(6)} ADA${datumInfo}`;
+    };
     return this.watch(`contract-${address.slice(0, 8)}`, { type: 'contract-state', address }, formatter || defaultFormatter);
   }
 
   async watchWalletUtxos(walletName, formatter = null) {
     console.log(`[Runtime] Setting up UTXO watcher for ${walletName}`);
-    const defaultFormatter = (data) => `${walletName} UTXOs: ${data.utxos.length} total`;
+    const defaultFormatter = (data) => {
+      const utxos = data.utxos || [];
+      const totalValue = utxos.reduce((sum, utxo) => sum + parseInt(utxo.amount || '0'), 0);
+      return `${walletName}: ${utxos.length} UTXOs, ${(totalValue/1000000).toFixed(6)} ADA`;
+    };
     try {
       const result = await this.watch(`${walletName}-utxos`, { type: 'wallet-utxos', wallet: walletName }, formatter || defaultFormatter);
       console.log(`[Runtime] UTXO watcher setup successful for ${walletName}`);
@@ -680,7 +698,7 @@ class MonadicRuntime {
       
       case 'contract-state':
         return {
-          endpoint: `/api/contract/${query.address}/state`,
+          endpoint: `/api/contract/${query.address}/utxos`,
           method: 'GET',
           params: { sessionId: this.sessionId }
         };
