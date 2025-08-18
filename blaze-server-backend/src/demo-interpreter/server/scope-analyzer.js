@@ -79,7 +79,7 @@ app.post('/initialize-runtime', async (req, res) => {
     const { baseUrl } = req.body;
     
     // Initialize real runtime
-    realRuntime = new MonadicRuntime({ baseUrl });
+    realRuntime = new MonadicRuntime({ baseUrl, debug: false });
     await realRuntime.initialize();
     
     // Initialize dry runtime

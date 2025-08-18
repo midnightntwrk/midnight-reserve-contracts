@@ -42,7 +42,14 @@ export class JavaScriptDemoExecutor {
     console.log(`[JavaScriptDemoExecutor] Demo has ${demo.stanzas.length} stanzas`);
     console.log(`[JavaScriptDemoExecutor] First stanza: ${demo.stanzas[0]?.name}`);
     this.demo = demo;
-    this.executor = new IntegratedDemoExecutor(baseUrl);
+    
+    // Pass contract configuration from demo config to the executor
+    const config = {
+      baseUrl,
+      contracts: (demo as any).config?.contracts || {},
+      debug: false
+    };
+    this.executor = new IntegratedDemoExecutor(config);
   }
 
   /**

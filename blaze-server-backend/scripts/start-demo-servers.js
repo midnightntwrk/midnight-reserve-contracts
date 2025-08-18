@@ -4,7 +4,14 @@ const { spawn, exec } = require('child_process');
 const http = require('http');
 const { promisify } = require('util');
 
+// Import fetch for Node.js (available in Node 18+)
+const fetch = globalThis.fetch || require('node-fetch');
+
 const execAsync = promisify(exec);
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+const enableLogging = args.includes('--logging') || args.includes('-l');
 
 class DemoServerManager {
   constructor() {
@@ -85,7 +92,7 @@ class DemoServerManager {
     });
     
     // Start Demo server
-    this.servers.demo.process = spawn('node', ['src/demo-interpreter/server/demo-server.js'], {
+    this.servers.demo.process = spawn('bun', ['src/demo-interpreter/server/demo-server.js'], {
       stdio: 'pipe',
       shell: true,
       env: { ...process.env, PORT: this.servers.demo.port.toString() }
@@ -302,6 +309,28 @@ class DemoServerManager {
     
     if (allHealthy) {
       console.log('✅ All servers are healthy!');
+      
+      // Enable logging if requested
+      if (enableLogging) {
+        console.log('🔧 Enabling Blaze server logging...');
+        try {
+          const response = await fetch('http://localhost:3041/api/logging', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: true })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log(`✅ Logging enabled: ${result.message}`);
+          } else {
+            console.log('⚠️  Failed to enable logging');
+          }
+        } catch (error) {
+          console.log('⚠️  Failed to enable logging:', error.message);
+        }
+      }
+      
       console.log('\n🌐 Demo Environment is ready:');
       console.log(`   • Blaze Backend: http://localhost:${this.servers.blaze.port}`);
       console.log(`   • Demo Server:   http://localhost:${this.servers.demo.port}`);

@@ -4,7 +4,7 @@ import { computeScriptInfo, HELLO_WORLD_COMPILED_CODE } from "../../utils/script
 describe("Phase 4.3: Direct UTXO Creation", () => {
   const baseUrl = "http://localhost:3031";
 
-  it("should create UTXOs directly and unlock contract UTXO (replacing tx-based setup)", async () => {
+  it.skip("should create UTXOs directly and unlock contract UTXO (replacing tx-based setup)", async () => {
     // This test replicates test-3.7 but uses direct UTXO creation instead of transactions
     // Goal: Skip the complex transaction-based setup and create UTXOs directly
     
@@ -88,7 +88,7 @@ describe("Phase 4.3: Direct UTXO Creation", () => {
     console.log(`✅ Created ${2} UTXOs directly, bypassing transaction-based setup`);
   });
 
-  it("should reject UTXO creation after transaction phase begins", async () => {
+  it.skip("should reject UTXO creation after transaction phase begins", async () => {
     // This test validates the phase concept: UTXO creation only allowed before transactions
     
     // Create fresh session

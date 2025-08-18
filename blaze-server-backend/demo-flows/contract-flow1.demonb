@@ -1,0 +1,404 @@
+{
+  "name": "Contract Deployment and Execution Demo",
+  "description": "Demonstrates complete contract lifecycle: deployment, locking funds, and unlocking with real transaction IDs. Based on test-3.7-contract-utxo-unlocking.test.ts",
+  "version": "1.0",
+  "config": {
+    "baseUrl": "http://localhost:3041"
+  },
+  "stanzas": [
+    {
+      "name": "introduction",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "# Contract Deployment and Execution Demo",
+            "",
+            "This demo demonstrates the complete lifecycle of a smart contract:",
+            "1. Creating wallets with sufficient funds",
+            "2. Setting up reference scripts for efficient contract interactions",
+            "3. Locking funds to a contract with a datum",
+            "4. Unlocking funds from the contract with a redeemer",
+            "5. Verifying real transaction IDs and state changes",
+            "",
+            "We'll use the Hello World contract that validates when datum equals redeemer."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "wallet_setup",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Setting Up Wallets",
+            "",
+            "First, we'll create a wallet with sufficient funds for contract operations. We need enough ADA for:",
+            "- Reference script creation (2 ADA)",
+            "- Contract locking (3 ADA)", 
+            "- Transaction fees and collateral",
+            "",
+            "Following the SundaeSwap pattern, we'll start with 20 ADA."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Create Alice's wallet with sufficient funds for contract operations",
+            "alice = await createWallet('alice', 20_000_000); // 20 ADA",
+            "console.log(`Alice's wallet created!`);",
+            "console.log(`Wallet name: ${alice.name}`);",
+            "console.log(`Initial balance: ${alice.balance} lovelace`);",
+            "",
+            "// Verify the balance",
+            "aliceBalance = await getBalance('alice');",
+            "console.log(`Verified balance: ${aliceBalance} lovelace`);"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "contract_deployment",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Creating Reference Scripts",
+            "",
+            "We'll create reference scripts using the modern Babbage-era approach. This approach:",
+            "- Creates a reference script UTXO that can be reused",
+            "- Avoids the need for inline scripts in every transaction",
+            "- Is more efficient for repeated contract interactions",
+            "",
+            "The contract validates that the datum equals the redeemer (both set to 42)."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Create reference scripts for the Hello World contract",
+            "console.log('Creating reference scripts...');",
+            "",
+            "// Use the elegant monadic function with user-specified blueprint path",
+            "referenceScripts = await createReferenceScript('hello_world', { wallet: 'alice', blueprint: './plutus.json' });",
+            "console.log(`Reference script created successfully!`);",
+            "console.log(`Script hash: ${referenceScripts.scriptHash}`);",
+            "console.log(`Contract address: ${referenceScripts.contractAddress}`);",
+            "console.log(`Reference script UTXO: ${referenceScripts.refScriptUtxo.txHash}:${referenceScripts.refScriptUtxo.outputIndex}`);",
+            "console.log(`Spending UTXO: ${referenceScripts.spendingUtxo.txHash}:${referenceScripts.spendingUtxo.outputIndex}`);",
+            "",
+            "// Store for later use",
+            "refScriptUtxo = referenceScripts.refScriptUtxo;",
+            "spendingUtxo = referenceScripts.spendingUtxo;",
+            "contractAddress = referenceScripts.contractAddress;",
+            "scriptHash = referenceScripts.scriptHash;"
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "fund_locking",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Locking Funds to the Contract",
+            "",
+            "Now we'll lock 3 ADA to the contract with a datum value of 42. This demonstrates:",
+            "- Pay-to-contract operations",
+            "- Datum creation and attachment",
+            "- Manual UTXO selection for precise control",
+            "- Real transaction ID generation",
+            "",
+            "The funds will be locked until someone provides a redeemer that equals the datum (42)."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Lock 3 ADA to the contract with datum = 42",
+            "console.log('Locking 3 ADA to the contract with datum = 42...');",
+            "",
+            "// Use the elegant monadic function with user-specified blueprint path",
+            "lockResult = await lockToContract(scriptHash, {",
+            "  amount: 3_000_000, // 3 ADA in lovelace",
+            "  datum: 42,",
+            "  spendingUtxo: spendingUtxo,",
+            "  contractName: 'hello_world',",
+            "  blueprint: './plutus.json',",
+            "  wallet: 'alice'",
+            "});",
+            "",
+            "console.log(`Funds locked successfully!`);",
+            "console.log(`Transaction ID: ${lockResult.txId}`);",
+            "console.log(`Locked amount: 3 ADA`);",
+            "console.log(`Datum value: 42`);",
+            "",
+            "// Store the locked UTXO for later use",
+            "lockedUtxo = lockResult.lockedUtxo;"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "contract_state_verification",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Verifying Contract State",
+            "",
+            "Let's verify that the funds were actually locked to the contract by checking:",
+            "- Contract UTXOs to see the locked funds",
+            "- Alice's remaining balance",
+            "- Transaction ID verification",
+            "",
+            "This proves that the transaction ID is real and corresponds to actual state changes."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Check contract state to verify locked funds",
+            "contractState = await getContractState(contractAddress);",
+            "console.log(`Contract UTXOs: ${contractState.utxos.length} total`);",
+            "",
+            "// Find our locked UTXO (should have 3 ADA)",
+            "foundLockedUtxo = contractState.utxos.find(utxo => utxo.amount === '3000000');",
+            "if (foundLockedUtxo) {",
+            "  console.log(`✅ Found locked UTXO: ${foundLockedUtxo.txHash}:${foundLockedUtxo.outputIndex}`);",
+            "  console.log(`   Amount: ${foundLockedUtxo.amount} lovelace`);",
+            "  console.log(`   Matches our transaction: ${foundLockedUtxo.txHash === lockResult.txId}`);",
+            "} else {",
+            "  console.log(`❌ Locked UTXO not found!`);",
+            "}",
+            "",
+            "// Check Alice's remaining balance",
+            "aliceBalanceAfterLock = await getBalance('alice');",
+            "balanceDecrease = parseInt(alice.balance) - parseInt(aliceBalanceAfterLock);",
+            "console.log(`Alice's balance decreased by: ${balanceDecrease} lovelace`);",
+            "console.log(`(Includes 3 ADA lock + transaction fees)`);"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fund_unlocking",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Unlocking Funds from the Contract",
+            "",
+            "Now we'll unlock the funds by providing a redeemer that equals the datum (42). This demonstrates:",
+            "- Contract execution with redeemers",
+            "- UTXO consumption and recreation",
+            "- Real transaction ID verification",
+            "- Balance restoration",
+            "",
+            "The contract will validate that redeemer == datum (both 42) and allow the unlock."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Unlock funds by providing redeemer = 42 (matching datum)",
+            "console.log('Unlocking funds with redeemer = 42...');",
+            "",
+            "// Get Alice's address and balance before unlock",
+            "aliceUtxos = await getWalletUtxos('alice');",
+            "aliceAddress = aliceUtxos.utxos[0].address;",
+            "aliceBalanceBeforeUnlock = await getBalance('alice');",
+            "console.log(`Alice's address: ${aliceAddress}`);",
+            "console.log(`Alice's balance before unlock: ${aliceBalanceBeforeUnlock} lovelace`);",
+            "",
+            "// Get the current locked UTXO from contract state by matching the lock transaction ID",
+            "currentContractState = await getContractState(contractAddress);",
+            "currentLockedUtxo = currentContractState.utxos.find(utxo => utxo.txHash === lockResult.txId);",
+            "if (!currentLockedUtxo) {",
+            "  throw new Error(`No locked UTXO found for transaction ID: ${lockResult.txId}`);",
+            "}",
+            "console.log(`Using locked UTXO: ${currentLockedUtxo.txHash}:${currentLockedUtxo.outputIndex}`);",
+            "",
+            "// Execute the unlock transaction using the elegant monadic function",
+            "unlockResult = await unlockFromContract(currentLockedUtxo, refScriptUtxo, {",
+            "  redeemer: 42, // Must match the datum value",
+            "  returnAddress: aliceAddress,",
+            "  wallet: 'alice',",
+            "  contractName: 'hello_world',",
+            "  blueprint: './plutus.json'",
+            "});",
+            "",
+            "console.log(`Funds unlocked successfully!`);",
+            "console.log(`Transaction ID: ${unlockResult.txId}`);",
+            "console.log(`Redeemer value: 42`);"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "unlock_verification",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Verifying the Unlock Operation",
+            "",
+            "Let's verify that the unlock operation was successful by checking:",
+            "- Contract UTXOs (should be empty now)",
+            "- Alice's balance (should have increased)",
+            "- Transaction ID verification",
+            "- UTXO consumption and recreation",
+            "",
+            "This provides comprehensive proof that the transaction IDs are real and unfakeable."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Check contract state after unlock",
+            "contractStateAfterUnlock = await getContractState(contractAddress);",
+            "console.log(`Contract UTXOs after unlock: ${contractStateAfterUnlock.utxos.length} total`);",
+            "",
+            "if (contractStateAfterUnlock.utxos.length === 0) {",
+            "  console.log(`✅ Contract UTXOs consumed successfully!`);",
+            "} else {",
+            "  console.log(`❌ Contract still has UTXOs!`);",
+            "}",
+            "",
+            "// Check Alice's balance after unlock",
+            "aliceBalanceAfterUnlock = await getBalance('alice');",
+            "balanceIncrease = parseInt(aliceBalanceAfterUnlock) - parseInt(aliceBalanceBeforeUnlock);",
+            "console.log(`Alice's balance increased by: ${balanceIncrease} lovelace`);",
+            "console.log(`(Should be approximately 3 ADA minus fees)`);",
+            "",
+            "// Verify the transaction ID is real by checking Alice's UTXOs",
+            "aliceUtxosAfterUnlock = await getWalletUtxos('alice');",
+            "unlockUtxo = aliceUtxosAfterUnlock.utxos.find(utxo => utxo.txHash === unlockResult.txId);",
+            "",
+            "if (unlockUtxo) {",
+            "  console.log(`✅ Found UTXO from unlock transaction: ${unlockUtxo.txHash}:${unlockUtxo.outputIndex}`);",
+            "  console.log(`   Amount: ${unlockUtxo.amount} lovelace`);",
+            "  console.log(`   Transaction ID is real and unfakeable!`);",
+            "} else {",
+            "  console.log(`❌ Unlock UTXO not found - transaction ID may be fake!`);",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "failure_test",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Testing Contract Validation Failure",
+            "",
+            "Let's demonstrate that the contract properly validates redeemers by trying to unlock with an incorrect value. This shows:",
+            "- Contract validation working correctly",
+            "- Proper error handling",
+            "- Security of the contract logic",
+            "",
+            "We'll try to unlock with redeemer = 99 (should fail since datum = 42)."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Try to unlock with incorrect redeemer (should fail)",
+            "console.log('Testing contract validation with incorrect redeemer...');",
+            "console.log('Attempting to unlock with redeemer = 99 (datum = 42)...');",
+            "",
+            "try {",
+            "  // This should fail because redeemer (99) != datum (42)",
+            "  // We need to create a new locked UTXO first since we consumed the previous one",
+            "  console.log('Creating new locked UTXO for failure test...');",
+            "  ",
+            "  // Lock funds again with datum = 42",
+            "  lockResult2 = await lockToContract(scriptHash, {",
+            "    amount: 1_000_000, // 1 ADA",
+            "    datum: 42,",
+            "    spendingUtxo: spendingUtxo, // Reuse the spending UTXO",
+            "    contractName: 'hello_world',",
+            "    blueprint: './plutus.json',",
+            "    wallet: 'alice'",
+            "  });",
+            "  ",
+            "  console.log(`Created test UTXO: ${lockResult2.txId}`);",
+            "  ",
+            "  // Try to unlock with incorrect redeemer",
+            "  unlockFailResult = await unlockFromContract(lockResult2.lockedUtxo, refScriptUtxo, {",
+            "    redeemer: 99, // Incorrect redeemer",
+            "    returnAddress: aliceAddress,",
+            "    wallet: 'alice',",
+            "    contractName: 'hello_world',",
+            "    blueprint: './plutus.json'",
+            "  });",
+            "  ",
+            "  console.log(`❌ Unexpected success - contract validation failed!`);",
+            "} catch (error) {",
+            "  console.log(`✅ Contract validation working correctly!`);",
+            "  console.log(`   Error: ${error.message}`);",
+            "  console.log(`   Redeemer 99 was correctly rejected (datum = 42)`);",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "final_summary",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Demo Summary",
+            "",
+            "We've successfully demonstrated the complete contract lifecycle:",
+            "",
+            "✅ **Contract Deployment**: Deployed Hello World contract with reference scripts",
+            "✅ **Fund Locking**: Locked 3 ADA with datum = 42",
+            "✅ **State Verification**: Confirmed locked funds in contract UTXOs",
+            "✅ **Fund Unlocking**: Unlocked funds with correct redeemer = 42",
+            "✅ **Transaction Verification**: Proved transaction IDs are real and unfakeable",
+            "✅ **Contract Validation**: Confirmed contract rejects incorrect redeemers",
+            "",
+            "**Key Achievements:**",
+            "- Real transaction IDs that correspond to actual state changes",
+            "- Complete UTXO lifecycle (creation, consumption, recreation)",
+            "- Proper contract validation and error handling",
+            "- Efficient reference script usage",
+            "- Comprehensive state verification"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Final verification of all operations",
+            "console.log('\\n=== Final Demo Summary ===');",
+            "console.log(`Contract address: ${contractAddress}`);",
+            "console.log(`Script hash: ${scriptHash}`);",
+            "console.log(`Lock transaction: ${lockResult.txId}`);",
+            "console.log(`Unlock transaction: ${unlockResult.txId}`);",
+            "console.log(`Alice's final balance: ${await getBalance('alice')} lovelace`);",
+            "contractStateFinal = await getContractState(contractAddress);",
+            "console.log(`Contract UTXOs: ${contractStateFinal.utxos.length} total`);",
+            "",
+            "console.log('\\n🎉 Contract deployment and execution demo completed successfully!');",
+            "console.log('All transaction IDs are real and verified!');"
+          ]
+        }
+      ]
+    }
+  ]
+}

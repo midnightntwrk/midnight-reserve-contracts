@@ -5,6 +5,11 @@
  * Provides the implementation for the pure functions in functions.js.
  */
 
+// Import utilities for blueprint resolution
+const { computeScriptInfo } = require('../../utils/script-utils.js');
+const fs = require('fs');
+const path = require('path');
+
 class MonadicRuntime {
   constructor(config = {}) {
     this.baseUrl = config.baseUrl || 'http://localhost:3031';
@@ -47,7 +52,9 @@ class MonadicRuntime {
   // Core wallet operations
 
   async createWallet(name, initialBalance) {
-    console.log(`[MonadicRuntime] Making HTTP call to ${this.baseUrl}/api/wallet/register for wallet: ${name}`);
+    if (this.debug) {
+      console.log(`[MonadicRuntime] Making HTTP call to ${this.baseUrl}/api/wallet/register for wallet: ${name}`);
+    }
     
     const response = await fetch(`${this.baseUrl}/api/wallet/register`, {
       method: 'POST',
@@ -68,7 +75,9 @@ class MonadicRuntime {
       throw new Error(`Server error during ${this.currentStepLabel}: ${body.error || 'unknown'}`);
     }
 
-    console.log(`[MonadicRuntime] Wallet created successfully: ${body.walletName} with balance ${body.balance}`);
+    if (this.debug) {
+      console.log(`[MonadicRuntime] Wallet created successfully: ${body.walletName} with balance ${body.balance}`);
+    }
 
     // API returns walletName and balance only - no address
     return { 
@@ -127,34 +136,308 @@ class MonadicRuntime {
 
   // Contract operations
 
-  async deployContract(name, params) {
-    const compiledCode = this.contracts[name];
-    if (!compiledCode) {
-      throw new Error(`Contract '${name}' not found in config`);
+  async createReferenceScript(name, params = {}) {
+    // Handle blueprint file paths from params
+    let compiledCode;
+    if (params.blueprint) {
+      // User-specified blueprint file path
+      const blueprintPath = path.resolve(params.blueprint);
+      if (!fs.existsSync(blueprintPath)) {
+        throw new Error(`Blueprint file not found: ${blueprintPath}`);
+      }
+      
+      const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
+      const validator = blueprintData.validators.find(v => 
+        v.title.includes(name) && v.title.includes('spend')
+      );
+      
+      if (!validator) {
+        throw new Error(`Validator not found in blueprint for contract '${name}'`);
+      }
+      
+      compiledCode = validator.compiledCode;
+    } else {
+      // Fallback to config-based resolution (legacy)
+      const contractConfig = this.contracts[name];
+      if (!contractConfig) {
+        throw new Error(`Contract '${name}' not found in config and no blueprint path provided`);
+      }
+
+      if (typeof contractConfig === 'string') {
+        // Direct CBOR string (legacy format)
+        compiledCode = contractConfig;
+      } else if (contractConfig.blueprint) {
+        // Config-based blueprint file path
+        const blueprintPath = path.resolve(contractConfig.blueprint);
+        if (!fs.existsSync(blueprintPath)) {
+          throw new Error(`Blueprint file not found: ${blueprintPath}`);
+        }
+        
+        const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
+        const validator = blueprintData.validators.find(v => 
+          v.title.includes(name) && v.title.includes('spend')
+        );
+        
+        if (!validator) {
+          throw new Error(`Validator not found in blueprint for contract '${name}'`);
+        }
+        
+        compiledCode = validator.compiledCode;
+      } else {
+        throw new Error(`Invalid contract configuration for '${name}'. Expected string or {blueprint: path}`);
+      }
     }
 
-    const response = await fetch(`${this.baseUrl}/api/contract/deploy`, {
+    // Get wallet address for reference script
+    const walletResponse = await fetch(`${this.baseUrl}/api/wallet/${params.wallet || 'alice'}/utxos?sessionId=${this.sessionId}`);
+    if (!walletResponse.ok) {
+      throw new Error(`HTTP error getting wallet UTXOs: ${walletResponse.status}`);
+    }
+    const walletData = await walletResponse.json();
+    const walletAddress = walletData.utxos[0].address;
+
+    // Create reference script transaction (following phase 3 test pattern)
+    const response = await fetch(`${this.baseUrl}/api/transaction/build-and-submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sessionId: this.sessionId,
-        compiledCode,
-        params
+        signerWallet: params.wallet || 'alice',
+        operations: [{
+          type: "pay-to-address",
+          address: walletAddress,
+          amount: "2000000", // 2 ADA for reference script
+          referenceScript: compiledCode
+        }, {
+          type: "pay-to-address",
+          address: walletAddress,
+          amount: "8000000" // 8 ADA for spending
+        }]
       })
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error deploying contract: ${response.status}`);
+      throw new Error(`HTTP error creating reference script: ${response.status}`);
     }
 
     const body = await response.json();
     if (!body.success) {
-      throw new Error(`Contract deployment failed: ${body.error || body.message || 'unknown'}`);
+      throw new Error(`Failed to create reference script: ${body.error || 'unknown'}`);
+    }
+
+    // Extract UTXOs from the response
+    const refScriptUtxo = body.createdUtxos.find(utxo => utxo.amount === "2000000");
+    const spendingUtxo = body.createdUtxos.find(utxo => utxo.amount === "8000000");
+
+    if (!refScriptUtxo || !spendingUtxo) {
+      throw new Error(`Failed to find expected UTXOs in transaction response`);
+    }
+
+    // Compute script info dynamically from the compiled code
+    const scriptInfo = computeScriptInfo(compiledCode);
+    const scriptHash = scriptInfo.scriptHash;
+    const contractAddress = scriptInfo.contractAddress;
+
+    // Return script info and UTXOs
+    return {
+      refScriptUtxo,
+      spendingUtxo,
+      scriptHash,
+      contractAddress
+    };
+  }
+
+  async lockToContract(contractAddress, params) {
+    const { amount, datum, spendingUtxo, wallet = 'alice', contractName, blueprint } = params;
+    
+    if (!amount || !datum || !spendingUtxo || !contractName) {
+      throw new Error(`Missing required parameters: amount, datum, spendingUtxo, contractName`);
+    }
+
+    // Handle blueprint file paths from params
+    let compiledCode;
+    if (blueprint) {
+      // User-specified blueprint file path
+      const blueprintPath = path.resolve(blueprint);
+      if (!fs.existsSync(blueprintPath)) {
+        throw new Error(`Blueprint file not found: ${blueprintPath}`);
+      }
+      
+      const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
+      const validator = blueprintData.validators.find(v => 
+        v.title.includes(contractName) && v.title.includes('spend')
+      );
+      
+      if (!validator) {
+        throw new Error(`Validator not found in blueprint for contract '${contractName}'`);
+      }
+      
+      compiledCode = validator.compiledCode;
+    } else {
+      // Fallback to config-based resolution (legacy)
+      const contractConfig = this.contracts[contractName];
+      if (!contractConfig) {
+        throw new Error(`Contract '${contractName}' not found in config and no blueprint path provided`);
+      }
+
+      if (typeof contractConfig === 'string') {
+        // Direct CBOR string (legacy format)
+        compiledCode = contractConfig;
+      } else if (contractConfig.blueprint) {
+        // Config-based blueprint file path
+        const blueprintPath = path.resolve(contractConfig.blueprint);
+        if (!fs.existsSync(blueprintPath)) {
+          throw new Error(`Blueprint file not found: ${blueprintPath}`);
+        }
+        
+        const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
+        const validator = blueprintData.validators.find(v => 
+          v.title.includes(contractName) && v.title.includes('spend')
+        );
+        
+        if (!validator) {
+          throw new Error(`Validator not found in blueprint for contract '${contractName}'`);
+        }
+        
+        compiledCode = validator.compiledCode;
+      } else {
+        throw new Error(`Invalid contract configuration for '${contractName}'. Expected string or {blueprint: path}`);
+      }
+    }
+
+    // Lock funds to contract using the transaction API
+    const response = await fetch(`${this.baseUrl}/api/transaction/build-and-submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: this.sessionId,
+        signerWallet: wallet,
+        operations: [{
+          type: 'spend-specific-utxos',
+          utxos: [{ txHash: spendingUtxo.txHash, outputIndex: spendingUtxo.outputIndex }]
+        }, {
+          type: 'pay-to-contract',
+          contractAddress: contractAddress,
+          compiledCode: compiledCode,
+          amount: amount.toString(),
+          datum: datum
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error locking funds: ${response.status}`);
+    }
+
+    const body = await response.json();
+    if (!body.success) {
+      throw new Error(`Failed to lock funds: ${body.error || 'unknown'}`);
+    }
+
+    // Find the locked UTXO in the response
+    const lockedUtxo = body.createdUtxos.find(utxo => utxo.amount === amount.toString());
+
+    return {
+      txId: body.transactionId,
+      lockedUtxo
+    };
+  }
+
+  async unlockFromContract(lockedUtxo, refScriptUtxo, params) {
+    const { redeemer, returnAddress, wallet = 'alice', contractName, blueprint } = params;
+    
+    if (!redeemer || !returnAddress) {
+      throw new Error(`Missing required parameters: redeemer, returnAddress`);
+    }
+
+    // Get compiled code for the contract
+    let compiledCode;
+    if (blueprint) {
+      // User-specified blueprint file path
+      const blueprintPath = path.resolve(blueprint);
+      if (!fs.existsSync(blueprintPath)) {
+        throw new Error(`Blueprint file not found: ${blueprintPath}`);
+      }
+      
+      const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
+      const validator = blueprintData.validators.find(v => 
+        v.title.includes(contractName) && v.title.includes('spend')
+      );
+      
+      if (!validator) {
+        throw new Error(`Validator not found in blueprint for contract '${contractName}'`);
+      }
+      
+      compiledCode = validator.compiledCode;
+    } else {
+      // Fallback to config-based resolution (legacy)
+      const contractConfig = this.contracts[contractName];
+      if (!contractConfig) {
+        throw new Error(`Contract '${contractName}' not found in config and no blueprint path provided`);
+      }
+
+      if (typeof contractConfig === 'string') {
+        // Direct CBOR string (legacy format)
+        compiledCode = contractConfig;
+      } else if (contractConfig.blueprint) {
+        // Config-based blueprint file path
+        const blueprintPath = path.resolve(contractConfig.blueprint);
+        if (!fs.existsSync(blueprintPath)) {
+          throw new Error(`Blueprint file not found: ${blueprintPath}`);
+        }
+        
+        const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
+        const validator = blueprintData.validators.find(v => 
+          v.title.includes(contractName) && v.title.includes('spend')
+        );
+        
+        if (!validator) {
+          throw new Error(`Validator not found in blueprint for contract '${contractName}'`);
+        }
+        
+        compiledCode = validator.compiledCode;
+      } else {
+        throw new Error(`Invalid contract configuration for '${contractName}'. Expected string or {blueprint: path}`);
+      }
+    }
+
+    // Unlock funds from contract using reference script
+    const response = await fetch(`${this.baseUrl}/api/transaction/build-and-submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: this.sessionId,
+        signerWallet: wallet,
+        operations: [{
+          type: 'unlock-utxo',
+          txHash: lockedUtxo.txHash,
+          outputIndex: lockedUtxo.outputIndex,
+          redeemer: redeemer,
+          compiledCode: compiledCode, // Include script bytes for UTXO discovery
+          referenceScriptUtxo: {
+            txHash: refScriptUtxo.txHash,
+            outputIndex: refScriptUtxo.outputIndex
+          }
+        }, {
+          type: 'pay-to-address',
+          address: returnAddress,
+          amount: "2000000" // Return 2 ADA (minus fees)
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error unlocking funds: ${response.status}`);
+    }
+
+    const body = await response.json();
+    if (!body.success) {
+      throw new Error(`Failed to unlock funds: ${body.error || 'unknown'}`);
     }
 
     return {
-      address: body.address,
-      scriptHash: body.scriptHash
+      txId: body.transactionId,
+      unlockedAmount: lockedUtxo.amount
     };
   }
 
@@ -185,20 +468,51 @@ class MonadicRuntime {
   }
 
   async getContractState(address) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/contract/${address}/utxos?sessionId=${this.sessionId}`,
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error getting contract state: ${response.status}`);
+      }
+
+      const body = await response.json();
+      if (!body.success) {
+        throw new Error(`Failed to get contract state: ${body.error || 'unknown'}`);
+      }
+
+      return body;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error(`Timeout getting contract state for address: ${address}`);
+      }
+      throw error;
+    }
+  }
+
+  async getWalletUtxos(walletName) {
     const response = await fetch(
-      `${this.baseUrl}/api/contract/${address}/state?sessionId=${this.sessionId}`
+      `${this.baseUrl}/api/wallet/${walletName}/utxos?sessionId=${this.sessionId}`
     );
 
     if (!response.ok) {
-      throw new Error(`HTTP error getting contract state: ${response.status}`);
+      throw new Error(`HTTP error getting wallet UTXOs: ${response.status}`);
     }
 
     const body = await response.json();
-    if (!body.ok) {
-      throw new Error(`Failed to get contract state: ${body.error || 'unknown'}`);
+    if (!body.success) {
+      throw new Error(`Failed to get wallet UTXOs: ${body.error || 'unknown'}`);
     }
 
-    return body.state;
+    return body;
   }
 
   // Emulator operations

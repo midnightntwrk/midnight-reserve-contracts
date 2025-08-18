@@ -38,7 +38,7 @@ async function main() {
     const config = {
       baseUrl: notebook.config?.baseUrl || 'http://localhost:3031',
       contracts: notebook.config?.contracts || {},
-      debug: true,
+      debug: false,
       interactive: true
     };
     

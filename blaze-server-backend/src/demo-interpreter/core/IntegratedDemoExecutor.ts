@@ -1,7 +1,7 @@
 const { DryRuntime } = require("../monadic/dry-runtime.js");
 const { MonadicRuntime } = require("../monadic/runtime.js");
 const { ScopeManager } = require("./ScopeManager.js");
-const { createWallet, getBalance, transfer, deployContract, contractAction, getContractState, advanceTime, watchBalance, watchContractState, watchWalletUtxos, watchCustom, watch } = require("../monadic/functions.js");
+const { createWallet, getBalance, transfer, createReferenceScript, lockToContract, unlockFromContract, getContractState, getWalletUtxos, advanceTime, watchBalance, watchContractState, watchWalletUtxos, watchCustom, watch } = require("../monadic/functions.js");
 
 export interface ExecutionResult {
   result: any;
@@ -19,15 +19,19 @@ export class IntegratedDemoExecutor {
   private codeBlocks: string[] = []; // Store all code blocks for two-pass processing
   private rewrittenBlocks: string[] = []; // Store rewritten code blocks (computed once)
 
-  constructor(baseUrl: string = 'http://localhost:3031') {
+  constructor(config: { baseUrl?: string; contracts?: Record<string, string>; debug?: boolean } = {}) {
+    const baseUrl = config.baseUrl || 'http://localhost:3031';
+    
     // Initialize scope manager with monadic functions
     const monadicFunctions = {
       createWallet,
       getBalance,
       transfer,
-      deployContract,
-      contractAction,
+      createReferenceScript,
+      lockToContract,
+      unlockFromContract,
       getContractState,
+      getWalletUtxos,
       advanceTime,
       watchBalance,
       watchContractState,
@@ -37,7 +41,11 @@ export class IntegratedDemoExecutor {
     };
     this.scopeManager = new ScopeManager(monadicFunctions);
     this.dryRuntime = new DryRuntime({ baseUrl });
-    this.realRuntime = new MonadicRuntime({ baseUrl });
+    this.realRuntime = new MonadicRuntime({ 
+      baseUrl, 
+      debug: config.debug || false,
+      contracts: config.contracts || {}
+    });
   }
   
   async initialize(): Promise<void> {
@@ -122,6 +130,7 @@ export class IntegratedDemoExecutor {
   
   // Execute a stanza and maintain scope
   async executeStanza(blockIndex: number): Promise<ExecutionResult> {
+    /*
     // STEP 1: Dry Runtime Analysis (with cloned scope)
     const dryRuntime = new DryRuntime({ baseUrl: this.dryRuntime.baseUrl });
     await dryRuntime.initialize();
@@ -139,12 +148,6 @@ export class IntegratedDemoExecutor {
         clonedScope[key] = value;
       }
     }
-    
-    // Debug: Check what's in the current scope before cloning
-    console.log('Current scope before dry run:', Object.keys(currentScope));
-    console.log('Current scope values:', Object.entries(currentScope).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`));
-    console.log('Cloned scope for dry run:', Object.keys(clonedScope));
-    console.log('Cloned scope values:', Object.entries(clonedScope).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`));
     
     // Override fetch to use dry runtime for operation detection
     const originalFetch = (globalThis as any).fetch;
@@ -184,6 +187,7 @@ export class IntegratedDemoExecutor {
       delete (global as any).__demoRuntime;
       await dryRuntime.cleanup();
     }
+    */
     
     // STEP 2: Real Execution (with persistent scope)
     // Use the real runtime for actual execution against the test server
@@ -193,7 +197,7 @@ export class IntegratedDemoExecutor {
       // Execute in the real persistent scope
       const result = await this.executeCodeBlock(blockIndex);
       
-      return { result, operationType, isPartial: dryRuntime.hasPartialExecution() };
+      return { result, operationType: 'unknown', isPartial: false };
     } finally {
       delete (global as any).__demoRuntime;
     }

@@ -1413,13 +1413,47 @@
 
       showCompletion() {
         const content = document.getElementById('content');
-        content.innerHTML = `
-          <div class="loading">
-            <h2>🎉 Demo Completed!</h2>
-            <p>All stanzas have been executed successfully.</p>
-            <p>Completed ${this.completedCodeStanzas} code stanzas.</p>
-          </div>
+        
+        // Create completion message as an overlay instead of replacing content
+        const completionDiv = document.createElement('div');
+        completionDiv.className = 'loading';
+        completionDiv.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 40px;
+          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+          z-index: 1000;
+          text-align: center;
+          border: 3px solid #28a745;
         `;
+        completionDiv.innerHTML = `
+          <h2 style="color: #28a745; margin-bottom: 16px;">🎉 Demo Completed!</h2>
+          <p style="margin-bottom: 8px;">All stanzas have been executed successfully.</p>
+          <p style="margin-bottom: 16px;">Completed ${this.completedCodeStanzas} code stanzas.</p>
+          <button onclick="this.parentElement.remove()" style="
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+          ">Dismiss</button>
+        `;
+        
+        // Add to body instead of content to avoid clearing
+        document.body.appendChild(completionDiv);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+          if (completionDiv.parentNode) {
+            completionDiv.remove();
+          }
+        }, 10000);
       }
     }
 

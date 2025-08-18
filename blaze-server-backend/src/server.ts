@@ -796,8 +796,11 @@ export function createServer(sessionManager: SessionManager) {
     const { contractAddress } = req.params;
     const { sessionId } = req.query;
     
+    console.log(`[Contract UTXOs] Request for address: ${contractAddress}, session: ${sessionId}`);
+    
     const currentSession = sessionManager.getCurrentSession();
     if (!currentSession || currentSession.id !== sessionId) {
+      console.log(`[Contract UTXOs] Invalid session ID: ${sessionId}, current: ${currentSession?.id}`);
       return res.status(400).json({
         success: false,
         error: "Invalid session ID"
@@ -805,12 +808,18 @@ export function createServer(sessionManager: SessionManager) {
     }
     
     try {
+      console.log(`[Contract UTXOs] Parsing address: ${contractAddress}`);
       const scriptAddress = Core.addressFromBech32(contractAddress);
+      console.log(`[Contract UTXOs] Address parsed successfully`);
       
       // Use any wallet to query the contract address
       const walletName = Array.from(currentSession.emulator.mockedWallets.keys())[0];
+      console.log(`[Contract UTXOs] Using wallet: ${walletName}`);
+      
       await currentSession.emulator.as(walletName, async (blaze: any, addr: any) => {
+        console.log(`[Contract UTXOs] Getting unspent outputs for script address`);
         const utxos = await blaze.provider.getUnspentOutputs(scriptAddress);
+        console.log(`[Contract UTXOs] Found ${utxos.length} UTXOs`);
         
         const formattedUtxos = utxos.map((utxo: any) => {
           const output = utxo.output();
@@ -827,16 +836,19 @@ export function createServer(sessionManager: SessionManager) {
           };
         });
         
+        console.log(`[Contract UTXOs] Sending response with ${formattedUtxos.length} UTXOs`);
         res.json({
           success: true,
           utxos: formattedUtxos
         });
       });
     } catch (error) {
-      console.log("Contract UTXO discovery error:", error);
+      console.log("[Contract UTXOs] Error:", error);
+      console.log("[Contract UTXOs] Error stack:", error instanceof Error ? error.stack : 'No stack trace');
       res.status(500).json({
         success: false,
-        error: "Failed to discover contract UTXOs"
+        error: "Failed to discover contract UTXOs",
+        details: error instanceof Error ? error.message : String(error)
       });
     }
   });

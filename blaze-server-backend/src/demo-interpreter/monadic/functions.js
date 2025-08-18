@@ -38,24 +38,34 @@ function transfer(from, to, amount) {
 }
 
 /**
- * Deploy a contract
+ * Create a reference script for a contract
  * @param {string} name - Contract name (must exist in config.contracts)
- * @param {object} params - Contract parameters
- * @returns {Promise<{address: string, scriptHash: string}>}
+ * @param {object} params - Parameters including wallet name
+ * @returns {Promise<{refScriptUtxo: object, spendingUtxo: object, scriptHash: string, contractAddress: string}>}
  */
-function deployContract(name, params = {}) {
-  return global.__demoRuntime.deployContract(name, params);
+function createReferenceScript(name, params = {}) {
+  return global.__demoRuntime.createReferenceScript(name, params);
 }
 
 /**
- * Interact with a contract
- * @param {string} address - Contract address
- * @param {string} action - Action to perform
- * @param {object} params - Action parameters
- * @returns {Promise<{txId: string, result: any}>}
+ * Lock funds to a contract
+ * @param {string} contractAddress - Contract address (script hash)
+ * @param {object} params - Parameters including amount, datum, spendingUtxo
+ * @returns {Promise<{txId: string, lockedUtxo: object}>}
  */
-function contractAction(address, action, params) {
-  return global.__demoRuntime.contractAction(address, action, params);
+function lockToContract(contractAddress, params) {
+  return global.__demoRuntime.lockToContract(contractAddress, params);
+}
+
+/**
+ * Unlock funds from a contract
+ * @param {object} lockedUtxo - The UTXO to unlock
+ * @param {object} refScriptUtxo - Reference script UTXO
+ * @param {object} params - Parameters including redeemer, returnAddress
+ * @returns {Promise<{txId: string, unlockedAmount: string}>}
+ */
+function unlockFromContract(lockedUtxo, refScriptUtxo, params) {
+  return global.__demoRuntime.unlockFromContract(lockedUtxo, refScriptUtxo, params);
 }
 
 /**
@@ -135,6 +145,10 @@ function watchWalletUtxos(walletName, formatter = null) {
   return global.__demoRuntime.watchWalletUtxos(walletName, formatter);
 }
 
+function getWalletUtxos(walletName) {
+  return global.__demoRuntime.getWalletUtxos(walletName);
+}
+
 /**
  * Watch custom endpoint
  * @param {string} name - Watcher name
@@ -162,15 +176,15 @@ module.exports = {
   createWallet,
   getBalance,
   transfer,
-  deployContract,
-  contractAction,
+  createReferenceScript,
+  lockToContract,
+  unlockFromContract,
   getContractState,
+  getWalletUtxos,
   advanceTime,
   waitFor,
   createWalletExpectFailure,
   transferExpectFailure,
-  deployContractExpectFailure,
-  contractActionExpectFailure,
   watchBalance,
   watchContractState,
   watchWalletUtxos,
