@@ -602,57 +602,6 @@ class MonadicRuntime {
     throw new Error(`Timeout waiting for condition after ${timeout}ms`);
   }
 
-  // Failure-expecting variants
-
-  async createWalletExpectFailure(name, initialBalance) {
-    try {
-      const result = await this.createWallet(name, initialBalance);
-      throw new Error(`Expected wallet creation to fail but it succeeded: ${JSON.stringify(result)}`);
-    } catch (error) {
-      if (error.message.startsWith('Expected wallet creation to fail')) {
-        throw error;
-      }
-      // Expected failure occurred
-      return { error: error.message };
-    }
-  }
-
-  async transferExpectFailure(from, to, amount) {
-    try {
-      const result = await this.transfer(from, to, amount);
-      throw new Error(`Expected transfer to fail but it succeeded: ${JSON.stringify(result)}`);
-    } catch (error) {
-      if (error.message.startsWith('Expected transfer to fail')) {
-        throw error;
-      }
-      return { error: error.message };
-    }
-  }
-
-  async deployContractExpectFailure(name, params) {
-    try {
-      const result = await this.deployContract(name, params);
-      throw new Error(`Expected contract deployment to fail but it succeeded: ${JSON.stringify(result)}`);
-    } catch (error) {
-      if (error.message.startsWith('Expected contract deployment to fail')) {
-        throw error;
-      }
-      return { error: error.message };
-    }
-  }
-
-  async contractActionExpectFailure(address, action, params) {
-    try {
-      const result = await this.contractAction(address, action, params);
-      throw new Error(`Expected contract action to fail but it succeeded: ${JSON.stringify(result)}`);
-    } catch (error) {
-      if (error.message.startsWith('Expected contract action to fail')) {
-        throw error;
-      }
-      return { error: error.message };
-    }
-  }
-
   // Watch functionality
 
   async watchBalance(walletName, formatter = null) {

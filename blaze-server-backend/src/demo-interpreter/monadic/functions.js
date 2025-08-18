@@ -109,25 +109,6 @@ function waitFor(condition, timeout = 30000) {
   return global.__demoRuntime.waitFor(condition, timeout);
 }
 
-// Failure-expecting variants
-// These expect the operation to fail and will throw if it succeeds
-
-function createWalletExpectFailure(name, initialBalance) {
-  return global.__demoRuntime.createWalletExpectFailure(name, initialBalance);
-}
-
-function transferExpectFailure(from, to, amount) {
-  return global.__demoRuntime.transferExpectFailure(from, to, amount);
-}
-
-function deployContractExpectFailure(name, params = {}) {
-  return global.__demoRuntime.deployContractExpectFailure(name, params);
-}
-
-function contractActionExpectFailure(address, action, params) {
-  return global.__demoRuntime.contractActionExpectFailure(address, action, params);
-}
-
 /**
  * Watch wallet balance
  * @param {string} walletName - Wallet name to watch
@@ -197,8 +178,6 @@ module.exports = {
   getWalletUtxos,
   advanceTime,
   waitFor,
-  createWalletExpectFailure,
-  transferExpectFailure,
   watchBalance,
   watchContractState,
   watchWalletUtxos,
