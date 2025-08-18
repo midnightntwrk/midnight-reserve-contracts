@@ -100,23 +100,24 @@ The demo system integrates seamlessly with the Aiken contract development workfl
    ```
 
 4. **Create Demo**
-   ```json
-   {
-     "config": {
-       "contracts": {
-         "my_contract": {
-           "blueprint": "./validators/my_contract/blueprint.json"
-         }
-       }
-     }
-   }
+   ```javascript
+   // Use the contract directly with blueprint path
+   referenceScripts = await createReferenceScript('my_contract', { 
+     wallet: 'alice',
+     blueprint: './validators/my_contract/blueprint.json'
+   });
    ```
 
 5. **Test in Demo**
    ```javascript
-   // Use the contract in your demo
-   referenceScripts = await createReferenceScript('my_contract', { 
-     wallet: 'alice' 
+   // Use the contract in your demo with blueprint path
+   lockResult = await lockToContract(scriptHash, {
+     amount: 3_000_000,
+     datum: 42,
+     spendingUtxo: spendingUtxo,
+     contractName: 'my_contract',
+     blueprint: './validators/my_contract/blueprint.json',
+     wallet: 'alice'
    });
    ```
 
@@ -130,8 +131,8 @@ The demo system integrates seamlessly with the Aiken contract development workfl
 - **Fast Iteration**: Change contract → rebuild → demo reflects immediately
 - **Proper Testing**: Unit tests run before demo testing
 - **Blueprint Benefits**: Type safety, parameter validation, documentation
-- **Hot Reload**: Demo server watches blueprint files for changes
-- **No Compilation Overhead**: Demo server just reads JSON
+- **Direct Path Usage**: Specify blueprint paths directly in function calls
+- **No Config Overhead**: No need to pre-configure contracts in demo files
 
 ## Built-in Functions
 
@@ -189,19 +190,20 @@ Creates reference scripts for a contract using the modern Babbage-era approach.
 
 ```javascript
 referenceScripts = await createReferenceScript('hello_world', { 
-  wallet: 'alice' 
+  wallet: 'alice',
+  blueprint: './plutus.json'
 });
 console.log(`Script hash: ${referenceScripts.scriptHash}`);
 console.log(`Contract address: ${referenceScripts.contractAddress}`);
 ```
 
 **Parameters:**
-- `name` (string): Contract name (must exist in config.contracts)
-- `params` (object): Parameters including wallet name
+- `name` (string): Contract name
+- `params` (object): Parameters including wallet name and blueprint path
 
 **Returns:** `{refScriptUtxo: object, spendingUtxo: object, scriptHash: string, contractAddress: string}`
 
-#### `lockToContract(contractAddress, params)`
+#### `lockToContract(scriptHash, params)`
 Locks funds to a contract with a datum.
 
 ```javascript
@@ -210,14 +212,15 @@ lockResult = await lockToContract(scriptHash, {
   datum: 42,
   spendingUtxo: spendingUtxo,
   contractName: 'hello_world',
+  blueprint: './plutus.json',
   wallet: 'alice'
 });
 console.log(`Funds locked: ${lockResult.txId}`);
 ```
 
 **Parameters:**
-- `contractAddress` (string): Contract address (script hash)
-- `params` (object): Parameters including amount, datum, spendingUtxo, contractName, wallet
+- `scriptHash` (string): Contract script hash
+- `params` (object): Parameters including amount, datum, spendingUtxo, contractName, blueprint, wallet
 
 **Returns:** `{txId: string, lockedUtxo: object}`
 
@@ -228,7 +231,9 @@ Unlocks funds from a contract using reference scripts.
 unlockResult = await unlockFromContract(lockedUtxo, refScriptUtxo, {
   redeemer: 42, // Must match the datum value
   returnAddress: aliceAddress,
-  wallet: 'alice'
+  wallet: 'alice',
+  contractName: 'hello_world',
+  blueprint: './plutus.json'
 });
 console.log(`Funds unlocked: ${unlockResult.txId}`);
 ```
@@ -236,7 +241,7 @@ console.log(`Funds unlocked: ${unlockResult.txId}`);
 **Parameters:**
 - `lockedUtxo` (object): The UTXO to unlock
 - `refScriptUtxo` (object): Reference script UTXO
-- `params` (object): Parameters including redeemer, returnAddress, wallet
+- `params` (object): Parameters including redeemer, returnAddress, wallet, contractName, blueprint
 
 **Returns:** `{txId: string, unlockedAmount: string}`
 
@@ -252,6 +257,19 @@ console.log(`Contract UTXOs: ${contractState.utxos.length} total`);
 - `address` (string): Contract address
 
 **Returns:** `object` (contract state/UTXOs)
+
+#### `getWalletUtxos(walletName)`
+Gets the current UTXOs of a wallet.
+
+```javascript
+walletUtxos = await getWalletUtxos('alice');
+console.log(`Alice has ${walletUtxos.utxos.length} UTXOs`);
+```
+
+**Parameters:**
+- `walletName` (string): Wallet name
+
+**Returns:** `object` (wallet UTXOs)
 
 ### Emulator Operations
 
@@ -290,14 +308,18 @@ await waitFor(async () => {
 Watches a wallet's balance for changes.
 
 ```javascript
+// Use default formatter (shows ADA)
+watcher = await watchBalance('alice');
+
+// Or use custom formatter
 watcher = await watchBalance('alice', (data) => 
-  `${data.balance} lovelace`
+  `${(parseInt(data.balance)/1000000).toFixed(6)} ADA`
 );
 ```
 
 **Parameters:**
 - `walletName` (string): Wallet name to watch
-- `formatter` (Function): Optional formatter function
+- `formatter` (Function): Optional formatter function (default shows ADA)
 
 **Returns:** `{name: string, status: string}`
 
@@ -305,14 +327,18 @@ watcher = await watchBalance('alice', (data) =>
 Watches a contract's state for changes.
 
 ```javascript
+// Use default formatter (shows UTXO count, total ADA, and datum)
+watcher = await watchContractState(contractAddress);
+
+// Or use custom formatter
 watcher = await watchContractState(contractAddress, (data) => 
-  `${data.utxos.length} UTXOs`
+  `${data.utxos.length} UTXOs, ${(data.utxos.reduce((sum, u) => sum + parseInt(u.amount), 0)/1000000).toFixed(6)} ADA`
 );
 ```
 
 **Parameters:**
 - `address` (string): Contract address to watch
-- `formatter` (Function): Optional formatter function
+- `formatter` (Function): Optional formatter function (default shows UTXO count, total ADA, and datum)
 
 **Returns:** `{name: string, status: string}`
 
@@ -320,14 +346,18 @@ watcher = await watchContractState(contractAddress, (data) =>
 Watches a wallet's UTXOs for changes.
 
 ```javascript
+// Use default formatter (shows UTXO count and total ADA)
+watcher = await watchWalletUtxos('alice');
+
+// Or use custom formatter
 watcher = await watchWalletUtxos('alice', (data) => 
-  `${data.utxos.length} UTXOs`
+  `${data.utxos.length} UTXOs, ${(data.utxos.reduce((sum, u) => sum + parseInt(u.amount), 0)/1000000).toFixed(6)} ADA`
 );
 ```
 
 **Parameters:**
 - `walletName` (string): Wallet name to watch
-- `formatter` (Function): Optional formatter function
+- `formatter` (Function): Optional formatter function (default shows UTXO count and total ADA)
 
 **Returns:** `{name: string, status: string}`
 
@@ -390,34 +420,17 @@ try {
 
 ## Demo Configuration
 
-### Contract Configuration
-
-Contracts can be specified using blueprint file paths:
-
-```json
-{
-  "config": {
-    "contracts": {
-      "hello_world": {
-        "blueprint": "./validators/hello_world/blueprint.json"
-      },
-      "my_contract": {
-        "blueprint": "../other-project/contracts/my_contract/blueprint.json"
-      }
-    }
-  }
-}
-```
-
 ### Server Configuration
 
 ```json
 {
   "config": {
-    "baseUrl": "http://localhost:3031"
+    "baseUrl": "http://localhost:3041"
   }
 }
 ```
+
+**Note**: Contract configuration is no longer needed in the demo file. Blueprint paths are specified directly in function calls.
 
 ## Running Demos
 
@@ -425,7 +438,10 @@ Contracts can be specified using blueprint file paths:
 
 ```bash
 # Start all demo servers
-bun run demo:serve
+bun run demo:start
+
+# Start with logging enabled
+bun run demo:start:logging
 ```
 
 This starts:
@@ -444,7 +460,7 @@ This starts:
 
 ```bash
 # Run demo from command line
-bun run demo:test ./demo-flows/my-demo.demonb
+bun run demo:run ./demo-flows/my-demo.demonb
 ```
 
 ## Troubleshooting
