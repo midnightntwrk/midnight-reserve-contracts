@@ -571,6 +571,49 @@
       border-radius: 0;
     }
 
+    .transaction-box {
+      margin: 8px 0;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      color: white;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-left: 4px solid #4CAF50;
+    }
+
+    .transaction-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .transaction-title {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .transaction-time {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .transaction-details {
+      font-size: 14px;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+
+    .transaction-id {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 11px;
+      opacity: 0.7;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 4px 6px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
     .demo-selector {
       margin-bottom: 20px;
     }
@@ -1072,6 +1115,60 @@
         }).join('');
       }
 
+      renderTransactionBox(txData) {
+        const operation = txData.operation;
+        const timestamp = new Date(txData.timestamp).toLocaleTimeString();
+        const data = txData.data;
+        
+        let title = '';
+        let details = '';
+        
+        switch (operation) {
+          case 'createWallet':
+            title = `💰 Wallet Created`;
+            details = `Created wallet "${data.walletName}" with ${parseInt(data.initialBalance) / 1000000} ADA`;
+            break;
+          case 'transfer':
+            title = `💸 Transfer`;
+            details = `Transferred ${data.amount / 1000000} ADA from "${data.from}" to "${data.to}"`;
+            break;
+          case 'createReferenceScript':
+            title = `📜 Contract Deployed`;
+            details = `Deployed contract "${data.contractName}" to address ${data.contractAddress.slice(0, 8)}...`;
+            break;
+          case 'lockToContract':
+            title = `🔒 Funds Locked`;
+            details = `Locked ${data.amount / 1000000} ADA to contract "${data.contractName}"`;
+            break;
+          case 'unlockFromContract':
+            title = `🔓 Funds Unlocked`;
+            details = `Unlocked ${parseInt(data.unlockedAmount) / 1000000} ADA from contract "${data.contractName}"`;
+            break;
+          case 'mintNFT':
+            title = `🎨 NFT Minted`;
+            details = `Minted ${data.amount} of asset "${data.assetName}" with policy ${data.policyId.slice(0, 8)}...`;
+            break;
+          case 'advanceTime':
+            title = `⏰ Time Advanced`;
+            details = `Advanced time by ${data.seconds} seconds`;
+            break;
+          default:
+            title = `🚀 Transaction`;
+            details = `Operation: ${operation}`;
+        }
+        
+        return `
+          <div class="transaction-box">
+            <div class="transaction-header">
+              <span class="transaction-title">${title}</span>
+              <span class="transaction-time">${timestamp}</span>
+            </div>
+            <div class="transaction-details">${details}</div>
+            <div class="transaction-id">TX ID: ${data.transactionId || data.result?.transactionId || 'N/A'}</div>
+          </div>
+        `;
+      }
+
       async executeBlock(blockIndex) {
         const button = document.getElementById(`execute-${blockIndex}`);
         const statusElement = document.getElementById(`stanza-status-${this.currentStanzaIndex}`);
@@ -1174,10 +1271,16 @@
           codeBlockResults.forEach((result, blockIndex) => {
             resultHtml += `<div class="block-output">`;
             
-            // Show console output if available
-            if (result.consoleOutput && result.consoleOutput.length > 0) {
-              result.consoleOutput.forEach(line => {
-                resultHtml += `<div class="console-line">${line}</div>`;
+            // Show structured output if available
+            if (result.structuredOutput && result.structuredOutput.length > 0) {
+              result.structuredOutput.forEach(item => {
+                if (typeof item === 'string') {
+                  // Regular console output
+                  resultHtml += `<div class="console-line">${item}</div>`;
+                } else if (item.type === 'transaction') {
+                  // Transaction object - render as styled box
+                  resultHtml += this.renderTransactionBox(item.data);
+                }
               });
             } else {
               resultHtml += `<div class="console-line"><em>No output</em></div>`;

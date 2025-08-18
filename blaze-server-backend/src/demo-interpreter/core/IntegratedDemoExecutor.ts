@@ -7,7 +7,7 @@ export interface ExecutionResult {
   result: any;
   operationType: string;
   isPartial: boolean;
-  consoleOutput?: string[];
+  structuredOutput?: Array<string | { type: 'transaction', data: any }>;
   watchResults?: Record<string, any>;
 }
 
@@ -93,13 +93,27 @@ export class IntegratedDemoExecutor {
     // Set up global runtime for monadic functions
     (global as any).__demoRuntime = this.realRuntime;
     
-    // Capture console.log output
-    const capturedOutput: string[] = [];
+    // Capture console.log output and transactions in order
+    const structuredOutput: Array<string | { type: 'transaction', data: any }> = [];
     const originalConsoleLog = console.log;
     console.log = (...args: any[]) => {
-      capturedOutput.push(args.map(arg => 
+      const output = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(' '));
+      ).join(' ');
+      
+      // Check if this is a transaction emission
+      if (output.startsWith('🚀 TX_EMIT:')) {
+        try {
+          const txData = JSON.parse(output.substring('🚀 TX_EMIT:'.length));
+          structuredOutput.push({ type: 'transaction', data: txData });
+        } catch (e) {
+          console.error('Failed to parse transaction emission:', e);
+        }
+      } else {
+        // Regular console output
+        structuredOutput.push(output);
+      }
+      
       originalConsoleLog(...args); // Still log to server console
     };
     
@@ -120,7 +134,7 @@ export class IntegratedDemoExecutor {
         result, 
         operationType: 'unknown', 
         isPartial: false,
-        consoleOutput: capturedOutput
+        structuredOutput: structuredOutput
       };
     } finally {
       // Restore original console.log
@@ -198,7 +212,12 @@ export class IntegratedDemoExecutor {
       // Execute in the real persistent scope
       const result = await this.executeCodeBlock(blockIndex);
       
-      return { result, operationType: 'unknown', isPartial: false };
+      return { 
+        result: result.result, 
+        operationType: result.operationType, 
+        isPartial: result.isPartial,
+        structuredOutput: result.structuredOutput
+      };
     } finally {
       delete (global as any).__demoRuntime;
     }

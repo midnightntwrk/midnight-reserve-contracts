@@ -23,6 +23,19 @@ class MonadicRuntime {
     this.changedWatchers = new Set();
   }
 
+  // Emit transaction info for frontend rendering
+  emitTransaction(type, data) {
+    const txInfo = {
+      type: 'transaction',
+      operation: type,
+      timestamp: new Date().toISOString(),
+      data: data
+    };
+    
+    // Print in a special format that can be parsed by the frontend
+    console.log(`🚀 TX_EMIT:${JSON.stringify(txInfo)}`);
+  }
+
   setCurrentStep(label) {
     this.currentStepLabel = label;
   }
@@ -79,6 +92,13 @@ class MonadicRuntime {
       console.log(`[MonadicRuntime] Wallet created successfully: ${body.walletName} with balance ${body.balance}`);
     }
 
+    // Emit transaction info for frontend
+    this.emitTransaction('createWallet', {
+      walletName: body.walletName,
+      initialBalance: body.balance,
+      result: { name: body.walletName, balance: body.balance }
+    });
+
     // API returns walletName and balance only - no address
     return { 
       name: body.walletName,
@@ -130,6 +150,15 @@ class MonadicRuntime {
     if (!body.success) {
       throw new Error(`Transfer failed: ${body.error || body.message || 'unknown'}`);
     }
+
+    // Emit transaction info for frontend
+    this.emitTransaction('transfer', {
+      from: from,
+      to: to,
+      amount: amount,
+      transactionId: body.transactionId,
+      result: { transactionId: body.transactionId }
+    });
 
     return { transactionId: body.transactionId };
   }
@@ -238,6 +267,20 @@ class MonadicRuntime {
     const scriptHash = scriptInfo.scriptHash;
     const contractAddress = scriptInfo.contractAddress;
 
+    // Emit transaction info for frontend
+    this.emitTransaction('createReferenceScript', {
+      contractName: name,
+      scriptHash: scriptHash,
+      contractAddress: contractAddress,
+      wallet: params.wallet || 'alice',
+      result: {
+        refScriptUtxo,
+        spendingUtxo,
+        scriptHash,
+        contractAddress
+      }
+    });
+
     // Return script info and UTXOs
     return {
       refScriptUtxo,
@@ -288,6 +331,21 @@ class MonadicRuntime {
     if (!body.success) {
       throw new Error(`Failed to mint NFT: ${body.error || 'unknown'}`);
     }
+
+    // Emit transaction info for frontend
+    this.emitTransaction('mintNFT', {
+      policyId: policyId,
+      assetName: assetName,
+      amount: amount,
+      wallet: params.wallet || 'alice',
+      transactionId: body.transactionId,
+      result: {
+        transactionId: body.transactionId,
+        policyId: policyId,
+        assetName: assetName,
+        amount: amount
+      }
+    });
 
     return {
       transactionId: body.transactionId,
@@ -387,6 +445,20 @@ class MonadicRuntime {
     // Find the locked UTXO in the response
     const lockedUtxo = body.createdUtxos.find(utxo => utxo.amount === amount.toString());
 
+    // Emit transaction info for frontend
+    this.emitTransaction('lockToContract', {
+      contractAddress: contractAddress,
+      amount: amount,
+      datum: datum,
+      wallet: wallet,
+      contractName: contractName,
+      transactionId: body.transactionId,
+      result: {
+        txId: body.transactionId,
+        lockedUtxo
+      }
+    });
+
     return {
       txId: body.transactionId,
       lockedUtxo
@@ -484,6 +556,20 @@ class MonadicRuntime {
     if (!body.success) {
       throw new Error(`Failed to unlock funds: ${body.error || 'unknown'}`);
     }
+
+    // Emit transaction info for frontend
+    this.emitTransaction('unlockFromContract', {
+      lockedUtxo: lockedUtxo,
+      redeemer: redeemer,
+      returnAddress: returnAddress,
+      wallet: wallet,
+      contractName: contractName,
+      transactionId: body.transactionId,
+      result: {
+        txId: body.transactionId,
+        unlockedAmount: lockedUtxo.amount
+      }
+    });
 
     return {
       txId: body.transactionId,
@@ -586,6 +672,13 @@ class MonadicRuntime {
       throw new Error(`Failed to advance time: ${body.error || 'unknown'}`);
     }
 
+    // Emit transaction info for frontend
+    this.emitTransaction('advanceTime', {
+      seconds: seconds,
+      newTime: body.newTime,
+      result: { newTime: body.newTime }
+    });
+
     return { newTime: body.newTime };
   }
 
@@ -605,7 +698,9 @@ class MonadicRuntime {
   // Watch functionality
 
   async watchBalance(walletName, formatter = null) {
-    console.log(`[Runtime] Setting up balance watcher for ${walletName}`);
+    if (this.debug) {
+      console.log(`[Runtime] Setting up balance watcher for ${walletName}`);
+    }
     const defaultFormatter = (data) => {
       // Handle both direct data and API response format
       const balance = parseInt((data.balance || data.success ? data.balance : '0') || '0');
@@ -613,7 +708,9 @@ class MonadicRuntime {
     };
     try {
       const result = await this.watch(walletName, { type: 'balance', wallet: walletName }, formatter || defaultFormatter);
-      console.log(`[Runtime] Balance watcher setup successful for ${walletName}`);
+      if (this.debug) {
+        console.log(`[Runtime] Balance watcher setup successful for ${walletName}`);
+      }
       return result;
     } catch (error) {
       console.error(`[Runtime] Balance watcher setup failed for ${walletName}:`, error);
@@ -638,7 +735,9 @@ class MonadicRuntime {
   }
 
   async watchWalletUtxos(walletName, formatter = null) {
-    console.log(`[Runtime] Setting up UTXO watcher for ${walletName}`);
+    if (this.debug) {
+      console.log(`[Runtime] Setting up UTXO watcher for ${walletName}`);
+    }
     const defaultFormatter = (data) => {
       const utxos = data.utxos || [];
       const totalValue = utxos.reduce((sum, utxo) => sum + parseInt(utxo.amount || '0'), 0);
@@ -646,7 +745,9 @@ class MonadicRuntime {
     };
     try {
       const result = await this.watch(`${walletName}-utxos`, { type: 'wallet-utxos', wallet: walletName }, formatter || defaultFormatter);
-      console.log(`[Runtime] UTXO watcher setup successful for ${walletName}`);
+      if (this.debug) {
+        console.log(`[Runtime] UTXO watcher setup successful for ${walletName}`);
+      }
       return result;
     } catch (error) {
       console.error(`[Runtime] UTXO watcher setup failed for ${walletName}:`, error);
@@ -756,7 +857,9 @@ class MonadicRuntime {
       
       if (dataChanged) {
         this.changedWatchers.add(watcher.id);
-        console.log(`[Runtime] Added ${watcher.id} to changed watchers`);
+        if (this.debug) {
+          console.log(`[Runtime] Added ${watcher.id} to changed watchers`);
+        }
       }
       
       watcher.lastRawData = data;
@@ -820,7 +923,9 @@ class MonadicRuntime {
   }
 
   async executeAllWatchers() {
-    console.log('[Runtime] Executing all watchers...');
+    if (this.debug) {
+      console.log('[Runtime] Executing all watchers...');
+    }
     
     const promises = Array.from(this.watchers.values())
       .map(w => this.executeWatcher(w));
@@ -843,14 +948,18 @@ class MonadicRuntime {
         hasChanged: watcher.hasChanged,
         lastRun: watcher.lastRun
       };
-      console.log(`[Runtime] Watcher info for ${watcher.name}:`, watcherInfo);
+      if (this.debug) {
+        console.log(`[Runtime] Watcher info for ${watcher.name}:`, watcherInfo);
+      }
       watchers.push(watcherInfo);
     }
     return watchers;
   }
 
   clearChangedState() {
-    console.log('[Runtime] Clearing changed state for all watchers');
+    if (this.debug) {
+      console.log('[Runtime] Clearing changed state for all watchers');
+    }
     this.changedWatchers.clear();
     for (const watcher of this.watchers.values()) {
       watcher.hasChanged = false;

@@ -1,4 +1,4 @@
-import { IntegratedDemoExecutor, ExecutionResult } from './IntegratedDemoExecutor';
+import { IntegratedDemoExecutor, ExecutionResult } from './IntegratedDemoExecutor.js';
 
 export interface DemoBlock {
   type: 'markdown' | 'code';
@@ -26,7 +26,7 @@ export interface DemoExecutionResult {
   isPartial?: boolean;
   result: any;
   scope: Record<string, any>;
-  consoleOutput?: string[]; // Added for console output
+  structuredOutput?: Array<string | { type: 'transaction', data: any }>;
 }
 
 /**
@@ -149,7 +149,7 @@ export class JavaScriptDemoExecutor {
         // Set the code block for execution
         this.executor.setCodeBlocks([codeContent]);
 
-        const { result, operationType, isPartial } = await this.executor.executeStanza(0);
+        const { result, operationType, isPartial, structuredOutput } = await this.executor.executeStanza(0);
         
         console.log(`\nOperation Type: ${operationType}`);
         console.log(`Current Scope Variables: [${Object.keys(this.executor.getScope()).join(', ')}]`);
@@ -163,7 +163,8 @@ export class JavaScriptDemoExecutor {
           operationType,
           isPartial,
           result,
-          scope: this.executor.getScope()
+          scope: this.executor.getScope(),
+          structuredOutput: structuredOutput || []
         };
         results.push(executionResult);
         codeBlockIndex++;
@@ -221,7 +222,7 @@ export class JavaScriptDemoExecutor {
       });
 
       // Execute the code block using its index in the full demo scope
-      const { result, operationType, isPartial, consoleOutput } = await this.executor.executeStanza(stanzaStartBlockIndex + codeBlockIndex);
+      const { result, operationType, isPartial, structuredOutput } = await this.executor.executeStanza(stanzaStartBlockIndex + codeBlockIndex);
       
       console.log(`\nOperation Type: ${operationType}`);
       console.log(`Current Scope Variables: [${Object.keys(this.executor.getScope()).join(', ')}]`);
@@ -236,7 +237,7 @@ export class JavaScriptDemoExecutor {
         isPartial,
         result,
         scope: this.executor.getScope(),
-        consoleOutput: consoleOutput || result.consoleOutput || []
+        structuredOutput: structuredOutput || []
       };
       results.push(executionResult);
       codeBlockIndex++;
