@@ -247,6 +247,56 @@ class MonadicRuntime {
     };
   }
 
+  async mintNFT(policyId, assetName, amount, referenceScriptUtxo, params = {}) {
+    // Get wallet address for the mint transaction
+    const walletResponse = await fetch(`${this.baseUrl}/api/wallet/${params.wallet || 'alice'}/utxos?sessionId=${this.sessionId}`);
+    if (!walletResponse.ok) {
+      throw new Error(`HTTP error getting wallet UTXOs: ${walletResponse.status}`);
+    }
+    const walletData = await walletResponse.json();
+    const walletAddress = walletData.utxos[0].address;
+
+    // Create mint transaction
+    const response = await fetch(`${this.baseUrl}/api/transaction/build-and-submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: this.sessionId,
+        signerWallet: params.wallet || 'alice',
+        operations: [
+          {
+            type: "mint",
+            policyId: policyId,
+            assetName: assetName,
+            amount: amount.toString(),
+            referenceScriptUtxo: referenceScriptUtxo
+          },
+          {
+            type: "pay-to-address",
+            address: walletAddress,
+            amount: "1000000" // 1 ADA for the NFT
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error minting NFT: ${response.status}`);
+    }
+
+    const body = await response.json();
+    if (!body.success) {
+      throw new Error(`Failed to mint NFT: ${body.error || 'unknown'}`);
+    }
+
+    return {
+      transactionId: body.transactionId,
+      policyId: policyId,
+      assetName: assetName,
+      amount: amount
+    };
+  }
+
   async lockToContract(contractAddress, params) {
     const { amount, datum, spendingUtxo, wallet = 'alice', contractName, blueprint } = params;
     
@@ -608,7 +658,8 @@ class MonadicRuntime {
   async watchBalance(walletName, formatter = null) {
     console.log(`[Runtime] Setting up balance watcher for ${walletName}`);
     const defaultFormatter = (data) => {
-      const balance = parseInt(data.balance || '0');
+      // Handle both direct data and API response format
+      const balance = parseInt((data.balance || data.success ? data.balance : '0') || '0');
       return `${walletName}: ${(balance/1000000).toFixed(6)} ADA`;
     };
     try {
@@ -673,8 +724,8 @@ class MonadicRuntime {
       id: watcherId,
       name,
       query: httpRequest,
-      formatter: formatter,
-      lastResult: null,
+      formatter: formatter, // Keep for compatibility but don't use
+      lastRawData: null,
       lastRun: null,
       hasChanged: false
     };
@@ -747,34 +798,27 @@ class MonadicRuntime {
       // Store raw data
       watcher.rawData = data;
       
-      // Apply formatter
-      let formattedResult;
-      if (typeof watcher.formatter === 'string') {
-        formattedResult = this.applyStringFormatter(watcher.formatter, data);
-      } else {
-        formattedResult = this.applyFunctionFormatter(watcher.formatter, data);
-      }
-
-      // Check if result has changed
-      const hasChanged = watcher.lastResult !== formattedResult;
-      watcher.hasChanged = hasChanged;
+      // Store raw data only - no server-side formatting
+      watcher.rawData = data;
       
-      console.log(`[Runtime] Watcher ${watcher.name}: lastResult="${watcher.lastResult}", newResult="${formattedResult}", hasChanged=${hasChanged}`);
+      // Check if data has changed (compare raw data)
+      const dataChanged = JSON.stringify(watcher.lastRawData) !== JSON.stringify(data);
+      watcher.hasChanged = dataChanged;
       
-      if (hasChanged) {
+      if (dataChanged) {
         this.changedWatchers.add(watcher.id);
         console.log(`[Runtime] Added ${watcher.id} to changed watchers`);
       }
       
-      watcher.lastResult = formattedResult;
+      watcher.lastRawData = data;
       watcher.lastRun = Date.now();
-      this.watchResults.set(watcher.id, formattedResult);
+      this.watchResults.set(watcher.id, 'Data updated'); // Simple status, not formatted result
 
       if (this.debug) {
-        console.log(`[Runtime] Watcher ${watcher.name}: ${formattedResult}`);
+        console.log(`[Runtime] Watcher ${watcher.name}: data updated`);
       }
 
-      return formattedResult;
+      return 'Data updated';
     } catch (error) {
       console.error(`Watcher ${watcher.name} failed:`, error);
       
@@ -792,20 +836,20 @@ class MonadicRuntime {
         friendlyMessage = error.message;
       }
       
-      const result = `⏳ ${friendlyMessage}`;
+      const errorStatus = `⏳ ${friendlyMessage}`;
       
-      // Check if result has changed (even for errors)
-      const hasChanged = watcher.lastResult !== result;
+      // Check if error status has changed
+      const hasChanged = watcher.lastErrorStatus !== errorStatus;
       watcher.hasChanged = hasChanged;
       
       if (hasChanged) {
         this.changedWatchers.add(watcher.id);
       }
       
-      watcher.lastResult = result;
+      watcher.lastErrorStatus = errorStatus;
       watcher.lastRun = Date.now();
-      this.watchResults.set(watcher.id, result);
-      return result;
+      this.watchResults.set(watcher.id, errorStatus);
+      return errorStatus;
     }
   }
 

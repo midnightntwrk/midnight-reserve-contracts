@@ -48,6 +48,7 @@
     "@babel/parser": "^7.28.3",
     "@babel/traverse": "^7.28.3",
     "@babel/types": "^7.28.2",
+    "@blaze-cardano/blueprint": "^0.6.1",
     "@blaze-cardano/emulator": "^0.3.29",
     "@blaze-cardano/sdk": "^0.2.33",
     "cors": "^2.8.5",

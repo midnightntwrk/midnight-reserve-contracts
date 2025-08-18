@@ -1,0 +1,35 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ErrorCode = void 0;
+var ErrorCode;
+(function (ErrorCode) {
+    // Session errors
+    ErrorCode["SESSION_NOT_FOUND"] = "SESSION_NOT_FOUND";
+    ErrorCode["SESSION_ALREADY_EXISTS"] = "SESSION_ALREADY_EXISTS";
+    ErrorCode["SESSION_LIMIT_EXCEEDED"] = "SESSION_LIMIT_EXCEEDED";
+    ErrorCode["SESSION_EXPIRED"] = "SESSION_EXPIRED";
+    // Wallet errors
+    ErrorCode["WALLET_NOT_FOUND"] = "WALLET_NOT_FOUND";
+    ErrorCode["WALLET_ALREADY_EXISTS"] = "WALLET_ALREADY_EXISTS";
+    ErrorCode["INSUFFICIENT_BALANCE"] = "INSUFFICIENT_BALANCE";
+    ErrorCode["INVALID_ADDRESS"] = "INVALID_ADDRESS";
+    // Contract errors
+    ErrorCode["CONTRACT_NOT_FOUND"] = "CONTRACT_NOT_FOUND";
+    ErrorCode["CONTRACT_COMPILATION_FAILED"] = "CONTRACT_COMPILATION_FAILED";
+    ErrorCode["CONTRACT_DEPLOYMENT_FAILED"] = "CONTRACT_DEPLOYMENT_FAILED";
+    ErrorCode["CONTRACT_EXECUTION_FAILED"] = "CONTRACT_EXECUTION_FAILED";
+    ErrorCode["INVALID_CONTRACT_PARAMS"] = "INVALID_CONTRACT_PARAMS";
+    // Transaction errors
+    ErrorCode["TRANSACTION_BUILD_FAILED"] = "TRANSACTION_BUILD_FAILED";
+    ErrorCode["TRANSACTION_SIGN_FAILED"] = "TRANSACTION_SIGN_FAILED";
+    ErrorCode["TRANSACTION_SUBMIT_FAILED"] = "TRANSACTION_SUBMIT_FAILED";
+    ErrorCode["INVALID_TRANSACTION"] = "INVALID_TRANSACTION";
+    // Emulator errors
+    ErrorCode["EMULATOR_INIT_FAILED"] = "EMULATOR_INIT_FAILED";
+    ErrorCode["EMULATOR_CRASHED"] = "EMULATOR_CRASHED";
+    // General errors
+    ErrorCode["INVALID_REQUEST"] = "INVALID_REQUEST";
+    ErrorCode["INTERNAL_ERROR"] = "INTERNAL_ERROR";
+    ErrorCode["NOT_IMPLEMENTED"] = "NOT_IMPLEMENTED";
+    ErrorCode["RESOURCE_EXHAUSTED"] = "RESOURCE_EXHAUSTED";
+})(ErrorCode || (exports.ErrorCode = ErrorCode = {}));

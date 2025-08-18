@@ -1291,7 +1291,9 @@
           resultDiv.className = 'watcher-result';
           resultDiv.dataset.watcherId = watcher.id;
           resultDiv.dataset.viewMode = 'formatted';
-          resultDiv.textContent = watcher.result || 'No data';
+          
+          // Start with formatted view (using raw data)
+          resultDiv.textContent = this.getCleanFormattedResult(watcher);
           
           cell.appendChild(toggleButton);
           cell.appendChild(nameDiv);
@@ -1335,11 +1337,32 @@
           resultDiv.style.fontSize = '';
           resultDiv.style.whiteSpace = '';
         } else {
-          resultDiv.textContent = watcher.result || 'No data';
+          // Formatted view (but show clean data)
+          resultDiv.textContent = this.getCleanFormattedResult(watcher);
           resultDiv.style.fontFamily = '';
           resultDiv.style.fontSize = '';
           resultDiv.style.whiteSpace = '';
         }
+      }
+
+      getCleanFormattedResult(watcher) {
+        if (!watcher.rawData) return 'No data available';
+        
+        // Check if this looks like balance data
+        if (watcher.rawData.balance !== undefined) {
+          const balance = parseInt(watcher.rawData.balance || '0');
+          return `${(balance/1000000).toFixed(6)} ADA`;
+        }
+        
+        // Check if this looks like UTXO data
+        if (watcher.rawData.utxos && Array.isArray(watcher.rawData.utxos)) {
+          const utxos = watcher.rawData.utxos;
+          const totalValue = utxos.reduce((sum, utxo) => sum + parseInt(utxo.amount || '0'), 0);
+          return `${utxos.length} UTXO${utxos.length !== 1 ? 's' : ''}, ${(totalValue/1000000).toFixed(6)} ADA`;
+        }
+        
+        // Default to a simple summary
+        return 'Data available';
       }
 
       renderDetailedView(watcher) {

@@ -705,6 +705,30 @@ export function createServer(sessionManager: SessionManager) {
               );
               break;
               
+            case "mint":
+              // Convert asset name to BigInt (following SundaeSwap pattern)
+              const assetNameBigInt = BigInt(operation.assetName);
+              const amount = BigInt(operation.amount);
+              
+              // Create assets map for the mint operation
+              const assetsMap = new Map([[assetNameBigInt, amount]]);
+              
+              // Handle redeemer if provided
+              let redeemer = undefined;
+              if (operation.redeemer) {
+                redeemer = Data.serialize(Data.BigInt(), BigInt(operation.redeemer));
+              }
+              
+              // Add the mint operation
+              tx = tx.addMint(operation.policyId, assetsMap, redeemer);
+              
+              // If reference script is provided, add it as reference input
+              if (operation.referenceScriptUtxo) {
+                const refScriptUtxo = await findUtxo(blaze, operation.referenceScriptUtxo.txHash, operation.referenceScriptUtxo.outputIndex);
+                tx = tx.addReferenceInput(refScriptUtxo);
+              }
+              break;
+              
             default:
               throw new Error(`Unsupported operation type: ${operation.type}`);
           }

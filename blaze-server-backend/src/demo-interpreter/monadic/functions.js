@@ -69,6 +69,19 @@ function unlockFromContract(lockedUtxo, refScriptUtxo, params) {
 }
 
 /**
+ * Mint an NFT using a deployed minting policy
+ * @param {string} policyId - The policy ID (script hash)
+ * @param {string} assetName - The asset name (e.g., "001")
+ * @param {number} amount - Amount to mint (typically 1 for NFTs)
+ * @param {object} referenceScriptUtxo - Reference script UTXO from policy deployment
+ * @param {object} params - Parameters including wallet name
+ * @returns {Promise<{transactionId: string, policyId: string, assetName: string, amount: number}>}
+ */
+function mintNFT(policyId, assetName, amount, referenceScriptUtxo, params = {}) {
+  return global.__demoRuntime.mintNFT(policyId, assetName, amount, referenceScriptUtxo, params);
+}
+
+/**
  * Get contract state
  * @param {string} address - Contract address
  * @returns {Promise<object>} Contract state/UTXOs
@@ -179,6 +192,7 @@ module.exports = {
   createReferenceScript,
   lockToContract,
   unlockFromContract,
+  mintNFT,
   getContractState,
   getWalletUtxos,
   advanceTime,

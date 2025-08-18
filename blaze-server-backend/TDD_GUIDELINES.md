@@ -33,6 +33,41 @@
 - Only then move to the next test
 - **NEVER** write multiple tests or implementations simultaneously
 
+### 2a. **Red Tests Must Assert Intended Behavior (Not Temporary Failure)**
+- **ALWAYS** write Red tests that assert the desired, correct behavior of the system (e.g., expected 200 status, `success: true`, proper payload)
+- **NEVER** make a test “Red” by asserting a failure state (e.g., expecting 400/500 or `success: false`) just to force a failure. The test should fail because the implementation is missing, not because the test expects the wrong behavior
+- **NEVER** trap errors or catch exceptions to make a failing test pass. Let the test fail naturally until the implementation is correct
+- **WHEN** adding negative/cheat-catching tests, assert the specific failure that the final system should produce (e.g., a well-defined 400 with a precise message), not a generic fallback error
+
+Example:
+
+Wrong (anti-TDD — asserts failure to stay Red):
+```ts
+// Expecting 500 only to force Red
+expect(response.status).toBe(500);
+```
+
+Right (proper Red — asserts the correct success and fails until implemented):
+```ts
+// Assert the intended behavior up front
+expect(response.status).toBe(200);
+const data = await response.json();
+expect(data.success).toBe(true);
+```
+
+**Key Principle**: In TDD, we always test optimistically for the eventual success and watch the test fail until the implementation can do the right thing the right way.
+
+Wrong (anti-TDD — traps error to fake Green):
+```ts
+try {
+  const response = await fetch("/api/endpoint");
+  expect(response.status).toBe(200); // This will fail
+} catch (error) {
+  // Don't do this! Let the test fail naturally
+  expect(error.message).toContain("expected");
+}
+```
+
 ### 3. **Test-Driven Development, Not Test-After Development**
 - Write the test FIRST
 - Watch it fail (Red phase)
@@ -65,6 +100,11 @@
 - Don't implement features without test coverage
 - Don't assume you know what the test should look like
 - **ALWAYS** let the test drive the implementation
+
+### ❌ **NEVER Force Red By Expecting Failure**
+- Don't change assertions to expect 400/500 (or `success: false`) merely to keep a test Red
+- Don't rely on generic fallback errors (e.g., "Failed to build and submit transaction") as the assertion for Red phase
+- The Red should come from the absence of implementation for the asserted correct behavior
 
 ### ❌ **NEVER Use Superstitious Fixes**
 - Don't add arbitrary delays (`setTimeout`) without understanding why

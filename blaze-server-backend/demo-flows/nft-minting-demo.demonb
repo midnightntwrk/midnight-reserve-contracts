@@ -1,0 +1,200 @@
+{
+  "name": "NFT Minting Demo",
+  "description": "Demonstrates NFT minting functionality using deployed minting policies",
+  "version": "1.0",
+  "config": {
+    "baseUrl": "http://localhost:3041"
+  },
+  "stanzas": [
+    {
+      "name": "introduction",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## NFT Minting Overview",
+            "",
+            "This demo showcases NFT minting functionality using the Cardano blockchain. We'll:",
+            "1. Create a wallet with sufficient funds",
+            "2. Deploy a minting policy (using createReferenceScript)",
+            "3. Mint an NFT using the deployed policy",
+            "4. Monitor the process with watchers"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "wallet_setup",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Setting Up Wallets",
+            "",
+            "First, we'll create a wallet with sufficient funds for NFT operations. We need enough ADA for:",
+            "- Reference script creation (2 ADA)",
+            "- NFT minting transaction (1 ADA)",
+            "- Transaction fees and collateral",
+            "",
+            "We'll start with 20 ADA to ensure we have plenty of funds."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Create Alice's wallet with sufficient funds for NFT operations",
+            "alice = await createWallet('alice', 20_000_000); // 20 ADA",
+            "console.log(`Alice's wallet created!`);",
+            "console.log(`Wallet name: ${alice.name}`);",
+            "console.log(`Initial balance: ${alice.balance} lovelace`);",
+            "",
+            "// Verify the balance",
+            "aliceBalance = await getBalance('alice');",
+            "console.log(`Verified balance: ${aliceBalance} lovelace`);",
+            "",
+            "// Set up watchers for Alice's wallet as early as possible",
+            "console.log('Setting up wallet watchers...');",
+            "aliceBalanceWatcher = await watchBalance('alice', (balance) => `Alice balance: ${(balance/1000000).toFixed(6)} ADA`);",
+            "aliceUtxosWatcher = await watchWalletUtxos('alice', (utxos) => `Alice UTXOs: ${utxos.length} total`);",
+            "console.log(`✅ Balance watcher: ${aliceBalanceWatcher.name}`);",
+            "console.log(`✅ UTXOs watcher: ${aliceUtxosWatcher.name}`);"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "policy_deployment",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Deploying the Minting Policy",
+            "",
+            "We'll deploy a minting policy using the `createReferenceScript` function. This creates:",
+            "- A reference script UTXO that can be used as a minting policy",
+            "- A spending UTXO for future transactions",
+            "- The policy ID (script hash) and contract address",
+            "",
+            "We'll use the hello_world contract as a placeholder for our minting policy."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Deploy the minting policy using createReferenceScript",
+            "console.log('Deploying minting policy...');",
+            "policyDeployment = await createReferenceScript('hello_world', { ",
+            "  wallet: 'alice', ",
+            "  blueprint: './plutus.json'",
+            "});",
+            "",
+            "console.log(`✅ Minting policy deployed successfully!`);",
+            "console.log(`Policy ID (script hash): ${policyDeployment.scriptHash}`);",
+            "console.log(`Contract address: ${policyDeployment.contractAddress}`);",
+            "console.log(`Reference script UTXO: ${policyDeployment.refScriptUtxo.txHash}:${policyDeployment.refScriptUtxo.outputIndex}`);",
+            "console.log(`Spending UTXO: ${policyDeployment.spendingUtxo.txHash}:${policyDeployment.spendingUtxo.outputIndex}`);",
+            "",
+            "// Store for later use",
+            "policyId = policyDeployment.scriptHash;",
+            "refScriptUtxo = policyDeployment.refScriptUtxo;",
+            "spendingUtxo = policyDeployment.spendingUtxo;",
+            "",
+            "// Set up contract state watcher for the policy",
+            "console.log('Setting up policy state watcher...');",
+            "policyStateWatcher = await watchContractState(policyDeployment.contractAddress, (state) => `Policy UTXOs: ${state.utxos.length} total`);",
+            "console.log(`✅ Policy state watcher: ${policyStateWatcher.name}`);"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nft_minting",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Minting the NFT",
+            "",
+            "Now we'll mint an NFT using the deployed minting policy. We'll:",
+            "- Use the `mintNFT` function with our policy ID",
+            "- Specify an asset name and amount",
+            "- Provide the reference script UTXO from the policy deployment",
+            "",
+            "The NFT will be minted and sent to Alice's wallet."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Mint an NFT using the deployed policy",
+            "console.log('Minting NFT...');",
+            "nftResult = await mintNFT(",
+            "  policyId, // Policy ID from deployment",
+            "  '001', // Asset name (simple numeric)",
+            "  1, // Amount to mint (1 for NFT)",
+            "  refScriptUtxo, // Reference script UTXO from policy deployment",
+            "  { wallet: 'alice' } // Parameters",
+            ");",
+            "",
+            "console.log(`✅ NFT minted successfully!`);",
+            "console.log(`Transaction ID: ${nftResult.transactionId}`);",
+            "console.log(`Policy ID: ${nftResult.policyId}`);",
+            "console.log(`Asset Name: ${nftResult.assetName}`);",
+            "console.log(`Amount: ${nftResult.amount}`);",
+            "",
+            "// Store the NFT details",
+            "nftTransactionId = nftResult.transactionId;",
+            "nftAssetName = nftResult.assetName;",
+            "",
+            "console.log(`🎉 Successfully minted NFT ${nftAssetName} with policy ${policyId}!`);"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "verification",
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": [
+            "## Verification",
+            "",
+            "Let's verify that our NFT minting was successful by checking:",
+            "- Alice's updated balance",
+            "- The transaction details",
+            "- The watcher outputs showing the changes"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "javascript",
+          "content": [
+            "// Check Alice's final balance",
+            "finalBalance = await getBalance('alice');",
+            "console.log(`Alice's final balance: ${finalBalance} lovelace`);",
+            "",
+            "// Calculate balance change",
+            "balanceChange = parseInt(aliceBalance) - parseInt(finalBalance);",
+            "console.log(`Total spent: ${balanceChange} lovelace`);",
+            "",
+            "// Get final UTXO count",
+            "finalUtxos = await getWalletUtxos('alice');",
+            "console.log(`Final UTXO count: ${finalUtxos.utxos.length}`);",
+            "",
+            "console.log('📊 Summary:');",
+            "console.log(`- Policy deployed: ${policyId}`);",
+            "console.log(`- NFT minted: ${nftAssetName}`);",
+            "console.log(`- Transaction: ${nftTransactionId}`);",
+            "console.log(`- Balance change: ${balanceChange} lovelace`);",
+            "console.log(`- Final UTXOs: ${finalUtxos.utxos.length}`);",
+            "",
+            "console.log('🎯 NFT minting demo completed successfully!');"
+          ]
+        }
+      ]
+    }
+  ]
+}
