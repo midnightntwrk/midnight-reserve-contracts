@@ -284,6 +284,51 @@ export class JavaScriptDemoExecutor {
   resetScope(): void {
     this.executor.resetScope();
   }
+
+  /**
+   * Execute a single block by global index while maintaining session scope
+   */
+  async executeBlock(blockIndex: number): Promise<any> {
+    console.log(`[JavaScriptDemoExecutor] Executing block ${blockIndex}`);
+    
+    // Find which stanza contains this block
+    let globalBlockCount = 0;
+    let targetStanzaIndex = 0;
+    let targetBlockIndex = 0;
+    
+    for (let stanzaIndex = 0; stanzaIndex < this.demo.stanzas.length; stanzaIndex++) {
+      const stanza = this.demo.stanzas[stanzaIndex];
+      for (let localBlockIndex = 0; localBlockIndex < stanza.blocks.length; localBlockIndex++) {
+        const block = stanza.blocks[localBlockIndex];
+        if (block.type === 'code') {
+          if (globalBlockCount === blockIndex) {
+            targetStanzaIndex = stanzaIndex;
+            targetBlockIndex = localBlockIndex;
+            break;
+          }
+          globalBlockCount++;
+        }
+      }
+      if (globalBlockCount > blockIndex) break;
+    }
+    
+    console.log(`[JavaScriptDemoExecutor] Block ${blockIndex} is in stanza ${targetStanzaIndex}, local block ${targetBlockIndex}`);
+    
+    // Execute the entire stanza to maintain proper scope
+    const results = await this.executeStanza(targetStanzaIndex);
+    
+    // Return only the result for the specific block
+    const targetResult = results.find(result => result.blockIndex === targetBlockIndex);
+    
+    if (!targetResult) {
+      throw new Error(`Block ${blockIndex} not found in stanza ${targetStanzaIndex}`);
+    }
+    
+    console.log(`[JavaScriptDemoExecutor] Block execution completed. Operation type: ${targetResult.operationType}`);
+    console.log(`[JavaScriptDemoExecutor] Current scope: [${Object.keys(this.executor.getScope()).join(', ')}]`);
+    
+    return targetResult;
+  }
 }
 
 /**

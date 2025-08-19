@@ -12,8 +12,8 @@ class DemoClient {
   async loadDemo(demoName) {
     try {
       console.log(`[DemoClient] Loading demo: ${demoName}`);
-      // Load demo content from file
-      const response = await fetch(`/demo-flows/${demoName}`);
+      // Load demo content from demo server
+      const response = await fetch(`${this.serverUrl}/demo-flows/${demoName}`);
       if (!response.ok) {
         throw new Error(`Failed to load demo: ${response.statusText}`);
       }
@@ -163,6 +163,60 @@ class DemoClient {
       };
     } catch (error) {
       console.error('Error executing stanza:', error);
+      
+      // If session error, clear session and retry once
+      if (error.message.includes('session') || error.message.includes('Session')) {
+        this.sessionId = null;
+        throw new Error('Session expired. Please try again.');
+      }
+      
+      throw error;
+    }
+  }
+
+  async executeBlock(blockId) {
+    try {
+      // Check if session exists
+      if (!this.sessionId) {
+        throw new Error('No active session. Please load a demo first.');
+      }
+
+      const response = await fetch(`${this.serverUrl}/demo/execute-block`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: this.sessionId,
+          blockId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to execute block: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      // Execute watchers after successful block execution
+      let watchResults = {};
+      let watchersInfo = [];
+      try {
+        const watcherResponse = await this.executeWatchers();
+        watchResults = watcherResponse.watchResults || {};
+        watchersInfo = watcherResponse.watchersInfo || [];
+      } catch (watchError) {
+        console.error('Watcher execution failed:', watchError);
+      }
+      
+      return {
+        result: result.result,
+        watchResults,
+        watchersInfo
+      };
+    } catch (error) {
+      console.error('Error executing block:', error);
       
       // If session error, clear session and retry once
       if (error.message.includes('session') || error.message.includes('Session')) {

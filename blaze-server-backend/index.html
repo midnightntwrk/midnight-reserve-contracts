@@ -1033,6 +1033,7 @@
         blockHeader.className = 'block-header';
         
         if (block.type === 'code') {
+          
           // Add spacer to push button to the right
           const spacer = document.createElement('div');
           spacer.style.flex = '1';
@@ -1041,8 +1042,8 @@
           const executeButton = document.createElement('button');
           executeButton.className = 'execute-button unknown';
           executeButton.textContent = 'Execute';
-          executeButton.onclick = () => this.executeBlock(blockIndex);
-          executeButton.id = `execute-${blockIndex}`;
+          executeButton.onclick = () => this.executeBlock(block.blockId);
+          executeButton.id = `execute-${block.blockId}`;
           blockHeader.appendChild(executeButton);
           
           // Analyze operation type for button styling
@@ -1169,9 +1170,12 @@
         `;
       }
 
-      async executeBlock(blockIndex) {
-        const button = document.getElementById(`execute-${blockIndex}`);
+      async executeBlock(blockId) {
+        
+        const button = document.getElementById(`execute-${blockId}`);
         const statusElement = document.getElementById(`stanza-status-${this.currentStanzaIndex}`);
+        
+        // blockId is the unique identifier assigned by the server
         
         // Update UI state
         button.disabled = true;
@@ -1180,10 +1184,25 @@
         statusElement.textContent = 'Executing';
         
         try {
-          const response = await this.demoClient.executeStanza(this.currentStanzaIndex);
+          const response = await this.demoClient.executeBlock(blockId);
           this.lastWatchResults = response.watchResults || {};
           this.watchersInfo = response.watchersInfo || [];
-          this.updateStanzaResult(response.results);
+          
+          // Create a single result object for this block
+          const currentStanza = this.currentDemo.stanzas[this.currentStanzaIndex];
+          const blockResult = {
+            stanzaIndex: this.currentStanzaIndex,
+            stanzaName: currentStanza.name,
+            blockIndex: 0, // We don't need the local index for display
+            blockType: 'code',
+            operationType: response.result.operationType,
+            isPartial: response.result.isPartial,
+            result: response.result.result,
+            scope: response.result.scope,
+            structuredOutput: response.result.structuredOutput || []
+          };
+          
+          this.updateStanzaResult([blockResult]);
           this.updateWatcherPanel();
           
           // Update progress
@@ -1195,21 +1214,23 @@
           
           // Track execution progress for this stanza
           const stanzaElement = document.getElementById(`stanza-${this.currentStanzaIndex}`);
-          const executedBlocks = parseInt(stanzaElement.dataset.executedBlocks || '0') + 1;
-          const totalCodeBlocks = parseInt(stanzaElement.dataset.totalCodeBlocks || '0');
-          
-          stanzaElement.dataset.executedBlocks = executedBlocks.toString();
-          
-          // Only show the Next button after ALL code blocks are executed
-          if (executedBlocks >= totalCodeBlocks) {
-            const footer = stanzaElement.querySelector('.stanza-footer');
-            const nextButton = footer.querySelector('button');
+          if (stanzaElement) {
+            const executedBlocks = parseInt(stanzaElement.dataset.executedBlocks || '0') + 1;
+            const totalCodeBlocks = parseInt(stanzaElement.dataset.totalCodeBlocks || '0');
             
-            if (footer && nextButton) {
-              footer.style.display = 'flex';
-              nextButton.disabled = false;
-              nextButton.textContent = 'Next';
-              nextButton.className = 'execute-button query';
+            stanzaElement.dataset.executedBlocks = executedBlocks.toString();
+            
+            // Only show the Next button after ALL code blocks are executed
+            if (executedBlocks >= totalCodeBlocks) {
+              const footer = stanzaElement.querySelector('.stanza-footer');
+              const nextButton = footer.querySelector('button');
+              
+              if (footer && nextButton) {
+                footer.style.display = 'flex';
+                nextButton.disabled = false;
+                nextButton.textContent = 'Next';
+                nextButton.className = 'execute-button query';
+              }
             }
           }
           
@@ -1340,12 +1361,7 @@
           content.appendChild(errorDiv);
         }
         
-        // Auto-remove error after 5 seconds
-        setTimeout(() => {
-          if (errorDiv.parentNode) {
-            errorDiv.remove();
-          }
-        }, 5000);
+        // Error stays until user dismisses it or page is refreshed
       }
 
       toggleWatcherPanel() {

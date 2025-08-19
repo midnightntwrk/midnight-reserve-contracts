@@ -1,10 +1,12 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 const { IntegratedDemoExecutor } = require('../../../dist/demo-interpreter/core/IntegratedDemoExecutor.js');
 const { JavaScriptDemoExecutor } = require('../../../dist/demo-interpreter/core/JavaScriptDemoExecutor.js');
 
 const app = express();
-const port = process.env.PORT || 3032;
+const port = process.env.PORT || 3042;
 
 app.use(cors());
 app.use(express.json());
@@ -32,9 +34,32 @@ app.post('/demo/init', async (req, res) => {
     const executor = new JavaScriptDemoExecutor(demo, baseUrl);
     await executor.initialize();
     
+    // Assign unique IDs to all code blocks
+    const blockIdMap = new Map();
+    let nextBlockId = 1;
+    const demoWithBlockIds = {
+      ...demo,
+      stanzas: demo.stanzas.map(stanza => ({
+        ...stanza,
+        blocks: stanza.blocks.map(block => {
+          if (block.type === 'code') {
+            const blockId = `block_${nextBlockId++}`;
+            blockIdMap.set(blockId, block);
+            return {
+              ...block,
+              blockId: blockId
+            };
+          }
+          return block;
+        })
+      }))
+    };
+    
     sessions.set(sessionId, {
       executor,
-      demo,
+      demo: demoWithBlockIds,
+      blockIdMap,
+      executedBlockIds: new Set(),
       currentStanzaIndex: 0,
       results: []
     });
@@ -98,6 +123,60 @@ app.post('/demo/execute-stanza', async (req, res) => {
     console.error('Stanza execution error:', error);
     res.status(500).json({ 
       error: 'Failed to execute stanza', 
+      message: error.message 
+    });
+  }
+});
+
+// Execute a single block by ID
+app.post('/demo/execute-block', async (req, res) => {
+  try {
+    const { sessionId, blockId } = req.body;
+    
+    console.log(`[Demo Server] Executing block ${blockId} for session ${sessionId}`);
+    
+    const session = sessions.get(sessionId);
+    if (!session) {
+      console.log(`[Demo Server] Session ${sessionId} not found. Available sessions: ${Array.from(sessions.keys()).join(', ')}`);
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Get the block from the map
+    const block = session.blockIdMap.get(blockId);
+    if (!block) {
+      return res.status(404).json({ error: `Block ${blockId} not found` });
+    }
+
+    // Check execution order (optional validation)
+    const blockNumber = parseInt(blockId.split('_')[1]);
+    const expectedNextBlock = session.executedBlockIds.size + 1;
+    if (blockNumber !== expectedNextBlock) {
+      console.warn(`[Demo Server] Warning: Block ${blockId} executed out of order. Expected block_${expectedNextBlock}`);
+    }
+
+    // Execute the block using the integrated executor
+    
+    const result = await session.executor.executor.executeCodeBlock(blockNumber - 1); // Convert to 0-based index
+    
+    // Mark block as executed
+    session.executedBlockIds.add(blockId);
+    
+    console.log(`[Demo Server] Block execution completed. Operation type: ${result.operationType}`);
+
+    res.json({
+      success: true,
+      result: {
+        result: result.result,
+        operationType: result.operationType,
+        isPartial: result.isPartial,
+        structuredOutput: result.structuredOutput || []
+      },
+      scope: session.executor.getScope()
+    });
+  } catch (error) {
+    console.error('Block execution error:', error);
+    res.status(500).json({ 
+      error: 'Failed to execute block', 
       message: error.message 
     });
   }
@@ -252,10 +331,7 @@ app.delete('/demo/session/:sessionId', async (req, res) => {
 // Demo files endpoint
 app.get('/api/demo-files', (req, res) => {
   try {
-    const fs = require('fs');
-    const path = require('path');
-    
-    const demoFlowsDir = path.join(__dirname, '../../../demo-flows');
+    const demoFlowsDir = path.join(process.cwd(), 'demo-flows');
     const files = fs.readdirSync(demoFlowsDir)
       .filter(file => {
         const ext = path.extname(file).toLowerCase();
@@ -272,6 +348,52 @@ app.get('/api/demo-files', (req, res) => {
     });
   }
 });
+
+// Serve demo files with block IDs
+app.get('/demo-flows/:filename', (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(process.cwd(), 'demo-flows', filename);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Demo file not found' });
+    }
+    
+    // Read the demo file
+    const content = fs.readFileSync(filePath, 'utf8');
+    const demo = JSON.parse(content);
+    
+    // Add block IDs to the demo
+    let nextBlockId = 1;
+    const demoWithBlockIds = {
+      ...demo,
+      stanzas: demo.stanzas.map(stanza => ({
+        ...stanza,
+        blocks: stanza.blocks.map(block => {
+          if (block.type === 'code') {
+            return {
+              ...block,
+              blockId: `block_${nextBlockId++}`
+            };
+          }
+          return block;
+        })
+      }))
+    };
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.json(demoWithBlockIds);
+  } catch (error) {
+    console.error('Error serving demo file:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to serve demo file"
+    });
+  }
+});
+
+
 
 // Health check
 app.get('/health', (req, res) => {

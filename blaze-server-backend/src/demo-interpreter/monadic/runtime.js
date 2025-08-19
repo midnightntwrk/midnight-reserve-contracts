@@ -57,6 +57,7 @@ class MonadicRuntime {
       if (this.debug) {
         console.log(`[Runtime] Session created: ${this.sessionId}`);
       }
+      console.log(`[MonadicRuntime] Session created: ${this.sessionId}`);
     } catch (error) {
       throw new Error(`Failed to connect to server at ${this.baseUrl}: ${error.message}`);
     }
