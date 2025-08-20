@@ -74,7 +74,7 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
           utxos: [{ txHash: spendingUtxo.txHash, outputIndex: spendingUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: contractScriptHash,
+          scriptHash: contractScriptHash,
           compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 123
@@ -172,7 +172,7 @@ describe("Phase 3.2: Balance Query API - Two Approaches", () => {
           utxos: [{ txHash: spendingUtxo.txHash, outputIndex: spendingUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: contractScriptHash,
+          scriptHash: contractScriptHash,
           compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 123

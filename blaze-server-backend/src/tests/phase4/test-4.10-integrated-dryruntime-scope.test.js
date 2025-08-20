@@ -67,9 +67,14 @@ describe("Phase 4.10: Integrated DryRuntime with Scope Persistence Tests", () =>
               type: 'code',
               language: 'javascript',
               content: [
-                '// Use the monadic transfer function with variables from previous stanzas',
+                '// Use the monadic transaction builder to transfer funds',
                 'transferAmount = 10_000_000;',
-                'transferResult = await transfer(\'jeff\', \'alice\', transferAmount);',
+                '// Get Alice\'s address first',
+                'aliceUtxos = await getWalletUtxos(\'alice\');',
+                'aliceAddress = aliceUtxos[0].address;',
+                'transferResult = await newTransaction(\'jeff\')',
+                '  .payToAddress(aliceAddress, transferAmount)',
+                '  .submit();',
                 'console.log(\'Transfer completed:\', transferResult);'
               ]
             }
@@ -188,9 +193,14 @@ describe("Phase 4.10: Integrated DryRuntime with Scope Persistence Tests", () =>
                 '  totalBalance = balance1 + balance2;',
                 '  console.log(\'Total balance:\', totalBalance);',
                 '  ',
-                '  // Transfer between wallets',
+                '  // Transfer between wallets using transaction builder',
                 '  transferAmount = Math.min(balance1, 5_000_000);',
-                '  transferResult = await transfer(\'wallet1\', \'wallet2\', transferAmount);',
+                '  // Get wallet2\'s address first',
+                '  wallet2Utxos = await getWalletUtxos(\'wallet2\');',
+                '  wallet2Address = wallet2Utxos[0].address;',
+                '  transferResult = await newTransaction(\'wallet1\')',
+                '    .payToAddress(wallet2Address, transferAmount)',
+                '    .submit();',
                 '  console.log(\'Transfer result:\', transferResult);',
                 '}'
               ]

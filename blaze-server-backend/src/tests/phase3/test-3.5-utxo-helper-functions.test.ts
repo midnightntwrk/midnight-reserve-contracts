@@ -68,7 +68,7 @@ describe("Phase 3.5: UTXO Helper Functions - Two Approaches", () => {
           utxos: [{ txHash: spendingUtxo.txHash, outputIndex: spendingUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: contractScriptHash,
+          scriptHash: contractScriptHash,
           compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 42
@@ -193,7 +193,7 @@ describe("Phase 3.5: UTXO Helper Functions - Two Approaches", () => {
           utxos: [{ txHash: spendingUtxo.txHash, outputIndex: spendingUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: contractScriptHash,
+          scriptHash: contractScriptHash,
           compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 42

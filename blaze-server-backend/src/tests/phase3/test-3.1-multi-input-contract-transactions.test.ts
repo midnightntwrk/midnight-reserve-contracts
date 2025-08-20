@@ -84,14 +84,14 @@ describe("Phase 3.1: Multi-Input Contract Transactions - Two Approaches", () => 
           },
           {
             type: "pay-to-contract",
-            contractAddress: contractScriptHash,
+            scriptHash: contractScriptHash,
             compiledCode: compiledCode, // Include script bytes for address computation
             amount: "3000000", // 3 ADA total
             datum: 123
           },
           {
             type: "pay-to-contract", 
-            contractAddress: contractScriptHash,
+            scriptHash: contractScriptHash,
             compiledCode: compiledCode, // Include script bytes for address computation
             amount: "3000000", // Another 3 ADA (50/50 split)
             datum: 456
@@ -190,14 +190,14 @@ describe("Phase 3.1: Multi-Input Contract Transactions - Two Approaches", () => 
           },
           {
             type: "pay-to-contract",
-            contractAddress: contractScriptHash,
+            scriptHash: contractScriptHash,
             compiledCode: compiledCode, // Include script bytes for address computation
             amount: "3000000", // 3 ADA total
             datum: 123
           },
           {
             type: "pay-to-contract", 
-            contractAddress: contractScriptHash,
+            scriptHash: contractScriptHash,
             compiledCode: compiledCode, // Include script bytes for address computation
             amount: "3000000", // Another 3 ADA (50/50 split)
             datum: 456

@@ -88,7 +88,7 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
           },
           {
             type: "pay-to-contract",
-            contractAddress: contractScriptHash,
+            scriptHash: contractScriptHash,
             compiledCode: compiledCode,
             amount: "2000000", // 2 ADA to contract
             datum: 77 // Simple integer datum
@@ -246,7 +246,7 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
           utxos: [{ txHash: bigUtxo.txHash, outputIndex: bigUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: refContractScriptHash,
+          scriptHash: refContractScriptHash,
           compiledCode: compiledCode,
           amount: "3000000", // 3 ADA
           datum: 99
@@ -400,7 +400,7 @@ describe("Phase 3.11: Build-and-Submit Real Transaction IDs", () => {
           utxos: [{ txHash: spendingUtxo.txHash, outputIndex: spendingUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: inlineContractScriptHash,
+          scriptHash: inlineContractScriptHash,
           compiledCode: compiledCode,
           amount: "3000000", // 3 ADA
           datum: 99

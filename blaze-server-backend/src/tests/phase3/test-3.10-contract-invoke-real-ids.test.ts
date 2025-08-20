@@ -96,7 +96,7 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs - Two Approaches", ()
           utxos: [{ txHash: bigUtxo.txHash, outputIndex: bigUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: refContractScriptHash, // Use script hash from fresh session
+          scriptHash: refContractScriptHash, // Use script hash from fresh session
           compiledCode: compiledCode,
           amount: "3000000", // 3 ADA
           datum: 42
@@ -279,7 +279,7 @@ describe("Phase 3.10: Contract Invoke Real Transaction IDs - Two Approaches", ()
           utxos: [{ txHash: spendingUtxo.txHash, outputIndex: spendingUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: inlineContractScriptHash, // Use computed script hash
+          scriptHash: inlineContractScriptHash, // Use computed script hash
           compiledCode: compiledCode,
           amount: "3000000", // 3 ADA
           datum: 42

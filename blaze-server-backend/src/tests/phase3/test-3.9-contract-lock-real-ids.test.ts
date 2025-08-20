@@ -108,7 +108,7 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
           utxos: [{ txHash: bigUtxo.txHash, outputIndex: bigUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: refContractScriptHash,
+          scriptHash: refContractScriptHash,
           compiledCode: compiledCode,
           amount: "2000000", // 2 ADA
           datum: 42
@@ -265,7 +265,7 @@ describe("Phase 3.9: Contract Lock Real Transaction IDs - Two Approaches", () =>
           utxos: [{ txHash: spendingUtxo.txHash, outputIndex: spendingUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: inlineContractScriptHash,
+          scriptHash: inlineContractScriptHash,
           compiledCode: compiledCode,
           amount: "2000000", // 2 ADA
           datum: 42

@@ -80,7 +80,7 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
           utxos: [{ txHash: bigUtxo.txHash, outputIndex: bigUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: refContractScriptHash,
+          scriptHash: refContractScriptHash,
           compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 42 // Redeemer that unlocks this UTXO
@@ -221,7 +221,7 @@ describe("Phase 3.7: Contract UTXO Unlocking - Two Approaches", () => {
           utxos: [{ txHash: spendingUtxo.txHash, outputIndex: spendingUtxo.outputIndex }]
         }, {
           type: "pay-to-contract",
-          contractAddress: inlineContractScriptHash,
+          scriptHash: inlineContractScriptHash,
           compiledCode: compiledCode, // Include script bytes for address computation
           amount: "3000000", // 3 ADA
           datum: 42 // Redeemer that unlocks this UTXO
