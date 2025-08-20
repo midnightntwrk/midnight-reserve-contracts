@@ -1,10 +1,11 @@
 /**
- * Monadic Runtime v4.2
+ * Monadic Runtime v4.6
  *
- * This version adds the missing getWatchResults function to fully restore
- * the sophisticated watcher logic from the original runtime. It also
- * aligns the payToContract method with the server's API by sending
- * 'scriptHash' instead of 'contractAddress'.
+ * This version corrects a regression by ensuring that the getBalance,
+ * getWalletUtxos, and getContractState functions return the raw data
+ * (e.g., the balance string or the UTxO array) instead of the full
+ * server response object. This makes the monadic function API clean
+ * and predictable for the demo scripts.
  */
 
 // Node.js module dependencies for the loadContract function
@@ -12,6 +13,24 @@ const fs = require('fs');
 const path = require('path');
 // This utility is assumed to exist in your project structure
 const { computeScriptInfo } = require('../../utils/script-utils.js');
+
+/**
+ * Creates a canonical (sorted-key) string representation of a JSON object.
+ * This is used for reliable change detection in watchers.
+ * @param {*} value - The value to stringify.
+ * @returns {string}
+ */
+function canonicalStringify(value) {
+    if (value === null || typeof value !== 'object') {
+        return JSON.stringify(value);
+    }
+    if (Array.isArray(value)) {
+        return `[${value.map(canonicalStringify).join(',')}]`;
+    }
+    const keys = Object.keys(value).sort();
+    const pairs = keys.map(key => `${JSON.stringify(key)}:${canonicalStringify(value[key])}`);
+    return `{${pairs.join(',')}}`;
+}
 
 
 class MonadicRuntime {
@@ -156,10 +175,7 @@ class MonadicRuntime {
 
         const compiledCode = validator.compiledCode;
         const scriptInfo = computeScriptInfo(compiledCode);
-
-        // --- FIX ---
-        // Combine the scriptInfo (hash, address) with the compiledCode
-        // so the demo script has access to everything it needs.
+        
         const contractDetails = {
             ...scriptInfo,
             compiledCode: compiledCode
@@ -190,44 +206,61 @@ class MonadicRuntime {
     }
 
     watchBalance(walletName, formatter = null) {
-        return this.watch(`Balance: ${walletName}`, { type: 'balance', key: walletName }, formatter);
+        const defaultFormatter = (balance) => `${walletName}: ${(parseInt(balance || '0') / 1000000).toFixed(6)} ADA`;
+        return this.watch(`Balance: ${walletName}`, { type: 'balance', key: walletName }, formatter || defaultFormatter);
     }
 
     watchWalletUtxos(walletName, formatter = null) {
-        return this.watch(`UTxOs: ${walletName}`, { type: 'walletUtxos', key: walletName }, formatter);
+        const defaultFormatter = (utxos) => {
+            const totalValue = (utxos || []).reduce((sum, utxo) => sum + parseInt(utxo.amount || '0'), 0);
+            return `${walletName}: ${(utxos || []).length} UTXOs, ${(totalValue / 1000000).toFixed(6)} ADA`;
+        };
+        return this.watch(`UTxOs: ${walletName}`, { type: 'walletUtxos', key: walletName }, formatter || defaultFormatter);
     }
 
     watchContractState(address, formatter = null) {
-        return this.watch(`State: ${address.substring(0, 20)}...`, { type: 'contractState', key: address }, formatter);
+        const defaultFormatter = (utxos) => {
+            const utxoList = utxos || [];
+            const totalValue = utxoList.reduce((sum, utxo) => sum + parseInt(utxo.amount || '0'), 0);
+            let datumInfo = '';
+            if (utxoList.length > 0 && utxoList[0].datum !== undefined) {
+                datumInfo = `, datum: ${utxoList[0].datum}`;
+            }
+            return `Contract: ${utxoList.length} UTXOs, ${(totalValue / 1000000).toFixed(6)} ADA${datumInfo}`;
+        };
+        return this.watch(`State: ${address.substring(0, 20)}...`, { type: 'contractState', key: address }, formatter || defaultFormatter);
     }
 
     async executeWatcher(watcher) {
-        let data;
+        let rawData;
         try {
             switch (watcher.query.type) {
                 case 'balance':
-                    data = await this.getBalance(watcher.query.key);
+                    rawData = await this.getBalance(watcher.query.key);
                     break;
                 case 'walletUtxos':
-                    data = await this.getWalletUtxos(watcher.query.key);
+                    rawData = await this.getWalletUtxos(watcher.query.key);
                     break;
                 case 'contractState':
-                    data = await this.getContractState(watcher.query.key);
+                    rawData = await this.getContractState(watcher.query.key);
                     break;
                 default:
                     throw new Error(`Unknown watcher type: ${watcher.query.type}`);
             }
 
-            const dataChanged = JSON.stringify(watcher.lastRawData) !== JSON.stringify(data);
+            const dataChanged = canonicalStringify(watcher.lastRawData) !== canonicalStringify(rawData);
+            
             watcher.hasChanged = dataChanged;
-
             if (dataChanged) {
                 this.changedWatchers.add(watcher.id);
             }
 
-            watcher.lastRawData = data;
+            watcher.lastRawData = rawData;
             watcher.lastRun = Date.now();
-            this.watchResults.set(watcher.id, { data: data });
+            this.watchResults.set(watcher.id, { 
+                data: rawData, 
+                formatted: watcher.formatter(rawData) 
+            });
 
         } catch (error) {
             const errorStatus = `Error: ${error.message}`;
@@ -254,6 +287,7 @@ class MonadicRuntime {
                 id: watcher.id,
                 name: watcher.name,
                 result: this.watchResults.get(id),
+                rawData: watcher.lastRawData, 
                 hasChanged: this.changedWatchers.has(id),
                 lastRun: watcher.lastRun
             });
@@ -389,8 +423,8 @@ class TransactionBuilder {
         }
         if (options.referenceScriptUtxo) {
             op.referenceScriptUtxo = {
-                txHash: options.referenceScriptUtxo.txHash,
-                outputIndex: options.referenceScriptUtxo.outputIndex
+                txHash: options.referenceScriptUtxos.txHash,
+                outputIndex: options.referenceScriptUtxos.outputIndex
             };
         }
         this._operations.push(op);

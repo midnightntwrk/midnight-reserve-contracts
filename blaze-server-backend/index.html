@@ -1411,8 +1411,15 @@
           resultDiv.dataset.watcherId = watcher.id;
           resultDiv.dataset.viewMode = 'formatted';
           
-          // Start with formatted view (using raw data)
-          resultDiv.textContent = this.getCleanFormattedResult(watcher);
+          // --- FIX ---
+          // Use the pre-formatted string from the result object
+          if (watcher.result && watcher.result.formatted) {
+            resultDiv.textContent = watcher.result.formatted;
+          } else if (watcher.result && watcher.result.error) {
+            resultDiv.textContent = watcher.result.error;
+          } else {
+            resultDiv.textContent = 'Updating...';
+          }
           
           cell.appendChild(toggleButton);
           cell.appendChild(nameDiv);
@@ -1446,54 +1453,44 @@
         resultDiv.dataset.viewMode = newMode;
         
         if (newMode === 'raw') {
+          // --- FIX ---
+          // Use watcher.rawData which is now correctly populated by the runtime
           resultDiv.textContent = JSON.stringify(watcher.rawData, null, 2);
           resultDiv.style.fontFamily = 'monospace';
           resultDiv.style.fontSize = '0.8em';
           resultDiv.style.whiteSpace = 'pre-wrap';
         } else if (newMode === 'detailed') {
+          // --- FIX ---
+          // Use watcher.rawData for detailed rendering
           resultDiv.innerHTML = this.renderDetailedView(watcher);
           resultDiv.style.fontFamily = '';
           resultDiv.style.fontSize = '';
           resultDiv.style.whiteSpace = '';
         } else {
-          // Formatted view (but show clean data)
-          resultDiv.textContent = this.getCleanFormattedResult(watcher);
+          // --- FIX ---
+          // Formatted view should use the pre-formatted string from the result
+          if (watcher.result && watcher.result.formatted) {
+            resultDiv.textContent = watcher.result.formatted;
+          } else {
+            resultDiv.textContent = 'No data';
+          }
           resultDiv.style.fontFamily = '';
           resultDiv.style.fontSize = '';
           resultDiv.style.whiteSpace = '';
         }
       }
 
-      getCleanFormattedResult(watcher) {
-        if (!watcher.rawData) return 'No data available';
-        
-        // Check if this looks like balance data
-        if (watcher.rawData.balance !== undefined) {
-          const balance = parseInt(watcher.rawData.balance || '0');
-          return `${(balance/1000000).toFixed(6)} ADA`;
-        }
-        
-        // Check if this looks like UTXO data
-        if (watcher.rawData.utxos && Array.isArray(watcher.rawData.utxos)) {
-          const utxos = watcher.rawData.utxos;
-          const totalValue = utxos.reduce((sum, utxo) => sum + parseInt(utxo.amount || '0'), 0);
-          return `${utxos.length} UTXO${utxos.length !== 1 ? 's' : ''}, ${(totalValue/1000000).toFixed(6)} ADA`;
-        }
-        
-        // Default to a simple summary
-        return 'Data available';
-      }
-
       renderDetailedView(watcher) {
+        // --- FIX ---
+        // This function now correctly receives the full watcher info object
+        // and can inspect its name to determine how to render the rawData.
         if (!watcher.rawData) return 'No data available';
         
-        // Check if this looks like UTXO data
-        if (watcher.rawData.utxos && Array.isArray(watcher.rawData.utxos)) {
-          return this.renderUtxoView(watcher.rawData.utxos);
+        if (watcher.name.startsWith('UTxOs:') || watcher.name.startsWith('State:')) {
+          return this.renderUtxoView(watcher.rawData);
         }
         
-        // Check if this looks like balance data
-        if (watcher.rawData.balance !== undefined) {
+        if (watcher.name.startsWith('Balance:')) {
           return this.renderBalanceView(watcher.rawData);
         }
         
@@ -1508,7 +1505,7 @@
 
         const utxoElements = utxos.map((utxo, index) => {
           const amount = utxo.amount || 0;
-          const lovelace = amount / 1000000; // Convert to ADA
+          const lovelace = parseInt(amount) / 1000000; // Convert to ADA
           const address = utxo.address || 'Unknown address';
           const datum = utxo.datum !== undefined && utxo.datum !== null ? `datum: ${utxo.datum}` : 'No datum';
           
@@ -1536,14 +1533,16 @@
         `;
       }
 
-      renderBalanceView(balanceData) {
-        const balance = balanceData.balance || 0;
-        const lovelace = balance / 1000000; // Convert to ADA
+      renderBalanceView(balance) {
+        // --- FIX ---
+        // This function now receives the raw balance string directly
+        const lovelace = parseInt(balance || '0');
+        const ada = lovelace / 1000000;
         
         return `
           <div class="balance-detail">
-            <div class="balance-amount">${lovelace.toFixed(6)} ADA</div>
-            <div class="balance-lovelace">${balance.toLocaleString()} lovelace</div>
+            <div class="balance-amount">${ada.toFixed(6)} ADA</div>
+            <div class="balance-lovelace">${lovelace.toLocaleString()} lovelace</div>
           </div>
         `;
       }

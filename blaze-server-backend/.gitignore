@@ -24,3 +24,6 @@ test-results/
 bun.lock
 package-lock.json
 backup-*.tar.gz
+
+# tmp filee
+*~
