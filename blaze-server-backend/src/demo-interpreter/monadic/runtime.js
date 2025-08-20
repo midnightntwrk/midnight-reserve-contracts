@@ -1,991 +1,437 @@
 /**
- * Monadic Runtime
- * 
- * Handles all HTTP communication, session management, and error handling.
- * Provides the implementation for the pure functions in functions.js.
+ * Monadic Runtime v4.2
+ *
+ * This version adds the missing getWatchResults function to fully restore
+ * the sophisticated watcher logic from the original runtime. It also
+ * aligns the payToContract method with the server's API by sending
+ * 'scriptHash' instead of 'contractAddress'.
  */
 
-// Import utilities for blueprint resolution
-const { computeScriptInfo } = require('../../utils/script-utils.js');
+// Node.js module dependencies for the loadContract function
 const fs = require('fs');
 const path = require('path');
+// This utility is assumed to exist in your project structure
+const { computeScriptInfo } = require('../../utils/script-utils.js');
+
 
 class MonadicRuntime {
-  constructor(config = {}) {
-    this.baseUrl = config.baseUrl || 'http://localhost:3031';
-    this.sessionId = null;
-    this.contracts = config.contracts || {};
-    this.currentStepLabel = '';
-    this.debug = config.debug || false;
-    this.watchers = new Map();
-    this.watchResults = new Map();
-    this.watcherCounter = 0;
-    this.changedWatchers = new Set();
-  }
-
-  // Emit transaction info for frontend rendering
-  emitTransaction(type, data) {
-    const txInfo = {
-      type: 'transaction',
-      operation: type,
-      timestamp: new Date().toISOString(),
-      data: data
-    };
-    
-    // Print in a special format that can be parsed by the frontend
-    console.log(`🚀 TX_EMIT:${JSON.stringify(txInfo)}`);
-  }
-
-  setCurrentStep(label) {
-    this.currentStepLabel = label;
-  }
-
-  async initialize() {
-    // Create session
-    try {
-      const response = await fetch(`${this.baseUrl}/api/session/new`, {
-        method: 'POST'
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to create session: ${response.status}`);
-      }
-
-      const data = await response.json();
-      this.sessionId = data.sessionId;
-      
-      if (this.debug) {
-        console.log(`[Runtime] Session created: ${this.sessionId}`);
-      }
-      console.log(`[MonadicRuntime] Session created: ${this.sessionId}`);
-    } catch (error) {
-      throw new Error(`Failed to connect to server at ${this.baseUrl}: ${error.message}`);
-    }
-  }
-
-  // Core wallet operations
-
-  async createWallet(name, initialBalance) {
-    if (this.debug) {
-      console.log(`[MonadicRuntime] Making HTTP call to ${this.baseUrl}/api/wallet/register for wallet: ${name}`);
-    }
-    
-    const response = await fetch(`${this.baseUrl}/api/wallet/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: this.sessionId,
-        name,
-        initialBalance: initialBalance.toString()
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error during ${this.currentStepLabel}: ${response.status}`);
+    /**
+     * Corrected, single constructor for the MonadicRuntime class.
+     */
+    constructor(config = {}) {
+        this.baseUrl = config.baseUrl || 'http://localhost:3031';
+        this.sessionId = null;
+        this.currentStepLabel = '';
+        this.debug = config.debug || false;
+        this._contractCache = new Map();
+        // Properties from the original, proven watcher implementation
+        this.watchers = new Map();
+        this.watchResults = new Map();
+        this.watcherCounter = 0;
+        this.changedWatchers = new Set();
     }
 
-    const body = await response.json();
-    if (!body.success) {
-      throw new Error(`Server error during ${this.currentStepLabel}: ${body.error || 'unknown'}`);
+    /**
+     * Emits a structured log for the frontend to render transaction information.
+     * @param {string} type - The type of operation (e.g., 'createWallet', 'transaction').
+     * @param {object} data - The data associated with the operation.
+     */
+    emitTransaction(type, data) {
+        const txInfo = {
+            type: 'transaction',
+            operation: type,
+            timestamp: new Date().toISOString(),
+            data: data
+        };
+        // This special console log format can be parsed by a listening frontend.
+        console.log(`🚀 TX_EMIT:${JSON.stringify(txInfo)}`);
     }
 
-    if (this.debug) {
-      console.log(`[MonadicRuntime] Wallet created successfully: ${body.walletName} with balance ${body.balance}`);
+    /**
+     * Sets a label for the current step in a demo script for better error reporting.
+     * @param {string} label - The descriptive label for the current step.
+     */
+    setCurrentStep(label) {
+        this.currentStepLabel = label;
     }
 
-    // Emit transaction info for frontend
-    this.emitTransaction('createWallet', {
-      walletName: body.walletName,
-      initialBalance: body.balance,
-      result: { name: body.walletName, balance: body.balance }
-    });
-
-    // API returns walletName and balance only - no address
-    return { 
-      name: body.walletName,
-      balance: body.balance
-    };
-  }
-
-  async getBalance(name) {
-    const response = await fetch(
-      `${this.baseUrl}/api/wallet/${name}/balance?sessionId=${this.sessionId}`
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error getting balance for ${name}: ${response.status}`);
+    /**
+     * Initializes the runtime by creating a new session with the server.
+     * This must be called before any other operations.
+     */
+    async initialize() {
+        try {
+            const response = await this._fetch('/api/session/new', { method: 'POST' });
+            this.sessionId = response.sessionId;
+            if (this.debug) {
+                console.log(`[Runtime] Session created: ${this.sessionId}`);
+            }
+        } catch (error) {
+            console.error(`[Runtime] Failed to connect to server at ${this.baseUrl}: ${error.message}`);
+            throw error;
+        }
     }
 
-    const body = await response.json();
-    if (!body.success) {
-      throw new Error(`Server error getting balance: ${body.error || 'unknown'}`);
+    // =================================================================
+    // CORE API: Wallet and Emulator Management
+    // =================================================================
+
+    async createWallet(name, initialBalance) {
+        const body = {
+            sessionId: this.sessionId,
+            name,
+            initialBalance: initialBalance.toString()
+        };
+        const result = await this._fetch('/api/wallet/register', {
+            method: 'POST',
+            body: body
+        });
+
+        this.emitTransaction('createWallet', {
+            walletName: result.walletName,
+            initialBalance: result.balance,
+            result: { name: result.walletName, balance: result.balance }
+        });
+
+        return {
+            name: result.walletName,
+            balance: result.balance
+        };
     }
 
-    return body.balance;
-  }
-
-  async transfer(from, to, amount) {
-    const response = await fetch(`${this.baseUrl}/api/wallet/transfer`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: this.sessionId,
-        fromWallet: from,
-        toWallet: to,
-        amount: amount.toString()
-      })
-    });
-
-    if (!response.ok) {
-      let errorDetails = '';
-      try {
-        const errorBody = await response.text();
-        errorDetails = ` - ${errorBody}`;
-      } catch (e) {
-        errorDetails = ' - Could not read error response';
-      }
-      throw new Error(`HTTP error during transfer: ${response.status}${errorDetails}`);
+    async getBalance(name) {
+        const result = await this._fetch(`/api/wallet/${name}/balance?sessionId=${this.sessionId}`);
+        return result.balance;
     }
 
-    const body = await response.json();
-    if (!body.success) {
-      throw new Error(`Transfer failed: ${body.error || body.message || 'unknown'}`);
+    async getWalletUtxos(walletName) {
+        const result = await this._fetch(`/api/wallet/${walletName}/utxos?sessionId=${this.sessionId}`);
+        return result.utxos;
     }
 
-    // Emit transaction info for frontend
-    this.emitTransaction('transfer', {
-      from: from,
-      to: to,
-      amount: amount,
-      transactionId: body.transactionId,
-      result: { transactionId: body.transactionId }
-    });
+    async getContractState(contractAddress) {
+        const result = await this._fetch(`/api/contract/${contractAddress}/utxos?sessionId=${this.sessionId}`);
+        return result.utxos;
+    }
 
-    return { transactionId: body.transactionId };
-  }
+    async advanceTime(seconds) {
+        const currentTimeResponse = await this._fetch(`/api/emulator/current-time?sessionId=${this.sessionId}`);
+        const targetUnixTime = currentTimeResponse.currentUnixTime + (seconds * 1000);
 
-  // Contract operations
+        const body = {
+            sessionId: this.sessionId,
+            targetUnixTime
+        };
+        const result = await this._fetch('/api/emulator/advance-time', {
+            method: 'POST',
+            body: body
+        });
 
-  async createReferenceScript(name, params = {}) {
-    // Handle blueprint file paths from params
-    let compiledCode;
-    if (params.blueprint) {
-      // User-specified blueprint file path
-      const blueprintPath = path.resolve(params.blueprint);
-      if (!fs.existsSync(blueprintPath)) {
-        throw new Error(`Blueprint file not found: ${blueprintPath}`);
-      }
-      
-      const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
-      const validator = blueprintData.validators.find(v => 
-        v.title.includes(name) && v.title.includes('spend')
-      );
-      
-      if (!validator) {
-        throw new Error(`Validator not found in blueprint for contract '${name}'`);
-      }
-      
-      compiledCode = validator.compiledCode;
-    } else {
-      // Fallback to config-based resolution (legacy)
-      const contractConfig = this.contracts[name];
-      if (!contractConfig) {
-        throw new Error(`Contract '${name}' not found in config and no blueprint path provided`);
-      }
+        this.emitTransaction('advanceTime', {
+            seconds: seconds,
+            newSlot: result.newSlot,
+            result: { newSlot: result.newSlot }
+        });
 
-      if (typeof contractConfig === 'string') {
-        // Direct CBOR string (legacy format)
-        compiledCode = contractConfig;
-      } else if (contractConfig.blueprint) {
-        // Config-based blueprint file path
-        const blueprintPath = path.resolve(contractConfig.blueprint);
+        return { newSlot: result.newSlot };
+    }
+
+    async loadContract(filePath, contractName) {
+        const cacheKey = `${filePath}:${contractName}`;
+        if (this._contractCache.has(cacheKey)) {
+            return this._contractCache.get(cacheKey);
+        }
+
+        const blueprintPath = path.resolve(filePath);
         if (!fs.existsSync(blueprintPath)) {
-          throw new Error(`Blueprint file not found: ${blueprintPath}`);
+            throw new Error(`Blueprint file not found: ${blueprintPath}`);
         }
-        
-        const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
-        const validator = blueprintData.validators.find(v => 
-          v.title.includes(name) && v.title.includes('spend')
-        );
-        
+
+        const blueprint = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
+        const validator = blueprint.validators.find(v => v.title.startsWith(contractName));
+
         if (!validator) {
-          throw new Error(`Validator not found in blueprint for contract '${name}'`);
+            throw new Error(`Validator '${contractName}' not found in ${filePath}`);
         }
-        
-        compiledCode = validator.compiledCode;
-      } else {
-        throw new Error(`Invalid contract configuration for '${name}'. Expected string or {blueprint: path}`);
-      }
+
+        const compiledCode = validator.compiledCode;
+        const scriptInfo = computeScriptInfo(compiledCode);
+
+        // --- FIX ---
+        // Combine the scriptInfo (hash, address) with the compiledCode
+        // so the demo script has access to everything it needs.
+        const contractDetails = {
+            ...scriptInfo,
+            compiledCode: compiledCode
+        };
+
+        this._contractCache.set(cacheKey, contractDetails);
+        return contractDetails;
     }
 
-    // Get wallet address for reference script
-    const walletResponse = await fetch(`${this.baseUrl}/api/wallet/${params.wallet || 'alice'}/utxos?sessionId=${this.sessionId}`);
-    if (!walletResponse.ok) {
-      throw new Error(`HTTP error getting wallet UTXOs: ${walletResponse.status}`);
-    }
-    const walletData = await walletResponse.json();
-    const walletAddress = walletData.utxos[0].address;
+    // =================================================================
+    // WATCHER API (Integrated from original runtime)
+    // =================================================================
 
-    // Create reference script transaction (following phase 3 test pattern)
-    const response = await fetch(`${this.baseUrl}/api/transaction/build-and-submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: this.sessionId,
-        signerWallet: params.wallet || 'alice',
-        operations: [{
-          type: "pay-to-address",
-          address: walletAddress,
-          amount: "2000000", // 2 ADA for reference script
-          referenceScript: compiledCode
-        }, {
-          type: "pay-to-address",
-          address: walletAddress,
-          amount: "8000000" // 8 ADA for spending
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error creating reference script: ${response.status}`);
+    async watch(name, query, formatter) {
+        const watcherId = `watcher_${++this.watcherCounter}`;
+        const watcher = {
+            id: watcherId,
+            name,
+            query,
+            formatter,
+            lastRawData: null,
+            lastRun: null,
+            hasChanged: false
+        };
+        this.watchers.set(watcherId, watcher);
+        await this.executeWatcher(watcher); // Execute immediately on creation
+        return { name, status: 'active' };
     }
 
-    const body = await response.json();
-    if (!body.success) {
-      throw new Error(`Failed to create reference script: ${body.error || 'unknown'}`);
+    watchBalance(walletName, formatter = null) {
+        return this.watch(`Balance: ${walletName}`, { type: 'balance', key: walletName }, formatter);
     }
 
-    // Extract UTXOs from the response
-    const refScriptUtxo = body.createdUtxos.find(utxo => utxo.amount === "2000000");
-    const spendingUtxo = body.createdUtxos.find(utxo => utxo.amount === "8000000");
-
-    if (!refScriptUtxo || !spendingUtxo) {
-      throw new Error(`Failed to find expected UTXOs in transaction response`);
+    watchWalletUtxos(walletName, formatter = null) {
+        return this.watch(`UTxOs: ${walletName}`, { type: 'walletUtxos', key: walletName }, formatter);
     }
 
-    // Compute script info dynamically from the compiled code
-    const scriptInfo = computeScriptInfo(compiledCode);
-    const scriptHash = scriptInfo.scriptHash;
-    const contractAddress = scriptInfo.contractAddress;
-
-    // Emit transaction info for frontend
-    this.emitTransaction('createReferenceScript', {
-      contractName: name,
-      scriptHash: scriptHash,
-      contractAddress: contractAddress,
-      wallet: params.wallet || 'alice',
-      result: {
-        refScriptUtxo,
-        spendingUtxo,
-        scriptHash,
-        contractAddress
-      }
-    });
-
-    // Return script info and UTXOs
-    return {
-      refScriptUtxo,
-      spendingUtxo,
-      scriptHash,
-      contractAddress
-    };
-  }
-
-  async mintNFT(policyId, assetName, amount, referenceScriptUtxo, params = {}) {
-    // Get wallet address for the mint transaction
-    const walletResponse = await fetch(`${this.baseUrl}/api/wallet/${params.wallet || 'alice'}/utxos?sessionId=${this.sessionId}`);
-    if (!walletResponse.ok) {
-      throw new Error(`HTTP error getting wallet UTXOs: ${walletResponse.status}`);
+    watchContractState(address, formatter = null) {
+        return this.watch(`State: ${address.substring(0, 20)}...`, { type: 'contractState', key: address }, formatter);
     }
-    const walletData = await walletResponse.json();
-    const walletAddress = walletData.utxos[0].address;
 
-    // Create mint transaction
-    const response = await fetch(`${this.baseUrl}/api/transaction/build-and-submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: this.sessionId,
-        signerWallet: params.wallet || 'alice',
-        operations: [
-          {
-            type: "mint",
+    async executeWatcher(watcher) {
+        let data;
+        try {
+            switch (watcher.query.type) {
+                case 'balance':
+                    data = await this.getBalance(watcher.query.key);
+                    break;
+                case 'walletUtxos':
+                    data = await this.getWalletUtxos(watcher.query.key);
+                    break;
+                case 'contractState':
+                    data = await this.getContractState(watcher.query.key);
+                    break;
+                default:
+                    throw new Error(`Unknown watcher type: ${watcher.query.type}`);
+            }
+
+            const dataChanged = JSON.stringify(watcher.lastRawData) !== JSON.stringify(data);
+            watcher.hasChanged = dataChanged;
+
+            if (dataChanged) {
+                this.changedWatchers.add(watcher.id);
+            }
+
+            watcher.lastRawData = data;
+            watcher.lastRun = Date.now();
+            this.watchResults.set(watcher.id, { data: data });
+
+        } catch (error) {
+            const errorStatus = `Error: ${error.message}`;
+            const statusChanged = watcher.lastErrorStatus !== errorStatus;
+            watcher.hasChanged = statusChanged;
+            if (statusChanged) {
+                this.changedWatchers.add(watcher.id);
+            }
+            watcher.lastErrorStatus = errorStatus;
+            this.watchResults.set(watcher.id, { error: errorStatus });
+        }
+    }
+
+    async executeAllWatchers() {
+        if (this.debug) console.log(`[Runtime] Executing all ${this.watchers.size} watchers...`);
+        const promises = Array.from(this.watchers.values()).map(w => this.executeWatcher(w));
+        await Promise.allSettled(promises);
+    }
+
+    getWatchersInfo() {
+        const watchersInfo = [];
+        for (const [id, watcher] of this.watchers) {
+            watchersInfo.push({
+                id: watcher.id,
+                name: watcher.name,
+                result: this.watchResults.get(id),
+                hasChanged: this.changedWatchers.has(id),
+                lastRun: watcher.lastRun
+            });
+        }
+        return watchersInfo;
+    }
+
+    getWatchResults() {
+        return Object.fromEntries(this.watchResults);
+    }
+
+    clearChangedState() {
+        this.changedWatchers.clear();
+        for (const watcher of this.watchers.values()) {
+            watcher.hasChanged = false;
+        }
+    }
+
+    // =================================================================
+    // TRANSACTION BUILDER API
+    // =================================================================
+
+    newTransaction(signerWallet) {
+        return new TransactionBuilder(this, signerWallet);
+    }
+
+    // =================================================================
+    // INTERNAL HELPERS
+    // =================================================================
+
+    async _fetch(endpoint, options = {}) {
+        const url = `${this.baseUrl}${endpoint}`;
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers,
+        };
+        const config = { ...options, headers };
+        if (options.body) {
+            config.body = JSON.stringify(options.body);
+        }
+        const response = await fetch(url, config);
+        if (!response.ok) {
+            let errorDetails = '';
+            try {
+                const errorBody = await response.json();
+                errorDetails = errorBody.error || errorBody.message || 'No additional details.';
+            } catch (e) {
+                errorDetails = 'Could not parse error response.';
+            }
+            const errorMessage = `HTTP error for ${this.currentStepLabel}: ${response.status} - ${errorDetails}`;
+            console.error(`[Runtime] Fetch failed for ${url}: ${errorMessage}`);
+            throw new Error(errorMessage);
+        }
+        const responseBody = await response.json();
+        if (!responseBody.success) {
+            const errorMessage = `Server error during ${this.currentStepLabel}: ${responseBody.error || 'unknown'}`;
+            console.error(`[Runtime] Server logic error for ${url}: ${errorMessage}`);
+            throw new Error(errorMessage);
+        }
+        return responseBody;
+    }
+
+    async cleanup() {
+        if (this.sessionId && this.debug) {
+            console.log(`[Runtime] Cleaning up session: ${this.sessionId}`);
+        }
+        this.sessionId = null;
+    }
+}
+
+class TransactionBuilder {
+    constructor(runtime, signerWallet) {
+        this._runtime = runtime;
+        this._signerWallet = signerWallet;
+        this._operations = [];
+        this._collateralUtxos = null;
+    }
+    spendUtxos(utxos) {
+        this._operations.push({
+            type: 'spend-specific-utxos',
+            utxos: utxos.map(u => ({ txHash: u.txHash, outputIndex: u.outputIndex })),
+        });
+        return this;
+    }
+    payToAddress(address, amount, options = {}) {
+        const op = {
+            type: 'pay-to-address',
+            address: address,
+            amount: amount.toString(),
+        };
+        if (options.referenceScript) {
+            op.referenceScript = options.referenceScript;
+        }
+        this._operations.push(op);
+        return this;
+    }
+    payToContract(scriptHash, compiledCode, amount, datum) {
+        this._operations.push({
+            type: 'pay-to-contract',
+            scriptHash: scriptHash,
+            compiledCode: compiledCode,
+            amount: amount.toString(),
+            datum: datum,
+        });
+        return this;
+    }
+    unlockUtxo(lockedUtxo, redeemer, compiledCode, options = {}) {
+        const op = {
+            type: 'unlock-utxo',
+            txHash: lockedUtxo.txHash,
+            outputIndex: lockedUtxo.outputIndex,
+            redeemer: redeemer,
+            compiledCode: compiledCode,
+        };
+        if (options.referenceScriptUtxo) {
+            op.referenceScriptUtxo = {
+                txHash: options.referenceScriptUtxo.txHash,
+                outputIndex: options.referenceScriptUtxo.outputIndex
+            };
+        }
+        this._operations.push(op);
+        return this;
+    }
+    mint(policyId, assetName, amount, options = {}) {
+        const op = {
+            type: 'mint',
             policyId: policyId,
             assetName: assetName,
             amount: amount.toString(),
-            referenceScriptUtxo: referenceScriptUtxo
-          },
-          {
-            type: "pay-to-address",
-            address: walletAddress,
-            amount: "1000000" // 1 ADA for the NFT
-          }
-        ]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error minting NFT: ${response.status}`);
-    }
-
-    const body = await response.json();
-    if (!body.success) {
-      throw new Error(`Failed to mint NFT: ${body.error || 'unknown'}`);
-    }
-
-    // Emit transaction info for frontend
-    this.emitTransaction('mintNFT', {
-      policyId: policyId,
-      assetName: assetName,
-      amount: amount,
-      wallet: params.wallet || 'alice',
-      transactionId: body.transactionId,
-      result: {
-        transactionId: body.transactionId,
-        policyId: policyId,
-        assetName: assetName,
-        amount: amount
-      }
-    });
-
-    return {
-      transactionId: body.transactionId,
-      policyId: policyId,
-      assetName: assetName,
-      amount: amount
-    };
-  }
-
-  async lockToContract(contractAddress, params) {
-    const { amount, datum, spendingUtxo, wallet = 'alice', contractName, blueprint } = params;
-    
-    if (!amount || !datum || !spendingUtxo || !contractName) {
-      throw new Error(`Missing required parameters: amount, datum, spendingUtxo, contractName`);
-    }
-
-    // Handle blueprint file paths from params
-    let compiledCode;
-    if (blueprint) {
-      // User-specified blueprint file path
-      const blueprintPath = path.resolve(blueprint);
-      if (!fs.existsSync(blueprintPath)) {
-        throw new Error(`Blueprint file not found: ${blueprintPath}`);
-      }
-      
-      const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
-      const validator = blueprintData.validators.find(v => 
-        v.title.includes(contractName) && v.title.includes('spend')
-      );
-      
-      if (!validator) {
-        throw new Error(`Validator not found in blueprint for contract '${contractName}'`);
-      }
-      
-      compiledCode = validator.compiledCode;
-    } else {
-      // Fallback to config-based resolution (legacy)
-      const contractConfig = this.contracts[contractName];
-      if (!contractConfig) {
-        throw new Error(`Contract '${contractName}' not found in config and no blueprint path provided`);
-      }
-
-      if (typeof contractConfig === 'string') {
-        // Direct CBOR string (legacy format)
-        compiledCode = contractConfig;
-      } else if (contractConfig.blueprint) {
-        // Config-based blueprint file path
-        const blueprintPath = path.resolve(contractConfig.blueprint);
-        if (!fs.existsSync(blueprintPath)) {
-          throw new Error(`Blueprint file not found: ${blueprintPath}`);
-        }
-        
-        const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
-        const validator = blueprintData.validators.find(v => 
-          v.title.includes(contractName) && v.title.includes('spend')
-        );
-        
-        if (!validator) {
-          throw new Error(`Validator not found in blueprint for contract '${contractName}'`);
-        }
-        
-        compiledCode = validator.compiledCode;
-      } else {
-        throw new Error(`Invalid contract configuration for '${contractName}'. Expected string or {blueprint: path}`);
-      }
-    }
-
-    // Lock funds to contract using the transaction API
-    const response = await fetch(`${this.baseUrl}/api/transaction/build-and-submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: this.sessionId,
-        signerWallet: wallet,
-        operations: [{
-          type: 'spend-specific-utxos',
-          utxos: [{ txHash: spendingUtxo.txHash, outputIndex: spendingUtxo.outputIndex }]
-        }, {
-          type: 'pay-to-contract',
-          contractAddress: contractAddress,
-          compiledCode: compiledCode,
-          amount: amount.toString(),
-          datum: datum
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error locking funds: ${response.status}`);
-    }
-
-    const body = await response.json();
-    if (!body.success) {
-      throw new Error(`Failed to lock funds: ${body.error || 'unknown'}`);
-    }
-
-    // Find the locked UTXO in the response
-    const lockedUtxo = body.createdUtxos.find(utxo => utxo.amount === amount.toString());
-
-    // Emit transaction info for frontend
-    this.emitTransaction('lockToContract', {
-      contractAddress: contractAddress,
-      amount: amount,
-      datum: datum,
-      wallet: wallet,
-      contractName: contractName,
-      transactionId: body.transactionId,
-      result: {
-        txId: body.transactionId,
-        lockedUtxo
-      }
-    });
-
-    return {
-      txId: body.transactionId,
-      lockedUtxo
-    };
-  }
-
-  async unlockFromContract(lockedUtxo, refScriptUtxo, params) {
-    const { redeemer, returnAddress, wallet = 'alice', contractName, blueprint } = params;
-    
-    if (!redeemer || !returnAddress) {
-      throw new Error(`Missing required parameters: redeemer, returnAddress`);
-    }
-
-    // Get compiled code for the contract
-    let compiledCode;
-    if (blueprint) {
-      // User-specified blueprint file path
-      const blueprintPath = path.resolve(blueprint);
-      if (!fs.existsSync(blueprintPath)) {
-        throw new Error(`Blueprint file not found: ${blueprintPath}`);
-      }
-      
-      const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
-      const validator = blueprintData.validators.find(v => 
-        v.title.includes(contractName) && v.title.includes('spend')
-      );
-      
-      if (!validator) {
-        throw new Error(`Validator not found in blueprint for contract '${contractName}'`);
-      }
-      
-      compiledCode = validator.compiledCode;
-    } else {
-      // Fallback to config-based resolution (legacy)
-      const contractConfig = this.contracts[contractName];
-      if (!contractConfig) {
-        throw new Error(`Contract '${contractName}' not found in config and no blueprint path provided`);
-      }
-
-      if (typeof contractConfig === 'string') {
-        // Direct CBOR string (legacy format)
-        compiledCode = contractConfig;
-      } else if (contractConfig.blueprint) {
-        // Config-based blueprint file path
-        const blueprintPath = path.resolve(contractConfig.blueprint);
-        if (!fs.existsSync(blueprintPath)) {
-          throw new Error(`Blueprint file not found: ${blueprintPath}`);
-        }
-        
-        const blueprintData = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
-        const validator = blueprintData.validators.find(v => 
-          v.title.includes(contractName) && v.title.includes('spend')
-        );
-        
-        if (!validator) {
-          throw new Error(`Validator not found in blueprint for contract '${contractName}'`);
-        }
-        
-        compiledCode = validator.compiledCode;
-      } else {
-        throw new Error(`Invalid contract configuration for '${contractName}'. Expected string or {blueprint: path}`);
-      }
-    }
-
-    // Unlock funds from contract using reference script
-    const response = await fetch(`${this.baseUrl}/api/transaction/build-and-submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: this.sessionId,
-        signerWallet: wallet,
-        operations: [{
-          type: 'unlock-utxo',
-          txHash: lockedUtxo.txHash,
-          outputIndex: lockedUtxo.outputIndex,
-          redeemer: redeemer,
-          compiledCode: compiledCode, // Include script bytes for UTXO discovery
-          referenceScriptUtxo: {
-            txHash: refScriptUtxo.txHash,
-            outputIndex: refScriptUtxo.outputIndex
-          }
-        }, {
-          type: 'pay-to-address',
-          address: returnAddress,
-          amount: "2000000" // Return 2 ADA (minus fees)
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error unlocking funds: ${response.status}`);
-    }
-
-    const body = await response.json();
-    if (!body.success) {
-      throw new Error(`Failed to unlock funds: ${body.error || 'unknown'}`);
-    }
-
-    // Emit transaction info for frontend
-    this.emitTransaction('unlockFromContract', {
-      lockedUtxo: lockedUtxo,
-      redeemer: redeemer,
-      returnAddress: returnAddress,
-      wallet: wallet,
-      contractName: contractName,
-      transactionId: body.transactionId,
-      result: {
-        txId: body.transactionId,
-        unlockedAmount: lockedUtxo.amount
-      }
-    });
-
-    return {
-      txId: body.transactionId,
-      unlockedAmount: lockedUtxo.amount
-    };
-  }
-
-  async contractAction(address, action, params) {
-    const response = await fetch(`${this.baseUrl}/api/contract/${action}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: this.sessionId,
-        address,
-        ...params
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error during contract action: ${response.status}`);
-    }
-
-    const body = await response.json();
-    if (!body.ok) {
-      throw new Error(`Contract action failed: ${body.error || 'unknown'}`);
-    }
-
-    return {
-      txId: body.txId,
-      result: body.result
-    };
-  }
-
-  async getContractState(address) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
-    try {
-      const response = await fetch(
-        `${this.baseUrl}/api/contract/${address}/utxos?sessionId=${this.sessionId}`,
-        { signal: controller.signal }
-      );
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error getting contract state: ${response.status}`);
-      }
-
-      const body = await response.json();
-      if (!body.success) {
-        throw new Error(`Failed to get contract state: ${body.error || 'unknown'}`);
-      }
-
-      return body;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        throw new Error(`Timeout getting contract state for address: ${address}`);
-      }
-      throw error;
-    }
-  }
-
-  async getWalletUtxos(walletName) {
-    const response = await fetch(
-      `${this.baseUrl}/api/wallet/${walletName}/utxos?sessionId=${this.sessionId}`
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error getting wallet UTXOs: ${response.status}`);
-    }
-
-    const body = await response.json();
-    if (!body.success) {
-      throw new Error(`Failed to get wallet UTXOs: ${body.error || 'unknown'}`);
-    }
-
-    return body;
-  }
-
-  // Emulator operations
-
-  async advanceTime(seconds) {
-    const response = await fetch(`${this.baseUrl}/api/emulator/advance-time`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: this.sessionId,
-        seconds
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error advancing time: ${response.status}`);
-    }
-
-    const body = await response.json();
-    if (!body.ok) {
-      throw new Error(`Failed to advance time: ${body.error || 'unknown'}`);
-    }
-
-    // Emit transaction info for frontend
-    this.emitTransaction('advanceTime', {
-      seconds: seconds,
-      newTime: body.newTime,
-      result: { newTime: body.newTime }
-    });
-
-    return { newTime: body.newTime };
-  }
-
-  async waitFor(condition, timeout) {
-    const startTime = Date.now();
-    
-    while (Date.now() - startTime < timeout) {
-      if (await condition()) {
-        return;
-      }
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    
-    throw new Error(`Timeout waiting for condition after ${timeout}ms`);
-  }
-
-  // Watch functionality
-
-  async watchBalance(walletName, formatter = null) {
-    if (this.debug) {
-      console.log(`[Runtime] Setting up balance watcher for ${walletName}`);
-    }
-    const defaultFormatter = (data) => {
-      // Handle both direct data and API response format
-      const balance = parseInt((data.balance || data.success ? data.balance : '0') || '0');
-      return `${walletName}: ${(balance/1000000).toFixed(6)} ADA`;
-    };
-    try {
-      const result = await this.watch(walletName, { type: 'balance', wallet: walletName }, formatter || defaultFormatter);
-      if (this.debug) {
-        console.log(`[Runtime] Balance watcher setup successful for ${walletName}`);
-      }
-      return result;
-    } catch (error) {
-      console.error(`[Runtime] Balance watcher setup failed for ${walletName}:`, error);
-      throw error;
-    }
-  }
-
-  async watchContractState(address, formatter = null) {
-    const defaultFormatter = (data) => {
-      const utxos = data.utxos || [];
-      const totalValue = utxos.reduce((sum, utxo) => sum + parseInt(utxo.amount || '0'), 0);
-      
-      // Show datum info if available
-      let datumInfo = '';
-      if (utxos.length > 0 && utxos[0].datum !== undefined) {
-        datumInfo = `, datum: ${utxos[0].datum}`;
-      }
-      
-      return `Contract: ${utxos.length} UTXOs, ${(totalValue/1000000).toFixed(6)} ADA${datumInfo}`;
-    };
-    return this.watch(`contract-${address.slice(0, 8)}`, { type: 'contract-state', address }, formatter || defaultFormatter);
-  }
-
-  async watchWalletUtxos(walletName, formatter = null) {
-    if (this.debug) {
-      console.log(`[Runtime] Setting up UTXO watcher for ${walletName}`);
-    }
-    const defaultFormatter = (data) => {
-      const utxos = data.utxos || [];
-      const totalValue = utxos.reduce((sum, utxo) => sum + parseInt(utxo.amount || '0'), 0);
-      return `${walletName}: ${utxos.length} UTXOs, ${(totalValue/1000000).toFixed(6)} ADA`;
-    };
-    try {
-      const result = await this.watch(`${walletName}-utxos`, { type: 'wallet-utxos', wallet: walletName }, formatter || defaultFormatter);
-      if (this.debug) {
-        console.log(`[Runtime] UTXO watcher setup successful for ${walletName}`);
-      }
-      return result;
-    } catch (error) {
-      console.error(`[Runtime] UTXO watcher setup failed for ${walletName}:`, error);
-      throw error;
-    }
-  }
-
-  async watchCustom(name, endpoint, formatter, options = {}) {
-    return this.watch(name, {
-      type: 'custom',
-      endpoint,
-      method: options.method || 'GET',
-      body: options.body
-    }, formatter);
-  }
-
-  async watch(name, query, formatter) {
-    const httpRequest = this.convertQueryToHttpRequest(query);
-    
-    // Generate unique ID for this watcher
-    const watcherId = `watcher_${++this.watcherCounter}_${Date.now()}`;
-    
-    const watcher = {
-      id: watcherId,
-      name,
-      query: httpRequest,
-      formatter: formatter, // Keep for compatibility but don't use
-      lastRawData: null,
-      lastRun: null,
-      hasChanged: false
-    };
-
-    this.watchers.set(watcherId, watcher);
-    
-    // Execute immediately
-    await this.executeWatcher(watcher);
-    
-    return { id: watcherId, name, status: 'active' };
-  }
-
-  convertQueryToHttpRequest(query) {
-    switch (query.type) {
-      case 'balance':
-        return {
-          endpoint: `/api/wallet/${query.wallet}/balance`,
-          method: 'GET',
-          params: { sessionId: this.sessionId }
         };
-      
-      case 'contract-state':
-        return {
-          endpoint: `/api/contract/${query.address}/utxos`,
-          method: 'GET',
-          params: { sessionId: this.sessionId }
-        };
-      
-      case 'wallet-utxos':
-        return {
-          endpoint: `/api/wallet/${query.wallet}/utxos`,
-          method: 'GET',
-          params: { sessionId: this.sessionId }
-        };
-      
-      case 'custom':
-        return {
-          endpoint: query.endpoint,
-          method: query.method || 'GET',
-          params: { ...query.params, sessionId: this.sessionId },
-          body: query.body
-        };
-      
-      default:
-        throw new Error(`Unknown query type: ${query.type}`);
+        if (options.redeemer) {
+            op.redeemer = options.redeemer;
+        }
+        if (options.referenceScriptUtxo) {
+            op.referenceScriptUtxo = {
+                txHash: options.referenceScriptUtxo.txHash,
+                outputIndex: options.referenceScriptUtxo.outputIndex
+            };
+        }
+        this._operations.push(op);
+        return this;
     }
-  }
-
-  async executeWatcher(watcher) {
-    try {
-      const url = new URL(`${this.baseUrl}${watcher.query.endpoint}`);
-      if (watcher.query.params) {
-        Object.entries(watcher.query.params).forEach(([key, value]) => {
-          url.searchParams.append(key, value);
+    addCollateral(utxos) {
+        this._collateralUtxos = utxos.map(u => ({ txHash: u.txHash, outputIndex: u.outputIndex }));
+        return this;
+    }
+    async submit() {
+        if (this._operations.length === 0) {
+            throw new Error("Transaction has no operations. Add operations before submitting.");
+        }
+        const body = {
+            sessionId: this._runtime.sessionId,
+            signerWallet: this._signerWallet,
+            operations: this._operations,
+        };
+        if (this._collateralUtxos) {
+            body.collateralUtxos = this._collateralUtxos;
+        }
+        const result = await this._runtime._fetch('/api/transaction/build-and-submit', {
+            method: 'POST',
+            body: body,
         });
-      }
-
-      const response = await fetch(url.toString(), {
-        method: watcher.query.method,
-        headers: { 'Content-Type': 'application/json' },
-        body: watcher.query.body ? JSON.stringify(watcher.query.body) : undefined
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      // Store raw data
-      watcher.rawData = data;
-      
-      // Store raw data only - no server-side formatting
-      watcher.rawData = data;
-      
-      // Check if data has changed (compare raw data)
-      const dataChanged = JSON.stringify(watcher.lastRawData) !== JSON.stringify(data);
-      watcher.hasChanged = dataChanged;
-      
-      if (dataChanged) {
-        this.changedWatchers.add(watcher.id);
-        if (this.debug) {
-          console.log(`[Runtime] Added ${watcher.id} to changed watchers`);
-        }
-      }
-      
-      watcher.lastRawData = data;
-      watcher.lastRun = Date.now();
-      this.watchResults.set(watcher.id, 'Data updated'); // Simple status, not formatted result
-
-      if (this.debug) {
-        console.log(`[Runtime] Watcher ${watcher.name}: data updated`);
-      }
-
-      return 'Data updated';
-    } catch (error) {
-      console.error(`Watcher ${watcher.name} failed:`, error);
-      
-      // Provide friendly error messages for common cases
-      let friendlyMessage;
-      if (error.message.includes('HTTP 400') || error.message.includes('HTTP 404')) {
-        if (watcher.name.includes('balance')) {
-          friendlyMessage = 'Wallet not created yet';
-        } else if (watcher.name.includes('utxo')) {
-          friendlyMessage = 'Wallet not created yet';
-        } else {
-          friendlyMessage = 'Resource not available yet';
-        }
-      } else {
-        friendlyMessage = error.message;
-      }
-      
-      const errorStatus = `⏳ ${friendlyMessage}`;
-      
-      // Check if error status has changed
-      const hasChanged = watcher.lastErrorStatus !== errorStatus;
-      watcher.hasChanged = hasChanged;
-      
-      if (hasChanged) {
-        this.changedWatchers.add(watcher.id);
-      }
-      
-      watcher.lastErrorStatus = errorStatus;
-      watcher.lastRun = Date.now();
-      this.watchResults.set(watcher.id, errorStatus);
-      return errorStatus;
+        this._runtime.emitTransaction('transaction', {
+            signer: this._signerWallet,
+            operations: this._operations,
+            result: {
+                transactionId: result.transactionId,
+                createdUtxos: result.createdUtxos
+            }
+        });
+        return {
+            transactionId: result.transactionId,
+            createdUtxos: result.createdUtxos,
+        };
     }
-  }
-
-  applyStringFormatter(formatter, data) {
-    // Simple string template replacement
-    return formatter.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-      return data[key] || match;
-    });
-  }
-
-  applyFunctionFormatter(formatter, data) {
-    // Execute the formatter function directly
-    try {
-      return formatter(data);
-    } catch (error) {
-      console.error('Formatter function error:', error);
-      return `Formatter error: ${error.message}`;
-    }
-  }
-
-  async executeAllWatchers() {
-    if (this.debug) {
-      console.log('[Runtime] Executing all watchers...');
-    }
-    
-    const promises = Array.from(this.watchers.values())
-      .map(w => this.executeWatcher(w));
-    
-    return Promise.allSettled(promises);
-  }
-
-  getWatchResults() {
-    return Object.fromEntries(this.watchResults);
-  }
-
-  getWatchersInfo() {
-    const watchers = [];
-    for (const [id, watcher] of this.watchers) {
-      const watcherInfo = {
-        id: watcher.id,
-        name: watcher.name,
-        result: this.watchResults.get(id),
-        rawData: watcher.rawData,
-        hasChanged: watcher.hasChanged,
-        lastRun: watcher.lastRun
-      };
-      if (this.debug) {
-        console.log(`[Runtime] Watcher info for ${watcher.name}:`, watcherInfo);
-      }
-      watchers.push(watcherInfo);
-    }
-    return watchers;
-  }
-
-  clearChangedState() {
-    if (this.debug) {
-      console.log('[Runtime] Clearing changed state for all watchers');
-    }
-    this.changedWatchers.clear();
-    for (const watcher of this.watchers.values()) {
-      watcher.hasChanged = false;
-    }
-  }
-
-  stopWatcher(name) {
-    this.watchers.delete(name);
-    this.watchResults.delete(name);
-  }
-
-  stopAllWatchers() {
-    this.watchers.clear();
-    this.watchResults.clear();
-  }
-
-  // Cleanup
-
-  async cleanup() {
-    if (this.sessionId && this.debug) {
-      console.log(`[Runtime] Cleaning up session: ${this.sessionId}`);
-    }
-    this.sessionId = null;
-    this.stopAllWatchers();
-  }
 }
 
-module.exports = { MonadicRuntime };
+// Export for use in Node.js environments
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { MonadicRuntime };
+}

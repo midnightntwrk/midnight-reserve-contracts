@@ -1,108 +1,89 @@
 /**
- * Monadic Demo Functions
- * 
- * Pure interface functions that demo scripts call.
- * The runtime injects context and handles HTTP/errors.
- * These functions return promises that resolve to domain objects.
+ * Monadic Demo Functions (v2)
+ *
+ * This is the pure functional interface that demo scripts should use.
+ * The runtime, injected as a global, handles all the underlying state,
+ * HTTP communication, and error handling.
+ *
+ * This version is updated to use the TransactionBuilder pattern from the
+ * new MonadicRuntime, promoting a more flexible and powerful way to
+ * construct transactions.
  */
 
+// =================================================================
+// CORE API: Wallet and Emulator Management
+// =================================================================
+
 /**
- * Create a new wallet with initial balance
- * @param {string} name - Wallet name
- * @param {number} initialBalance - Initial balance in lovelace
- * @returns {object} {name: string, balance: string}
+ * Creates a new wallet in the emulator with an initial balance.
+ * @param {string} name - The name for the new wallet (e.g., 'alice').
+ * @param {number} initialBalance - The starting balance in Lovelace.
+ * @returns {Promise<{name: string, balance: bigint}>} A promise that resolves to the new wallet's details.
  */
 function createWallet(name, initialBalance) {
-  // Runtime will intercept this call and handle HTTP asynchronously
   return global.__demoRuntime.createWallet(name, initialBalance);
 }
 
 /**
- * Get wallet balance
- * @param {string} name - Wallet name
- * @returns {Promise<string>} Balance in lovelace
+ * Retrieves the current balance of a specified wallet.
+ * @param {string} name - The name of the wallet to query.
+ * @returns {Promise<bigint>} A promise that resolves to the wallet's balance in Lovelace.
  */
 function getBalance(name) {
   return global.__demoRuntime.getBalance(name);
 }
 
 /**
- * Transfer funds between wallets
- * @param {string} from - Source wallet name
- * @param {string} to - Destination wallet name or address
- * @param {number} amount - Amount in lovelace
- * @returns {Promise<{txId: string}>}
+ * Fetches all UTxOs (Unspent Transaction Outputs) for a given wallet.
+ * @param {string} walletName - The name of the wallet.
+ * @returns {Promise<Array<object>>} A promise that resolves to a list of UTxOs.
  */
-function transfer(from, to, amount) {
-  return global.__demoRuntime.transfer(from, to, amount);
+function getWalletUtxos(walletName) {
+  return global.__demoRuntime.getWalletUtxos(walletName);
 }
 
 /**
- * Create a reference script for a contract
- * @param {string} name - Contract name (must exist in config.contracts)
- * @param {object} params - Parameters including wallet name
- * @returns {Promise<{refScriptUtxo: object, spendingUtxo: object, scriptHash: string, contractAddress: string}>}
+ * Fetches all UTxOs currently held at a contract address.
+ * This effectively represents the current state of the contract.
+ * @param {string} contractAddress - The Bech32 address of the contract.
+ * @returns {Promise<Array<object>>} A promise that resolves to a list of the contract's UTxOs.
  */
-function createReferenceScript(name, params = {}) {
-  return global.__demoRuntime.createReferenceScript(name, params);
+function getContractState(contractAddress) {
+  return global.__demoRuntime.getContractState(contractAddress);
 }
 
 /**
- * Lock funds to a contract
- * @param {string} contractAddress - Contract address (script hash)
- * @param {object} params - Parameters including amount, datum, spendingUtxo
- * @returns {Promise<{txId: string, lockedUtxo: object}>}
- */
-function lockToContract(contractAddress, params) {
-  return global.__demoRuntime.lockToContract(contractAddress, params);
-}
-
-/**
- * Unlock funds from a contract
- * @param {object} lockedUtxo - The UTXO to unlock
- * @param {object} refScriptUtxo - Reference script UTXO
- * @param {object} params - Parameters including redeemer, returnAddress
- * @returns {Promise<{txId: string, unlockedAmount: string}>}
- */
-function unlockFromContract(lockedUtxo, refScriptUtxo, params) {
-  return global.__demoRuntime.unlockFromContract(lockedUtxo, refScriptUtxo, params);
-}
-
-/**
- * Mint an NFT using a deployed minting policy
- * @param {string} policyId - The policy ID (script hash)
- * @param {string} assetName - The asset name (e.g., "001")
- * @param {number} amount - Amount to mint (typically 1 for NFTs)
- * @param {object} referenceScriptUtxo - Reference script UTXO from policy deployment
- * @param {object} params - Parameters including wallet name
- * @returns {Promise<{transactionId: string, policyId: string, assetName: string, amount: number}>}
- */
-function mintNFT(policyId, assetName, amount, referenceScriptUtxo, params = {}) {
-  return global.__demoRuntime.mintNFT(policyId, assetName, amount, referenceScriptUtxo, params);
-}
-
-/**
- * Get contract state
- * @param {string} address - Contract address
- * @returns {Promise<object>} Contract state/UTXOs
- */
-function getContractState(address) {
-  return global.__demoRuntime.getContractState(address);
-}
-
-/**
- * Advance time in the emulator
- * @param {number} seconds - Seconds to advance
- * @returns {Promise<{newTime: number}>}
+ * Advances the emulator's internal clock forward by a set amount of time.
+ * @param {number} seconds - The number of seconds to advance time.
+ * @returns {Promise<{newSlot: number}>} A promise that resolves with the new slot number.
  */
 function advanceTime(seconds) {
   return global.__demoRuntime.advanceTime(seconds);
 }
 
+// =================================================================
+// TRANSACTION BUILDER API
+// =================================================================
+
 /**
- * Wait for a specific condition
- * @param {Function} condition - Function that returns true when condition is met
- * @param {number} timeout - Maximum wait time in milliseconds
+ * Begins the construction of a new transaction.
+ * This is the primary entry point for all on-chain actions.
+ * @param {string} signerWallet - The name of the wallet that will sign this transaction.
+ * @returns {object} A TransactionBuilder instance to chain operations on.
+ */
+function newTransaction(signerWallet) {
+  return global.__demoRuntime.newTransaction(signerWallet);
+}
+
+
+// =================================================================
+// UTILITY & WATCHER FUNCTIONS (for UI integration)
+// =================================================================
+
+/**
+ * Pauses execution until a condition is met or a timeout occurs.
+ * @param {Function} condition - A function that returns true when the wait should end.
+ * @param {number} [timeout=30000] - The maximum time to wait in milliseconds.
  * @returns {Promise<void>}
  */
 function waitFor(condition, timeout = 30000) {
@@ -110,77 +91,62 @@ function waitFor(condition, timeout = 30000) {
 }
 
 /**
- * Watch wallet balance
- * @param {string} walletName - Wallet name to watch
- * @param {Function} formatter - Optional formatter function
- * @returns {Promise<{name: string, status: string}>}
+ * Sets up a watcher to monitor a wallet's balance.
+ * @param {string} walletName - The name of the wallet to watch.
+ * @param {Function|null} [formatter=null] - An optional function to format the output string.
+ * @returns {Promise<object>}
  */
 function watchBalance(walletName, formatter = null) {
   return global.__demoRuntime.watchBalance(walletName, formatter);
 }
 
 /**
- * Watch contract state
- * @param {string} address - Contract address to watch
- * @param {Function} formatter - Optional formatter function
- * @returns {Promise<{name: string, status: string}>}
+ * Sets up a watcher to monitor the state (UTxOs) of a contract.
+ * @param {string} address - The Bech32 address of the contract to watch.
+ * @param {Function|null} [formatter=null] - An optional function to format the output string.
+ * @returns {Promise<object>}
  */
 function watchContractState(address, formatter = null) {
   return global.__demoRuntime.watchContractState(address, formatter);
 }
 
 /**
- * Watch wallet UTXOs
- * @param {string} walletName - Wallet name to watch
- * @param {Function} formatter - Optional formatter function
- * @returns {Promise<{name: string, status: string}>}
+ * Sets up a watcher to monitor a wallet's UTxO set.
+ * @param {string} walletName - The name of the wallet to watch.
+ * @param {Function|null} [formatter=null] - An optional function to format the output string.
+ * @returns {Promise<object>}
  */
 function watchWalletUtxos(walletName, formatter = null) {
   return global.__demoRuntime.watchWalletUtxos(walletName, formatter);
 }
 
-function getWalletUtxos(walletName) {
-  return global.__demoRuntime.getWalletUtxos(walletName);
-}
 
 /**
- * Watch custom endpoint
- * @param {string} name - Watcher name
- * @param {string} endpoint - API endpoint to watch
- * @param {Function} formatter - Formatter function
- * @param {object} options - Optional configuration
- * @returns {Promise<{name: string, status: string}>}
+ * Loads contract details from a blueprint file by its name.
+ * @param {string} filePath - Path to the plutus.json file.
+ * @param {string} contractName - The name of the contract validator.
+ * @returns {Promise<{compiledCode: string, scriptHash: string, contractAddress: string}>}
  */
-function watchCustom(name, endpoint, formatter, options = {}) {
-  return global.__demoRuntime.watchCustom(name, endpoint, formatter, options);
+function loadContract(filePath, contractName) {
+  return global.__demoRuntime.loadContract(filePath, contractName);
 }
 
-/**
- * Generic watch function
- * @param {string} name - Watcher name
- * @param {object} query - Query specification
- * @param {Function} formatter - Formatter function
- * @returns {Promise<{name: string, status: string}>}
- */
-function watch(name, query, formatter) {
-  return global.__demoRuntime.watch(name, query, formatter);
-}
 
 module.exports = {
+  // Core API
   createWallet,
   getBalance,
-  transfer,
-  createReferenceScript,
-  lockToContract,
-  unlockFromContract,
-  mintNFT,
-  getContractState,
   getWalletUtxos,
+  getContractState,
   advanceTime,
+  loadContract,
+
+  // Transaction Builder
+  newTransaction,
+
+  // Utilities & Watchers
   waitFor,
   watchBalance,
   watchContractState,
   watchWalletUtxos,
-  watchCustom,
-  watch
 };

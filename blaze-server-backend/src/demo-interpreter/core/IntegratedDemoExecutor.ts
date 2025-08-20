@@ -1,8 +1,18 @@
 const { DryRuntime } = require("../monadic/dry-runtime.js");
 const { MonadicRuntime } = require("../monadic/runtime.js");
 const { ScopeManager } = require("./ScopeManager.js");
-const { createWallet, getBalance, transfer, createReferenceScript, lockToContract, unlockFromContract, mintNFT, getContractState, getWalletUtxos, advanceTime, watchBalance, watchContractState, watchWalletUtxos, watchCustom, watch } = require("../monadic/functions.js");
-
+const {
+  createWallet,
+  getBalance,
+  getWalletUtxos,
+  getContractState,
+  advanceTime,
+  loadContract,
+  newTransaction,
+  watchBalance,
+  watchContractState,
+  watchWalletUtxos
+} = require("../monadic/functions.js");
 export interface ExecutionResult {
   result: any;
   operationType: string;
@@ -26,19 +36,14 @@ export class IntegratedDemoExecutor {
     const monadicFunctions = {
       createWallet,
       getBalance,
-      transfer,
-      createReferenceScript,
-      lockToContract,
-      unlockFromContract,
-      mintNFT,
-      getContractState,
       getWalletUtxos,
+      getContractState,
       advanceTime,
+      loadContract,
+      newTransaction,
       watchBalance,
       watchContractState,
-      watchWalletUtxos,
-      watchCustom,
-      watch
+      watchWalletUtxos
     };
     this.scopeManager = new ScopeManager(monadicFunctions);
     this.dryRuntime = new DryRuntime({ baseUrl });
