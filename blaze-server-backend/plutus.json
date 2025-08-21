@@ -35,11 +35,40 @@
       },
       "compiledCode": "587c01010029800aba2aba1aab9eaab9dab9a4888896600264646644b30013370e900118031baa00289919912cc004cdc3a400460126ea80062942266e1cdd6980598051baa300b300a37540026eb4c02c01900818048009804980500098039baa0028b200a30063007001300600230060013003375400d149a26cac8009",
       "hash": "5b7e059453488d25906a7920dfe4b750ff4bd8c0afb6fecf8721b050"
+    },
+    {
+      "title": "simple_mint.simple_mint.mint",
+      "redeemer": {
+        "title": "_redeemer",
+        "schema": {
+          "$ref": "#/definitions/Void"
+        }
+      },
+      "compiledCode": "587601010029800aba2aba1aab9faab9eaab9dab9a48888896600264653001300700198039804000cc01c0092225980099b8748000c01cdd500144cc89289bae300a30083754004b30013370e900018039baa0038acc004c020dd5001c5268b20128b200c8b200c180380098019baa0078a4d13656400401",
+      "hash": "8761e9fe0a8c042808814d59559d62be87d492b46fa93ab09b44a00f"
+    },
+    {
+      "title": "simple_mint.simple_mint.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "compiledCode": "587601010029800aba2aba1aab9faab9eaab9dab9a48888896600264653001300700198039804000cc01c0092225980099b8748000c01cdd500144cc89289bae300a30083754004b30013370e900018039baa0038acc004c020dd5001c5268b20128b200c8b200c180380098019baa0078a4d13656400401",
+      "hash": "8761e9fe0a8c042808814d59559d62be87d492b46fa93ab09b44a00f"
     }
   ],
   "definitions": {
     "Int": {
       "dataType": "integer"
+    },
+    "Void": {
+      "title": "Unit",
+      "anyOf": [
+        {
+          "dataType": "constructor",
+          "index": 0,
+          "fields": []
+        }
+      ]
     },
     "hello_world/MyDatum": {
       "title": "MyDatum",

@@ -1,7 +1,7 @@
 {
-  "name": "Watch Function Test",
-  "description": "Demonstrates wallet operations with watch functionality",
-  "version": "1.0",
+  "name": "Watch Function Test (v2)",
+  "description": "Demonstrates wallet operations with watch functionality using the new TransactionBuilder.",
+  "version": "2.0",
   "config": {
     "baseUrl": "http://localhost:3031"
   },
@@ -16,11 +16,8 @@
             "",
             "This demo demonstrates wallet operations with automatic watch functionality:",
             "1. Setting up watchers to monitor balances and UTXOs",
-            "2. Creating wallets with initial funds",
-            "3. Transferring funds and seeing automatic updates",
-            "4. Checking wallet balances",
-            "",
-            "We'll set up watchers first, then create two wallets for Jeff and Nancy, and perform transfers."
+            "2. Creating wallets and seeing watchers update",
+            "3. Transferring funds and seeing watchers update again"
           ]
         }
       ]
@@ -33,36 +30,30 @@
           "content": [
             "## Setting Up Watchers",
             "",
-            "First, let's set up watchers to monitor balances and UTXOs automatically. These will track changes as we create wallets and perform transfers."
+            "First, let's set up watchers to monitor balances and UTXOs automatically. They will start in a pending state until the wallets are created."
           ]
         },
         {
           "type": "code",
           "language": "javascript",
           "content": [
-            "// Watch Jeff's balance with custom formatter",
-            "await watchBalance('jeff', (data) => `💰 Jeff: ${data.balance} lovelace`);",
-            "",
-            "// Watch Nancy's balance with default formatter",
+            "await watchBalance('jeff');",
             "await watchBalance('nancy');",
-            "",
-            "// Watch Jeff's UTXOs",
-            "await watchWalletUtxos('jeff', (data) => `📦 Jeff UTXOs: ${data.utxos.length} total`);",
-            "",
+            "await watchWalletUtxos('jeff');",
             "console.log('Watchers set up successfully!');"
           ]
         }
       ]
     },
     {
-      "name": "jeff_wallet_setup",
+      "name": "create_wallets",
       "blocks": [
         {
           "type": "markdown",
           "content": [
-            "## Creating Jeff's Wallet",
+            "## Creating Wallets",
             "",
-            "Now we'll create a wallet for Jeff with an initial balance of 50 ADA (50,000,000 lovelace). The watchers will automatically detect this new wallet."
+            "Now we'll create wallets for Jeff and Nancy. The watchers will automatically detect these new wallets and update their state."
           ]
         },
         {
@@ -70,32 +61,9 @@
           "language": "javascript",
           "content": [
             "jeff = await createWallet('jeff', 50_000_000);",
-            "console.log(`Jeff's wallet created!`);",
-            "console.log(`Wallet name: ${jeff.name}`);",
-            "console.log(`Initial balance: ${jeff.balance} lovelace`);"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "nancy_wallet_setup",
-      "blocks": [
-        {
-          "type": "markdown",
-          "content": [
-            "## Creating Nancy's Wallet",
-            "",
-            "Now we'll create a wallet for Nancy with a larger initial balance of 75 ADA. The watchers will detect this new wallet too."
-          ]
-        },
-        {
-          "type": "code",
-          "language": "javascript",
-          "content": [
+            "console.log(`Jeff's wallet created with ${jeff.balance} lovelace`);",
             "nancy = await createWallet('nancy', 75_000_000);",
-            "console.log(`Nancy's wallet created!`);",
-            "console.log(`Wallet name: ${nancy.name}`);",
-            "console.log(`Initial balance: ${nancy.balance} lovelace`);"
+            "console.log(`Nancy's wallet created with ${nancy.balance} lovelace`);"
           ]
         }
       ]
@@ -108,16 +76,20 @@
           "content": [
             "## Transferring Funds",
             "",
-            "Let's transfer some funds from Jeff to Nancy and see the watchers update automatically."
+            "Let's transfer 10 ADA from Jeff to Nancy. The watchers should update automatically to reflect the new balances."
           ]
         },
         {
           "type": "code",
           "language": "javascript",
           "content": [
-            "transferResult = await transfer('jeff', 'nancy', 10_000_000);",
-            "console.log(`Transfer completed: ${transferResult.transactionId}`);",
-            "console.log('Check the watch results below for updated balances!');"
+            "const nancyAddr = (await getWalletUtxos('nancy'))[0].address;",
+            "const transferTx = await newTransaction('jeff')",
+            "  .payToAddress(nancyAddr, 10_000_000)",
+            "  .submit();",
+            "",
+            "console.log(`Transfer completed in transaction: ${transferTx.transactionId}`);",
+            "console.log('Check the watcher panel for updated balances!');"
           ]
         }
       ]
@@ -130,7 +102,7 @@
           "content": [
             "## Verifying Balances",
             "",
-            "Let's verify the balances after the transfer."
+            "Let's manually verify the balances after the transfer to confirm the watcher output is correct."
           ]
         },
         {
@@ -139,41 +111,8 @@
           "content": [
             "jeffBalance = await getBalance('jeff');",
             "nancyBalance = await getBalance('nancy');",
-            "jeffAda = parseInt(jeffBalance) / 1_000_000;",
-            "nancyAda = parseInt(nancyBalance) / 1_000_000;",
-            "console.log(`Jeff's current balance: ${jeffBalance} lovelace (${jeffAda} ADA)`);",
-            "console.log(`Nancy's current balance: ${nancyBalance} lovelace (${nancyAda} ADA)`);"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "final_summary",
-      "blocks": [
-        {
-          "type": "markdown",
-          "content": [
-            "## Summary",
-            "",
-            "We've successfully:",
-            "- Created two wallets (Jeff and Nancy)",
-            "- Set up watchers to monitor balances and UTXOs",
-            "- Transferred 10 ADA from Jeff to Nancy",
-            "- Verified the transfer with automatic watch updates",
-            "",
-            "The watchers automatically updated after each operation!"
-          ]
-        },
-        {
-          "type": "code",
-          "language": "javascript",
-          "content": [
-            "console.log('\\n=== Final Summary ===');",
-            "console.log(`Jeff's wallet: ${jeff.name}`);",
-            "console.log(`  Balance: ${jeffAda} ADA`);",
-            "console.log(`Nancy's wallet: ${nancy.name}`);",
-            "console.log(`  Balance: ${nancyAda} ADA`);",
-            "console.log('✅ Watch demo completed successfully!');"
+            "console.log(`Jeff's final balance: ${jeffBalance} lovelace`);",
+            "console.log(`Nancy's final balance: ${nancyBalance} lovelace`);"
           ]
         }
       ]

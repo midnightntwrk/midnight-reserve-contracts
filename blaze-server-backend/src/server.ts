@@ -7,6 +7,39 @@ import * as Data from "@blaze-cardano/data";
 import { MyDatum } from "./utils/contracts";
 import { computeScriptInfo } from "./utils/script-utils";
 
+// Helper function to convert Uint8Array to a hex string
+function bytesToHex(bytes: Uint8Array): string {
+  return Buffer.from(bytes).toString('hex');
+}
+
+// Helper function to extract native assets from a UTXO's value
+// Helper function to extract native assets from a UTXO's value
+function extractAssets(amount: Core.Value): Record<string, Record<string, string>> {
+  const assets: Record<string, Record<string, string>> = {};
+  const multiAsset = amount.multiasset();
+  
+  if (multiAsset) {
+    for (const [policyId, assetsUnderPolicy] of (multiAsset as any)) {
+      const policyIdHex = policyId.toString();
+      assets[policyIdHex] = {};
+      
+      if (assetsUnderPolicy instanceof Map) {
+        for (const [assetName, quantity] of assetsUnderPolicy.entries()) {
+          // CONVERSION: Convert the Uint8Array to a JSON-serializable object
+          const serializedAssetName = JSON.stringify(Buffer.from(assetName).toJSON());
+          assets[policyIdHex][serializedAssetName] = quantity.toString();
+        }
+      } else {
+        // Handle cases where the asset name is not a Map
+        const serializedAssetName = JSON.stringify(Buffer.from(new Uint8Array(0)).toJSON());
+        assets[policyIdHex][serializedAssetName] = assetsUnderPolicy.toString();
+      }
+    }
+  }
+  return assets;
+}
+
+
 export function createServer(sessionManager: SessionManager) {
   const app = express();
   
@@ -683,29 +716,41 @@ export function createServer(sessionManager: SessionManager) {
               );
               break;
               
-            case "mint":
-              // Convert asset name to BigInt (following SundaeSwap pattern)
-              const assetNameBigInt = BigInt(operation.assetName);
-              const amount = BigInt(operation.amount);
-              
-              // Create assets map for the mint operation
-              const assetsMap = new Map([[assetNameBigInt, amount]]);
-              
-              // Handle redeemer if provided
-              let redeemer = undefined;
-              if (operation.redeemer) {
-                redeemer = Data.serialize(Data.BigInt(), BigInt(operation.redeemer));
-              }
-              
-              // Add the mint operation
-              tx = tx.addMint(operation.policyId, assetsMap, redeemer);
-              
-              // If reference script is provided, add it as reference input
-              if (operation.referenceScriptUtxo) {
-                const refScriptUtxo = await findUtxo(blaze, operation.referenceScriptUtxo.txHash, operation.referenceScriptUtxo.outputIndex);
-                tx = tx.addReferenceInput(refScriptUtxo);
-              }
-              break;
+case "mint":
+  console.log("[DEBUG] Mint operation received:", {
+    policyId: operation.policyId,
+    assetName: operation.assetName,
+    assetNameType: typeof operation.assetName,
+    amount: operation.amount
+  });
+  
+  // STEP 1: USE HEX STRING DIRECTLY FOR ASSETNAME
+  console.log("[DEBUG] Using hex string:", operation.assetName);
+  
+  // STEP 2: PASS THE HEX STRING TO THE SDK WITH PROPER TYPES
+  const assetsMap = new Map([[Core.AssetName(operation.assetName), BigInt(operation.amount)]]);
+  console.log("[DEBUG] Assets map created:", assetsMap);
+  
+  console.log("[DEBUG] About to call addMint with:", {
+    policyId: operation.policyId,
+    policyIdType: typeof operation.policyId
+  });
+
+  // Handle redeemer if provided
+  let redeemer = undefined; // Don't provide redeemer unless explicitly requested
+  if (operation.redeemer) {
+    redeemer = Data.serialize(Data.BigInt(), BigInt(operation.redeemer));
+  }
+
+  // Add the mint operation with proper Blaze types
+  tx = tx.addMint(Core.PolicyId(operation.policyId), assetsMap, redeemer);
+
+  // If reference script is provided, add it as reference input
+  if (operation.referenceScriptUtxo) {
+    const refScriptUtxo = await findUtxo(blaze, operation.referenceScriptUtxo.txHash, operation.referenceScriptUtxo.outputIndex);
+    tx = tx.addReferenceInput(refScriptUtxo);
+  }
+  break;
               
             default:
               throw new Error(`Unsupported operation type: ${operation.type}`);
@@ -776,7 +821,7 @@ export function createServer(sessionManager: SessionManager) {
           outputIndex: Number(utxo.input().index()),
           address: utxo.output().address().toBech32(),
           amount: utxo.output().amount().coin().toString(),
-          assets: {}, // TODO: implement extractAssets helper
+          assets: extractAssets(utxo.output().amount()),
           datum: null // TODO: implement extractDatum helper
         }));
         
@@ -832,7 +877,7 @@ export function createServer(sessionManager: SessionManager) {
             outputIndex: Number(utxo.input().index()),
             address: output.address().toBech32(),
             amount: output.amount().coin().toString(),
-            assets: {}, // TODO: implement extractAssets helper
+            assets: extractAssets(output.amount()),
             datum: extractSimpleDatum(datum), // Extract datum for contract UTXOs
             datumHash: getDatumHash(datum) // Extract datum hash
           };
@@ -984,13 +1029,13 @@ export function createServer(sessionManager: SessionManager) {
       resolve(server);
     });
     
-  // Handle port-in-use and other server errors
-  server.on('error', (err: any) => {
-    if (err.code === 'EADDRINUSE') {
-      reject(new Error(`Port ${port} is already in use`));
-    } else {
-      reject(err);
-    }
+    // Handle port-in-use and other server errors
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        reject(new Error(`Port ${port} is already in use`));
+      } else {
+        reject(err);
+      }
+    });
   });
-});
 }

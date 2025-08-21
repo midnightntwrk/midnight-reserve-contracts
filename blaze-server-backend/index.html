@@ -729,7 +729,7 @@
     <div class="main-content">
       <div id="content">
       </div>
-      <div id="watcher-panel" class="watcher-panel hidden">
+      <div id="watcher-panel" class="watcher-panel">
         <div class="watcher-panel-header">
           <h3>Watchers</h3>
           <button id="toggle-watcher-panel" class="toggle-button">×</button>
@@ -1375,10 +1375,7 @@
         
         console.log('[UI] Updating watcher panel with:', this.watchersInfo);
         
-        // Show panel if we have watchers
-        if (this.watchersInfo.length > 0) {
-          panel.classList.remove('hidden');
-        }
+        // Panel is always visible now
         
         // Clear existing watcher cells
         watcherList.innerHTML = '';

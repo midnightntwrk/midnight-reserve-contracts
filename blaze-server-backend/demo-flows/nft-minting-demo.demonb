@@ -1,7 +1,7 @@
 {
-  "name": "NFT Minting Demo",
-  "description": "Demonstrates NFT minting functionality using deployed minting policies",
-  "version": "1.0",
+  "name": "NFT Minting Demo (v2)",
+  "description": "Demonstrates NFT minting functionality using the new TransactionBuilder.",
+  "version": "2.0",
   "config": {
     "baseUrl": "http://localhost:3041"
   },
@@ -16,7 +16,7 @@
             "",
             "This demo showcases NFT minting functionality using the Cardano blockchain. We'll:",
             "1. Create a wallet with sufficient funds",
-            "2. Deploy a minting policy (using createReferenceScript)",
+            "2. Deploy a minting policy by creating a reference script",
             "3. Mint an NFT using the deployed policy",
             "4. Monitor the process with watchers"
           ]
@@ -24,41 +24,34 @@
       ]
     },
     {
-      "name": "wallet_setup",
+      "name": "wallet_and_policy_setup",
       "blocks": [
         {
           "type": "markdown",
           "content": [
-            "## Setting Up Wallets",
+            "## Setting Up Wallet and Policy Info",
             "",
-            "First, we'll create a wallet with sufficient funds for NFT operations. We need enough ADA for:",
-            "- Reference script creation (2 ADA)",
-            "- NFT minting transaction (1 ADA)",
-            "- Transaction fees and collateral",
-            "",
-            "We'll start with 20 ADA to ensure we have plenty of funds."
+            "First, we'll create a wallet for Alice and load our minting policy details from the `plutus.json` blueprint."
           ]
         },
         {
           "type": "code",
           "language": "javascript",
           "content": [
-            "// Create Alice's wallet with sufficient funds for NFT operations",
-            "alice = await createWallet('alice', 20_000_000); // 20 ADA",
-            "console.log(`Alice's wallet created!`);",
-            "console.log(`Wallet name: ${alice.name}`);",
-            "console.log(`Initial balance: ${alice.balance} lovelace`);",
+            "// Create Alice's wallet with 20 ADA",
+            "alice = await createWallet('alice', 20_000_000);",
+            "console.log(`Alice's wallet created with balance: ${alice.balance} lovelace`);",
             "",
-            "// Verify the balance",
-            "aliceBalance = await getBalance('alice');",
-            "console.log(`Verified balance: ${aliceBalance} lovelace`);",
+            "// Set up watchers for Alice's wallet",
+            "await watchBalance('alice');",
+            "await watchWalletUtxos('alice');",
+            "console.log('✅ Wallet watchers are active.');",
             "",
-            "// Set up watchers for Alice's wallet as early as possible",
-            "console.log('Setting up wallet watchers...');",
-            "aliceBalanceWatcher = await watchBalance('alice', (balance) => `Alice balance: ${(balance/1000000).toFixed(6)} ADA`);",
-            "aliceUtxosWatcher = await watchWalletUtxos('alice', (utxos) => `Alice UTXOs: ${utxos.length} total`);",
-            "console.log(`✅ Balance watcher: ${aliceBalanceWatcher.name}`);",
-            "console.log(`✅ UTXOs watcher: ${aliceUtxosWatcher.name}`);"
+            "// Load the 'simple_mint' contract to use as our minting policy",
+            "const policyInfo = await loadContract('./plutus.json', 'simple_mint');",
+            "policyId = policyInfo.scriptHash;",
+            "compiledPolicy = policyInfo.compiledCode;",
+            "console.log(`✅ Loaded minting policy with ID: ${policyId}`);"
           ]
         }
       ]
@@ -71,40 +64,24 @@
           "content": [
             "## Deploying the Minting Policy",
             "",
-            "We'll deploy a minting policy using the `createReferenceScript` function. This creates:",
-            "- A reference script UTXO that can be used as a minting policy",
-            "- A spending UTXO for future transactions",
-            "- The policy ID (script hash) and contract address",
-            "",
-            "We'll use the hello_world contract as a placeholder for our minting policy."
+            "We'll build a transaction to create a reference script UTXO containing our minting policy. This makes the policy available on-chain for minting transactions."
           ]
         },
         {
           "type": "code",
           "language": "javascript",
           "content": [
-            "// Deploy the minting policy using createReferenceScript",
-            "console.log('Deploying minting policy...');",
-            "policyDeployment = await createReferenceScript('hello_world', { ",
-            "  wallet: 'alice', ",
-            "  blueprint: './plutus.json'",
-            "});",
+            "console.log('Deploying minting policy via reference script...');",
+            "const aliceAddr = (await getWalletUtxos('alice'))[0].address;",
             "",
-            "console.log(`✅ Minting policy deployed successfully!`);",
-            "console.log(`Policy ID (script hash): ${policyDeployment.scriptHash}`);",
-            "console.log(`Contract address: ${policyDeployment.contractAddress}`);",
-            "console.log(`Reference script UTXO: ${policyDeployment.refScriptUtxo.txHash}:${policyDeployment.refScriptUtxo.outputIndex}`);",
-            "console.log(`Spending UTXO: ${policyDeployment.spendingUtxo.txHash}:${policyDeployment.spendingUtxo.outputIndex}`);",
+            "const setupTx = await newTransaction('alice')",
+            "  .payToAddress(aliceAddr, 2_000_000, { referenceScript: compiledPolicy })",
+            "  .submit();",
             "",
-            "// Store for later use",
-            "policyId = policyDeployment.scriptHash;",
-            "refScriptUtxo = policyDeployment.refScriptUtxo;",
-            "spendingUtxo = policyDeployment.spendingUtxo;",
-            "",
-            "// Set up contract state watcher for the policy",
-            "console.log('Setting up policy state watcher...');",
-            "policyStateWatcher = await watchContractState(policyDeployment.contractAddress, (state) => `Policy UTXOs: ${state.utxos.length} total`);",
-            "console.log(`✅ Policy state watcher: ${policyStateWatcher.name}`);"
+            "// Find the UTXO that contains the reference script by its amount.",
+            "refScriptUtxo = setupTx.createdUtxos.find(u => u.amount === '2000000');",
+            "console.log(`✅ Minting policy deployed in transaction: ${setupTx.transactionId}`);",
+            "console.log(`Reference Script UTxO: ${refScriptUtxo.txHash}:${refScriptUtxo.outputIndex}`);"
           ]
         }
       ]
@@ -117,39 +94,25 @@
           "content": [
             "## Minting the NFT",
             "",
-            "Now we'll mint an NFT using the deployed minting policy. We'll:",
-            "- Use the `mintNFT` function with our policy ID",
-            "- Specify an asset name and amount",
-            "- Provide the reference script UTXO from the policy deployment",
-            "",
-            "The NFT will be minted and sent to Alice's wallet."
+            "Now we'll build a transaction to mint a single token. We'll provide the policy, an asset name, and use the reference script we just created."
           ]
         },
         {
           "type": "code",
           "language": "javascript",
           "content": [
-            "// Mint an NFT using the deployed policy",
             "console.log('Minting NFT...');",
-            "nftResult = await mintNFT(",
-            "  policyId, // Policy ID from deployment",
-            "  '001', // Asset name (simple numeric)",
-            "  1, // Amount to mint (1 for NFT)",
-            "  refScriptUtxo, // Reference script UTXO from policy deployment",
-            "  { wallet: 'alice' } // Parameters",
-            ");",
+            "// Assign to the shared scope by omitting 'const'",
+            "assetName = 'MyNFT'; // Simple string - runtime will convert to hex",
+            "",
+            "const mintTx = await newTransaction('alice')",
+            "  .mint(policyId, assetName, 1, { referenceScriptUtxo: refScriptUtxo })",
+            "  .submit();",
             "",
             "console.log(`✅ NFT minted successfully!`);",
-            "console.log(`Transaction ID: ${nftResult.transactionId}`);",
-            "console.log(`Policy ID: ${nftResult.policyId}`);",
-            "console.log(`Asset Name: ${nftResult.assetName}`);",
-            "console.log(`Amount: ${nftResult.amount}`);",
-            "",
-            "// Store the NFT details",
-            "nftTransactionId = nftResult.transactionId;",
-            "nftAssetName = nftResult.assetName;",
-            "",
-            "console.log(`🎉 Successfully minted NFT ${nftAssetName} with policy ${policyId}!`);"
+            "console.log(`Transaction ID: ${mintTx.transactionId}`);",
+            "console.log(`Policy ID: ${policyId}`);",
+            "console.log(`Asset Name (hex): ${assetName}`);"
           ]
         }
       ]
@@ -162,34 +125,26 @@
           "content": [
             "## Verification",
             "",
-            "Let's verify that our NFT minting was successful by checking:",
-            "- Alice's updated balance",
-            "- The transaction details",
-            "- The watcher outputs showing the changes"
+            "Let's verify that the NFT is now in Alice's wallet by checking her UTxOs."
           ]
         },
         {
           "type": "code",
           "language": "javascript",
           "content": [
-            "// Check Alice's final balance",
-            "finalBalance = await getBalance('alice');",
-            "console.log(`Alice's final balance: ${finalBalance} lovelace`);",
+            "console.log('Verifying NFT in wallet...');",
+            "const finalUtxos = await getWalletUtxos('alice');",
+            "// Find the UTXO that contains our specific minted asset.",
+            "// The 'assetName' variable is now available from the previous block's scope.",
+            "const nftUtxo = finalUtxos.find(u => u.assets && u.assets[policyId] && u.assets[policyId][assetName]);",
             "",
-            "// Calculate balance change",
-            "balanceChange = parseInt(aliceBalance) - parseInt(finalBalance);",
-            "console.log(`Total spent: ${balanceChange} lovelace`);",
-            "",
-            "// Get final UTXO count",
-            "finalUtxos = await getWalletUtxos('alice');",
-            "console.log(`Final UTXO count: ${finalUtxos.utxos.length}`);",
-            "",
-            "console.log('📊 Summary:');",
-            "console.log(`- Policy deployed: ${policyId}`);",
-            "console.log(`- NFT minted: ${nftAssetName}`);",
-            "console.log(`- Transaction: ${nftTransactionId}`);",
-            "console.log(`- Balance change: ${balanceChange} lovelace`);",
-            "console.log(`- Final UTXOs: ${finalUtxos.utxos.length}`);",
+            "if (nftUtxo) {",
+            "  console.log('✅ Found NFT in Alice\\'s wallet!');",
+            "  console.log(`   In UTxO: ${nftUtxo.txHash}:${nftUtxo.outputIndex}`);",
+            "  console.log(`   Amount: ${nftUtxo.assets[policyId][assetName]}`);",
+            "} else {",
+            "  console.log('❌ NFT not found in wallet!');",
+            "}",
             "",
             "console.log('🎯 NFT minting demo completed successfully!');"
           ]

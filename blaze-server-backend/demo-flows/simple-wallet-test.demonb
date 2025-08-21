@@ -1,7 +1,7 @@
 {
-  "name": "Simple Wallet Demo",
+  "name": "Simple Wallet Demo (v2)",
   "description": "Demonstrates creating wallets and checking balances",
-  "version": "1.0",
+  "version": "2.0",
   "config": {
     "baseUrl": "http://localhost:3031"
   },
@@ -17,9 +17,8 @@
             "This demo demonstrates basic wallet operations in the blockchain emulator:",
             "1. Creating wallets with initial funds",
             "2. Checking wallet balances",
-            "3. Basic wallet management",
             "",
-            "We'll create two wallets for Jeff and Nancy, each with different initial balances."
+            "We'll create two wallets for Jeff and Nancy."
           ]
         }
       ]
@@ -32,7 +31,7 @@
           "content": [
             "## Creating Jeff's Wallet",
             "",
-            "First, we'll create a wallet for Jeff with an initial balance of 50 ADA (50,000,000 lovelace)."
+            "First, we'll create a wallet for Jeff with an initial balance of 50 ADA."
           ]
         },
         {
@@ -117,38 +116,6 @@
       ]
     },
     {
-      "name": "scope_verification",
-      "blocks": [
-        {
-          "type": "markdown",
-          "content": [
-            "## Scope Persistence Test",
-            "",
-            "This block will test that variables from previous stanzas are still accessible.",
-            "It should be classified as 'query' since it only reads data."
-          ]
-        },
-        {
-          "type": "code",
-          "language": "javascript",
-          "content": [
-            "// Testing scope persistence - variables from earlier blocks should be accessible",
-            "console.log('\\n=== Scope Persistence Test ===');",
-            "console.log('Jeff object:', jeff);",
-            "console.log('Nancy object:', nancy);", 
-            "console.log('Jeff ADA balance:', jeffAda);",
-            "console.log('Nancy ADA balance:', nancyAda);",
-            "",
-            "// Verify we can call getBalance using the wallet names from scope",
-            "currentJeffBalance = await getBalance(jeff.name);",
-            "currentNancyBalance = await getBalance(nancy.name);",
-            "console.log('Current Jeff balance:', currentJeffBalance);",
-            "console.log('Current Nancy balance:', currentNancyBalance);"
-          ]
-        }
-      ]
-    },
-    {
       "name": "final_summary",
       "blocks": [
         {
@@ -158,9 +125,7 @@
             "",
             "We've successfully created two wallets and verified their balances:",
             "- Jeff's wallet with 50 ADA",
-            "- Nancy's wallet with 75 ADA",
-            "",
-            "Both wallets are now ready for transactions and other blockchain operations."
+            "- Nancy's wallet with 75 ADA"
           ]
         },
         {
@@ -168,10 +133,8 @@
           "language": "javascript",
           "content": [
             "console.log('\\n=== Final Summary ===');",
-            "console.log(`Jeff's wallet: ${jeff.name}`);",
-            "console.log(`  Balance: ${jeffAda} ADA`);",
-            "console.log(`Nancy's wallet: ${nancy.name}`);",
-            "console.log(`  Balance: ${nancyAda} ADA`);",
+            "console.log(`Jeff's wallet: ${jeff.name}, Balance: ${jeffAda} ADA`);",
+            "console.log(`Nancy's wallet: ${nancy.name}, Balance: ${nancyAda} ADA`);",
             "console.log('✅ Demo completed successfully!');"
           ]
         }

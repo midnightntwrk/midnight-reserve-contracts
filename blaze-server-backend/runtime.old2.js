@@ -1,45 +1,17 @@
 /**
- * Monadic Runtime v4.7
+ * Monadic Runtime v4.3
  *
- * This version implements the new data conversion strategy where all
- * transformations happen at this layer, leaving the server as a simple proxy.
+ * This version fixes a bug in the loadContract function where the compiledCode
+ * was not being included in the returned object, causing it to be undefined
+ * in the demo scripts.
  */
 
 // Node.js module dependencies for the loadContract function
 const fs = require('fs');
 const path = require('path');
 // This utility is assumed to exist in your project structure
-const { computeScriptInfo } = require('../../utils/script-utils.js');
+const { computeScriptInfo } = require('./utils/script-utils.js');
 
-// Import Core utilities for asset name conversion
-const { Core } = require('@blaze-cardano/sdk');
-
-/**
- * Creates a canonical (sorted-key) string representation of a JSON object.
- * This is used for reliable change detection in watchers.
- * @param {*} value - The value to stringify.
- * @returns {string}
- */
-function canonicalStringify(value) {
-    if (value === null || typeof value !== 'object') {
-        return JSON.stringify(value);
-    }
-    if (Array.isArray(value)) {
-        return `[${value.map(canonicalStringify).join(',')}]`;
-    }
-    const keys = Object.keys(value).sort();
-    const pairs = keys.map(key => `${JSON.stringify(key)}:${canonicalStringify(value[key])}`);
-    return `{${pairs.join(',')}}`;
-}
-
-
-// Helper function to deserialize a byte array from a JSON object
-function deserializeBytes(json) {
-    if (json && json.type === 'Buffer' && Array.isArray(json.data)) {
-        return Buffer.from(json.data);
-    }
-    return null;
-}
 
 class MonadicRuntime {
     /**
@@ -133,39 +105,12 @@ class MonadicRuntime {
 
     async getWalletUtxos(walletName) {
         const result = await this._fetch(`/api/wallet/${walletName}/utxos?sessionId=${this.sessionId}`);
-        
-        // CONVERSION FOR THE QUERY PATH: Convert asset data from the server's serialized format
-        // back to the hex string format expected by the client.
-        return result.utxos.map(utxo => {
-            const convertedAssets = {};
-            for (const policyId in utxo.assets) {
-                convertedAssets[policyId] = {};
-                for (const serializedAssetName in utxo.assets[policyId]) {
-                    const bytes = deserializeBytes(JSON.parse(serializedAssetName));
-                    const assetNameHex = bytes ? Buffer.from(bytes).toString('hex') : serializedAssetName;
-                    convertedAssets[policyId][assetNameHex] = utxo.assets[policyId][serializedAssetName];
-                }
-            }
-            return { ...utxo, assets: convertedAssets };
-        });
+        return result.utxos;
     }
 
     async getContractState(contractAddress) {
         const result = await this._fetch(`/api/contract/${contractAddress}/utxos?sessionId=${this.sessionId}`);
-
-        // CONVERSION FOR THE QUERY PATH: Same conversion for contract state queries.
-        return result.utxos.map(utxo => {
-            const convertedAssets = {};
-            for (const policyId in utxo.assets) {
-                convertedAssets[policyId] = {};
-                for (const serializedAssetName in utxo.assets[policyId]) {
-                    const bytes = deserializeBytes(JSON.parse(serializedAssetName));
-                    const assetNameHex = bytes ? Buffer.from(bytes).toString('hex') : serializedAssetName;
-                    convertedAssets[policyId][assetNameHex] = utxo.assets[policyId][serializedAssetName];
-                }
-            }
-            return { ...utxo, assets: convertedAssets };
-        });
+        return result.utxos;
     }
 
     async advanceTime(seconds) {
@@ -210,7 +155,10 @@ class MonadicRuntime {
 
         const compiledCode = validator.compiledCode;
         const scriptInfo = computeScriptInfo(compiledCode);
-        
+
+        // --- FIX ---
+        // Combine the scriptInfo (hash, address) with the compiledCode
+        // so the demo script has access to everything it needs.
         const contractDetails = {
             ...scriptInfo,
             compiledCode: compiledCode
@@ -241,77 +189,54 @@ class MonadicRuntime {
     }
 
     watchBalance(walletName, formatter = null) {
-        const defaultFormatter = (balance) => `${walletName}: ${(parseInt(balance || '0') / 1000000).toFixed(6)} ADA`;
-        return this.watch(`Balance: ${walletName}`, { type: 'balance', key: walletName }, formatter || defaultFormatter);
+        return this.watch(`Balance: ${walletName}`, { type: 'balance', key: walletName }, formatter);
     }
 
     watchWalletUtxos(walletName, formatter = null) {
-        const defaultFormatter = (utxos) => {
-            const totalValue = (utxos || []).reduce((sum, utxo) => sum + parseInt(utxo.amount || '0'), 0);
-            return `${walletName}: ${(utxos || []).length} UTxOs, ${(totalValue / 1000000).toFixed(6)} ADA`;
-        };
-        return this.watch(`UTxOs: ${walletName}`, { type: 'walletUtxos', key: walletName }, formatter || defaultFormatter);
+        return this.watch(`UTxOs: ${walletName}`, { type: 'walletUtxos', key: walletName }, formatter);
     }
 
     watchContractState(address, formatter = null) {
-        const defaultFormatter = (utxos) => {
-            const utxoList = utxos || [];
-            const totalValue = utxos.reduce((sum, utxo) => sum + parseInt(utxo.amount || '0'), 0);
-            let datumInfo = '';
-            if (utxoList.length > 0 && utxoList[0].datum !== undefined) {
-                datumInfo = `, datum: ${utxoList[0].datum}`;
-            }
-            return `Contract: ${utxoList.length} UTxOs, ${(totalValue / 1000000).toFixed(6)} ADA${datumInfo}`;
-        };
-        return this.watch(`State: ${address.substring(0, 20)}...`, { type: 'contractState', key: address }, formatter || defaultFormatter);
+        return this.watch(`State: ${address.substring(0, 20)}...`, { type: 'contractState', key: address }, formatter);
     }
 
     async executeWatcher(watcher) {
-        let rawData;
+        let data;
         try {
             switch (watcher.query.type) {
                 case 'balance':
-                    rawData = await this.getBalance(watcher.query.key);
+                    data = await this.getBalance(watcher.query.key);
                     break;
                 case 'walletUtxos':
-                    rawData = await this.getWalletUtxos(watcher.query.key);
+                    data = await this.getWalletUtxos(watcher.query.key);
                     break;
                 case 'contractState':
-                    rawData = await this.getContractState(watcher.query.key);
+                    data = await this.getContractState(watcher.query.key);
                     break;
                 default:
                     throw new Error(`Unknown watcher type: ${watcher.query.type}`);
             }
 
-            const dataChanged = canonicalStringify(watcher.lastRawData) !== canonicalStringify(rawData);
-            
+            const dataChanged = JSON.stringify(watcher.lastRawData) !== JSON.stringify(data);
             watcher.hasChanged = dataChanged;
+
             if (dataChanged) {
                 this.changedWatchers.add(watcher.id);
             }
 
-            watcher.lastRawData = rawData;
+            watcher.lastRawData = data;
             watcher.lastRun = Date.now();
-            this.watchResults.set(watcher.id, { 
-                data: rawData, 
-                formatted: watcher.formatter(rawData) 
-            });
+            this.watchResults.set(watcher.id, { data: data });
 
         } catch (error) {
-            let errorStatus;
-            if (error instanceof Error && error.message.includes("does not exist")) {
-                errorStatus = '⏳ Pending creation...';
-            } else {
-                errorStatus = `Error: ${error.message}`;
-            }
-
+            const errorStatus = `Error: ${error.message}`;
             const statusChanged = watcher.lastErrorStatus !== errorStatus;
             watcher.hasChanged = statusChanged;
             if (statusChanged) {
                 this.changedWatchers.add(watcher.id);
             }
             watcher.lastErrorStatus = errorStatus;
-            this.watchResults.set(watcher.id, { error: errorStatus, formatted: errorStatus });
+            this.watchResults.set(watcher.id, { error: errorStatus });
         }
     }
 
@@ -328,7 +253,6 @@ class MonadicRuntime {
                 id: watcher.id,
                 name: watcher.name,
                 result: this.watchResults.get(id),
-                rawData: watcher.lastRawData, 
                 hasChanged: this.changedWatchers.has(id),
                 lastRun: watcher.lastRun
             });
@@ -452,59 +376,25 @@ class TransactionBuilder {
         this._operations.push(op);
         return this;
     }
-mint(policyId, assetName, amount, options = {}) {
-    // Handle different asset name formats using Blaze SDK patterns:
-    // 1. String like 'MyNFT' -> convert to hex using Core.toHex()
-    // 2. Hex string like '4d794e4654' -> use as-is
-    // 3. Already a Uint8Array -> convert to hex
-    
-    let assetNameHex;
-    
-    if (typeof assetName === 'string') {
-        if (assetName.match(/^[0-9a-fA-F]+$/)) {
-            // Already a hex string
-            assetNameHex = assetName;
-        } else {
-            // Regular string - convert to hex using Blaze pattern
-            assetNameHex = Core.toHex(Buffer.from(assetName, 'utf8'));
-        }
-    } else if (assetName instanceof Uint8Array) {
-        // Byte array - convert to hex
-        assetNameHex = Core.toHex(assetName);
-    } else {
-        throw new Error('Asset name must be a string or Uint8Array');
-    }
-
-    // Validate length (32 bytes max)
-    const assetNameBytes = Buffer.from(assetNameHex, 'hex');
-    if (assetNameBytes.length > 32) {
-        throw new Error(`Asset name "${assetName}" exceeds the 32-byte limit.`);
-    }
-
-    console.log("[DEBUG] Runtime creating mint operation:", {
-        policyId: policyId,
-        assetNameHex: assetNameHex,
-        amount: amount.toString()
-    });
-    
-    const op = {
-        type: 'mint',
-        policyId: policyId,
-        assetName: assetNameHex, // Send as hex string to server
-        amount: amount.toString(),
-    };
-    if (options.redeemer) {
-        op.redeemer = options.redeemer;
-    }
-    if (options.referenceScriptUtxo) {
-        op.referenceScriptUtxo = {
-            txHash: options.referenceScriptUtxo.txHash,
-            outputIndex: options.referenceScriptUtxo.outputIndex
+    mint(policyId, assetName, amount, options = {}) {
+        const op = {
+            type: 'mint',
+            policyId: policyId,
+            assetName: assetName,
+            amount: amount.toString(),
         };
+        if (options.redeemer) {
+            op.redeemer = options.redeemer;
+        }
+        if (options.referenceScriptUtxo) {
+            op.referenceScriptUtxo = {
+                txHash: options.referenceScriptUtxo.txHash,
+                outputIndex: options.referenceScriptUtxo.outputIndex
+            };
+        }
+        this._operations.push(op);
+        return this;
     }
-    this._operations.push(op);
-    return this;
-}
     addCollateral(utxos) {
         this._collateralUtxos = utxos.map(u => ({ txHash: u.txHash, outputIndex: u.outputIndex }));
         return this;
