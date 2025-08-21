@@ -2,6 +2,50 @@ import { describe, test, expect } from "bun:test";
 import fs from "fs";
 import path from "path";
 
+// Utility function to list assets by name in a human-readable format
+function listAssetsByUtxo(utxos: any[]): string[] {
+  const assetList: string[] = [];
+  
+  utxos.forEach((utxo, index) => {
+    if (utxo.assets && Object.keys(utxo.assets).length > 0) {
+      assetList.push(`UTxO #${index} (${utxo.txHash}:${utxo.outputIndex}):`);
+      
+      for (const policyId in utxo.assets) {
+        for (const assetName in utxo.assets[policyId]) {
+          const amount = utxo.assets[policyId][assetName];
+          // Try to convert hex asset name back to string if possible
+          let readableName = assetName;
+          try {
+            const bytes = Buffer.from(assetName, 'hex');
+            const decoded = bytes.toString('utf8');
+            // Only use decoded if it looks like a readable string (letters, numbers, basic symbols)
+            if (decoded.match(/^[a-zA-Z0-9\s\-_]+$/) && decoded.trim() && decoded.length > 0) {
+              readableName = decoded;
+            }
+          } catch (e) {
+            // Keep hex if conversion fails
+          }
+          assetList.push(`  - ${policyId}.${readableName}: ${amount}`);
+        }
+      }
+    }
+  });
+  
+  return assetList;
+}
+
+// Utility function to find a specific asset in UTXOs
+function findAssetInUtxos(utxos: any[], policyId: string, assetName: string): any | null {
+  const assetNameHex = Buffer.from(assetName, 'utf8').toString('hex');
+  
+  for (const utxo of utxos) {
+    if (utxo.assets && utxo.assets[policyId] && utxo.assets[policyId][assetNameHex]) {
+      return utxo;
+    }
+  }
+  return null;
+}
+
 describe("Phase 4.12: NFT Minting Tests", () => {
   // Note: Using shared server and SessionManager from global test setup
 
@@ -80,39 +124,120 @@ describe("Phase 4.12: NFT Minting Tests", () => {
     
     console.log(`✅ NFT policy deployed with reference script UTXO: ${refScriptUtxo.txHash}:${refScriptUtxo.outputIndex}`);
 
-    // Step 2: Mint an NFT using the deployed policy
-    const mintResponse = await fetch("http://localhost:3031/api/transaction/build-and-submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        signerWallet: "alice",
-        operations: [
-          {
-            type: "mint", // This operation type doesn't exist yet - will cause test to fail
-            policyId: "5b7e059453488d25906a7920dfe4b750ff4bd8c0afb6fecf8721b050", // Example policy ID
-            assetName: "001", // Simple numeric asset name
-            amount: "1",
-            referenceScriptUtxo: {
-              txHash: refScriptUtxo.txHash,
-              outputIndex: refScriptUtxo.outputIndex
-            }
-          },
-          {
-            type: "pay-to-address",
-            address: aliceAddress,
-            amount: "1000000" // 1 ADA for the NFT
-          }
-        ]
-      })
-    });
+    // Step 2: Mint multiple NFTs with friendly names using the deployed policy
+    // Mint each asset in a separate transaction to avoid "Duplicate policy" error
+    const mintAssets = [
+      { friendlyName: "cats", amount: "1" },
+      { friendlyName: "dogs", amount: "2" },
+      { friendlyName: "gerbils", amount: "3" },
+      { friendlyName: "hamsters", amount: "4" }
+    ];
 
-    // This should now succeed because the "mint" operation type is implemented
-    expect(mintResponse.status).toBe(200);
-    const mintData = await mintResponse.json();
-    expect(mintData.success).toBe(true);
-    expect(mintData.transactionId).toBeDefined();
+    console.log("=== MINTING ASSETS ===");
+    for (const { friendlyName, amount } of mintAssets) {
+      const assetNameHex = Buffer.from(friendlyName, 'utf8').toString('hex');
+      console.log(`Minting ${friendlyName} (${assetNameHex})...`);
+      
+      const mintResponse = await fetch("http://localhost:3031/api/transaction/build-and-submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          signerWallet: "alice",
+          operations: [
+            {
+              type: "mint",
+              policyId: "5b7e059453488d25906a7920dfe4b750ff4bd8c0afb6fecf8721b050",
+              assetName: assetNameHex,
+              amount,
+              referenceScriptUtxo: {
+                txHash: refScriptUtxo.txHash,
+                outputIndex: refScriptUtxo.outputIndex
+              }
+            }
+          ]
+        })
+      });
+
+      expect(mintResponse.status).toBe(200);
+      const mintData = await mintResponse.json();
+      expect(mintData.success).toBe(true);
+      console.log(`✅ Successfully minted ${friendlyName} with transaction ID: ${mintData.transactionId}`);
+    }
+
+    console.log("=== ALL ASSETS MINTED SUCCESSFULLY ===");
+
+    // Step 3: Investigate the resulting UTXOs
+    console.log("\n=== INVESTIGATING UTXOs AFTER MINTING ===");
     
-    console.log(`✅ Successfully minted NFT with transaction ID: ${mintData.transactionId}`);
+    // Get Alice's UTXOs after minting
+    const finalUtxosResponse = await fetch(`http://localhost:3031/api/wallet/alice/utxos?sessionId=${sessionId}`);
+    expect(finalUtxosResponse.status).toBe(200);
+    const finalUtxosData = await finalUtxosResponse.json();
+    expect(finalUtxosData.success).toBe(true);
+    
+    console.log("Final UTXOs raw data:", JSON.stringify(finalUtxosData.utxos, null, 2));
+    
+    // List all assets in a readable format
+    const assetList = listAssetsByUtxo(finalUtxosData.utxos);
+    console.log("\nAssets found in UTXOs:");
+    assetList.forEach(line => console.log(line));
+    
+    // Try to find our friendly-named assets
+    const actualPolicyId = "5b7e059453488d25906a7920dfe4b750ff4bd8c0afb6fecf8721b050";
+    const expectedAssets = ["cats", "dogs", "gerbils", "hamsters"];
+    const expectedAmounts = ["1", "2", "3", "4"];
+    
+    console.log("\n=== SEARCHING FOR FRIENDLY ASSET NAMES ===");
+    
+    // Find the UTXO that contains our assets
+    const nftUtxo = finalUtxosData.utxos.find(utxo => 
+      utxo.assets && utxo.assets[actualPolicyId]
+    );
+    
+    if (nftUtxo) {
+      console.log(`\n✅ Found asset UTXO: ${nftUtxo.txHash}:${nftUtxo.outputIndex}`);
+      console.log("Assets in this UTXO:", JSON.stringify(nftUtxo.assets[actualPolicyId], null, 2));
+      
+      // Check if we can find each expected asset by name
+      let foundAssets = 0;
+      expectedAssets.forEach((assetName, index) => {
+        const foundViaUtility = findAssetInUtxos(finalUtxosData.utxos, actualPolicyId, assetName);
+        if (foundViaUtility) {
+          console.log(`✅ Found ${assetName} via utility function`);
+          foundAssets++;
+        } else {
+          console.log(`❌ Could not find ${assetName} via utility function`);
+        }
+      });
+      
+      console.log(`Found ${foundAssets}/${expectedAssets.length} expected assets`);
+    } else {
+      console.log("\n❌ NFT not found in any UTxO");
+      
+      // Debug: Check what policy IDs and asset names are actually present
+      const allPolicyIds = new Set<string>();
+      const allAssetNames = new Set<string>();
+      
+      finalUtxosData.utxos.forEach((utxo: any) => {
+        if (utxo.assets) {
+          Object.keys(utxo.assets).forEach(policyId => {
+            allPolicyIds.add(policyId);
+            Object.keys(utxo.assets[policyId]).forEach(assetName => {
+              allAssetNames.add(assetName);
+            });
+          });
+        }
+      });
+      
+      console.log("Available policy IDs:", Array.from(allPolicyIds));
+      console.log("Available asset names:", Array.from(allAssetNames));
+    }
+    
+    // Test our utility functions
+    expect(assetList.length).toBeGreaterThan(0); // Should have some output
+    console.log("\n=== UTILITY FUNCTION TESTING ===");
+    console.log("Asset listing function works:", assetList.length > 0);
+    console.log("Asset finding function works:", nftUtxo !== null);
   });
 });

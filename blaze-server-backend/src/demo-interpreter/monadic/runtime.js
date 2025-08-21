@@ -1,6 +1,6 @@
 /**
  * Monadic Runtime v4.7
- *
+ * 
  * This version implements the new data conversion strategy where all
  * transformations happen at this layer, leaving the server as a simple proxy.
  */
@@ -45,126 +45,145 @@ class MonadicRuntime {
     /**
      * Corrected, single constructor for the MonadicRuntime class.
      */
-    constructor(config = {}) {
-        this.baseUrl = config.baseUrl || 'http://localhost:3031';
-        this.sessionId = null;
-        this.currentStepLabel = '';
-        this.debug = config.debug || false;
+  constructor(config = {}) {
+    this.baseUrl = config.baseUrl || 'http://localhost:3031';
+    this.sessionId = null;
+    this.currentStepLabel = '';
+    this.debug = config.debug || false;
         this._contractCache = new Map();
         // Properties from the original, proven watcher implementation
-        this.watchers = new Map();
-        this.watchResults = new Map();
-        this.watcherCounter = 0;
-        this.changedWatchers = new Set();
-    }
+    this.watchers = new Map();
+    this.watchResults = new Map();
+    this.watcherCounter = 0;
+    this.changedWatchers = new Set();
+  }
 
     /**
      * Emits a structured log for the frontend to render transaction information.
      * @param {string} type - The type of operation (e.g., 'createWallet', 'transaction').
      * @param {object} data - The data associated with the operation.
      */
-    emitTransaction(type, data) {
-        const txInfo = {
-            type: 'transaction',
-            operation: type,
-            timestamp: new Date().toISOString(),
-            data: data
-        };
+  emitTransaction(type, data) {
+    const txInfo = {
+      type: 'transaction',
+      operation: type,
+      timestamp: new Date().toISOString(),
+      data: data
+    };
         // This special console log format can be parsed by a listening frontend.
-        console.log(`🚀 TX_EMIT:${JSON.stringify(txInfo)}`);
-    }
+    console.log(`🚀 TX_EMIT:${JSON.stringify(txInfo)}`);
+  }
 
     /**
      * Sets a label for the current step in a demo script for better error reporting.
      * @param {string} label - The descriptive label for the current step.
      */
-    setCurrentStep(label) {
-        this.currentStepLabel = label;
-    }
+  setCurrentStep(label) {
+    this.currentStepLabel = label;
+  }
 
     /**
      * Initializes the runtime by creating a new session with the server.
      * This must be called before any other operations.
      */
-    async initialize() {
+  async initialize() {
         try {
             const response = await this._fetch('/api/session/new', { method: 'POST' });
             this.sessionId = response.sessionId;
-            if (this.debug) {
-                console.log(`[Runtime] Session created: ${this.sessionId}`);
-            }
-        } catch (error) {
+      if (this.debug) {
+        console.log(`[Runtime] Session created: ${this.sessionId}`);
+      }
+    } catch (error) {
             console.error(`[Runtime] Failed to connect to server at ${this.baseUrl}: ${error.message}`);
             throw error;
-        }
     }
+  }
 
     // =================================================================
     // CORE API: Wallet and Emulator Management
     // =================================================================
 
-    async createWallet(name, initialBalance) {
+  async createWallet(name, initialBalance) {
         const body = {
-            sessionId: this.sessionId,
-            name,
-            initialBalance: initialBalance.toString()
+        sessionId: this.sessionId,
+        name,
+        initialBalance: initialBalance.toString()
         };
         const result = await this._fetch('/api/wallet/register', {
             method: 'POST',
             body: body
         });
 
-        this.emitTransaction('createWallet', {
+    this.emitTransaction('createWallet', {
             walletName: result.walletName,
             initialBalance: result.balance,
             result: { name: result.walletName, balance: result.balance }
         });
 
-        return {
+    return { 
             name: result.walletName,
             balance: result.balance
-        };
-    }
+    };
+  }
 
-    async getBalance(name) {
+  async getBalance(name) {
         const result = await this._fetch(`/api/wallet/${name}/balance?sessionId=${this.sessionId}`);
         return result.balance;
     }
 
-    async getWalletUtxos(walletName) {
+        async getWalletUtxos(walletName) {
         const result = await this._fetch(`/api/wallet/${walletName}/utxos?sessionId=${this.sessionId}`);
         
-        // CONVERSION FOR THE QUERY PATH: Convert asset data from the server's serialized format
-        // back to the hex string format expected by the client.
+        // Convert hex asset names to readable strings for the frontend
         return result.utxos.map(utxo => {
-            const convertedAssets = {};
-            for (const policyId in utxo.assets) {
-                convertedAssets[policyId] = {};
-                for (const serializedAssetName in utxo.assets[policyId]) {
-                    const bytes = deserializeBytes(JSON.parse(serializedAssetName));
-                    const assetNameHex = bytes ? Buffer.from(bytes).toString('hex') : serializedAssetName;
-                    convertedAssets[policyId][assetNameHex] = utxo.assets[policyId][serializedAssetName];
+            if (utxo.assets && Object.keys(utxo.assets).length > 0) {
+                const convertedAssets = {};
+                for (const [policyId, assets] of Object.entries(utxo.assets)) {
+                    convertedAssets[policyId] = {};
+                    for (const [assetNameHex, assetAmount] of Object.entries(assets)) {
+                        let readableName = assetNameHex;
+                        try {
+                            const decoded = Buffer.from(assetNameHex, 'hex').toString('utf8');
+                            if (decoded.match(/^[a-zA-Z0-9\s\-_]+$/)) {
+                                readableName = decoded;
+                            }
+                        } catch (e) {
+                            // Keep hex if conversion fails
+                        }
+                        convertedAssets[policyId][readableName] = assetAmount;
+                    }
                 }
+                return { ...utxo, assets: convertedAssets };
             }
-            return { ...utxo, assets: convertedAssets };
+            return utxo;
         });
     }
 
     async getContractState(contractAddress) {
         const result = await this._fetch(`/api/contract/${contractAddress}/utxos?sessionId=${this.sessionId}`);
 
-        // CONVERSION FOR THE QUERY PATH: Same conversion for contract state queries.
+        // Convert hex asset names to readable strings for the frontend
         return result.utxos.map(utxo => {
-            const convertedAssets = {};
-            for (const policyId in utxo.assets) {
-                convertedAssets[policyId] = {};
-                for (const serializedAssetName in utxo.assets[policyId]) {
-                    const bytes = deserializeBytes(JSON.parse(serializedAssetName));
-                    const assetNameHex = bytes ? Buffer.from(bytes).toString('hex') : serializedAssetName;
-                    convertedAssets[policyId][assetNameHex] = utxo.assets[policyId][serializedAssetName];
+            if (utxo.assets && Object.keys(utxo.assets).length > 0) {
+                const convertedAssets = {};
+                for (const [policyId, assets] of Object.entries(utxo.assets)) {
+                    convertedAssets[policyId] = {};
+                    for (const [assetNameHex, assetAmount] of Object.entries(assets)) {
+                        let readableName = assetNameHex;
+                        try {
+                            const decoded = Buffer.from(assetNameHex, 'hex').toString('utf8');
+                            if (decoded.match(/^[a-zA-Z0-9\s\-_]+$/)) {
+                                readableName = decoded;
+                            }
+                        } catch (e) {
+                            // Keep hex if conversion fails
+                        }
+                        convertedAssets[policyId][readableName] = assetAmount;
+                    }
                 }
+                return { ...utxo, assets: convertedAssets };
             }
-            return { ...utxo, assets: convertedAssets };
+            return utxo;
         });
     }
 
@@ -177,7 +196,7 @@ class MonadicRuntime {
             targetUnixTime
         };
         const result = await this._fetch('/api/emulator/advance-time', {
-            method: 'POST',
+      method: 'POST',
             body: body
         });
 
@@ -198,12 +217,12 @@ class MonadicRuntime {
 
         const blueprintPath = path.resolve(filePath);
         if (!fs.existsSync(blueprintPath)) {
-            throw new Error(`Blueprint file not found: ${blueprintPath}`);
+          throw new Error(`Blueprint file not found: ${blueprintPath}`);
         }
-
+        
         const blueprint = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
         const validator = blueprint.validators.find(v => v.title.startsWith(contractName));
-
+        
         if (!validator) {
             throw new Error(`Validator '${contractName}' not found in ${filePath}`);
         }
@@ -224,18 +243,18 @@ class MonadicRuntime {
     // WATCHER API (Integrated from original runtime)
     // =================================================================
 
-    async watch(name, query, formatter) {
+  async watch(name, query, formatter) {
         const watcherId = `watcher_${++this.watcherCounter}`;
-        const watcher = {
-            id: watcherId,
-            name,
+    const watcher = {
+      id: watcherId,
+      name,
             query,
             formatter,
-            lastRawData: null,
-            lastRun: null,
-            hasChanged: false
-        };
-        this.watchers.set(watcherId, watcher);
+      lastRawData: null,
+      lastRun: null,
+      hasChanged: false
+    };
+    this.watchers.set(watcherId, watcher);
         await this.executeWatcher(watcher); // Execute immediately on creation
         return { name, status: 'active' };
     }
@@ -264,9 +283,9 @@ class MonadicRuntime {
             return `Contract: ${utxoList.length} UTxOs, ${(totalValue / 1000000).toFixed(6)} ADA${datumInfo}`;
         };
         return this.watch(`State: ${address.substring(0, 20)}...`, { type: 'contractState', key: address }, formatter || defaultFormatter);
-    }
+  }
 
-    async executeWatcher(watcher) {
+  async executeWatcher(watcher) {
         let rawData;
         try {
             switch (watcher.query.type) {
@@ -285,67 +304,67 @@ class MonadicRuntime {
 
             const dataChanged = canonicalStringify(watcher.lastRawData) !== canonicalStringify(rawData);
             
-            watcher.hasChanged = dataChanged;
-            if (dataChanged) {
-                this.changedWatchers.add(watcher.id);
-            }
-
+      watcher.hasChanged = dataChanged;
+      if (dataChanged) {
+        this.changedWatchers.add(watcher.id);
+      }
+      
             watcher.lastRawData = rawData;
-            watcher.lastRun = Date.now();
+      watcher.lastRun = Date.now();
             this.watchResults.set(watcher.id, { 
                 data: rawData, 
                 formatted: watcher.formatter(rawData) 
             });
 
-        } catch (error) {
+    } catch (error) {
             let errorStatus;
             if (error instanceof Error && error.message.includes("does not exist")) {
                 errorStatus = '⏳ Pending creation...';
-            } else {
+        } else {
                 errorStatus = `Error: ${error.message}`;
             }
 
             const statusChanged = watcher.lastErrorStatus !== errorStatus;
             watcher.hasChanged = statusChanged;
             if (statusChanged) {
-                this.changedWatchers.add(watcher.id);
-            }
-            watcher.lastErrorStatus = errorStatus;
+        this.changedWatchers.add(watcher.id);
+      }
+      watcher.lastErrorStatus = errorStatus;
             this.watchResults.set(watcher.id, { error: errorStatus, formatted: errorStatus });
-        }
     }
+  }
 
-    async executeAllWatchers() {
+  async executeAllWatchers() {
         if (this.debug) console.log(`[Runtime] Executing all ${this.watchers.size} watchers...`);
         const promises = Array.from(this.watchers.values()).map(w => this.executeWatcher(w));
         await Promise.allSettled(promises);
-    }
+  }
 
-    getWatchersInfo() {
+  getWatchersInfo() {
         const watchersInfo = [];
-        for (const [id, watcher] of this.watchers) {
+    for (const [id, watcher] of this.watchers) {
             watchersInfo.push({
-                id: watcher.id,
-                name: watcher.name,
-                result: this.watchResults.get(id),
+        id: watcher.id,
+        name: watcher.name,
+        result: this.watchResults.get(id),
                 rawData: watcher.lastRawData, 
                 hasChanged: this.changedWatchers.has(id),
-                lastRun: watcher.lastRun
+        lastRun: watcher.lastRun
             });
-        }
+      }
         return watchersInfo;
     }
 
     getWatchResults() {
         return Object.fromEntries(this.watchResults);
-    }
+  }
 
-    clearChangedState() {
-        this.changedWatchers.clear();
-        for (const watcher of this.watchers.values()) {
-            watcher.hasChanged = false;
-        }
+  clearChangedState() {
+    this.changedWatchers.clear();
+    for (const watcher of this.watchers.values()) {
+      watcher.hasChanged = false;
     }
+  }
 
     // =================================================================
     // TRANSACTION BUILDER API
@@ -391,11 +410,11 @@ class MonadicRuntime {
         return responseBody;
     }
 
-    async cleanup() {
-        if (this.sessionId && this.debug) {
-            console.log(`[Runtime] Cleaning up session: ${this.sessionId}`);
-        }
-        this.sessionId = null;
+  async cleanup() {
+    if (this.sessionId && this.debug) {
+      console.log(`[Runtime] Cleaning up session: ${this.sessionId}`);
+    }
+    this.sessionId = null;
     }
 }
 
@@ -465,8 +484,8 @@ mint(policyId, assetName, amount, options = {}) {
             // Already a hex string
             assetNameHex = assetName;
         } else {
-            // Regular string - convert to hex using Blaze pattern
-            assetNameHex = Core.toHex(Buffer.from(assetName, 'utf8'));
+            // Regular string - convert to hex using standard Buffer conversion
+            assetNameHex = Buffer.from(assetName, 'utf8').toString('hex');
         }
     } else if (assetName instanceof Uint8Array) {
         // Byte array - convert to hex
@@ -481,9 +500,10 @@ mint(policyId, assetName, amount, options = {}) {
         throw new Error(`Asset name "${assetName}" exceeds the 32-byte limit.`);
     }
 
-    console.log("[DEBUG] Runtime creating mint operation:", {
+    console.log("[DEBUG] Runtime converting asset name:", {
+        originalAssetName: assetName,
+        convertedAssetNameHex: assetNameHex,
         policyId: policyId,
-        assetNameHex: assetNameHex,
         amount: amount.toString()
     });
     
@@ -493,6 +513,8 @@ mint(policyId, assetName, amount, options = {}) {
         assetName: assetNameHex, // Send as hex string to server
         amount: amount.toString(),
     };
+    
+    console.log("[DEBUG] Runtime sending operation to server:", op);
     if (options.redeemer) {
         op.redeemer = options.redeemer;
     }
@@ -542,5 +564,5 @@ mint(policyId, assetName, amount, options = {}) {
 
 // Export for use in Node.js environments
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { MonadicRuntime };
+module.exports = { MonadicRuntime };
 }

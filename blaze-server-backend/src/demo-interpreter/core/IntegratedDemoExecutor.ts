@@ -63,9 +63,6 @@ export class IntegratedDemoExecutor {
     this.codeBlocks = codeBlocks;
     // Do the rewrite (phases 1 and 2) exactly once
     this.rewrittenBlocks = this.scopeManager.processCodeBlocks(this.codeBlocks);
-    
-    // Log all blocks for debugging
-
   }
   
   async cleanup(): Promise<void> {
@@ -100,8 +97,6 @@ export class IntegratedDemoExecutor {
   async executeCodeBlock(blockIndex: number): Promise<any> {
     // Set up global runtime for monadic functions
     (global as any).__demoRuntime = this.realRuntime;
-    
-    console.log(`[IntegratedDemoExecutor] Executing block ${blockIndex} with session ID: ${this.realRuntime.sessionId}`);
     
     // Capture console.log output and transactions in order
     const structuredOutput: Array<string | { type: 'transaction', data: any }> = [];

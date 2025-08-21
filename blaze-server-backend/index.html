@@ -216,6 +216,20 @@
       color: #6c757d;
     }
 
+    .utxo-assets {
+      margin-top: 4px;
+    }
+
+    .utxo-asset {
+      font-size: 12px;
+      color: #007bff;
+      background-color: #e3f2fd;
+      padding: 2px 6px;
+      margin: 2px 0;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    }
+
     .utxo-empty {
       text-align: center;
       color: #6c757d;
@@ -1506,6 +1520,19 @@
           const address = utxo.address || 'Unknown address';
           const datum = utxo.datum !== undefined && utxo.datum !== null ? `datum: ${utxo.datum}` : 'No datum';
           
+          // Render assets (now already converted to readable names by runtime)
+          let assetsHtml = '';
+          if (utxo.assets && Object.keys(utxo.assets).length > 0) {
+            const assetList = [];
+            for (const [policyId, assets] of Object.entries(utxo.assets)) {
+              for (const [assetName, assetAmount] of Object.entries(assets)) {
+                const shortPolicyId = policyId.substring(0, 8) + '...';
+                assetList.push(`<div class="utxo-asset">${assetName} x${assetAmount} (${shortPolicyId})</div>`);
+              }
+            }
+            assetsHtml = `<div class="utxo-assets">${assetList.join('')}</div>`;
+          }
+          
           return `
             <div class="utxo-item">
               <div class="utxo-header">
@@ -1517,6 +1544,7 @@
                   ${this.truncateAddress(address)}
                 </div>
                 <div class="utxo-datum">${datum}</div>
+                ${assetsHtml}
               </div>
             </div>
           `;

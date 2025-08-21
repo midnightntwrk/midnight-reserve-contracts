@@ -16,23 +16,39 @@ function bytesToHex(bytes: Uint8Array): string {
 // Helper function to extract native assets from a UTXO's value
 function extractAssets(amount: Core.Value): Record<string, Record<string, string>> {
   const assets: Record<string, Record<string, string>> = {};
-  const multiAsset = amount.multiasset();
+  
+  // Try to access multi-assets using the correct Blaze SDK method
+  let multiAsset;
+  try {
+    multiAsset = amount.multiasset();
+  } catch (e) {
+    // If multiasset() fails, try the alternative format
+    if (amount && typeof amount === 'object' && 'assets' in amount) {
+      multiAsset = (amount as any).assets;
+    } else {
+      return assets;
+    }
+  }
   
   if (multiAsset) {
-    for (const [policyId, assetsUnderPolicy] of (multiAsset as any)) {
-      const policyIdHex = policyId.toString();
-      assets[policyIdHex] = {};
-      
-      if (assetsUnderPolicy instanceof Map) {
-        for (const [assetName, quantity] of assetsUnderPolicy.entries()) {
-          // CONVERSION: Convert the Uint8Array to a JSON-serializable object
-          const serializedAssetName = JSON.stringify(Buffer.from(assetName).toJSON());
-          assets[policyIdHex][serializedAssetName] = quantity.toString();
+    // Handle the case where multiAsset is a Map with full asset IDs as keys
+    if (multiAsset instanceof Map) {
+      for (const [fullAssetId, quantity] of multiAsset.entries()) {
+        const fullAssetIdStr = fullAssetId.toString();
+        
+        // Split the full asset ID into policy ID and asset name
+        // Full asset ID format: policyId + assetName (concatenated)
+        if (fullAssetIdStr.length >= 56) { // Policy ID is 56 chars, asset name is variable
+          const policyId = fullAssetIdStr.substring(0, 56);
+          const assetName = fullAssetIdStr.substring(56);
+          
+          if (!assets[policyId]) {
+            assets[policyId] = {};
+          }
+          
+          // Store the asset name as hex string (user-friendly)
+          assets[policyId][assetName] = quantity.toString();
         }
-      } else {
-        // Handle cases where the asset name is not a Map
-        const serializedAssetName = JSON.stringify(Buffer.from(new Uint8Array(0)).toJSON());
-        assets[policyIdHex][serializedAssetName] = assetsUnderPolicy.toString();
       }
     }
   }
@@ -717,24 +733,9 @@ export function createServer(sessionManager: SessionManager) {
               break;
               
 case "mint":
-  console.log("[DEBUG] Mint operation received:", {
-    policyId: operation.policyId,
-    assetName: operation.assetName,
-    assetNameType: typeof operation.assetName,
-    amount: operation.amount
-  });
-  
   // STEP 1: USE HEX STRING DIRECTLY FOR ASSETNAME
-  console.log("[DEBUG] Using hex string:", operation.assetName);
-  
   // STEP 2: PASS THE HEX STRING TO THE SDK WITH PROPER TYPES
   const assetsMap = new Map([[Core.AssetName(operation.assetName), BigInt(operation.amount)]]);
-  console.log("[DEBUG] Assets map created:", assetsMap);
-  
-  console.log("[DEBUG] About to call addMint with:", {
-    policyId: operation.policyId,
-    policyIdType: typeof operation.policyId
-  });
 
   // Handle redeemer if provided
   let redeemer = undefined; // Don't provide redeemer unless explicitly requested
@@ -768,7 +769,8 @@ case "mint":
           txHash: realTransactionId,
           outputIndex: index,
           address: output.address, // Already in bech32 format
-          amount: output.value.coins.toString() // Convert bigint to string
+          amount: output.value.coins.toString(), // Convert bigint to string
+          assets: extractAssets(output.value) // Include assets in created UTXOs
         }));
 
         // Submit the transaction to emulator
