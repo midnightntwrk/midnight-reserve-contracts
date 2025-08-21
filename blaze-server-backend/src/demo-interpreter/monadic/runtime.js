@@ -8,8 +8,9 @@
 // Node.js module dependencies for the loadContract function
 const fs = require("fs");
 const path = require("path");
+const { execSync } = require("child_process");
 // This utility is assumed to exist in your project structure
-const { computeScriptInfo } = require("../../utils/script-utils.js");
+const { computeScriptInfo } = require("../../utils/script-utils.ts");
 
 // Import Core utilities for asset name conversion
 const { Core } = require("@blaze-cardano/sdk");
@@ -233,25 +234,207 @@ class MonadicRuntime {
       throw new Error(`Blueprint file not found: ${blueprintPath}`);
     }
 
-    const blueprint = JSON.parse(fs.readFileSync(blueprintPath, "utf-8"));
-    const validator = blueprint.validators.find((v) =>
-      v.title.startsWith(contractName),
-    );
+    // Generate contract schema using Blaze blueprint command
+    const outputPath = path.resolve(__dirname, "../../utils/contracts.ts");
+    const tracePath = blueprintPath.replace(".json", "-trace.json");
 
-    if (!validator) {
-      throw new Error(`Validator '${contractName}' not found in ${filePath}`);
+    try {
+      // Run the Blaze blueprint command to generate TypeScript
+      const command = `bunx @blaze-cardano/blueprint ${blueprintPath} ${tracePath} -o ${outputPath}`;
+      execSync(command, { stdio: "inherit", cwd: path.dirname(outputPath) });
+
+      // Load the generated TypeScript file content
+      if (!fs.existsSync(outputPath)) {
+        throw new Error(`Generated contract file not found: ${outputPath}`);
+      }
+
+      // Use dynamic import to load the generated TypeScript module
+      const contractModule = await import(`file://${outputPath}?${Date.now()}`);
+
+      // Get all exported classes
+      const exportedKeys = Object.keys(contractModule);
+      const contractClasses = exportedKeys.filter((key) => {
+        const exported = contractModule[key];
+        return (
+          typeof exported === "function" &&
+          exported.prototype &&
+          exported.prototype.constructor === exported
+        );
+      });
+
+      // Find the class that matches our contract name
+      // Convert camelCase to snake_case for matching
+      const matchingClass = contractClasses.find((className) => {
+        const normalizedClassName = className
+          .replace(/([A-Z])/g, "_$1")
+          .toLowerCase()
+          .replace(/^_/, "");
+        const normalizedContractName = contractName
+          .toLowerCase()
+          .replace(/[._]/g, "_");
+        return (
+          normalizedClassName.includes(normalizedContractName) ||
+          className.toLowerCase().includes(contractName.toLowerCase())
+        );
+      });
+
+      if (!matchingClass) {
+        throw new Error(
+          `Contract class for '${contractName}' not found. Available classes: ${contractClasses.join(", ")}`,
+        );
+      }
+
+      // Get the contract class constructor
+      const ContractClass = contractModule[matchingClass];
+
+      // Check if the constructor needs parameters by examining the original blueprint
+      const blueprint = JSON.parse(fs.readFileSync(blueprintPath, "utf-8"));
+
+      const validator = blueprint.validators.find((v) => {
+        const titleParts = v.title.split(".");
+        const contractParts = contractName.split(".");
+
+        // If contractName has multiple parts (like "protocol_params.spend"), match exactly
+        if (contractParts.length > 1) {
+          return v.title.toLowerCase().includes(contractName.toLowerCase());
+        }
+
+        // Otherwise, match the first part of the title
+        return titleParts[0].toLowerCase().includes(contractName.toLowerCase());
+      });
+
+      let contractInstance;
+      let compiledCode;
+
+      if (
+        validator &&
+        validator.parameters &&
+        validator.parameters.length > 0
+      ) {
+        // Contract requires parameters - extract compiled code from validator
+        compiledCode = validator.compiledCode;
+        // Create a mock instance for schema access (we'll handle parameters later)
+        contractInstance = {
+          Script: { code: compiledCode },
+          // Add schema access methods if they exist
+          datumSchema: ContractClass.datumSchema,
+          redeemerSchema: ContractClass.redeemerSchema,
+        };
+      } else {
+        // No parameters needed - instantiate directly
+        contractInstance = new ContractClass();
+        compiledCode = contractInstance.Script.code;
+      }
+
+      const scriptInfo = computeScriptInfo(compiledCode);
+
+      // Look for datum and redeemer schemas based on the validator info
+      let datumSchema = null;
+      let redeemerSchema = null;
+
+      if (validator) {
+        // Extract schema references from validator definition
+        if (
+          validator.datum &&
+          validator.datum.schema &&
+          validator.datum.schema.$ref
+        ) {
+          const datumRef = validator.datum.schema.$ref.split("~1").pop();
+          const datumImportSchema = contractModule[datumRef];
+
+          // Resolve the $ref to get the actual schema definition
+          if (
+            datumImportSchema &&
+            datumImportSchema.$ref &&
+            datumImportSchema.$defs
+          ) {
+            datumSchema = datumImportSchema.$defs[datumImportSchema.$ref];
+
+            // Recursively resolve any remaining $refs in the schema
+            datumSchema = this._resolveRemainingRefs(
+              datumSchema,
+              datumImportSchema.$defs,
+            );
+          }
+        }
+
+        if (
+          validator.redeemer &&
+          validator.redeemer.schema &&
+          validator.redeemer.schema.$ref
+        ) {
+          const redeemerRef = validator.redeemer.schema.$ref.split("~1").pop();
+          const redeemerImportSchema = contractModule[redeemerRef];
+
+          // Resolve the $ref to get the actual schema definition
+          if (
+            redeemerImportSchema &&
+            redeemerImportSchema.$ref &&
+            redeemerImportSchema.$defs
+          ) {
+            redeemerSchema =
+              redeemerImportSchema.$defs[redeemerImportSchema.$ref];
+
+            // Recursively resolve any remaining $refs in the schema
+            redeemerSchema = this._resolveRemainingRefs(
+              redeemerSchema,
+              redeemerImportSchema.$defs,
+            );
+          }
+        }
+      }
+
+      const contractDetails = {
+        ...scriptInfo,
+        compiledCode: compiledCode,
+        contractClass: ContractClass,
+        contractInstance: contractInstance,
+        className: matchingClass,
+        availableClasses: contractClasses,
+        datumSchema: datumSchema,
+        redeemerSchema: redeemerSchema,
+        validator: validator,
+        parameters: validator?.parameters || [],
+      };
+
+      this._contractCache.set(cacheKey, contractDetails);
+      return contractDetails;
+    } catch (error) {
+      throw new Error(`Failed to generate contract schema: ${error.message}`);
+    }
+  }
+
+  // Helper method to recursively resolve remaining $refs in schema
+  _resolveRemainingRefs(schema, definitions) {
+    if (!schema || typeof schema !== "object") {
+      return schema;
     }
 
-    const compiledCode = validator.compiledCode;
-    const scriptInfo = computeScriptInfo(compiledCode);
+    // Handle arrays
+    if (Array.isArray(schema)) {
+      return schema.map((item) =>
+        this._resolveRemainingRefs(item, definitions),
+      );
+    }
 
-    const contractDetails = {
-      ...scriptInfo,
-      compiledCode: compiledCode,
-    };
+    // Handle objects
+    const resolved = { ...schema };
 
-    this._contractCache.set(cacheKey, contractDetails);
-    return contractDetails;
+    // If this object has a $ref, resolve it
+    if (resolved.$ref && definitions[resolved.$ref]) {
+      const referencedSchema = definitions[resolved.$ref];
+      // Recursively resolve the referenced schema
+      return this._resolveRemainingRefs(referencedSchema, definitions);
+    }
+
+    // Recursively resolve all properties
+    for (const [key, value] of Object.entries(resolved)) {
+      if (typeof value === "object" && value !== null) {
+        resolved[key] = this._resolveRemainingRefs(value, definitions);
+      }
+    }
+
+    return resolved;
   }
 
   // =================================================================
