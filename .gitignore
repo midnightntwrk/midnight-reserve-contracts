@@ -1,1 +1,29 @@
-.DS_Store
+**/node_modules/
+**/dist/
+**/.env
+**/.env.local
+**/*.log
+**/.DS_Store
+**/coverage/
+**/.vscode/
+**/.idea/
+
+# Aiken artifacts
+**/build/
+**/artifacts/
+**/docs/
+
+# Test artifacts
+**/test-results/
+**/*.tmp
+
+# Research code repositories (cloned for local study)
+**/.gitignored-repos/
+
+# Lock files (dependency management)
+**/bun.lock
+**/package-lock.json
+**/backup-*.tar.gz
+
+# tmp filee
+**/*~
