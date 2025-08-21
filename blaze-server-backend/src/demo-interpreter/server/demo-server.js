@@ -39,7 +39,7 @@ app.post('/demo/init', async (req, res) => {
     const executor = new JavaScriptDemoExecutor(demo, baseUrl);
     await executor.initialize();
     
-    // Assign unique IDs to all code blocks for the frontend
+    // Assign unique IDs and numbers to all code blocks for the frontend
     let nextBlockId = 1;
     const demoWithBlockIds = {
       ...demo,
@@ -47,7 +47,7 @@ app.post('/demo/init', async (req, res) => {
         ...stanza,
         blocks: stanza.blocks.map(block => {
           if (block.type === 'code') {
-            return { ...block, blockId: `block_${nextBlockId++}` };
+            return { ...block, blockId: `block_${nextBlockId}`, blockNumber: nextBlockId++ };
           }
           return block;
         })
@@ -209,7 +209,7 @@ app.get('/demo-flows/:filename', (req, res) => {
         ...stanza,
         blocks: stanza.blocks.map(block => {
           if (block.type === 'code') {
-            return { ...block, blockId: `block_${nextBlockId++}` };
+            return { ...block, blockId: `block_${nextBlockId}`, blockNumber: nextBlockId++ };
           }
           return block;
         })

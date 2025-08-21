@@ -479,6 +479,34 @@
       cursor: not-allowed;
     }
 
+    .execute-button.run-to-here {
+      background: #17a2b8;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .execute-button.run-to-here:hover {
+      background: #138496;
+    }
+    
+    .execute-button.run-to-here.disabled {
+      background: #6c757d;
+      color: #adb5bd;
+      cursor: not-allowed;
+    }
+    
+    .execute-button.run-to-here.disabled:hover {
+      background: #6c757d;
+    }
+
     .markdown-content {
       padding: 16px;
     }
@@ -762,16 +790,54 @@
         this.currentDemo = null;
         this.currentStanzaIndex = 0;
         this.completedCodeStanzas = 0;
-        this.totalCodeStanzas = 0;
-        this.demoClient = null;
         this.lastWatchResults = {};
         this.watchersInfo = [];
+        this.demoClient = new DemoClient();
+        this.isEditMode = this.detectEditMode();
+        this.highestExecuted = -1; // Track the highest executed block index
+        
         this.init();
       }
 
-      init() {
-        this.setupEventListeners();
-        this.populateDemoFiles();
+      detectEditMode() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('edit') === 'true';
+      }
+
+      async init() {
+        try {
+          this.setupEventListeners();
+          await this.populateDemoFiles();
+          
+          // Only try to load demo if we have a file selected
+          // The original flow was to wait for user to select a file
+          if (this.isEditMode) {
+            // In edit mode, we can show the UI without a demo loaded
+            this.showEditModeIndicator();
+          }
+        } catch (error) {
+          this.showError(`Failed to initialize: ${error.message}`);
+        }
+      }
+
+      showEditModeIndicator() {
+        const header = document.querySelector('.header');
+        if (header) {
+          const editIndicator = document.createElement('div');
+          editIndicator.style.cssText = `
+            background: #17a2b8;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          `;
+          editIndicator.textContent = 'Edit Mode';
+          header.appendChild(editIndicator);
+        }
       }
 
       setupEventListeners() {
@@ -894,6 +960,12 @@
 
       async loadDemo(filePath) {
         try {
+          if (!filePath) {
+            // If no file path provided, just return without error
+            console.log(`[UI] No file path provided, skipping demo load`);
+            return;
+          }
+          
           console.log(`[UI] Loading demo from path: ${filePath}`);
           this.showLoading('Loading demo...');
           
@@ -907,6 +979,12 @@
       }
 
       initializeDemo() {
+        // Ensure we have a demo loaded
+        if (!this.currentDemo || !this.currentDemo.stanzas) {
+          console.error('[UI] No demo loaded, cannot initialize');
+          return;
+        }
+        
         // Count total code stanzas for progress tracking
         this.totalCodeStanzas = this.currentDemo.stanzas.filter(stanza => 
           stanza.blocks.some(block => block.type === 'code')
@@ -929,7 +1007,12 @@
         this.watchersInfo = [];
         this.updateWatcherPanel();
         
-        this.showNextStanza();
+        // Show appropriate view based on edit mode
+        if (this.isEditMode) {
+          this.showAllStanzas();
+        } else {
+          this.showNextStanza();
+        }
       }
 
 
@@ -965,72 +1048,88 @@
         }, 100);
       }
 
+      showAllStanzas() {
+        const content = document.getElementById('content');
+        content.innerHTML = '';
+        
+        this.currentDemo.stanzas.forEach((stanza, index) => {
+          const stanzaElement = this.createStanzaElement(stanza, index);
+          content.appendChild(stanzaElement);
+          
+          // Make all stanzas visible immediately in edit mode
+          setTimeout(() => {
+            stanzaElement.classList.add('visible');
+          }, index * 100);
+        });
+      }
+
       createStanzaElement(stanza, index) {
         const stanzaElement = document.createElement('div');
         stanzaElement.className = 'stanza';
         stanzaElement.id = `stanza-${index}`;
         
-        // Stanza header
         const header = document.createElement('div');
         header.className = 'stanza-header';
         
-        const name = document.createElement('div');
-        name.className = 'stanza-name';
-        name.textContent = stanza.name.replace(/_/g, ' ');
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'stanza-name';
+        nameSpan.textContent = stanza.name;
         
-        const status = document.createElement('div');
-        status.className = 'stanza-status pending';
-        status.textContent = 'Pending';
-        status.id = `stanza-status-${index}`;
+        const statusSpan = document.createElement('span');
+        statusSpan.className = 'stanza-status pending';
+        statusSpan.textContent = 'Pending';
+        statusSpan.id = `stanza-status-${index}`;
         
-        header.appendChild(name);
-        header.appendChild(status);
+        header.appendChild(nameSpan);
+        header.appendChild(statusSpan);
         
-        // Stanza content
         const content = document.createElement('div');
         content.className = 'stanza-content';
         
-        // Render blocks within the stanza
+        // Track global block index for "Run to here" functionality
         let globalBlockIndex = 0;
         for (let i = 0; i < index; i++) {
           globalBlockIndex += this.currentDemo.stanzas[i].blocks.length;
         }
         
         stanza.blocks.forEach((block, localBlockIndex) => {
-          const blockElement = this.createBlockElement(block, globalBlockIndex + localBlockIndex, stanza);
+          const blockElement = this.createBlockElement(block, globalBlockIndex + localBlockIndex, stanza, index);
           content.appendChild(blockElement);
         });
         
         stanzaElement.appendChild(header);
         stanzaElement.appendChild(content);
         
-        // Add footer with Next button (initially hidden for code stanzas)
-        const footer = document.createElement('div');
-        footer.className = 'stanza-footer';
-        footer.style.display = 'none'; // Hidden by default
-        
-        const nextButton = document.createElement('button');
-        nextButton.className = 'execute-button query';
-        nextButton.textContent = 'Next';
-        nextButton.onclick = () => this.advanceToNextStanza();
-        nextButton.id = `next-stanza-${index}`;
-        
-        // Check if this stanza has code blocks
-        const hasCodeBlocks = stanza.blocks.some(b => b.type === 'code');
-        if (hasCodeBlocks) {
-          nextButton.disabled = true;
-          nextButton.textContent = 'Execute Code First';
-          nextButton.className = 'execute-button unknown';
-        } else {
-          // For markdown-only stanzas, show the Next button immediately
-          footer.style.display = 'flex';
+        // In edit mode, don't add the footer with Next button
+        if (!this.isEditMode) {
+          // Add footer with Next button (initially hidden for code stanzas)
+          const footer = document.createElement('div');
+          footer.className = 'stanza-footer';
+          footer.style.display = 'none'; // Hidden by default
+          
+          const nextButton = document.createElement('button');
+          nextButton.className = 'execute-button query';
+          nextButton.textContent = 'Next';
+          nextButton.onclick = () => this.advanceToNextStanza();
+          nextButton.id = `next-stanza-${index}`;
+          
+          // Check if this stanza has code blocks
+          const hasCodeBlocks = stanza.blocks.some(b => b.type === 'code');
+          if (hasCodeBlocks) {
+            nextButton.disabled = true;
+            nextButton.textContent = 'Execute Code First';
+            nextButton.className = 'execute-button unknown';
+          } else {
+            // For markdown-only stanzas, show the Next button immediately
+            footer.style.display = 'flex';
+          }
+          
+          footer.appendChild(nextButton);
+          stanzaElement.appendChild(footer);
+          
+          // Store reference to footer for later use
+          stanzaElement.dataset.footerId = `footer-${index}`;
         }
-        
-        footer.appendChild(nextButton);
-        stanzaElement.appendChild(footer);
-        
-        // Store reference to footer for later use
-        stanzaElement.dataset.footerId = `footer-${index}`;
         
         // Track execution state for this stanza
         stanzaElement.dataset.executedBlocks = '0';
@@ -1039,9 +1138,33 @@
         return stanzaElement;
       }
 
-      createBlockElement(block, blockIndex, stanza) {
+      createBlockElement(block, blockIndex, stanza, stanzaIndex) {
         const blockElement = document.createElement('div');
         blockElement.className = `block ${block.type}-block`;
+        blockElement.dataset.blockId = block.blockId;
+        blockElement.dataset.stanzaIndex = stanzaIndex;
+        blockElement.dataset.blockIndex = blockIndex;
+        
+        // Add "Run to here" button in edit mode
+        if (this.isEditMode && block.type === 'code') {
+          console.log(`[UI] Creating "Run to here" button for block ${block.blockId}, blockNumber: ${block.blockNumber}`);
+          
+          const runToHereButton = document.createElement('button');
+          runToHereButton.className = 'execute-button run-to-here';
+          runToHereButton.textContent = `Run to here (${block.blockNumber})`;
+          
+          // Disable if this block or earlier blocks have already been executed
+          if (block.blockNumber <= this.highestExecuted + 1) {
+            runToHereButton.disabled = true;
+            runToHereButton.textContent = `Already executed (${block.blockNumber})`;
+            runToHereButton.className = 'execute-button run-to-here disabled';
+          } else {
+            runToHereButton.onclick = () => this.runToBlock(block.blockNumber);
+          }
+          
+          blockElement.appendChild(runToHereButton);
+          console.log(`[UI] Added "Run to here" button for block ${block.blockNumber}`);
+        }
         
         const blockHeader = document.createElement('div');
         blockHeader.className = 'block-header';
@@ -1056,7 +1179,12 @@
           const executeButton = document.createElement('button');
           executeButton.className = 'execute-button unknown';
           executeButton.textContent = 'Execute';
-          executeButton.onclick = () => this.executeBlock(block.blockId);
+          executeButton.dataset.blockId = block.blockId;
+          executeButton.dataset.stanzaIndex = stanzaIndex;
+          executeButton.onclick = () => {
+            console.log(`[UI] Execute button clicked for block ${block.blockId}`);
+            this.executeBlock(block.blockId, stanzaIndex);
+          };
           executeButton.id = `execute-${block.blockId}`;
           blockHeader.appendChild(executeButton);
           
@@ -1081,6 +1209,14 @@
           
           codeContent.appendChild(codeBody);
           blockElement.appendChild(codeContent);
+          
+          // Create result container with data attributes
+          const resultContainer = document.createElement('div');
+          resultContainer.className = 'execution-result';
+          resultContainer.dataset.blockId = block.blockId;
+          resultContainer.dataset.stanzaIndex = stanzaIndex;
+          resultContainer.style.display = 'none'; // Hidden until execution
+          blockElement.appendChild(resultContainer);
         }
         
         return blockElement;
@@ -1184,10 +1320,40 @@
         `;
       }
 
-      async executeBlock(blockId) {
+      async executeBlock(blockId, stanzaIndex) {
+        console.log(`[UI] executeBlock called for blockId: ${blockId}, stanzaIndex: ${stanzaIndex}`);
         
-        const button = document.getElementById(`execute-${blockId}`);
-        const statusElement = document.getElementById(`stanza-status-${this.currentStanzaIndex}`);
+        const button = document.querySelector(`button[data-block-id="${blockId}"]`);
+        const statusElement = document.getElementById(`stanza-status-${stanzaIndex}`);
+        
+        console.log(`[UI] Button found:`, button);
+        console.log(`[UI] Button disabled:`, button?.disabled);
+        console.log(`[UI] Button text:`, button?.textContent);
+        console.log(`[UI] Button HTML:`, button?.outerHTML);
+        
+        // Also check if there are multiple elements with the same data attributes
+        const allElementsWithBlockId = document.querySelectorAll(`[data-block-id="${blockId}"]`);
+        console.log(`[UI] All elements with blockId ${blockId}:`, allElementsWithBlockId);
+        
+        // Check if button is already completed
+        if (button && button.disabled && button.textContent === 'Completed') {
+          console.log(`[UI] Block ${blockId} is already completed, skipping execution`);
+          return;
+        }
+        
+        // Reset button state if it's in an inconsistent state
+        if (button && button.hasAttribute('disabled') && !button.disabled) {
+          console.log(`[UI] Resetting inconsistent button state for block ${blockId}`);
+          button.removeAttribute('disabled');
+        }
+        
+        // Re-enable button if it was marked as completed by run-to-here
+        if (button && button.disabled && button.textContent === 'Completed') {
+          console.log(`[UI] Re-enabling completed button for individual execution: ${blockId}`);
+          button.disabled = false;
+          button.textContent = 'Execute';
+          button.className = 'execute-button unknown';
+        }
         
         // blockId is the unique identifier assigned by the server
         
@@ -1198,26 +1364,36 @@
         statusElement.textContent = 'Executing';
         
         try {
+          console.log(`[UI] Calling demoClient.executeBlock for blockId: ${blockId}`);
           const response = await this.demoClient.executeBlock(blockId);
+          console.log(`[UI] Received response from server:`, response);
+          
           this.lastWatchResults = response.watchResults || {};
           this.watchersInfo = response.watchersInfo || [];
           
           // Create a single result object for this block
-          const currentStanza = this.currentDemo.stanzas[this.currentStanzaIndex];
+          const currentStanza = this.currentDemo.stanzas[stanzaIndex];
           const blockResult = {
-            stanzaIndex: this.currentStanzaIndex,
+            blockId: blockId,
+            stanzaIndex: stanzaIndex,
             stanzaName: currentStanza.name,
             blockIndex: 0, // We don't need the local index for display
             blockType: 'code',
-            operationType: response.result.operationType,
-            isPartial: response.result.isPartial,
-            result: response.result.result,
-            scope: response.result.scope,
-            structuredOutput: response.result.structuredOutput || []
+            operationType: response.result?.operationType || 'unknown',
+            isPartial: response.result?.isPartial || false,
+            result: response.result?.result || response.result,
+            scope: response.result?.scope || {},
+            structuredOutput: response.result?.structuredOutput || []
           };
           
-          this.updateStanzaResult([blockResult]);
-          this.updateWatcherPanel();
+          console.log(`[UI] Created block result for individual execution:`, blockResult);
+          try {
+            this.updateStanzaResult([blockResult]);
+            this.updateWatcherPanel();
+          } catch (updateError) {
+            console.error(`[UI] Error in updateStanzaResult or updateWatcherPanel:`, updateError);
+            // Don't let this error affect the button state - execution was successful
+          }
           
           // Update progress
           this.completedCodeStanzas++;
@@ -1227,7 +1403,7 @@
           statusElement.textContent = 'Completed';
           
           // Track execution progress for this stanza
-          const stanzaElement = document.getElementById(`stanza-${this.currentStanzaIndex}`);
+          const stanzaElement = document.getElementById(`stanza-${stanzaIndex}`);
           if (stanzaElement) {
             const executedBlocks = parseInt(stanzaElement.dataset.executedBlocks || '0') + 1;
             const totalCodeBlocks = parseInt(stanzaElement.dataset.totalCodeBlocks || '0');
@@ -1237,39 +1413,90 @@
             // Only show the Next button after ALL code blocks are executed
             if (executedBlocks >= totalCodeBlocks) {
               const footer = stanzaElement.querySelector('.stanza-footer');
-              const nextButton = footer.querySelector('button');
-              
-              if (footer && nextButton) {
-                footer.style.display = 'flex';
-                nextButton.disabled = false;
-                nextButton.textContent = 'Next';
-                nextButton.className = 'execute-button query';
+              if (footer) {
+                const nextButton = footer.querySelector('button');
+                
+                if (nextButton) {
+                  footer.style.display = 'flex';
+                  nextButton.disabled = false;
+                  nextButton.textContent = 'Next';
+                  nextButton.className = 'execute-button query';
+                }
               }
             }
           }
           
           // Mark the execute button as completed (one-shot execution)
+          console.log(`[UI] About to set button to Completed state. Current state: ${button.textContent}, disabled: ${button.disabled}`);
           button.disabled = true;
           button.textContent = 'Completed';
           button.className = 'execute-button completed';
+          console.log(`[UI] Set button to Completed state: ${button.textContent}, disabled: ${button.disabled}`);
           
+          // Update highest executed cursor for individual execution
+          // Find the block number for this block
+          let blockNumber = -1;
+          for (let sIndex = 0; sIndex < this.currentDemo.stanzas.length; sIndex++) {
+            const stanza = this.currentDemo.stanzas[sIndex];
+            for (let bIndex = 0; bIndex < stanza.blocks.length; bIndex++) {
+              const block = stanza.blocks[bIndex];
+              if (block.blockId === blockId && block.type === 'code') {
+                blockNumber = block.blockNumber;
+                break;
+              }
+            }
+            if (blockNumber !== -1) break;
+          }
+          
+          if (blockNumber !== -1) {
+            this.highestExecuted = Math.max(this.highestExecuted, blockNumber);
+            console.log(`[UI] Updated highestExecuted to: ${this.highestExecuted} (individual execution of block ${blockNumber})`);
+          }
+          
+          // Update all "Run to here" button states after individual execution
+          this.updateRunToHereButtonStates();
+          
+          console.log(`[UI] Individual execution completed successfully. Final button state: ${button.textContent}, disabled: ${button.disabled}`);
 
           
           // Don't auto-advance - let user choose when to move on
           
         } catch (error) {
+          console.error(`[UI] Caught error in executeBlock:`, error);
           this.showError(`Execution failed: ${error.message}`);
           statusElement.className = 'stanza-status error';
           statusElement.textContent = 'Error';
           button.disabled = false;
           button.textContent = 'Retry';
-        } finally {
-          // Always reset button state if it's still in executing state
-          if (button.textContent === 'Executing...') {
-            button.disabled = false;
-            button.textContent = 'Execute';
-          }
+          console.log(`[UI] Set button to Retry state due to error: ${button.textContent}, disabled: ${button.disabled}`);
         }
+      }
+
+      updateRunToHereButtonStates() {
+        // Update all "Run to here" buttons based on current highestExecuted cursor
+        const runToHereButtons = document.querySelectorAll('.execute-button.run-to-here');
+        console.log(`[UI] Found ${runToHereButtons.length} "Run to here" buttons. highestExecuted: ${this.highestExecuted}`);
+        
+
+        
+        runToHereButtons.forEach(button => {
+          const blockNumber = parseInt(button.textContent.match(/\((\d+)\)/)?.[1] || '0');
+          console.log(`[UI] Button text: "${button.textContent}", parsed blockNumber: ${blockNumber}, should disable: ${blockNumber <= this.highestExecuted + 1}`);
+          
+          if (blockNumber <= this.highestExecuted + 1) {
+            button.disabled = true;
+            button.textContent = `Already executed (${blockNumber})`;
+            button.className = 'execute-button run-to-here disabled';
+            console.log(`[UI] Disabled button for block ${blockNumber}`);
+          } else {
+            button.disabled = false;
+            button.textContent = `Run to here (${blockNumber})`;
+            button.className = 'execute-button run-to-here';
+            // Re-attach click handler
+            button.onclick = () => this.runToBlock(blockNumber);
+            console.log(`[UI] Enabled button for block ${blockNumber}`);
+          }
+        });
       }
 
       advanceToNextStanza() {
@@ -1282,30 +1509,36 @@
       }
 
       updateStanzaResult(results) {
-        const stanzaElement = document.getElementById(`stanza-${this.currentStanzaIndex}`);
-        const content = stanzaElement.querySelector('.stanza-content');
+        console.log(`[UI] updateStanzaResult called with:`, results);
         
-        // Find the result container or create one
-        let resultContainer = content.querySelector('.execution-result');
-        if (!resultContainer) {
-          resultContainer = document.createElement('div');
+        // Process each result individually using data attributes
+        results.forEach(result => {
+          const blockId = result.blockId || result.blockIndex;
+          const stanzaIndex = result.stanzaIndex;
+          
+          console.log(`[UI] Processing result for blockId: ${blockId}, stanzaIndex: ${stanzaIndex}`);
+          
+          // Find the result container using data attributes
+          const resultContainer = document.querySelector(
+            `.execution-result[data-block-id="${blockId}"][data-stanza-index="${stanzaIndex}"]`
+          );
+          
+          console.log(`[UI] Found result container:`, resultContainer);
+          
+          if (!resultContainer) {
+            console.error(`[UI] Could not find result container for blockId: ${blockId}, stanzaIndex: ${stanzaIndex}`);
+            return;
+          }
+          
+          // Show the result container
+          resultContainer.style.display = 'block';
           resultContainer.className = 'execution-result success';
-          content.appendChild(resultContainer);
-        }
-        
-        resultContainer.className = 'execution-result success';
-        
-        let resultHtml = '<h4>Output:</h4>';
-        
-        // Only show results for code blocks (skip markdown)
-        const codeBlockResults = results.filter(result => result.blockType === 'code');
-        
-        if (codeBlockResults.length === 0) {
-          resultHtml += '<p><em>No executable code in this stanza.</em></p>';
-        } else {
-          codeBlockResults.forEach((result, blockIndex) => {
-            resultHtml += `<div class="block-output">`;
-            
+          
+          let resultHtml = '<h4>Output:</h4>';
+          console.log(`[UI] Starting to build result HTML for block ${blockId}`);
+          
+          // Only show results for code blocks (skip markdown)
+          if (result.blockType === 'code') {
             // Show structured output if available
             if (result.structuredOutput && result.structuredOutput.length > 0) {
               result.structuredOutput.forEach(item => {
@@ -1320,34 +1553,176 @@
             } else {
               resultHtml += `<div class="console-line"><em>No output</em></div>`;
             }
-            
-            resultHtml += `</div>`;
-          });
-        }
-        
-        resultContainer.innerHTML = resultHtml;
-        
-        // Smart scroll to show output without hiding the code block
-        setTimeout(() => {
-          const codeBlock = resultContainer.closest('.stanza').querySelector('.code-content');
-          const codeBlockTop = codeBlock.offsetTop;
-          const resultContainerBottom = resultContainer.offsetTop + resultContainer.offsetHeight;
-          const viewportHeight = window.innerHeight;
-          const currentScrollTop = window.pageYOffset;
-          
-          // Calculate how much we need to scroll to show the bottom of the result
-          const scrollNeeded = resultContainerBottom - currentScrollTop - viewportHeight + 20; // 20px padding
-          
-          // Only scroll if it won't hide the code block
-          if (scrollNeeded > 0 && (currentScrollTop + scrollNeeded) < codeBlockTop) {
-            window.scrollTo({
-              top: currentScrollTop + scrollNeeded,
-              behavior: 'smooth'
-            });
+          } else {
+            resultHtml += '<p><em>No executable code in this block.</em></p>';
           }
-        }, 100);
+          
+          resultContainer.innerHTML = resultHtml;
+          
+          // Smart scroll to show output without hiding the code block
+          // Skip auto-scroll in edit mode to avoid layout issues
+          if (!this.isEditMode) {
+            setTimeout(() => {
+              const stanzaElement = resultContainer.closest('.stanza');
+              const codeBlock = stanzaElement ? stanzaElement.querySelector('.code-content') : null;
+              
+              if (codeBlock && resultContainer.offsetTop !== undefined) {
+                const codeBlockTop = codeBlock.offsetTop;
+                const resultContainerBottom = resultContainer.offsetTop + resultContainer.offsetHeight;
+                const viewportHeight = window.innerHeight;
+                const currentScrollTop = window.pageYOffset;
+                
+                // Calculate how much we need to scroll to show the bottom of the result
+                const scrollNeeded = resultContainerBottom - currentScrollTop - viewportHeight + 20; // 20px padding
+                
+                // Only scroll if it won't hide the code block
+                if (scrollNeeded > 0 && (currentScrollTop + scrollNeeded) < codeBlockTop) {
+                  window.scrollTo({
+                    top: currentScrollTop + scrollNeeded,
+                    behavior: 'smooth'
+                  });
+                }
+              }
+            }, 100);
+          }
+        });
       }
 
+      async runToBlock(targetBlockNumber) {
+        console.log(`Running to block ${targetBlockNumber}`);
+        
+        // Get all code blocks from highestExecuted + 1 up to the target block
+        const blocksToExecute = [];
+        
+        console.log(`[UI] runToBlock: targetBlockNumber=${targetBlockNumber}, highestExecuted=${this.highestExecuted}`);
+        
+        for (let stanzaIndex = 0; stanzaIndex < this.currentDemo.stanzas.length; stanzaIndex++) {
+          const stanza = this.currentDemo.stanzas[stanzaIndex];
+          for (let blockIndex = 0; blockIndex < stanza.blocks.length; blockIndex++) {
+            const block = stanza.blocks[blockIndex];
+            if (block.type === 'code') {
+              console.log(`[UI] Checking code block ${block.blockNumber}: shouldExecute=${block.blockNumber > this.highestExecuted && block.blockNumber < targetBlockNumber}`);
+              if (block.blockNumber > this.highestExecuted && block.blockNumber < targetBlockNumber) {
+                console.log(`[UI] Adding block to execute: blockId=${block.blockId}, blockNumber=${block.blockNumber}`);
+                blocksToExecute.push({
+                  blockId: block.blockId,
+                  stanzaIndex,
+                  blockIndex,
+                  blockNumber: block.blockNumber
+                });
+              }
+            }
+          }
+        }
+        
+        console.log(`Executing ${blocksToExecute.length} blocks:`, blocksToExecute);
+        
+        // Execute each block in sequence
+        for (const blockInfo of blocksToExecute) {
+          // Update currentStanzaIndex to match the block being executed
+          this.currentStanzaIndex = blockInfo.stanzaIndex;
+          try {
+            const button = document.getElementById(`execute-${blockInfo.blockId}`);
+            if (button && !button.disabled) {
+              // Update button state
+              button.disabled = true;
+              button.textContent = 'Executing...';
+              
+              // Update stanza status
+              const statusElement = document.getElementById(`stanza-status-${blockInfo.stanzaIndex}`);
+              if (statusElement) {
+                statusElement.className = 'stanza-status executing';
+                statusElement.textContent = 'Executing';
+              }
+              
+              // Execute the block
+              const response = await this.demoClient.executeBlock(blockInfo.blockId);
+              console.log(`[UI] Block ${blockInfo.blockId} execution response:`, response);
+              
+              this.lastWatchResults = response.watchResults || {};
+              this.watchersInfo = response.watchersInfo || [];
+              
+              // Create result object for display (similar to executeBlock method)
+              const currentStanza = this.currentDemo.stanzas[blockInfo.stanzaIndex];
+              const blockResult = {
+                blockId: blockInfo.blockId,
+                stanzaIndex: blockInfo.stanzaIndex,
+                stanzaName: currentStanza.name,
+                blockIndex: blockInfo.blockIndex,
+                blockType: 'code',
+                operationType: response.result?.operationType || 'unknown',
+                isPartial: response.result?.isPartial || false,
+                result: response.result?.result || response.result,
+                scope: response.result?.scope || {},
+                structuredOutput: response.result?.structuredOutput || []
+              };
+              
+              console.log(`[UI] Created block result:`, blockResult);
+              
+              // Update UI with results
+              this.updateStanzaResult([blockResult]);
+              
+              // Update button and status
+              button.textContent = 'Completed';
+              button.className = 'execute-button completed';
+              
+              if (statusElement) {
+                statusElement.className = 'stanza-status completed';
+                statusElement.textContent = 'Completed';
+              }
+              
+              // Update watcher panel
+              this.updateWatcherPanel();
+              
+              // Track execution progress for this stanza (similar to executeBlock)
+              const stanzaElement = document.getElementById(`stanza-${blockInfo.stanzaIndex}`);
+              if (stanzaElement) {
+                const executedBlocks = parseInt(stanzaElement.dataset.executedBlocks || '0') + 1;
+                const totalCodeBlocks = parseInt(stanzaElement.dataset.totalCodeBlocks || '0');
+                
+                stanzaElement.dataset.executedBlocks = executedBlocks.toString();
+                
+                              // Update progress counter
+              this.completedCodeStanzas++;
+              
+              // Update highest executed cursor
+              console.log(`[UI] Before update: highestExecuted=${this.highestExecuted}, blockInfo.blockNumber=${blockInfo.blockNumber}`);
+              this.highestExecuted = Math.max(this.highestExecuted, blockInfo.blockNumber);
+              console.log(`[UI] Updated highestExecuted to: ${this.highestExecuted}`);
+            }
+            
+            // Add a small delay between executions
+            await new Promise(resolve => setTimeout(resolve, 500));
+              
+            } else if (button && button.disabled) {
+              console.log(`Block ${blockInfo.blockId} already executed, skipping`);
+            }
+                  } catch (error) {
+          console.error(`Error executing block ${blockInfo.blockId}:`, error);
+          console.error(`Error details:`, error.stack);
+          
+          const button = document.getElementById(`execute-${blockInfo.blockId}`);
+          if (button) {
+            button.disabled = false;
+            button.textContent = 'Retry';
+          }
+          
+          const statusElement = document.getElementById(`stanza-status-${blockInfo.stanzaIndex}`);
+          if (statusElement) {
+            statusElement.className = 'stanza-status error';
+            statusElement.textContent = 'Error';
+          }
+          
+          this.showError(`Failed to execute block ${blockInfo.blockId}: ${error.message}`);
+          break; // Stop execution on error
+        }
+        }
+        
+        // Update all "Run to here" button states after execution
+        console.log(`[UI] About to call updateRunToHereButtonStates() from runToBlock`);
+        this.updateRunToHereButtonStates();
+        console.log(`[UI] Finished updateRunToHereButtonStates() from runToBlock`);
+      }
 
 
       showLoading(message) {
