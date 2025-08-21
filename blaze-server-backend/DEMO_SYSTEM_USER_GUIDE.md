@@ -8,9 +8,10 @@ The Demo System provides an interactive environment for creating and running blo
 2. [Creating Demos](#creating-demos)
 3. [Contract Development Workflow](#contract-development-workflow)
 4. [Built-in Functions](#built-in-functions)
-5. [Demo Configuration](#demo-configuration)
-6. [Running Demos](#running-demos)
-7. [Troubleshooting](#troubleshooting)
+5. [Transaction Builder API](#transaction-builder-api)
+6. [Demo Configuration](#demo-configuration)
+7. [Running Demos](#running-demos)
+8. [Troubleshooting](#troubleshooting)
 
 ## Overview
 
@@ -19,6 +20,7 @@ The Demo System consists of:
 - **Demo Files (.demonb)**: JSON-based demo scripts with markdown and JavaScript code blocks
 - **Demo Server**: Express server that executes demos and manages sessions
 - **Monadic Functions**: High-level JavaScript functions for blockchain operations
+- **Transaction Builder**: Fluent API for constructing complex transactions
 - **Web Interface**: Browser-based demo runner with real-time output
 
 ## Creating Demos
@@ -33,12 +35,7 @@ Demo files use the `.demonb` extension and contain:
   "description": "Description of what this demo demonstrates",
   "version": "1.0",
   "config": {
-    "baseUrl": "http://localhost:3031",
-    "contracts": {
-      "my_contract": {
-        "blueprint": "./validators/my_contract/blueprint.json"
-      }
-    }
+    "baseUrl": "http://localhost:3041"
   },
   "stanzas": [
     {
@@ -99,26 +96,20 @@ The demo system integrates seamlessly with the Aiken contract development workfl
    aiken blueprint build
    ```
 
-4. **Create Demo**
+4. **Load Contract in Demo**
    ```javascript
-   // Use the contract directly with blueprint path
-   referenceScripts = await createReferenceScript('my_contract', { 
-     wallet: 'alice',
-     blueprint: './validators/my_contract/blueprint.json'
-   });
+   // Load contract details from blueprint
+   const contractInfo = await loadContract('./plutus.json', 'my_contract');
+   console.log(`Script hash: ${contractInfo.scriptHash}`);
+   console.log(`Contract address: ${contractInfo.contractAddress}`);
    ```
 
-5. **Test in Demo**
+5. **Use in Transactions**
    ```javascript
-   // Use the contract in your demo with blueprint path
-   lockResult = await lockToContract(scriptHash, {
-     amount: 3_000_000,
-     datum: 42,
-     spendingUtxo: spendingUtxo,
-     contractName: 'my_contract',
-     blueprint: './validators/my_contract/blueprint.json',
-     wallet: 'alice'
-   });
+   // Use the contract in transactions
+   const tx = await newTransaction('alice')
+     .payToContract(contractInfo.scriptHash, contractInfo.compiledCode, 3_000_000, 42)
+     .submit();
    ```
 
 6. **Iterate**
@@ -131,7 +122,7 @@ The demo system integrates seamlessly with the Aiken contract development workfl
 - **Fast Iteration**: Change contract → rebuild → demo reflects immediately
 - **Proper Testing**: Unit tests run before demo testing
 - **Blueprint Benefits**: Type safety, parameter validation, documentation
-- **Direct Path Usage**: Specify blueprint paths directly in function calls
+- **Direct Loading**: Load contracts directly from blueprint files
 - **No Config Overhead**: No need to pre-configure contracts in demo files
 
 ## Built-in Functions
@@ -168,108 +159,49 @@ console.log(`Alice's balance: ${balance} lovelace`);
 
 **Returns:** `string` (balance in lovelace)
 
-#### `transfer(from, to, amount)`
-Transfers funds between wallets.
-
-```javascript
-result = await transfer('alice', 'bob', 1_000_000);
-console.log(`Transfer completed: ${result.txId}`);
-```
-
-**Parameters:**
-- `from` (string): Source wallet name
-- `to` (string): Destination wallet name or address
-- `amount` (number): Amount in lovelace
-
-**Returns:** `{txId: string}`
-
-### Contract Operations
-
-#### `createReferenceScript(name, params)`
-Creates reference scripts for a contract using the modern Babbage-era approach.
-
-```javascript
-referenceScripts = await createReferenceScript('hello_world', { 
-  wallet: 'alice',
-  blueprint: './plutus.json'
-});
-console.log(`Script hash: ${referenceScripts.scriptHash}`);
-console.log(`Contract address: ${referenceScripts.contractAddress}`);
-```
-
-**Parameters:**
-- `name` (string): Contract name
-- `params` (object): Parameters including wallet name and blueprint path
-
-**Returns:** `{refScriptUtxo: object, spendingUtxo: object, scriptHash: string, contractAddress: string}`
-
-#### `lockToContract(scriptHash, params)`
-Locks funds to a contract with a datum.
-
-```javascript
-lockResult = await lockToContract(scriptHash, {
-  amount: 3_000_000, // 3 ADA
-  datum: 42,
-  spendingUtxo: spendingUtxo,
-  contractName: 'hello_world',
-  blueprint: './plutus.json',
-  wallet: 'alice'
-});
-console.log(`Funds locked: ${lockResult.txId}`);
-```
-
-**Parameters:**
-- `scriptHash` (string): Contract script hash
-- `params` (object): Parameters including amount, datum, spendingUtxo, contractName, blueprint, wallet
-
-**Returns:** `{txId: string, lockedUtxo: object}`
-
-#### `unlockFromContract(lockedUtxo, refScriptUtxo, params)`
-Unlocks funds from a contract using reference scripts.
-
-```javascript
-unlockResult = await unlockFromContract(lockedUtxo, refScriptUtxo, {
-  redeemer: 42, // Must match the datum value
-  returnAddress: aliceAddress,
-  wallet: 'alice',
-  contractName: 'hello_world',
-  blueprint: './plutus.json'
-});
-console.log(`Funds unlocked: ${unlockResult.txId}`);
-```
-
-**Parameters:**
-- `lockedUtxo` (object): The UTXO to unlock
-- `refScriptUtxo` (object): Reference script UTXO
-- `params` (object): Parameters including redeemer, returnAddress, wallet, contractName, blueprint
-
-**Returns:** `{txId: string, unlockedAmount: string}`
-
-#### `getContractState(address)`
-Gets the current state of a contract (UTXOs).
-
-```javascript
-contractState = await getContractState(contractAddress);
-console.log(`Contract UTXOs: ${contractState.utxos.length} total`);
-```
-
-**Parameters:**
-- `address` (string): Contract address
-
-**Returns:** `object` (contract state/UTXOs)
-
 #### `getWalletUtxos(walletName)`
-Gets the current UTXOs of a wallet.
+Gets all UTXOs for a wallet.
 
 ```javascript
-walletUtxos = await getWalletUtxos('alice');
-console.log(`Alice has ${walletUtxos.utxos.length} UTXOs`);
+utxos = await getWalletUtxos('alice');
+console.log(`Alice has ${utxos.length} UTXOs`);
 ```
 
 **Parameters:**
 - `walletName` (string): Wallet name
 
-**Returns:** `object` (wallet UTXOs)
+**Returns:** `Array<object>` (wallet UTXOs)
+
+### Contract Operations
+
+#### `loadContract(filePath, contractName)`
+Loads contract details from a blueprint file.
+
+```javascript
+const contractInfo = await loadContract('./plutus.json', 'hello_world');
+console.log(`Script hash: ${contractInfo.scriptHash}`);
+console.log(`Contract address: ${contractInfo.contractAddress}`);
+console.log(`Compiled code: ${contractInfo.compiledCode}`);
+```
+
+**Parameters:**
+- `filePath` (string): Path to the plutus.json file
+- `contractName` (string): The name of the contract validator
+
+**Returns:** `{compiledCode: string, scriptHash: string, contractAddress: string}`
+
+#### `getContractState(contractAddress)`
+Gets the current state of a contract (UTXOs).
+
+```javascript
+contractState = await getContractState(contractAddress);
+console.log(`Contract UTXOs: ${contractState.length} total`);
+```
+
+**Parameters:**
+- `address` (string): Contract address
+
+**Returns:** `Array<object>` (contract UTXOs)
 
 ### Emulator Operations
 
@@ -278,31 +210,15 @@ Advances time in the emulator.
 
 ```javascript
 result = await advanceTime(3600); // Advance 1 hour
-console.log(`New time: ${result.newTime}`);
+console.log(`New slot: ${result.newSlot}`);
 ```
 
 **Parameters:**
 - `seconds` (number): Seconds to advance
 
-**Returns:** `{newTime: number}`
+**Returns:** `{newSlot: number}`
 
-#### `waitFor(condition, timeout)`
-Waits for a specific condition to be met.
-
-```javascript
-await waitFor(async () => {
-  balance = await getBalance('alice');
-  return parseInt(balance) > 5_000_000;
-}, 30000); // Wait up to 30 seconds
-```
-
-**Parameters:**
-- `condition` (Function): Function that returns true when condition is met
-- `timeout` (number): Maximum wait time in milliseconds (default: 30000)
-
-**Returns:** `Promise<void>`
-
-### Watch Operations
+### Watcher Functions
 
 #### `watchBalance(walletName, formatter)`
 Watches a wallet's balance for changes.
@@ -312,8 +228,8 @@ Watches a wallet's balance for changes.
 watcher = await watchBalance('alice');
 
 // Or use custom formatter
-watcher = await watchBalance('alice', (data) => 
-  `${(parseInt(data.balance)/1000000).toFixed(6)} ADA`
+watcher = await watchBalance('alice', (balance) => 
+  `${(parseInt(balance)/1000000).toFixed(6)} ADA`
 );
 ```
 
@@ -331,8 +247,8 @@ Watches a contract's state for changes.
 watcher = await watchContractState(contractAddress);
 
 // Or use custom formatter
-watcher = await watchContractState(contractAddress, (data) => 
-  `${data.utxos.length} UTXOs, ${(data.utxos.reduce((sum, u) => sum + parseInt(u.amount), 0)/1000000).toFixed(6)} ADA`
+watcher = await watchContractState(contractAddress, (utxos) => 
+  `${utxos.length} UTXOs, ${(utxos.reduce((sum, u) => sum + parseInt(u.amount), 0)/1000000).toFixed(6)} ADA`
 );
 ```
 
@@ -350,8 +266,8 @@ Watches a wallet's UTXOs for changes.
 watcher = await watchWalletUtxos('alice');
 
 // Or use custom formatter
-watcher = await watchWalletUtxos('alice', (data) => 
-  `${data.utxos.length} UTXOs, ${(data.utxos.reduce((sum, u) => sum + parseInt(u.amount), 0)/1000000).toFixed(6)} ADA`
+watcher = await watchWalletUtxos('alice', (utxos) => 
+  `${utxos.length} UTXOs, ${(utxos.reduce((sum, u) => sum + parseInt(u.amount), 0)/1000000).toFixed(6)} ADA`
 );
 ```
 
@@ -361,61 +277,228 @@ watcher = await watchWalletUtxos('alice', (data) =>
 
 **Returns:** `{name: string, status: string}`
 
-#### `watchCustom(name, endpoint, formatter, options)`
-Watches a custom endpoint.
+### Utility Functions
+
+#### `waitFor(condition, timeout)`
+Waits for a specific condition to be met.
 
 ```javascript
-watcher = await watchCustom('custom', '/api/custom/endpoint', 
-  (data) => JSON.stringify(data, null, 2)
-);
+await waitFor(async () => {
+  balance = await getBalance('alice');
+  return parseInt(balance) > 5_000_000;
+}, 30000); // Wait up to 30 seconds
 ```
 
 **Parameters:**
-- `name` (string): Watcher name
-- `endpoint` (string): API endpoint to watch
-- `formatter` (Function): Formatter function
-- `options` (object): Optional configuration
+- `condition` (Function): Function that returns true when condition is met
+- `timeout` (number): Maximum wait time in milliseconds (default: 30000)
 
-**Returns:** `{name: string, status: string}`
+**Returns:** `Promise<void>`
 
-#### `watch(name, query, formatter)`
-Generic watch function.
+## Transaction Builder API
+
+The Transaction Builder provides a fluent API for constructing complex transactions. All on-chain operations now use this pattern.
+
+### Basic Usage
 
 ```javascript
-watcher = await watch('generic', { type: 'custom', data: 'value' }, 
-  (data) => data.toString()
-);
+// Start building a transaction
+const tx = await newTransaction('alice')
+  .payToAddress(address, 1_000_000)
+  .submit();
+
+console.log(`Transaction ID: ${tx.transactionId}`);
+```
+
+### Available Methods
+
+#### `newTransaction(signerWallet)`
+Begins construction of a new transaction.
+
+```javascript
+const tx = await newTransaction('alice');
 ```
 
 **Parameters:**
-- `name` (string): Watcher name
-- `query` (object): Query specification
-- `formatter` (Function): Formatter function
+- `signerWallet` (string): Wallet name that will sign the transaction
 
-**Returns:** `{name: string, status: string}`
+**Returns:** `TransactionBuilder` instance
 
-### Failure-Expecting Variants
-
-#### `createWalletExpectFailure(name, initialBalance)`
-Expects wallet creation to fail.
+#### `spendUtxos(utxos)`
+Specifies specific UTXOs to spend in the transaction.
 
 ```javascript
-try {
-  await createWalletExpectFailure('invalid', -1000);
-} catch (error) {
-  console.log('Expected failure:', error.message);
-}
+const tx = await newTransaction('alice')
+  .spendUtxos([utxo1, utxo2])
+  .submit();
 ```
 
-#### `transferExpectFailure(from, to, amount)`
-Expects transfer to fail.
+**Parameters:**
+- `utxos` (Array): Array of UTXO objects to spend
+
+**Returns:** `TransactionBuilder` (for chaining)
+
+#### `payToAddress(address, amount, options)`
+Pays funds to a specific address.
 
 ```javascript
-try {
-  await transferExpectFailure('alice', 'bob', 999999999);
-} catch (error) {
-  console.log('Expected failure:', error.message);
-}
+const tx = await newTransaction('alice')
+  .payToAddress('addr1...', 1_000_000)
+  .submit();
+
+// With reference script
+const tx = await newTransaction('alice')
+  .payToAddress('addr1...', 2_000_000, { 
+    referenceScript: compiledCode 
+  })
+  .submit();
+```
+
+**Parameters:**
+- `address` (string): Destination address
+- `amount` (number): Amount in lovelace
+- `options` (object): Optional parameters including `referenceScript`
+
+**Returns:** `TransactionBuilder` (for chaining)
+
+#### `payToContract(scriptHash, compiledCode, amount, datum)`
+Locks funds to a contract with a datum.
+
+```javascript
+const tx = await newTransaction('alice')
+  .payToContract(scriptHash, compiledCode, 3_000_000, 42)
+  .submit();
+```
+
+**Parameters:**
+- `scriptHash` (string): Contract script hash
+- `compiledCode` (string): Compiled contract code
+- `amount` (number): Amount in lovelace
+- `datum` (any): Datum value
+
+**Returns:** `TransactionBuilder` (for chaining)
+
+#### `unlockUtxo(lockedUtxo, redeemer, compiledCode, options)`
+Unlocks funds from a contract using a redeemer.
+
+```javascript
+const tx = await newTransaction('alice')
+  .unlockUtxo(lockedUtxo, 42, compiledCode, {
+    referenceScriptUtxo: refScriptUtxo
+  })
+  .submit();
+```
+
+**Parameters:**
+- `lockedUtxo` (object): The UTXO to unlock
+- `redeemer` (any): Redeemer value
+- `compiledCode` (string): Compiled contract code
+- `options` (object): Optional parameters including `referenceScriptUtxo`
+
+**Returns:** `TransactionBuilder` (for chaining)
+
+#### `mint(policyId, assetName, amount, options)`
+Mints tokens using a minting policy.
+
+```javascript
+const tx = await newTransaction('alice')
+  .mint(policyId, 'MyNFT', 1, {
+    redeemer: {},
+    referenceScriptUtxo: refScriptUtxo
+  })
+  .submit();
+```
+
+**Parameters:**
+- `policyId` (string): Minting policy ID
+- `assetName` (string): Asset name (converted to hex automatically)
+- `amount` (number): Amount to mint
+- `options` (object): Optional parameters including `redeemer` and `referenceScriptUtxo`
+
+**Returns:** `TransactionBuilder` (for chaining)
+
+#### `addCollateral(utxos)`
+Adds collateral UTXOs for complex transactions.
+
+```javascript
+const tx = await newTransaction('alice')
+  .addCollateral([collateralUtxo])
+  .payToContract(scriptHash, compiledCode, 3_000_000, datum)
+  .submit();
+```
+
+**Parameters:**
+- `utxos` (Array): Array of UTXO objects to use as collateral
+
+**Returns:** `TransactionBuilder` (for chaining)
+
+#### `submit()`
+Submits the transaction to the blockchain.
+
+```javascript
+const result = await newTransaction('alice')
+  .payToAddress(address, 1_000_000)
+  .submit();
+
+console.log(`Transaction ID: ${result.transactionId}`);
+console.log(`Created UTXOs: ${result.createdUtxos.length}`);
+```
+
+**Returns:** `{transactionId: string, createdUtxos: Array}`
+
+### Complete Examples
+
+#### Simple Transfer
+```javascript
+// Transfer 10 ADA from Alice to Bob
+const bobAddress = (await getWalletUtxos('bob'))[0].address;
+const tx = await newTransaction('alice')
+  .payToAddress(bobAddress, 10_000_000)
+  .submit();
+
+console.log(`Transfer completed: ${tx.transactionId}`);
+```
+
+#### Contract Interaction
+```javascript
+// Load contract
+const contractInfo = await loadContract('./plutus.json', 'hello_world');
+
+// Lock funds to contract
+const lockTx = await newTransaction('alice')
+  .payToContract(contractInfo.scriptHash, contractInfo.compiledCode, 3_000_000, 42)
+  .submit();
+
+// Get the locked UTXO
+const lockedUtxo = lockTx.createdUtxos.find(u => u.address === contractInfo.contractAddress);
+
+// Unlock funds
+const unlockTx = await newTransaction('alice')
+  .unlockUtxo(lockedUtxo, 42, contractInfo.compiledCode, {
+    referenceScriptUtxo: refScriptUtxo
+  })
+  .submit();
+```
+
+#### NFT Minting
+```javascript
+// Load minting policy
+const policyInfo = await loadContract('./plutus.json', 'simple_mint');
+
+// Create reference script
+const setupTx = await newTransaction('alice')
+  .payToAddress(aliceAddress, 2_000_000, { referenceScript: policyInfo.compiledCode })
+  .submit();
+
+const refScriptUtxo = setupTx.createdUtxos.find(u => u.amount === '2000000');
+
+// Mint NFT
+const mintTx = await newTransaction('alice')
+  .mint(policyInfo.scriptHash, 'MyNFT', 1, {
+    redeemer: {},
+    referenceScriptUtxo: refScriptUtxo
+  })
+  .submit();
 ```
 
 ## Demo Configuration
@@ -430,7 +513,7 @@ try {
 }
 ```
 
-**Note**: Contract configuration is no longer needed in the demo file. Blueprint paths are specified directly in function calls.
+**Note**: Contract configuration is no longer needed in the demo file. Contracts are loaded directly from blueprint files using the `loadContract` function.
 
 ## Running Demos
 
@@ -475,7 +558,7 @@ bun run demo:run ./demo-flows/my-demo.demonb
 **Contract Not Found**
 - Verify blueprint file path is correct
 - Ensure blueprint file exists and is valid JSON
-- Check file permissions
+- Check that contract name matches the validator title in blueprint
 
 **Function Not Defined**
 - Ensure you're using the correct function names
@@ -486,6 +569,12 @@ bun run demo:run ./demo-flows/my-demo.demonb
 - Check wallet balances
 - Verify contract parameters
 - Ensure UTXOs are available for spending
+- Check that reference scripts are properly created
+
+**Asset Name Issues**
+- Asset names are automatically converted to hex
+- Maximum length is 32 bytes
+- Use simple strings like 'MyNFT' or hex strings
 
 ### Debug Mode
 
