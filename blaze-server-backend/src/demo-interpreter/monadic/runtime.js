@@ -251,7 +251,7 @@ class MonadicRuntime {
       // Use dynamic import to load the generated TypeScript module
       const contractModule = await import(`file://${outputPath}?${Date.now()}`);
 
-      // Get all exported classes
+      // Get all exported classes and schema objects
       const exportedKeys = Object.keys(contractModule);
       const contractClasses = exportedKeys.filter((key) => {
         const exported = contractModule[key];
@@ -328,58 +328,34 @@ class MonadicRuntime {
 
       const scriptInfo = computeScriptInfo(compiledCode);
 
-      // Look for datum and redeemer schemas based on the validator info
+      // Extract schemas from the generated module
       let datumSchema = null;
       let redeemerSchema = null;
 
       if (validator) {
-        // Extract schema references from validator definition
+        // Look for datum schema
         if (
           validator.datum &&
           validator.datum.schema &&
           validator.datum.schema.$ref
         ) {
           const datumRef = validator.datum.schema.$ref.split("~1").pop();
-          const datumImportSchema = contractModule[datumRef];
-
-          // Resolve the $ref to get the actual schema definition
-          if (
-            datumImportSchema &&
-            datumImportSchema.$ref &&
-            datumImportSchema.$defs
-          ) {
-            datumSchema = datumImportSchema.$defs[datumImportSchema.$ref];
-
-            // Recursively resolve any remaining $refs in the schema
-            datumSchema = this._resolveRemainingRefs(
-              datumSchema,
-              datumImportSchema.$defs,
-            );
+          // Try to find the schema in the exported module
+          if (contractModule[datumRef]) {
+            datumSchema = contractModule[datumRef];
           }
         }
 
+        // Look for redeemer schema
         if (
           validator.redeemer &&
           validator.redeemer.schema &&
           validator.redeemer.schema.$ref
         ) {
           const redeemerRef = validator.redeemer.schema.$ref.split("~1").pop();
-          const redeemerImportSchema = contractModule[redeemerRef];
-
-          // Resolve the $ref to get the actual schema definition
-          if (
-            redeemerImportSchema &&
-            redeemerImportSchema.$ref &&
-            redeemerImportSchema.$defs
-          ) {
-            redeemerSchema =
-              redeemerImportSchema.$defs[redeemerImportSchema.$ref];
-
-            // Recursively resolve any remaining $refs in the schema
-            redeemerSchema = this._resolveRemainingRefs(
-              redeemerSchema,
-              redeemerImportSchema.$defs,
-            );
+          // Try to find the schema in the exported module
+          if (contractModule[redeemerRef]) {
+            redeemerSchema = contractModule[redeemerRef];
           }
         }
       }
@@ -395,6 +371,18 @@ class MonadicRuntime {
         redeemerSchema: redeemerSchema,
         validator: validator,
         parameters: validator?.parameters || [],
+        // Add method to create parameterized instance
+        createInstance: (...params) => {
+          if (
+            validator &&
+            validator.parameters &&
+            validator.parameters.length > 0
+          ) {
+            return new ContractClass(...params);
+          } else {
+            return contractInstance;
+          }
+        },
       };
 
       this._contractCache.set(cacheKey, contractDetails);
