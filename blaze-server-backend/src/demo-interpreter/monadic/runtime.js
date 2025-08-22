@@ -223,7 +223,7 @@ class MonadicRuntime {
     return { newSlot: result.newSlot };
   }
 
-  async loadContract(filePath, contractName) {
+  async loadContract(filePath, contractName, parameters = null) {
     const cacheKey = `${filePath}:${contractName}`;
     if (this._contractCache.has(cacheKey)) {
       return this._contractCache.get(cacheKey);
@@ -659,13 +659,20 @@ class TransactionBuilder {
     this._operations.push(op);
     return this;
   }
-  payToContract(scriptHash, compiledCode, amount, datum) {
+  payToContract(
+    scriptHash,
+    compiledCode,
+    amount,
+    datum,
+    contractDetails = null,
+  ) {
     this._operations.push({
       type: "pay-to-contract",
       scriptHash: scriptHash,
       compiledCode: compiledCode,
       amount: amount.toString(),
       datum: datum,
+      contractDetails: contractDetails,
     });
     return this;
   }
@@ -676,6 +683,7 @@ class TransactionBuilder {
       outputIndex: lockedUtxo.outputIndex,
       redeemer: redeemer,
       compiledCode: compiledCode,
+      contractDetails: options.contractDetails || null,
     };
     if (options.referenceScriptUtxo) {
       op.referenceScriptUtxo = {

@@ -4,7 +4,6 @@ import { makeValue } from "@blaze-cardano/sdk";
 import * as Core from "@blaze-cardano/core";
 import { cborToScript } from "@blaze-cardano/uplc";
 import * as Data from "@blaze-cardano/data";
-import { MyDatum } from "./utils/contracts";
 import { computeScriptInfo } from "./utils/script-utils";
 
 // Helper function to convert Uint8Array to a hex string
@@ -713,10 +712,34 @@ export function createServer(sessionManager: SessionManager) {
                 );
 
                 // Add input with redeemer
-                tx = tx.addInput(
-                  scriptUtxo,
-                  Data.serialize(Data.BigInt(), BigInt(operation.redeemer)),
-                );
+                let serializedRedeemer;
+                if (
+                  operation.contractDetails &&
+                  operation.contractDetails.redeemerSchema
+                ) {
+                  try {
+                    serializedRedeemer = Data.serialize(
+                      operation.contractDetails.redeemerSchema,
+                      operation.redeemer,
+                    );
+                  } catch (error) {
+                    console.error(
+                      "Failed to serialize redeemer with contract schema:",
+                      error,
+                    );
+                    // Fall back to simple serialization
+                    serializedRedeemer = Data.serialize(
+                      Data.BigInt(),
+                      BigInt(operation.redeemer),
+                    );
+                  }
+                } else {
+                  serializedRedeemer = Data.serialize(
+                    Data.BigInt(),
+                    BigInt(operation.redeemer),
+                  );
+                }
+                tx = tx.addInput(scriptUtxo, serializedRedeemer);
 
                 // Handle script reference: either reference script OR inline script (CIP-33)
                 if (operation.referenceScriptUtxo) {
@@ -813,10 +836,30 @@ export function createServer(sessionManager: SessionManager) {
                 }
 
                 let serializedDatum = operation.datum;
-                if (typeof operation.datum === "number") {
-                  serializedDatum = Data.serialize(MyDatum, {
-                    thing: BigInt(operation.datum),
-                  });
+
+                // Use contractDetails schema if provided
+                if (
+                  operation.contractDetails &&
+                  operation.contractDetails.datumSchema
+                ) {
+                  try {
+                    serializedDatum = Data.serialize(
+                      operation.contractDetails.datumSchema,
+                      operation.datum,
+                    );
+                  } catch (error) {
+                    console.error(
+                      "Failed to serialize datum with contract schema:",
+                      error,
+                    );
+                    // Fall back to simple serialization
+                    if (typeof operation.datum === "number") {
+                      serializedDatum = Data.serialize(
+                        Data.BigInt(),
+                        BigInt(operation.datum),
+                      );
+                    }
+                  }
                 } else if (typeof operation.datum === "string") {
                   // For string datums (like JSON), serialize as Data.Bytes
 
