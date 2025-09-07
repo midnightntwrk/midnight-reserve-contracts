@@ -1,0 +1,23 @@
+name = "midnight/reserve"
+version = "0.0.0"
+compiler = "v1.1.19"
+plutus = "v3"
+license = "Apache-2.0"
+description = "Aiken contracts for project 'midnight/reserve'"
+
+[repository]
+user = "midnight"
+project = "reserve"
+platform = "github"
+
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "v2.2.0"
+source = "github"
+
+[config.default]
+cnight_policy = "thing_cool"
+
+[config.preview.cnight_policy]
+bytes = "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69"
+encoding = "hex"
