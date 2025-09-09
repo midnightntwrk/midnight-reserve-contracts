@@ -17,6 +17,12 @@ source = "github"
 
 [config.default]
 cnight_policy = "thing_cool"
+one_shot_hash = "yes_no_test"
+one_shot_index = 1
+
+[config.preview]
+one_shot_hash = "yes_no_test"
+one_shot_index = 1
 
 [config.preview.cnight_policy]
 bytes = "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69"
