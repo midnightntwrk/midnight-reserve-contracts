@@ -4,9 +4,9 @@ use aiken/collection/list
 use aiken/crypto.{ScriptHash}
 use cardano/address.{Address, Credential, Script}
 use cardano/assets.{to_dict}
-use cardano/script_context.{Minting, ScriptContext, Spending}
+use cardano/script_context.{Minting, ScriptInfo, Spending}
 use cardano/transaction.{
-  Datum, InlineDatum, Input, Output, OutputReference, Transaction,
+  Datum, InlineDatum, Input, Output, OutputReference, Redeemer, Transaction,
 }
 use upgradable/types.{
   Auth, Logic, Main, MitigationAuth, MitigationLogic, RefState, Staging,
@@ -30,11 +30,11 @@ fn expected_staging_nft_id(own_policy) {
 
 // Validators in various repos will simply call this function
 pub fn two_stage_upgradable(
-  ctx: ScriptContext,
+  transaction: Transaction,
+  redeemer: Redeemer,
+  info: ScriptInfo,
   one_shot_ref: OutputReference,
 ) -> Bool {
-  let ScriptContext { transaction, redeemer, info } = ctx
-
   let Transaction { inputs, reference_inputs, mint, outputs, withdrawals, .. } =
     transaction
 
