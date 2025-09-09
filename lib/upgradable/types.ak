@@ -2,11 +2,20 @@ use aiken/crypto.{ScriptHash}
 use cardano/transaction.{OutputReference}
 
 @list
-pub type Stage {
+pub type UpgradeState {
   logic: ScriptHash,
   mitigation_logic: ScriptHash,
   auth: ScriptHash,
   mitigation_auth: ScriptHash,
+  round: Int,
+}
+
+@list
+pub type RefState<a, b, c, d> {
+  logic: a,
+  mitigation_logic: b,
+  auth: c,
+  mitigation_auth: d,
   round: Int,
 }
 
@@ -24,5 +33,5 @@ pub type UpdateField {
 
 pub type WhichStage {
   Main(OutputReference)
-  Staging(ScriptHash)
+  Staging(OutputReference, ScriptHash)
 }

@@ -1,20 +1,24 @@
 use aiken/builtin
 use aiken/collection/dict.{to_pairs}
-use cardano/address.{Address, Script}
+use aiken/collection/list
+use aiken/crypto.{ScriptHash}
+use cardano/address.{Address, Credential, Script}
 use cardano/assets.{to_dict}
 use cardano/script_context.{Minting, ScriptContext, Spending}
 use cardano/transaction.{
-  InlineDatum, Input, Output, OutputReference, Transaction,
+  Datum, InlineDatum, Input, Output, OutputReference, Transaction,
 }
 use upgradable/types.{
-  Auth, Logic, Main, MitigationAuth, MitigationLogic, Stage, Staging,
-  TwoStageRedeemer,
+  Auth, Logic, Main, MitigationAuth, MitigationLogic, RefState, Staging,
+  TwoStageRedeemer, UpdateField, UpgradeState,
 }
 use utils.{must_find, must_find_key}
 
 pub const main_token_name = "main"
 
 pub const staging_token_name = "staging"
+
+const empty = ""
 
 fn expected_main_nft_id(own_policy) {
   [Pair(own_policy, [Pair(main_token_name, 1)])] |> as_data
@@ -31,7 +35,8 @@ pub fn two_stage_upgradable(
 ) -> Bool {
   let ScriptContext { transaction, redeemer, info } = ctx
 
-  let Transaction { inputs, reference_inputs, mint, outputs, .. } = transaction
+  let Transaction { inputs, reference_inputs, mint, outputs, withdrawals, .. } =
+    transaction
 
   when info is {
     // Used for initial 2 stage setup
@@ -42,100 +47,104 @@ pub fn two_stage_upgradable(
       let own_input =
         must_find(inputs, fn(input: Input) { input.output_reference == output })
 
-      let Input { output: Output { address, value, datum, .. }, .. } = own_input
+      // State of either main or staging depending on which input is spent
+      let Input {
+        output: Output { address, value, datum: spending_datum, .. },
+        ..
+      } = own_input
 
       expect Script(own_hash) as pay_cred = address.payment_credential
 
-      expect InlineDatum(datum) = datum
-
-      expect stage: Stage = datum
-
-      // TODO Check auth field script is running here
       expect TwoStageRedeemer { update_field, which_stage }: TwoStageRedeemer =
         redeemer
 
       let expected_staging_nft_id = expected_staging_nft_id(own_hash)
 
+      let expected_main_nft_id = expected_main_nft_id(own_hash)
+
       expect [_, ..nft_id] = value |> to_dict |> to_pairs
 
-      let handle_stage =
-        fn(fields_access_fn, callback) {
-          when which_stage is {
-            Main(staging_out_ref) -> {
-              let Input {
-                output: Output {
-                  address: staging_addr,
-                  value: staging_value,
-                  datum: staging_datum,
-                  ..
-                },
+      let expected_output_datum: UpgradeState =
+        when which_stage is {
+          Main(staging_out_ref) -> {
+            // validate main token
+            expect ( nft_id |> as_data ) == expected_main_nft_id
+
+            // Ledger rules prevent an input from being
+            // both referenced and spent so staging remains unchanged
+            let staging_input =
+              reference_inputs
+                |> must_find(
+                    fn(input: Input) {
+                      input.output_reference == staging_out_ref
+                    },
+                  )
+
+            let Input {
+              output: Output {
+                address: staging_addr,
+                value: staging_value,
+                datum: staging_datum,
                 ..
-              } =
-                must_find(
-                  reference_inputs,
-                  fn(input: Input) { input.output_reference == staging_out_ref },
-                )
+              },
+              ..
+            } = staging_input
 
-              expect staging_addr.payment_credential == pay_cred
+            //validate fields on staging ref input
+            expect staging_addr.payment_credential == pay_cred
 
-              expect [_, ..staging_nft_id] =
-                staging_value |> to_dict |> to_pairs
+            expect [_, ..staging_nft_id] = staging_value |> to_dict |> to_pairs
 
-              expect expected_staging_nft_id == ( staging_nft_id |> as_data )
+            expect ( staging_nft_id |> as_data ) == expected_staging_nft_id
 
-              expect InlineDatum(staging_datum) = staging_datum
+            validate_main_update(
+              update_field,
+              spending_datum,
+              staging_datum,
+              withdrawals,
+            )
+          }
 
-              expect staging_datum: Stage = staging_datum
+          Staging(main_out_ref, new_script_hash) -> {
+            // validate staging token
+            expect ( nft_id |> as_data ) == expected_staging_nft_id
 
-              let expected_main_nft_id = expected_main_nft_id(own_hash)
+            let main_input =
+              must_find(
+                reference_inputs,
+                fn(input: Input) { input.output_reference == main_out_ref },
+              )
 
-              // Ensure our input actually does have the nft
-              expect expected_main_nft_id == ( nft_id |> as_data )
+            // Ledger rules prevent an input from being
+            // both referenced and spent so main remains unchanged
+            let Input {
+              output: Output {
+                address: main_addr,
+                value: main_value,
+                datum: main_datum,
+                ..
+              },
+              ..
+            } = main_input
 
-              callback(fields_access_fn(staging_datum), staging_datum.round)
-            }
+            //validate staging ref input
+            expect main_addr.payment_credential == pay_cred
 
-            Staging(script_hash) -> {
-              // Ensure our input actually does have the nft
-              expect expected_staging_nft_id == ( nft_id |> as_data )
+            expect [_, ..main_nft_id] = main_value |> to_dict |> to_pairs
 
-              callback(script_hash, stage.round + 1)
-            }
+            expect ( main_nft_id |> as_data ) == expected_main_nft_id
+
+            validate_staging_update(
+              update_field,
+              new_script_hash,
+              spending_datum,
+              main_datum,
+              withdrawals,
+            )
           }
         }
 
-      let expected_output_datum =
-        when update_field is {
-          Logic -> {
-            let sh, new_round <- handle_stage(fn(stage: Stage) { stage.logic })
-
-            Stage { ..stage, logic: sh, round: new_round }
-          }
-
-          Auth -> {
-            let sh, new_round <- handle_stage(fn(stage: Stage) { stage.auth })
-
-            Stage { ..stage, auth: sh, round: new_round }
-          }
-          // TODO double check mitigations are empty when updating
-          MitigationLogic -> {
-            let
-              sh,
-              new_round,
-            <- handle_stage(fn(stage: Stage) { stage.mitigation_logic })
-
-            Stage { ..stage, mitigation_logic: sh, round: new_round }
-          }
-          MitigationAuth -> {
-            let
-              sh,
-              new_round,
-            <- handle_stage(fn(stage: Stage) { stage.mitigation_auth })
-
-            Stage { ..stage, mitigation_auth: sh, round: new_round }
-          }
-        }
-          |> InlineDatum
+      let expected_output_datum = InlineDatum(expected_output_datum)
 
       expect [
         Output { address: out_addr, value: out_value, datum: out_datum, .. },
@@ -152,6 +161,173 @@ pub fn two_stage_upgradable(
     }
 
     _ -> fail
+  }
+}
+
+fn validate_main_update(
+  update_field: UpdateField,
+  spending_datum: Datum,
+  staging_datum: Datum,
+  withdrawals,
+) {
+  expect InlineDatum(spending_datum) = spending_datum
+
+  expect InlineDatum(staging_datum) = staging_datum
+
+  expect UpgradeState { auth, mitigation_auth, .. } as spending_datum: UpgradeState =
+    spending_datum
+
+  let auth_cred = Script(auth)
+
+  // validate auth scripts are run
+  expect validate_auth(auth_cred, mitigation_auth, withdrawals)
+
+  when update_field is {
+    Logic -> {
+      expect RefState { logic, round, .. }: RefState<
+        ScriptHash,
+        Data,
+        Data,
+        Data,
+      > = staging_datum
+
+      UpgradeState { ..spending_datum, logic, round }
+    }
+
+    Auth -> {
+      expect RefState { auth, round, .. }: RefState<
+        Data,
+        Data,
+        ScriptHash,
+        Data,
+      > = staging_datum
+
+      UpgradeState { ..spending_datum, auth, round }
+    }
+
+    MitigationLogic -> {
+      // Can only set the mitigation logic script once
+      expect spending_datum.mitigation_logic == ""
+
+      expect RefState { mitigation_logic, round, .. }: RefState<
+        Data,
+        ScriptHash,
+        Data,
+        Data,
+      > = staging_datum
+
+      UpgradeState { ..spending_datum, mitigation_logic, round }
+    }
+
+    MitigationAuth -> {
+      // Can only set the mitigation logic script once
+      expect spending_datum.mitigation_auth == ""
+
+      expect RefState { mitigation_auth, round, .. }: RefState<
+        Data,
+        Data,
+        Data,
+        ScriptHash,
+      > = staging_datum
+
+      UpgradeState { ..spending_datum, mitigation_auth, round }
+    }
+  }
+}
+
+fn validate_staging_update(
+  update_field: UpdateField,
+  new_val: ScriptHash,
+  spending_datum: Datum,
+  main_datum: Datum,
+  withdrawals,
+) {
+  // Check new value is proper script hash
+  expect builtin.length_of_bytearray(new_val) == 28
+
+  expect InlineDatum(spending_datum) = spending_datum
+
+  expect InlineDatum(main_datum) = main_datum
+
+  expect UpgradeState { auth, mitigation_auth, round, .. } as spending_datum: UpgradeState =
+    spending_datum
+
+  expect RefState { auth: main_auth, mitigation_auth: main_mitigation_auth, .. } as main_datum: RefState<
+    Data,
+    Data,
+    ScriptHash,
+    ScriptHash,
+  > = main_datum
+
+  let auth_cred = Script(auth)
+
+  let main_auth_cred = Script(main_auth)
+
+  // validate auth scripts are run
+  // We allow either staging auth or main auth
+  // (In case staging auth is accidentally stuck)
+  expect or {
+      validate_auth(auth_cred, mitigation_auth, withdrawals),
+      // Special case for MitigationAuth
+      if update_field == MitigationAuth {
+        empty
+      } else {
+        main_mitigation_auth
+      }
+        |> validate_auth(main_auth_cred, _, withdrawals),
+    }
+
+  when update_field is {
+    Logic -> UpgradeState { ..spending_datum, logic: new_val, round: round + 1 }
+
+    Auth -> UpgradeState { ..spending_datum, auth: new_val, round: round + 1 }
+
+    MitigationLogic -> {
+      // Can only set the mitigation logic script if main is not yet set
+      expect main_datum.mitigation_logic == as_data("")
+
+      UpgradeState {
+        ..spending_datum,
+        mitigation_logic: new_val,
+        round: round + 1,
+      }
+    }
+
+    MitigationAuth -> {
+      // Can only set the mitigation auth script if main is not yet set
+      expect main_mitigation_auth == ""
+
+      UpgradeState {
+        ..spending_datum,
+        mitigation_auth: new_val,
+        round: round + 1,
+      }
+    }
+  }
+}
+
+fn validate_auth(
+  auth_cred: Credential,
+  mitigation_auth: ScriptHash,
+  withdrawals,
+) -> Bool {
+  and {
+    list.any(
+      withdrawals,
+      fn(withdrawal: Pair<Credential, Int>) { withdrawal.1st == auth_cred },
+    ),
+    or {
+      mitigation_auth == "",
+      {
+        let mitigation_auth_cred = Script(mitigation_auth)
+        list.any(
+          withdrawals,
+          fn(withdrawal: Pair<Credential, Int>) {
+            withdrawal.1st == mitigation_auth_cred
+          },
+        )
+      },
+    },
   }
 }
 
@@ -190,7 +366,7 @@ fn validate_mint_tokens(own_policy, one_shot_ref, inputs, outputs, mint) {
 
   expect expected_main_nft_id(own_policy) == ( main_nft_id |> as_data )
 
-  expect Stage {
+  expect UpgradeState {
     logic,
     mitigation_logic: "",
     auth,
@@ -205,7 +381,7 @@ fn validate_mint_tokens(own_policy, one_shot_ref, inputs, outputs, mint) {
   // Second output is staging
   expect [staging, ..] = rest_outputs
 
-  // Datum must be inline cus hash is crazy
+  // Datum must be inline
   expect Output {
     address: Address { payment_credential: out_pay_cred, .. },
     value,
@@ -219,7 +395,7 @@ fn validate_mint_tokens(own_policy, one_shot_ref, inputs, outputs, mint) {
 
   expect expected_staging_nft_id(own_policy) == ( staging_nft_id |> as_data )
 
-  expect Stage {
+  expect UpgradeState {
     logic,
     mitigation_logic: "",
     auth,
