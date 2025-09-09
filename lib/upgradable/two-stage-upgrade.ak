@@ -3,7 +3,7 @@ use aiken/collection/dict.{to_pairs}
 use aiken/collection/list
 use aiken/crypto.{ScriptHash}
 use cardano/address.{Address, Credential, Script}
-use cardano/assets.{to_dict}
+use cardano/assets.{PolicyId, Value, to_dict}
 use cardano/script_context.{Minting, ScriptInfo, Spending}
 use cardano/transaction.{
   Datum, InlineDatum, Input, Output, OutputReference, Redeemer, Transaction,
@@ -174,13 +174,12 @@ fn validate_main_update(
 
   expect InlineDatum(staging_datum) = staging_datum
 
-  expect UpgradeState { auth, mitigation_auth, .. } as spending_datum: UpgradeState =
-    spending_datum
+  expect spending_datum: UpgradeState = spending_datum
 
-  let auth_cred = Script(auth)
+  let auth_cred = Script(spending_datum.auth)
 
   // validate auth scripts are run
-  expect validate_auth(auth_cred, mitigation_auth, withdrawals)
+  expect validate_auth(auth_cred, spending_datum.mitigation_auth, withdrawals)
 
   when update_field is {
     Logic -> {
@@ -331,7 +330,13 @@ fn validate_auth(
   }
 }
 
-fn validate_mint_tokens(own_policy, one_shot_ref, inputs, outputs, mint) {
+fn validate_mint_tokens(
+  own_policy: PolicyId,
+  one_shot_ref: OutputReference,
+  inputs: List<Input>,
+  outputs: List<Output>,
+  mint: Value,
+) {
   let own_tokens = mint |> to_dict |> to_pairs |> must_find_key(own_policy)
   // "m" is lexographically before "s"
   let minted_tokens = [Pair(main_token_name, 1), Pair(staging_token_name, 1)]
