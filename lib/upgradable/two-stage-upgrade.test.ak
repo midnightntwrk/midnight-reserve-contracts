@@ -7,7 +7,9 @@ use cardano/transaction.{
 }
 use config
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
-use upgradable/types.{Logic, Main, TwoStageRedeemer, UpgradeState}
+use upgradable/types.{
+  Auth, Logic, Main, Staging, TwoStageRedeemer, UpgradeState,
+}
 
 const policy = #"00000000000000000000000000000000000000000000000000000001"
 
@@ -367,7 +369,9 @@ test spending_main_logic_change() {
           Output(
             script_address,
             from_lovelace(10000000) |> add(policy, "staging", 1),
-            InlineDatum(staging_datum),
+            InlineDatum(
+              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
+            ),
             None,
           ),
         ),
@@ -376,7 +380,13 @@ test spending_main_logic_change() {
         Output(
           script_address,
           from_lovelace(10000000) |> add(policy, "main", 1),
-          InlineDatum(UpgradeState { ..main_datum, logic: staging_datum.logic }),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              logic: staging_datum.logic,
+              round: staging_datum.round + 2,
+            },
+          ),
           None,
         ),
       ],
@@ -384,6 +394,186 @@ test spending_main_logic_change() {
     }
 
   let redeemer: Redeemer = TwoStageRedeemer(Logic, Main(ref_input_out_ref))
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_logic_change() {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(staging_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "staging", 1),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: #"51515151515151515151515151515151515151515151515151515151",
+              round: staging_datum.round + 1,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(staging_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_logic_change_w_mitigation() {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(
+              UpgradeState {
+                ..staging_datum,
+                logic: #"51515151515151515151515151515151515151515151515151515151",
+                round: staging_datum.round,
+                mitigation_auth: #"72727272727272727272727272727272727272727272727272727272",
+              },
+            ),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "staging", 1),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: #"51515151515151515151515151515151515151515151515151515151",
+              round: staging_datum.round + 1,
+              mitigation_auth: #"72727272727272727272727272727272727272727272727272727272",
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [
+        Pair(Script(staging_datum.auth), 0),
+        Pair(
+          Script(#"72727272727272727272727272727272727272727272727272727272"),
+          0,
+        ),
+      ],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_main_auth_change() {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(
+              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
+            ),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "main", 1),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              auth: staging_datum.auth,
+              round: staging_datum.round + 2,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(main_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer = TwoStageRedeemer(Auth, Main(ref_input_out_ref))
 
   let info = Spending(own_out_ref, None)
 

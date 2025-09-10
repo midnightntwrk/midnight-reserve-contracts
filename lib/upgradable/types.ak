@@ -10,15 +10,6 @@ pub type UpgradeState {
   round: Int,
 }
 
-@list
-pub type RefState<a, b, c, d> {
-  logic: a,
-  mitigation_logic: b,
-  auth: c,
-  mitigation_auth: d,
-  round: Int,
-}
-
 pub type TwoStageRedeemer {
   update_field: UpdateField,
   which_stage: WhichStage,
