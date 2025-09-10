@@ -29,6 +29,7 @@ pub fn build_native_script(multisig: Multisig) -> NativeScript {
       )
     } else {
       builtin.serialise_data(total_signers)
+        // Taking advantage of right side extension to modify 19 to become 99
         |> builtin.or_bytearray(True, _, list_length_next_2_byte)
         |> bytearray.concat(list_items)
     }

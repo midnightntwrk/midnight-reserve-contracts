@@ -10,5 +10,6 @@ pub type NativeScript =
 
 /// A signer pubkey hash plus extra bytes
 /// in front to be a native script signer
+/// #8200581C will be enforced to preprend each pubkey hash
 pub type NativeScriptSigner =
   ByteArray
