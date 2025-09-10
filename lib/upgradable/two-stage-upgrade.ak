@@ -9,8 +9,8 @@ use cardano/transaction.{
   Datum, InlineDatum, Input, Output, OutputReference, Redeemer, Transaction,
 }
 use upgradable/types.{
-  Auth, Logic, Main, MitigationAuth, MitigationLogic, RefState, Staging,
-  TwoStageRedeemer, UpdateField, UpgradeState,
+  Auth, Logic, Main, MitigationAuth, MitigationLogic, Staging, TwoStageRedeemer,
+  UpdateField, UpgradeState,
 }
 use utils.{must_find, must_find_key}
 
@@ -157,7 +157,7 @@ pub fn two_stage_upgradable(
         out_addr.payment_credential == pay_cred,
         out_nft_id == nft_id,
         out_datum == expected_output_datum,
-      }
+      }?
     }
 
     _ -> fail
@@ -174,62 +174,57 @@ fn validate_main_update(
 
   expect InlineDatum(staging_datum) = staging_datum
 
-  expect spending_datum: UpgradeState = spending_datum
+  expect UpgradeState { logic, mitigation_logic, auth, mitigation_auth, .. }: UpgradeState =
+    spending_datum
 
-  let auth_cred = Script(spending_datum.auth)
+  let auth_cred = Script(auth)
 
   // validate auth scripts are run
-  expect validate_auth(auth_cred, spending_datum.mitigation_auth, withdrawals)
+  expect validate_auth(auth_cred, mitigation_auth, withdrawals)
 
   when update_field is {
     Logic -> {
-      expect RefState { logic, round, .. }: RefState<
-        ScriptHash,
-        Data,
-        Data,
-        Data,
-      > = staging_datum
+      expect UpgradeState { logic, round, .. }: UpgradeState = staging_datum
 
-      UpgradeState { ..spending_datum, logic, round }
+      UpgradeState { logic, mitigation_logic, auth, mitigation_auth, round }
     }
 
     Auth -> {
-      expect RefState { auth, round, .. }: RefState<
-        Data,
-        Data,
-        ScriptHash,
-        Data,
-      > = staging_datum
+      expect UpgradeState { auth, round, .. }: UpgradeState = staging_datum
 
-      UpgradeState { ..spending_datum, auth, round }
+      UpgradeState { logic, mitigation_logic, auth, mitigation_auth, round }
     }
 
     MitigationLogic -> {
       // Can only set the mitigation logic script once
-      expect spending_datum.mitigation_logic == ""
+      expect mitigation_logic == ""
 
-      expect RefState { mitigation_logic, round, .. }: RefState<
-        Data,
-        ScriptHash,
-        Data,
-        Data,
-      > = staging_datum
+      expect UpgradeState { mitigation_logic: new_mitigation, round, .. } =
+        staging_datum
 
-      UpgradeState { ..spending_datum, mitigation_logic, round }
+      UpgradeState {
+        logic,
+        mitigation_logic: new_mitigation,
+        auth,
+        mitigation_auth,
+        round,
+      }
     }
 
     MitigationAuth -> {
       // Can only set the mitigation logic script once
-      expect spending_datum.mitigation_auth == ""
+      expect mitigation_auth == ""
 
-      expect RefState { mitigation_auth, round, .. }: RefState<
-        Data,
-        Data,
-        Data,
-        ScriptHash,
-      > = staging_datum
+      expect UpgradeState { mitigation_auth: new_mitigation, round, .. } =
+        staging_datum
 
-      UpgradeState { ..spending_datum, mitigation_auth, round }
+      UpgradeState {
+        logic,
+        mitigation_logic,
+        auth,
+        mitigation_auth: new_mitigation,
+        round,
+      }
     }
   }
 }
@@ -248,15 +243,15 @@ fn validate_staging_update(
 
   expect InlineDatum(main_datum) = main_datum
 
-  expect UpgradeState { auth, mitigation_auth, round, .. } as spending_datum: UpgradeState =
+  expect UpgradeState { logic, mitigation_logic, auth, mitigation_auth, round } =
     spending_datum
 
-  expect RefState { auth: main_auth, mitigation_auth: main_mitigation_auth, .. } as main_datum: RefState<
-    Data,
-    Data,
-    ScriptHash,
-    ScriptHash,
-  > = main_datum
+  expect UpgradeState {
+    mitigation_logic: main_mitigation_logic,
+    auth: main_auth,
+    mitigation_auth: main_mitigation_auth,
+    ..
+  } = main_datum
 
   let auth_cred = Script(auth)
 
@@ -277,17 +272,33 @@ fn validate_staging_update(
     }
 
   when update_field is {
-    Logic -> UpgradeState { ..spending_datum, logic: new_val, round: round + 1 }
+    Logic ->
+      UpgradeState {
+        logic: new_val,
+        mitigation_logic,
+        auth,
+        mitigation_auth,
+        round: round + 1,
+      }
 
-    Auth -> UpgradeState { ..spending_datum, auth: new_val, round: round + 1 }
+    Auth ->
+      UpgradeState {
+        logic,
+        mitigation_logic,
+        auth: new_val,
+        mitigation_auth,
+        round: round + 1,
+      }
 
     MitigationLogic -> {
       // Can only set the mitigation logic script if main is not yet set
-      expect main_datum.mitigation_logic == as_data("")
+      expect main_mitigation_logic == ""
 
       UpgradeState {
-        ..spending_datum,
+        logic,
         mitigation_logic: new_val,
+        auth,
+        mitigation_auth,
         round: round + 1,
       }
     }
@@ -297,7 +308,9 @@ fn validate_staging_update(
       expect main_mitigation_auth == ""
 
       UpgradeState {
-        ..spending_datum,
+        logic,
+        mitigation_logic,
+        auth,
         mitigation_auth: new_val,
         round: round + 1,
       }
