@@ -14,7 +14,7 @@ use upgradable/types.{
 const policy = #"00000000000000000000000000000000000000000000000000000001"
 
 const one_shot_ref =
-  OutputReference(config.one_shot_hash, config.one_shot_index)
+  OutputReference(config.reserve_one_shot_hash, config.reserve_one_shot_index)
 
 const address =
   Address(

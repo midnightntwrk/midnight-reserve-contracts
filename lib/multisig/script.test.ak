@@ -1,6 +1,7 @@
 use aiken/builtin
+use aiken/crypto.{VerificationKeyHash}
 use aiken/primitive/bytearray
-use multisig/script.{build_native_script, create_signer}
+use multisig/script.{build_native_script}
 use multisig/types.{Multisig}
 
 test number_serialize() {
@@ -22,6 +23,12 @@ test number_serialize() {
   //   ],
   // )
   Void
+}
+
+fn create_signer(pkh: VerificationKeyHash) -> ByteArray {
+  expect builtin.length_of_bytearray(pkh) == 28
+
+  bytearray.concat(#"8200581c", pkh)
 }
 
 test native_script_creation() {
