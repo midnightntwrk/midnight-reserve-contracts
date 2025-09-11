@@ -8,6 +8,7 @@ use cardano/script_context.{Minting, ScriptInfo, Spending}
 use cardano/transaction.{
   Datum, InlineDatum, Input, Output, OutputReference, Redeemer, Transaction,
 }
+use config
 use upgradable/types.{
   Auth, Logic, Main, MitigationAuth, MitigationLogic, Staging, TwoStageRedeemer,
   UpdateField, UpgradeState,
@@ -411,8 +412,6 @@ fn validate_mint_tokens(
 
   expect [_, ..staging_nft_id] = value |> to_dict |> to_pairs
 
-  expect expected_staging_nft_id(own_policy) == ( staging_nft_id |> as_data )
-
   expect UpgradeState {
     logic,
     mitigation_logic: "",
@@ -421,7 +420,10 @@ fn validate_mint_tokens(
     round: 0,
   } = staging_datum
 
-  expect builtin.length_of_bytearray(logic) == 28
-
-  builtin.length_of_bytearray(auth) == 28
+  and {
+    expected_staging_nft_id(own_policy) == ( staging_nft_id |> as_data ),
+    builtin.length_of_bytearray(logic) == 28,
+    builtin.length_of_bytearray(auth) == 28,
+    own_policy != config.cnight_policy,
+  }
 }
