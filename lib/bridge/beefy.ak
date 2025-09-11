@@ -5,6 +5,7 @@ use bridge/types.{
   BeefyConsensusProof, BeefyConsensusState, Commitment, Node,
   PartialConsensusProof, Payload, RelayChainProof, Vote, mmr_root_payload_id,
 }
+use utils.{must_find}
 
 pub fn verify_consensus(
   trusted_state: BeefyConsensusState,
@@ -135,15 +136,6 @@ pub fn verify_mmr_update_proof(
 
 pub fn check_participation_threshold(len: Int, total: Int) {
   len >= 2 * total / 3 + 1
-}
-
-pub fn must_find(list: List<a>, cond: fn(a) -> Bool) -> a {
-  expect [x, ..xs] = list
-  if cond(x) {
-    x
-  } else {
-    must_find(xs, cond)
-  }
 }
 
 pub fn check_auth_sigs_and_get_len(

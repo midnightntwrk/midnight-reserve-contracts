@@ -180,7 +180,7 @@ fn validate_main_update(
   let auth_cred = Script(auth)
 
   // validate auth scripts are run
-  expect validate_auth(auth_cred, mitigation_auth, withdrawals)
+  expect validate_running(auth_cred, mitigation_auth, withdrawals)
 
   when update_field is {
     Logic -> {
@@ -261,14 +261,14 @@ fn validate_staging_update(
   // We allow either staging auth or main auth
   // (In case staging auth is accidentally stuck)
   expect or {
-      validate_auth(auth_cred, mitigation_auth, withdrawals),
+      validate_running(auth_cred, mitigation_auth, withdrawals),
       // Special case for MitigationAuth
       if update_field == MitigationAuth {
         empty
       } else {
         main_mitigation_auth
       }
-        |> validate_auth(main_auth_cred, _, withdrawals),
+        |> validate_running(main_auth_cred, _, withdrawals),
     }
 
   when update_field is {
@@ -318,7 +318,7 @@ fn validate_staging_update(
   }
 }
 
-fn validate_auth(
+pub fn validate_running(
   auth_cred: Credential,
   mitigation_auth: ScriptHash,
   withdrawals,
@@ -358,8 +358,8 @@ fn validate_mint_tokens(
   expect ( own_tokens |> to_pairs ) == minted_tokens
 
   // Spend a determined input so minting can only happen once
-  expect _ =
-    must_find(
+  expect
+    list.any(
       inputs,
       fn(input: Input) { input.output_reference == one_shot_ref },
     )
