@@ -8,11 +8,12 @@ use cardano/script_context.{Minting, ScriptInfo}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Redeemer, Transaction,
 }
+use config
 use forever/forever_types.{Outputs}
 use upgradable/two_stage_upgrade.{validate_running}
 use utils.{must_find}
 
-pub fn forever_permissioned(
+pub fn forever_contract(
   transaction: Transaction,
   redeemer: Redeemer,
   info: ScriptInfo,
@@ -54,6 +55,7 @@ pub fn forever_permissioned(
       and {
         ( nft_id |> as_data ) == as_data([Pair(own_policy, [Pair("", 1)])]),
         initial_state_validation(datum, redeemer),
+        own_policy != config.cnight_policy,
       }
     }
 

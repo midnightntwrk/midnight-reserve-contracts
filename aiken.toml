@@ -23,12 +23,17 @@ reserve_two_stage_hash = "blah_blah"
 council_one_shot_hash = "yes_no_test"
 council_one_shot_index = 1
 council_two_stage_hash = "blah_blah"
+ics_one_shot_hash = "yes_no_test"
+ics_one_shot_index = 1
+ics_two_stage_hash = "blah_blah"
 
 [config.preview]
 reserve_one_shot_hash = "yes_no_test"
 reserve_one_shot_index = 1
 council_one_shot_hash = "yes_no_test"
 council_one_shot_index = 1
+ics_one_shot_hash = "yes_no_test"
+ics_one_shot_index = 1
 
 [config.preview.cnight_policy]
 bytes = "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69"
@@ -40,4 +45,8 @@ encoding = "hex"
 
 [config.preview.council_two_stage_hash]
 bytes = "54545454545454545454545454545454545454545454545454545454"
+encoding = "hex"
+
+[config.preview.ics_two_stage_hash]
+bytes = "37373737373737373737373737373737373737373737373737373737"
 encoding = "hex"
