@@ -20,7 +20,9 @@ pub fn scale_encode_commitment(commitment: Commitment) -> ByteArray {
       },
     )
 
-  let payload_encoded = scale_encode_bytes(payload_bytes)
+  let payload_encoded =
+    scale_encode_length(list.length(payloads))
+      |> bytearray.concat(payload_bytes)
 
   let rest =
     builtin.integer_to_bytearray(False, 4, block_number)
@@ -63,27 +65,14 @@ pub fn scale_encode_beefy_mmr_leaf(leaf: BeefyMmrLeaf) -> ByteArray {
 
 pub const scale_mode = [#"00", #"01", #"02", #"03"]
 
-pub fn scale_encode_bytes(data: ByteArray) -> ByteArray {
-  let length = builtin.length_of_bytearray(data)
-
+fn scale_encode_length(length: Int) {
   let length_encoded =
     if length < 64 {
-      builtin.integer_to_bytearray(False, 1, length)
-        |> builtin.shift_bytearray(2)
+      builtin.integer_to_bytearray(False, 1, length * 4)
     } else if length < 16384 {
-      builtin.or_bytearray(
-        True,
-        builtin.integer_to_bytearray(False, 2, length)
-          |> builtin.shift_bytearray(2),
-        #"01",
-      )
+      builtin.integer_to_bytearray(False, 2, length * 4 + 1)
     } else if length < 1_073_741_824 {
-      builtin.or_bytearray(
-        True,
-        builtin.integer_to_bytearray(False, 4, length)
-          |> builtin.shift_bytearray(2),
-        #"02",
-      )
+      builtin.integer_to_bytearray(False, 4, length * 4 + 2)
     } else {
       // Using 0 gets the exact byte length to store the integer
       // No extra padding to strip off
@@ -91,17 +80,18 @@ pub fn scale_encode_bytes(data: ByteArray) -> ByteArray {
       let length_of_length = builtin.length_of_bytearray(length_bytes)
 
       let prefix =
-        builtin.or_bytearray(
-          True,
-          builtin.integer_to_bytearray(False, 1, length_of_length - 4)
-            |> builtin.shift_bytearray(2),
-          #"03",
-        )
+        builtin.integer_to_bytearray(False, 1, ( length_of_length - 4 ) * 4 + 3)
 
       bytearray.concat(prefix, length_bytes)
     }
 
-  bytearray.concat(length_encoded, data)
+  length_encoded
+}
+
+pub fn scale_encode_bytes(data: ByteArray) -> ByteArray {
+  let length = builtin.length_of_bytearray(data)
+
+  scale_encode_length(length) |> bytearray.concat(data)
 }
 
 /// This is actually unneeded
@@ -117,4 +107,111 @@ pub fn remove_ending_zeros(b: ByteArray) -> ByteArray {
   let last_byte = last_set_bit + 7 / 8
 
   builtin.slice_bytearray(0, last_byte, b)
+}
+
+// SignedCommitment {
+//     commitment: Commitment {
+//         payload: Payload(
+//             [
+//                 (
+//                     [
+//                         109,
+//                         104,
+//                     ],
+//                     [
+//                         53,
+//                         65,
+//                         254,
+//                         123,
+//                         27,
+//                         186,
+//                         127,
+//                         141,
+//                         229,
+//                         210,
+//                         46,
+//                         204,
+//                         239,
+//                         0,
+//                         80,
+//                         219,
+//                         105,
+//                         225,
+//                         203,
+//                         189,
+//                         175,
+//                         186,
+//                         97,
+//                         188,
+//                         180,
+//                         234,
+//                         162,
+//                         244,
+//                         237,
+//                         247,
+//                         111,
+//                         152,
+//                     ],
+//                 ),
+//             ],
+//         ),
+//         block_number: 665,
+//         validator_set_id: 0,
+//     },
+//     signatures: [
+//         Some(
+//             Signature(
+//                 a43cd5ab202cfb127d8cf74f68b05c0db0e9b030b1f1bb89a3c272e5c0762a1a7ac67e71538de8033ef8d566657f1f47c0456cf1371982ff08ced25f53eaf80000,
+//             ),
+//         ),
+//     ],
+// }
+
+const comm =
+  Commitment(
+    [
+      Payload(
+        #[109, 104],
+        #[
+          79,
+          42,
+          251,
+          147,
+          130,
+          143,
+          102,
+          40,
+          32,
+          255,
+          188,
+          69,
+          86,
+          105,
+          27,
+          101,
+          117,
+          37,
+          249,
+          209,
+          30,
+          101,
+          14,
+          4,
+          231,
+          189,
+          125,
+          5,
+          76,
+          64,
+          153,
+          138,
+        ],
+      ),
+    ],
+    185,
+    0,
+  )
+
+test scale_encode_commitment_1() {
+  scale_encode_commitment(comm) == #"046d68804f2afb93828f662820ffbc4556691b657525f9d11e650e04e7bd7d054c40998ab90000000000000000000000"
 }
