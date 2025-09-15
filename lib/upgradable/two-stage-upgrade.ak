@@ -427,3 +427,35 @@ fn validate_mint_tokens(
     own_policy != config.cnight_policy,
   }
 }
+
+pub fn logic_is_on_main(
+  inputs: List<Input>,
+  two_stage_hash: PolicyId,
+  logic: ScriptHash,
+) {
+  let pay_cred = Script(two_stage_hash)
+  let main_nft_id = expected_main_nft_id(two_stage_hash)
+
+  list.any(
+    inputs,
+    fn(input) {
+      let Output { address, value, datum, .. } = input.output
+
+      and {
+        address.payment_credential == pay_cred,
+        {
+          expect [_, ..nft_id] = value |> to_dict |> to_pairs
+
+          as_data(main_nft_id) == as_data(nft_id)
+        },
+        {
+          expect InlineDatum(datum) = datum
+
+          expect [current_logic, ..] = datum |> builtin.un_list_data
+
+          builtin.un_b_data(current_logic) == logic
+        },
+      }
+    },
+  )
+}

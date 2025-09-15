@@ -67,13 +67,13 @@ pub fn create_signer(pkh: Data<VerificationKeyHash>) -> ByteArray {
 }
 
 pub fn check_for_multisig(
-  reference_inputs: List<Input>,
+  inputs: List<Input>,
   mint: Value,
   nft_id: PolicyId,
 ) -> Bool {
   let input =
     must_find(
-      reference_inputs,
+      inputs,
       fn(input) {
         when input.output.value |> to_dict |> to_pairs is {
           [_, Pair(nft_policy, _), ..] -> nft_policy == nft_id

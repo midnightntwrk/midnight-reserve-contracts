@@ -20,12 +20,19 @@ cnight_policy = "thing_cool"
 reserve_one_shot_hash = "yes_no_test"
 reserve_one_shot_index = 1
 reserve_two_stage_hash = "blah_blah"
+reserve_forever_hash = "forever_hash"
 council_one_shot_hash = "yes_no_test"
 council_one_shot_index = 1
 council_two_stage_hash = "blah_blah"
+council_forever_hash = "forever_hash"
 ics_one_shot_hash = "yes_no_test"
 ics_one_shot_index = 1
 ics_two_stage_hash = "blah_blah"
+ics_forever_hash = "forever_hash"
+technical_authority_one_shot_hash = "yes_no_test"
+technical_authority_one_shot_index = 1
+technical_authority_two_stage_hash = "blah_blah"
+technical_authority_forever_hash = "forever_hash"
 
 [config.preview]
 reserve_one_shot_hash = "yes_no_test"
@@ -34,6 +41,8 @@ council_one_shot_hash = "yes_no_test"
 council_one_shot_index = 1
 ics_one_shot_hash = "yes_no_test"
 ics_one_shot_index = 1
+technical_authority_one_shot_hash = "yes_no_test"
+technical_authority_one_shot_index = 1
 
 [config.preview.cnight_policy]
 bytes = "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69"
@@ -43,10 +52,30 @@ encoding = "hex"
 bytes = "54545454545454545454545454545454545454545454545454545454"
 encoding = "hex"
 
+[config.preview.reserve_forever_hash]
+bytes = "12121212121212121212121212121212121212121212121212121212"
+encoding = "hex"
+
 [config.preview.council_two_stage_hash]
 bytes = "54545454545454545454545454545454545454545454545454545454"
 encoding = "hex"
 
+[config.preview.council_forever_hash]
+bytes = "45454545454545454545454545454545454545454545454545454545"
+encoding = "hex"
+
 [config.preview.ics_two_stage_hash]
 bytes = "37373737373737373737373737373737373737373737373737373737"
+encoding = "hex"
+
+[config.preview.ics_forever_hash]
+bytes = "78787878787878787878787878787878787878787878787878787878"
+encoding = "hex"
+
+[config.preview.technical_authority_two_stage_hash]
+bytes = "91919191919191919191919191919191919191919191919191919191"
+encoding = "hex"
+
+[config.preview.technical_authority_forever_hash]
+bytes = "21212121212121212121212121212121212121212121212121212121"
 encoding = "hex"
