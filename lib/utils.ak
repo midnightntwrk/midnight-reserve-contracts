@@ -1,4 +1,8 @@
 use aiken/builtin
+use aiken/collection/dict.{to_pairs}
+use cardano/address.{Script}
+use cardano/assets.{PolicyId, to_dict}
+use cardano/transaction.{InlineDatum, Input, Output}
 
 pub fn must_find_key(pairs: Pairs<ByteArray, a>, key: ByteArray) -> a {
   expect [item, ..rest] = pairs
@@ -38,4 +42,36 @@ pub fn foldr2(
       with(x, acc_a, acc_b, return)
     }
   }
+}
+
+pub fn get_output_state_by_policy(outputs: List<Output>, policy: PolicyId) {
+  let pay_cred = Script(policy)
+
+  let Output { value, datum, .. } =
+    must_find(
+      outputs,
+      fn(output) { output.address.payment_credential == pay_cred },
+    )
+
+  expect [_, ..nft_id] = value |> to_dict |> to_pairs
+
+  expect as_data(nft_id) == as_data([Pair(policy, [Pair("", 1)])])
+
+  expect InlineDatum(datum) = datum
+
+  datum
+}
+
+pub fn get_input_state_by_policy(inputs: List<Input>, policy: PolicyId) {
+  expect InlineDatum(datum) =
+    must_find(
+      inputs,
+      fn(input) {
+        expect [_, ..assets] = input.output.value |> to_dict |> to_pairs
+
+        as_data(assets) == as_data([Pair(policy, [Pair("", 1)])])
+      },
+    ).output.datum
+
+  datum
 }

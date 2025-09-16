@@ -1,21 +1,20 @@
 use aiken/builtin
-use aiken/collection/dict.{to_pairs}
-use aiken/collection/list
-use cardano/address.{Script}
-use cardano/assets.{to_dict}
-use cardano/script_context.{Minting, ScriptContext, Withdrawing}
-use cardano/transaction.{
-  InlineDatum, Input, Output, OutputReference, Redeemer, Transaction,
-}
+use auth/script.{auth_multisig_validation} as auth_script
+use cardano/script_context.{ScriptContext}
+use cardano/transaction.{OutputReference, Redeemer}
 use config
-use forever/forever_contract.{forever_contract}
-use logic/types.{StagingState}
-use multisig/script.{check_for_multisig, create_signer}
-use multisig/types.{Multisig} as t
-use upgradable/two_stage_upgrade.{logic_is_on_main, two_stage_upgradable}
-use utils.{foldr2, must_find}
+use forever/script.{forever_contract}
+use logic/script.{logic_multisig_validation_nft_input} as logic_script
+use logic/types.{
+  RefTechnicalAuthRefCouncil, RefTechnicalAuthSpendCouncil,
+  SpendTechnicalAuthRefCouncil,
+}
+use multisig/script.{create_signer} as multisig_script
+use multisig/types.{Multisig} as multisig_types
+use upgradable/two_stage_upgrade.{two_stage_upgradable}
+use utils.{foldr2}
 
-fn permissioned_init_validation(datum: Data, redeemer: Redeemer) {
+fn multisig_validation(datum: Data, redeemer: Redeemer) {
   expect Multisig { total_signers, min_signers, signers }: Multisig = datum
 
   let given_signers = redeemer |> builtin.un_list_data
@@ -40,7 +39,7 @@ fn permissioned_init_validation(datum: Data, redeemer: Redeemer) {
   }
 }
 
-validator forever_council {
+validator council_forever {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
@@ -56,12 +55,12 @@ validator forever_council {
       info,
       one_shot_ref,
       config.council_two_stage_hash,
-      permissioned_init_validation,
+      multisig_validation,
     )
   }
 }
 
-validator two_stage_upgrade_council {
+validator council_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
@@ -75,12 +74,9 @@ validator two_stage_upgrade_council {
   }
 }
 
-validator logic_council {
+validator council_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
-
-    let Transaction { inputs, reference_inputs, outputs, mint, .. } =
-      transaction
 
     let one_shot_ref =
       OutputReference(
@@ -88,70 +84,149 @@ validator logic_council {
         config.council_one_shot_index,
       )
 
-    when info is {
-      Minting(own_policy) -> {
-        // Spend a determined input so minting can only happen once
-        expect
-          list.any(
-            inputs,
-            fn(input: Input) { input.output_reference == one_shot_ref },
-          )
+    logic_multisig_validation_nft_input(
+      transaction,
+      redeemer,
+      info,
+      one_shot_ref,
+      multisig_validation,
+      RefTechnicalAuthSpendCouncil,
+    )
+  }
+}
 
-        let Pair(_, tokens) =
-          mint
-            |> to_dict
-            |> to_pairs
-            |> must_find(fn(value) { value.1st == own_policy })
+validator council_gov {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+    auth_multisig_validation(transaction, info)
+  }
+}
 
-        expect [Pair("", 1)] = tokens |> to_pairs
+validator tech_auth_forever {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, redeemer, info } = ctx
 
-        let pay_cred = Script(own_policy)
+    let one_shot_ref =
+      OutputReference(
+        config.technical_authority_one_shot_hash,
+        config.technical_authority_one_shot_index,
+      )
 
-        let Output { value, datum, .. } =
-          must_find(
-            outputs,
-            fn(output) { output.address.payment_credential == pay_cred },
-          )
+    forever_contract(
+      transaction,
+      redeemer,
+      info,
+      one_shot_ref,
+      config.technical_authority_two_stage_hash,
+      multisig_validation,
+    )
+  }
+}
 
-        expect [_, ..nft_id] = value |> to_dict |> to_pairs
+validator tech_auth_two_stage_upgrade {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, redeemer, info } = ctx
 
-        expect InlineDatum(datum) = datum
+    let one_shot_ref =
+      OutputReference(
+        config.technical_authority_one_shot_hash,
+        config.technical_authority_one_shot_index,
+      )
 
-        expect _: StagingState = datum
+    two_stage_upgradable(transaction, redeemer, info, one_shot_ref)
+  }
+}
 
-        and {
-          ( nft_id |> as_data ) == as_data([Pair(own_policy, [Pair("", 1)])]),
-          own_policy != config.cnight_policy,
-        }
-      }
+validator tech_auth_logic {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, redeemer, info } = ctx
 
-      Withdrawing(Script(own_hash) as cred) ->
-        if logic_is_on_main(
-          reference_inputs,
-          config.council_two_stage_hash,
-          own_hash,
-        ) {
-          todo
-        } else {
-          let Output { value, datum, .. } =
-            must_find(
-              reference_inputs,
-              fn(input) { cred == input.output.address.payment_credential },
-            ).output
+    let one_shot_ref =
+      OutputReference(
+        config.technical_authority_one_shot_hash,
+        config.technical_authority_one_shot_index,
+      )
 
-          expect [_, ..nft_id] = value |> to_dict |> to_pairs
+    logic_multisig_validation_nft_input(
+      transaction,
+      redeemer,
+      info,
+      one_shot_ref,
+      multisig_validation,
+      SpendTechnicalAuthRefCouncil,
+    )
+  }
+}
 
-          expect as_data(nft_id) == as_data([Pair(own_hash, [Pair("", 1)])])
+validator tech_auth_gov {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+    auth_multisig_validation(transaction, info)
+  }
+}
 
-          expect InlineDatum(datum) = datum
+// Is committee operators aka federated
+// block producers even needed on Cardano.
+// Based on what I know I don't think so
+validator committe_ops_forever {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, redeemer, info } = ctx
 
-          expect StagingState { technical_authority_nft, .. }: StagingState =
-            datum
+    let one_shot_ref =
+      OutputReference(
+        config.technical_authority_one_shot_hash,
+        config.technical_authority_one_shot_index,
+      )
 
-          check_for_multisig(reference_inputs, mint, technical_authority_nft)
-        }
+    forever_contract(
+      transaction,
+      redeemer,
+      info,
+      one_shot_ref,
+      config.technical_authority_two_stage_hash,
+      multisig_validation,
+    )
+  }
+}
 
-      _ -> fail
-    }
+validator committe_ops_two_stage_upgrade {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, redeemer, info } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.technical_authority_one_shot_hash,
+        config.technical_authority_one_shot_index,
+      )
+
+    two_stage_upgradable(transaction, redeemer, info, one_shot_ref)
+  }
+}
+
+validator committe_ops_logic {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, redeemer, info } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.technical_authority_one_shot_hash,
+        config.technical_authority_one_shot_index,
+      )
+
+    logic_multisig_validation_nft_input(
+      transaction,
+      redeemer,
+      info,
+      one_shot_ref,
+      multisig_validation,
+      RefTechnicalAuthRefCouncil,
+    )
+  }
+}
+
+validator committe_ops_gov {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+    auth_multisig_validation(transaction, info)
   }
 }
