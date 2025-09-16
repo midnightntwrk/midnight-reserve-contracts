@@ -441,6 +441,8 @@ pub fn logic_is_on_main(
     fn(input) {
       let Output { address, value, datum, .. } = input.output
 
+      // Remember and is lazy and will not evaluate cases further
+      // if one returned false
       and {
         address.payment_credential == pay_cred,
         {
