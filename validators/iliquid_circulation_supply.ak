@@ -1,15 +1,17 @@
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
-use forever/forever_contract.{forever_contract}
+use forever/script.{forever_contract}
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 
-fn ics_init_validation(_datum: Data, _redeemer: Redeemer) {
+// Likely lock up forever
+fn ics_validation(_datum: Data, _redeemer: Redeemer) {
   // ics initialization validation
   // For properly setting up state
-  todo
+  fail
 }
 
+// TODO: likely want a separate forever ics rather than default script
 validator forever_ics {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
@@ -23,7 +25,7 @@ validator forever_ics {
       info,
       one_shot_ref,
       config.ics_two_stage_hash,
-      ics_init_validation,
+      ics_validation,
     )
   }
 }

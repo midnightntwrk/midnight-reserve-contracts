@@ -9,9 +9,9 @@ use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Redeemer, Transaction,
 }
 use config
-use forever/forever_types.{Outputs}
+use forever/types.{Outputs}
 use upgradable/two_stage_upgrade.{validate_running}
-use utils.{must_find}
+use utils.{get_output_state_by_policy, must_find}
 
 pub fn forever_contract(
   transaction: Transaction,
@@ -38,22 +38,13 @@ pub fn forever_contract(
           |> to_pairs
           |> must_find(fn(value) { value.1st == own_policy })
 
+      // ensure only a single nft token with no name is minted
+      // under this policy
       expect [Pair("", 1)] = tokens |> to_pairs
 
-      let pay_cred = Script(own_policy)
-
-      let Output { value, datum, .. } =
-        must_find(
-          outputs,
-          fn(output) { output.address.payment_credential == pay_cred },
-        )
-
-      expect [_, ..nft_id] = value |> to_dict |> to_pairs
-
-      expect InlineDatum(datum) = datum
+      let datum = get_output_state_by_policy(outputs, own_policy)
 
       and {
-        ( nft_id |> as_data ) == as_data([Pair(own_policy, [Pair("", 1)])]),
         initial_state_validation(datum, redeemer),
         own_policy != config.cnight_policy,
       }
