@@ -1,18 +1,16 @@
+use aiken/builtin
+use auth/script.{auth_multisig_validation} as auth_script
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
 use forever/script.{forever_contract}
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 
-// Likely lock up forever
-fn ics_validation(_datum: Data, _redeemer: Redeemer) {
-  // ics initialization validation
-  // For properly setting up state
-  fail
+fn ics_init_validation(datum: Data, _redeemer: Redeemer) {
+  builtin.un_i_data(datum) == 0
 }
 
-// TODO: likely want a separate forever ics rather than default script
-validator forever_ics {
+validator ics_forever {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
@@ -25,12 +23,12 @@ validator forever_ics {
       info,
       one_shot_ref,
       config.ics_two_stage_hash,
-      ics_validation,
+      ics_init_validation,
     )
   }
 }
 
-validator two_stage_upgrade_ics {
+validator ics_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
@@ -38,5 +36,19 @@ validator two_stage_upgrade_ics {
       OutputReference(config.ics_one_shot_hash, config.ics_one_shot_index)
 
     two_stage_upgradable(transaction, redeemer, info, one_shot_ref)
+  }
+}
+
+// ICS is currently a black hole until updated
+validator ics_logic {
+  else(_ctx) {
+    fail
+  }
+}
+
+validator ics_gov {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+    auth_multisig_validation(transaction, info)
   }
 }

@@ -10,7 +10,7 @@ use upgradable/two_stage_upgrade.{two_stage_upgradable}
 fn reserve_init_validation(_datum: Data, _redeemer: Redeemer) {
   // Reserve initialization validation
   // For properly setting up state
-  // Figure out release rate logic
+  // Figure out max release rate logic
   todo
 }
 
