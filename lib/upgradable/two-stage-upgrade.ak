@@ -424,6 +424,8 @@ fn validate_mint_tokens(
     expected_staging_nft_id(own_policy) == ( staging_nft_id |> as_data ),
     builtin.length_of_bytearray(logic) == 28,
     builtin.length_of_bytearray(auth) == 28,
+    // This trick is simply to include cnight policy in the script hash
+    // without the compiler optimizing the policy away
     own_policy != config.cnight_policy,
   }
 }
