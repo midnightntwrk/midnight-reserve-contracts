@@ -1,3 +1,5 @@
+use aiken/crypto.{ScriptHash}
+
 @list
 pub type Multisig {
   total_signers: Int,
@@ -13,3 +15,12 @@ pub type NativeScript =
 /// #8200581C will be enforced to preprend each pubkey hash
 pub type NativeScriptSigner =
   ByteArray
+
+pub type MultisigPolicy {
+  signer_state: ScriptHash,
+  threshold_numerator: Int,
+  threshold_denominator: Int,
+}
+
+pub type MultisigPolicies =
+  List<MultisigPolicy>

@@ -14,7 +14,7 @@ use multisig/types.{Multisig} as multisig_types
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 use utils.{foldr2}
 
-fn multisig_validation(datum: Data, redeemer: Redeemer) {
+fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
   expect Multisig { total_signers, min_signers, signers }: Multisig = datum
 
   let given_signers = redeemer |> builtin.un_list_data
@@ -55,7 +55,7 @@ validator council_forever {
       info,
       one_shot_ref,
       config.council_two_stage_hash,
-      multisig_validation,
+      validate_multisig_structure,
     )
   }
 }
@@ -89,7 +89,7 @@ validator council_logic {
       redeemer,
       info,
       one_shot_ref,
-      multisig_validation,
+      validate_multisig_structure,
       RefTechnicalAuthSpendCouncil,
     )
   }
@@ -118,7 +118,7 @@ validator tech_auth_forever {
       info,
       one_shot_ref,
       config.technical_authority_two_stage_hash,
-      multisig_validation,
+      validate_multisig_structure,
     )
   }
 }
@@ -152,7 +152,7 @@ validator tech_auth_logic {
       redeemer,
       info,
       one_shot_ref,
-      multisig_validation,
+      validate_multisig_structure,
       SpendTechnicalAuthRefCouncil,
     )
   }
@@ -184,7 +184,7 @@ validator committe_ops_forever {
       info,
       one_shot_ref,
       config.technical_authority_two_stage_hash,
-      multisig_validation,
+      validate_multisig_structure,
     )
   }
 }
@@ -218,7 +218,7 @@ validator committe_ops_logic {
       redeemer,
       info,
       one_shot_ref,
-      multisig_validation,
+      validate_multisig_structure,
       RefTechnicalAuthRefCouncil,
     )
   }

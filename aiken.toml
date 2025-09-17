@@ -37,6 +37,24 @@ committee_operators_one_shot_hash = "yes_no_test"
 committee_operators_one_shot_index = 1
 committee_operators_two_stage_hash = "blah_blah"
 committee_operators_forever_hash = "forever_hash"
+main_gov_one_shot_hash = "yes_no_test"
+main_gov_one_shot_index = 1
+main_gov_threshold_hash = "blah_blah"
+staging_gov_one_shot_hash = "yes_no_test"
+staging_gov_one_shot_index = 1
+staging_gov_threshold_hash = "blah_blah"
+main_council_update_one_shot_hash = "yes_no_test"
+main_council_update_one_shot_index = 1
+main_council_update_threshold_hash = "blah_blah"
+staging_council_update_one_shot_hash = "yes_no_test"
+staging_council_update_one_shot_index = 1
+staging_council_update_threshold_hash = "blah_blah"
+main_tech_auth_update_one_shot_hash = "yes_no_test"
+main_tech_auth_update_one_shot_index = 1
+main_tech_auth_update_threshold_hash = "blah_blah"
+staging_tech_auth_update_one_shot_hash = "yes_no_test"
+staging_tech_auth_update_one_shot_index = 1
+staging_tech_auth_update_threshold_hash = "blah_blah"
 
 [config.preview]
 reserve_one_shot_hash = "yes_no_test"
@@ -49,6 +67,18 @@ technical_authority_one_shot_hash = "yes_no_test"
 technical_authority_one_shot_index = 1
 committee_operators_one_shot_hash = "yes_no_test"
 committee_operators_one_shot_index = 1
+main_gov_one_shot_hash = "yes_no_test"
+main_gov_one_shot_index = 1
+staging_gov_one_shot_hash = "yes_no_test"
+staging_gov_one_shot_index = 1
+main_council_update_one_shot_hash = "yes_no_test"
+main_council_update_one_shot_index = 1
+staging_council_update_one_shot_hash = "yes_no_test"
+staging_council_update_one_shot_index = 1
+main_tech_auth_update_one_shot_hash = "yes_no_test"
+main_tech_auth_update_one_shot_index = 1
+staging_tech_auth_update_one_shot_hash = "yes_no_test"
+staging_tech_auth_update_one_shot_index = 1
 
 [config.preview.cnight_policy]
 bytes = "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69"
@@ -92,4 +122,28 @@ encoding = "hex"
 
 [config.preview.committee_operators_forever_hash]
 bytes = "84848484848484848484848484848484848484848484848484848484"
+encoding = "hex"
+
+[config.preview.main_gov_threshold_hash]
+bytes = "95959595959595959595959595959595959595959595959595959595"
+encoding = "hex"
+
+[config.preview.staging_gov_threshold_hash]
+bytes = "16161616161616161616161616161616161616161616161616161616"
+encoding = "hex"
+
+[config.preview.main_council_update_threshold_hash]
+bytes = "27272727272727272727272727272727272727272727272727272727"
+encoding = "hex"
+
+[config.preview.staging_council_update_threshold_hash]
+bytes = "38383838383838383838383838383838383838383838383838383838"
+encoding = "hex"
+
+[config.preview.main_tech_auth_update_threshold_hash]
+bytes = "49494949494949494949494949494949494949494949494949494949"
+encoding = "hex"
+
+[config.preview.staging_tech_auth_update_threshold_hash]
+bytes = "50505050505050505050505050505050505050505050505050505050"
 encoding = "hex"
