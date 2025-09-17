@@ -90,3 +90,7 @@ pub fn check_for_multisig(
 
   list.any(mint |> to_dict |> to_pairs, fn(pair) { pair.1st == minting_policy })
 }
+
+pub fn update_thresholds() {
+  todo
+}
