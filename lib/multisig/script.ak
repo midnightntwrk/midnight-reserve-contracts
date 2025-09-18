@@ -16,8 +16,16 @@ const list_length_next_2_byte = #"99"
 
 const n_of_m_script_bytes = #"008303"
 
-pub fn build_native_script(multisig: Multisig) -> NativeScript {
-  let Multisig { total_signers, min_signers, signers } = multisig
+pub fn build_native_script(
+  multisig: Multisig,
+  threshold_numerator,
+  threshold_denominator,
+) -> NativeScript {
+  let Multisig { total_signers, signers } = multisig
+
+  // ceil always
+  let min_signers =
+    ( total_signers * threshold_numerator + threshold_denominator ) / threshold_denominator
 
   let min_signer_serialized = builtin.serialise_data(min_signers)
 
@@ -70,6 +78,8 @@ pub fn check_for_multisig(
   inputs: List<Input>,
   mint: Value,
   nft_id: PolicyId,
+  threshold_numerator,
+  threshold_denominator,
 ) -> Bool {
   let input =
     must_find(
@@ -86,7 +96,9 @@ pub fn check_for_multisig(
 
   expect multisig: Multisig = datum
 
-  let minting_policy = build_native_script(multisig) |> builtin.blake2b_224
+  let minting_policy =
+    build_native_script(multisig, threshold_numerator, threshold_denominator)
+      |> builtin.blake2b_224
 
   list.any(mint |> to_dict |> to_pairs, fn(pair) { pair.1st == minting_policy })
 }

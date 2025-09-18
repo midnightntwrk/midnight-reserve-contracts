@@ -3,7 +3,6 @@ use aiken/crypto.{ScriptHash}
 @list
 pub type Multisig {
   total_signers: Int,
-  min_signers: Int,
   signers: Data<List<NativeScriptSigner>>,
 }
 
@@ -16,11 +15,14 @@ pub type NativeScript =
 pub type NativeScriptSigner =
   ByteArray
 
-pub type MultisigPolicy {
-  signer_state: ScriptHash,
-  threshold_numerator: Int,
-  threshold_denominator: Int,
+pub type MainMultisigThreshold {
+  technical_auth_numerator: Int,
+  technical_auth_denominator: Int,
+  council_numerator: Int,
+  council_denominator: Int,
 }
 
-pub type MultisigPolicies =
-  List<MultisigPolicy>
+pub type StagingMultisigThreshold {
+  technical_auth_numerator: Int,
+  technical_auth_denominator: Int,
+}

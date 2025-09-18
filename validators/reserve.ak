@@ -59,14 +59,7 @@ validator reserve_logic {
         config.technical_authority_one_shot_index,
       )
 
-    logic_multisig_validation_nft_input(
-      transaction,
-      redeemer,
-      info,
-      one_shot_ref,
-      reserve_init_validation,
-      RefTechnicalAuthRefCouncil,
-    )
+    todo
   }
 }
 

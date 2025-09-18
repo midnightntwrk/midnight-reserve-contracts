@@ -15,7 +15,7 @@ use upgradable/two_stage_upgrade.{two_stage_upgradable}
 use utils.{foldr2}
 
 fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
-  expect Multisig { total_signers, min_signers, signers }: Multisig = datum
+  expect Multisig { total_signers, signers }: Multisig = datum
 
   let given_signers = redeemer |> builtin.un_list_data
 
@@ -35,7 +35,6 @@ fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
   and {
     as_data(expected_signers) == signers,
     total_signers == len,
-    min_signers <= len,
   }
 }
 
@@ -91,6 +90,8 @@ validator council_logic {
       one_shot_ref,
       validate_multisig_structure,
       RefTechnicalAuthSpendCouncil,
+      config.main_council_update_threshold_hash,
+      config.staging_council_update_threshold_hash,
     )
   }
 }
@@ -154,6 +155,8 @@ validator tech_auth_logic {
       one_shot_ref,
       validate_multisig_structure,
       SpendTechnicalAuthRefCouncil,
+      config.main_tech_auth_update_threshold_hash,
+      config.staging_tech_auth_update_threshold_hash,
     )
   }
 }
@@ -212,15 +215,15 @@ validator committe_ops_logic {
         config.technical_authority_one_shot_hash,
         config.technical_authority_one_shot_index,
       )
-
-    logic_multisig_validation_nft_input(
-      transaction,
-      redeemer,
-      info,
-      one_shot_ref,
-      validate_multisig_structure,
-      RefTechnicalAuthRefCouncil,
-    )
+    // logic_multisig_validation_nft_input(
+    //   transaction,
+    //   redeemer,
+    //   info,
+    //   one_shot_ref,
+    //   validate_multisig_structure,
+    //   RefTechnicalAuthRefCouncil,
+    // )
+    todo
   }
 }
 

@@ -1,6 +1,7 @@
 use aiken/builtin
 use aiken/collection/dict.{to_pairs}
 use aiken/collection/list
+use aiken/crypto.{ScriptHash}
 use cardano/address.{Script}
 use cardano/assets.{to_dict}
 use cardano/certificate.{RegisterCredential, UnregisterCredential}
@@ -12,8 +13,12 @@ use logic/types.{
   SpendTechnicalAuthRefCouncil, StagingState,
 }
 use multisig/script.{check_for_multisig}
+use multisig/types.{MainMultisigThreshold, StagingMultisigThreshold} as t
 use upgradable/two_stage_upgrade.{logic_is_on_main}
-use utils.{get_input_state_by_policy, get_output_state_by_policy, must_find}
+use utils.{
+  get_input_state_by_policy, get_output_state_by_policy, must_find,
+  one_shot_mint,
+}
 
 pub fn logic_multisig_validation_nft_input(
   transaction: Transaction,
@@ -22,26 +27,38 @@ pub fn logic_multisig_validation_nft_input(
   one_shot_ref: OutputReference,
   logic_state_validation,
   spending_type: AuthorizerLogic,
+  main_threshold: ScriptHash,
+  staging_threshold: ScriptHash,
 ) {
   let Transaction { inputs, reference_inputs, outputs, mint, .. } = transaction
 
   let validation =
     fn(own_hash) {
-      let tech_auth_location, council_location <-
-        fn(callback) {
-          when spending_type is {
-            RefTechnicalAuthRefCouncil ->
-              callback(reference_inputs, reference_inputs)
-            RefTechnicalAuthSpendCouncil -> callback(reference_inputs, inputs)
-            SpendTechnicalAuthRefCouncil -> callback(inputs, reference_inputs)
-          }
-        }
-
       if logic_is_on_main(
         reference_inputs,
         config.council_two_stage_hash,
         own_hash,
       ) {
+        let tech_auth_location, council_location <-
+          fn(callback) {
+            when spending_type is {
+              RefTechnicalAuthRefCouncil ->
+                callback(reference_inputs, reference_inputs)
+              RefTechnicalAuthSpendCouncil -> callback(reference_inputs, inputs)
+              SpendTechnicalAuthRefCouncil -> callback(inputs, reference_inputs)
+            }
+          }
+
+        let main_threshold_datum =
+          get_input_state_by_policy(reference_inputs, main_threshold)
+
+        expect MainMultisigThreshold {
+          technical_auth_numerator,
+          technical_auth_denominator,
+          council_numerator,
+          council_denominator,
+        } = main_threshold_datum
+
         let datum =
           get_output_state_by_policy(outputs, config.council_forever_hash)
 
@@ -50,11 +67,15 @@ pub fn logic_multisig_validation_nft_input(
             tech_auth_location,
             mint,
             config.technical_authority_forever_hash,
+            technical_auth_numerator,
+            technical_auth_denominator,
           ),
           check_for_multisig(
             council_location,
             mint,
             config.council_forever_hash,
+            council_numerator,
+            council_denominator,
           ),
           logic_state_validation(datum, redeemer),
         }
@@ -63,11 +84,21 @@ pub fn logic_multisig_validation_nft_input(
 
         expect StagingState { forever_script_hash, .. }: StagingState = datum
 
+        let staging_threshold_datum =
+          get_input_state_by_policy(reference_inputs, staging_threshold)
+
+        expect StagingMultisigThreshold {
+          technical_auth_numerator,
+          technical_auth_denominator,
+        }: StagingMultisigThreshold = staging_threshold_datum
+
         expect
           check_for_multisig(
             reference_inputs,
             mint,
             config.technical_authority_forever_hash,
+            technical_auth_numerator,
+            technical_auth_denominator,
           )
 
         let datum = get_output_state_by_policy(outputs, forever_script_hash)
@@ -78,22 +109,7 @@ pub fn logic_multisig_validation_nft_input(
 
   when info is {
     Minting(own_policy) -> {
-      // Spend a determined input so minting can only happen once
-      expect
-        list.any(
-          inputs,
-          fn(input: Input) { input.output_reference == one_shot_ref },
-        )
-
-      let Pair(_, tokens) =
-        mint
-          |> to_dict
-          |> to_pairs
-          |> must_find(fn(value) { value.1st == own_policy })
-
-      expect [Pair("", 1)] = tokens |> to_pairs
-
-      let datum = get_output_state_by_policy(outputs, own_policy)
+      let datum = one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
       expect StagingState { cnight_test_policy, forever_script_hash } = datum
 
