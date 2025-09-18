@@ -1,8 +1,9 @@
 use aiken/builtin
 use aiken/collection/dict.{to_pairs}
+use aiken/collection/list
 use cardano/address.{Script}
-use cardano/assets.{PolicyId, to_dict}
-use cardano/transaction.{InlineDatum, Input, Output}
+use cardano/assets.{PolicyId, Value, to_dict}
+use cardano/transaction.{InlineDatum, Input, Output, OutputReference}
 
 pub fn must_find_key(pairs: Pairs<ByteArray, a>, key: ByteArray) -> a {
   expect [item, ..rest] = pairs
@@ -72,6 +73,33 @@ pub fn get_input_state_by_policy(inputs: List<Input>, policy: PolicyId) {
         as_data(assets) == as_data([Pair(policy, [Pair("", 1)])])
       },
     ).output.datum
+
+  datum
+}
+
+pub fn one_shot_mint(
+  inputs: List<Input>,
+  mint: Value,
+  outputs: List<Output>,
+  own_policy: PolicyId,
+  one_shot_ref: OutputReference,
+) {
+  // Spend a determined input so minting can only happen once
+  expect
+    list.any(
+      inputs,
+      fn(input: Input) { input.output_reference == one_shot_ref },
+    )
+
+  let Pair(_, tokens) =
+    mint
+      |> to_dict
+      |> to_pairs
+      |> must_find(fn(value) { value.1st == own_policy })
+
+  expect [Pair("", 1)] = tokens |> to_pairs
+
+  let datum = get_output_state_by_policy(outputs, own_policy)
 
   datum
 }

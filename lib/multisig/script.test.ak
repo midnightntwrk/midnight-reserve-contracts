@@ -30,11 +30,10 @@ test native_script_creation() {
   let multisig =
     Multisig {
       total_signers: 2,
-      min_signers: 2,
       signers: [signer |> create_signer, signer2 |> create_signer],
     }
 
-  let native_script = build_native_script(multisig)
+  let native_script = build_native_script(multisig, 99, 100)
 
   let hash = builtin.blake2b_224(native_script)
 
