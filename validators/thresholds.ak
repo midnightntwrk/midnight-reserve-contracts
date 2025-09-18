@@ -8,8 +8,8 @@ use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
 }
 use config
-use multisig/types.{MultisigPolicies, MultisigPolicy}
-use utils.{get_output_state_by_policy, must_find}
+use multisig/types.{MainMultisigThreshold}
+use utils.{must_find, one_shot_mint}
 
 validator main_gov_threshold {
   else(ctx: ScriptContext) {
@@ -25,47 +25,24 @@ validator main_gov_threshold {
 
     when info is {
       Minting(own_policy) -> {
-        // Spend a determined input so minting can only happen once
-        expect
-          list.any(
-            inputs,
-            fn(input: Input) { input.output_reference == one_shot_ref },
-          )
+        let datum =
+          one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
-        let Pair(_, tokens) =
-          mint
-            |> to_dict
-            |> to_pairs
-            |> must_find(fn(value) { value.1st == own_policy })
-
-        expect [Pair("", 1)] = tokens |> to_pairs
-
-        let datum = get_output_state_by_policy(outputs, own_policy)
-
-        expect multisigs: MultisigPolicies = datum
+        expect MainMultisigThreshold {
+          technical_auth_numerator,
+          technical_auth_denominator,
+          council_numerator,
+          council_denominator,
+        }: MainMultisigThreshold = datum
 
         and {
           own_policy != config.cnight_policy,
-          list.all(
-            multisigs,
-            fn(multisig) {
-              let MultisigPolicy {
-                signer_state,
-                threshold_numerator,
-                threshold_denominator,
-              } = multisig
-
-              and {
-                builtin.length_of_bytearray(signer_state) == 28,
-                threshold_numerator <= threshold_denominator,
-                threshold_numerator > 0,
-              }
-            },
-          ),
+          technical_auth_numerator < technical_auth_denominator,
+          council_numerator < council_denominator,
         }
       }
 
-      Spending(output, datum) -> {
+      Spending { output, .. } -> {
         let own_input =
           must_find(
             inputs,
@@ -94,24 +71,17 @@ validator main_gov_threshold {
 
         expect InlineDatum(out_datum) = out_datum
 
-        expect multisigs: MultisigPolicies = out_datum
+        expect MainMultisigThreshold {
+          technical_auth_numerator,
+          technical_auth_denominator,
+          council_numerator,
+          council_denominator,
+        }: MainMultisigThreshold = out_datum
 
-        list.all(
-          multisigs,
-          fn(multisig) {
-            let MultisigPolicy {
-              signer_state,
-              threshold_numerator,
-              threshold_denominator,
-            } = multisig
-
-            and {
-              builtin.length_of_bytearray(signer_state) == 28,
-              threshold_numerator <= threshold_denominator,
-              threshold_numerator > 0,
-            }
-          },
-        )
+        and {
+          technical_auth_numerator < technical_auth_denominator,
+          council_numerator < council_denominator,
+        }
       }
 
       _ -> fail

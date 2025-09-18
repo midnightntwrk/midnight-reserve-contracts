@@ -11,7 +11,7 @@ use cardano/transaction.{
 use config
 use forever/types.{Outputs}
 use upgradable/two_stage_upgrade.{validate_running}
-use utils.{get_output_state_by_policy, must_find}
+use utils.{must_find, one_shot_mint}
 
 pub fn forever_contract(
   transaction: Transaction,
@@ -24,25 +24,7 @@ pub fn forever_contract(
   when info is {
     Minting(own_policy) -> {
       let Transaction { inputs, mint, outputs, .. } = transaction
-
-      // Spend a determined input so minting can only happen once
-      expect
-        list.any(
-          inputs,
-          fn(input: Input) { input.output_reference == one_shot_ref },
-        )
-
-      let Pair(_, tokens) =
-        mint
-          |> to_dict
-          |> to_pairs
-          |> must_find(fn(value) { value.1st == own_policy })
-
-      // ensure only a single nft token with no name is minted
-      // under this policy
-      expect [Pair("", 1)] = tokens |> to_pairs
-
-      let datum = get_output_state_by_policy(outputs, own_policy)
+      let datum = one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
       and {
         initial_state_validation(datum, redeemer),
