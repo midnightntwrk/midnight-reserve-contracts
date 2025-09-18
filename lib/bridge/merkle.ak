@@ -15,6 +15,7 @@ pub fn verify_mmr_leaf(
   let RelayChainProof {
     latest_mmr_leaf: BeefyMmrLeaf { parent_number, k_index, leaf_index, .. } as latest,
     mmr_proof,
+    mmr_subtree_proof,
     ..
   } = relay_proof
 
@@ -24,6 +25,7 @@ pub fn verify_mmr_leaf(
 
   mmr_root == calculate_mmr_root(
     mmr_proof |> builtin.un_list_data,
+    mmr_subtree_proof,
     [MmrLeaf(k_index, leaf_index, hash)],
     leaf_count,
   )
@@ -31,6 +33,7 @@ pub fn verify_mmr_leaf(
 
 fn calculate_mmr_root(
   mmr_proof: List<Data<ByteArray>>,
+  subtree_proof: Data<List<List<Node>>>,
   leaves: List<MmrLeaf>,
   leaf_count: Int,
 ) {
