@@ -1,6 +1,4 @@
-use aiken/builtin
 use aiken/collection/dict.{to_pairs}
-use aiken/collection/list
 use cardano/address.{Script}
 use cardano/assets.{to_dict}
 use cardano/script_context.{Minting, ScriptContext, Spending}
@@ -8,6 +6,7 @@ use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
 }
 use config
+use multisig/script.{check_for_multisig}
 use multisig/types.{MainMultisigThreshold}
 use utils.{must_find, one_shot_mint}
 
@@ -15,7 +14,8 @@ validator main_gov_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
 
-    let Transaction { inputs, outputs, mint, .. } = transaction
+    let Transaction { inputs, reference_inputs, outputs, mint, .. } =
+      transaction
 
     let one_shot_ref =
       OutputReference(
@@ -62,6 +62,32 @@ validator main_gov_threshold {
 
         expect as_data(expected_nft_id)
 
+        expect InlineDatum(spending_datum) = spending_datum
+
+        expect MainMultisigThreshold {
+          technical_auth_numerator,
+          technical_auth_denominator,
+          council_numerator,
+          council_denominator,
+        }: MainMultisigThreshold = spending_datum
+
+        expect and {
+            check_for_multisig(
+              reference_inputs,
+              mint,
+              config.technical_authority_forever_hash,
+              technical_auth_numerator,
+              technical_auth_denominator,
+            ),
+            check_for_multisig(
+              reference_inputs,
+              mint,
+              config.council_forever_hash,
+              council_numerator,
+              council_denominator,
+            ),
+          }
+
         expect [
           Output { address: out_addr, value: out_value, datum: out_datum, .. },
           ..
@@ -79,6 +105,8 @@ validator main_gov_threshold {
         }: MainMultisigThreshold = out_datum
 
         and {
+          out_addr.payment_credential == pay_cred,
+          nft_id == out_nft_id,
           technical_auth_numerator < technical_auth_denominator,
           council_numerator < council_denominator,
         }

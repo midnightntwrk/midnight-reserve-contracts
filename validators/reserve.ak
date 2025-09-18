@@ -3,8 +3,7 @@ use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
 use forever/script.{forever_contract}
-use logic/script.{logic_multisig_validation_nft_input} as logic_script
-use logic/types.{RefTechnicalAuthRefCouncil}
+use logic/script.{logic_deposit} as logic_script
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 
 fn reserve_init_validation(_datum: Data, _redeemer: Redeemer) {
@@ -51,15 +50,9 @@ validator reserve_two_stage_upgrade {
 
 validator reserve_logic {
   else(ctx: ScriptContext) {
-    let ScriptContext { transaction, redeemer, info } = ctx
+    let ScriptContext { transaction, .. } = ctx
 
-    let one_shot_ref =
-      OutputReference(
-        config.technical_authority_one_shot_hash,
-        config.technical_authority_one_shot_index,
-      )
-
-    todo
+    logic_deposit(transaction)
   }
 }
 
