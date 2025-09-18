@@ -4,6 +4,7 @@ use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
 use forever/script.{forever_contract}
+use logic/script.{logic_deposit} as logic_script
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 
 fn ics_init_validation(datum: Data, _redeemer: Redeemer) {
@@ -41,8 +42,10 @@ validator ics_two_stage_upgrade {
 
 // ICS is currently a black hole until updated
 validator ics_logic {
-  else(_ctx) {
-    fail
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, .. } = ctx
+
+    logic_deposit(transaction)
   }
 }
 
