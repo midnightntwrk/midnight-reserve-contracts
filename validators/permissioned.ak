@@ -215,15 +215,17 @@ validator committe_ops_logic {
         config.technical_authority_one_shot_hash,
         config.technical_authority_one_shot_index,
       )
-    // logic_multisig_validation_nft_input(
-    //   transaction,
-    //   redeemer,
-    //   info,
-    //   one_shot_ref,
-    //   validate_multisig_structure,
-    //   RefTechnicalAuthRefCouncil,
-    // )
-    todo
+
+    logic_multisig_validation_nft_input(
+      transaction,
+      redeemer,
+      info,
+      one_shot_ref,
+      validate_multisig_structure,
+      RefTechnicalAuthRefCouncil,
+      config.main_tech_auth_update_threshold_hash,
+      config.staging_tech_auth_update_threshold_hash,
+    )
   }
 }
 

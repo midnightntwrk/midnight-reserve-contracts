@@ -20,6 +20,10 @@ use utils.{
   one_shot_mint,
 }
 
+pub fn logic_deposit(transaction: Transaction) {
+  todo
+}
+
 pub fn logic_multisig_validation_nft_input(
   transaction: Transaction,
   redeemer: Redeemer,
