@@ -33,10 +33,10 @@ technical_authority_one_shot_hash = "yes_no_test"
 technical_authority_one_shot_index = 1
 technical_authority_two_stage_hash = "blah_blah"
 technical_authority_forever_hash = "forever_hash"
-committee_operators_one_shot_hash = "yes_no_test"
-committee_operators_one_shot_index = 1
-committee_operators_two_stage_hash = "blah_blah"
-committee_operators_forever_hash = "forever_hash"
+federated_operators_one_shot_hash = "yes_no_test"
+federated_operators_one_shot_index = 1
+federated_operators_two_stage_hash = "blah_blah"
+federated_operators_forever_hash = "forever_hash"
 main_gov_one_shot_hash = "yes_no_test"
 main_gov_one_shot_index = 1
 main_gov_threshold_hash = "blah_blah"
@@ -55,6 +55,10 @@ main_tech_auth_update_threshold_hash = "blah_blah"
 staging_tech_auth_update_one_shot_hash = "yes_no_test"
 staging_tech_auth_update_one_shot_index = 1
 staging_tech_auth_update_threshold_hash = "blah_blah"
+committee_bridge_one_shot_hash = "yes_no_test"
+committee_bridge_one_shot_index = 1
+committee_bridge_two_stage_hash = "blah_blah"
+committee_bridge_forever_hash = "forever_hash"
 
 [config.preview]
 reserve_one_shot_hash = "yes_no_test"
@@ -65,8 +69,8 @@ ics_one_shot_hash = "yes_no_test"
 ics_one_shot_index = 1
 technical_authority_one_shot_hash = "yes_no_test"
 technical_authority_one_shot_index = 1
-committee_operators_one_shot_hash = "yes_no_test"
-committee_operators_one_shot_index = 1
+federated_operators_one_shot_hash = "yes_no_test"
+federated_operators_one_shot_index = 1
 main_gov_one_shot_hash = "yes_no_test"
 main_gov_one_shot_index = 1
 staging_gov_one_shot_hash = "yes_no_test"
@@ -79,6 +83,8 @@ main_tech_auth_update_one_shot_hash = "yes_no_test"
 main_tech_auth_update_one_shot_index = 1
 staging_tech_auth_update_one_shot_hash = "yes_no_test"
 staging_tech_auth_update_one_shot_index = 1
+committee_bridge_one_shot_hash = "yes_no_test"
+committee_bridge_one_shot_index = 1
 
 [config.preview.cnight_policy]
 bytes = "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69"
@@ -116,11 +122,11 @@ encoding = "hex"
 bytes = "21212121212121212121212121212121212121212121212121212121"
 encoding = "hex"
 
-[config.preview.committee_operators_two_stage_hash]
+[config.preview.federated_operators_two_stage_hash]
 bytes = "63636363636363636363636363636363636363636363636363636363"
 encoding = "hex"
 
-[config.preview.committee_operators_forever_hash]
+[config.preview.federated_operators_forever_hash]
 bytes = "84848484848484848484848484848484848484848484848484848484"
 encoding = "hex"
 
@@ -146,4 +152,12 @@ encoding = "hex"
 
 [config.preview.staging_tech_auth_update_threshold_hash]
 bytes = "50505050505050505050505050505050505050505050505050505050"
+encoding = "hex"
+
+[config.preview.committee_bridge_two_stage_hash]
+bytes = "61616161616161616161616161616161616161616161616161616161"
+encoding = "hex"
+
+[config.preview.committee_bridge_forever_hash]
+bytes = "72727272727272727272727272727272727272727272727272727272"
 encoding = "hex"
