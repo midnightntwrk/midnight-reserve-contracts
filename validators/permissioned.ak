@@ -88,8 +88,8 @@ validator council_logic {
       redeemer,
       info,
       one_shot_ref,
+      config.council_forever_hash,
       validate_multisig_structure,
-      RefTechnicalAuthSpendCouncil,
       config.main_council_update_threshold_hash,
       config.staging_council_update_threshold_hash,
     )
@@ -153,8 +153,8 @@ validator tech_auth_logic {
       redeemer,
       info,
       one_shot_ref,
+      config.technical_authority_forever_hash,
       validate_multisig_structure,
-      SpendTechnicalAuthRefCouncil,
       config.main_tech_auth_update_threshold_hash,
       config.staging_tech_auth_update_threshold_hash,
     )
@@ -220,8 +220,8 @@ validator federated_ops_logic {
       redeemer,
       info,
       one_shot_ref,
+      config.federated_operators_forever_hash,
       validate_multisig_structure,
-      RefTechnicalAuthRefCouncil,
       config.main_tech_auth_update_threshold_hash,
       config.staging_tech_auth_update_threshold_hash,
     )

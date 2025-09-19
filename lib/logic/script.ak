@@ -20,8 +20,57 @@ use utils.{
   one_shot_mint,
 }
 
-pub fn logic_deposit(transaction: Transaction) {
-  todo
+pub fn logic_deposit(
+  transaction: Transaction,
+  info: ScriptInfo,
+  main_forever_script_hash: ScriptHash,
+  one_shot_ref: OutputReference,
+) {
+  let Transaction { inputs, reference_inputs, outputs, mint, .. } = transaction
+
+  let validation =
+    fn(own_hash) {
+      if logic_is_on_main(
+        reference_inputs,
+        config.council_two_stage_hash,
+        own_hash,
+      ) {
+        let datum =
+          get_output_state_by_policy(outputs, main_forever_script_hash)
+
+        todo
+      } else {
+        let datum = get_input_state_by_policy(inputs, own_hash)
+
+        expect StagingState { forever_script_hash, .. }: StagingState = datum
+
+        todo
+      }
+    }
+
+  when info is {
+    Minting(own_policy) -> {
+      let datum = one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
+
+      expect StagingState { cnight_test_policy, forever_script_hash } = datum
+
+      and {
+        own_policy != config.cnight_policy,
+        builtin.length_of_bytearray(cnight_test_policy) == 28,
+        builtin.length_of_bytearray(forever_script_hash) == 28,
+      }
+    }
+
+    Withdrawing(Script(own_hash)) |
+    Publishing {
+      certificate: UnregisterCredential { credential: Script(own_hash), .. },
+      ..
+    } -> validation(own_hash)
+
+    Publishing { certificate: RegisterCredential { .. }, .. } -> True
+
+    _ -> fail
+  }
 }
 
 pub fn logic_multisig_validation_nft_input(
@@ -29,8 +78,8 @@ pub fn logic_multisig_validation_nft_input(
   redeemer: Redeemer,
   info: ScriptInfo,
   one_shot_ref: OutputReference,
+  main_forever_script_hash: ScriptHash,
   logic_state_validation,
-  spending_type: AuthorizerLogic,
   main_threshold: ScriptHash,
   staging_threshold: ScriptHash,
 ) {
@@ -43,16 +92,6 @@ pub fn logic_multisig_validation_nft_input(
         config.council_two_stage_hash,
         own_hash,
       ) {
-        let tech_auth_location, council_location <-
-          fn(callback) {
-            when spending_type is {
-              RefTechnicalAuthRefCouncil ->
-                callback(reference_inputs, reference_inputs)
-              RefTechnicalAuthSpendCouncil -> callback(reference_inputs, inputs)
-              SpendTechnicalAuthRefCouncil -> callback(inputs, reference_inputs)
-            }
-          }
-
         let main_threshold_datum =
           get_input_state_by_policy(reference_inputs, main_threshold)
 
@@ -63,19 +102,28 @@ pub fn logic_multisig_validation_nft_input(
           council_denominator,
         } = main_threshold_datum
 
-        let datum =
-          get_output_state_by_policy(outputs, config.council_forever_hash)
+        let datum = get_output_state_by_policy(outputs, own_hash)
 
         and {
           check_for_multisig(
-            tech_auth_location,
+            // Used in the case we are spending multisig state rather than referencing it
+            if main_forever_script_hash == config.technical_authority_forever_hash {
+              inputs
+            } else {
+              reference_inputs
+            },
             mint,
             config.technical_authority_forever_hash,
             technical_auth_numerator,
             technical_auth_denominator,
           ),
           check_for_multisig(
-            council_location,
+            // Used in the case we are spending multisig state rather than referencing it
+            if main_forever_script_hash == config.council_forever_hash {
+              inputs
+            } else {
+              reference_inputs
+            },
             mint,
             config.council_forever_hash,
             council_numerator,

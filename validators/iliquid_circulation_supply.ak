@@ -40,12 +40,17 @@ validator ics_two_stage_upgrade {
   }
 }
 
-// ICS is currently a black hole until updated
 validator ics_logic {
   else(ctx: ScriptContext) {
-    let ScriptContext { transaction, .. } = ctx
+    let ScriptContext { transaction, info, .. } = ctx
 
-    logic_deposit(transaction)
+    let one_shot_ref =
+      OutputReference(
+        config.reserve_one_shot_hash,
+        config.reserve_one_shot_index,
+      )
+
+    logic_deposit(transaction, info, config.ics_forever_hash, one_shot_ref)
   }
 }
 
