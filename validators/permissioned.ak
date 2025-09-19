@@ -168,10 +168,9 @@ validator tech_auth_gov {
   }
 }
 
-// Is committee operators aka federated
-// block producers even needed on Cardano.
+// Is federated block producers even needed on Cardano.
 // Based on what I know I don't think so
-validator committe_ops_forever {
+validator federated_ops_forever {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
@@ -192,7 +191,7 @@ validator committe_ops_forever {
   }
 }
 
-validator committe_ops_two_stage_upgrade {
+validator federated_ops_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
@@ -206,7 +205,7 @@ validator committe_ops_two_stage_upgrade {
   }
 }
 
-validator committe_ops_logic {
+validator federated_ops_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
@@ -229,7 +228,7 @@ validator committe_ops_logic {
   }
 }
 
-validator committe_ops_gov {
+validator federated_ops_gov {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
     auth_multisig_validation(transaction, info)

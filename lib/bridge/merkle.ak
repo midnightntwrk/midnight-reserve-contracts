@@ -21,40 +21,46 @@ pub fn verify_mmr_leaf(
 
   let hash = scale_encode_beefy_mmr_leaf(latest) |> builtin.keccak_256
 
-  let leaf_count = parent_number - beefy_activation_block + 1
+  let mmr_leaf_count = parent_number - beefy_activation_block + 1
 
   mmr_root == calculate_mmr_root(
     mmr_proof |> builtin.un_list_data,
     mmr_subtree_proof,
-    [MmrLeaf(k_index, leaf_index, hash)],
-    leaf_count,
+    MmrLeaf(k_index, leaf_index, hash),
+    mmr_leaf_count,
   )
 }
 
 fn calculate_mmr_root(
   mmr_proof: List<Data<ByteArray>>,
   subtree_proof: Data<List<List<Node>>>,
-  leaves: List<MmrLeaf>,
-  leaf_count: Int,
+  leaf: MmrLeaf,
+  mmr_leaf_count: Int,
 ) {
-  let subtree = subtree_heights(leaf_count)
+  let subtree = subtree_heights(mmr_leaf_count)
 
   todo
 }
 
-fn subtree_heights(leaves_length: Int) -> List<Int> {
+fn subtree_heights(leaves_length: Int) -> List<Pair<Int, Int>> {
   if leaves_length == 0 {
     []
   } else {
     let log = log2(leaves_length)
-    let current =
-      leaves_length - builtin.bytearray_to_integer(
+
+    let two_exp =
+      builtin.bytearray_to_integer(
         True,
         builtin.shift_bytearray(shift_array, log),
       )
+    let current = leaves_length - two_exp
 
-    [log, ..subtree_heights(current)]
+    [Pair(log, two_exp), ..subtree_heights(current)]
   }
+}
+
+fn calculate_subtree_proof() {
+  todo
 }
 
 pub fn verify_merkle_multi_proof(
