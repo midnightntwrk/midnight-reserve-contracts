@@ -7,10 +7,7 @@ use logic/script.{logic_deposit} as logic_script
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 
 fn reserve_init_validation(_datum: Data, _redeemer: Redeemer) {
-  // Reserve initialization validation
-  // For properly setting up state
-  // Figure out max release rate logic
-  todo
+  True
 }
 
 validator reserve_forever {
@@ -50,9 +47,15 @@ validator reserve_two_stage_upgrade {
 
 validator reserve_logic {
   else(ctx: ScriptContext) {
-    let ScriptContext { transaction, .. } = ctx
+    let ScriptContext { transaction, info, .. } = ctx
 
-    logic_deposit(transaction)
+    let one_shot_ref =
+      OutputReference(
+        config.reserve_one_shot_hash,
+        config.reserve_one_shot_index,
+      )
+
+    logic_deposit(transaction, info, config.reserve_forever_hash, one_shot_ref)
   }
 }
 
