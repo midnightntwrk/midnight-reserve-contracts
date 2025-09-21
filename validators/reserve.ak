@@ -3,7 +3,7 @@ use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
 use forever/script.{forever_contract}
-use logic/script.{logic_deposit} as logic_script
+use logic/script.{logic_merge} as logic_script
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 
 fn reserve_init_validation(_datum: Data, _redeemer: Redeemer) {
@@ -55,7 +55,7 @@ validator reserve_logic {
         config.reserve_one_shot_index,
       )
 
-    logic_deposit(transaction, info, config.reserve_forever_hash, one_shot_ref)
+    logic_merge(transaction, info, config.reserve_forever_hash, one_shot_ref)
   }
 }
 
