@@ -3,10 +3,17 @@ use aiken/collection/dict.{to_pairs}
 use aiken/collection/list
 use aiken/crypto.{VerificationKeyHash}
 use aiken/primitive/bytearray
+use cardano/address.{Script}
 use cardano/assets.{PolicyId, Value, to_dict}
-use cardano/transaction.{InlineDatum, Input}
-use multisig/types.{Multisig, NativeScript, NativeScriptSigner}
-use utils.{must_find}
+use cardano/script_context.{Minting, ScriptInfo, Spending}
+use cardano/transaction.{
+  InlineDatum, Input, Output, OutputReference, Transaction,
+}
+use config
+use multisig/types.{
+  MainMultisigThreshold, Multisig, NativeScript, NativeScriptSigner,
+}
+use utils.{get_input_state_by_policy, must_find, one_shot_mint}
 
 const empty_list_length_byte = #"80" |> builtin.bytearray_to_integer(True, _)
 
@@ -103,6 +110,98 @@ pub fn check_for_multisig(
   list.any(mint |> to_dict |> to_pairs, fn(pair) { pair.1st == minting_policy })
 }
 
-pub fn update_thresholds() {
-  todo
+pub fn main_thresholds(
+  transaction: Transaction,
+  info: ScriptInfo,
+  one_shot_ref: OutputReference,
+) {
+  let Transaction { inputs, reference_inputs, outputs, mint, .. } = transaction
+
+  when info is {
+    Minting(own_policy) -> {
+      let datum = one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
+
+      expect MainMultisigThreshold {
+        technical_auth_numerator,
+        technical_auth_denominator,
+        council_numerator,
+        council_denominator,
+      }: MainMultisigThreshold = datum
+
+      and {
+        own_policy != config.cnight_policy,
+        technical_auth_numerator < technical_auth_denominator,
+        council_numerator < council_denominator,
+      }
+    }
+
+    Spending { output, .. } -> {
+      let own_input =
+        must_find(inputs, fn(input: Input) { input.output_reference == output })
+
+      let Input { output: Output { address, value, .. }, .. } = own_input
+
+      expect Script(own_hash) as pay_cred = address.payment_credential
+
+      let expected_nft_id = [Pair(own_hash, [Pair("", 1)])]
+
+      expect [_, ..nft_id] = value |> to_dict |> to_pairs
+
+      expect as_data(expected_nft_id) == as_data(nft_id)
+
+      let gov_threshold_datum =
+        get_input_state_by_policy(
+          reference_inputs,
+          config.main_gov_threshold_hash,
+        )
+      expect MainMultisigThreshold {
+        technical_auth_numerator,
+        technical_auth_denominator,
+        council_numerator,
+        council_denominator,
+      }: MainMultisigThreshold = gov_threshold_datum
+
+      expect and {
+          check_for_multisig(
+            reference_inputs,
+            mint,
+            config.technical_authority_forever_hash,
+            technical_auth_numerator,
+            technical_auth_denominator,
+          ),
+          check_for_multisig(
+            reference_inputs,
+            mint,
+            config.council_forever_hash,
+            council_numerator,
+            council_denominator,
+          ),
+        }
+
+      expect [
+        Output { address: out_addr, value: out_value, datum: out_datum, .. },
+        ..
+      ] = outputs
+
+      expect [_, ..out_nft_id] = out_value |> to_dict |> to_pairs
+
+      expect InlineDatum(out_datum) = out_datum
+
+      expect MainMultisigThreshold {
+        technical_auth_numerator,
+        technical_auth_denominator,
+        council_numerator,
+        council_denominator,
+      }: MainMultisigThreshold = out_datum
+
+      and {
+        out_addr.payment_credential == pay_cred,
+        nft_id == out_nft_id,
+        technical_auth_numerator < technical_auth_denominator,
+        council_numerator < council_denominator,
+      }
+    }
+
+    _ -> fail
+  }
 }
