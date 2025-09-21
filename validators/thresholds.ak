@@ -60,7 +60,7 @@ validator main_gov_threshold {
 
         expect [_, ..nft_id] = value |> to_dict |> to_pairs
 
-        expect as_data(expected_nft_id)
+        expect as_data(expected_nft_id) == as_data(nft_id)
 
         expect InlineDatum(spending_datum) = spending_datum
 
