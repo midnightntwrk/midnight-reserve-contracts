@@ -4,7 +4,7 @@ use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
 use forever/script.{forever_contract}
-use logic/script.{logic_deposit} as logic_script
+use logic/script.{logic_merge} as logic_script
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 
 fn ics_init_validation(datum: Data, _redeemer: Redeemer) {
@@ -50,7 +50,7 @@ validator ics_logic {
         config.reserve_one_shot_index,
       )
 
-    logic_deposit(transaction, info, config.ics_forever_hash, one_shot_ref)
+    logic_merge(transaction, info, config.ics_forever_hash, one_shot_ref)
   }
 }
 
