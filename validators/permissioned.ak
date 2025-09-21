@@ -5,10 +5,6 @@ use cardano/transaction.{OutputReference, Redeemer}
 use config
 use forever/script.{forever_contract}
 use logic/script.{logic_multisig_validation_nft_input} as logic_script
-use logic/types.{
-  RefTechnicalAuthRefCouncil, RefTechnicalAuthSpendCouncil,
-  SpendTechnicalAuthRefCouncil,
-}
 use multisig/script.{create_signer} as multisig_script
 use multisig/types.{Multisig} as multisig_types
 use upgradable/two_stage_upgrade.{two_stage_upgradable}

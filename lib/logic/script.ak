@@ -1,17 +1,13 @@
 use aiken/builtin
-use aiken/collection/dict.{to_pairs}
 use aiken/collection/list
 use aiken/crypto.{ScriptHash}
-use cardano/address.{Script}
-use cardano/assets.{to_dict}
+use cardano/address.{Address, Script}
+use cardano/assets
 use cardano/certificate.{RegisterCredential, UnregisterCredential}
 use cardano/script_context.{Minting, Publishing, ScriptInfo, Withdrawing}
 use cardano/transaction.{Input, OutputReference, Redeemer, Transaction}
 use config
-use logic/types.{
-  AuthorizerLogic, RefTechnicalAuthRefCouncil, RefTechnicalAuthSpendCouncil,
-  SpendTechnicalAuthRefCouncil, StagingState,
-}
+use logic/types.{StagingState}
 use multisig/script.{check_for_multisig}
 use multisig/types.{MainMultisigThreshold, StagingMultisigThreshold} as t
 use upgradable/two_stage_upgrade.{logic_is_on_main}
@@ -20,13 +16,41 @@ use utils.{
   one_shot_mint,
 }
 
-pub fn logic_deposit(
+pub fn logic_merge(
   transaction: Transaction,
   info: ScriptInfo,
   main_forever_script_hash: ScriptHash,
   one_shot_ref: OutputReference,
 ) {
   let Transaction { inputs, reference_inputs, outputs, mint, .. } = transaction
+
+  let merge_values =
+    fn(forever_script_hash) {
+      let guarded_cred = Script(forever_script_hash)
+      let guarded_value =
+        list.foldr(
+          inputs,
+          assets.zero,
+          fn(input, acc) {
+            let output = input.output
+            if output.address.payment_credential == guarded_cred {
+              assets.merge(output.value, acc)
+            } else {
+              acc
+            }
+          },
+        )
+
+      let guarded_address = Address(Script(forever_script_hash), None)
+
+      let output =
+        must_find(outputs, fn(output) { output.address == guarded_address })
+
+      and {
+        output.value == guarded_value,
+        builtin.length_of_bytearray(builtin.serialise_data(output.value)) < 2048,
+      }
+    }
 
   let validation =
     fn(own_hash) {
@@ -35,16 +59,13 @@ pub fn logic_deposit(
         config.council_two_stage_hash,
         own_hash,
       ) {
-        let datum =
-          get_output_state_by_policy(outputs, main_forever_script_hash)
-
-        todo
+        merge_values(main_forever_script_hash)
       } else {
         let datum = get_input_state_by_policy(inputs, own_hash)
 
         expect StagingState { forever_script_hash, .. }: StagingState = datum
 
-        todo
+        merge_values(forever_script_hash)
       }
     }
 
