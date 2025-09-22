@@ -6,9 +6,37 @@ use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
 }
 use config
-use multisig/script.{check_for_multisig}
-use multisig/types.{MainMultisigThreshold}
+use multisig/script.{check_for_multisig, threshold_validation}
+use multisig/types.{MainMultisigThreshold, StagingMultisigThreshold}
 use utils.{must_find, one_shot_mint}
+
+fn main_validation(datum: Data) {
+  expect MainMultisigThreshold {
+    technical_auth_numerator,
+    technical_auth_denominator,
+    council_numerator,
+    council_denominator,
+  }: MainMultisigThreshold = datum
+
+  and {
+    technical_auth_numerator < technical_auth_denominator,
+    council_numerator < council_denominator,
+    technical_auth_numerator > 0,
+    council_numerator > 0,
+  }
+}
+
+fn staging_validation(datum: Data) {
+  expect StagingMultisigThreshold {
+    technical_auth_numerator,
+    technical_auth_denominator,
+  }: StagingMultisigThreshold = datum
+
+  and {
+    technical_auth_numerator < technical_auth_denominator,
+    technical_auth_numerator > 0,
+  }
+}
 
 validator main_gov_threshold {
   else(ctx: ScriptContext) {
@@ -97,18 +125,10 @@ validator main_gov_threshold {
 
         expect InlineDatum(out_datum) = out_datum
 
-        expect MainMultisigThreshold {
-          technical_auth_numerator,
-          technical_auth_denominator,
-          council_numerator,
-          council_denominator,
-        }: MainMultisigThreshold = out_datum
-
         and {
           out_addr.payment_credential == pay_cred,
           nft_id == out_nft_id,
-          technical_auth_numerator < technical_auth_denominator,
-          council_numerator < council_denominator,
+          main_validation(out_datum),
         }
       }
 
@@ -118,31 +138,71 @@ validator main_gov_threshold {
 }
 
 validator staging_gov_threshold {
-  else(_ctx) {
-    todo
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.staging_gov_one_shot_hash,
+        config.staging_gov_one_shot_index,
+      )
+
+    threshold_validation(transaction, info, one_shot_ref, staging_validation)
   }
 }
 
 validator main_council_update_threshold {
-  else(_ctx) {
-    todo
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.main_council_update_one_shot_hash,
+        config.main_council_update_one_shot_index,
+      )
+
+    threshold_validation(transaction, info, one_shot_ref, main_validation)
   }
 }
 
 validator staging_council_update_threshold {
-  else(_ctx) {
-    todo
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.staging_council_update_one_shot_hash,
+        config.staging_council_update_one_shot_index,
+      )
+
+    threshold_validation(transaction, info, one_shot_ref, staging_validation)
   }
 }
 
 validator main_tech_auth_update_threshold {
-  else(_ctx) {
-    todo
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.main_tech_auth_update_one_shot_hash,
+        config.main_tech_auth_update_one_shot_index,
+      )
+
+    threshold_validation(transaction, info, one_shot_ref, main_validation)
   }
 }
 
 validator staging_tech_auth_update_threshold {
-  else(_ctx) {
-    todo
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.staging_tech_auth_update_one_shot_hash,
+        config.staging_tech_auth_update_one_shot_index,
+      )
+
+    threshold_validation(transaction, info, one_shot_ref, staging_validation)
   }
 }
