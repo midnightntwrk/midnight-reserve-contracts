@@ -44,6 +44,8 @@ validator council_forever {
         config.council_one_shot_index,
       )
 
+    trace config.council_two_stage_hash
+
     forever_contract(
       transaction,
       redeemer,
