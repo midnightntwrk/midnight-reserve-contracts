@@ -110,10 +110,11 @@ pub fn check_for_multisig(
   list.any(mint |> to_dict |> to_pairs, fn(pair) { pair.1st == minting_policy })
 }
 
-pub fn main_thresholds(
+pub fn threshold_validation(
   transaction: Transaction,
   info: ScriptInfo,
   one_shot_ref: OutputReference,
+  datum_validation: fn(Data) -> Bool,
 ) {
   let Transaction { inputs, reference_inputs, outputs, mint, .. } = transaction
 
@@ -121,17 +122,9 @@ pub fn main_thresholds(
     Minting(own_policy) -> {
       let datum = one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
-      expect MainMultisigThreshold {
-        technical_auth_numerator,
-        technical_auth_denominator,
-        council_numerator,
-        council_denominator,
-      }: MainMultisigThreshold = datum
-
       and {
         own_policy != config.cnight_policy,
-        technical_auth_numerator < technical_auth_denominator,
-        council_numerator < council_denominator,
+        datum_validation(datum),
       }
     }
 
@@ -149,17 +142,18 @@ pub fn main_thresholds(
 
       expect as_data(expected_nft_id) == as_data(nft_id)
 
-      let gov_threshold_datum =
+      expect InlineDatum(ref_datum) =
         get_input_state_by_policy(
           reference_inputs,
           config.main_gov_threshold_hash,
         )
+
       expect MainMultisigThreshold {
         technical_auth_numerator,
         technical_auth_denominator,
         council_numerator,
         council_denominator,
-      }: MainMultisigThreshold = gov_threshold_datum
+      }: MainMultisigThreshold = ref_datum
 
       expect and {
           check_for_multisig(
@@ -187,18 +181,10 @@ pub fn main_thresholds(
 
       expect InlineDatum(out_datum) = out_datum
 
-      expect MainMultisigThreshold {
-        technical_auth_numerator,
-        technical_auth_denominator,
-        council_numerator,
-        council_denominator,
-      }: MainMultisigThreshold = out_datum
-
       and {
         out_addr.payment_credential == pay_cred,
         nft_id == out_nft_id,
-        technical_auth_numerator < technical_auth_denominator,
-        council_numerator < council_denominator,
+        datum_validation(out_datum),
       }
     }
 

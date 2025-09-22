@@ -1,5 +1,3 @@
-use aiken/crypto.{ScriptHash}
-
 @list
 pub type Multisig {
   total_signers: Int,
