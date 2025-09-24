@@ -1,6 +1,5 @@
 use aiken/builtin
 use aiken/collection/dict.{to_pairs}
-use aiken/collection/list
 use aiken/crypto.{ScriptHash}
 use cardano/address.{Script}
 use cardano/assets.{to_dict}
@@ -9,7 +8,6 @@ use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Redeemer, Transaction,
 }
 use config
-use forever/types.{Outputs}
 use upgradable/two_stage_upgrade.{validate_running}
 use utils.{must_find, one_shot_mint}
 
@@ -33,37 +31,21 @@ pub fn forever_contract(
     }
 
     _ -> {
-      let Transaction { reference_inputs, outputs, withdrawals, .. } =
-        transaction
+      let Transaction { reference_inputs, withdrawals, .. } = transaction
 
       let main_nft_id = [Pair(two_stage_hash, [Pair("main", 1)])] |> as_data
 
-      let main_state =
-        if redeemer == as_data(Outputs) {
-          let output =
-            outputs
-              |> must_find(
-                  fn(output) {
-                    expect [_, ..assets] = output.value |> to_dict |> to_pairs
+      let input =
+        reference_inputs
+          |> must_find(
+              fn(input) {
+                expect [_, ..assets] = input.output.value |> to_dict |> to_pairs
 
-                    as_data(assets) == main_nft_id
-                  },
-                )
-          output.datum
-        } else {
-          let input =
-            reference_inputs
-              |> must_find(
-                  fn(input) {
-                    expect [_, ..assets] =
-                      input.output.value |> to_dict |> to_pairs
+                as_data(assets) == main_nft_id
+              },
+            )
 
-                    as_data(assets) == main_nft_id
-                  },
-                )
-
-          input.output.datum
-        }
+      let main_state = input.output.datum
 
       expect InlineDatum(main_state) = main_state
 

@@ -7,16 +7,16 @@ use cardano/transaction.{
 }
 use config
 use multisig/script.{check_for_multisig, threshold_validation}
-use multisig/types.{MainMultisigThreshold, StagingMultisigThreshold}
+use multisig/types.{MultisigThreshold}
 use utils.{must_find, one_shot_mint}
 
 fn main_validation(datum: Data) {
-  expect MainMultisigThreshold {
+  expect MultisigThreshold {
     technical_auth_numerator,
     technical_auth_denominator,
     council_numerator,
     council_denominator,
-  }: MainMultisigThreshold = datum
+  }: MultisigThreshold = datum
 
   and {
     technical_auth_numerator < technical_auth_denominator,
@@ -27,10 +27,11 @@ fn main_validation(datum: Data) {
 }
 
 fn staging_validation(datum: Data) {
-  expect StagingMultisigThreshold {
+  expect MultisigThreshold {
     technical_auth_numerator,
     technical_auth_denominator,
-  }: StagingMultisigThreshold = datum
+    ..
+  }: MultisigThreshold = datum
 
   and {
     technical_auth_numerator < technical_auth_denominator,
@@ -56,12 +57,12 @@ validator main_gov_threshold {
         let datum =
           one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
-        expect MainMultisigThreshold {
+        expect MultisigThreshold {
           technical_auth_numerator,
           technical_auth_denominator,
           council_numerator,
           council_denominator,
-        }: MainMultisigThreshold = datum
+        }: MultisigThreshold = datum
 
         and {
           own_policy != config.cnight_policy,
@@ -92,12 +93,12 @@ validator main_gov_threshold {
 
         expect InlineDatum(spending_datum) = spending_datum
 
-        expect MainMultisigThreshold {
+        expect MultisigThreshold {
           technical_auth_numerator,
           technical_auth_denominator,
           council_numerator,
           council_denominator,
-        }: MainMultisigThreshold = spending_datum
+        }: MultisigThreshold = spending_datum
 
         expect and {
             check_for_multisig(
