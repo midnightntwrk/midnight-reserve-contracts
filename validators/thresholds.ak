@@ -166,20 +166,6 @@ validator main_council_update_threshold {
   }
 }
 
-validator staging_council_update_threshold {
-  else(ctx: ScriptContext) {
-    let ScriptContext { transaction, info, .. } = ctx
-
-    let one_shot_ref =
-      OutputReference(
-        config.staging_council_update_one_shot_hash,
-        config.staging_council_update_one_shot_index,
-      )
-
-    threshold_validation(transaction, info, one_shot_ref, staging_validation)
-  }
-}
-
 validator main_tech_auth_update_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -191,19 +177,5 @@ validator main_tech_auth_update_threshold {
       )
 
     threshold_validation(transaction, info, one_shot_ref, main_validation)
-  }
-}
-
-validator staging_tech_auth_update_threshold {
-  else(ctx: ScriptContext) {
-    let ScriptContext { transaction, info, .. } = ctx
-
-    let one_shot_ref =
-      OutputReference(
-        config.staging_tech_auth_update_one_shot_hash,
-        config.staging_tech_auth_update_one_shot_index,
-      )
-
-    threshold_validation(transaction, info, one_shot_ref, staging_validation)
   }
 }

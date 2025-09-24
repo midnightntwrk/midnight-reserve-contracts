@@ -5,25 +5,40 @@ use cardano/transaction.{Transaction}
 use config
 use multisig/script.{check_for_multisig}
 use multisig/types.{MultisigThreshold}
+use upgradable/two_stage_upgrade.{logic_is_on_main}
 use utils.{get_input_state_by_policy}
 
-pub fn auth_multisig_validation(transaction: Transaction, info: ScriptInfo) {
+pub fn staging_auth_multisig_validation(
+  transaction: Transaction,
+  info: ScriptInfo,
+) {
   let Transaction { reference_inputs, mint, .. } = transaction
 
   let validation =
-    fn() {
+    fn(own_hash) {
       let threshold_datum =
-        get_input_state_by_policy(
+        if logic_is_on_main(
           reference_inputs,
-          config.main_gov_threshold_hash,
-        )
+          config.council_two_stage_hash,
+          own_hash,
+        ) {
+          get_input_state_by_policy(
+            reference_inputs,
+            config.main_gov_threshold_hash,
+          )
+        } else {
+          get_input_state_by_policy(
+            reference_inputs,
+            config.staging_gov_threshold_hash,
+          )
+        }
 
       expect MultisigThreshold {
         technical_auth_numerator,
         technical_auth_denominator,
         council_numerator,
         council_denominator,
-      } = threshold_datum
+      }: MultisigThreshold = threshold_datum
 
       and {
         check_for_multisig(
@@ -44,8 +59,11 @@ pub fn auth_multisig_validation(transaction: Transaction, info: ScriptInfo) {
     }
 
   when info is {
-    Withdrawing(_) | Publishing { certificate: UnregisterCredential { .. }, .. } ->
-      validation()
+    Withdrawing(Script(own_hash)) |
+    Publishing {
+      certificate: UnregisterCredential { credential: Script(own_hash), .. },
+      ..
+    } -> validation(own_hash)
 
     Publishing {
       certificate: RegisterCredential { credential: Script(own_hash), .. },
