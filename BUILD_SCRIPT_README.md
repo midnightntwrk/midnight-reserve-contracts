@@ -7,9 +7,9 @@ This repository contains a build script that compiles Aiken smart contracts in t
 The build script (`build_contracts.sh`) handles the complex dependency chain between validators by compiling them in phases:
 
 1. **Two-stage validators** - Independent validators compiled together
-2. **Forever validators** - Depend on two-stage validators  
+2. **Forever validators** - Depend on two-stage validators
 3. **Threshold validators** - Depend on forever validators
-4. **Committee bridge** - Final validator using a single contract for multiple hashes
+
 
 ## Usage
 
@@ -26,7 +26,7 @@ The build script (`build_contracts.sh`) handles the complex dependency chain bet
 ### Trace Levels (Optional)
 
 - `silent` - Minimal output during compilation
-- `verbose` - Detailed compilation output  
+- `verbose` - Detailed compilation output
 - `compact` - Compact compilation output
 
 ### Examples
@@ -38,7 +38,7 @@ The build script (`build_contracts.sh`) handles the complex dependency chain bet
 # Build for mainnet with verbose output
 ./build_contracts.sh default verbose
 
-# Build for preview with compact output  
+# Build for preview with compact output
 ./build_contracts.sh preview compact
 ```
 
@@ -50,7 +50,6 @@ The script follows this process:
 2. **Phase 1: Two-stage validators** - Compiles all two-stage upgrade validators in one build
 3. **Phase 2: Forever validators** - Compiles all forever validators that depend on two-stage
 4. **Phase 3: Threshold validators** - Compiles threshold validators that depend on forever contracts
-5. **Phase 4: Committee bridge** - Compiles the committee bridge validator
 6. **Final compilation** - One final build with all hashes in place
 
 ## Configuration Management
@@ -82,9 +81,7 @@ The script modifies:
 ## Dependency Order
 
 The dependency relationships are:
-- **Two-stage → Forever → Logic/Gov validators**
-- **Forever contracts → Threshold validators** 
-- **All previous → Committee bridge**
+- **Two-stage → Forever → Threshold validators → Logic/Gov validators**
 
 This ensures that when a validator references another validator's hash, that hash is already available in the configuration.
 
@@ -94,8 +91,11 @@ The script maintains a consistent format in `aiken.toml`:
 
 - **Direct key-value pairs** for one-shot parameters:
   ```toml
-  reserve_one_shot_hash = "yes_no_test"
   reserve_one_shot_index = 1
+
+  [config.default.reserve_one_shot_hash]
+  bytes = "0000000000000000000000000000000000000000000000000000000000000001"
+  encoding = "hex"
   ```
 
 - **Hex-encoded table entries** for validator hashes:

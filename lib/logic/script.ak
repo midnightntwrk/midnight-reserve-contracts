@@ -4,25 +4,19 @@ use aiken/crypto.{ScriptHash}
 use cardano/address.{Address, Script}
 use cardano/assets
 use cardano/certificate.{RegisterCredential, UnregisterCredential}
-use cardano/script_context.{Minting, Publishing, ScriptInfo, Withdrawing}
-use cardano/transaction.{Input, OutputReference, Redeemer, Transaction}
+use cardano/script_context.{Publishing, ScriptInfo, Withdrawing}
+use cardano/transaction.{Input, Redeemer, Transaction}
 use config
-use logic/types.{StagingState}
 use multisig/script.{check_for_multisig}
 use multisig/types.{MultisigThreshold} as t
-use upgradable/two_stage_upgrade.{logic_is_on_main}
-use utils.{
-  get_input_state_by_policy, get_output_state_by_policy, must_find,
-  one_shot_mint,
-}
+use utils.{get_input_state_by_policy, get_output_state_by_policy, must_find}
 
 pub fn logic_merge(
   transaction: Transaction,
   info: ScriptInfo,
   main_forever_script_hash: ScriptHash,
-  one_shot_ref: OutputReference,
 ) {
-  let Transaction { inputs, reference_inputs, outputs, mint, .. } = transaction
+  let Transaction { inputs, outputs, .. } = transaction
 
   let merge_values =
     fn(forever_script_hash) {
@@ -52,41 +46,9 @@ pub fn logic_merge(
       }
     }
 
-  let validation =
-    fn(own_hash) {
-      if logic_is_on_main(
-        reference_inputs,
-        config.council_two_stage_hash,
-        own_hash,
-      ) {
-        merge_values(main_forever_script_hash)
-      } else {
-        let datum = get_input_state_by_policy(inputs, own_hash)
-
-        expect StagingState { forever_script_hash, .. }: StagingState = datum
-
-        merge_values(forever_script_hash)
-      }
-    }
-
   when info is {
-    Minting(own_policy) -> {
-      let datum = one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
-
-      expect StagingState { cnight_test_policy, forever_script_hash } = datum
-
-      and {
-        own_policy != config.cnight_policy,
-        builtin.length_of_bytearray(cnight_test_policy) == 28,
-        builtin.length_of_bytearray(forever_script_hash) == 28,
-      }
-    }
-
-    Withdrawing(Script(own_hash)) |
-    Publishing {
-      certificate: UnregisterCredential { credential: Script(own_hash), .. },
-      ..
-    } -> validation(own_hash)
+    Withdrawing(_) | Publishing { certificate: UnregisterCredential { .. }, .. } ->
+      merge_values(main_forever_script_hash)
 
     Publishing { certificate: RegisterCredential { .. }, .. } -> True
 
@@ -98,39 +60,16 @@ pub fn logic_multisig_validation_nft_input(
   transaction: Transaction,
   redeemer: Redeemer,
   info: ScriptInfo,
-  one_shot_ref: OutputReference,
   main_forever_script_hash: ScriptHash,
   logic_state_validation,
   main_threshold: ScriptHash,
-  staging_threshold: ScriptHash,
 ) {
   let Transaction { inputs, reference_inputs, outputs, mint, .. } = transaction
 
   let validation =
-    fn(own_hash) {
-      let threshold_datum, forever_hash <-
-        fn(callback) {
-          if logic_is_on_main(
-            reference_inputs,
-            config.council_two_stage_hash,
-            own_hash,
-          ) {
-            callback(
-              get_input_state_by_policy(reference_inputs, main_threshold),
-              main_forever_script_hash,
-            )
-          } else {
-            let datum = get_input_state_by_policy(inputs, own_hash)
-
-            expect StagingState { forever_script_hash, .. }: StagingState =
-              datum
-
-            callback(
-              get_input_state_by_policy(reference_inputs, staging_threshold),
-              forever_script_hash,
-            )
-          }
-        }
+    fn() {
+      let threshold_datum =
+        get_input_state_by_policy(reference_inputs, main_threshold)
 
       expect MultisigThreshold {
         technical_auth_numerator,
@@ -139,12 +78,12 @@ pub fn logic_multisig_validation_nft_input(
         council_denominator,
       } = threshold_datum
 
-      let datum = get_output_state_by_policy(outputs, forever_hash)
+      let datum = get_output_state_by_policy(outputs, main_forever_script_hash)
 
       and {
         check_for_multisig(
           // Used in the case we are spending multisig state rather than referencing it
-          if forever_hash == config.technical_authority_forever_hash {
+          if main_forever_script_hash == config.technical_authority_forever_hash {
             inputs
           } else {
             reference_inputs
@@ -156,7 +95,7 @@ pub fn logic_multisig_validation_nft_input(
         ),
         check_for_multisig(
           // Used in the case we are spending multisig state rather than referencing it
-          if forever_hash == config.council_forever_hash {
+          if main_forever_script_hash == config.council_forever_hash {
             inputs
           } else {
             reference_inputs
@@ -171,23 +110,8 @@ pub fn logic_multisig_validation_nft_input(
     }
 
   when info is {
-    Minting(own_policy) -> {
-      let datum = one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
-
-      expect StagingState { cnight_test_policy, forever_script_hash } = datum
-
-      and {
-        own_policy != config.cnight_policy,
-        builtin.length_of_bytearray(cnight_test_policy) == 28,
-        builtin.length_of_bytearray(forever_script_hash) == 28,
-      }
-    }
-
-    Withdrawing(Script(own_hash)) |
-    Publishing {
-      certificate: UnregisterCredential { credential: Script(own_hash), .. },
-      ..
-    } -> validation(own_hash)
+    Withdrawing(_) | Publishing { certificate: UnregisterCredential { .. }, .. } ->
+      validation()
 
     Publishing { certificate: RegisterCredential { .. }, .. } -> True
 

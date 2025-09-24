@@ -1,5 +1,4 @@
 use aiken/builtin
-use auth/script.{auth_multisig_validation} as auth_script
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
@@ -44,19 +43,6 @@ validator ics_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
 
-    let one_shot_ref =
-      OutputReference(
-        config.reserve_one_shot_hash,
-        config.reserve_one_shot_index,
-      )
-
-    logic_merge(transaction, info, config.ics_forever_hash, one_shot_ref)
-  }
-}
-
-validator ics_gov {
-  else(ctx: ScriptContext) {
-    let ScriptContext { transaction, info, .. } = ctx
-    auth_multisig_validation(transaction, info)
+    logic_merge(transaction, info, config.ics_forever_hash)
   }
 }

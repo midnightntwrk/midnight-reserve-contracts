@@ -1,5 +1,4 @@
 use aiken/builtin
-use auth/script.{auth_multisig_validation} as auth_script
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
@@ -75,29 +74,14 @@ validator council_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
-    let one_shot_ref =
-      OutputReference(
-        config.council_one_shot_hash,
-        config.council_one_shot_index,
-      )
-
     logic_multisig_validation_nft_input(
       transaction,
       redeemer,
       info,
-      one_shot_ref,
       config.council_forever_hash,
       validate_multisig_structure,
       config.main_council_update_threshold_hash,
-      config.staging_council_update_threshold_hash,
     )
-  }
-}
-
-validator council_gov {
-  else(ctx: ScriptContext) {
-    let ScriptContext { transaction, info, .. } = ctx
-    auth_multisig_validation(transaction, info)
   }
 }
 
@@ -140,29 +124,14 @@ validator tech_auth_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
-    let one_shot_ref =
-      OutputReference(
-        config.technical_authority_one_shot_hash,
-        config.technical_authority_one_shot_index,
-      )
-
     logic_multisig_validation_nft_input(
       transaction,
       redeemer,
       info,
-      one_shot_ref,
       config.technical_authority_forever_hash,
       validate_multisig_structure,
       config.main_tech_auth_update_threshold_hash,
-      config.staging_tech_auth_update_threshold_hash,
     )
-  }
-}
-
-validator tech_auth_gov {
-  else(ctx: ScriptContext) {
-    let ScriptContext { transaction, info, .. } = ctx
-    auth_multisig_validation(transaction, info)
   }
 }
 
@@ -207,28 +176,13 @@ validator federated_ops_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
-    let one_shot_ref =
-      OutputReference(
-        config.technical_authority_one_shot_hash,
-        config.technical_authority_one_shot_index,
-      )
-
     logic_multisig_validation_nft_input(
       transaction,
       redeemer,
       info,
-      one_shot_ref,
       config.federated_operators_forever_hash,
       validate_multisig_structure,
       config.main_tech_auth_update_threshold_hash,
-      config.staging_tech_auth_update_threshold_hash,
     )
-  }
-}
-
-validator federated_ops_gov {
-  else(ctx: ScriptContext) {
-    let ScriptContext { transaction, info, .. } = ctx
-    auth_multisig_validation(transaction, info)
   }
 }
