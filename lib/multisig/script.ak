@@ -11,7 +11,7 @@ use cardano/transaction.{
 }
 use config
 use multisig/types.{
-  MainMultisigThreshold, Multisig, NativeScript, NativeScriptSigner,
+  Multisig, MultisigThreshold, NativeScript, NativeScriptSigner,
 }
 use utils.{get_input_state_by_policy, must_find, one_shot_mint}
 
@@ -32,7 +32,7 @@ pub fn build_native_script(
 
   // ceil always
   let min_signers =
-    ( total_signers * threshold_numerator + threshold_denominator ) / threshold_denominator
+    ( total_signers * threshold_numerator + ( threshold_denominator - 1 ) ) / threshold_denominator
 
   let min_signer_serialized = builtin.serialise_data(min_signers)
 
@@ -148,12 +148,12 @@ pub fn threshold_validation(
           config.main_gov_threshold_hash,
         )
 
-      expect MainMultisigThreshold {
+      expect MultisigThreshold {
         technical_auth_numerator,
         technical_auth_denominator,
         council_numerator,
         council_denominator,
-      }: MainMultisigThreshold = ref_datum
+      }: MultisigThreshold = ref_datum
 
       expect and {
           check_for_multisig(

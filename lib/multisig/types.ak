@@ -13,14 +13,9 @@ pub type NativeScript =
 pub type NativeScriptSigner =
   ByteArray
 
-pub type MainMultisigThreshold {
+pub type MultisigThreshold {
   technical_auth_numerator: Int,
   technical_auth_denominator: Int,
   council_numerator: Int,
   council_denominator: Int,
-}
-
-pub type StagingMultisigThreshold {
-  technical_auth_numerator: Int,
-  technical_auth_denominator: Int,
 }
