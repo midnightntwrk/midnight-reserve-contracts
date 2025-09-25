@@ -26,47 +26,52 @@ staging_gov_one_shot_index = 1
 main_council_update_one_shot_index = 1
 
 main_tech_auth_update_one_shot_index = 1
+main_federated_ops_update_one_shot_index = 1
 
 committee_bridge_one_shot_index = 1
 
 [config.default.reserve_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000001"
 encoding = "hex"
 
 [config.default.council_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000002"
 encoding = "hex"
 
 [config.default.ics_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000003"
 encoding = "hex"
 
 [config.default.technical_authority_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000004"
 encoding = "hex"
 
 [config.default.federated_operators_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000005"
 encoding = "hex"
 
 [config.default.main_gov_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000006"
 encoding = "hex"
 
 [config.default.staging_gov_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000007"
 encoding = "hex"
 
 [config.default.main_council_update_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000008"
 encoding = "hex"
 
 [config.default.main_tech_auth_update_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000009"
+encoding = "hex"
+
+[config.default.main_federated_ops_update_one_shot_hash]
+bytes = "000000000000000000000000000000000000000000000000000000000000000a"
 encoding = "hex"
 
 [config.default.committee_bridge_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "000000000000000000000000000000000000000000000000000000000000000b"
 encoding = "hex"
 
 [config.default.cnight_policy]
@@ -74,67 +79,71 @@ bytes = "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69"
 encoding = "hex"
 
 [config.default.reserve_two_stage_hash]
-bytes = "b96195f36818f9753d8e67eb4691589ec28f4b7344261f1a72ba9177"
+bytes = "e50425866de3312a0a5206fbdbb798160a2464effff798d344e5097b"
 encoding = "hex"
 
 [config.default.reserve_forever_hash]
-bytes = "5e9ed926296e493431ce21ea303997802bb0795fde39866b86bacbdd"
+bytes = "4d4d8576f3d0ff8f1d798822b5b89e816d1b5fed14ad0d429d8db3d7"
 encoding = "hex"
 
 [config.default.council_two_stage_hash]
-bytes = "b96195f36818f9753d8e67eb4691589ec28f4b7344261f1a72ba9177"
+bytes = "5f985ea0d26836e148e3268960e9f6ad2116d2283921c44054ac65b1"
 encoding = "hex"
 
 [config.default.council_forever_hash]
-bytes = "c1a3748929ae95208c9aca243a2386e2a61caf523a764befba853544"
+bytes = "a019262884241ca787b08d60a5b7c8de7ceba80791022a7c487e28d2"
 encoding = "hex"
 
 [config.default.ics_two_stage_hash]
-bytes = "b96195f36818f9753d8e67eb4691589ec28f4b7344261f1a72ba9177"
+bytes = "0141b498095bc063210c6abfa5fad112508790b038e2d903b589bc85"
 encoding = "hex"
 
 [config.default.ics_forever_hash]
-bytes = "d304900d859a9ebf3a8cf0861b80949b9ad247072b5e4204384b092a"
+bytes = "9997a97b265944cd17d28445709f13b229e06202c1175984f16dc59c"
 encoding = "hex"
 
 [config.default.technical_authority_two_stage_hash]
-bytes = "b96195f36818f9753d8e67eb4691589ec28f4b7344261f1a72ba9177"
+bytes = "af54f06fe288a5b95e4059ea22507298d072404cbd7037a6803a9ebd"
 encoding = "hex"
 
 [config.default.technical_authority_forever_hash]
-bytes = "c1a3748929ae95208c9aca243a2386e2a61caf523a764befba853544"
+bytes = "6ca08d71ec66f2ed47abe555f39595a48743a2d6040717c23c0139e1"
 encoding = "hex"
 
 [config.default.federated_operators_two_stage_hash]
-bytes = "b96195f36818f9753d8e67eb4691589ec28f4b7344261f1a72ba9177"
+bytes = "af54f06fe288a5b95e4059ea22507298d072404cbd7037a6803a9ebd"
 encoding = "hex"
 
 [config.default.federated_operators_forever_hash]
-bytes = "c1a3748929ae95208c9aca243a2386e2a61caf523a764befba853544"
+bytes = "6ca08d71ec66f2ed47abe555f39595a48743a2d6040717c23c0139e1"
 encoding = "hex"
 
 [config.default.main_gov_threshold_hash]
-bytes = "ceb55d6b52e7d855aa9c2581557684bdef5050286f01d642c2883a21"
+bytes = "68c9f99d7c06aef4eabe98b775655764714bdd4aac09150e04dbf049"
 encoding = "hex"
 
 [config.default.staging_gov_threshold_hash]
-bytes = "b7e53d104efe7e690c94ae9401cd20c269d8e753cd0bba612df10842"
+bytes = "8b0340b628b11a05fa4088c4b76c5371b6e7c58afa608a345b0456ee"
 encoding = "hex"
 
 [config.default.main_council_update_threshold_hash]
-bytes = "2371750be2b3788142784c41a82d7d96c9873a66ea4d07ca8cc2eb6e"
+bytes = "0f3b394fd44f8dec40a41164a63a3496588841bf771b902192c19d93"
 encoding = "hex"
 
 [config.default.main_tech_auth_update_threshold_hash]
-bytes = "2371750be2b3788142784c41a82d7d96c9873a66ea4d07ca8cc2eb6e"
+bytes = "d85af6d6b7089c466bf09bd42250b0ef2dcce16349ddfccc460f6e67"
+encoding = "hex"
+
+[config.default.main_federated_ops_update_threshold_hash]
+bytes = "b974c9fe34d85e0a5d45aa7c7b03d4b881a56fa59afe0de5fb2733b6"
 encoding = "hex"
 
 [config.default.committee_bridge_two_stage_hash]
-bytes = "d0340bb6543e0d1330033f11ce1d87f79e6aa580b189fbd8753c46cc"
+bytes = "dca33d16382da303db99a08376fa39e6fc774bb29b19aa1f0bef183c"
 encoding = "hex"
 
 [config.default.committee_bridge_forever_hash]
-bytes = "d0340bb6543e0d1330033f11ce1d87f79e6aa580b189fbd8753c46cc"
+bytes = "dca33d16382da303db99a08376fa39e6fc774bb29b19aa1f0bef183c"
 encoding = "hex"
 
 [config.preview]
@@ -148,47 +157,52 @@ staging_gov_one_shot_index = 1
 main_council_update_one_shot_index = 1
 
 main_tech_auth_update_one_shot_index = 1
+main_federated_ops_update_one_shot_index = 1
 
 committee_bridge_one_shot_index = 1
 
 [config.preview.reserve_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000001"
 encoding = "hex"
 
 [config.preview.council_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000002"
 encoding = "hex"
 
 [config.preview.ics_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000003"
 encoding = "hex"
 
 [config.preview.technical_authority_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000004"
 encoding = "hex"
 
 [config.preview.federated_operators_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000005"
 encoding = "hex"
 
 [config.preview.main_gov_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000006"
 encoding = "hex"
 
 [config.preview.staging_gov_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000007"
 encoding = "hex"
 
 [config.preview.main_council_update_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000008"
 encoding = "hex"
 
 [config.preview.main_tech_auth_update_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "0000000000000000000000000000000000000000000000000000000000000009"
+encoding = "hex"
+
+[config.preview.main_federated_ops_update_one_shot_hash]
+bytes = "000000000000000000000000000000000000000000000000000000000000000a"
 encoding = "hex"
 
 [config.preview.committee_bridge_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "000000000000000000000000000000000000000000000000000000000000000b"
 encoding = "hex"
 
 [config.preview.cnight_policy]
@@ -248,6 +262,10 @@ bytes = "29bf0406d0cbdee368ace211da0d210ff494a96ac1c940d2dc9413a0"
 encoding = "hex"
 
 [config.preview.main_tech_auth_update_threshold_hash]
+bytes = "29bf0406d0cbdee368ace211da0d210ff494a96ac1c940d2dc9413a0"
+encoding = "hex"
+
+[config.preview.main_federated_ops_update_threshold_hash]
 bytes = "29bf0406d0cbdee368ace211da0d210ff494a96ac1c940d2dc9413a0"
 encoding = "hex"
 
