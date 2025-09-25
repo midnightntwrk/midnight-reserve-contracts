@@ -7,6 +7,8 @@ use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
 }
 use config
+use forever/script.{forever_contract}
+use upgradable/two_stage_upgrade.{two_stage_upgradable}
 use utils.{must_find, one_shot_mint}
 
 validator simple_bridge {
@@ -70,5 +72,54 @@ validator simple_bridge {
 
       _ -> False
     }
+  }
+}
+
+validator committee_bridge_forever {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, redeemer, info } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.committee_bridge_one_shot_hash,
+        config.committee_bridge_one_shot_index,
+      )
+
+    forever_contract(
+      transaction,
+      redeemer,
+      info,
+      one_shot_ref,
+      config.committee_bridge_two_stage_hash,
+      fn(datum, _redeemer) {
+        expect BeefyConsensusState {
+          current_authority_set,
+          next_authority_set,
+          ..
+        }: BeefyConsensusState = datum
+
+        current_authority_set.id < next_authority_set.id
+      },
+    )
+  }
+}
+
+validator committee_bridge_two_stage_upgrade {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, redeemer, info } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.committee_bridge_one_shot_hash,
+        config.committee_bridge_one_shot_index,
+      )
+
+    two_stage_upgradable(transaction, redeemer, info, one_shot_ref)
+  }
+}
+
+validator committee_bridge_logic {
+  else(_ctx) {
+    todo
   }
 }
