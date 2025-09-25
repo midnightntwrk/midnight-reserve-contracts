@@ -1,7 +1,7 @@
 use aiken/builtin
 use aiken/collection/list
 use aiken/primitive/bytearray
-use bridge/types.{BeefyMmrLeaf, Commitment, Payload}
+use bridge/types.{AuthoritySetCommitment, BeefyMmrLeaf, Commitment, Payload}
 
 pub fn scale_encode_commitment(commitment: Commitment) -> ByteArray {
   let Commitment { payloads, block_number, validator_set_id } = commitment
@@ -60,7 +60,13 @@ pub fn scale_encode_beefy_mmr_leaf(leaf: BeefyMmrLeaf) -> ByteArray {
   first
     |> bytearray.concat(second)
     |> bytearray.concat(third)
-    |> bytearray.concat(extra)
+    |> bytearray.concat(
+        if extra == "" {
+          #"00"
+        } else {
+          extra
+        },
+      )
 }
 
 pub const scale_mode = [#"00", #"01", #"02", #"03"]
@@ -214,4 +220,25 @@ const comm =
 
 test scale_encode_commitment_1() {
   scale_encode_commitment(comm) == #"046d68804f2afb93828f662820ffbc4556691b657525f9d11e650e04e7bd7d054c40998ab90000000000000000000000"
+}
+
+test scale_encode_beefy_leaf_1() {
+  let beefy_leaf =
+    BeefyMmrLeaf {
+      version: 0,
+      parent_number: 273,
+      parent_hash: #"c773b67e92868f58aef6874146464646331be113fba51bd89a48d65b6d81bf3d",
+      next_authority_set: AuthoritySetCommitment(
+        1,
+        1,
+        #"ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d",
+      ),
+      extra: "",
+      k_index: 273,
+      leaf_index: 273,
+    }
+
+  let codec_leaf = scale_encode_beefy_mmr_leaf(beefy_leaf)
+
+  codec_leaf == #"0011010000c773b67e92868f58aef6874146464646331be113fba51bd89a48d65b6d81bf3d010000000000000001000000ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d00"
 }
