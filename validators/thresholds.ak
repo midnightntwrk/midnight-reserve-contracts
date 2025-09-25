@@ -179,3 +179,17 @@ validator main_tech_auth_update_threshold {
     threshold_validation(transaction, info, one_shot_ref, main_validation)
   }
 }
+
+validator main_federated_ops_update_threshold {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.main_federated_ops_update_one_shot_hash,
+        config.main_federated_ops_update_one_shot_index,
+      )
+
+    threshold_validation(transaction, info, one_shot_ref, main_validation)
+  }
+}
