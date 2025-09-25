@@ -28,58 +28,59 @@ TOML_FILE="aiken.toml"
 # Order: two_stage -> forever -> logic/auth -> thresholds -> committee_bridge
 
 # Two-stage validators (compiled first)
-RESERVE_TWO_STAGE_PLUTUS_KEY=".validators.[17].hash"
+RESERVE_TWO_STAGE_PLUTUS_KEY=".validators.[20].hash"
 RESERVE_TWO_STAGE_TOML_KEY="reserve_two_stage_hash"
 
-COUNCIL_TWO_STAGE_PLUTUS_KEY=".validators.[8].hash"
+COUNCIL_TWO_STAGE_PLUTUS_KEY=".validators.[11].hash"
 COUNCIL_TWO_STAGE_TOML_KEY="council_two_stage_hash"
 
-ICS_TWO_STAGE_PLUTUS_KEY=".validators.[5].hash"
+ICS_TWO_STAGE_PLUTUS_KEY=".validators.[8].hash"
 ICS_TWO_STAGE_TOML_KEY="ics_two_stage_hash"
 
-TECH_AUTH_TWO_STAGE_PLUTUS_KEY=".validators.[14].hash"
+TECH_AUTH_TWO_STAGE_PLUTUS_KEY=".validators.[17].hash"
 TECH_AUTH_TWO_STAGE_TOML_KEY="technical_authority_two_stage_hash"
 
-FEDERATED_OPS_TWO_STAGE_PLUTUS_KEY=".validators.[11].hash"
+FEDERATED_OPS_TWO_STAGE_PLUTUS_KEY=".validators.[14].hash"
 FEDERATED_OPS_TWO_STAGE_TOML_KEY="federated_operators_two_stage_hash"
 
 # Forever validators (compiled second)
-RESERVE_FOREVER_PLUTUS_KEY=".validators.[15].hash"
+RESERVE_FOREVER_PLUTUS_KEY=".validators.[18].hash"
 RESERVE_FOREVER_TOML_KEY="reserve_forever_hash"
 
-COUNCIL_FOREVER_PLUTUS_KEY=".validators.[6].hash"
+COUNCIL_FOREVER_PLUTUS_KEY=".validators.[9].hash"
 COUNCIL_FOREVER_TOML_KEY="council_forever_hash"
 
-ICS_FOREVER_PLUTUS_KEY=".validators.[3].hash"
+ICS_FOREVER_PLUTUS_KEY=".validators.[6].hash"
 ICS_FOREVER_TOML_KEY="ics_forever_hash"
 
-TECH_AUTH_FOREVER_PLUTUS_KEY=".validators.[12].hash"
+TECH_AUTH_FOREVER_PLUTUS_KEY=".validators.[15].hash"
 TECH_AUTH_FOREVER_TOML_KEY="technical_authority_forever_hash"
 
-FEDERATED_OPS_FOREVER_PLUTUS_KEY=".validators.[9].hash"
+FEDERATED_OPS_FOREVER_PLUTUS_KEY=".validators.[12].hash"
 FEDERATED_OPS_FOREVER_TOML_KEY="federated_operators_forever_hash"
 
 
 
-# Committee Bridge (single validator)
-COMMITTEE_BRIDGE_PLUTUS_KEY=".validators.[0].hash"
+# Committee Bridge validators
+COMMITTEE_BRIDGE_FOREVER_PLUTUS_KEY=".validators.[0].hash"
+COMMITTEE_BRIDGE_TWO_STAGE_PLUTUS_KEY=".validators.[2].hash"
 COMMITTEE_BRIDGE_TWO_STAGE_TOML_KEY="committee_bridge_two_stage_hash"
 COMMITTEE_BRIDGE_FOREVER_TOML_KEY="committee_bridge_forever_hash"
 
 # Threshold validators (compiled last, depend on forever contracts)
-MAIN_GOV_THRESHOLD_PLUTUS_KEY=".validators.[20].hash"
+MAIN_GOV_THRESHOLD_PLUTUS_KEY=".validators.[23].hash"
 MAIN_GOV_THRESHOLD_TOML_KEY="main_gov_threshold_hash"
 
-STAGING_GOV_THRESHOLD_PLUTUS_KEY=".validators.[22].hash"
+STAGING_GOV_THRESHOLD_PLUTUS_KEY=".validators.[25].hash"
 STAGING_GOV_THRESHOLD_TOML_KEY="staging_gov_threshold_hash"
 
-MAIN_COUNCIL_UPDATE_THRESHOLD_PLUTUS_KEY=".validators.[18].hash"
+MAIN_COUNCIL_UPDATE_THRESHOLD_PLUTUS_KEY=".validators.[21].hash"
 MAIN_COUNCIL_UPDATE_THRESHOLD_TOML_KEY="main_council_update_threshold_hash"
 
-MAIN_TECH_AUTH_UPDATE_THRESHOLD_PLUTUS_KEY=".validators.[21].hash"
+MAIN_TECH_AUTH_UPDATE_THRESHOLD_PLUTUS_KEY=".validators.[24].hash"
 MAIN_TECH_AUTH_UPDATE_THRESHOLD_TOML_KEY="main_tech_auth_update_threshold_hash"
 
-MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_PLUTUS_KEY=".validators.[19].hash"
+MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_PLUTUS_KEY=".validators.[22].hash"
 MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_TOML_KEY="main_federated_ops_update_threshold_hash"
 
 # Help function
@@ -251,7 +252,7 @@ update_hash "$COUNCIL_TWO_STAGE_PLUTUS_KEY" "$COUNCIL_TWO_STAGE_TOML_KEY"
 update_hash "$ICS_TWO_STAGE_PLUTUS_KEY" "$ICS_TWO_STAGE_TOML_KEY"
 update_hash "$TECH_AUTH_TWO_STAGE_PLUTUS_KEY" "$TECH_AUTH_TWO_STAGE_TOML_KEY"
 update_hash "$FEDERATED_OPS_TWO_STAGE_PLUTUS_KEY" "$FEDERATED_OPS_TWO_STAGE_TOML_KEY"
-update_hash "$COMMITTEE_BRIDGE_PLUTUS_KEY" "$COMMITTEE_BRIDGE_TWO_STAGE_TOML_KEY"
+update_hash "$COMMITTEE_BRIDGE_TWO_STAGE_PLUTUS_KEY" "$COMMITTEE_BRIDGE_TWO_STAGE_TOML_KEY"
 
 # Phase 2: Forever validators (batch compile)
 echo "Phase 2: Setting up forever validators..."
@@ -262,7 +263,7 @@ update_hash "$COUNCIL_FOREVER_PLUTUS_KEY" "$COUNCIL_FOREVER_TOML_KEY"
 update_hash "$ICS_FOREVER_PLUTUS_KEY" "$ICS_FOREVER_TOML_KEY"
 update_hash "$TECH_AUTH_FOREVER_PLUTUS_KEY" "$TECH_AUTH_FOREVER_TOML_KEY"
 update_hash "$FEDERATED_OPS_FOREVER_PLUTUS_KEY" "$FEDERATED_OPS_FOREVER_TOML_KEY"
-update_hash "$COMMITTEE_BRIDGE_PLUTUS_KEY" "$COMMITTEE_BRIDGE_FOREVER_TOML_KEY"
+update_hash "$COMMITTEE_BRIDGE_FOREVER_PLUTUS_KEY" "$COMMITTEE_BRIDGE_FOREVER_TOML_KEY"
 
 # Phase 3: Threshold validators (batch compile - depend on forever contracts)
 echo "Phase 3: Setting up threshold validators..."

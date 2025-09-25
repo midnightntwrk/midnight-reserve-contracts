@@ -123,27 +123,27 @@ bytes = "68c9f99d7c06aef4eabe98b775655764714bdd4aac09150e04dbf049"
 encoding = "hex"
 
 [config.default.staging_gov_threshold_hash]
-bytes = "8b0340b628b11a05fa4088c4b76c5371b6e7c58afa608a345b0456ee"
+bytes = "7f0ba10a995454794e4d6f970444ed1b0bfd7468f285494be47b1c48"
 encoding = "hex"
 
 [config.default.main_council_update_threshold_hash]
-bytes = "0f3b394fd44f8dec40a41164a63a3496588841bf771b902192c19d93"
+bytes = "78822a5d8fc248a35ccef9da5dde3a9e998557466634c8602e5afb4f"
 encoding = "hex"
 
 [config.default.main_tech_auth_update_threshold_hash]
-bytes = "d85af6d6b7089c466bf09bd42250b0ef2dcce16349ddfccc460f6e67"
+bytes = "f602c675633de68b9f75b94364f62d982620c30ae83068e26a40edf3"
 encoding = "hex"
 
 [config.default.main_federated_ops_update_threshold_hash]
-bytes = "b974c9fe34d85e0a5d45aa7c7b03d4b881a56fa59afe0de5fb2733b6"
+bytes = "b07358261834bd3480d71690054b597e4a6e269e36b16718dcc11d52"
 encoding = "hex"
 
 [config.default.committee_bridge_two_stage_hash]
-bytes = "dca33d16382da303db99a08376fa39e6fc774bb29b19aa1f0bef183c"
+bytes = "89700eb8d823d9b7ecd35b4048eeb3a8668bc73d7f83883257b0cd1d"
 encoding = "hex"
 
 [config.default.committee_bridge_forever_hash]
-bytes = "dca33d16382da303db99a08376fa39e6fc774bb29b19aa1f0bef183c"
+bytes = "044e171b91d92c2b267d5c35f7d56660b965923708c0f9dfe026d0a6"
 encoding = "hex"
 
 [config.preview]
