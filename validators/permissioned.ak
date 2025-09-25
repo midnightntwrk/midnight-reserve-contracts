@@ -182,7 +182,7 @@ validator federated_ops_logic {
       info,
       config.federated_operators_forever_hash,
       validate_multisig_structure,
-      config.main_tech_auth_update_threshold_hash,
+      config.main_federated_ops_update_threshold_hash,
     )
   }
 }

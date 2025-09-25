@@ -11,7 +11,7 @@
 # Usage: ./build_contracts.sh <default|preview|preprod> [silent|verbose|compact]
 #
 # Network options:
-#   default  - Use for mainnet/production builds
+#   default  - Use for local testing builds
 #   preview  - Use for preview testnet (uses hex encoding)
 #   preprod  - Use for preprod testnet
 #
@@ -67,17 +67,20 @@ COMMITTEE_BRIDGE_TWO_STAGE_TOML_KEY="committee_bridge_two_stage_hash"
 COMMITTEE_BRIDGE_FOREVER_TOML_KEY="committee_bridge_forever_hash"
 
 # Threshold validators (compiled last, depend on forever contracts)
-MAIN_GOV_THRESHOLD_PLUTUS_KEY=".validators.[19].hash"
+MAIN_GOV_THRESHOLD_PLUTUS_KEY=".validators.[20].hash"
 MAIN_GOV_THRESHOLD_TOML_KEY="main_gov_threshold_hash"
 
-STAGING_GOV_THRESHOLD_PLUTUS_KEY=".validators.[21].hash"
+STAGING_GOV_THRESHOLD_PLUTUS_KEY=".validators.[22].hash"
 STAGING_GOV_THRESHOLD_TOML_KEY="staging_gov_threshold_hash"
 
 MAIN_COUNCIL_UPDATE_THRESHOLD_PLUTUS_KEY=".validators.[18].hash"
 MAIN_COUNCIL_UPDATE_THRESHOLD_TOML_KEY="main_council_update_threshold_hash"
 
-MAIN_TECH_AUTH_UPDATE_THRESHOLD_PLUTUS_KEY=".validators.[20].hash"
+MAIN_TECH_AUTH_UPDATE_THRESHOLD_PLUTUS_KEY=".validators.[21].hash"
 MAIN_TECH_AUTH_UPDATE_THRESHOLD_TOML_KEY="main_tech_auth_update_threshold_hash"
+
+MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_PLUTUS_KEY=".validators.[19].hash"
+MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_TOML_KEY="main_federated_ops_update_threshold_hash"
 
 # Help function
 show_help() {
@@ -86,7 +89,7 @@ show_help() {
     echo "Usage: $0 <network> [trace_level]"
     echo ""
     echo "Networks:"
-    echo "  default   Use for mainnet/production builds"
+    echo "  default   Use for local testing builds"
     echo "  preview   Use for preview testnet (uses hex encoding)"
     echo "  preprod   Use for preprod testnet"
     echo ""
@@ -117,11 +120,6 @@ fi
 
 # Convert parameter to lowercase for consistent comparison
 NETWORK=$(echo "$1" | tr '[:upper:]' '[:lower:]')
-
-# Map mainnet to default for aiken config compatibility
-if [ "$NETWORK" == "mainnet" ]; then
-    NETWORK="default"
-fi
 
 TRACE_LEVEL=$([ $# -eq 2 ] && echo "-t $2" || echo "")
 
@@ -274,6 +272,7 @@ update_hash "$MAIN_GOV_THRESHOLD_PLUTUS_KEY" "$MAIN_GOV_THRESHOLD_TOML_KEY"
 update_hash "$STAGING_GOV_THRESHOLD_PLUTUS_KEY" "$STAGING_GOV_THRESHOLD_TOML_KEY"
 update_hash "$MAIN_COUNCIL_UPDATE_THRESHOLD_PLUTUS_KEY" "$MAIN_COUNCIL_UPDATE_THRESHOLD_TOML_KEY"
 update_hash "$MAIN_TECH_AUTH_UPDATE_THRESHOLD_PLUTUS_KEY" "$MAIN_TECH_AUTH_UPDATE_THRESHOLD_TOML_KEY"
+update_hash "$MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_PLUTUS_KEY" "$MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_TOML_KEY"
 
 # Final compilation with all hashes in place
 echo "Final compilation..."
