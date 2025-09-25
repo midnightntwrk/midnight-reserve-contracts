@@ -400,6 +400,514 @@ test spending_main_logic_change() {
   two_stage_upgradable(tx, redeemer, info, one_shot_ref)
 }
 
+test spending_main_input_lacks_main_token() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(
+              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
+            ),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "main", 1),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              logic: staging_datum.logic,
+              round: staging_datum.round + 2,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(main_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer = TwoStageRedeemer(Logic, Main(ref_input_out_ref))
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_main_reference_input_missing() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "main", 1),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              logic: staging_datum.logic,
+              round: staging_datum.round + 2,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(main_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer = TwoStageRedeemer(Logic, Main(ref_input_out_ref))
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_main_reference_input_missing_staging_token() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000),
+            InlineDatum(
+              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
+            ),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "main", 1),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              logic: staging_datum.logic,
+              round: staging_datum.round + 2,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(main_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer = TwoStageRedeemer(Logic, Main(ref_input_out_ref))
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_main_output_to_different_address() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(
+              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
+            ),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          address,
+          from_lovelace(10000000) |> add(policy, "main", 1),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              logic: staging_datum.logic,
+              round: staging_datum.round + 2,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(main_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer = TwoStageRedeemer(Logic, Main(ref_input_out_ref))
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_main_output_missing_token() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(
+              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
+            ),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              logic: staging_datum.logic,
+              round: staging_datum.round + 2,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(main_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer = TwoStageRedeemer(Logic, Main(ref_input_out_ref))
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_main_input_output_missing_token() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(
+              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
+            ),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              logic: staging_datum.logic,
+              round: staging_datum.round + 2,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(main_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer = TwoStageRedeemer(Logic, Main(ref_input_out_ref))
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_main_output_logic_does_not_match_staging() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(
+              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
+            ),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "main", 1),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              logic: main_datum.logic,
+              round: staging_datum.round + 2,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(main_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer = TwoStageRedeemer(Logic, Main(ref_input_out_ref))
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_main_output_round_does_not_match_staging() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(
+              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
+            ),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "main", 1),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              logic: staging_datum.logic,
+              round: main_datum.round,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(main_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer = TwoStageRedeemer(Logic, Main(ref_input_out_ref))
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_main_withdrawals_missing() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(
+              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
+            ),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "main", 1),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              logic: staging_datum.logic,
+              round: staging_datum.round + 2,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [],
+    }
+
+  let redeemer: Redeemer = TwoStageRedeemer(Logic, Main(ref_input_out_ref))
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_main_withdrawals_does_not_contain_main_auth() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(
+              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
+            ),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "main", 1),
+          InlineDatum(
+            UpgradeState {
+              ..main_datum,
+              logic: staging_datum.logic,
+              round: staging_datum.round + 2,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(staging_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer = TwoStageRedeemer(Logic, Main(ref_input_out_ref))
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
 test spending_staging_logic_change() {
   let tx =
     Transaction {
@@ -441,6 +949,571 @@ test spending_staging_logic_change() {
         ),
       ],
       withdrawals: [Pair(Script(staging_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_input_lacks_staging_token() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000),
+            InlineDatum(staging_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "staging", 1),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: #"51515151515151515151515151515151515151515151515151515151",
+              round: staging_datum.round + 1,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(staging_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_reference_input_missing() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(staging_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "staging", 1),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: #"51515151515151515151515151515151515151515151515151515151",
+              round: staging_datum.round + 1,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(staging_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_reference_input_missing_main_token() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(staging_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "staging", 1),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: #"51515151515151515151515151515151515151515151515151515151",
+              round: staging_datum.round + 1,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(staging_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_output_to_different_address() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(staging_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          address,
+          from_lovelace(10000000) |> add(policy, "staging", 1),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: #"51515151515151515151515151515151515151515151515151515151",
+              round: staging_datum.round + 1,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(staging_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_output_missing_token() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(staging_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: #"51515151515151515151515151515151515151515151515151515151",
+              round: staging_datum.round + 1,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(staging_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_input_output_missing_token() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000),
+            InlineDatum(staging_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: #"51515151515151515151515151515151515151515151515151515151",
+              round: staging_datum.round + 1,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(staging_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_output_logic_does_not_match_redeemer() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(staging_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "staging", 1),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: staging_datum.logic,
+              round: staging_datum.round + 1,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(staging_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_output_round_not_incremented() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(staging_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "staging", 1),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: #"51515151515151515151515151515151515151515151515151515151",
+              round: staging_datum.round,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(staging_datum.auth), 0)],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_withdrawals_missing() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(staging_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "staging", 1),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: #"51515151515151515151515151515151515151515151515151515151",
+              round: staging_datum.round + 1,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [],
+    }
+
+  let redeemer: Redeemer =
+    TwoStageRedeemer(
+      Logic,
+      Staging(
+        ref_input_out_ref,
+        #"51515151515151515151515151515151515151515151515151515151",
+      ),
+    )
+
+  let info = Spending(own_out_ref, None)
+
+  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
+}
+
+test spending_staging_withdrawals_does_not_contain_staging_auth() fail {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          own_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "staging", 1),
+            InlineDatum(staging_datum),
+            None,
+          ),
+        ),
+      ],
+      reference_inputs: [
+        Input(
+          ref_input_out_ref,
+          Output(
+            script_address,
+            from_lovelace(10000000) |> add(policy, "main", 1),
+            InlineDatum(main_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(10000000) |> add(policy, "staging", 1),
+          InlineDatum(
+            UpgradeState {
+              ..staging_datum,
+              logic: #"51515151515151515151515151515151515151515151515151515151",
+              round: staging_datum.round + 1,
+            },
+          ),
+          None,
+        ),
+      ],
+      withdrawals: [
+        Pair(
+          Script(#"51515151515151515151515151515151515151515151515151515151"),
+          0,
+        ),
+      ],
     }
 
   let redeemer: Redeemer =
