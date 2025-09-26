@@ -1,6 +1,6 @@
 use cardano/address.{Address, Script, VerificationKey}
 use cardano/assets.{add, from_asset, from_lovelace}
-use cardano/script_context.{Minting, ScriptContext, Spending}
+use cardano/script_context.{Minting, ScriptContext, Spending, Withdrawing}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction, placeholder,
 }
@@ -557,4 +557,62 @@ test forever_spending_wrong_withdrawal_with_empty_mitigation_fail() fail {
   let ctx = ScriptContext(tx, 0, Spending(spending_out_ref, None))
 
   reserve.reserve_forever.else(ctx)
+}
+
+test reserve_logic_merge() {
+  let forever_script_address =
+    Address(Script(config.reserve_forever_hash), None)
+
+  let input1_ref =
+    OutputReference(
+      #"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      0,
+    )
+
+  let input2_ref =
+    OutputReference(
+      #"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      1,
+    )
+
+  let withdrawal_ref =
+    Script(#"cccccccccccccccccccccccccccccccccccccccccccccccccccccccc")
+
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          input1_ref,
+          Output(
+            forever_script_address,
+            from_lovelace(5000000) |> add(policy, "", 1),
+            InlineDatum(initial_datum),
+            None,
+          ),
+        ),
+        Input(
+          input2_ref,
+          Output(
+            forever_script_address,
+            from_lovelace(3000000) |> add(policy, "", 2),
+            InlineDatum(initial_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          forever_script_address,
+          from_lovelace(8000000) |> add(policy, "", 3),
+          InlineDatum(initial_datum),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(logic_script_hash), 0)],
+    }
+
+  let ctx = ScriptContext(tx, 0, Withdrawing(withdrawal_ref))
+
+  reserve.reserve_logic.else(ctx)
 }
