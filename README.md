@@ -1,7 +1,23 @@
-# Midnight Reserve Repository
+# Midnight Cardano Contracts Repository
 
-This GitHub repository should be used as a template when creating a new Midnight GitHub repository.
-The template is configured with default repository settings and a set of default files that are expected to exist in all Midnight GitHub repositories.
+This repository contains the various upgradable and non-upgradable contracts related to midnight governance and cnight token holdings.
+
+## Building and Tests
+This repository use a Justfile to simplify the commands used in this repository
+
+
+To build run
+```sh
+just build <network_env, optional> <trace_level, optional>
+```
+
+
+To run the onchain tests
+```sh
+just check <trace_level, optional>
+```
+
+
 
 ### LICENSE
 
@@ -39,7 +55,7 @@ signing process, enabling contributors to sign our CLAs directly within a GitHub
 
 ### Dependabot
 
-The Midnight Foundation uses GitHub Dependabot feature to keep our projects dependencies up-to-date and address potential security vulnerabilities. 
+The Midnight Foundation uses GitHub Dependabot feature to keep our projects dependencies up-to-date and address potential security vulnerabilities.
 
 ### Checkmarx
 
@@ -48,7 +64,7 @@ All repositories are scanned with Checkmarx's suite of tools including: Static A
 
 ### Unito
 
-Facilitates two-way data synchronization, automated workflows and streamline processes between: Jira, GitHub issues and Github project Kanban board. 
+Facilitates two-way data synchronization, automated workflows and streamline processes between: Jira, GitHub issues and Github project Kanban board.
 
 # TODO - New Repo Owner
 
