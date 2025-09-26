@@ -12,7 +12,7 @@ import {
 } from "@blaze-cardano/core";
 import { Type, serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
-import * as Contracts from "../contracts";
+import * as Contracts from "../contract_blueprint";
 import { beforeEach, describe, test } from "bun:test";
 import * as U from "uplc-node";
 
@@ -21,7 +21,7 @@ describe("Verify Signers", () => {
 
   const emulator = new Emulator([]);
 
-  const beefySpend = new Contracts.BeefyValidationPlaceholderSpend();
+  const beefySpend = new Contracts.CommitteeBridgeSimpleBridgeElse();
 
   beforeEach(async () => {});
 

@@ -2,7 +2,10 @@ use aiken/collection/dict.{to_pairs}
 use bridge/beefy.{verify_mmr_update_proof}
 use bridge/types.{BeefyConsensusState, RelayChainProof}
 use cardano/assets.{to_dict}
-use cardano/script_context.{Minting, ScriptContext, Spending}
+use cardano/certificate.{RegisterCredential, UnregisterCredential}
+use cardano/script_context.{
+  Minting, Publishing, ScriptContext, Spending, Withdrawing,
+}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
 }
@@ -119,7 +122,16 @@ validator committee_bridge_two_stage_upgrade {
 }
 
 validator committee_bridge_logic {
-  else(_ctx) {
-    todo
+  else(ctx: ScriptContext) {
+    let ScriptContext { info, .. } = ctx
+
+    when info is {
+      Withdrawing(_) |
+      Publishing { certificate: UnregisterCredential { .. }, .. } -> todo
+
+      Publishing { certificate: RegisterCredential { .. }, .. } -> True
+
+      _ -> fail
+    }
   }
 }
