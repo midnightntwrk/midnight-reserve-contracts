@@ -1,4 +1,5 @@
 use aiken/crypto.{VerificationKeyHash}
+use bridge/types.{BeefyConsensusState, RelayChainProof} as bridge_types
 use multisig/types.{Multisig, MultisigThreshold}
 use upgradable/types.{TwoStageRedeemer, UpgradeState} as t
 
@@ -29,6 +30,21 @@ validator z_permissioned_types {
 
 validator z_two_stage_upgrade_types {
   spend(_datum: Option<UpgradeState>, _redeemer: TwoStageRedeemer, _output, _tx) {
+    fail
+  }
+
+  else(_) {
+    fail
+  }
+}
+
+validator z_committee_bridge_types {
+  spend(
+    _datum: Option<BeefyConsensusState>,
+    _redeemer: RelayChainProof,
+    _output,
+    _tx,
+  ) {
     fail
   }
 
