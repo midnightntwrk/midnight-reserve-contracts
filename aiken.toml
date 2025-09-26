@@ -123,19 +123,19 @@ bytes = "6b4d7d1cb2cac46f791d414e8fae1d04291bb4a64889156515e7ef6a"
 encoding = "hex"
 
 [config.default.staging_gov_threshold_hash]
-bytes = "21b3810ef6c15ba333175f83f5cbe8ff4b2a88a254be2ce8874af6ab"
+bytes = "acc6ccb7c63c653920681c7494da043539f57ae6ebb5b821cc04b04b"
 encoding = "hex"
 
 [config.default.main_council_update_threshold_hash]
-bytes = "6e14d277019da3ef939c60c9ba94805473084a4a97a8e159a9b23865"
+bytes = "38b4dd46e8eb29bdae487038d80e2dcee1eb4ecfb917ed08781c1110"
 encoding = "hex"
 
 [config.default.main_tech_auth_update_threshold_hash]
-bytes = "260b60bbda97559310e2a0269fb87da0de68b850f5892599ebe3c408"
+bytes = "caac052b9d0661e1175931ca4bc8ac3e123df5a13038fb179193c0f7"
 encoding = "hex"
 
 [config.default.main_federated_ops_update_threshold_hash]
-bytes = "00646664b2280240daefb09119fd83cbb5fdf02082cb7157a9f0380e"
+bytes = "8e686c0631a2deba71081700524fa1aa1fa5a816aa9241f446090bbc"
 encoding = "hex"
 
 [config.default.committee_bridge_two_stage_hash]
