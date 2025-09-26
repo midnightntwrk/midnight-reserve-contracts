@@ -55,7 +55,6 @@ pub type RelayChainProof {
   signed_commitment: SignedCommitment,
   latest_mmr_leaf: BeefyMmrLeaf,
   mmr_proof: Data<List<ByteArray>>,
-  mmr_subtree_proof: Data<List<List<Node>>>,
   proof: Data<List<List<Node>>>,
 }
 
