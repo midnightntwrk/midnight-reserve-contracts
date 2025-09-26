@@ -1,4 +1,5 @@
 graph TD
+
     %% All direct dependencies are handled compile time by aiken
     %% Logic contracts depend on their corresponding forever counterpart
     reserve_logic --> reserve_forever
