@@ -1,5 +1,6 @@
 use aiken/crypto.{VerificationKeyHash}
 use bridge/types.{BeefyConsensusState, RelayChainProof} as bridge_types
+use cnight_generates_dust.{DustAction, DustMappingDatum}
 use multisig/types.{Multisig, MultisigThreshold}
 use upgradable/types.{TwoStageRedeemer, UpgradeState} as t
 
@@ -45,6 +46,16 @@ validator z_committee_bridge_types {
     _output,
     _tx,
   ) {
+    fail
+  }
+
+  else(_) {
+    fail
+  }
+}
+
+validator z_generates_dust {
+  spend(_datum: Option<DustMappingDatum>, _redeemer: DustAction, _output, _tx) {
     fail
   }
 

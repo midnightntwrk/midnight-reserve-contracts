@@ -143,8 +143,8 @@ validator federated_ops_forever {
 
     let one_shot_ref =
       OutputReference(
-        config.technical_authority_one_shot_hash,
-        config.technical_authority_one_shot_index,
+        config.federated_operators_one_shot_hash,
+        config.federated_operators_one_shot_index,
       )
 
     forever_contract(
@@ -152,7 +152,7 @@ validator federated_ops_forever {
       redeemer,
       info,
       one_shot_ref,
-      config.technical_authority_two_stage_hash,
+      config.federated_operators_two_stage_hash,
       validate_multisig_structure,
     )
   }
@@ -164,8 +164,8 @@ validator federated_ops_two_stage_upgrade {
 
     let one_shot_ref =
       OutputReference(
-        config.technical_authority_one_shot_hash,
-        config.technical_authority_one_shot_index,
+        config.federated_operators_one_shot_hash,
+        config.federated_operators_one_shot_index,
       )
 
     two_stage_upgradable(transaction, redeemer, info, one_shot_ref)
