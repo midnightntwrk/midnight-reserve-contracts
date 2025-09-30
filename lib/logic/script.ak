@@ -47,8 +47,7 @@ pub fn logic_merge(
     }
 
   when info is {
-    Withdrawing(_) | Publishing { certificate: UnregisterCredential { .. }, .. } ->
-      merge_values(main_forever_script_hash)
+    Withdrawing(_) -> merge_values(main_forever_script_hash)
 
     Publishing { certificate: RegisterCredential { .. }, .. } -> True
 
