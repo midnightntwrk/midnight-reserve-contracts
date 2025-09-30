@@ -1,4 +1,3 @@
-use aiken/builtin
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
@@ -6,8 +5,8 @@ use forever/script.{forever_contract}
 use logic/script.{logic_merge} as logic_script
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 
-fn ics_init_validation(datum: Data, _redeemer: Redeemer) {
-  builtin.un_i_data(datum) == 0
+fn ics_init_validation(_datum: Data, _redeemer: Redeemer) {
+  True
 }
 
 validator ics_forever {
