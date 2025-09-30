@@ -8,6 +8,7 @@ use cardano/script_context.{
   Minting, Publishing, ScriptContext, Spending, Withdrawing,
 }
 use cardano/transaction.{InlineDatum, Input, Output, Transaction}
+use config
 use utils.{must_find, one_shot_mint}
 
 pub type DustMappingDatum {
@@ -81,8 +82,10 @@ validator cnight_generates_dust {
               |> to_dict
               |> to_pairs
               |> must_find(fn(value) { value.1st == own_policy })
-
-          [Pair("", spent_inputs)] == to_pairs(tokens)
+          and {
+            [Pair("", spent_inputs)] == to_pairs(tokens),
+            own_policy != config.cnight_policy,
+          }
         }
 
       Withdrawing(own_cred) -> {
