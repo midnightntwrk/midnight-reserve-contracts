@@ -12,3 +12,12 @@ build env="default" verbosity="verbose":
 check verbosity="verbose":
     #!/bin/bash
     aiken check -S -t {{verbosity}}
+
+
+deploy env:
+    #!/bin/bash
+    echo "Building contracts for {{env}} network..."
+    just build {{env}}
+
+    echo "Generating deployment transactions..."
+    bun run index.ts {{env}}

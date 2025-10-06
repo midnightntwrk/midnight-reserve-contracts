@@ -10,7 +10,7 @@ use multisig/script.{check_for_multisig, threshold_validation}
 use multisig/types.{MultisigThreshold}
 use utils.{must_find, one_shot_mint}
 
-fn main_validation(datum: Data) {
+fn validation(datum: Data) {
   expect MultisigThreshold {
     technical_auth_numerator,
     technical_auth_denominator,
@@ -23,19 +23,6 @@ fn main_validation(datum: Data) {
     council_numerator < council_denominator,
     technical_auth_numerator > 0,
     council_numerator > 0,
-  }
-}
-
-fn staging_validation(datum: Data) {
-  expect MultisigThreshold {
-    technical_auth_numerator,
-    technical_auth_denominator,
-    ..
-  }: MultisigThreshold = datum
-
-  and {
-    technical_auth_numerator < technical_auth_denominator,
-    technical_auth_numerator > 0,
   }
 }
 
@@ -129,7 +116,7 @@ validator main_gov_threshold {
         and {
           out_addr.payment_credential == pay_cred,
           nft_id == out_nft_id,
-          main_validation(out_datum),
+          validation(out_datum),
         }
       }
 
@@ -148,7 +135,7 @@ validator staging_gov_threshold {
         config.staging_gov_one_shot_index,
       )
 
-    threshold_validation(transaction, info, one_shot_ref, staging_validation)
+    threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
 
@@ -162,7 +149,7 @@ validator main_council_update_threshold {
         config.main_council_update_one_shot_index,
       )
 
-    threshold_validation(transaction, info, one_shot_ref, main_validation)
+    threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
 
@@ -176,7 +163,7 @@ validator main_tech_auth_update_threshold {
         config.main_tech_auth_update_one_shot_index,
       )
 
-    threshold_validation(transaction, info, one_shot_ref, main_validation)
+    threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
 
@@ -190,6 +177,6 @@ validator main_federated_ops_update_threshold {
         config.main_federated_ops_update_one_shot_index,
       )
 
-    threshold_validation(transaction, info, one_shot_ref, main_validation)
+    threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
