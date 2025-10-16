@@ -4,11 +4,9 @@ use aiken/math.{log2}
 use aiken/primitive/bytearray
 use bridge/codec.{scale_encode_beefy_mmr_leaf}
 use bridge/types.{
-  AuthoritySetCommitment, BeefyMmrLeaf, MmrLeaf, Node, RelayChainProof,
+  AuthoritySetCommitment, BeefyMmrLeaf, MmrLeaf, Node, ProofNodeRec,
+  RelayChainProof,
 }
-
-pub type ProofNodeRec =
-  List<Data>
 
 pub type Leaf =
   ByteArray
