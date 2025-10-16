@@ -51,11 +51,14 @@ pub type PartialConsensusProof {
   proof: Data<List<List<Node>>>,
 }
 
+pub type ProofNodeRec =
+  List<Data>
+
 pub type RelayChainProof {
   signed_commitment: SignedCommitment,
   latest_mmr_leaf: BeefyMmrLeaf,
   mmr_proof: Data<List<ByteArray>>,
-  proof: Data<List<List<Node>>>,
+  proof: Data<ProofNodeRec>,
 }
 
 pub type Parachain {
