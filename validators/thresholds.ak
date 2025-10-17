@@ -8,7 +8,7 @@ use cardano/transaction.{
 use config
 use multisig/script.{check_for_multisig, threshold_validation}
 use multisig/types.{MultisigThreshold}
-use utils.{must_find, one_shot_mint}
+use utils.{input_linked_mint, must_find}
 
 fn validation(datum: Data) {
   expect MultisigThreshold {
@@ -42,7 +42,7 @@ validator main_gov_threshold {
     when info is {
       Minting(own_policy) -> {
         let datum =
-          one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
+          input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
         expect MultisigThreshold {
           technical_auth_numerator,

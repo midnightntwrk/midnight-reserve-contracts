@@ -1,0 +1,1773 @@
+// Auto-generated from CIP-57 blueprint
+pub use blueprint_rs::runtime::*;
+pub struct ValidatorScript<P> {
+    pub title: &'static str,
+    pub compiled_code: &'static str,
+    pub hash: &'static str,
+    pub parameters: P,
+}
+pub enum Void {
+    Value,
+}
+pub const VOID: Void = Void::Value;
+impl ToPlutusData for Void {
+    fn to_plutus_data_with(&self, _metadata: Option<&CanonicalMetadata>) -> PlutusData {
+        PlutusData::Constr(Constr { tag: 0u64, any_constructor: None, fields: MaybeIndefArray::Def(Vec::new()) })
+    }
+}
+impl FromPlutusData for Void {
+    fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+        let constr = expect_constr(data, "Void")?;
+        if constr.constr_index() != 0u64 {
+            return Err(PlutusDataError::UnexpectedTag { context: "Void", found: constr.constr_index() });
+        }
+        let fields_decoded = decode_constructor_fields(constr, "Void", 0)?;
+        if !fields_decoded.value.is_empty() {
+            return Err(PlutusDataError::FieldCountMismatch { context: "Void", expected: 0, found: fields_decoded.value.len() });
+        }
+        let issues = fields_decoded
+            .metadata
+            .as_ref()
+            .map_or(Vec::new(), |meta| meta.issues().to_vec());
+        Ok(Decoded::from_parts(Void::Value, issues))
+    }
+}
+pub type Data = PlutusData;
+pub type Int = num_bigint::BigInt;
+pub mod aiken {
+    use super::*;
+    pub mod crypto {
+        use super::super::*;
+        pub type ScriptHash = ByteArray;
+        pub type VerificationKeyHash = ByteArray;
+    }
+}
+pub mod bridge {
+    use super::*;
+    pub mod types {
+        use super::super::*;
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct AuthoritySetCommitment {
+            pub id: Int,
+            pub len: Int,
+            pub root: ByteArray,
+        }
+        impl ToPlutusData for AuthoritySetCommitment {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                let mut fields = Vec::with_capacity(3);
+                let field_0_metadata = metadata.and_then(|meta| meta.project_field("id"));
+                fields.push(self.id.to_plutus_data_with(field_0_metadata.as_ref()));
+                let field_1_metadata = metadata.and_then(|meta| meta.project_field("len"));
+                fields.push(self.len.to_plutus_data_with(field_1_metadata.as_ref()));
+                let field_2_metadata = metadata.and_then(|meta| meta.project_field("root"));
+                fields.push(self.root.to_plutus_data_with(field_2_metadata.as_ref()));
+                let (tag, any_constructor) = encode_variant_index(0usize);
+                let wrapped = if metadata
+                    .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                {
+                    MaybeIndefArray::Indef(fields)
+                } else {
+                    MaybeIndefArray::Def(fields)
+                };
+                PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+            }
+        }
+        impl FromPlutusData for AuthoritySetCommitment {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "AuthoritySetCommitment")?;
+                if constr.constr_index() != 0u64 {
+                    return Err(PlutusDataError::UnexpectedTag { context: "AuthoritySetCommitment", found: constr.constr_index() });
+                }
+                let fields_decoded = decode_constructor_fields(constr, "AuthoritySetCommitment", 3)?;
+                let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                    .metadata
+                    .as_ref()
+                    .map_or(Vec::new(), |meta| meta.issues().to_vec());
+                let items = fields_decoded.value;
+                if items.len() < 3 {
+                    return Err(PlutusDataError::FieldCountMismatch { context: "AuthoritySetCommitment", expected: 3, found: items.len() });
+                }
+                let value = AuthoritySetCommitment {
+                    id: {
+                        let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("id")], decoded.metadata());
+                        decoded.value
+                    },
+                    len: {
+                        let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("len")], decoded.metadata());
+                        decoded.value
+                    },
+                    root: {
+                        let decoded = FromPlutusData::from_plutus_data(items[2])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("root")], decoded.metadata());
+                        decoded.value
+                    },
+                };
+                Ok(Decoded::from_parts(value, issues))
+            }
+        }
+
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct BeefyConsensusState {
+            pub latest_height: Int,
+            pub activation_block: Int,
+            pub current_authority_set: AuthoritySetCommitment,
+            pub next_authority_set: AuthoritySetCommitment,
+        }
+        impl ToPlutusData for BeefyConsensusState {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                let mut fields = Vec::with_capacity(4);
+                let field_0_metadata = metadata.and_then(|meta| meta.project_field("latest_height"));
+                fields.push(self.latest_height.to_plutus_data_with(field_0_metadata.as_ref()));
+                let field_1_metadata = metadata.and_then(|meta| meta.project_field("activation_block"));
+                fields.push(self.activation_block.to_plutus_data_with(field_1_metadata.as_ref()));
+                let field_2_metadata = metadata.and_then(|meta| meta.project_field("current_authority_set"));
+                fields.push(self.current_authority_set.to_plutus_data_with(field_2_metadata.as_ref()));
+                let field_3_metadata = metadata.and_then(|meta| meta.project_field("next_authority_set"));
+                fields.push(self.next_authority_set.to_plutus_data_with(field_3_metadata.as_ref()));
+                let (tag, any_constructor) = encode_variant_index(0usize);
+                let wrapped = if metadata
+                    .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                {
+                    MaybeIndefArray::Indef(fields)
+                } else {
+                    MaybeIndefArray::Def(fields)
+                };
+                PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+            }
+        }
+        impl FromPlutusData for BeefyConsensusState {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "BeefyConsensusState")?;
+                if constr.constr_index() != 0u64 {
+                    return Err(PlutusDataError::UnexpectedTag { context: "BeefyConsensusState", found: constr.constr_index() });
+                }
+                let fields_decoded = decode_constructor_fields(constr, "BeefyConsensusState", 4)?;
+                let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                    .metadata
+                    .as_ref()
+                    .map_or(Vec::new(), |meta| meta.issues().to_vec());
+                let items = fields_decoded.value;
+                if items.len() < 4 {
+                    return Err(PlutusDataError::FieldCountMismatch { context: "BeefyConsensusState", expected: 4, found: items.len() });
+                }
+                let value = BeefyConsensusState {
+                    latest_height: {
+                        let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("latest_height")], decoded.metadata());
+                        decoded.value
+                    },
+                    activation_block: {
+                        let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("activation_block")], decoded.metadata());
+                        decoded.value
+                    },
+                    current_authority_set: {
+                        let decoded = FromPlutusData::from_plutus_data(items[2])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("current_authority_set")], decoded.metadata());
+                        decoded.value
+                    },
+                    next_authority_set: {
+                        let decoded = FromPlutusData::from_plutus_data(items[3])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("next_authority_set")], decoded.metadata());
+                        decoded.value
+                    },
+                };
+                Ok(Decoded::from_parts(value, issues))
+            }
+        }
+
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct BeefyMmrLeaf {
+            pub version: Int,
+            pub parent_number: Int,
+            pub parent_hash: ByteArray,
+            pub next_authority_set: AuthoritySetCommitment,
+            pub extra: ByteArray,
+            pub k_index: Int,
+            pub leaf_index: Int,
+        }
+        impl ToPlutusData for BeefyMmrLeaf {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                let mut fields = Vec::with_capacity(7);
+                let field_0_metadata = metadata.and_then(|meta| meta.project_field("version"));
+                fields.push(self.version.to_plutus_data_with(field_0_metadata.as_ref()));
+                let field_1_metadata = metadata.and_then(|meta| meta.project_field("parent_number"));
+                fields.push(self.parent_number.to_plutus_data_with(field_1_metadata.as_ref()));
+                let field_2_metadata = metadata.and_then(|meta| meta.project_field("parent_hash"));
+                fields.push(self.parent_hash.to_plutus_data_with(field_2_metadata.as_ref()));
+                let field_3_metadata = metadata.and_then(|meta| meta.project_field("next_authority_set"));
+                fields.push(self.next_authority_set.to_plutus_data_with(field_3_metadata.as_ref()));
+                let field_4_metadata = metadata.and_then(|meta| meta.project_field("extra"));
+                fields.push(self.extra.to_plutus_data_with(field_4_metadata.as_ref()));
+                let field_5_metadata = metadata.and_then(|meta| meta.project_field("k_index"));
+                fields.push(self.k_index.to_plutus_data_with(field_5_metadata.as_ref()));
+                let field_6_metadata = metadata.and_then(|meta| meta.project_field("leaf_index"));
+                fields.push(self.leaf_index.to_plutus_data_with(field_6_metadata.as_ref()));
+                let (tag, any_constructor) = encode_variant_index(0usize);
+                let wrapped = if metadata
+                    .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                {
+                    MaybeIndefArray::Indef(fields)
+                } else {
+                    MaybeIndefArray::Def(fields)
+                };
+                PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+            }
+        }
+        impl FromPlutusData for BeefyMmrLeaf {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "BeefyMmrLeaf")?;
+                if constr.constr_index() != 0u64 {
+                    return Err(PlutusDataError::UnexpectedTag { context: "BeefyMmrLeaf", found: constr.constr_index() });
+                }
+                let fields_decoded = decode_constructor_fields(constr, "BeefyMmrLeaf", 7)?;
+                let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                    .metadata
+                    .as_ref()
+                    .map_or(Vec::new(), |meta| meta.issues().to_vec());
+                let items = fields_decoded.value;
+                if items.len() < 7 {
+                    return Err(PlutusDataError::FieldCountMismatch { context: "BeefyMmrLeaf", expected: 7, found: items.len() });
+                }
+                let value = BeefyMmrLeaf {
+                    version: {
+                        let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("version")], decoded.metadata());
+                        decoded.value
+                    },
+                    parent_number: {
+                        let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("parent_number")], decoded.metadata());
+                        decoded.value
+                    },
+                    parent_hash: {
+                        let decoded = FromPlutusData::from_plutus_data(items[2])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("parent_hash")], decoded.metadata());
+                        decoded.value
+                    },
+                    next_authority_set: {
+                        let decoded = FromPlutusData::from_plutus_data(items[3])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("next_authority_set")], decoded.metadata());
+                        decoded.value
+                    },
+                    extra: {
+                        let decoded = FromPlutusData::from_plutus_data(items[4])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("extra")], decoded.metadata());
+                        decoded.value
+                    },
+                    k_index: {
+                        let decoded = FromPlutusData::from_plutus_data(items[5])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("k_index")], decoded.metadata());
+                        decoded.value
+                    },
+                    leaf_index: {
+                        let decoded = FromPlutusData::from_plutus_data(items[6])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("leaf_index")], decoded.metadata());
+                        decoded.value
+                    },
+                };
+                Ok(Decoded::from_parts(value, issues))
+            }
+        }
+
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct Commitment {
+            pub payloads: Vec<Payload>,
+            pub block_number: Int,
+            pub validator_set_id: Int,
+        }
+        impl ToPlutusData for Commitment {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                let mut fields = Vec::with_capacity(3);
+                let field_0_metadata = metadata.and_then(|meta| meta.project_field("payloads"));
+                fields.push(self.payloads.to_plutus_data_with(field_0_metadata.as_ref()));
+                let field_1_metadata = metadata.and_then(|meta| meta.project_field("block_number"));
+                fields.push(self.block_number.to_plutus_data_with(field_1_metadata.as_ref()));
+                let field_2_metadata = metadata.and_then(|meta| meta.project_field("validator_set_id"));
+                fields.push(self.validator_set_id.to_plutus_data_with(field_2_metadata.as_ref()));
+                let (tag, any_constructor) = encode_variant_index(0usize);
+                let wrapped = if metadata
+                    .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                {
+                    MaybeIndefArray::Indef(fields)
+                } else {
+                    MaybeIndefArray::Def(fields)
+                };
+                PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+            }
+        }
+        impl FromPlutusData for Commitment {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "Commitment")?;
+                if constr.constr_index() != 0u64 {
+                    return Err(PlutusDataError::UnexpectedTag { context: "Commitment", found: constr.constr_index() });
+                }
+                let fields_decoded = decode_constructor_fields(constr, "Commitment", 3)?;
+                let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                    .metadata
+                    .as_ref()
+                    .map_or(Vec::new(), |meta| meta.issues().to_vec());
+                let items = fields_decoded.value;
+                if items.len() < 3 {
+                    return Err(PlutusDataError::FieldCountMismatch { context: "Commitment", expected: 3, found: items.len() });
+                }
+                let value = Commitment {
+                    payloads: {
+                        let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("payloads")], decoded.metadata());
+                        decoded.value
+                    },
+                    block_number: {
+                        let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("block_number")], decoded.metadata());
+                        decoded.value
+                    },
+                    validator_set_id: {
+                        let decoded = FromPlutusData::from_plutus_data(items[2])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("validator_set_id")], decoded.metadata());
+                        decoded.value
+                    },
+                };
+                Ok(Decoded::from_parts(value, issues))
+            }
+        }
+
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct Payload {
+            pub id: ByteArray,
+            pub data: ByteArray,
+        }
+        impl ToPlutusData for Payload {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                let mut fields = Vec::with_capacity(2);
+                let field_0_metadata = metadata.and_then(|meta| meta.project_field("id"));
+                fields.push(self.id.to_plutus_data_with(field_0_metadata.as_ref()));
+                let field_1_metadata = metadata.and_then(|meta| meta.project_field("data"));
+                fields.push(self.data.to_plutus_data_with(field_1_metadata.as_ref()));
+                let (tag, any_constructor) = encode_variant_index(0usize);
+                let wrapped = if metadata
+                    .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                {
+                    MaybeIndefArray::Indef(fields)
+                } else {
+                    MaybeIndefArray::Def(fields)
+                };
+                PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+            }
+        }
+        impl FromPlutusData for Payload {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "Payload")?;
+                if constr.constr_index() != 0u64 {
+                    return Err(PlutusDataError::UnexpectedTag { context: "Payload", found: constr.constr_index() });
+                }
+                let fields_decoded = decode_constructor_fields(constr, "Payload", 2)?;
+                let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                    .metadata
+                    .as_ref()
+                    .map_or(Vec::new(), |meta| meta.issues().to_vec());
+                let items = fields_decoded.value;
+                if items.len() < 2 {
+                    return Err(PlutusDataError::FieldCountMismatch { context: "Payload", expected: 2, found: items.len() });
+                }
+                let value = Payload {
+                    id: {
+                        let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("id")], decoded.metadata());
+                        decoded.value
+                    },
+                    data: {
+                        let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("data")], decoded.metadata());
+                        decoded.value
+                    },
+                };
+                Ok(Decoded::from_parts(value, issues))
+            }
+        }
+
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct RelayChainProof {
+            pub signed_commitment: SignedCommitment,
+            pub latest_mmr_leaf: BeefyMmrLeaf,
+            pub mmr_proof: Data,
+            pub proof: Data,
+        }
+        impl ToPlutusData for RelayChainProof {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                let mut fields = Vec::with_capacity(4);
+                let field_0_metadata = metadata.and_then(|meta| meta.project_field("signed_commitment"));
+                fields.push(self.signed_commitment.to_plutus_data_with(field_0_metadata.as_ref()));
+                let field_1_metadata = metadata.and_then(|meta| meta.project_field("latest_mmr_leaf"));
+                fields.push(self.latest_mmr_leaf.to_plutus_data_with(field_1_metadata.as_ref()));
+                let field_2_metadata = metadata.and_then(|meta| meta.project_field("mmr_proof"));
+                fields.push(self.mmr_proof.to_plutus_data_with(field_2_metadata.as_ref()));
+                let field_3_metadata = metadata.and_then(|meta| meta.project_field("proof"));
+                fields.push(self.proof.to_plutus_data_with(field_3_metadata.as_ref()));
+                let (tag, any_constructor) = encode_variant_index(0usize);
+                let wrapped = if metadata
+                    .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                {
+                    MaybeIndefArray::Indef(fields)
+                } else {
+                    MaybeIndefArray::Def(fields)
+                };
+                PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+            }
+        }
+        impl FromPlutusData for RelayChainProof {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "RelayChainProof")?;
+                if constr.constr_index() != 0u64 {
+                    return Err(PlutusDataError::UnexpectedTag { context: "RelayChainProof", found: constr.constr_index() });
+                }
+                let fields_decoded = decode_constructor_fields(constr, "RelayChainProof", 4)?;
+                let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                    .metadata
+                    .as_ref()
+                    .map_or(Vec::new(), |meta| meta.issues().to_vec());
+                let items = fields_decoded.value;
+                if items.len() < 4 {
+                    return Err(PlutusDataError::FieldCountMismatch { context: "RelayChainProof", expected: 4, found: items.len() });
+                }
+                let value = RelayChainProof {
+                    signed_commitment: {
+                        let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("signed_commitment")], decoded.metadata());
+                        decoded.value
+                    },
+                    latest_mmr_leaf: {
+                        let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("latest_mmr_leaf")], decoded.metadata());
+                        decoded.value
+                    },
+                    mmr_proof: {
+                        let decoded = FromPlutusData::from_plutus_data(items[2])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("mmr_proof")], decoded.metadata());
+                        decoded.value
+                    },
+                    proof: {
+                        let decoded = FromPlutusData::from_plutus_data(items[3])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("proof")], decoded.metadata());
+                        decoded.value
+                    },
+                };
+                Ok(Decoded::from_parts(value, issues))
+            }
+        }
+
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct SignedCommitment {
+            pub commitment: Commitment,
+            pub votes: Vec<Vote>,
+        }
+        impl ToPlutusData for SignedCommitment {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                let mut fields = Vec::with_capacity(2);
+                let field_0_metadata = metadata.and_then(|meta| meta.project_field("commitment"));
+                fields.push(self.commitment.to_plutus_data_with(field_0_metadata.as_ref()));
+                let field_1_metadata = metadata.and_then(|meta| meta.project_field("votes"));
+                fields.push(self.votes.to_plutus_data_with(field_1_metadata.as_ref()));
+                let (tag, any_constructor) = encode_variant_index(0usize);
+                let wrapped = if metadata
+                    .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                {
+                    MaybeIndefArray::Indef(fields)
+                } else {
+                    MaybeIndefArray::Def(fields)
+                };
+                PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+            }
+        }
+        impl FromPlutusData for SignedCommitment {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "SignedCommitment")?;
+                if constr.constr_index() != 0u64 {
+                    return Err(PlutusDataError::UnexpectedTag { context: "SignedCommitment", found: constr.constr_index() });
+                }
+                let fields_decoded = decode_constructor_fields(constr, "SignedCommitment", 2)?;
+                let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                    .metadata
+                    .as_ref()
+                    .map_or(Vec::new(), |meta| meta.issues().to_vec());
+                let items = fields_decoded.value;
+                if items.len() < 2 {
+                    return Err(PlutusDataError::FieldCountMismatch { context: "SignedCommitment", expected: 2, found: items.len() });
+                }
+                let value = SignedCommitment {
+                    commitment: {
+                        let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("commitment")], decoded.metadata());
+                        decoded.value
+                    },
+                    votes: {
+                        let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("votes")], decoded.metadata());
+                        decoded.value
+                    },
+                };
+                Ok(Decoded::from_parts(value, issues))
+            }
+        }
+
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct Vote {
+            pub signature: ByteArray,
+            pub authority_index: Int,
+            pub public_key: ByteArray,
+        }
+        impl ToPlutusData for Vote {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                let mut fields = Vec::with_capacity(3);
+                let field_0_metadata = metadata.and_then(|meta| meta.project_field("signature"));
+                fields.push(self.signature.to_plutus_data_with(field_0_metadata.as_ref()));
+                let field_1_metadata = metadata.and_then(|meta| meta.project_field("authority_index"));
+                fields.push(self.authority_index.to_plutus_data_with(field_1_metadata.as_ref()));
+                let field_2_metadata = metadata.and_then(|meta| meta.project_field("public_key"));
+                fields.push(self.public_key.to_plutus_data_with(field_2_metadata.as_ref()));
+                let (tag, any_constructor) = encode_variant_index(0usize);
+                let wrapped = if metadata
+                    .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                {
+                    MaybeIndefArray::Indef(fields)
+                } else {
+                    MaybeIndefArray::Def(fields)
+                };
+                PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+            }
+        }
+        impl FromPlutusData for Vote {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "Vote")?;
+                if constr.constr_index() != 0u64 {
+                    return Err(PlutusDataError::UnexpectedTag { context: "Vote", found: constr.constr_index() });
+                }
+                let fields_decoded = decode_constructor_fields(constr, "Vote", 3)?;
+                let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                    .metadata
+                    .as_ref()
+                    .map_or(Vec::new(), |meta| meta.issues().to_vec());
+                let items = fields_decoded.value;
+                if items.len() < 3 {
+                    return Err(PlutusDataError::FieldCountMismatch { context: "Vote", expected: 3, found: items.len() });
+                }
+                let value = Vote {
+                    signature: {
+                        let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("signature")], decoded.metadata());
+                        decoded.value
+                    },
+                    authority_index: {
+                        let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("authority_index")], decoded.metadata());
+                        decoded.value
+                    },
+                    public_key: {
+                        let decoded = FromPlutusData::from_plutus_data(items[2])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("public_key")], decoded.metadata());
+                        decoded.value
+                    },
+                };
+                Ok(Decoded::from_parts(value, issues))
+            }
+        }
+
+    }
+}
+pub mod cardano {
+    use super::*;
+    pub mod address {
+        use super::super::*;
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub enum Credential {
+            VerificationKey { verification_key_hash: super::super::aiken::crypto::VerificationKeyHash },
+            Script { script_hash: super::super::aiken::crypto::ScriptHash },
+        }
+        impl ToPlutusData for Credential {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                match self {
+                    Self::VerificationKey { verification_key_hash } => {
+                        let variant_metadata = metadata.and_then(|meta| meta.project_variant("VerificationKey"));
+                        let mut fields = Vec::with_capacity(1);
+                        let field_0_metadata = variant_metadata.as_ref().and_then(|meta| meta.project_field("verification_key_hash"));
+                        fields.push(verification_key_hash.to_plutus_data_with(field_0_metadata.as_ref()));
+                        let (tag, any_constructor) = encode_variant_index(0);
+                        let wrapped = if variant_metadata
+                            .as_ref()
+                            .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                        {
+                            MaybeIndefArray::Indef(fields)
+                        } else {
+                            MaybeIndefArray::Def(fields)
+                        };
+                        PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+                    },
+                    Self::Script { script_hash } => {
+                        let variant_metadata = metadata.and_then(|meta| meta.project_variant("Script"));
+                        let mut fields = Vec::with_capacity(1);
+                        let field_0_metadata = variant_metadata.as_ref().and_then(|meta| meta.project_field("script_hash"));
+                        fields.push(script_hash.to_plutus_data_with(field_0_metadata.as_ref()));
+                        let (tag, any_constructor) = encode_variant_index(1);
+                        let wrapped = if variant_metadata
+                            .as_ref()
+                            .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                        {
+                            MaybeIndefArray::Indef(fields)
+                        } else {
+                            MaybeIndefArray::Def(fields)
+                        };
+                        PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+                    },
+                }
+            }
+        }
+        impl FromPlutusData for Credential {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "Credential")?;
+                match constr.constr_index() {
+                    0u64 => {
+                        let fields_decoded = decode_constructor_fields(constr, "Credential::VerificationKey", 1)?;
+                        let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                            .metadata
+                            .as_ref()
+                            .map_or(Vec::new(), |meta| meta
+                                .issues()
+                                .iter()
+                                .cloned()
+                                .map(|issue| issue.with_prefix(PathSegment::Variant("VerificationKey")))
+                                .collect());
+                        let items = fields_decoded.value;
+                        if items.len() < 1 {
+                            return Err(PlutusDataError::FieldCountMismatch { context: "Credential::VerificationKey", expected: 1, found: items.len() });
+                        }
+                        let value = Self::VerificationKey {
+                            verification_key_hash: {
+                                let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                                extend_with_metadata(&mut issues, vec![PathSegment::Variant("VerificationKey"), PathSegment::Field("verification_key_hash")], decoded.metadata());
+                                decoded.value
+                            },
+                        };
+                        Ok(Decoded::from_parts(value, issues))
+                    }
+                    1u64 => {
+                        let fields_decoded = decode_constructor_fields(constr, "Credential::Script", 1)?;
+                        let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                            .metadata
+                            .as_ref()
+                            .map_or(Vec::new(), |meta| meta
+                                .issues()
+                                .iter()
+                                .cloned()
+                                .map(|issue| issue.with_prefix(PathSegment::Variant("Script")))
+                                .collect());
+                        let items = fields_decoded.value;
+                        if items.len() < 1 {
+                            return Err(PlutusDataError::FieldCountMismatch { context: "Credential::Script", expected: 1, found: items.len() });
+                        }
+                        let value = Self::Script {
+                            script_hash: {
+                                let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                                extend_with_metadata(&mut issues, vec![PathSegment::Variant("Script"), PathSegment::Field("script_hash")], decoded.metadata());
+                                decoded.value
+                            },
+                        };
+                        Ok(Decoded::from_parts(value, issues))
+                    }
+                    found => Err(PlutusDataError::UnexpectedTag { context: "Credential", found }),
+                }
+            }
+        }
+
+    }
+    pub mod transaction {
+        use super::super::*;
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct OutputReference {
+            pub transaction_id: ByteArray,
+            pub index: Int,
+        }
+        impl ToPlutusData for OutputReference {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                let mut fields = Vec::with_capacity(2);
+                let field_0_metadata = metadata.and_then(|meta| meta.project_field("transaction_id"));
+                fields.push(self.transaction_id.to_plutus_data_with(field_0_metadata.as_ref()));
+                let field_1_metadata = metadata.and_then(|meta| meta.project_field("index"));
+                fields.push(self.index.to_plutus_data_with(field_1_metadata.as_ref()));
+                let (tag, any_constructor) = encode_variant_index(0usize);
+                let wrapped = if metadata
+                    .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                {
+                    MaybeIndefArray::Indef(fields)
+                } else {
+                    MaybeIndefArray::Def(fields)
+                };
+                PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+            }
+        }
+        impl FromPlutusData for OutputReference {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "OutputReference")?;
+                if constr.constr_index() != 0u64 {
+                    return Err(PlutusDataError::UnexpectedTag { context: "OutputReference", found: constr.constr_index() });
+                }
+                let fields_decoded = decode_constructor_fields(constr, "OutputReference", 2)?;
+                let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                    .metadata
+                    .as_ref()
+                    .map_or(Vec::new(), |meta| meta.issues().to_vec());
+                let items = fields_decoded.value;
+                if items.len() < 2 {
+                    return Err(PlutusDataError::FieldCountMismatch { context: "OutputReference", expected: 2, found: items.len() });
+                }
+                let value = OutputReference {
+                    transaction_id: {
+                        let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("transaction_id")], decoded.metadata());
+                        decoded.value
+                    },
+                    index: {
+                        let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("index")], decoded.metadata());
+                        decoded.value
+                    },
+                };
+                Ok(Decoded::from_parts(value, issues))
+            }
+        }
+
+    }
+}
+pub mod cnight_generates_dust {
+    use super::*;
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub enum DustAction {
+        Create,
+        Burn,
+    }
+    impl ToPlutusData for DustAction {
+        fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+            match self {
+                Self::Create => {
+                    let variant_metadata = metadata.and_then(|meta| meta.project_variant("Create"));
+                    let (tag, any_constructor) = encode_variant_index(0);
+                    let wrapped = if variant_metadata
+                        .as_ref()
+                        .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                    {
+                        MaybeIndefArray::Indef(Vec::new())
+                    } else {
+                        MaybeIndefArray::Def(Vec::new())
+                    };
+                    PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+                },
+                Self::Burn => {
+                    let variant_metadata = metadata.and_then(|meta| meta.project_variant("Burn"));
+                    let (tag, any_constructor) = encode_variant_index(1);
+                    let wrapped = if variant_metadata
+                        .as_ref()
+                        .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                    {
+                        MaybeIndefArray::Indef(Vec::new())
+                    } else {
+                        MaybeIndefArray::Def(Vec::new())
+                    };
+                    PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+                },
+            }
+        }
+    }
+    impl FromPlutusData for DustAction {
+        fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+            let constr = expect_constr(data, "DustAction")?;
+            match constr.constr_index() {
+                0u64 => {
+                    let fields_decoded = decode_constructor_fields(constr, "DustAction::Create", 0)?;
+                    let issues: Vec<NonCanonicalIssue> = fields_decoded
+                        .metadata
+                        .as_ref()
+                        .map_or(Vec::new(), |meta| meta
+                            .issues()
+                            .iter()
+                            .cloned()
+                            .map(|issue| issue.with_prefix(PathSegment::Variant("Create")))
+                            .collect());
+                    let _items = fields_decoded.value;
+                    Ok(Decoded::from_parts(Self::Create, issues))
+                }
+                1u64 => {
+                    let fields_decoded = decode_constructor_fields(constr, "DustAction::Burn", 0)?;
+                    let issues: Vec<NonCanonicalIssue> = fields_decoded
+                        .metadata
+                        .as_ref()
+                        .map_or(Vec::new(), |meta| meta
+                            .issues()
+                            .iter()
+                            .cloned()
+                            .map(|issue| issue.with_prefix(PathSegment::Variant("Burn")))
+                            .collect());
+                    let _items = fields_decoded.value;
+                    Ok(Decoded::from_parts(Self::Burn, issues))
+                }
+                found => Err(PlutusDataError::UnexpectedTag { context: "DustAction", found }),
+            }
+        }
+    }
+
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub struct DustMappingDatum {
+        pub c_wallet: super::cardano::address::Credential,
+        pub address: ByteArray,
+    }
+    impl ToPlutusData for DustMappingDatum {
+        fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+            let mut fields = Vec::with_capacity(2);
+            let field_0_metadata = metadata.and_then(|meta| meta.project_field("c_wallet"));
+            fields.push(self.c_wallet.to_plutus_data_with(field_0_metadata.as_ref()));
+            let field_1_metadata = metadata.and_then(|meta| meta.project_field("address"));
+            fields.push(self.address.to_plutus_data_with(field_1_metadata.as_ref()));
+            let (tag, any_constructor) = encode_variant_index(0usize);
+            let wrapped = if metadata
+                .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+            {
+                MaybeIndefArray::Indef(fields)
+            } else {
+                MaybeIndefArray::Def(fields)
+            };
+            PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+        }
+    }
+    impl FromPlutusData for DustMappingDatum {
+        fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+            let constr = expect_constr(data, "DustMappingDatum")?;
+            if constr.constr_index() != 0u64 {
+                return Err(PlutusDataError::UnexpectedTag { context: "DustMappingDatum", found: constr.constr_index() });
+            }
+            let fields_decoded = decode_constructor_fields(constr, "DustMappingDatum", 2)?;
+            let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                .metadata
+                .as_ref()
+                .map_or(Vec::new(), |meta| meta.issues().to_vec());
+            let items = fields_decoded.value;
+            if items.len() < 2 {
+                return Err(PlutusDataError::FieldCountMismatch { context: "DustMappingDatum", expected: 2, found: items.len() });
+            }
+            let value = DustMappingDatum {
+                c_wallet: {
+                    let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                    extend_with_metadata(&mut issues, vec![PathSegment::Field("c_wallet")], decoded.metadata());
+                    decoded.value
+                },
+                address: {
+                    let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                    extend_with_metadata(&mut issues, vec![PathSegment::Field("address")], decoded.metadata());
+                    decoded.value
+                },
+            };
+            Ok(Decoded::from_parts(value, issues))
+        }
+    }
+
+    // Validator: cnight_generates_dust.cnight_generates_dust.else
+    pub type ElseRedeemer = ();
+    pub struct ElseValidator;
+    impl ElseValidator {
+        pub const TITLE: &'static str = "cnight_generates_dust.cnight_generates_dust.else";
+        pub const COMPILED_CODE: &'static str = "590d3601010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492119657870656374205b782c202e2e726573745d203d206c69737400168a9980124929657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a9980124934657870656374206275696c74696e2e6c656e6774685f6f665f62797465617272617928647573745f6164647265737329203e203000168a998012495365787065637420447573744d617070696e67446174756d207b20635f77616c6c65742c20647573745f61646472657373207d203d0a2020202020202020202020202020202020206f75747075745f646174756d00168a9980124933657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168a998012493065787065637420447573744d617070696e67446174756d207b20635f77616c6c65742c202e2e207d203d20646174756d00164888889660033001300a37540212300e300f001911919800800801912cc00400629422b30013371e6eb8c04400400e29462660040046024002805900f488c8cc00400400c896600200314a115980098019808800c528c4cc008008c04800500b201e9b87480026e1d2002911919800800801912cc004006015132598009802000c400626600600660260048060c04400500f4dc3a4008911111111991199119194c004dd5980d800cdd6180d980e180e000c888c966002601c00313259800800c00e264b300100180240120090048992cc004c08c00e00d00540806eb80050231810000a03c301c37540091598009806800c4c9660020030038992cc0040060090048024012264b3001302300380340150201bae001408c604000280f0c070dd500240090192032301a37540073758603600b30173754007375860360093756603600491111112cc004c04400e26644b30013375e604801e980103d87980008acc00401a2a6603e9211b657870656374205b696e7075742c202e2e5d203d20696e7075747300168992cc0040062b300130143021375400313259800800c072264b30010018992cc00400603d13259800800c07e03f01f80fc4c966002605600719800802456600266e212000371a003159800980c98131baa00489980d8071bae302a3027375400913301a00f23375e604e00200a81220428122040806a0408140dd7000a05630280014098605000501d80ec07603a8148c09800502418111baa00180da03e80dc06e03701b409c64b300132330010010082259800800c528456600266ebcc09cc090dd51813800801c528c4cc008008c0a0005021204a8992cc00400603d13259800981400144c96600266e3d22100375c6048005159800980b000c4c8c8c9660020030208acc004cdd79ba6302c001374c6605466ec0dd4804a6103a14001004bd6f7b63044c966002603060506ea80062605860526ea80062a6604e9212165787065637420496e6c696e65446174756d28646174756d29203d20646174756d001640986056605800515330264901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d29001640948148dd59815000981518131baa3301600923375e6054604e6ea8c0a8c09cdd500080119ba548008cc09cdd480325eb8204081120408110dd69812000c07d0251813000a0483756604466004008466e3cdd71811000802454cc0812416b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016407c604860426ea8c09001902244c96600266ebcdd31981219bb04c10140003750653001001804520004004444b30010028800c660020073029002acc004cdd7981418129baa3028302537546034604a6ea8c0a0008012266e0000520018800a044400c81312f5bded8c0604466004008466e3cdd7181100080246600266e3c00d22011c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51407d14a080f8cdd2a4004660466ea40092f5c080f0dd71811180f9baa00a2232330010010032259800800c07e264b300130040018800c4cc00c00cc0a00090211813000a0488acc004c03800e264b30013011301f3754003132324a2653001001803c0150011112cc00400a200319800801cc0a000ab30013375e604e60486ea8c09cc090dd5180c98121baa30270020058acc0040062a6604492136657870656374205b4f7574707574207b2076616c75652c20646174756d2c202e2e207d2c202e2e726573745d203d206f757470757473001689919912cc00400a03f15980099baf374c605600400f13259800980b98139baa0018992cc0040062b3001301b3028375400313259800800c08e264b30010018992cc00400604b13259800800c09a04d02681344c966002606400719800802456600266e212000371a003159800acc004c080c0b4dd500244cc088054dd7181898171baa00489981080b119baf302e00100540ad10088a998162481ff6578706563740a2020202020202020202020202020202020207768656e20635f77616c6c6574206973207b0a2020202020202020202020202020202020202020566572696669636174696f6e4b6579286b657929202d3e206c6973742e6861732865787472615f7369676e61746f726965732c206b6579290a0a2020202020202020202020202020202020202020536372697074285f2920617320736372697074202d3e0a202020202020202020202020202020202020202020206c6973742e616e79280a2020202020202020202020202020202020202020202020207769746864726177616c732c0a20202020202020202020202020202020202020202057202020666e28776974686472617729207b2077697468647261772e317374203d3d20736372697074207d2c0a20202020202020202020202020202020202020202020290a2020202020202020202020202020202020207d001640ad02840ad027405102740bc6eb80050321817800a05a302f002812409204902440c0605a0028158c0a4dd5000c089026408a045022811205c302b3028375400315330264912865787065637420496e6c696e65446174756d286f75747075745f646174756d29203d20646174756d001640946054605600715330254901266578706563742061735f64617461286e66745f696429203d3d2065787065637465645f6e6674001640908140dd598140009814801181418121baa302700140951001408480190251ba63302233760604660406ea8005300103a14001004bd6f7b630454cc07924012265787065637420536372697074286f776e5f6861736829203d206f776e5f63726564001640746044603e6ea802a2b3001301000389919912cc004c050c084dd5000c4c966002003159800980a98111baa0018992cc00400603713259800800c4c96600200301d8992cc00400603d01e80f407a264b3001302c0038cc004012264b3001301a3028375400313259800acc004c070c0a4dd500344cc078044dd7181698151baa00689980e809119baf302a001007409d15980099b880014800229462b30013301d01223375e60540020071301c0018a50409c813a294102719192cc004c070c0a8dd5000c5200089bad302e302b37540028140c966002603860546ea8006298103d87a8000899198008009bab302f302c375400444b30010018a6103d87a8000899192cc004cdc8a45000018acc004cdc7a44100001899ba548000cc0c4c0bc0092f5c114c0103d87a800040b1133004004303300340b06eb8c0b4004c0c000502e2050323300100100d2259800800c5300103d87a8000899192cc004cdc8802800c56600266e3c014006266e95200033030302e0024bd7045300103d87a800040ad133004004303200340ac6eb8c0b0004c0bc00502d1bae302c3029375400315330274919165787065637420536372697074286f776e5f686173682920617320736372697074203d0a202020202020202020206d7573745f66696e6428696e707574732c20666e28696e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f7574707574207d292e6f75747075742e616464726573732e7061796d656e745f63726564656e7469616c00164098605660506ea8c0acc0a0dd5180e98141baa3301800d23375e605860526ea800402603e807203e8148dd7000a0583029001409c605200501c80e40720388150c09c00502518119baa00180d204080d406a03501a40a0604a60446ea80062a660409211a65787065637420536f6d6528646174756d29203d20646174756d0016407c604600260466048002603e6ea802a2b30013370e9003001c5660026022603c6ea8c088c08cc07cdd50054528c5901c45901c2038407080e0603660360026034603400460306030002602e6030004602c01060246ea8c054021149a2a660109211856616c696461746f722072657475726e65642066616c73650013656401c1";
+        pub const HASH: &'static str = "02bb23034895672d8eb59120080cbcc721d383f88a609c446a640ef8";
+        pub fn script() -> ValidatorScript<()> {
+            ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+        }
+    }
+}
+pub mod committee_bridge {
+    use super::*;
+    pub mod committee_bridge_forever {
+        use super::super::*;
+        // Validator: committee_bridge.committee_bridge_forever.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "committee_bridge.committee_bridge_forever.else";
+            pub const COMPILED_CODE: &'static str = "5907a201010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492129657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a9980124949657870656374205b6c6f6769632c206d697469676174696f6e5f6c6f6769632c202e2e5d203d206d61696e5f7374617465207c3e206275696c74696e2e756e5f6c6973745f6461746100168a998012498f657870656374204265656679436f6e73656e7375735374617465207b0a2020202020202020202063757272656e745f617574686f726974795f7365742c0a202020202020202020206e6578745f617574686f726974795f7365742c0a202020202020202020202e2e0a20202020202020207d3a204265656679436f6e73656e7375735374617465203d20646174756d0016488896600330013008375401d2232330010010032259800800c01e264b300130040018800c4cc00c00cc04400900a1807800a01a911919800800801912cc00400629422b30013003300f0018a518998010011808000a01240352300c300d0019ba54800a6e1d20004888888ca60026024003301230130019809003a444b3001300530113754005132332259800992cc0040062b300130093015375400313259800800c042264b3001001808c0460231332259800800c04e264b300100180a40520291332259800800c05a264b30010018992cc00400603113259800800c566002604800513298008024660020051337106eb4c090c084dd50021bad30243021375400501a400501a4004444b300130163022375400713259800800c00a264b3001001801c00e0071332259800800c016264b3001001803401a00d1332259800800c022264b3001001804c0260130098992cc004c0c000e01700a40b46eb80050301816800a056375a002605800500640b460540028140dd68009814801400d02a1813800a04a302337540070014081019408501980cc0660328128c0880050201811001405e02f01780ba046302000140786eb4004c07c00a0288100c07400501b1bad001301c002808a03a301a0014060602c6ea800601e809a01f00f807c03d01b4c004dd6180c001cdd5980c180c980c8014dd6180c0012444b300132330010010042259800800c528456600266ebcc074c068dd5180e800a6127d8799f5820000000000000000000000000000000000000000000000000000000000000000b01ff008a51899801001180f000a02e406d13259800800c056264b3001301e0028992cc004cdc7a4500375c603400515980099b87480080062646464b30010018a9980e248133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba63022001374c6604066ec0dd4805260103a14001004bd6f7b63044c96600266e1d2004301e375400313022301f3754003153301d49012165787065637420496e6c696e65446174756d28646174756d29203d20646174756d0016407060426044005153301c4901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290016406c80f8dd598100009810180e1baa3301300523375e6040603a6ea8c080c074dd500080118079980e9ba90074bd70405d018405d0181bad301a00180b2036301c00140686eacc060c8cc00400400c89660020030158992cc004cdc79bae301a0010078800c4cc00c00cc07c009018180e800a0368a9980b24816b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a2020202029001640548cc004cdc7800a451c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51404914a08090c05cc05c004dd7180b18099baa0033012375400313322325980099b8748010c050dd5000c4c9660020030108992cc0040060231980098059980c980d00125eb826eb8c0680066eacc068c06cc06cc06cc06cc06c0152225980099808000919baf301a0010048acc004cdc7801245008a5189919808801119baf301b001002300e3301c375200497ae0405d14a080b880c0c0680050171bac301830153754003153301349012b65787065637420496e6c696e65446174756d286d61696e5f737461746529203d206d61696e5f737461746500164048602e6030603060286ea8c024c050dd5198059bac301700223259800800c54cc051240140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c603400200680b8dd59805180a9baa300a30153754002602c60246ea8004dd31980a19bb04c011e581c53595ba019ce613d6d17fad7d484aa0f01dcf9dcfc1a0782c84e8e8e004c0107a1446d61696e01004bd6f7b630201e18090032293454cc0192411856616c696461746f722072657475726e65642066616c7365001365640141";
+            pub const HASH: &'static str = "54486b77760202030b83cc4f31966bbcf1cabe46356ae18e1169dd9a";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod committee_bridge_logic {
+        use super::super::*;
+        // Validator: committee_bridge.committee_bridge_logic.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "committee_bridge.committee_bridge_logic.else";
+            pub const COMPILED_CODE: &'static str = "58b701010029800aba2aba1aab9eaab9dab9cab9a4888889660026464b30013370e9002000c54cc01124010b61696b656e3a3a746f646f00168acc004cdc3a400c0031325980099b87480080062a6600a9210b61696b656e3a3a746f646f00168acc004cdc3a400000314a31640108020c014dd51803980418031baa0028b2006400c60086ea8004c014c018c018c010dd5003c5268a998012491856616c696461746f722072657475726e65642066616c7365001365640041";
+            pub const HASH: &'static str = "f818600668edf5efdc0d038a7ec687b608e817b49a5784accc34d323";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod committee_bridge_two_stage_upgrade {
+        use super::super::*;
+        // Validator: committee_bridge.committee_bridge_two_stage_upgrade.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "committee_bridge.committee_bridge_two_stage_upgrade.else";
+            pub const COMPILED_CODE: &'static str = "591f5d01010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a660049214665787065637420557067726164655374617465207b206c6f6769632c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012494565787065637420557067726164655374617465207b20617574682c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012495b65787065637420557067726164655374617465207b206d697469676174696f6e5f6c6f6769633a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012495a65787065637420557067726164655374617465207b206d697469676174696f6e5f617574683a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012496d65787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c202e2e207d3a20557067726164655374617465203d0a202020207370656e64696e675f646174756d00168a998012499a65787065637420557067726164655374617465207b0a202020206d697469676174696f6e5f6c6f6769633a206d61696e5f6d697469676174696f6e5f6c6f6769632c0a20202020617574683a206d61696e5f617574682c0a202020206d697469676174696f6e5f617574683a206d61696e5f6d697469676174696f6e5f617574682c0a202020202e2e0a20207d203d206d61696e5f646174756d00168a998012496265787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c20726f756e64207d203d0a202020207370656e64696e675f646174756d00168a998012493365787065637420496e6c696e65446174756d287370656e64696e675f646174756d29203d207370656e64696e675f646174756d00168a998012497f65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d2073746167696e675f646174756d00168a998012497c65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d206d61696e5f646174756d00168a9980124928657870656374206f75745f7061795f63726564203d3d2065787065637465645f7061795f6372656400168a998012495a6578706563742054776f537461676552656465656d6572207b207570646174655f6669656c642c2077686963685f7374616765207d3a2054776f537461676552656465656d6572203d0a202020202020202072656465656d6572001648888888888896600330013010375402d2232330010010032259800800c52845660026006602e00314a31330020023018001404480aa46e98cc04ccdd81ba90014c10aa14773746167696e6701004bd6f7b63048dd31980999bb03752002980107a1446d61696e01004bd6f7b6304dc3a4001371e911009ba54800a44646600200200644b30010018a9980924919657870656374205b782c202e2e726573745d203d206c69737400168992cc004c010006200313300300330190024048602e00280aa6e1d20389b874801122222222229800980f005488966002601260386ea800e264b300100180144c966002003003801c00e0071332259800800c016264b3001001803401a00d132598009813801c02200e8120dd6800c0190271812000a044375c00260460048120c08400501f180e9baa003800a0349112cc004cc0300048cdd7980e8008024566002601000514a31323300d00223375e603c002004600e6603e6ea40092f5c080d2294101a4c0740292222332232323298009bab3026302730270019813004cc088dd5002cdd618130024dd61813001cdd618130012444444b300130150048992cc004cdd79ba632330010013756605c01244b30010018a998152491d657870656374205b6974656d2c202e2e726573745d203d20706169727300168992cc004cdc79bae302c00100489bab302d00189980180198188012054302f00140b4980110a2446d61696e014773746167696e6701008acc004c8cc004004014896600200314a115980099baf302f302c3754605e002980127d8799f5820000000000000000000000000000000000000000000000000000000000000000b01ff008a518998010011818000a05240b513259800801c54cc0a524127657870656374205b6d61696e2c202e2e726573745f6f7574707574735d203d206f7574707574730016899194c004dd59818000cc0c0c0c4006606200a9112cc004c05cc0bcdd500144c96600266ebcc0d0c0c4dd5181a003003c566002009153302f490138657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd7980f0041ba630350048acc0040060490248992cc00400604b13259800800c09a04d02681344cc89660020030288992cc004006053029814c0a626644b3001001815c4c96600200302c81640b20591332259800800c0ba264b3001001817c0be05f02f899912cc00400606313259800800c0ca0650328992cc004c11000e2b3001302b00a8acc004c0ac0122b3001302c0018acc004c0a0dc6806c56600260506e3401e2b30010118a9981f24923657870656374205b73746167696e672c202e2e5d203d20726573745f6f75747075747300168991919912cc004c0acc10cdd5000c4c96600266ebcc120c114dd5182400280dc56600200715330434913b657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc00400a07503a8992cc00400607713259800800c0f207903c81e44cc896600200303e8992cc00400607f03f81fc0fe26644b3001001820c4c966002003042821410a0851332259800800c112264b3001001822c11608b045899912cc00400608f13259800800c1220910488992cc004c16400e2b3001304000a8acc004c1000122b300130410018acc004cdd798218161ba60108acc004c0f4dc6806c566002607a6e3401e330013371e05891011c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51414914a082922941052452820a4824a0a4824a0a4824a0a4824a0ac375a003048416460ac00282a0dd7000982a80120ac305300141446eb8004c1480090531828000a09c375c002609e0048280c13400504b1bae001304c002413460940028240dd600140ea0748258c12400d04640dd042182398221baa0018a9982124995657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d2873746167696e675f646174756d292c0a202020202e2e0a20207d203d2073746167696e67001641046eacc114004c114c118004c114004c100dd51821808a0828a9981f24812e657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286175746829203d3d203238001640f5153303e4912f657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286c6f67696329203d3d203238001640f503340f503340f503340f503341046eb40060648220c10400503f1bae00130400024104607c00281e0dd7000981e801207c303b00140e46eb8004c0e800903b181c000a06c375c002606e00481c0c0d40050331bac0018124091036454cc0bd2401456578706563742065787065637465645f6d61696e5f6e66745f6964286f776e5f706f6c69637929203d3d2028206d61696e5f6e66745f6964207c3e2061735f646174612029001640b881920468170c0ccc0c0dd5001454cc0b92418f657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d286d61696e5f646174756d292c0a202020202e2e0a20207d203d206d61696e001640b43030001302b3754605c0068160c050cc0b0dd4800a5eb822a6605092016b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016409d1533028491326578706563742028206f776e5f746f6b656e73207c3e20746f5f70616972732029203d3d206d696e7465645f746f6b656e730016409c6eb8c0b0c0a4dd5005c4c966002600200b132323298009bab303000198181818800cc0c0c0b4dd518180012444b30013007302f375400313259800806c566002603a60606ea8036264b3001001811c4c96600200313259800800c096264b30010018acc004c0e400a26644b300130230018acc004c0dcdd5002c00a05081c22b3001300e0018acc004c0dcdd5002c00a05081c22b3001301e0018acc004c0dcdd5002c00a05081c22b30013370e9003000c566002606e6ea801600502840e102840d081a1034206813322598009811800c4c9660020030298992cc0040062b3001303d0028cc00400600902a407902a40e902a81540aa05481f0c0ec005039181b9baa0038acc004c038006264b3001001814c4c96600200313259800800c0ae264b300100181640b205902c8992cc004c10000e33001004803c0b502140b503d1bae0014100607a00281d8c0f400a05502a81540a903e181d800a0723037375400702840d081a04cc8966002015153303549133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc0040422a6606c92173657870656374205b0a20202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a20202020202020202e2e0a2020202020205d203d206f757470757473001689919192cc0040062a660729213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc0056600266ebcc0f8c0ecdd5181f001806456600266ebcdd3181f8009ba6004899baf303e303f0023374a90021981e9ba7598009813981d1baa0078992cc004cdd79ba6005006899192cc004cdd79820981f1baa304100200f8992cc0040062a6607a92143657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2073746167696e675f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304300100a8992cc004c09cc0fcdd50094566002604e607e6ea800626644b300100181d40ea264b300100181dc4c96600200303c81e40f20791332259800800c0fa264b300100181fc0fe07f03f899912cc00400608313259800800c10a08504282144cc89660020030448992cc00400608b045822c11626644b3001001823c4c9660020030488244122264b300130550038acc00660026076660a66ea401d2f5c1004817206a8992cc004c0f80062b3001012827413a264b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc16626644b300100182dc4c96600200305c82e4172264b300130650038998319ba900d330633752034660c66ea405ccc18cdd480a198319ba80014bd7041750621bad00182e20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09d04e415d1598009814800c56600202504d826c4c96600200304e8992cc00400609f04f827c13e26644b3001001828c4c966002003052829414a0a51332259800800c152264b300100182ac1560ab055899912cc0040060af13259800800c1620b105882c44cc896600200305a8992cc0040060b705b82dc4c96600260ca007133063375203a660c66ea4068cc18cdd4803998319ba901433063375000297ae082e20c4375a00305b419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009413609a82ba2b300130390018acc004c0f402e2b30010128264132264b3001001826c4c96600200304e827413a09d1332259800800c142264b3001001828c1460a3051899912cc0040060a713259800800c1520a905482a44cc89660020030568992cc0040060af05782bc15e26644b300100182cc4c96600200305a82d416a264b300130650038998319ba901d330633752014660c66ea405ccc18cdd480a198319ba80014bd70416d0621bad00182d20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09904c415d15330504911d657870656374206d697469676174696f6e5f6c6f676963203d3d2022220016413d159800981e802c56600202504b825c4c96600200304c8992cc00400609b04d826c13626644b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc4c96600260ca007133063375203a660c66ea4068cc18cdd480b998319ba900433063375000297ae082d20c4375a003059419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009412e09682ba2a660a092011c657870656374206d697469676174696f6e5f61757468203d3d2022220016413c827904f209e3050375403f153304f491406578706563742076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73290016413904941486eb400609082a8c1480050501bae00130510024148609e0028268dd70009827001209e304c00141286eb8004c12c00904c1824800a08e375c00260900048248c1180050441bac00181d40e9047182198201baa001304330403754025153303e49013165787065637420496e6c696e65446174756d2873746167696e675f646174756d29203d2073746167696e675f646174756d001640f503540f460846086005153303d4913f65787065637420282073746167696e675f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640f08200dd59820800c54cc0f12401326578706563742073746167696e675f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640ec608200260786ea8c0fcc100c0f0dd51981280a919baf3040303d3754002005153303a491346578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640e4607c60766ea801e2646644b30013375e6e9801c02626464b30013375e608660806ea8c10c008046264b30010018a9981fa493d657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d206d61696e5f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304500100b8992cc004c0a8dc6802c566002605260826ea80522b30013029304137540031332259800800c0ea07513259800800c0ee264b300100181e40f207903c899912cc00400607d13259800800c0fe07f03f81fc4cc89660020030418992cc004006085042821410a26644b300100182244c966002003045822c11608b1332259800800c11e264b3001001824412209113259800982b801c56600202304a82544c96600200304b8992cc00400609904c826413226644b300100182744c96600200304f827c13e09f1332259800800c146264b3001001829414a0a5052899912cc0040060a913259800800c1560ab05582ac4cc89660020030578992cc0040060b105882c44c96600260cc00713259800acc0066002609a660ca6ea405d2f5c1014820208e8a518cc004006b30013375e06298103d87c80008a45008802a0c0820208e41811332259800982880144cc19cdd4814198339ba901c330673752032660ce6ea4058cc19cdd41800809a5eb822b3001303c0028998339ba901f330673752038660ce6ea40a0cc19cdd480b198339ba830010134bd70456600260980051598009828006c4cc19cdd480f998339ba9028330673752032660ce6ea4058cc19cdd41800809a5eb822a660c6920122657870656374206d61696e5f6d697469676174696f6e5f6c6f676963203d3d202222001641891598009828003c4cc19cdd480f998339ba901c330673752032660ce6ea40a0cc19cdd41800809a5eb822a660c6920121657870656374206d61696e5f6d697469676174696f6e5f61757468203d3d20222200164188831106220c4306237540626e0120028a99830a49ff657870656374206f72207b0a20202020202076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73292c0a2020202020202f2f205370656369616c206361736520666f72204d697469676174696f6e417574680a2020202020206966207570646174655f6669656c64203d3d204d697469676174696f6e41757468207b0a2020202020202020656d7074790a2020202020207d20656c7365207b0a20202020202020206d61696e5f6d697469676174696f6e5f617574680a2020202020207d0a20202020202020207c3e2076616c69646174655f72756e6e696e67286d2561696e5f617574685f637265642c205f2c207769746864726177616c73292c0a202020207d001641806098660c86ea401d2f5c1059418c6eb40060b08330c18c0050611bae0013062002418c60c000282f0dd7000982f80120c0305d001416c6eb8004c17000905d182d000a0b0375c00260b200482d0c15c0050551bac011825412905841250541bad00182420ae305400141486eb8004c14c0090541828800a09e375c00260a00048288c13800504c1bae001304d002413860960028248dd700098250012096304800141186eb000607503a4124608a60846ea8004c114c108dd500a454cc1012412b65787065637420496e6c696e65446174756d286d61696e5f646174756d29203d206d61696e5f646174756d001640fd03740fd1533040490131657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286e65775f76616c29203d3d203238001640fc6088608a005153303f4901396578706563742028206d61696e5f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640f88210dd59821800c54cc0f924012f657870656374206d61696e5f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640f46086002607c6ea8c104c108c0f8dd51981380b919baf3042303f3754002007153303c491376578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640ec607e0026eb8c0fcc100004c0ecdd5003a0704bd70452820708a5040e114a31533039490178616e64207b0a20206f75745f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f637265642c0a20206f75745f6e66745f6964203d3d206e66745f69642c0a20206f75745f646174756d203d3d2065787065637465645f6f75747075745f646174756d2c0a7d203f2046616c73650014a081c103c1bab303d001303d00130383754607602081c8c0ec02903818118029811002981a1baa0013034375400702640d9026813409a04c81d0c0dc005035181b80140920490248122070303500140cc60626ea8036044817204502281140890361bae303330303754003153302e4914065787065637420536372697074286f776e5f6861736829206173207061795f63726564203d20616464726573732e7061796d656e745f63726564656e7469616c001640b43030001302b3754605c605e60566ea8cc0500148cdd7981798161baa001002302d302a375401916409c6e1d20024098302630260013025001302400130213022004301e375400245268a998072491856616c696461746f722072657475726e65642066616c7365001365640341";
+            pub const HASH: &'static str = "53595ba019ce613d6d17fad7d484aa0f01dcf9dcfc1a0782c84e8e8e";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod simple_bridge {
+        use super::super::*;
+        // Validator: committee_bridge.simple_bridge.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "committee_bridge.simple_bridge.else";
+            pub const COMPILED_CODE: &'static str = "5918a901010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492145657870656374204e6f6465207b206b5f696e6465783a2075707065725f6b5f696e6465782c202e2e207d2061732075707065725f6974656d203d2075707065725f6974656d00168a9980124954657870656374205b726f6f745f6e6f64655d203d0a2020202063616c63756c6174655f726f6f74286c65617665732c207570706572207c3e206275696c74696e2e756e5f6c6973745f646174612c20726573742900168a9980124929657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a9980124922657870656374206c65617665733a204c6973743c4e6f64653e203d206c656176657300168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a9980124933657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168a998012493a65787065637420747275737465645f73746174653a204265656679436f6e73656e7375735374617465203d207370656e64696e675f646174756d00168a998012492b6578706563742072656465656d65723a2052656c6179436861696e50726f6f66203d2072656465656d657200168a998012498f657870656374204265656679436f6e73656e7375735374617465207b0a2020202020202020202063757272656e745f617574686f726974795f7365742c0a202020202020202020206e6578745f617574686f726974795f7365742c0a202020202020202020202e2e0a20202020202020207d3a204265656679436f6e73656e7375735374617465203d20646174756d00164888888889660033001300d37540272232330010010032259800800c026264b300130040018800c4cc00c00cc05800900f180a000a0249b87480026e1d200448888cc8a6002602c005301730170019bac3016001980b180b8012444530013758603400730163754003222598009805980c9baa0038992cc00400600513259800800c00e007003899912cc00400600b13259800800c01a00d006899912cc00400601113259800800c026013009804c4c966002604e00700b8052048375c0028138c0900050221bad001302300280320483021001407c6eb4004c08000a0068108c07800501c180d1baa003800a02e48896600266e1d200200289919194c004dd59810000cc080c08400660400049112cc004036264b300130123020375401d13259800800c05e264b30010018992cc00400603313259800800c4c96600200301b899912cc00400603b1325980098168014566002603460506ea801e264b300100180fc4c96600200313259800800c086264b3001001811408a264b300130320038acc004c07cc0b4dd500244c9660020030248992cc00400604b025899912cc00400604f13259800800c0a2051028899912cc00400605513259800800c0ae05702b8992cc004c0ec00e26602e00e44b300100289980c806112cc00400a2b3001302c303a375402f13259800800c0c6264b300100181940ca0651332259800800c0d2264b300100181ac0d606b1332259800800c0de264b300100181c40e2071038899912cc00400607513259800800c4c96600200303c8992cc00400607b03d81ec0f626644b300100181fc4c966002003040820410226644b300100182144c966002003043821c10e264b300130530038cc00402a2b3001303f304e375406313259800800c5660026082609e6ea8006264b3001001823c4c966002003048824412226644b300100182544c96600200304b825c12e26644b3001001826c4c96600200313259800800c13e264b30010018acc004c17800a330010038cc0040062b300103d828c566002087153305849179657870656374205b0a202020202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a202020202020202020202e2e0a20202020202020205d203d206f757470757473001689919192cc0040062a660b69213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc004c138c174dd5000c56600266ebcdd318310209ba630620028acc004cdd79830982f1baa30610043061305e375407f13375f30012306230630019183118319831800cdc02400523062306330633063001982f1baa00f48888a60024446600266e0cdd69834801a40086f1ccdc51bae3069306a003375c60100052259800800c5200089802998010011834800a0cc919912cc004c0092080018cc00528520029800801af25159800980124101000519800a50a4009300630010035e4a2b300130024820202020022330014a14802266e00c00400d20045e4a26466e2a600294290014cdc0180119b80371a0029003a400cbc9000cc0052852000801af24831906320c637100026e0920089119b8930053370666e0920040014801800a60ce003375a600a60c66ea8c198c18cdd5183318319baa050488888a600244b30010018800c4c9660020031323306f374e660de6ea0cdc19bad307000148010cc1bcc1c0c1c40052f5c097ae0375860de005198009bac306f0029bac306f0019838000a4453001003801488cc1ccdd3998399ba800233073375200297ae033008008003403041b460de0028362600a00b306d0029bad306c00248888c8c8ca600244464b30010018a9983924936657870656374205b75707065722c202e2e726573745d203d2070726f6f66207c3e206275696c74696e2e756e5f6c6973745f6461746100168992cc0040060e113259800983d00144cdc78031bae3018001838a0ee375860f000283b26002440030039bac3077001983c000a00a41d46eb000660e660e800b307300548896600266e20dd6983b008805c4c966002003153307249149657870656374205b6c65617665732c202e2e726573745f70726f6f665d203d2072656c61795f70726f6f662e70726f6f66207c3e206275696c74696e2e756e5f6c6973745f646174610016899912cc0040060df06f8991982b800912cc00400a264b3001598009980a0009bad301c307a375401114a3133014001375a603860f46ea802507744c8c966002b30013001375a60fe60f86ea802a2946260026eb4c1fcc1f0dd5005a0f28992cc004c8c8c8cdc79bae30223080013754660e46eb0c20c04c20004dd5003119b8f375c6108026102026ea80052201026d68003232330010013758610a02610c0200a44b30010018801c4de399b8a33002002308701001375c610c02002842008dd718109840009baa3374a90001984100984180800998410098418098420080099841009ba9378e64646464664466e28cdc519b8a3371530014a14800a6eb4c224040197929800a50a4011375a61120200abc919b8a375c61120200930014a1480426eb4c22404c21804dd50012f2466e2a600294290044dd698141843009baa0025e48dd718139843009baa0025980099b8f001489008a450100008800a10602308701001375c610e02611002002610e02002610c02002610a020026100026ea80092f5c061060261060261060261060261060260fe6ea8004c20404004c20404c1f4dd503544c96600266e20dd6984080983f1baa301d307e375405e6eb4c20404c1f8dd5180e983f1baa3020307e37540d713300100d301d307e3754604060fc6ea81ae26600201801a83d888cdd2a400066102026ea005ccc20404dd400999840808011984080800a5eb822a660f692014a657870656374207665726966795f6d6d725f6c6561662862656566795f61637469766174696f6e5f626c6f636b2c2072656c61795f70726f6f662c206d6d725f726f6f742e6461746129001641e8b30013001375a60fe60f86ea802a2b300198009bae301d307c37540150069ba70084031149a2a660f49201566578706563740a2020202020207665726966795f6d65726b6c655f6d756c74695f70726f6f662863757272656e745f617574686f726974795f7365742e726f6f742c206c65617665732c20726573745f70726f6f6629001641e5159800cc004dd7180e983e1baa00b8034dd380420188a4d153307a4901536578706563740a2020202020207665726966795f6d65726b6c655f6d756c74695f70726f6f66286e6578745f617574686f726974795f7365742e726f6f742c206c65617665732c20726573745f70726f6f6629001641e483ca2a660f49218c657870656374206f72207b0a202020202020636f6d6d69746d656e742e76616c696461746f725f7365745f6964203d3d2063757272656e745f617574686f726974795f7365742e69642c0a202020202020636f6d6d69746d656e742e76616c696461746f725f7365745f6964203d3d206e6578745f617574686f726974795f7365742e69642c0a202020207d001641e46e1cdd6980e183d9baa001307d307a375460fa60f46ea819e2a660f09201a6657870656374206f72207b0a202020202020636865636b5f70617274696369706174696f6e5f7468726573686f6c64287369675f6c656e6774682c2063757272656e745f617574686f726974795f7365742e6c656e292c0a202020202020636865636b5f70617274696369706174696f6e5f7468726573686f6c64287369675f6c656e6774682c206e6578745f617574686f726974795f7365742e6c656e292c0a202020207d001641dc646645300100280340050021112cc0040062900044c8c07a600200932330010010042259800800c54cc1f924011e657870656374205b6c6561662c202e2e726573745d203d206c6561766573001689919912cc004cdc40011bad3025308301375400d13300500500189919192cc004cdc38029bad3089010028acc006600200300d9bae3089010035da22b30013371e6eb8c22404c22804018de3800c40122a661080292012a6578706563742068617368203d3d206275696c74696e2e6b656363616b5f3235362861646472657373290016420c05153308401491566578706563740a2020202020206275696c74696e2e7665726966795f65636473615f736563703235366b315f7369676e6174757265287075626c69635f6b65792c206d73675f686173682c207369676e6174757265290016420c0515330840149121657870656374206b5f696e646578203d3d20617574686f726974795f696e6465780016420c046eb8c22004c22404004c22004004c20c04dd5003210002375a610802002610a020046eb0c20c04005081014c20804009004184000800a0fc3758603860f46ea8c1f4c1e8dd50339bc73233223371466e28c05cc048004ca6002003002a45004004444b30010028800c660020073083010029919b8a002337146eb8c20c04004c8cdc5180e1b8d001001375c61060261080200260fe6ea8c208040090032100023371530014a1480226eb4c1fc0097929800a50a4021375a60fe610002004bc9183f0009bac307d0013079375460f860f26ea8c1f0c1e4dd503344c966002003073839c4c9660020030748992cc0040060eb07583ac4cc89660020030778992cc0040060f107883c41e2264b300130840100389804184200804c1e5081011bae00142100461020200283f8dd680098400080141d508101183f000a0f83758003073839a0fe307c00241e86eb00060df06f41ec60f000260ee00283a8dd6180918399baa0608a99838a48122657870656374206c6173745f686569676874203c206c61746573745f686569676874001641c03001001223300122222325980080144c0240063300100891000c0066eb0c1e400a60f400480410772cc00400a2660ee6e9ccc1dcdd40029983b9ba90044bd701804001c4cc8966002005073839c4c9660020030748992cc0040060eb07583ac4cc89660020030778992cc0040060f107883c41e2264b30013081010038acc004cdc400680244cc1fcdd39983f9ba800d3307f375201897ae09800807c8800601700a804a01e89983f9ba70089800807c8800a01b00c805c01e012807907a41e507e1bae00142040460fc00283e0dd6800983e80141d507e183d800a0f23758005073839a0f83078002307900241d8444b30010038a5eb82264b30010018994c00401e44005337066eb4c1e000520049bae30783079001a5eb82009003401c6eb0c1dc01233001375860ee009375860ee0033078001488a6002007002914c00402e44005002800c00e011007402c80a083a8c1dc00d074180200203061305e375400314a082da294105b454cc1712412965787065637420496e6c696e65446174756d286f75745f646174756d29203d206f75745f646174756d0016416c60c060c200482f0dd5982f800982f800982d1baa305d043416c82da0a0820a0a0820a0a082da0a1050828414105f182e000a0b4305c002827413a09d04e417460b400282c0dd6800982c801412d05a182b800a0aa375a00260ac005048415c60a80028290c140dd5000c11904d411a08d04682320aa3052304f3754063153304d4913365787065637420496e6c696e65446174756d287370656e64696e675f646174756d29203d207370656e64696e675f646174756d0016413104440d904441406eb40060868298c14000504e1bad001304f00282020a0304d001412c6eb8004c13000904d1825000a090304a00281dc0ee07703b412c60900028230dd7000982380120903045001410c6eb4004c11000a06a8228c1080050401bad00130410028192084303f00140f460766ea805e06081c2264b30010018acc004c0b4c0ecdd5000c4c9660020030328992cc004006067033819c0ce26644b300100181ac4c96600200303681b40da26644b300100181c44c96600200303981cc0e6073132598009824801c4c02cc1240320748230dd7000a092304600141106eb4004c11400a06c8230c10c0050411bae0013042002410c608000281f0c0f0dd5000c0c503940c6063031818a082303e00240f113259800800c566002605660726ea8006264b300100181844c966002003031818c0c60631332259800800c0ce264b300100181a40d20690348992cc004c11000e26010608801303541046eb80050441820800a07e375c00260800048208c0f800503c181d1baa001817a06e817c0be05f02f40fc607800481d205881c0dd6800c0ad03b181c000a06c375a002606e00502840e0606a0028198dd6000981a001409604a81a8c0c800503018171baa004811a056811a05e37580030228112064302f00140b4605e00502081040820408180c0b400502b18149baa00780f204c80f2054302b00140a4605200260540028138c0a400a03501a80d406902a1813800a04a302700280c406203101840a0604a0028118c084dd5007405901e11191980080080191198018009801001405602b01580aa04a1810000980d9baa301e301f301b37546601a00c466ebcc07cc070dd5000801180e980d1baa0048acc004c02c00a26464b30010018acc004c034c06cdd5000c4c9660020030118992cc00400602501280944cc89660020030148992cc00400602b01580ac4cc89660020030178992cc004006264b300100180cc4c966002003159800981500146600200719800800c4cdc41bad3029302637540066eb4c0a4c098dd5000c06900d406900d4069027406a03501a80d205630280014098605000501880c40620308148c0980050241bad001302500280aa04c302300140846eb4004c08800a0248118c08000501e180e1baa001808203280840420210104084b300132330010010072259800800c528456600266ebcc080c074dd51810000a60127d8799f5820000000000000000000000000000000000000000000000000000000000000000b01ff008a518998010011810800a034407913259800800c05a264b300130210028992cc004cdc7a4500375c603a00515980099b87480080062646464b300100180c456600266ebcdd318128009ba633023337606ea401d30103a14001004bd6f7b63044c966002602460426ea80062604a60446ea80062a660409212165787065637420496e6c696e65446174756d28646174756d29203d20646174756d0016407c6048604a005153301f4901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d29001640788110dd598118009811980f9baa3301100823375e604660406ea8c08cc080dd500080119ba548008cc080dd480225eb8203080da03080d8dd6980e800c05d01e180f800a03a3756603664660020026eacc07cc080c08002089660020030158992cc004cdc79bae301d0010048800c4cc00c00cc08800901b1810000a03c8a9980ca496b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a2020202029001640606eb8c074c068dd50024528202e405c180a80218089baa301400445268a99805a491856616c696461746f722072657475726e65642066616c7365001365640281";
+            pub const HASH: &'static str = "dcc7a533dad81d343f6c442beedd3dce48d13f532926c4d321f0fd19";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+}
+pub mod gov_auth {
+    use super::*;
+    pub mod main_gov_auth {
+        use super::super::*;
+        // Validator: gov_auth.main_gov_auth.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "gov_auth.main_gov_auth.else";
+            pub const COMPILED_CODE: &'static str = "5906f701010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a4888888888cc89660033001300637540192259800800c52201008992cc00400626eb8c03000a264b3001001899b8a375c601a0066eb8c03400a266e28cdc519b8a375c601a0066eb8c034008dd71806800998020021807000a016300d00140286018002804a46014601660160032300a300b001911919800800801912cc0040062a66010920119657870656374205b782c202e2e726573745d203d206c69737400168992cc004c0100062003133003003300f0024020601a002805a6e1d2004488888a6002600a00b300f006980798081808003244465300137586026003375660266028602860280032222232598009805980a9baa0018992cc0040060270138992cc00400602913259800800c05602b015899912cc00400602f13259800981000144c8c8cc004004034896600200314a115980099b8f375c603c604400200714a3133002002302300140708100de4199119b8a33714911030083030037666ea0cdc199b803370400401666e00029200100a5980099b89002480ba266e2ccdc0241000400400315980099b89002483f80e266e2d20b0023371600400313371530014a337666ea000a91010199005e6000501b2036375a603e00a60206eb0c07cc08001603080e8c07800501c1bad001301d00280aa03c301b00140646eb000602701340706032602c6ea80062a6602892012e65787065637420496e6c696e65446174756d28646174756d29203d20696e7075742e6f75747075742e646174756d0016404c601a602a6ea8c030c054dd519805802919912cc00400600513259800800c00e266e3cdd7180c180e000803a034301c00140642940dd59806980b1baa300d3016375400291119912cc004c02800600515980099b874801800626464b30013370e9001000c0122b30013370e9000000c4c96600266e1d2002301737540031980099b8f48811c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900375c603660306ea8006942945015459015180d180b9baa0028b20284050602a6ea8004c060c064c054dd5003c59012202413259800800c56600266e1d20003013375400313259800800c042264b3001001808c0460231332259800800c04e264b300100180a40520291332259800800c05a264b300100180bc05e02f1332259800800c066264b300100180d406a035132598009812001c5660033001010807d2211c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df00805401d00e46600202100fa4411cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd00802400500e4528203a80da042375a00301a4090604200280f8dd68009810001405d021180f000a038375a002603a0050144078603600280c8dd6800980d001404501b180c000a02c3014375400300f404500f807c03e01e80c8c966002601260266ea80062602e60286ea80062a660249201f265787065637420496e6c696e65446174756d28646174756d29203d0a202020206d7573745f66696e64280a202020202020696e707574732c0a202020202020666e28696e70757429207b0a2020202020202020657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730a0a202020202020202061735f646174612861737365747329203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290a2020202020207d2c0a20202020292e6f75747075742e646174756d00164044601660266ea8c028c04cdd5198048019192cc0040062a66026920140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c60320026e98cc05ccdd826011e581c8234e676cd5419e650da8a97ca371747cc2d96017aef6c82acb1c9ce004c0103a14001004bd6f7b630202c3756601660286ea8c02cc050dd500098091baa005180998079baa0022293454cc01124011856616c696461746f722072657475726e65642066616c73650013656400c2a66004920121657870656374206d756c74697369673a204d756c7469736967203d20646174756d00161533002491b2657870656374204d756c74697369675468726573686f6c64207b0a2020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a2020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a2020202020202020636f756e63696c5f6e756d657261746f722c0a2020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a2020202020207d203d207468726573686f6c645f646174756d001601";
+            pub const HASH: &'static str = "a2f61ae0a70a22ab1c5a524da0b8e8ce3bbaa05f3314fa14764ca6f1";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod staging_gov_auth {
+        use super::super::*;
+        // Validator: gov_auth.staging_gov_auth.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "gov_auth.staging_gov_auth.else";
+            pub const COMPILED_CODE: &'static str = "5908fb01010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a4888888888cc89660033001300637540192259800800c52201008992cc00400626eb8c03000a264b3001001899b8a375c601a0066eb8c03400a266e28cdc519b8a375c601a0066eb8c034008dd71806800998020021807000a016300d00140286018002804a46014601660160032300a300b001911919800800801912cc0040062a66010920119657870656374205b782c202e2e726573745d203d206c69737400168992cc004c0100062003133003003300f0024020601a002805a6e1d20049b8748009222222298009803003488c966002600a601e6ea80062602660206ea80062a6601c9201f265787065637420496e6c696e65446174756d28646174756d29203d0a202020206d7573745f66696e64280a202020202020696e707574732c0a202020202020666e28696e70757429207b0a2020202020202020657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730a0a202020202020202061735f646174612861737365747329203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290a2020202020207d2c0a20202020292e6f75747075742e646174756d00164034600e601e6ea8c018c03cdd5198028011192cc0040062a6601e920140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c602a0026e98cc04ccdd81ba90034c103a14001004bd6f7b63020243756600e60206ea8c01cc040dd5000cc04001e60206022602200e9111194c004dd6180a800cdd5980a980b180b180b000c88888c966002601a602e6ea8006264b300100180ac056264b300100180b44c96600200301780bc05e26644b300100180cc4c9660026044005132323300100100d2259800800c528456600266e3cdd718101812000801c528c4cc008008c09400501e20443790664466e28cdc5245030083030037666ea0cdc199b803370400401666e00029200100a5980099b89002480ba266e2ccdc0241000400400315980099b89002483f80e266e2d20b0023371600400313371530014a337666ea000a91010199005e6000501d203a375a604200a60226eb0c084c08801603480f8c08000501e1bad001301f00280ba040301d001406c6eb000602b0154078603660306ea80062a6602c92012e65787065637420496e6c696e65446174756d28646174756d29203d20696e7075742e6f75747075742e646174756d00164054601e602e6ea8c038c05cdd519806802919912cc00400600513259800800c00e266e3cdd7180d180f000803a038301e001406c2940dd59807980c1baa300f3018375400291119912cc004c030006264b3001300c3017375400313003375c603660306ea80062c80a8c068c05cdd5003c56600266e1d2006001899192cc004c034006264b3001300e3019375400313005375c603a60346ea80062c80b8c070c064dd5001456600266e1d20000018992cc004c038c064dd5000c6600266e3d2211c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900375c603a60346ea8006942945017459017180e180c9baa0028b202c4058602e6ea8004c068c06cc05cdd5003c59014202823259800800c56600266e1d20003016375400313259800800c04e264b300100180a40520291332259800800c05a264b300100180bc05e02f1332259800800c066264b300100180d406a0351332259800800c072264b300100180ec07603b132598009813801c566003300101180852211c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df00805401d00f466002023010a4411cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd00802400500f4528204080f2048375a00301d409c60480028110dd6800981180140690241810800a03e375a00260400050174084603c00280e0dd6800980e801405101e180d800a032301737540030124051012809404a02480e166002664464b3001300e3018375400313259800800c54cc0612413a657870656374205b63757272656e745f6c6f6769632c202e2e5d203d20646174756d207c3e206275696c74696e2e756e5f6c6973745f646174610016899b8f375c603a00200a80d8dd6180e180c9baa0018a9980ba492665787065637420496e6c696e65446174756d28646174756d29203d206d61696e5f646174756d00164058602060306ea8c03cc060dd5198070031192cc004cdd7980e980d1baa301d0010048992cc0040062a6603292133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf004374c603e00280e0dd5980e980f000c528202e30193754602060326ea8004cdd2a4004660309811e581c18b25c8a171745a297c9b8293a16b5cdbe3ebca5a7de38fb19e0a4bd004bd701ba633018337609811e581c18b25c8a171745a297c9b8293a16b5cdbe3ebca5a7de38fb19e0a4bd004c0107a1446d61696e01004bd6f7b63044cc02001122011c8234e676cd5419e650da8a97ca371747cc2d96017aef6c82acb1c9ce008998040022451ca79c38ac07491192634e5f88ef699ee8211444305f0763eb77ac285000404c60286ea8014602a60226ea80088a4d15330044911856616c696461746f722072657475726e65642066616c73650013656400c2a66004920121657870656374206d756c74697369673a204d756c7469736967203d20646174756d00161533002491c5657870656374204d756c74697369675468726573686f6c64207b0a2020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a2020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a2020202020202020636f756e63696c5f6e756d657261746f722c0a2020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a2020202020207d3a204d756c74697369675468726573686f6c64203d207468726573686f6c645f646174756d001601";
+            pub const HASH: &'static str = "6bb2849ffa328552ef82598eeea45d20302163eacf9d8782b3a77961";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+}
+pub mod iliquid_circulation_supply {
+    use super::*;
+    pub mod ics_forever {
+        use super::super::*;
+        // Validator: iliquid_circulation_supply.ics_forever.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "iliquid_circulation_supply.ics_forever.else";
+            pub const COMPILED_CODE: &'static str = "5905b401010029800aba2aba1aba0aab9faab9eaab9dab9cab9a48888888a60022a66004920129657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a9980124949657870656374205b6c6f6769632c206d697469676174696f6e5f6c6f6769632c202e2e5d203d206d61696e5f7374617465207c3e206275696c74696e2e756e5f6c6973745f6461746100164889660033001300737540192232330010010032259800800c01a264b300130040018800c4cc00c00cc0400090091807000a018911919800800801912cc00400629422b30013003300e0018a518998010011807800a01040312300b300c0019ba548009222223298009808000cc040c044006602000c9112cc004cdc3a4000601e6ea800a2646644b3001324a330013758602c0073756602c602e602e0053758602c0049112cc004c8cc004004010896600200314a115980099baf301b30183754603600298127d8799f58208dcf5fe7e3a8ef3eba1d514dd4c70ec1c33c477b5c0e3ad785b9de85a6c9244800ff008a51899801001180e000a02a406513259800800c04e264b3001301c0028992cc004cdc7a4500375c603000515980099b87480080062646464b30010018a9980d248133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba63020001374c6603c66ec0dd4805260103a14001004bd6f7b63044c96600266e1d2004301c375400313020301d3754003153301b49012165787065637420496e6c696e65446174756d28646174756d29203d20646174756d00164068603e6040005153301a4901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290016406480e8dd5980f000980f180d1baa3301200523375e603c60366ea8c078c06cdd500080118071980d9ba90074bd70405501640550161bad301800180a2032301a00140606eacc058c8cc00400400c89660020030138992cc004cdc79bae30180010078800c4cc00c00cc074009016180d800a0328a9980a24816b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016404c8cc004cdc7800a451c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51404114a08080c054c054004dd7180a18089baa0033010375400313322325980099b8748010c048dd5000c4c96600200300e8992cc00400601f1980098051980b980c00125eb826eb8c0600066eacc060c064c064c064c064c0640152225980099807800919baf30180010048acc004cdc7801245008a5189919808001119baf3019001002300d3301a375200497ae0405514a080a880b0c0600050151bac301630133754003153301149012b65787065637420496e6c696e65446174756d286d61696e5f737461746529203d206d61696e5f737461746500164040602a602c602c60246ea8c020c048dd5198051bac301500223259800800c54cc049240140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c603000200680a8dd5980498099baa300930133754002602860206ea8004dd31980919bb04c011e581c50fdbd60cc24d56e774a01490acd496e811d58dec647562c264e384c004c0107a1446d61696e01004bd6f7b630201a1808002a293454cc0152411856616c696461746f722072657475726e65642066616c7365001365640101";
+            pub const HASH: &'static str = "b45317b8f5734b1629e940d3a13c7e902d9c786e92dc6e495ed260a8";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod ics_logic {
+        use super::super::*;
+        // Validator: iliquid_circulation_supply.ics_logic.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "iliquid_circulation_supply.ics_logic.else";
+            pub const COMPILED_CODE: &'static str = "59038e01010029800aba2aba1aba0aab9faab9eaab9dab9cab9a4888888896600264664530013007375400530063754003370e900048c02cc03000522225980099b874801000e264646644b30013375e600a601e6ea8008dd319198008009bac30130092259800800c52f5bded8c113233225980099baf301730143754602e60286ea800801a26530010019bab300b301537540070024004444b30010028800c4c8cc8a600200d301e0059919800800802912cc00400626603c66ec0dd48021ba60034bd6f7b63044ca60026eb8c0700066eacc07400660420049112cc004cdc8004001c4cc088cdd81ba9008374c00e00b15980099b8f0080038992cc004c060c080dd5000c4cc08ccdd81ba90093024302137540020051002407864b300159800800c528c52820448a6103d87a80008980b198119ba60014bd70203c329800800c022006800888966002005100189919914c00401a605400b32330010010052259800800c4cc0a8cdd81ba9004375000697adef6c608994c004dd71814000cdd69814800cc0b40092225980099b9000800389981719bb037520106ea001c0162b30013371e01000713259800981218161baa00189981799bb037520126060605a6ea800400a20048150c966002604800314c0103d87a800089811198179ba80014bd7020543370000e00513302e337606ea400cdd400119803003000a05240a4302b00140a48030dd718118009bad302400130260024091133022337606ea400cdd300119803003000a03a4074301f00140748030dd7180b8009bab3018001301a002406110014044601060246ea8004cc00c00cc058008c05000501244cdc41b8d3766600a601e6ea80092080208a50403064660020026eb0c044c048c04801c8966002003153300d490119657870656374205b782c202e2e726573745d203d206c69737400168992cc004cdd7980998081baa0010048800c4cc00c00cc05000900d1809000a0203374a900119807a6011e581cb45317b8f5734b1629e940d3a13c7e902d9c786e92dc6e495ed260a8004bd7018009980719ba548008cc0393011e581cb45317b8f5734b1629e940d3a13c7e902d9c786e92dc6e495ed260a8004bd7019807260103d87a80004bd701ba5480022b30013370e9003001c566002600460146ea8c038c03cc02cdd5002c528c590084590082010180400098041804980480098021baa0098a4d15330024911856616c696461746f722072657475726e65642066616c7365001365640041";
+            pub const HASH: &'static str = "cc9fceeaba6b18f3abfa735b2a19548bb7b2151dab52533c6c204bb9";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod ics_two_stage_upgrade {
+        use super::super::*;
+        // Validator: iliquid_circulation_supply.ics_two_stage_upgrade.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "iliquid_circulation_supply.ics_two_stage_upgrade.else";
+            pub const COMPILED_CODE: &'static str = "591f5d01010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a660049214665787065637420557067726164655374617465207b206c6f6769632c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012494565787065637420557067726164655374617465207b20617574682c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012495b65787065637420557067726164655374617465207b206d697469676174696f6e5f6c6f6769633a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012495a65787065637420557067726164655374617465207b206d697469676174696f6e5f617574683a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012496d65787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c202e2e207d3a20557067726164655374617465203d0a202020207370656e64696e675f646174756d00168a998012499a65787065637420557067726164655374617465207b0a202020206d697469676174696f6e5f6c6f6769633a206d61696e5f6d697469676174696f6e5f6c6f6769632c0a20202020617574683a206d61696e5f617574682c0a202020206d697469676174696f6e5f617574683a206d61696e5f6d697469676174696f6e5f617574682c0a202020202e2e0a20207d203d206d61696e5f646174756d00168a998012496265787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c20726f756e64207d203d0a202020207370656e64696e675f646174756d00168a998012493365787065637420496e6c696e65446174756d287370656e64696e675f646174756d29203d207370656e64696e675f646174756d00168a998012497f65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d2073746167696e675f646174756d00168a998012497c65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d206d61696e5f646174756d00168a9980124928657870656374206f75745f7061795f63726564203d3d2065787065637465645f7061795f6372656400168a998012495a6578706563742054776f537461676552656465656d6572207b207570646174655f6669656c642c2077686963685f7374616765207d3a2054776f537461676552656465656d6572203d0a202020202020202072656465656d6572001648888888888896600330013010375402d2232330010010032259800800c52845660026006602e00314a31330020023018001404480aa46e98cc04ccdd81ba90014c10aa14773746167696e6701004bd6f7b63048dd31980999bb03752002980107a1446d61696e01004bd6f7b6304dc3a4001371e911009ba54800a44646600200200644b30010018a9980924919657870656374205b782c202e2e726573745d203d206c69737400168992cc004c010006200313300300330190024048602e00280aa6e1d20389b874801122222222229800980f005488966002601260386ea800e264b300100180144c966002003003801c00e0071332259800800c016264b3001001803401a00d132598009813801c02200e8120dd6800c0190271812000a044375c00260460048120c08400501f180e9baa003800a0349112cc004cc0300048cdd7980e8008024566002601000514a31323300d00223375e603c002004600e6603e6ea40092f5c080d2294101a4c0740292222332232323298009bab3026302730270019813004cc088dd5002cdd618130024dd61813001cdd618130012444444b300130150048992cc004cdd79ba632330010013756605c01244b30010018a998152491d657870656374205b6974656d2c202e2e726573745d203d20706169727300168992cc004cdc79bae302c00100489bab302d00189980180198188012054302f00140b4980110a2446d61696e014773746167696e6701008acc004c8cc004004014896600200314a115980099baf302f302c3754605e002980127d8799f58208dcf5fe7e3a8ef3eba1d514dd4c70ec1c33c477b5c0e3ad785b9de85a6c9244800ff008a518998010011818000a05240b513259800801c54cc0a524127657870656374205b6d61696e2c202e2e726573745f6f7574707574735d203d206f7574707574730016899194c004dd59818000cc0c0c0c4006606200a9112cc004c05cc0bcdd500144c96600266ebcc0d0c0c4dd5181a003003c566002009153302f490138657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd7980f0041ba630350048acc0040060490248992cc00400604b13259800800c09a04d02681344cc89660020030288992cc004006053029814c0a626644b3001001815c4c96600200302c81640b20591332259800800c0ba264b3001001817c0be05f02f899912cc00400606313259800800c0ca0650328992cc004c11000e2b3001302b00a8acc004c0ac0122b3001302c0018acc004c0a0dc6806c56600260506e3401e2b30010118a9981f24923657870656374205b73746167696e672c202e2e5d203d20726573745f6f75747075747300168991919912cc004c0acc10cdd5000c4c96600266ebcc120c114dd5182400280dc56600200715330434913b657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc00400a07503a8992cc00400607713259800800c0f207903c81e44cc896600200303e8992cc00400607f03f81fc0fe26644b3001001820c4c966002003042821410a0851332259800800c112264b3001001822c11608b045899912cc00400608f13259800800c1220910488992cc004c16400e2b3001304000a8acc004c1000122b300130410018acc004cdd798218161ba60108acc004c0f4dc6806c566002607a6e3401e330013371e05891011c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51414914a082922941052452820a4824a0a4824a0a4824a0a4824a0ac375a003048416460ac00282a0dd7000982a80120ac305300141446eb8004c1480090531828000a09c375c002609e0048280c13400504b1bae001304c002413460940028240dd600140ea0748258c12400d04640dd042182398221baa0018a9982124995657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d2873746167696e675f646174756d292c0a202020202e2e0a20207d203d2073746167696e67001641046eacc114004c114c118004c114004c100dd51821808a0828a9981f24812e657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286175746829203d3d203238001640f5153303e4912f657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286c6f67696329203d3d203238001640f503340f503340f503340f503341046eb40060648220c10400503f1bae00130400024104607c00281e0dd7000981e801207c303b00140e46eb8004c0e800903b181c000a06c375c002606e00481c0c0d40050331bac0018124091036454cc0bd2401456578706563742065787065637465645f6d61696e5f6e66745f6964286f776e5f706f6c69637929203d3d2028206d61696e5f6e66745f6964207c3e2061735f646174612029001640b881920468170c0ccc0c0dd5001454cc0b92418f657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d286d61696e5f646174756d292c0a202020202e2e0a20207d203d206d61696e001640b43030001302b3754605c0068160c050cc0b0dd4800a5eb822a6605092016b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016409d1533028491326578706563742028206f776e5f746f6b656e73207c3e20746f5f70616972732029203d3d206d696e7465645f746f6b656e730016409c6eb8c0b0c0a4dd5005c4c966002600200b132323298009bab303000198181818800cc0c0c0b4dd518180012444b30013007302f375400313259800806c566002603a60606ea8036264b3001001811c4c96600200313259800800c096264b30010018acc004c0e400a26644b300130230018acc004c0dcdd5002c00a05081c22b3001300e0018acc004c0dcdd5002c00a05081c22b3001301e0018acc004c0dcdd5002c00a05081c22b30013370e9003000c566002606e6ea801600502840e102840d081a1034206813322598009811800c4c9660020030298992cc0040062b3001303d0028cc00400600902a407902a40e902a81540aa05481f0c0ec005039181b9baa0038acc004c038006264b3001001814c4c96600200313259800800c0ae264b300100181640b205902c8992cc004c10000e33001004803c0b502140b503d1bae0014100607a00281d8c0f400a05502a81540a903e181d800a0723037375400702840d081a04cc8966002015153303549133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc0040422a6606c92173657870656374205b0a20202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a20202020202020202e2e0a2020202020205d203d206f757470757473001689919192cc0040062a660729213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc0056600266ebcc0f8c0ecdd5181f001806456600266ebcdd3181f8009ba6004899baf303e303f0023374a90021981e9ba7598009813981d1baa0078992cc004cdd79ba6005006899192cc004cdd79820981f1baa304100200f8992cc0040062a6607a92143657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2073746167696e675f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304300100a8992cc004c09cc0fcdd50094566002604e607e6ea800626644b300100181d40ea264b300100181dc4c96600200303c81e40f20791332259800800c0fa264b300100181fc0fe07f03f899912cc00400608313259800800c10a08504282144cc89660020030448992cc00400608b045822c11626644b3001001823c4c9660020030488244122264b300130550038acc00660026076660a66ea401d2f5c1004817206a8992cc004c0f80062b3001012827413a264b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc16626644b300100182dc4c96600200305c82e4172264b300130650038998319ba900d330633752034660c66ea405ccc18cdd480a198319ba80014bd7041750621bad00182e20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09d04e415d1598009814800c56600202504d826c4c96600200304e8992cc00400609f04f827c13e26644b3001001828c4c966002003052829414a0a51332259800800c152264b300100182ac1560ab055899912cc0040060af13259800800c1620b105882c44cc896600200305a8992cc0040060b705b82dc4c96600260ca007133063375203a660c66ea4068cc18cdd4803998319ba901433063375000297ae082e20c4375a00305b419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009413609a82ba2b300130390018acc004c0f402e2b30010128264132264b3001001826c4c96600200304e827413a09d1332259800800c142264b3001001828c1460a3051899912cc0040060a713259800800c1520a905482a44cc89660020030568992cc0040060af05782bc15e26644b300100182cc4c96600200305a82d416a264b300130650038998319ba901d330633752014660c66ea405ccc18cdd480a198319ba80014bd70416d0621bad00182d20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09904c415d15330504911d657870656374206d697469676174696f6e5f6c6f676963203d3d2022220016413d159800981e802c56600202504b825c4c96600200304c8992cc00400609b04d826c13626644b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc4c96600260ca007133063375203a660c66ea4068cc18cdd480b998319ba900433063375000297ae082d20c4375a003059419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009412e09682ba2a660a092011c657870656374206d697469676174696f6e5f61757468203d3d2022220016413c827904f209e3050375403f153304f491406578706563742076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73290016413904941486eb400609082a8c1480050501bae00130510024148609e0028268dd70009827001209e304c00141286eb8004c12c00904c1824800a08e375c00260900048248c1180050441bac00181d40e9047182198201baa001304330403754025153303e49013165787065637420496e6c696e65446174756d2873746167696e675f646174756d29203d2073746167696e675f646174756d001640f503540f460846086005153303d4913f65787065637420282073746167696e675f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640f08200dd59820800c54cc0f12401326578706563742073746167696e675f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640ec608200260786ea8c0fcc100c0f0dd51981280a919baf3040303d3754002005153303a491346578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640e4607c60766ea801e2646644b30013375e6e9801c02626464b30013375e608660806ea8c10c008046264b30010018a9981fa493d657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d206d61696e5f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304500100b8992cc004c0a8dc6802c566002605260826ea80522b30013029304137540031332259800800c0ea07513259800800c0ee264b300100181e40f207903c899912cc00400607d13259800800c0fe07f03f81fc4cc89660020030418992cc004006085042821410a26644b300100182244c966002003045822c11608b1332259800800c11e264b3001001824412209113259800982b801c56600202304a82544c96600200304b8992cc00400609904c826413226644b300100182744c96600200304f827c13e09f1332259800800c146264b3001001829414a0a5052899912cc0040060a913259800800c1560ab05582ac4cc89660020030578992cc0040060b105882c44c96600260cc00713259800acc0066002609a660ca6ea405d2f5c1014820208e8a518cc004006b30013375e06298103d87c80008a45008802a0c0820208e41811332259800982880144cc19cdd4814198339ba901c330673752032660ce6ea4058cc19cdd41800809a5eb822b3001303c0028998339ba901f330673752038660ce6ea40a0cc19cdd480b198339ba830010134bd70456600260980051598009828006c4cc19cdd480f998339ba9028330673752032660ce6ea4058cc19cdd41800809a5eb822a660c6920122657870656374206d61696e5f6d697469676174696f6e5f6c6f676963203d3d202222001641891598009828003c4cc19cdd480f998339ba901c330673752032660ce6ea40a0cc19cdd41800809a5eb822a660c6920121657870656374206d61696e5f6d697469676174696f6e5f61757468203d3d20222200164188831106220c4306237540626e0120028a99830a49ff657870656374206f72207b0a20202020202076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73292c0a2020202020202f2f205370656369616c206361736520666f72204d697469676174696f6e417574680a2020202020206966207570646174655f6669656c64203d3d204d697469676174696f6e41757468207b0a2020202020202020656d7074790a2020202020207d20656c7365207b0a20202020202020206d61696e5f6d697469676174696f6e5f617574680a2020202020207d0a20202020202020207c3e2076616c69646174655f72756e6e696e67286d2561696e5f617574685f637265642c205f2c207769746864726177616c73292c0a202020207d001641806098660c86ea401d2f5c1059418c6eb40060b08330c18c0050611bae0013062002418c60c000282f0dd7000982f80120c0305d001416c6eb8004c17000905d182d000a0b0375c00260b200482d0c15c0050551bac011825412905841250541bad00182420ae305400141486eb8004c14c0090541828800a09e375c00260a00048288c13800504c1bae001304d002413860960028248dd700098250012096304800141186eb000607503a4124608a60846ea8004c114c108dd500a454cc1012412b65787065637420496e6c696e65446174756d286d61696e5f646174756d29203d206d61696e5f646174756d001640fd03740fd1533040490131657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286e65775f76616c29203d3d203238001640fc6088608a005153303f4901396578706563742028206d61696e5f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640f88210dd59821800c54cc0f924012f657870656374206d61696e5f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640f46086002607c6ea8c104c108c0f8dd51981380b919baf3042303f3754002007153303c491376578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640ec607e0026eb8c0fcc100004c0ecdd5003a0704bd70452820708a5040e114a31533039490178616e64207b0a20206f75745f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f637265642c0a20206f75745f6e66745f6964203d3d206e66745f69642c0a20206f75745f646174756d203d3d2065787065637465645f6f75747075745f646174756d2c0a7d203f2046616c73650014a081c103c1bab303d001303d00130383754607602081c8c0ec02903818118029811002981a1baa0013034375400702640d9026813409a04c81d0c0dc005035181b80140920490248122070303500140cc60626ea8036044817204502281140890361bae303330303754003153302e4914065787065637420536372697074286f776e5f6861736829206173207061795f63726564203d20616464726573732e7061796d656e745f63726564656e7469616c001640b43030001302b3754605c605e60566ea8cc0500148cdd7981798161baa001002302d302a375401916409c6e1d20024098302630260013025001302400130213022004301e375400245268a998072491856616c696461746f722072657475726e65642066616c7365001365640341";
+            pub const HASH: &'static str = "50fdbd60cc24d56e774a01490acd496e811d58dec647562c264e384c";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+}
+pub mod multisig {
+    use super::*;
+    pub mod types {
+        use super::super::*;
+        pub type Multisig = (Int, Data);
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct MultisigThreshold {
+            pub technical_auth_numerator: Int,
+            pub technical_auth_denominator: Int,
+            pub council_numerator: Int,
+            pub council_denominator: Int,
+        }
+        impl ToPlutusData for MultisigThreshold {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                let mut fields = Vec::with_capacity(4);
+                let field_0_metadata = metadata.and_then(|meta| meta.project_field("technical_auth_numerator"));
+                fields.push(self.technical_auth_numerator.to_plutus_data_with(field_0_metadata.as_ref()));
+                let field_1_metadata = metadata.and_then(|meta| meta.project_field("technical_auth_denominator"));
+                fields.push(self.technical_auth_denominator.to_plutus_data_with(field_1_metadata.as_ref()));
+                let field_2_metadata = metadata.and_then(|meta| meta.project_field("council_numerator"));
+                fields.push(self.council_numerator.to_plutus_data_with(field_2_metadata.as_ref()));
+                let field_3_metadata = metadata.and_then(|meta| meta.project_field("council_denominator"));
+                fields.push(self.council_denominator.to_plutus_data_with(field_3_metadata.as_ref()));
+                let (tag, any_constructor) = encode_variant_index(0usize);
+                let wrapped = if metadata
+                    .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                {
+                    MaybeIndefArray::Indef(fields)
+                } else {
+                    MaybeIndefArray::Def(fields)
+                };
+                PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+            }
+        }
+        impl FromPlutusData for MultisigThreshold {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "MultisigThreshold")?;
+                if constr.constr_index() != 0u64 {
+                    return Err(PlutusDataError::UnexpectedTag { context: "MultisigThreshold", found: constr.constr_index() });
+                }
+                let fields_decoded = decode_constructor_fields(constr, "MultisigThreshold", 4)?;
+                let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                    .metadata
+                    .as_ref()
+                    .map_or(Vec::new(), |meta| meta.issues().to_vec());
+                let items = fields_decoded.value;
+                if items.len() < 4 {
+                    return Err(PlutusDataError::FieldCountMismatch { context: "MultisigThreshold", expected: 4, found: items.len() });
+                }
+                let value = MultisigThreshold {
+                    technical_auth_numerator: {
+                        let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("technical_auth_numerator")], decoded.metadata());
+                        decoded.value
+                    },
+                    technical_auth_denominator: {
+                        let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("technical_auth_denominator")], decoded.metadata());
+                        decoded.value
+                    },
+                    council_numerator: {
+                        let decoded = FromPlutusData::from_plutus_data(items[2])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("council_numerator")], decoded.metadata());
+                        decoded.value
+                    },
+                    council_denominator: {
+                        let decoded = FromPlutusData::from_plutus_data(items[3])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("council_denominator")], decoded.metadata());
+                        decoded.value
+                    },
+                };
+                Ok(Decoded::from_parts(value, issues))
+            }
+        }
+
+    }
+}
+pub mod permissioned {
+    use super::*;
+    pub mod council_forever {
+        use super::super::*;
+        // Validator: permissioned.council_forever.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "permissioned.council_forever.else";
+            pub const COMPILED_CODE: &'static str = "5909cb01010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492129657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a998012493c657870656374204d756c7469736967207b20746f74616c5f7369676e6572732c207369676e657273207d3a204d756c7469736967203d20646174756d00168a9980124949657870656374205b6c6f6769632c206d697469676174696f6e5f6c6f6769632c202e2e5d203d206d61696e5f7374617465207c3e206275696c74696e2e756e5f6c6973745f646174610016488896600264653001300d00198069807000cc03400922253300b373264646644653001001a6011e581c18b25c8a171745a297c9b8293a16b5cdbe3ebca5a7de38fb19e0a4bd00a44100400444464b30010038991919911980500119b8a48901280059800800c4cdc52441035b5d2900006899b8a489035b5f20009800800ccdc52441025d2900006914c00402a00530070014029229800805400a002805100920345980099b880014803a266e0120f2010018acc004cdc4000a41000513370066e01208014001480362c80a10141bac3017002375a602a0026466ec0dd4180a8009ba73016001375400713259800800c4cdc52441027b7d00003899b8a489037b5f20003232330010010032259800800c400e264b30010018994c00402a6034003337149101023a200098008054c06c00600a805100a180e80144ca6002015301a00199b8a489023a200098008054c06c006600e66008008004805100a180e8012036301d001406866e29220102207d00003405c6eac00e264b3001001899b8a489025b5d00003899b8a489035b5f20009800800ccdc52441015d00003914c00401e0053004001401d229800803c00a0028039006202e3758007133006375a0060051323371491102682700329800800ccdc01b8d0024800666e292210127000044004444b3001337100049000440062646645300100699b800054800666e2ccdc00012cc004cdc4001240291481822903720323371666e000056600266e2000520148a40c11481b9019002200c33706002901019b8600148080cdc7002001202c375c00680d0dc5245022c2000223233001001003225980099b8700148002266e292210130000038acc004cdc4000a40011337149101012d0033002002337029000000c4cc014cdc2000a402866e2ccdc019b85001480512060003404080808888c8cc004004014896600200310058992cc004006266008603200400d133005301900233003003001405c603200280b0c0040048896600266e2400920008800c6600200733708004900a4cdc599b803370a004900a240c0002801900d0cc00488c8cc00400400c896600200300c8992cc004c01000620031330030033016002403c6028002809244646600200200644b30010018a508acc004c00cc0500062946266004004602a002807101248c044c0480066e952002488896600266e1d20003010375400d132332259800992cc00400601f00f8992cc00400602113259800800c046023011899912cc00400602713259800980f00144ca60020033758023225980099baf374e00400913370e00c00314a080d10011112cc00400a26600297ae04800226530010049811001c88cc010cc088dd4992cc004cdc39b8d001480e2266e292201048200581c000018a9980fa4812d657870656374206275696c74696e2e6c656e6774685f6f665f62797465617272617928706b6829203d3d203238001640786eb800c008cdc0000a40048020c08000901e405101b180e000a034375a00260360050114070603200280b8dd6000c03e01e80d260026eb0c05c00e6eacc05cc060c06000a6eb0c05c009222598009919800800802112cc00400629422b30013375e603860326ea8c070005300127d8799f5820a70130b737698ecef4eb97616304e7c2203449dfa2b0329f0c3c5ee71c0728e001ff008a51899801001180e800a02c406913259800800c052264b3001301d0028992cc004cdc7a4500375c603200515980099b87480080062646464b30010018a9980da48133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba63021001374c6603e66ec0dd4805260103a14001004bd6f7b63044c96600266e1d2004301d375400313021301e3754003153301c49012165787065637420496e6c696e65446174756d28646174756d29203d20646174756d0016406c60406042005153301b4901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290016406880f0dd5980f800980f980d9baa3300e00523375e603e60386ea8c07cc070dd500080118051980e1ba90074bd70405901740590171bad301900180aa034301b00140646eacc05cc8cc00400400c89660020030148992cc004cdc79bae30190010078800c4cc00c00cc078009017180e000a0348a9980aa4816b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a2020202029001640508cc004cdc7800a451c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51404514a08088c058c058004dd7180a98091baa0073011375400b13322325980099b8748010c04cdd5000c4c96600200300e8992cc00400601f1980098031980c180c80125eb826eb8c0640066eacc064c068c068c068c068c0680152225980099805800919baf30190010048acc004cdc7801245008a5189919806001119baf301a00100230093301b375200497ae0405914a080b080b8c0640050161bac301730143754003153301249012b65787065637420496e6c696e65446174756d286d61696e5f737461746529203d206d61696e5f737461746500164044602c602e602e60266ea8c010c04cdd5198031bac301600223259800800c54cc04d240140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c603200200680b0dd59802980a1baa300530143754002602a60226ea8014dd31980999bb04c011e581c18b25c8a171745a297c9b8293a16b5cdbe3ebca5a7de38fb19e0a4bd004c0107a1446d61696e01004bd6f7b630201c0c034004c020dd500745268a998032491856616c696461746f722072657475726e65642066616c7365001365640141";
+            pub const HASH: &'static str = "fd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod council_logic {
+        use super::super::*;
+        // Validator: permissioned.council_logic.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "permissioned.council_logic.else";
+            pub const COMPILED_CODE: &'static str = "59096c01010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492121657870656374206d756c74697369673a204d756c7469736967203d20646174756d00168a998012493c657870656374204d756c7469736967207b20746f74616c5f7369676e6572732c207369676e657273207d3a204d756c7469736967203d20646174756d00168a99801249b2657870656374204d756c74697369675468726573686f6c64207b0a2020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a2020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a2020202020202020636f756e63696c5f6e756d657261746f722c0a2020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a2020202020207d203d207468726573686f6c645f646174756d001648896600330013007375401b2259800800c52201008992cc00400626eb8c03400a264b3001001899b8a375c601c0066eb8c03800a266e28cdc519b8a375c601c0066eb8c038008dd71807000998020021807800a018300e001402c601a002805246016601860180032300b300c001911919800800801912cc0040062a66012920119657870656374205b782c202e2e726573745d203d206c69737400168992cc004c010006200313300300330100024024601c00280626e1d2004488888a6002602200d30050059808003244530012222232598009805180a9baa0018992cc0040060270138992cc00400602913259800800c05602b015899912cc00400602f13259800981000144c8c8cc004004034896600200314a115980099b8f375c603c604400200714a3133002002302300140708100de4199119b8a33714911030083030037666ea0cdc199b803370400401666e00029200100a5980099b89002480ba266e2ccdc0241000400400315980099b89002483f80e266e2d20b0023371600400313371530014a337666ea000a91010199005e6000501b2036375a603e00a601c6eb0c07cc08001603080e8c07800501c1bad001301d00280aa03c301b00140646eb000602701340706032602c6ea80062a6602892012e65787065637420496e6c696e65446174756d28646174756d29203d20696e7075742e6f75747075742e646174756d0016404c6018602a6ea8c02cc054dd519805002919912cc00400600513259800800c00e266e3cdd7180c180e000803a034301c00140642940dd59806180b1baa300c3016375400330130039809980a001cc040dd5000a4444646530013758603200337566032603460340033758603200737586032004911119912cc004c04000600515980099b8748018006264b30013370e9001000c00e2b30013370e9000000c528c5901a2034301b3754603e604060386ea802a2c80c90190992cc0040062b30013370e9000180d1baa0018992cc00400602d13259800800c05e02f017899912cc00400603313259800800c06a03501a899912cc00400603913259800800c07603b01d899912cc00400603f13259800800c0820410208992cc004c0ac00e2b30019800acc005284403e201c812202148811c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df00805401d0174566003300159800a518807c403902440429111cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd00802400501744c966002003023811c4c9660020030248992cc00400604b025812c4cc89660020030278992cc004c0c400a26530010019bac01d912cc004cdd79ba7002004899b870060018a5040b48008889660020051330014bd702400113298008024c0d400e44660086606a6ea4c96600266e1cdc6800a40711337149101048200581c000018a9981924812d657870656374206275696c74696e2e6c656e6774685f6f665f62797465617272617928706b6829203d3d203238001640c46eb800c008cdc0000a40048020c0cc00903140a102e1817800a05a375a002605c00502540bc60580028150dd6000c08e0468168c8c8c9660020031533028490133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6302e001374c6605866ec130011e581cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd004c0103a14001004bd6f7b63044c966002603e60546ea80062605c60566ea80062a660529212165787065637420496e6c696e65446174756d28646174756d29203d20646174756d001640a0605a605c00515330284901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290016409c8158dd59816000981618141baa3301d01223375e605860526ea8c0b0c0a4dd500080119ba548008cc0a530011e581cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd004bd70452820488a50409102140a06eb40060408158c0a00050261bad001302700280ea0503025001408c6eb4004c09000a0348128c0880050201bad001302100280ba044301f001407460366ea800602a80c202b01580ac055020192cc004c03cc068dd5000c4c078c06cdd5000c54cc065241f265787065637420496e6c696e65446174756d28646174756d29203d0a202020206d7573745f66696e64280a202020202020696e707574732c0a202020202020666e28696e70757429207b0a2020202020202020657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730a0a202020202020202061735f646174612861737365747329203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290a2020202020207d2c0a20202020292e6f75747075742e646174756d00164060602260346ea8c040c068dd5198078009192cc0040062a66034920140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c60400026e98cc078cdd826011e581c69a568dd97fcadb8f511d1898dcc4bfa2f92cd077f002d56fed09a82004c0103a14001004bd6f7b630203a3756602260366ea8c044c06cdd5000980c9baa008180c800980c00088a4d15330054911856616c696461746f722072657475726e65642066616c7365001365640101";
+            pub const HASH: &'static str = "9f5b17dfaf62efa0fc0f7205947004aed9e35036aaa75c82d1e230bf";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod council_two_stage_upgrade {
+        use super::super::*;
+        // Validator: permissioned.council_two_stage_upgrade.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "permissioned.council_two_stage_upgrade.else";
+            pub const COMPILED_CODE: &'static str = "591f5d01010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a660049214665787065637420557067726164655374617465207b206c6f6769632c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012494565787065637420557067726164655374617465207b20617574682c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012495b65787065637420557067726164655374617465207b206d697469676174696f6e5f6c6f6769633a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012495a65787065637420557067726164655374617465207b206d697469676174696f6e5f617574683a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012496d65787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c202e2e207d3a20557067726164655374617465203d0a202020207370656e64696e675f646174756d00168a998012499a65787065637420557067726164655374617465207b0a202020206d697469676174696f6e5f6c6f6769633a206d61696e5f6d697469676174696f6e5f6c6f6769632c0a20202020617574683a206d61696e5f617574682c0a202020206d697469676174696f6e5f617574683a206d61696e5f6d697469676174696f6e5f617574682c0a202020202e2e0a20207d203d206d61696e5f646174756d00168a998012496265787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c20726f756e64207d203d0a202020207370656e64696e675f646174756d00168a998012493365787065637420496e6c696e65446174756d287370656e64696e675f646174756d29203d207370656e64696e675f646174756d00168a998012497f65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d2073746167696e675f646174756d00168a998012497c65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d206d61696e5f646174756d00168a9980124928657870656374206f75745f7061795f63726564203d3d2065787065637465645f7061795f6372656400168a998012495a6578706563742054776f537461676552656465656d6572207b207570646174655f6669656c642c2077686963685f7374616765207d3a2054776f537461676552656465656d6572203d0a202020202020202072656465656d6572001648888888888896600330013010375402d2232330010010032259800800c52845660026006602e00314a31330020023018001404480aa46e98cc04ccdd81ba90014c10aa14773746167696e6701004bd6f7b63048dd31980999bb03752002980107a1446d61696e01004bd6f7b6304dc3a4001371e911009ba54800a44646600200200644b30010018a9980924919657870656374205b782c202e2e726573745d203d206c69737400168992cc004c010006200313300300330190024048602e00280aa6e1d20389b874801122222222229800980f005488966002601260386ea800e264b300100180144c966002003003801c00e0071332259800800c016264b3001001803401a00d132598009813801c02200e8120dd6800c0190271812000a044375c00260460048120c08400501f180e9baa003800a0349112cc004cc0300048cdd7980e8008024566002601000514a31323300d00223375e603c002004600e6603e6ea40092f5c080d2294101a4c0740292222332232323298009bab3026302730270019813004cc088dd5002cdd618130024dd61813001cdd618130012444444b300130150048992cc004cdd79ba632330010013756605c01244b30010018a998152491d657870656374205b6974656d2c202e2e726573745d203d20706169727300168992cc004cdc79bae302c00100489bab302d00189980180198188012054302f00140b4980110a2446d61696e014773746167696e6701008acc004c8cc004004014896600200314a115980099baf302f302c3754605e002980127d8799f5820a70130b737698ecef4eb97616304e7c2203449dfa2b0329f0c3c5ee71c0728e001ff008a518998010011818000a05240b513259800801c54cc0a524127657870656374205b6d61696e2c202e2e726573745f6f7574707574735d203d206f7574707574730016899194c004dd59818000cc0c0c0c4006606200a9112cc004c05cc0bcdd500144c96600266ebcc0d0c0c4dd5181a003003c566002009153302f490138657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd7980f0041ba630350048acc0040060490248992cc00400604b13259800800c09a04d02681344cc89660020030288992cc004006053029814c0a626644b3001001815c4c96600200302c81640b20591332259800800c0ba264b3001001817c0be05f02f899912cc00400606313259800800c0ca0650328992cc004c11000e2b3001302b00a8acc004c0ac0122b3001302c0018acc004c0a0dc6806c56600260506e3401e2b30010118a9981f24923657870656374205b73746167696e672c202e2e5d203d20726573745f6f75747075747300168991919912cc004c0acc10cdd5000c4c96600266ebcc120c114dd5182400280dc56600200715330434913b657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc00400a07503a8992cc00400607713259800800c0f207903c81e44cc896600200303e8992cc00400607f03f81fc0fe26644b3001001820c4c966002003042821410a0851332259800800c112264b3001001822c11608b045899912cc00400608f13259800800c1220910488992cc004c16400e2b3001304000a8acc004c1000122b300130410018acc004cdd798218161ba60108acc004c0f4dc6806c566002607a6e3401e330013371e05891011c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51414914a082922941052452820a4824a0a4824a0a4824a0a4824a0ac375a003048416460ac00282a0dd7000982a80120ac305300141446eb8004c1480090531828000a09c375c002609e0048280c13400504b1bae001304c002413460940028240dd600140ea0748258c12400d04640dd042182398221baa0018a9982124995657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d2873746167696e675f646174756d292c0a202020202e2e0a20207d203d2073746167696e67001641046eacc114004c114c118004c114004c100dd51821808a0828a9981f24812e657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286175746829203d3d203238001640f5153303e4912f657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286c6f67696329203d3d203238001640f503340f503340f503340f503341046eb40060648220c10400503f1bae00130400024104607c00281e0dd7000981e801207c303b00140e46eb8004c0e800903b181c000a06c375c002606e00481c0c0d40050331bac0018124091036454cc0bd2401456578706563742065787065637465645f6d61696e5f6e66745f6964286f776e5f706f6c69637929203d3d2028206d61696e5f6e66745f6964207c3e2061735f646174612029001640b881920468170c0ccc0c0dd5001454cc0b92418f657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d286d61696e5f646174756d292c0a202020202e2e0a20207d203d206d61696e001640b43030001302b3754605c0068160c050cc0b0dd4800a5eb822a6605092016b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016409d1533028491326578706563742028206f776e5f746f6b656e73207c3e20746f5f70616972732029203d3d206d696e7465645f746f6b656e730016409c6eb8c0b0c0a4dd5005c4c966002600200b132323298009bab303000198181818800cc0c0c0b4dd518180012444b30013007302f375400313259800806c566002603a60606ea8036264b3001001811c4c96600200313259800800c096264b30010018acc004c0e400a26644b300130230018acc004c0dcdd5002c00a05081c22b3001300e0018acc004c0dcdd5002c00a05081c22b3001301e0018acc004c0dcdd5002c00a05081c22b30013370e9003000c566002606e6ea801600502840e102840d081a1034206813322598009811800c4c9660020030298992cc0040062b3001303d0028cc00400600902a407902a40e902a81540aa05481f0c0ec005039181b9baa0038acc004c038006264b3001001814c4c96600200313259800800c0ae264b300100181640b205902c8992cc004c10000e33001004803c0b502140b503d1bae0014100607a00281d8c0f400a05502a81540a903e181d800a0723037375400702840d081a04cc8966002015153303549133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc0040422a6606c92173657870656374205b0a20202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a20202020202020202e2e0a2020202020205d203d206f757470757473001689919192cc0040062a660729213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc0056600266ebcc0f8c0ecdd5181f001806456600266ebcdd3181f8009ba6004899baf303e303f0023374a90021981e9ba7598009813981d1baa0078992cc004cdd79ba6005006899192cc004cdd79820981f1baa304100200f8992cc0040062a6607a92143657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2073746167696e675f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304300100a8992cc004c09cc0fcdd50094566002604e607e6ea800626644b300100181d40ea264b300100181dc4c96600200303c81e40f20791332259800800c0fa264b300100181fc0fe07f03f899912cc00400608313259800800c10a08504282144cc89660020030448992cc00400608b045822c11626644b3001001823c4c9660020030488244122264b300130550038acc00660026076660a66ea401d2f5c1004817206a8992cc004c0f80062b3001012827413a264b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc16626644b300100182dc4c96600200305c82e4172264b300130650038998319ba900d330633752034660c66ea405ccc18cdd480a198319ba80014bd7041750621bad00182e20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09d04e415d1598009814800c56600202504d826c4c96600200304e8992cc00400609f04f827c13e26644b3001001828c4c966002003052829414a0a51332259800800c152264b300100182ac1560ab055899912cc0040060af13259800800c1620b105882c44cc896600200305a8992cc0040060b705b82dc4c96600260ca007133063375203a660c66ea4068cc18cdd4803998319ba901433063375000297ae082e20c4375a00305b419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009413609a82ba2b300130390018acc004c0f402e2b30010128264132264b3001001826c4c96600200304e827413a09d1332259800800c142264b3001001828c1460a3051899912cc0040060a713259800800c1520a905482a44cc89660020030568992cc0040060af05782bc15e26644b300100182cc4c96600200305a82d416a264b300130650038998319ba901d330633752014660c66ea405ccc18cdd480a198319ba80014bd70416d0621bad00182d20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09904c415d15330504911d657870656374206d697469676174696f6e5f6c6f676963203d3d2022220016413d159800981e802c56600202504b825c4c96600200304c8992cc00400609b04d826c13626644b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc4c96600260ca007133063375203a660c66ea4068cc18cdd480b998319ba900433063375000297ae082d20c4375a003059419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009412e09682ba2a660a092011c657870656374206d697469676174696f6e5f61757468203d3d2022220016413c827904f209e3050375403f153304f491406578706563742076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73290016413904941486eb400609082a8c1480050501bae00130510024148609e0028268dd70009827001209e304c00141286eb8004c12c00904c1824800a08e375c00260900048248c1180050441bac00181d40e9047182198201baa001304330403754025153303e49013165787065637420496e6c696e65446174756d2873746167696e675f646174756d29203d2073746167696e675f646174756d001640f503540f460846086005153303d4913f65787065637420282073746167696e675f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640f08200dd59820800c54cc0f12401326578706563742073746167696e675f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640ec608200260786ea8c0fcc100c0f0dd51981280a919baf3040303d3754002005153303a491346578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640e4607c60766ea801e2646644b30013375e6e9801c02626464b30013375e608660806ea8c10c008046264b30010018a9981fa493d657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d206d61696e5f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304500100b8992cc004c0a8dc6802c566002605260826ea80522b30013029304137540031332259800800c0ea07513259800800c0ee264b300100181e40f207903c899912cc00400607d13259800800c0fe07f03f81fc4cc89660020030418992cc004006085042821410a26644b300100182244c966002003045822c11608b1332259800800c11e264b3001001824412209113259800982b801c56600202304a82544c96600200304b8992cc00400609904c826413226644b300100182744c96600200304f827c13e09f1332259800800c146264b3001001829414a0a5052899912cc0040060a913259800800c1560ab05582ac4cc89660020030578992cc0040060b105882c44c96600260cc00713259800acc0066002609a660ca6ea405d2f5c1014820208e8a518cc004006b30013375e06298103d87c80008a45008802a0c0820208e41811332259800982880144cc19cdd4814198339ba901c330673752032660ce6ea4058cc19cdd41800809a5eb822b3001303c0028998339ba901f330673752038660ce6ea40a0cc19cdd480b198339ba830010134bd70456600260980051598009828006c4cc19cdd480f998339ba9028330673752032660ce6ea4058cc19cdd41800809a5eb822a660c6920122657870656374206d61696e5f6d697469676174696f6e5f6c6f676963203d3d202222001641891598009828003c4cc19cdd480f998339ba901c330673752032660ce6ea40a0cc19cdd41800809a5eb822a660c6920121657870656374206d61696e5f6d697469676174696f6e5f61757468203d3d20222200164188831106220c4306237540626e0120028a99830a49ff657870656374206f72207b0a20202020202076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73292c0a2020202020202f2f205370656369616c206361736520666f72204d697469676174696f6e417574680a2020202020206966207570646174655f6669656c64203d3d204d697469676174696f6e41757468207b0a2020202020202020656d7074790a2020202020207d20656c7365207b0a20202020202020206d61696e5f6d697469676174696f6e5f617574680a2020202020207d0a20202020202020207c3e2076616c69646174655f72756e6e696e67286d2561696e5f617574685f637265642c205f2c207769746864726177616c73292c0a202020207d001641806098660c86ea401d2f5c1059418c6eb40060b08330c18c0050611bae0013062002418c60c000282f0dd7000982f80120c0305d001416c6eb8004c17000905d182d000a0b0375c00260b200482d0c15c0050551bac011825412905841250541bad00182420ae305400141486eb8004c14c0090541828800a09e375c00260a00048288c13800504c1bae001304d002413860960028248dd700098250012096304800141186eb000607503a4124608a60846ea8004c114c108dd500a454cc1012412b65787065637420496e6c696e65446174756d286d61696e5f646174756d29203d206d61696e5f646174756d001640fd03740fd1533040490131657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286e65775f76616c29203d3d203238001640fc6088608a005153303f4901396578706563742028206d61696e5f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640f88210dd59821800c54cc0f924012f657870656374206d61696e5f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640f46086002607c6ea8c104c108c0f8dd51981380b919baf3042303f3754002007153303c491376578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640ec607e0026eb8c0fcc100004c0ecdd5003a0704bd70452820708a5040e114a31533039490178616e64207b0a20206f75745f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f637265642c0a20206f75745f6e66745f6964203d3d206e66745f69642c0a20206f75745f646174756d203d3d2065787065637465645f6f75747075745f646174756d2c0a7d203f2046616c73650014a081c103c1bab303d001303d00130383754607602081c8c0ec02903818118029811002981a1baa0013034375400702640d9026813409a04c81d0c0dc005035181b80140920490248122070303500140cc60626ea8036044817204502281140890361bae303330303754003153302e4914065787065637420536372697074286f776e5f6861736829206173207061795f63726564203d20616464726573732e7061796d656e745f63726564656e7469616c001640b43030001302b3754605c605e60566ea8cc0500148cdd7981798161baa001002302d302a375401916409c6e1d20024098302630260013025001302400130213022004301e375400245268a998072491856616c696461746f722072657475726e65642066616c7365001365640341";
+            pub const HASH: &'static str = "18b25c8a171745a297c9b8293a16b5cdbe3ebca5a7de38fb19e0a4bd";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod federated_ops_forever {
+        use super::super::*;
+        // Validator: permissioned.federated_ops_forever.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "permissioned.federated_ops_forever.else";
+            pub const COMPILED_CODE: &'static str = "5906e401010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492129657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a998012493c657870656374204d756c7469736967207b20746f74616c5f7369676e6572732c207369676e657273207d3a204d756c7469736967203d20646174756d00168a9980124949657870656374205b6c6f6769632c206d697469676174696f6e5f6c6f6769632c202e2e5d203d206d61696e5f7374617465207c3e206275696c74696e2e756e5f6c6973745f646174610016488896600330013008375401d2232330010010032259800800c01e264b300130040018800c4cc00c00cc04400900a1807800a01a911919800800801912cc00400629422b30013003300f0018a518998010011808000a01240352300c300d0019ba548009222223298009808800cc044c048006602200c9112cc004cdc3a400060206ea800a2646644b30013259800800c03e01f13259800800c042264b3001001808c0460231332259800800c04e264b3001301e0028994c0040066eb003644b30013375e6e9c008012266e1c018006294101a20022225980080144cc0052f5c0900044ca600200930220039119802198111ba9325980099b87371a002901c44cdc52441048200581c000018a9980fa4812d657870656374206275696c74696e2e6c656e6774685f6f665f62797465617272617928706b6829203d3d203238001640786eb800c008cdc0000a40048020c08000901e405101b180e000a034375a00260360050114070603200280b8dd6000c03e01e80d260026eb0c05c00e6eacc05cc060c06000a6eb0c05c009222598009919800800802112cc00400629422b30013375e603860326ea8c070005300127d8799f5820173af932888664afc4245101c8bc99c70a07855b1c8882546b6cfbfa6172dc0100ff008a51899801001180e800a02c406913259800800c052264b3001301d0028992cc004cdc7a4500375c603200515980099b87480080062646464b30010018a9980da48133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba63021001374c6603e66ec0dd4805260103a14001004bd6f7b63044c96600266e1d2004301d375400313021301e3754003153301c49012165787065637420496e6c696e65446174756d28646174756d29203d20646174756d0016406c60406042005153301b4901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290016406880f0dd5980f800980f980d9baa3301200523375e603e60386ea8c07cc070dd500080118071980e1ba90074bd70405901740590171bad301900180aa034301b00140646eacc05cc8cc00400400c89660020030148992cc004cdc79bae30190010078800c4cc00c00cc078009017180e000a0348a9980aa4816b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a2020202029001640508cc004cdc7800a451c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51404514a08088c058c058004dd7180a98091baa0033011375400313322325980099b8748010c04cdd5000c4c96600200300e8992cc00400601f1980098051980c180c80125eb826eb8c0640066eacc064c068c068c068c068c0680152225980099807800919baf30190010048acc004cdc7801245008a5189919808001119baf301a001002300d3301b375200497ae0405914a080b080b8c0640050161bac301730143754003153301249012b65787065637420496e6c696e65446174756d286d61696e5f737461746529203d206d61696e5f737461746500164044602c602e602e60266ea8c020c04cdd5198051bac301600223259800800c54cc04d240140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c603200200680b0dd59804980a1baa300930143754002602a60226ea8004dd31980999bb04c011e581c8320a8f48967bcb4a19922699a243b65862afad3bb6958bfc7a827f2004c0107a1446d61696e01004bd6f7b630201c1808802a293454cc0192411856616c696461746f722072657475726e65642066616c7365001365640141";
+            pub const HASH: &'static str = "77f887278ea42cfa23549e22eacb0a89f5dd23ed415f3f51d66b88fd";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod federated_ops_logic {
+        use super::super::*;
+        // Validator: permissioned.federated_ops_logic.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "permissioned.federated_ops_logic.else";
+            pub const COMPILED_CODE: &'static str = "59096c01010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492121657870656374206d756c74697369673a204d756c7469736967203d20646174756d00168a998012493c657870656374204d756c7469736967207b20746f74616c5f7369676e6572732c207369676e657273207d3a204d756c7469736967203d20646174756d00168a99801249b2657870656374204d756c74697369675468726573686f6c64207b0a2020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a2020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a2020202020202020636f756e63696c5f6e756d657261746f722c0a2020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a2020202020207d203d207468726573686f6c645f646174756d001648896600330013007375401b2259800800c52201008992cc00400626eb8c03400a264b3001001899b8a375c601c0066eb8c03800a266e28cdc519b8a375c601c0066eb8c038008dd71807000998020021807800a018300e001402c601a002805246016601860180032300b300c001911919800800801912cc0040062a66012920119657870656374205b782c202e2e726573745d203d206c69737400168992cc004c010006200313300300330100024024601c00280626e1d2004488888a6002602200d30050059808003244530012222232598009805180a9baa0018992cc0040060270138992cc00400602913259800800c05602b015899912cc00400602f13259800981000144c8c8cc004004034896600200314a115980099b8f375c603c604400200714a3133002002302300140708100de4199119b8a33714911030083030037666ea0cdc199b803370400401666e00029200100a5980099b89002480ba266e2ccdc0241000400400315980099b89002483f80e266e2d20b0023371600400313371530014a337666ea000a91010199005e6000501b2036375a603e00a601c6eb0c07cc08001603080e8c07800501c1bad001301d00280aa03c301b00140646eb000602701340706032602c6ea80062a6602892012e65787065637420496e6c696e65446174756d28646174756d29203d20696e7075742e6f75747075742e646174756d0016404c6018602a6ea8c02cc054dd519805002919912cc00400600513259800800c00e266e3cdd7180c180e000803a034301c00140642940dd59806180b1baa300c3016375400330130039809980a001cc040dd5000a4444646530013758603200337566032603460340033758603200737586032004911119912cc004c04000600515980099b8748018006264b30013370e9001000c00e2b30013370e9000000c528c5901a2034301b3754603e604060386ea802a2c80c90190992cc0040062b30013370e9000180d1baa0018992cc00400602d13259800800c05e02f017899912cc00400603313259800800c06a03501a899912cc00400603913259800800c07603b01d899912cc00400603f13259800800c0820410208992cc004c0ac00e2b30019800acc005284403e201c812202148811c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df00805401d0174566003300159800a508807c403902440429111cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd00802400501744c966002003023811c4c9660020030248992cc00400604b025812c4cc89660020030278992cc004c0c400a26530010019bac01d912cc004cdd79ba7002004899b870060018a5040b48008889660020051330014bd702400113298008024c0d400e44660086606a6ea4c96600266e1cdc6800a40711337149101048200581c000018a9981924812d657870656374206275696c74696e2e6c656e6774685f6f665f62797465617272617928706b6829203d3d203238001640c46eb800c008cdc0000a40048020c0cc00903140a102e1817800a05a375a002605c00502540bc60580028150dd6000c08e0468168c8c8c9660020031533028490133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6302e001374c6605866ec130011e581c77f887278ea42cfa23549e22eacb0a89f5dd23ed415f3f51d66b88fd004c0103a14001004bd6f7b63044c966002603e60546ea80062605c60566ea80062a660529212165787065637420496e6c696e65446174756d28646174756d29203d20646174756d001640a0605a605c00515330284901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290016409c8158dd59816000981618141baa3301d01223375e605860526ea8c0b0c0a4dd500080119ba548008cc0a530011e581c77f887278ea42cfa23549e22eacb0a89f5dd23ed415f3f51d66b88fd004bd70452820488a50409102140a06eb40060408158c0a00050261bad001302700280ea0503025001408c6eb4004c09000a0348128c0880050201bad001302100280ba044301f001407460366ea800602a80c202b01580ac055020192cc004c03cc068dd5000c4c078c06cdd5000c54cc065241f265787065637420496e6c696e65446174756d28646174756d29203d0a202020206d7573745f66696e64280a202020202020696e707574732c0a202020202020666e28696e70757429207b0a2020202020202020657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730a0a202020202020202061735f646174612861737365747329203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290a2020202020207d2c0a20202020292e6f75747075742e646174756d00164060602260346ea8c040c068dd5198078009192cc0040062a66034920140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c60400026e98cc078cdd826011e581c69a568dd97fcadb8f511d1898dcc4bfa2f92cd077f002d56fed09a82004c0103a14001004bd6f7b630203a3756602260366ea8c044c06cdd5000980c9baa008180c800980c00088a4d15330054911856616c696461746f722072657475726e65642066616c7365001365640101";
+            pub const HASH: &'static str = "88df34fabba3dca26a72f6281eef1ff4dafb1b47903a37d0c0dbef06";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod federated_ops_two_stage_upgrade {
+        use super::super::*;
+        // Validator: permissioned.federated_ops_two_stage_upgrade.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "permissioned.federated_ops_two_stage_upgrade.else";
+            pub const COMPILED_CODE: &'static str = "591f5d01010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a660049214665787065637420557067726164655374617465207b206c6f6769632c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012494565787065637420557067726164655374617465207b20617574682c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012495b65787065637420557067726164655374617465207b206d697469676174696f6e5f6c6f6769633a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012495a65787065637420557067726164655374617465207b206d697469676174696f6e5f617574683a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012496d65787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c202e2e207d3a20557067726164655374617465203d0a202020207370656e64696e675f646174756d00168a998012499a65787065637420557067726164655374617465207b0a202020206d697469676174696f6e5f6c6f6769633a206d61696e5f6d697469676174696f6e5f6c6f6769632c0a20202020617574683a206d61696e5f617574682c0a202020206d697469676174696f6e5f617574683a206d61696e5f6d697469676174696f6e5f617574682c0a202020202e2e0a20207d203d206d61696e5f646174756d00168a998012496265787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c20726f756e64207d203d0a202020207370656e64696e675f646174756d00168a998012493365787065637420496e6c696e65446174756d287370656e64696e675f646174756d29203d207370656e64696e675f646174756d00168a998012497f65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d2073746167696e675f646174756d00168a998012497c65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d206d61696e5f646174756d00168a9980124928657870656374206f75745f7061795f63726564203d3d2065787065637465645f7061795f6372656400168a998012495a6578706563742054776f537461676552656465656d6572207b207570646174655f6669656c642c2077686963685f7374616765207d3a2054776f537461676552656465656d6572203d0a202020202020202072656465656d6572001648888888888896600330013010375402d2232330010010032259800800c52845660026006602e00314a31330020023018001404480aa46e98cc04ccdd81ba90014c10aa14773746167696e6701004bd6f7b63048dd31980999bb03752002980107a1446d61696e01004bd6f7b6304dc3a4001371e911009ba54800a44646600200200644b30010018a9980924919657870656374205b782c202e2e726573745d203d206c69737400168992cc004c010006200313300300330190024048602e00280aa6e1d20389b874801122222222229800980f005488966002601260386ea800e264b300100180144c966002003003801c00e0071332259800800c016264b3001001803401a00d132598009813801c02200e8120dd6800c0190271812000a044375c00260460048120c08400501f180e9baa003800a0349112cc004cc0300048cdd7980e8008024566002601000514a31323300d00223375e603c002004600e6603e6ea40092f5c080d2294101a4c0740292222332232323298009bab3026302730270019813004cc088dd5002cdd618130024dd61813001cdd618130012444444b300130150048992cc004cdd79ba632330010013756605c01244b30010018a998152491d657870656374205b6974656d2c202e2e726573745d203d20706169727300168992cc004cdc79bae302c00100489bab302d00189980180198188012054302f00140b4980110a2446d61696e014773746167696e6701008acc004c8cc004004014896600200314a115980099baf302f302c3754605e002980127d8799f5820173af932888664afc4245101c8bc99c70a07855b1c8882546b6cfbfa6172dc0100ff008a518998010011818000a05240b513259800801c54cc0a524127657870656374205b6d61696e2c202e2e726573745f6f7574707574735d203d206f7574707574730016899194c004dd59818000cc0c0c0c4006606200a9112cc004c05cc0bcdd500144c96600266ebcc0d0c0c4dd5181a003003c566002009153302f490138657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd7980f0041ba630350048acc0040060490248992cc00400604b13259800800c09a04d02681344cc89660020030288992cc004006053029814c0a626644b3001001815c4c96600200302c81640b20591332259800800c0ba264b3001001817c0be05f02f899912cc00400606313259800800c0ca0650328992cc004c11000e2b3001302b00a8acc004c0ac0122b3001302c0018acc004c0a0dc6806c56600260506e3401e2b30010118a9981f24923657870656374205b73746167696e672c202e2e5d203d20726573745f6f75747075747300168991919912cc004c0acc10cdd5000c4c96600266ebcc120c114dd5182400280dc56600200715330434913b657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc00400a07503a8992cc00400607713259800800c0f207903c81e44cc896600200303e8992cc00400607f03f81fc0fe26644b3001001820c4c966002003042821410a0851332259800800c112264b3001001822c11608b045899912cc00400608f13259800800c1220910488992cc004c16400e2b3001304000a8acc004c1000122b300130410018acc004cdd798218161ba60108acc004c0f4dc6806c566002607a6e3401e330013371e05891011c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51414914a082922941052452820a4824a0a4824a0a4824a0a4824a0ac375a003048416460ac00282a0dd7000982a80120ac305300141446eb8004c1480090531828000a09c375c002609e0048280c13400504b1bae001304c002413460940028240dd600140ea0748258c12400d04640dd042182398221baa0018a9982124995657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d2873746167696e675f646174756d292c0a202020202e2e0a20207d203d2073746167696e67001641046eacc114004c114c118004c114004c100dd51821808a0828a9981f24812e657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286175746829203d3d203238001640f5153303e4912f657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286c6f67696329203d3d203238001640f503340f503340f503340f503341046eb40060648220c10400503f1bae00130400024104607c00281e0dd7000981e801207c303b00140e46eb8004c0e800903b181c000a06c375c002606e00481c0c0d40050331bac0018124091036454cc0bd2401456578706563742065787065637465645f6d61696e5f6e66745f6964286f776e5f706f6c69637929203d3d2028206d61696e5f6e66745f6964207c3e2061735f646174612029001640b881920468170c0ccc0c0dd5001454cc0b92418f657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d286d61696e5f646174756d292c0a202020202e2e0a20207d203d206d61696e001640b43030001302b3754605c0068160c050cc0b0dd4800a5eb822a6605092016b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016409d1533028491326578706563742028206f776e5f746f6b656e73207c3e20746f5f70616972732029203d3d206d696e7465645f746f6b656e730016409c6eb8c0b0c0a4dd5005c4c966002600200b132323298009bab303000198181818800cc0c0c0b4dd518180012444b30013007302f375400313259800806c566002603a60606ea8036264b3001001811c4c96600200313259800800c096264b30010018acc004c0e400a26644b300130230018acc004c0dcdd5002c00a05081c22b3001300e0018acc004c0dcdd5002c00a05081c22b3001301e0018acc004c0dcdd5002c00a05081c22b30013370e9003000c566002606e6ea801600502840e102840d081a1034206813322598009811800c4c9660020030298992cc0040062b3001303d0028cc00400600902a407902a40e902a81540aa05481f0c0ec005039181b9baa0038acc004c038006264b3001001814c4c96600200313259800800c0ae264b300100181640b205902c8992cc004c10000e33001004803c0b502140b503d1bae0014100607a00281d8c0f400a05502a81540a903e181d800a0723037375400702840d081a04cc8966002015153303549133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc0040422a6606c92173657870656374205b0a20202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a20202020202020202e2e0a2020202020205d203d206f757470757473001689919192cc0040062a660729213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc0056600266ebcc0f8c0ecdd5181f001806456600266ebcdd3181f8009ba6004899baf303e303f0023374a90021981e9ba7598009813981d1baa0078992cc004cdd79ba6005006899192cc004cdd79820981f1baa304100200f8992cc0040062a6607a92143657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2073746167696e675f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304300100a8992cc004c09cc0fcdd50094566002604e607e6ea800626644b300100181d40ea264b300100181dc4c96600200303c81e40f20791332259800800c0fa264b300100181fc0fe07f03f899912cc00400608313259800800c10a08504282144cc89660020030448992cc00400608b045822c11626644b3001001823c4c9660020030488244122264b300130550038acc00660026076660a66ea401d2f5c1004817206a8992cc004c0f80062b3001012827413a264b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc16626644b300100182dc4c96600200305c82e4172264b300130650038998319ba900d330633752034660c66ea405ccc18cdd480a198319ba80014bd7041750621bad00182e20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09d04e415d1598009814800c56600202504d826c4c96600200304e8992cc00400609f04f827c13e26644b3001001828c4c966002003052829414a0a51332259800800c152264b300100182ac1560ab055899912cc0040060af13259800800c1620b105882c44cc896600200305a8992cc0040060b705b82dc4c96600260ca007133063375203a660c66ea4068cc18cdd4803998319ba901433063375000297ae082e20c4375a00305b419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009413609a82ba2b300130390018acc004c0f402e2b30010128264132264b3001001826c4c96600200304e827413a09d1332259800800c142264b3001001828c1460a3051899912cc0040060a713259800800c1520a905482a44cc89660020030568992cc0040060af05782bc15e26644b300100182cc4c96600200305a82d416a264b300130650038998319ba901d330633752014660c66ea405ccc18cdd480a198319ba80014bd70416d0621bad00182d20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09904c415d15330504911d657870656374206d697469676174696f6e5f6c6f676963203d3d2022220016413d159800981e802c56600202504b825c4c96600200304c8992cc00400609b04d826c13626644b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc4c96600260ca007133063375203a660c66ea4068cc18cdd480b998319ba900433063375000297ae082d20c4375a003059419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009412e09682ba2a660a092011c657870656374206d697469676174696f6e5f61757468203d3d2022220016413c827904f209e3050375403f153304f491406578706563742076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73290016413904941486eb400609082a8c1480050501bae00130510024148609e0028268dd70009827001209e304c00141286eb8004c12c00904c1824800a08e375c00260900048248c1180050441bac00181d40e9047182198201baa001304330403754025153303e49013165787065637420496e6c696e65446174756d2873746167696e675f646174756d29203d2073746167696e675f646174756d001640f503540f460846086005153303d4913f65787065637420282073746167696e675f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640f08200dd59820800c54cc0f12401326578706563742073746167696e675f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640ec608200260786ea8c0fcc100c0f0dd51981280a919baf3040303d3754002005153303a491346578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640e4607c60766ea801e2646644b30013375e6e9801c02626464b30013375e608660806ea8c10c008046264b30010018a9981fa493d657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d206d61696e5f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304500100b8992cc004c0a8dc6802c566002605260826ea80522b30013029304137540031332259800800c0ea07513259800800c0ee264b300100181e40f207903c899912cc00400607d13259800800c0fe07f03f81fc4cc89660020030418992cc004006085042821410a26644b300100182244c966002003045822c11608b1332259800800c11e264b3001001824412209113259800982b801c56600202304a82544c96600200304b8992cc00400609904c826413226644b300100182744c96600200304f827c13e09f1332259800800c146264b3001001829414a0a5052899912cc0040060a913259800800c1560ab05582ac4cc89660020030578992cc0040060b105882c44c96600260cc00713259800acc0066002609a660ca6ea405d2f5c1014820208e8a518cc004006b30013375e06298103d87c80008a45008802a0c0820208e41811332259800982880144cc19cdd4814198339ba901c330673752032660ce6ea4058cc19cdd41800809a5eb822b3001303c0028998339ba901f330673752038660ce6ea40a0cc19cdd480b198339ba830010134bd70456600260980051598009828006c4cc19cdd480f998339ba9028330673752032660ce6ea4058cc19cdd41800809a5eb822a660c6920122657870656374206d61696e5f6d697469676174696f6e5f6c6f676963203d3d202222001641891598009828003c4cc19cdd480f998339ba901c330673752032660ce6ea40a0cc19cdd41800809a5eb822a660c6920121657870656374206d61696e5f6d697469676174696f6e5f61757468203d3d20222200164188831106220c4306237540626e0120028a99830a49ff657870656374206f72207b0a20202020202076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73292c0a2020202020202f2f205370656369616c206361736520666f72204d697469676174696f6e417574680a2020202020206966207570646174655f6669656c64203d3d204d697469676174696f6e41757468207b0a2020202020202020656d7074790a2020202020207d20656c7365207b0a20202020202020206d61696e5f6d697469676174696f6e5f617574680a2020202020207d0a20202020202020207c3e2076616c69646174655f72756e6e696e67286d2561696e5f617574685f637265642c205f2c207769746864726177616c73292c0a202020207d001641806098660c86ea401d2f5c1059418c6eb40060b08330c18c0050611bae0013062002418c60c000282f0dd7000982f80120c0305d001416c6eb8004c17000905d182d000a0b0375c00260b200482d0c15c0050551bac011825412905841250541bad00182420ae305400141486eb8004c14c0090541828800a09e375c00260a00048288c13800504c1bae001304d002413860960028248dd700098250012096304800141186eb000607503a4124608a60846ea8004c114c108dd500a454cc1012412b65787065637420496e6c696e65446174756d286d61696e5f646174756d29203d206d61696e5f646174756d001640fd03740fd1533040490131657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286e65775f76616c29203d3d203238001640fc6088608a005153303f4901396578706563742028206d61696e5f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640f88210dd59821800c54cc0f924012f657870656374206d61696e5f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640f46086002607c6ea8c104c108c0f8dd51981380b919baf3042303f3754002007153303c491376578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640ec607e0026eb8c0fcc100004c0ecdd5003a0704bd70452820708a5040e114a31533039490178616e64207b0a20206f75745f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f637265642c0a20206f75745f6e66745f6964203d3d206e66745f69642c0a20206f75745f646174756d203d3d2065787065637465645f6f75747075745f646174756d2c0a7d203f2046616c73650014a081c103c1bab303d001303d00130383754607602081c8c0ec02903818118029811002981a1baa0013034375400702640d9026813409a04c81d0c0dc005035181b80140920490248122070303500140cc60626ea8036044817204502281140890361bae303330303754003153302e4914065787065637420536372697074286f776e5f6861736829206173207061795f63726564203d20616464726573732e7061796d656e745f63726564656e7469616c001640b43030001302b3754605c605e60566ea8cc0500148cdd7981798161baa001002302d302a375401916409c6e1d20024098302630260013025001302400130213022004301e375400245268a998072491856616c696461746f722072657475726e65642066616c7365001365640341";
+            pub const HASH: &'static str = "8320a8f48967bcb4a19922699a243b65862afad3bb6958bfc7a827f2";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod tech_auth_forever {
+        use super::super::*;
+        // Validator: permissioned.tech_auth_forever.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "permissioned.tech_auth_forever.else";
+            pub const COMPILED_CODE: &'static str = "5906e401010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492129657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a998012493c657870656374204d756c7469736967207b20746f74616c5f7369676e6572732c207369676e657273207d3a204d756c7469736967203d20646174756d00168a9980124949657870656374205b6c6f6769632c206d697469676174696f6e5f6c6f6769632c202e2e5d203d206d61696e5f7374617465207c3e206275696c74696e2e756e5f6c6973745f646174610016488896600330013008375401d2232330010010032259800800c01e264b300130040018800c4cc00c00cc04400900a1807800a01a911919800800801912cc00400629422b30013003300f0018a518998010011808000a01240352300c300d0019ba548009222223298009808800cc044c048006602200c9112cc004cdc3a400060206ea800a2646644b30013259800800c03e01f13259800800c042264b3001001808c0460231332259800800c04e264b3001301e0028994c0040066eb003644b30013375e6e9c008012266e1c018006294101a20022225980080144cc0052f5c0900044ca600200930220039119802198111ba9325980099b87371a002901c44cdc52441048200581c000018a9980fa4812d657870656374206275696c74696e2e6c656e6774685f6f665f62797465617272617928706b6829203d3d203238001640786eb800c008cdc0000a40048020c08000901e405101b180e000a034375a00260360050114070603200280b8dd6000c03e01e80d260026eb0c05c00e6eacc05cc060c06000a6eb0c05c009222598009919800800802112cc00400629422b30013375e603860326ea8c070005300127d8799f5820208453ab0a137c72bf76d59b8bc0720394774cb128fcbd3361cc8825be5975c401ff008a51899801001180e800a02c406913259800800c052264b3001301d0028992cc004cdc7a4500375c603200515980099b87480080062646464b30010018a9980da48133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba63021001374c6603e66ec0dd4805260103a14001004bd6f7b63044c96600266e1d2004301d375400313021301e3754003153301c49012165787065637420496e6c696e65446174756d28646174756d29203d20646174756d0016406c60406042005153301b4901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290016406880f0dd5980f800980f980d9baa3301200523375e603e60386ea8c07cc070dd500080118071980e1ba90074bd70405901740590171bad301900180aa034301b00140646eacc05cc8cc00400400c89660020030148992cc004cdc79bae30190010078800c4cc00c00cc078009017180e000a0348a9980aa4816b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a2020202029001640508cc004cdc7800a451c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51404514a08088c058c058004dd7180a98091baa0033011375400313322325980099b8748010c04cdd5000c4c96600200300e8992cc00400601f1980098051980c180c80125eb826eb8c0640066eacc064c068c068c068c068c0680152225980099807800919baf30190010048acc004cdc7801245008a5189919808001119baf301a001002300d3301b375200497ae0405914a080b080b8c0640050161bac301730143754003153301249012b65787065637420496e6c696e65446174756d286d61696e5f737461746529203d206d61696e5f737461746500164044602c602e602e60266ea8c020c04cdd5198051bac301600223259800800c54cc04d240140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c603200200680b0dd59804980a1baa300930143754002602a60226ea8004dd31980999bb04c011e581ca621abacbd6314a8189e81e06a519a5c61eddf77fc0fc1400a297555004c0107a1446d61696e01004bd6f7b630201c1808802a293454cc0192411856616c696461746f722072657475726e65642066616c7365001365640141";
+            pub const HASH: &'static str = "811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod tech_auth_logic {
+        use super::super::*;
+        // Validator: permissioned.tech_auth_logic.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "permissioned.tech_auth_logic.else";
+            pub const COMPILED_CODE: &'static str = "59096c01010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492121657870656374206d756c74697369673a204d756c7469736967203d20646174756d00168a998012493c657870656374204d756c7469736967207b20746f74616c5f7369676e6572732c207369676e657273207d3a204d756c7469736967203d20646174756d00168a99801249b2657870656374204d756c74697369675468726573686f6c64207b0a2020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a2020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a2020202020202020636f756e63696c5f6e756d657261746f722c0a2020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a2020202020207d203d207468726573686f6c645f646174756d001648896600330013007375401b2259800800c52201008992cc00400626eb8c03400a264b3001001899b8a375c601c0066eb8c03800a266e28cdc519b8a375c601c0066eb8c038008dd71807000998020021807800a018300e001402c601a002805246016601860180032300b300c001911919800800801912cc0040062a66012920119657870656374205b782c202e2e726573745d203d206c69737400168992cc004c010006200313300300330100024024601c00280626e1d2004488888a6002602200d30050059808003244530012222232598009805180a9baa0018992cc0040060270138992cc00400602913259800800c05602b015899912cc00400602f13259800981000144c8c8cc004004034896600200314a115980099b8f375c603c604400200714a3133002002302300140708100de4199119b8a33714911030083030037666ea0cdc199b803370400401666e00029200100a5980099b89002480ba266e2ccdc0241000400400315980099b89002483f80e266e2d20b0023371600400313371530014a337666ea000a91010199005e6000501b2036375a603e00a601c6eb0c07cc08001603080e8c07800501c1bad001301d00280aa03c301b00140646eb000602701340706032602c6ea80062a6602892012e65787065637420496e6c696e65446174756d28646174756d29203d20696e7075742e6f75747075742e646174756d0016404c6018602a6ea8c02cc054dd519805002919912cc00400600513259800800c00e266e3cdd7180c180e000803a034301c00140642940dd59806180b1baa300c3016375400330130039809980a001cc040dd5000a4444646530013758603200337566032603460340033758603200737586032004911119912cc004c04000600515980099b8748018006264b30013370e9001000c00e2b30013370e9000000c528c5901a2034301b3754603e604060386ea802a2c80c90190992cc0040062b30013370e9000180d1baa0018992cc00400602d13259800800c05e02f017899912cc00400603313259800800c06a03501a899912cc00400603913259800800c07603b01d899912cc00400603f13259800800c0820410208992cc004c0ac00e2b30019800acc00528c403e201c812202148811c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df00805401d0174566003300159800a508807c403902440429111cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd00802400501744c966002003023811c4c9660020030248992cc00400604b025812c4cc89660020030278992cc004c0c400a26530010019bac01d912cc004cdd79ba7002004899b870060018a5040b48008889660020051330014bd702400113298008024c0d400e44660086606a6ea4c96600266e1cdc6800a40711337149101048200581c000018a9981924812d657870656374206275696c74696e2e6c656e6774685f6f665f62797465617272617928706b6829203d3d203238001640c46eb800c008cdc0000a40048020c0cc00903140a102e1817800a05a375a002605c00502540bc60580028150dd6000c08e0468168c8c8c9660020031533028490133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6302e001374c6605866ec130011e581c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df004c0103a14001004bd6f7b63044c966002603e60546ea80062605c60566ea80062a660529212165787065637420496e6c696e65446174756d28646174756d29203d20646174756d001640a0605a605c00515330284901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290016409c8158dd59816000981618141baa3301d01223375e605860526ea8c0b0c0a4dd500080119ba548008cc0a530011e581c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df004bd70452820488a50409102140a06eb40060408158c0a00050261bad001302700280ea0503025001408c6eb4004c09000a0348128c0880050201bad001302100280ba044301f001407460366ea800602a80c202b01580ac055020192cc004c03cc068dd5000c4c078c06cdd5000c54cc065241f265787065637420496e6c696e65446174756d28646174756d29203d0a202020206d7573745f66696e64280a202020202020696e707574732c0a202020202020666e28696e70757429207b0a2020202020202020657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730a0a202020202020202061735f646174612861737365747329203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290a2020202020207d2c0a20202020292e6f75747075742e646174756d00164060602260346ea8c040c068dd5198078009192cc0040062a66034920140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c60400026e98cc078cdd826011e581c016a341832096fc49a6cbcad98eafeb32aa750fa35a31c94961ed463004c0103a14001004bd6f7b630203a3756602260366ea8c044c06cdd5000980c9baa008180c800980c00088a4d15330054911856616c696461746f722072657475726e65642066616c7365001365640101";
+            pub const HASH: &'static str = "19c1e63203674acb40ac709876a3dbe59a6d7d0bf953779f0ba01d32";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod tech_auth_two_stage_upgrade {
+        use super::super::*;
+        // Validator: permissioned.tech_auth_two_stage_upgrade.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "permissioned.tech_auth_two_stage_upgrade.else";
+            pub const COMPILED_CODE: &'static str = "591f5d01010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a660049214665787065637420557067726164655374617465207b206c6f6769632c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012494565787065637420557067726164655374617465207b20617574682c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012495b65787065637420557067726164655374617465207b206d697469676174696f6e5f6c6f6769633a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012495a65787065637420557067726164655374617465207b206d697469676174696f6e5f617574683a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012496d65787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c202e2e207d3a20557067726164655374617465203d0a202020207370656e64696e675f646174756d00168a998012499a65787065637420557067726164655374617465207b0a202020206d697469676174696f6e5f6c6f6769633a206d61696e5f6d697469676174696f6e5f6c6f6769632c0a20202020617574683a206d61696e5f617574682c0a202020206d697469676174696f6e5f617574683a206d61696e5f6d697469676174696f6e5f617574682c0a202020202e2e0a20207d203d206d61696e5f646174756d00168a998012496265787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c20726f756e64207d203d0a202020207370656e64696e675f646174756d00168a998012493365787065637420496e6c696e65446174756d287370656e64696e675f646174756d29203d207370656e64696e675f646174756d00168a998012497f65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d2073746167696e675f646174756d00168a998012497c65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d206d61696e5f646174756d00168a9980124928657870656374206f75745f7061795f63726564203d3d2065787065637465645f7061795f6372656400168a998012495a6578706563742054776f537461676552656465656d6572207b207570646174655f6669656c642c2077686963685f7374616765207d3a2054776f537461676552656465656d6572203d0a202020202020202072656465656d6572001648888888888896600330013010375402d2232330010010032259800800c52845660026006602e00314a31330020023018001404480aa46e98cc04ccdd81ba90014c10aa14773746167696e6701004bd6f7b63048dd31980999bb03752002980107a1446d61696e01004bd6f7b6304dc3a4001371e911009ba54800a44646600200200644b30010018a9980924919657870656374205b782c202e2e726573745d203d206c69737400168992cc004c010006200313300300330190024048602e00280aa6e1d20389b874801122222222229800980f005488966002601260386ea800e264b300100180144c966002003003801c00e0071332259800800c016264b3001001803401a00d132598009813801c02200e8120dd6800c0190271812000a044375c00260460048120c08400501f180e9baa003800a0349112cc004cc0300048cdd7980e8008024566002601000514a31323300d00223375e603c002004600e6603e6ea40092f5c080d2294101a4c0740292222332232323298009bab3026302730270019813004cc088dd5002cdd618130024dd61813001cdd618130012444444b300130150048992cc004cdd79ba632330010013756605c01244b30010018a998152491d657870656374205b6974656d2c202e2e726573745d203d20706169727300168992cc004cdc79bae302c00100489bab302d00189980180198188012054302f00140b4980110a2446d61696e014773746167696e6701008acc004c8cc004004014896600200314a115980099baf302f302c3754605e002980127d8799f5820208453ab0a137c72bf76d59b8bc0720394774cb128fcbd3361cc8825be5975c401ff008a518998010011818000a05240b513259800801c54cc0a524127657870656374205b6d61696e2c202e2e726573745f6f7574707574735d203d206f7574707574730016899194c004dd59818000cc0c0c0c4006606200a9112cc004c05cc0bcdd500144c96600266ebcc0d0c0c4dd5181a003003c566002009153302f490138657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd7980f0041ba630350048acc0040060490248992cc00400604b13259800800c09a04d02681344cc89660020030288992cc004006053029814c0a626644b3001001815c4c96600200302c81640b20591332259800800c0ba264b3001001817c0be05f02f899912cc00400606313259800800c0ca0650328992cc004c11000e2b3001302b00a8acc004c0ac0122b3001302c0018acc004c0a0dc6806c56600260506e3401e2b30010118a9981f24923657870656374205b73746167696e672c202e2e5d203d20726573745f6f75747075747300168991919912cc004c0acc10cdd5000c4c96600266ebcc120c114dd5182400280dc56600200715330434913b657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc00400a07503a8992cc00400607713259800800c0f207903c81e44cc896600200303e8992cc00400607f03f81fc0fe26644b3001001820c4c966002003042821410a0851332259800800c112264b3001001822c11608b045899912cc00400608f13259800800c1220910488992cc004c16400e2b3001304000a8acc004c1000122b300130410018acc004cdd798218161ba60108acc004c0f4dc6806c566002607a6e3401e330013371e05891011c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51414914a082922941052452820a4824a0a4824a0a4824a0a4824a0ac375a003048416460ac00282a0dd7000982a80120ac305300141446eb8004c1480090531828000a09c375c002609e0048280c13400504b1bae001304c002413460940028240dd600140ea0748258c12400d04640dd042182398221baa0018a9982124995657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d2873746167696e675f646174756d292c0a202020202e2e0a20207d203d2073746167696e67001641046eacc114004c114c118004c114004c100dd51821808a0828a9981f24812e657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286175746829203d3d203238001640f5153303e4912f657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286c6f67696329203d3d203238001640f503340f503340f503340f503341046eb40060648220c10400503f1bae00130400024104607c00281e0dd7000981e801207c303b00140e46eb8004c0e800903b181c000a06c375c002606e00481c0c0d40050331bac0018124091036454cc0bd2401456578706563742065787065637465645f6d61696e5f6e66745f6964286f776e5f706f6c69637929203d3d2028206d61696e5f6e66745f6964207c3e2061735f646174612029001640b881920468170c0ccc0c0dd5001454cc0b92418f657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d286d61696e5f646174756d292c0a202020202e2e0a20207d203d206d61696e001640b43030001302b3754605c0068160c050cc0b0dd4800a5eb822a6605092016b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016409d1533028491326578706563742028206f776e5f746f6b656e73207c3e20746f5f70616972732029203d3d206d696e7465645f746f6b656e730016409c6eb8c0b0c0a4dd5005c4c966002600200b132323298009bab303000198181818800cc0c0c0b4dd518180012444b30013007302f375400313259800806c566002603a60606ea8036264b3001001811c4c96600200313259800800c096264b30010018acc004c0e400a26644b300130230018acc004c0dcdd5002c00a05081c22b3001300e0018acc004c0dcdd5002c00a05081c22b3001301e0018acc004c0dcdd5002c00a05081c22b30013370e9003000c566002606e6ea801600502840e102840d081a1034206813322598009811800c4c9660020030298992cc0040062b3001303d0028cc00400600902a407902a40e902a81540aa05481f0c0ec005039181b9baa0038acc004c038006264b3001001814c4c96600200313259800800c0ae264b300100181640b205902c8992cc004c10000e33001004803c0b502140b503d1bae0014100607a00281d8c0f400a05502a81540a903e181d800a0723037375400702840d081a04cc8966002015153303549133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc0040422a6606c92173657870656374205b0a20202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a20202020202020202e2e0a2020202020205d203d206f757470757473001689919192cc0040062a660729213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc0056600266ebcc0f8c0ecdd5181f001806456600266ebcdd3181f8009ba6004899baf303e303f0023374a90021981e9ba7598009813981d1baa0078992cc004cdd79ba6005006899192cc004cdd79820981f1baa304100200f8992cc0040062a6607a92143657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2073746167696e675f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304300100a8992cc004c09cc0fcdd50094566002604e607e6ea800626644b300100181d40ea264b300100181dc4c96600200303c81e40f20791332259800800c0fa264b300100181fc0fe07f03f899912cc00400608313259800800c10a08504282144cc89660020030448992cc00400608b045822c11626644b3001001823c4c9660020030488244122264b300130550038acc00660026076660a66ea401d2f5c1004817206a8992cc004c0f80062b3001012827413a264b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc16626644b300100182dc4c96600200305c82e4172264b300130650038998319ba900d330633752034660c66ea405ccc18cdd480a198319ba80014bd7041750621bad00182e20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09d04e415d1598009814800c56600202504d826c4c96600200304e8992cc00400609f04f827c13e26644b3001001828c4c966002003052829414a0a51332259800800c152264b300100182ac1560ab055899912cc0040060af13259800800c1620b105882c44cc896600200305a8992cc0040060b705b82dc4c96600260ca007133063375203a660c66ea4068cc18cdd4803998319ba901433063375000297ae082e20c4375a00305b419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009413609a82ba2b300130390018acc004c0f402e2b30010128264132264b3001001826c4c96600200304e827413a09d1332259800800c142264b3001001828c1460a3051899912cc0040060a713259800800c1520a905482a44cc89660020030568992cc0040060af05782bc15e26644b300100182cc4c96600200305a82d416a264b300130650038998319ba901d330633752014660c66ea405ccc18cdd480a198319ba80014bd70416d0621bad00182d20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09904c415d15330504911d657870656374206d697469676174696f6e5f6c6f676963203d3d2022220016413d159800981e802c56600202504b825c4c96600200304c8992cc00400609b04d826c13626644b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc4c96600260ca007133063375203a660c66ea4068cc18cdd480b998319ba900433063375000297ae082d20c4375a003059419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009412e09682ba2a660a092011c657870656374206d697469676174696f6e5f61757468203d3d2022220016413c827904f209e3050375403f153304f491406578706563742076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73290016413904941486eb400609082a8c1480050501bae00130510024148609e0028268dd70009827001209e304c00141286eb8004c12c00904c1824800a08e375c00260900048248c1180050441bac00181d40e9047182198201baa001304330403754025153303e49013165787065637420496e6c696e65446174756d2873746167696e675f646174756d29203d2073746167696e675f646174756d001640f503540f460846086005153303d4913f65787065637420282073746167696e675f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640f08200dd59820800c54cc0f12401326578706563742073746167696e675f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640ec608200260786ea8c0fcc100c0f0dd51981280a919baf3040303d3754002005153303a491346578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640e4607c60766ea801e2646644b30013375e6e9801c02626464b30013375e608660806ea8c10c008046264b30010018a9981fa493d657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d206d61696e5f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304500100b8992cc004c0a8dc6802c566002605260826ea80522b30013029304137540031332259800800c0ea07513259800800c0ee264b300100181e40f207903c899912cc00400607d13259800800c0fe07f03f81fc4cc89660020030418992cc004006085042821410a26644b300100182244c966002003045822c11608b1332259800800c11e264b3001001824412209113259800982b801c56600202304a82544c96600200304b8992cc00400609904c826413226644b300100182744c96600200304f827c13e09f1332259800800c146264b3001001829414a0a5052899912cc0040060a913259800800c1560ab05582ac4cc89660020030578992cc0040060b105882c44c96600260cc00713259800acc0066002609a660ca6ea405d2f5c1014820208e8a518cc004006b30013375e06298103d87c80008a45008802a0c0820208e41811332259800982880144cc19cdd4814198339ba901c330673752032660ce6ea4058cc19cdd41800809a5eb822b3001303c0028998339ba901f330673752038660ce6ea40a0cc19cdd480b198339ba830010134bd70456600260980051598009828006c4cc19cdd480f998339ba9028330673752032660ce6ea4058cc19cdd41800809a5eb822a660c6920122657870656374206d61696e5f6d697469676174696f6e5f6c6f676963203d3d202222001641891598009828003c4cc19cdd480f998339ba901c330673752032660ce6ea40a0cc19cdd41800809a5eb822a660c6920121657870656374206d61696e5f6d697469676174696f6e5f61757468203d3d20222200164188831106220c4306237540626e0120028a99830a49ff657870656374206f72207b0a20202020202076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73292c0a2020202020202f2f205370656369616c206361736520666f72204d697469676174696f6e417574680a2020202020206966207570646174655f6669656c64203d3d204d697469676174696f6e41757468207b0a2020202020202020656d7074790a2020202020207d20656c7365207b0a20202020202020206d61696e5f6d697469676174696f6e5f617574680a2020202020207d0a20202020202020207c3e2076616c69646174655f72756e6e696e67286d2561696e5f617574685f637265642c205f2c207769746864726177616c73292c0a202020207d001641806098660c86ea401d2f5c1059418c6eb40060b08330c18c0050611bae0013062002418c60c000282f0dd7000982f80120c0305d001416c6eb8004c17000905d182d000a0b0375c00260b200482d0c15c0050551bac011825412905841250541bad00182420ae305400141486eb8004c14c0090541828800a09e375c00260a00048288c13800504c1bae001304d002413860960028248dd700098250012096304800141186eb000607503a4124608a60846ea8004c114c108dd500a454cc1012412b65787065637420496e6c696e65446174756d286d61696e5f646174756d29203d206d61696e5f646174756d001640fd03740fd1533040490131657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286e65775f76616c29203d3d203238001640fc6088608a005153303f4901396578706563742028206d61696e5f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640f88210dd59821800c54cc0f924012f657870656374206d61696e5f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640f46086002607c6ea8c104c108c0f8dd51981380b919baf3042303f3754002007153303c491376578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640ec607e0026eb8c0fcc100004c0ecdd5003a0704bd70452820708a5040e114a31533039490178616e64207b0a20206f75745f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f637265642c0a20206f75745f6e66745f6964203d3d206e66745f69642c0a20206f75745f646174756d203d3d2065787065637465645f6f75747075745f646174756d2c0a7d203f2046616c73650014a081c103c1bab303d001303d00130383754607602081c8c0ec02903818118029811002981a1baa0013034375400702640d9026813409a04c81d0c0dc005035181b80140920490248122070303500140cc60626ea8036044817204502281140890361bae303330303754003153302e4914065787065637420536372697074286f776e5f6861736829206173207061795f63726564203d20616464726573732e7061796d656e745f63726564656e7469616c001640b43030001302b3754605c605e60566ea8cc0500148cdd7981798161baa001002302d302a375401916409c6e1d20024098302630260013025001302400130213022004301e375400245268a998072491856616c696461746f722072657475726e65642066616c7365001365640341";
+            pub const HASH: &'static str = "a621abacbd6314a8189e81e06a519a5c61eddf77fc0fc1400a297555";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+}
+pub mod reserve {
+    use super::*;
+    pub mod reserve_forever {
+        use super::super::*;
+        // Validator: reserve.reserve_forever.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "reserve.reserve_forever.else";
+            pub const COMPILED_CODE: &'static str = "5905b401010029800aba2aba1aba0aab9faab9eaab9dab9cab9a48888888a60022a66004920129657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a9980124949657870656374205b6c6f6769632c206d697469676174696f6e5f6c6f6769632c202e2e5d203d206d61696e5f7374617465207c3e206275696c74696e2e756e5f6c6973745f6461746100164889660033001300737540192232330010010032259800800c01a264b300130040018800c4cc00c00cc0400090091807000a018911919800800801912cc00400629422b30013003300e0018a518998010011807800a01040312300b300c0019ba548009222223298009808000cc040c044006602000c9112cc004cdc3a4000601e6ea800a2646644b3001324a330013758602c0073756602c602e602e0053758602c0049112cc004c8cc004004010896600200314a115980099baf301b30183754603600298127d8799f5820a70130b737698ecef4eb97616304e7c2203449dfa2b0329f0c3c5ee71c0728e000ff008a51899801001180e000a02a406513259800800c04e264b3001301c0028992cc004cdc7a4500375c603000515980099b87480080062646464b30010018a9980d248133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba63020001374c6603c66ec0dd4805260103a14001004bd6f7b63044c96600266e1d2004301c375400313020301d3754003153301b49012165787065637420496e6c696e65446174756d28646174756d29203d20646174756d00164068603e6040005153301a4901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290016406480e8dd5980f000980f180d1baa3301200523375e603c60366ea8c078c06cdd500080118071980d9ba90074bd70405501640550161bad301800180a2032301a00140606eacc058c8cc00400400c89660020030138992cc004cdc79bae30180010078800c4cc00c00cc074009016180d800a0328a9980a24816b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016404c8cc004cdc7800a451c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51404114a08080c054c054004dd7180a18089baa0033010375400313322325980099b8748010c048dd5000c4c96600200300e8992cc00400601f1980098051980b980c00125eb826eb8c0600066eacc060c064c064c064c064c0640152225980099807800919baf30180010048acc004cdc7801245008a5189919808001119baf3019001002300d3301a375200497ae0405514a080a880b0c0600050151bac301630133754003153301149012b65787065637420496e6c696e65446174756d286d61696e5f737461746529203d206d61696e5f737461746500164040602a602c602c60246ea8c020c048dd5198051bac301500223259800800c54cc049240140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c603000200680a8dd5980498099baa300930133754002602860206ea8004dd31980919bb04c011e581c5a909facb082fec3d9ab7df65054a4a1a89b89927359b8df473104ab004c0107a1446d61696e01004bd6f7b630201a1808002a293454cc0152411856616c696461746f722072657475726e65642066616c7365001365640101";
+            pub const HASH: &'static str = "c05663706206be2eed6fb6bc99b40be9cd748f5a981f84f3b851f9b4";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod reserve_logic {
+        use super::super::*;
+        // Validator: reserve.reserve_logic.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "reserve.reserve_logic.else";
+            pub const COMPILED_CODE: &'static str = "59038e01010029800aba2aba1aba0aab9faab9eaab9dab9cab9a4888888896600264664530013007375400530063754003370e900048c02cc03000522225980099b874801000e264646644b30013375e600a601e6ea8008dd319198008009bac30130092259800800c52f5bded8c113233225980099baf301730143754602e60286ea800801a26530010019bab300b301537540070024004444b30010028800c4c8cc8a600200d301e0059919800800802912cc00400626603c66ec0dd48021ba60034bd6f7b63044ca60026eb8c0700066eacc07400660420049112cc004cdc8004001c4cc088cdd81ba9008374c00e00b15980099b8f0080038992cc004c060c080dd5000c4cc08ccdd81ba90093024302137540020051002407864b300159800800c528c52820448a6103d87a80008980b198119ba60014bd70203c329800800c022006800888966002005100189919914c00401a605400b32330010010052259800800c4cc0a8cdd81ba9004375000697adef6c608994c004dd71814000cdd69814800cc0b40092225980099b9000800389981719bb037520106ea001c0162b30013371e01000713259800981218161baa00189981799bb037520126060605a6ea800400a20048150c966002604800314c0103d87a800089811198179ba80014bd7020543370000e00513302e337606ea400cdd400119803003000a05240a4302b00140a48030dd718118009bad302400130260024091133022337606ea400cdd300119803003000a03a4074301f00140748030dd7180b8009bab3018001301a002406110014044601060246ea8004cc00c00cc058008c05000501244cdc41b8d3766600a601e6ea80092080208a50403064660020026eb0c044c048c04801c8966002003153300d490119657870656374205b782c202e2e726573745d203d206c69737400168992cc004cdd7980998081baa0010048800c4cc00c00cc05000900d1809000a0203374a900119807a6011e581cc05663706206be2eed6fb6bc99b40be9cd748f5a981f84f3b851f9b4004bd7018009980719ba548008cc0393011e581cc05663706206be2eed6fb6bc99b40be9cd748f5a981f84f3b851f9b4004bd7019807260103d87a80004bd701ba5480022b30013370e9003001c566002600460146ea8c038c03cc02cdd5002c528c590084590082010180400098041804980480098021baa0098a4d15330024911856616c696461746f722072657475726e65642066616c7365001365640041";
+            pub const HASH: &'static str = "10419d650fd62c41fe9d4aae47bbf61f7eaee821a5c62d9bf516d390";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod reserve_two_stage_upgrade {
+        use super::super::*;
+        // Validator: reserve.reserve_two_stage_upgrade.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "reserve.reserve_two_stage_upgrade.else";
+            pub const COMPILED_CODE: &'static str = "591f5d01010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a660049214665787065637420557067726164655374617465207b206c6f6769632c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012494565787065637420557067726164655374617465207b20617574682c20726f756e642c202e2e207d3a20557067726164655374617465203d2073746167696e675f646174756d00168a998012495b65787065637420557067726164655374617465207b206d697469676174696f6e5f6c6f6769633a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012495a65787065637420557067726164655374617465207b206d697469676174696f6e5f617574683a206e65775f6d697469676174696f6e2c20726f756e642c202e2e207d203d0a202020202020202073746167696e675f646174756d00168a998012496d65787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c202e2e207d3a20557067726164655374617465203d0a202020207370656e64696e675f646174756d00168a998012499a65787065637420557067726164655374617465207b0a202020206d697469676174696f6e5f6c6f6769633a206d61696e5f6d697469676174696f6e5f6c6f6769632c0a20202020617574683a206d61696e5f617574682c0a202020206d697469676174696f6e5f617574683a206d61696e5f6d697469676174696f6e5f617574682c0a202020202e2e0a20207d203d206d61696e5f646174756d00168a998012496265787065637420557067726164655374617465207b206c6f6769632c206d697469676174696f6e5f6c6f6769632c20617574682c206d697469676174696f6e5f617574682c20726f756e64207d203d0a202020207370656e64696e675f646174756d00168a998012493365787065637420496e6c696e65446174756d287370656e64696e675f646174756d29203d207370656e64696e675f646174756d00168a998012497f65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d2073746167696e675f646174756d00168a998012497c65787065637420557067726164655374617465207b0a202020206c6f6769632c0a202020206d697469676174696f6e5f6c6f6769633a2022222c0a20202020617574682c0a202020206d697469676174696f6e5f617574683a2022222c0a20202020726f756e643a20302c0a20207d203d206d61696e5f646174756d00168a9980124928657870656374206f75745f7061795f63726564203d3d2065787065637465645f7061795f6372656400168a998012495a6578706563742054776f537461676552656465656d6572207b207570646174655f6669656c642c2077686963685f7374616765207d3a2054776f537461676552656465656d6572203d0a202020202020202072656465656d6572001648888888888896600330013010375402d2232330010010032259800800c52845660026006602e00314a31330020023018001404480aa46e98cc04ccdd81ba90014c10aa14773746167696e6701004bd6f7b63048dd31980999bb03752002980107a1446d61696e01004bd6f7b6304dc3a4001371e911009ba54800a44646600200200644b30010018a9980924919657870656374205b782c202e2e726573745d203d206c69737400168992cc004c010006200313300300330190024048602e00280aa6e1d20389b874801122222222229800980f005488966002601260386ea800e264b300100180144c966002003003801c00e0071332259800800c016264b3001001803401a00d132598009813801c02200e8120dd6800c0190271812000a044375c00260460048120c08400501f180e9baa003800a0349112cc004cc0300048cdd7980e8008024566002601000514a31323300d00223375e603c002004600e6603e6ea40092f5c080d2294101a4c0740292222332232323298009bab3026302730270019813004cc088dd5002cdd618130024dd61813001cdd618130012444444b300130150048992cc004cdd79ba632330010013756605c01244b30010018a998152491d657870656374205b6974656d2c202e2e726573745d203d20706169727300168992cc004cdc79bae302c00100489bab302d00189980180198188012054302f00140b4980110a2446d61696e014773746167696e6701008acc004c8cc004004014896600200314a115980099baf302f302c3754605e002980127d8799f5820a70130b737698ecef4eb97616304e7c2203449dfa2b0329f0c3c5ee71c0728e000ff008a518998010011818000a05240b513259800801c54cc0a524127657870656374205b6d61696e2c202e2e726573745f6f7574707574735d203d206f7574707574730016899194c004dd59818000cc0c0c0c4006606200a9112cc004c05cc0bcdd500144c96600266ebcc0d0c0c4dd5181a003003c566002009153302f490138657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd7980f0041ba630350048acc0040060490248992cc00400604b13259800800c09a04d02681344cc89660020030288992cc004006053029814c0a626644b3001001815c4c96600200302c81640b20591332259800800c0ba264b3001001817c0be05f02f899912cc00400606313259800800c0ca0650328992cc004c11000e2b3001302b00a8acc004c0ac0122b3001302c0018acc004c0a0dc6806c56600260506e3401e2b30010118a9981f24923657870656374205b73746167696e672c202e2e5d203d20726573745f6f75747075747300168991919912cc004c0acc10cdd5000c4c96600266ebcc120c114dd5182400280dc56600200715330434913b657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc00400a07503a8992cc00400607713259800800c0f207903c81e44cc896600200303e8992cc00400607f03f81fc0fe26644b3001001820c4c966002003042821410a0851332259800800c112264b3001001822c11608b045899912cc00400608f13259800800c1220910488992cc004c16400e2b3001304000a8acc004c1000122b300130410018acc004cdd798218161ba60108acc004c0f4dc6806c566002607a6e3401e330013371e05891011c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51414914a082922941052452820a4824a0a4824a0a4824a0a4824a0ac375a003048416460ac00282a0dd7000982a80120ac305300141446eb8004c1480090531828000a09c375c002609e0048280c13400504b1bae001304c002413460940028240dd600140ea0748258c12400d04640dd042182398221baa0018a9982124995657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d2873746167696e675f646174756d292c0a202020202e2e0a20207d203d2073746167696e67001641046eacc114004c114c118004c114004c100dd51821808a0828a9981f24812e657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286175746829203d3d203238001640f5153303e4912f657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286c6f67696329203d3d203238001640f503340f503340f503340f503341046eb40060648220c10400503f1bae00130400024104607c00281e0dd7000981e801207c303b00140e46eb8004c0e800903b181c000a06c375c002606e00481c0c0d40050331bac0018124091036454cc0bd2401456578706563742065787065637465645f6d61696e5f6e66745f6964286f776e5f706f6c69637929203d3d2028206d61696e5f6e66745f6964207c3e2061735f646174612029001640b881920468170c0ccc0c0dd5001454cc0b92418f657870656374204f7574707574207b0a20202020616464726573733a2041646472657373207b207061796d656e745f63726564656e7469616c3a206f75745f7061795f637265642c202e2e207d2c0a2020202076616c75652c0a20202020646174756d3a20496e6c696e65446174756d286d61696e5f646174756d292c0a202020202e2e0a20207d203d206d61696e001640b43030001302b3754605c0068160c050cc0b0dd4800a5eb822a6605092016b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016409d1533028491326578706563742028206f776e5f746f6b656e73207c3e20746f5f70616972732029203d3d206d696e7465645f746f6b656e730016409c6eb8c0b0c0a4dd5005c4c966002600200b132323298009bab303000198181818800cc0c0c0b4dd518180012444b30013007302f375400313259800806c566002603a60606ea8036264b3001001811c4c96600200313259800800c096264b30010018acc004c0e400a26644b300130230018acc004c0dcdd5002c00a05081c22b3001300e0018acc004c0dcdd5002c00a05081c22b3001301e0018acc004c0dcdd5002c00a05081c22b30013370e9003000c566002606e6ea801600502840e102840d081a1034206813322598009811800c4c9660020030298992cc0040062b3001303d0028cc00400600902a407902a40e902a81540aa05481f0c0ec005039181b9baa0038acc004c038006264b3001001814c4c96600200313259800800c0ae264b300100181640b205902c8992cc004c10000e33001004803c0b502140b503d1bae0014100607a00281d8c0f400a05502a81540a903e181d800a0723037375400702840d081a04cc8966002015153303549133657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc0040422a6606c92173657870656374205b0a20202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a20202020202020202e2e0a2020202020205d203d206f757470757473001689919192cc0040062a660729213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc0056600266ebcc0f8c0ecdd5181f001806456600266ebcdd3181f8009ba6004899baf303e303f0023374a90021981e9ba7598009813981d1baa0078992cc004cdd79ba6005006899192cc004cdd79820981f1baa304100200f8992cc0040062a6607a92143657870656374205b5f2c202e2e73746167696e675f6e66745f69645d203d2073746167696e675f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304300100a8992cc004c09cc0fcdd50094566002604e607e6ea800626644b300100181d40ea264b300100181dc4c96600200303c81e40f20791332259800800c0fa264b300100181fc0fe07f03f899912cc00400608313259800800c10a08504282144cc89660020030448992cc00400608b045822c11626644b3001001823c4c9660020030488244122264b300130550038acc00660026076660a66ea401d2f5c1004817206a8992cc004c0f80062b3001012827413a264b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc16626644b300100182dc4c96600200305c82e4172264b300130650038998319ba900d330633752034660c66ea405ccc18cdd480a198319ba80014bd7041750621bad00182e20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09d04e415d1598009814800c56600202504d826c4c96600200304e8992cc00400609f04f827c13e26644b3001001828c4c966002003052829414a0a51332259800800c152264b300100182ac1560ab055899912cc0040060af13259800800c1620b105882c44cc896600200305a8992cc0040060b705b82dc4c96600260ca007133063375203a660c66ea4068cc18cdd4803998319ba901433063375000297ae082e20c4375a00305b419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009413609a82ba2b300130390018acc004c0f402e2b30010128264132264b3001001826c4c96600200304e827413a09d1332259800800c142264b3001001828c1460a3051899912cc0040060a713259800800c1520a905482a44cc89660020030568992cc0040060af05782bc15e26644b300100182cc4c96600200305a82d416a264b300130650038998319ba901d330633752014660c66ea405ccc18cdd480a198319ba80014bd70416d0621bad00182d20ca306200141806eb8004c184009062182f800a0ba375c00260bc00482f8c17000505a1bae001305b002417060b200282b8dd7000982c00120b2305600141506eb004a09904c415d15330504911d657870656374206d697469676174696f6e5f6c6f676963203d3d2022220016413d159800981e802c56600202504b825c4c96600200304c8992cc00400609b04d826c13626644b3001001827c4c96600200305082841420a11332259800800c14a264b3001001829c14e0a7053899912cc0040060ab13259800800c15a0ad05682b44cc89660020030588992cc0040060b305982cc4c96600260ca007133063375203a660c66ea4068cc18cdd480b998319ba900433063375000297ae082d20c4375a003059419460c40028300dd7000983080120c4305f00141746eb8004c17800905f182e000a0b4375c00260b600482e0c1640050571bae0013058002416460ac00282a0dd6009412e09682ba2a660a092011c657870656374206d697469676174696f6e5f61757468203d3d2022220016413c827904f209e3050375403f153304f491406578706563742076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73290016413904941486eb400609082a8c1480050501bae00130510024148609e0028268dd70009827001209e304c00141286eb8004c12c00904c1824800a08e375c00260900048248c1180050441bac00181d40e9047182198201baa001304330403754025153303e49013165787065637420496e6c696e65446174756d2873746167696e675f646174756d29203d2073746167696e675f646174756d001640f503540f460846086005153303d4913f65787065637420282073746167696e675f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640f08200dd59820800c54cc0f12401326578706563742073746167696e675f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640ec608200260786ea8c0fcc100c0f0dd51981280a919baf3040303d3754002005153303a491346578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640e4607c60766ea801e2646644b30013375e6e9801c02626464b30013375e608660806ea8c10c008046264b30010018a9981fa493d657870656374205b5f2c202e2e6d61696e5f6e66745f69645d203d206d61696e5f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168acc004cdd79ba6304500100b8992cc004c0a8dc6802c566002605260826ea80522b30013029304137540031332259800800c0ea07513259800800c0ee264b300100181e40f207903c899912cc00400607d13259800800c0fe07f03f81fc4cc89660020030418992cc004006085042821410a26644b300100182244c966002003045822c11608b1332259800800c11e264b3001001824412209113259800982b801c56600202304a82544c96600200304b8992cc00400609904c826413226644b300100182744c96600200304f827c13e09f1332259800800c146264b3001001829414a0a5052899912cc0040060a913259800800c1560ab05582ac4cc89660020030578992cc0040060b105882c44c96600260cc00713259800acc0066002609a660ca6ea405d2f5c1014820208e8a518cc004006b30013375e06298103d87c80008a45008802a0c0820208e41811332259800982880144cc19cdd4814198339ba901c330673752032660ce6ea4058cc19cdd41800809a5eb822b3001303c0028998339ba901f330673752038660ce6ea40a0cc19cdd480b198339ba830010134bd70456600260980051598009828006c4cc19cdd480f998339ba9028330673752032660ce6ea4058cc19cdd41800809a5eb822a660c6920122657870656374206d61696e5f6d697469676174696f6e5f6c6f676963203d3d202222001641891598009828003c4cc19cdd480f998339ba901c330673752032660ce6ea40a0cc19cdd41800809a5eb822a660c6920121657870656374206d61696e5f6d697469676174696f6e5f61757468203d3d20222200164188831106220c4306237540626e0120028a99830a49ff657870656374206f72207b0a20202020202076616c69646174655f72756e6e696e6728617574685f637265642c206d697469676174696f6e5f617574682c207769746864726177616c73292c0a2020202020202f2f205370656369616c206361736520666f72204d697469676174696f6e417574680a2020202020206966207570646174655f6669656c64203d3d204d697469676174696f6e41757468207b0a2020202020202020656d7074790a2020202020207d20656c7365207b0a20202020202020206d61696e5f6d697469676174696f6e5f617574680a2020202020207d0a20202020202020207c3e2076616c69646174655f72756e6e696e67286d2561696e5f617574685f637265642c205f2c207769746864726177616c73292c0a202020207d001641806098660c86ea401d2f5c1059418c6eb40060b08330c18c0050611bae0013062002418c60c000282f0dd7000982f80120c0305d001416c6eb8004c17000905d182d000a0b0375c00260b200482d0c15c0050551bac011825412905841250541bad00182420ae305400141486eb8004c14c0090541828800a09e375c00260a00048288c13800504c1bae001304d002413860960028248dd700098250012096304800141186eb000607503a4124608a60846ea8004c114c108dd500a454cc1012412b65787065637420496e6c696e65446174756d286d61696e5f646174756d29203d206d61696e5f646174756d001640fd03740fd1533040490131657870656374206275696c74696e2e6c656e6774685f6f665f627974656172726179286e65775f76616c29203d3d203238001640fc6088608a005153303f4901396578706563742028206d61696e5f6e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f6d61696e5f6e66745f6964001640f88210dd59821800c54cc0f924012f657870656374206d61696e5f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f63726564001640f46086002607c6ea8c104c108c0f8dd51981380b919baf3042303f3754002007153303c491376578706563742028206e66745f6964207c3e2061735f646174612029203d3d2065787065637465645f73746167696e675f6e66745f6964001640ec607e0026eb8c0fcc100004c0ecdd5003a0704bd70452820708a5040e114a31533039490178616e64207b0a20206f75745f616464722e7061796d656e745f63726564656e7469616c203d3d207061795f637265642c0a20206f75745f6e66745f6964203d3d206e66745f69642c0a20206f75745f646174756d203d3d2065787065637465645f6f75747075745f646174756d2c0a7d203f2046616c73650014a081c103c1bab303d001303d00130383754607602081c8c0ec02903818118029811002981a1baa0013034375400702640d9026813409a04c81d0c0dc005035181b80140920490248122070303500140cc60626ea8036044817204502281140890361bae303330303754003153302e4914065787065637420536372697074286f776e5f6861736829206173207061795f63726564203d20616464726573732e7061796d656e745f63726564656e7469616c001640b43030001302b3754605c605e60566ea8cc0500148cdd7981798161baa001002302d302a375401916409c6e1d20024098302630260013025001302400130213022004301e375400245268a998072491856616c696461746f722072657475726e65642066616c7365001365640341";
+            pub const HASH: &'static str = "5a909facb082fec3d9ab7df65054a4a1a89b89927359b8df473104ab";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+}
+pub mod thresholds {
+    use super::*;
+    pub mod main_council_update_threshold {
+        use super::super::*;
+        // Validator: thresholds.main_council_update_threshold.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "thresholds.main_council_update_threshold.else";
+            pub const COMPILED_CODE: &'static str = "590fe301010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492121657870656374206d756c74697369673a204d756c7469736967203d20646174756d00168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a9980124929657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a99801249a7657870656374204d756c74697369675468726573686f6c64207b0a20202020746563686e6963616c5f617574685f6e756d657261746f722c0a20202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a20202020636f756e63696c5f6e756d657261746f722c0a20202020636f756e63696c5f64656e6f6d696e61746f722c0a20207d3a204d756c74697369675468726573686f6c64203d20646174756d00168a99801249bf657870656374204d756c74697369675468726573686f6c64207b0a2020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a2020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a2020202020202020636f756e63696c5f6e756d657261746f722c0a2020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a2020202020207d3a204d756c74697369675468726573686f6c64203d207265665f646174756d00168a998012499265787065637420496e6c696e65446174756d287265665f646174756d29203d0a20202020202020206765745f696e7075745f73746174655f62795f706f6c696379280a202020202020202020207265666572656e63655f696e707574732c0a20202020202020202020636f6e6669672e6d61696e5f676f765f7468726573686f6c645f686173682c0a20202020202020202900168a9980124933657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f7061697273001648888889660033001300b3754023370e9000488c8cc00400400c896600200300a8992cc004c0100062003133003003301400240346024002808244b30010018a45008992cc00400626eb8c04400a264b3001001899b8a375c60240066eb8c04800a266e28cdc519b8a375c60240066eb8c048008dd71809000998020021809800a0203012001403c602200280724601e602060200032300f30100019b87480126e1d200248888888a6002600a00b3016008980b180b980b8044966002003159800980418099baa0018992cc00400601d13259800800c03e01f00f899912cc00400602313259800800c04a025012899912cc00400602913259800800c05602b015899912cc00400602f13259800800c0620310188992cc004c09000e2b30013371001400f15980099b880040018acc004cdc42400001513371090000024528203a8a50407514a080ea0328108dd6800c0610241810800a03e375a00260400050154084603c00280e0dd6800980e801404901e180d800a032375a002603400500f406c603000280b0c050dd5000c035011403601b00d806a03248888c8c8ca60026eb0c0740066eacc074c078c07800660326ea80164444464b3001300f301f375400313259800800c07603b13259800800c07a264b300100180fc07e03f1332259800800c086264b3001302a0028991919800800806912cc00400629422b30013371e6eb8c0a0c0b000400e2946266004004605a002813102a1bc833223371466e29221030083030037666ea0cdc199b803370400401666e00029200100a5980099b89002480ba266e2ccdc0241000400400315980099b89002483f80e266e2d20b0023371600400313371530014a337666ea000a91010199005e60005025204a375a605200a60266eb0c0a4c0a80160448138c0a00050261bad001302700280fa0503025001408c6eb000603b01d4098604660406ea80062a6603c92012e65787065637420496e6c696e65446174756d28646174756d29203d20696e7075742e6f75747075742e646174756d001640746020603e6ea8c03cc07cdd519809002919912cc00400600513259800800c00e266e3cdd718111813000803a0483026001408c2940dd5980818101baa3010302037540033758603a0073758603a0049111112cc004c050012264b3001980099b8f00148811c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a5140791300b598009919800800802112cc00400629422b30013375e604c60466ea8c098005300127d8799f58208dcf5fe7e3a8ef3eba1d514dd4c70ec1c33c477b5c0e3ad785b9de85a6c9244801ff008a518998010011813800a040409113259800800c072264b300130270028992cc004cdc7a4500375c60460051598009809000c4c8c8c96600200301d8acc004cdd79ba6302b001374c6605266ec0dd4803a6103a14001004bd6f7b63044c966002602e604e6ea80062605660506ea80062a6604c9212165787065637420496e6c696e65446174756d28646174756d29203d20646174756d001640946054605600515330254901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d29001640908140dd59814800981498129baa3301800b23375e6052604c6ea8c0a4c098dd500080119ba548008cc098dd480225eb8203c810a03c8108dd69811800c0750241812800a04637566042646600200200e44b300100180f44c96600266e3cdd718118008024400626600600660500048108c098005024454cc07d24016b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016407914a080f0dd7181198101baa00b8acc004c0380122646464b300130113022375400313259800800c06a264b30013375e6e98cc09ccdd8181418129baa0034c103a14001004bd6f7b6301ba60018992cc0040062b300130153025375400313259800800c07a264b3001302c0028acc0040062b3001301c3027375400313259800800c086264b3001001811408a0451332259800800c092264b3001001812c09604b1332259800800c09e264b300100181440a20511332259800800c0aa264b3001001815c0ae05713259800981c001c566002b3001980080ac0669111c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df00805401d01746600202b019a4411cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd008024005017452820628acc00406a2a6606492173657870656374205b0a20202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a20202020202020202e2e0a2020202020205d203d206f757470757473001689919192cc0040062a6606a9213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc004c09cc0dcdd5000c56600266ebcc0ecc0e0dd5181d80200b456600266ebcdd300a1ba6303c00289811181d981c1baa0018a5040d514a081aa2a6606c92012965787065637420496e6c696e65446174756d286f75745f646174756d29203d206f75745f646174756d001640d46074607600481c0dd5981c800981c800981a1baa303701a40d515330324901ff65787065637420616e64207b0a20202020202020202020636865636b5f666f725f6d756c7469736967280a2020202020202020202020207265666572656e63655f696e707574732c0a2020202020202020202020206d696e742c0a202020202020202020202020636f6e6669672e746563686e6963616c5f617574686f726974795f666f72657665725f686173682c0a202020202020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a202020202020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a20202020202020202020292c0a20202020202020202020636865636b5f666f725fb96d756c7469736967280a2020202020202020202020207265666572656e63655f696e707574732c0a2020202020202020202020206d696e742c0a202020202020202020202020636f6e6669672e636f756e63696c5f666f72657665725f686173682c0a202020202020202020202020636f756e63696c5f6e756d657261746f722c0a202020202020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a20202020202020202020292c0a20202020202020207d001640c502c40d46eb400605681c0c0d40050331bad0013034002814206a303200140c06eb4004c0c400a04a8190c0bc00502d1bad001302e002811205e302c00140a860506ea8006040812a041020810408102d407d0291815000a0503026375400301d408d01d80ec07603a8158c966002602a604a6ea800626052604c6ea80062a660489201f265787065637420496e6c696e65446174756d28646174756d29203d0a202020206d7573745f66696e64280a202020202020696e707574732c0a202020202020666e28696e70757429207b0a2020202020202020657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730a0a202020202020202061735f646174612861737365747329203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290a2020202020207d2c0a20202020292e6f75747075742e646174756d0016408c602c604a6ea8c054c094dd51980c0031192cc0040062a6604a920140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c60560026e98cc0a4cdd826011e581c8234e676cd5419e650da8a97ca371747cc2d96017aef6c82acb1c9ce004c0103a14001004bd6f7b63020503756602c604c6ea8c058c098dd5000c54cc08d2401326578706563742061735f646174612865787065637465645f6e66745f696429203d3d2061735f64617461286e66745f6964290016408860500028128dd598131813801454cc0852414065787065637420536372697074286f776e5f6861736829206173207061795f63726564203d20616464726573732e7061796d656e745f63726564656e7469616c00164080604a60446ea8c094004c084dd51812181298109baa3301400323375e604a60446ea8004008c08cc080dd5005c5901d203a180e800980e000980b9baa0032293454cc0252411856616c696461746f722072657475726e65642066616c7365001365640201";
+            pub const HASH: &'static str = "69a568dd97fcadb8f511d1898dcc4bfa2f92cd077f002d56fed09a82";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod main_federated_ops_update_threshold {
+        use super::super::*;
+        // Validator: thresholds.main_federated_ops_update_threshold.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "thresholds.main_federated_ops_update_threshold.else";
+            pub const COMPILED_CODE: &'static str = "590fe301010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492121657870656374206d756c74697369673a204d756c7469736967203d20646174756d00168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a9980124929657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a99801249a7657870656374204d756c74697369675468726573686f6c64207b0a20202020746563686e6963616c5f617574685f6e756d657261746f722c0a20202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a20202020636f756e63696c5f6e756d657261746f722c0a20202020636f756e63696c5f64656e6f6d696e61746f722c0a20207d3a204d756c74697369675468726573686f6c64203d20646174756d00168a99801249bf657870656374204d756c74697369675468726573686f6c64207b0a2020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a2020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a2020202020202020636f756e63696c5f6e756d657261746f722c0a2020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a2020202020207d3a204d756c74697369675468726573686f6c64203d207265665f646174756d00168a998012499265787065637420496e6c696e65446174756d287265665f646174756d29203d0a20202020202020206765745f696e7075745f73746174655f62795f706f6c696379280a202020202020202020207265666572656e63655f696e707574732c0a20202020202020202020636f6e6669672e6d61696e5f676f765f7468726573686f6c645f686173682c0a20202020202020202900168a9980124933657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f7061697273001648888889660033001300b3754023370e9000488c8cc00400400c896600200300a8992cc004c0100062003133003003301400240346024002808244b30010018a45008992cc00400626eb8c04400a264b3001001899b8a375c60240066eb8c04800a266e28cdc519b8a375c60240066eb8c048008dd71809000998020021809800a0203012001403c602200280724601e602060200032300f30100019b87480126e1d200248888888a6002600a00b3016008980b180b980b8044966002003159800980418099baa0018992cc00400601d13259800800c03e01f00f899912cc00400602313259800800c04a025012899912cc00400602913259800800c05602b015899912cc00400602f13259800800c0620310188992cc004c09000e2b30013371001400f15980099b880040018acc004cdc42400001513371090000024528203a8a50407514a080ea0328108dd6800c0610241810800a03e375a00260400050154084603c00280e0dd6800980e801404901e180d800a032375a002603400500f406c603000280b0c050dd5000c035011403601b00d806a03248888c8c8ca60026eb0c0740066eacc074c078c07800660326ea80164444464b3001300f301f375400313259800800c07603b13259800800c07a264b300100180fc07e03f1332259800800c086264b3001302a0028991919800800806912cc00400629422b30013371e6eb8c0a0c0b000400e2946266004004605a002813102a1bc833223371466e29221030083030037666ea0cdc199b803370400401666e00029200100a5980099b89002480ba266e2ccdc0241000400400315980099b89002483f80e266e2d20b0023371600400313371530014a337666ea000a91010199005e60005025204a375a605200a60266eb0c0a4c0a80160448138c0a00050261bad001302700280fa0503025001408c6eb000603b01d4098604660406ea80062a6603c92012e65787065637420496e6c696e65446174756d28646174756d29203d20696e7075742e6f75747075742e646174756d001640746020603e6ea8c03cc07cdd519809002919912cc00400600513259800800c00e266e3cdd718111813000803a0483026001408c2940dd5980818101baa3010302037540033758603a0073758603a0049111112cc004c050012264b3001980099b8f00148811c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a5140791300b598009919800800802112cc00400629422b30013375e604c60466ea8c098005300127d8799f58208dcf5fe7e3a8ef3eba1d514dd4c70ec1c33c477b5c0e3ad785b9de85a6c9244801ff008a518998010011813800a040409113259800800c072264b300130270028992cc004cdc7a4500375c60460051598009809000c4c8c8c96600200301d8acc004cdd79ba6302b001374c6605266ec0dd4803a6103a14001004bd6f7b63044c966002602e604e6ea80062605660506ea80062a6604c9212165787065637420496e6c696e65446174756d28646174756d29203d20646174756d001640946054605600515330254901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d29001640908140dd59814800981498129baa3301800b23375e6052604c6ea8c0a4c098dd500080119ba548008cc098dd480225eb8203c810a03c8108dd69811800c0750241812800a04637566042646600200200e44b300100180f44c96600266e3cdd718118008024400626600600660500048108c098005024454cc07d24016b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016407914a080f0dd7181198101baa00b8acc004c0380122646464b300130113022375400313259800800c06a264b30013375e6e98cc09ccdd8181418129baa0034c103a14001004bd6f7b6301ba60018992cc0040062b300130153025375400313259800800c07a264b3001302c0028acc0040062b3001301c3027375400313259800800c086264b3001001811408a0451332259800800c092264b3001001812c09604b1332259800800c09e264b300100181440a20511332259800800c0aa264b3001001815c0ae05713259800981c001c566002b3001980080ac0669111c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df00805401d01746600202b019a4411cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd008024005017452820628acc00406a2a6606492173657870656374205b0a20202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a20202020202020202e2e0a2020202020205d203d206f757470757473001689919192cc0040062a6606a9213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc004c09cc0dcdd5000c56600266ebcc0ecc0e0dd5181d80200b456600266ebcdd300a1ba6303c00289811181d981c1baa0018a5040d514a081aa2a6606c92012965787065637420496e6c696e65446174756d286f75745f646174756d29203d206f75745f646174756d001640d46074607600481c0dd5981c800981c800981a1baa303701a40d515330324901ff65787065637420616e64207b0a20202020202020202020636865636b5f666f725f6d756c7469736967280a2020202020202020202020207265666572656e63655f696e707574732c0a2020202020202020202020206d696e742c0a202020202020202020202020636f6e6669672e746563686e6963616c5f617574686f726974795f666f72657665725f686173682c0a202020202020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a202020202020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a20202020202020202020292c0a20202020202020202020636865636b5f666f725fb96d756c7469736967280a2020202020202020202020207265666572656e63655f696e707574732c0a2020202020202020202020206d696e742c0a202020202020202020202020636f6e6669672e636f756e63696c5f666f72657665725f686173682c0a202020202020202020202020636f756e63696c5f6e756d657261746f722c0a202020202020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a20202020202020202020292c0a20202020202020207d001640c502c40d46eb400605681c0c0d40050331bad0013034002814206a303200140c06eb4004c0c400a04a8190c0bc00502d1bad001302e002811205e302c00140a860506ea8006040812a041020810408102d407d0291815000a0503026375400301d408d01d80ec07603a8158c966002602a604a6ea800626052604c6ea80062a660489201f265787065637420496e6c696e65446174756d28646174756d29203d0a202020206d7573745f66696e64280a202020202020696e707574732c0a202020202020666e28696e70757429207b0a2020202020202020657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730a0a202020202020202061735f646174612861737365747329203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290a2020202020207d2c0a20202020292e6f75747075742e646174756d0016408c602c604a6ea8c054c094dd51980c0031192cc0040062a6604a920140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c60560026e98cc0a4cdd826011e581c8234e676cd5419e650da8a97ca371747cc2d96017aef6c82acb1c9ce004c0103a14001004bd6f7b63020503756602c604c6ea8c058c098dd5000c54cc08d2401326578706563742061735f646174612865787065637465645f6e66745f696429203d3d2061735f64617461286e66745f6964290016408860500028128dd598131813801454cc0852414065787065637420536372697074286f776e5f6861736829206173207061795f63726564203d20616464726573732e7061796d656e745f63726564656e7469616c00164080604a60446ea8c094004c084dd51812181298109baa3301400323375e604a60446ea8004008c08cc080dd5005c5901d203a180e800980e000980b9baa0032293454cc0252411856616c696461746f722072657475726e65642066616c7365001365640201";
+            pub const HASH: &'static str = "69a568dd97fcadb8f511d1898dcc4bfa2f92cd077f002d56fed09a82";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod main_gov_threshold {
+        use super::super::*;
+        // Validator: thresholds.main_gov_threshold.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "thresholds.main_gov_threshold.else";
+            pub const COMPILED_CODE: &'static str = "590eb601010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492121657870656374206d756c74697369673a204d756c7469736967203d20646174756d00168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a9980124929657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a99801249c5657870656374204d756c74697369675468726573686f6c64207b0a20202020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a20202020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a20202020202020202020636f756e63696c5f6e756d657261746f722c0a20202020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a20202020202020207d3a204d756c74697369675468726573686f6c64203d20646174756d00168a99801249ce657870656374204d756c74697369675468726573686f6c64207b0a20202020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a20202020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a20202020202020202020636f756e63696c5f6e756d657261746f722c0a20202020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a20202020202020207d3a204d756c74697369675468726573686f6c64203d207370656e64696e675f646174756d00168a9980124933657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f706169727300164888889660033001300a37540212232330010010032259800800c026264b300130040018800c4cc00c00cc04c00900c1808800a01e9b874800a6e1d20049b8748001222223322323298009bac30160019bab30163017301700198091baa0039bac30160049bac30160024888896600260140071323259800800c566002601860326ea8006264b300100180a44c96600200301580ac05626644b300100180bc4c96600200301880c406226644b300100180d44c96600200301b80dc06e26644b300100180ec4c96600200301e80f407a264b3001302a0038acc006600266e3c0392211c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a51408d15980099b8800a007899b880040018a50408d14a0811a03e8138dd6800c07902a1813800a04a375a002604c00501b409c60480028110dd6800981180140610241810800a03e375a00260400050154084603c00280e0c068dd5000c04d017404e027013809a03e598009919800800802112cc00400629422b30013375e603c60366ea8c078005300127d8799f58208dcf5fe7e3a8ef3eba1d514dd4c70ec1c33c477b5c0e3ad785b9de85a6c9244801ff008a51899801001180f800a030407113259800800c052264b3001301f0028992cc004cdc7a4500375c60360051598009808000c4c8c8c9660020030168acc004cdd79ba63023001374c6604266ec0dd4803a6103a14001004bd6f7b63044c9660026026603e6ea80062604660406ea80062a6603c9212165787065637420496e6c696e65446174756d28646174756d29203d20646174756d0016407460446046005153301d4901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d29001640708100dd598108009810980e9baa3301200a23375e6042603c6ea8c084c078dd500080119ba548008cc078dd480225eb8202c80ca02c80c8dd6980d800c05501c180e800a03637566032646600200200c44b300100180b44c96600266e3cdd7180d80080244006266006006604000480c8c07800501c454cc05d24016b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a2020202029001640586eb8c06cc060dd500445660026018007132323322598009808180d9baa0018992cc0040060291325980099baf374c6604066ec0c084c078dd5001a6103a14001004bd6f7b6301ba60018992cc004c048c078dd5000c4c9660020031598009809180f9baa0018992cc00400603313259800800c06a03501a899912cc00400603913259800800c07603b01d899912cc00400603f13259800800c082041020899912cc00400604513259800800c08e0470238992cc004c0c000e2b30013233223259800cc0040660394891c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df00807402d00146600203301ca4411cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd0080440150014528205a2222232598009814181a1baa0018992cc0040060650328992cc00400606713259800800c0d2069034899912cc00400606d13259800981f80144c8c8cc004004034896600200314a115980099b8f375c607a608200200714a3133002002304200140ec81f8de4199119b8a337149101030083030037666ea0cdc199b803370400401666e00029200100a5980099b89002480ba266e2ccdc0241000400400315980099b89002483f80e266e2d20b0023371600400313371530014a337666ea000a91010199005e6000503a2074375a607c00a601c6eb0c0f8c0fc01606e81e0c0f400503b1bad001303c00281a207a303a00140e06eb000606503240ec6070606a6ea80062a6606692012e65787065637420496e6c696e65446174756d28646174756d29203d20696e7075742e6f75747075742e646174756d001640c8606e6070607060686ea8c018c0d0dd519814802919912cc00400600513259800800c00e266e3cdd7181b981d800803a072303b00140e02940dd59803981a9baa300730353754002600200246062606400244b30010018a45008992cc00400626eb8c0c800a264b3001001899b8a375c60660066eb8c0cc00a266e28cdc519b8a375c60660066eb8c0cc008dd7181980099802002181a000a062303300140c06064002817a2b30010198a9981524979657870656374205b0a202020202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a202020202020202020202e2e0a20202020202020205d203d206f757470757473001689919192cc0040062a6605a9213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc004c08cc0bcdd5000c56600266ebcc0ccc0c0dd5181980200ac56600266ebcdd30099ba630340028992cc0040062b300130233030375400313259800800c0ae264b300100181640b20591332259800800c0ba264b3001001817c0be05f1332259800800c0c6264b300100181940ca0651332259800800c0d2264b300100181ac0d606b132598009820801c56600266e2002801e2b30013371000800315980099b884800002a266e2120000048a5040e914a081d2294103a40d903e1bad00181aa082303e00140f06eb4004c0f400a06481f0c0ec0050391bad001303a002817a076303800140d86eb4004c0dc00a05881c0c0d400503318189baa001815205c81540aa05502a40d8606660606ea8006294102d4528205a8a998172492965787065637420496e6c696e65446174756d286f75745f646174756d29203d206f75745f646174756d001640b4606460660048180dd59818800981880098161baa302f01940b5153302a4901ff65787065637420616e64207b0a202020202020202020202020636865636b5f666f725f6d756c7469736967280a20202020202020202020202020207265666572656e63655f696e707574732c0a20202020202020202020202020206d696e742c0a2020202020202020202020202020636f6e6669672e746563686e6963616c5f617574686f726974795f666f72657665725f686173682c0a2020202020202020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a2020202020202020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a202020202020202020202020292c0a202020202020d7202020202020636865636b5f666f725f6d756c7469736967280a20202020202020202020202020207265666572656e63655f696e707574732c0a20202020202020202020202020206d696e742c0a2020202020202020202020202020636f6e6669672e636f756e63696c5f666f72657665725f686173682c0a2020202020202020202020202020636f756e63696c5f6e756d657261746f722c0a2020202020202020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a202020202020202020202020292c0a202020202020202020207d001640a502440b46eb40060468180c0b400502b1bad001302c002810205a302a00140a06eb4004c0a400a03a8150c09c0050251bad001302600280d204e3024001408860406ea800603080ea03101880c40610251811180f9baa0018a9980ea4813365787065637420496e6c696e65446174756d287370656e64696e675f646174756d29203d207370656e64696e675f646174756d0016407060426044009153301c4901326578706563742061735f646174612865787065637465645f6e66745f696429203d3d2061735f64617461286e66745f6964290016406c604200280f0dd5980f801454cc0692414065787065637420536372697074286f776e5f6861736829206173207061795f63726564203d20616464726573732e7061796d656e745f63726564656e7469616c00164064603c002603a60346ea8c074004c064dd5180e180e980c9baa3300e00323375e603a60346ea8004008c06cc060dd5004459015202a180b000980a80118079baa301200530123013301300545268a9980424811856616c696461746f722072657475726e65642066616c73650013656401c1";
+            pub const HASH: &'static str = "8234e676cd5419e650da8a97ca371747cc2d96017aef6c82acb1c9ce";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod main_tech_auth_update_threshold {
+        use super::super::*;
+        // Validator: thresholds.main_tech_auth_update_threshold.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "thresholds.main_tech_auth_update_threshold.else";
+            pub const COMPILED_CODE: &'static str = "590fe301010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492121657870656374206d756c74697369673a204d756c7469736967203d20646174756d00168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a9980124929657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a99801249a7657870656374204d756c74697369675468726573686f6c64207b0a20202020746563686e6963616c5f617574685f6e756d657261746f722c0a20202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a20202020636f756e63696c5f6e756d657261746f722c0a20202020636f756e63696c5f64656e6f6d696e61746f722c0a20207d3a204d756c74697369675468726573686f6c64203d20646174756d00168a99801249bf657870656374204d756c74697369675468726573686f6c64207b0a2020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a2020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a2020202020202020636f756e63696c5f6e756d657261746f722c0a2020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a2020202020207d3a204d756c74697369675468726573686f6c64203d207265665f646174756d00168a998012499265787065637420496e6c696e65446174756d287265665f646174756d29203d0a20202020202020206765745f696e7075745f73746174655f62795f706f6c696379280a202020202020202020207265666572656e63655f696e707574732c0a20202020202020202020636f6e6669672e6d61696e5f676f765f7468726573686f6c645f686173682c0a20202020202020202900168a9980124933657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f7061697273001648888889660033001300b3754023370e9000488c8cc00400400c896600200300a8992cc004c0100062003133003003301400240346024002808244b30010018a45008992cc00400626eb8c04400a264b3001001899b8a375c60240066eb8c04800a266e28cdc519b8a375c60240066eb8c048008dd71809000998020021809800a0203012001403c602200280724601e602060200032300f30100019b87480126e1d200248888888a6002600a00b3016008980b180b980b8044966002003159800980418099baa0018992cc00400601d13259800800c03e01f00f899912cc00400602313259800800c04a025012899912cc00400602913259800800c05602b015899912cc00400602f13259800800c0620310188992cc004c09000e2b30013371001400f15980099b880040018acc004cdc42400001513371090000024528203a8a50407514a080ea0328108dd6800c0610241810800a03e375a00260400050154084603c00280e0dd6800980e801404901e180d800a032375a002603400500f406c603000280b0c050dd5000c035011403601b00d806a03248888c8c8ca60026eb0c0740066eacc074c078c07800660326ea80164444464b3001300f301f375400313259800800c07603b13259800800c07a264b300100180fc07e03f1332259800800c086264b3001302a0028991919800800806912cc00400629422b30013371e6eb8c0a0c0b000400e2946266004004605a002813102a1bc833223371466e29221030083030037666ea0cdc199b803370400401666e00029200100a5980099b89002480ba266e2ccdc0241000400400315980099b89002483f80e266e2d20b0023371600400313371530014a337666ea000a91010199005e60005025204a375a605200a60266eb0c0a4c0a80160448138c0a00050261bad001302700280fa0503025001408c6eb000603b01d4098604660406ea80062a6603c92012e65787065637420496e6c696e65446174756d28646174756d29203d20696e7075742e6f75747075742e646174756d001640746020603e6ea8c03cc07cdd519809002919912cc00400600513259800800c00e266e3cdd718111813000803a0483026001408c2940dd5980818101baa3010302037540033758603a0073758603a0049111112cc004c050012264b3001980099b8f00148811c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a5140791300b598009919800800802112cc00400629422b30013375e604c60466ea8c098005300127d8799f58208dcf5fe7e3a8ef3eba1d514dd4c70ec1c33c477b5c0e3ad785b9de85a6c9244800ff008a518998010011813800a040409113259800800c072264b300130270028992cc004cdc7a4500375c60460051598009809000c4c8c8c96600200301d8acc004cdd79ba6302b001374c6605266ec0dd4803a6103a14001004bd6f7b63044c966002602e604e6ea80062605660506ea80062a6604c9212165787065637420496e6c696e65446174756d28646174756d29203d20646174756d001640946054605600515330254901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d29001640908140dd59814800981498129baa3301800b23375e6052604c6ea8c0a4c098dd500080119ba548008cc098dd480225eb8203c810a03c8108dd69811800c0750241812800a04637566042646600200200e44b300100180f44c96600266e3cdd718118008024400626600600660500048108c098005024454cc07d24016b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016407914a080f0dd7181198101baa00b8acc004c0380122646464b300130113022375400313259800800c06a264b30013375e6e98cc09ccdd8181418129baa0034c103a14001004bd6f7b6301ba60018992cc0040062b300130153025375400313259800800c07a264b3001302c0028acc0040062b3001301c3027375400313259800800c086264b3001001811408a0451332259800800c092264b3001001812c09604b1332259800800c09e264b300100181440a20511332259800800c0aa264b3001001815c0ae05713259800981c001c566002b3001980080ac0669111c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df00805401d01746600202b019a4411cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd008024005017452820628acc00406a2a6606492173657870656374205b0a20202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a20202020202020202e2e0a2020202020205d203d206f757470757473001689919192cc0040062a6606a9213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc004c09cc0dcdd5000c56600266ebcc0ecc0e0dd5181d80200b456600266ebcdd300a1ba6303c00289811181d981c1baa0018a5040d514a081aa2a6606c92012965787065637420496e6c696e65446174756d286f75745f646174756d29203d206f75745f646174756d001640d46074607600481c0dd5981c800981c800981a1baa303701a40d515330324901ff65787065637420616e64207b0a20202020202020202020636865636b5f666f725f6d756c7469736967280a2020202020202020202020207265666572656e63655f696e707574732c0a2020202020202020202020206d696e742c0a202020202020202020202020636f6e6669672e746563686e6963616c5f617574686f726974795f666f72657665725f686173682c0a202020202020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a202020202020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a20202020202020202020292c0a20202020202020202020636865636b5f666f725fb96d756c7469736967280a2020202020202020202020207265666572656e63655f696e707574732c0a2020202020202020202020206d696e742c0a202020202020202020202020636f6e6669672e636f756e63696c5f666f72657665725f686173682c0a202020202020202020202020636f756e63696c5f6e756d657261746f722c0a202020202020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a20202020202020202020292c0a20202020202020207d001640c502c40d46eb400605681c0c0d40050331bad0013034002814206a303200140c06eb4004c0c400a04a8190c0bc00502d1bad001302e002811205e302c00140a860506ea8006040812a041020810408102d407d0291815000a0503026375400301d408d01d80ec07603a8158c966002602a604a6ea800626052604c6ea80062a660489201f265787065637420496e6c696e65446174756d28646174756d29203d0a202020206d7573745f66696e64280a202020202020696e707574732c0a202020202020666e28696e70757429207b0a2020202020202020657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730a0a202020202020202061735f646174612861737365747329203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290a2020202020207d2c0a20202020292e6f75747075742e646174756d0016408c602c604a6ea8c054c094dd51980c0031192cc0040062a6604a920140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c60560026e98cc0a4cdd826011e581c8234e676cd5419e650da8a97ca371747cc2d96017aef6c82acb1c9ce004c0103a14001004bd6f7b63020503756602c604c6ea8c058c098dd5000c54cc08d2401326578706563742061735f646174612865787065637465645f6e66745f696429203d3d2061735f64617461286e66745f6964290016408860500028128dd598131813801454cc0852414065787065637420536372697074286f776e5f6861736829206173207061795f63726564203d20616464726573732e7061796d656e745f63726564656e7469616c00164080604a60446ea8c094004c084dd51812181298109baa3301400323375e604a60446ea8004008c08cc080dd5005c5901d203a180e800980e000980b9baa0032293454cc0252411856616c696461746f722072657475726e65642066616c7365001365640201";
+            pub const HASH: &'static str = "016a341832096fc49a6cbcad98eafeb32aa750fa35a31c94961ed463";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod staging_gov_threshold {
+        use super::super::*;
+        // Validator: thresholds.staging_gov_threshold.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "thresholds.staging_gov_threshold.else";
+            pub const COMPILED_CODE: &'static str = "590fe301010029800aba4aba2aba1aba0aab9faab9eaab9dab9cab9a488888888a60022a6600492121657870656374206d756c74697369673a204d756c7469736967203d20646174756d00168a9980124919657870656374205b782c202e2e726573745d203d206c69737400168a9980124929657870656374205b506169722822222c2031295d203d20746f6b656e73207c3e20746f5f706169727300168a99801249a7657870656374204d756c74697369675468726573686f6c64207b0a20202020746563686e6963616c5f617574685f6e756d657261746f722c0a20202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a20202020636f756e63696c5f6e756d657261746f722c0a20202020636f756e63696c5f64656e6f6d696e61746f722c0a20207d3a204d756c74697369675468726573686f6c64203d20646174756d00168a99801249bf657870656374204d756c74697369675468726573686f6c64207b0a2020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a2020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a2020202020202020636f756e63696c5f6e756d657261746f722c0a2020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a2020202020207d3a204d756c74697369675468726573686f6c64203d207265665f646174756d00168a998012499265787065637420496e6c696e65446174756d287265665f646174756d29203d0a20202020202020206765745f696e7075745f73746174655f62795f706f6c696379280a202020202020202020207265666572656e63655f696e707574732c0a20202020202020202020636f6e6669672e6d61696e5f676f765f7468726573686f6c645f686173682c0a20202020202020202900168a9980124933657870656374205b5f2c202e2e6e66745f69645d203d2076616c7565207c3e20746f5f64696374207c3e20746f5f7061697273001648888889660033001300b3754023370e9000488c8cc00400400c896600200300a8992cc004c0100062003133003003301400240346024002808244b30010018a45008992cc00400626eb8c04400a264b3001001899b8a375c60240066eb8c04800a266e28cdc519b8a375c60240066eb8c048008dd71809000998020021809800a0203012001403c602200280724601e602060200032300f30100019b87480126e1d200248888888a6002600a00b3016008980b180b980b8044966002003159800980418099baa0018992cc00400601d13259800800c03e01f00f899912cc00400602313259800800c04a025012899912cc00400602913259800800c05602b015899912cc00400602f13259800800c0620310188992cc004c09000e2b30013371001400f15980099b880040018acc004cdc42400001513371090000024528203a8a50407514a080ea0328108dd6800c0610241810800a03e375a00260400050154084603c00280e0dd6800980e801404901e180d800a032375a002603400500f406c603000280b0c050dd5000c035011403601b00d806a03248888c8c8ca60026eb0c0740066eacc074c078c07800660326ea80164444464b3001300f301f375400313259800800c07603b13259800800c07a264b300100180fc07e03f1332259800800c086264b3001302a0028991919800800806912cc00400629422b30013371e6eb8c0a0c0b000400e2946266004004605a002813102a1bc833223371466e29221030083030037666ea0cdc199b803370400401666e00029200100a5980099b89002480ba266e2ccdc0241000400400315980099b89002483f80e266e2d20b0023371600400313371530014a337666ea000a91010199005e60005025204a375a605200a60266eb0c0a4c0a80160448138c0a00050261bad001302700280fa0503025001408c6eb000603b01d4098604660406ea80062a6603c92012e65787065637420496e6c696e65446174756d28646174756d29203d20696e7075742e6f75747075742e646174756d001640746020603e6ea8c03cc07cdd519809002919912cc00400600513259800800c00e266e3cdd718111813000803a0483026001408c2940dd5980818101baa3010302037540033758603a0073758603a0049111112cc004c050012264b3001980099b8f00148811c3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d6900a50a5140791300b598009919800800802112cc00400629422b30013375e604c60466ea8c098005300127d8799f5820173af932888664afc4245101c8bc99c70a07855b1c8882546b6cfbfa6172dc0100ff008a518998010011813800a040409113259800800c072264b300130270028992cc004cdc7a4500375c60460051598009809000c4c8c8c96600200301d8acc004cdd79ba6302b001374c6605266ec0dd4803a6103a14001004bd6f7b63044c966002602e604e6ea80062605660506ea80062a6604c9212165787065637420496e6c696e65446174756d28646174756d29203d20646174756d001640946054605600515330254901406578706563742061735f64617461286e66745f696429203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d29001640908140dd59814800981498129baa3301800b23375e6052604c6ea8c0a4c098dd500080119ba548008cc098dd480225eb8203c810a03c8108dd69811800c0750241812800a04637566042646600200200e44b300100180f44c96600266e3cdd718118008024400626600600660500048108c098005024454cc07d24016b6578706563740a202020206c6973742e616e79280a202020202020696e707574732c0a202020202020666e28696e7075743a20496e70757429207b20696e7075742e6f75747075745f7265666572656e6365203d3d206f6e655f73686f745f726566207d2c0a20202020290016407914a080f0dd7181198101baa00b8acc004c0380122646464b300130113022375400313259800800c06a264b30013375e6e98cc09ccdd8181418129baa0034c103a14001004bd6f7b6301ba60018992cc0040062b300130153025375400313259800800c07a264b3001302c0028acc0040062b3001301c3027375400313259800800c086264b3001001811408a0451332259800800c092264b3001001812c09604b1332259800800c09e264b300100181440a20511332259800800c0aa264b3001001815c0ae05713259800981c001c566002b3001980080ac0669111c811935fb32e90975eff507256706aefd784f03f54d104ace5a82a2df00805401d01746600202b019a4411cfd29689d6fc5396ed8c8087ad28f7b615c1cb4f656831f6133442ebd008024005017452820628acc00406a2a6606492173657870656374205b0a20202020202020204f7574707574207b20616464726573733a206f75745f616464722c2076616c75653a206f75745f76616c75652c20646174756d3a206f75745f646174756d2c202e2e207d2c0a20202020202020202e2e0a2020202020205d203d206f757470757473001689919192cc0040062a6606a9213b657870656374205b5f2c202e2e6f75745f6e66745f69645d203d206f75745f76616c7565207c3e20746f5f64696374207c3e20746f5f706169727300168992cc004c09cc0dcdd5000c56600266ebcc0ecc0e0dd5181d80200b456600266ebcdd300a1ba6303c00289811181d981c1baa0018a5040d514a081aa2a6606c92012965787065637420496e6c696e65446174756d286f75745f646174756d29203d206f75745f646174756d001640d46074607600481c0dd5981c800981c800981a1baa303701a40d515330324901ff65787065637420616e64207b0a20202020202020202020636865636b5f666f725f6d756c7469736967280a2020202020202020202020207265666572656e63655f696e707574732c0a2020202020202020202020206d696e742c0a202020202020202020202020636f6e6669672e746563686e6963616c5f617574686f726974795f666f72657665725f686173682c0a202020202020202020202020746563686e6963616c5f617574685f6e756d657261746f722c0a202020202020202020202020746563686e6963616c5f617574685f64656e6f6d696e61746f722c0a20202020202020202020292c0a20202020202020202020636865636b5f666f725fb96d756c7469736967280a2020202020202020202020207265666572656e63655f696e707574732c0a2020202020202020202020206d696e742c0a202020202020202020202020636f6e6669672e636f756e63696c5f666f72657665725f686173682c0a202020202020202020202020636f756e63696c5f6e756d657261746f722c0a202020202020202020202020636f756e63696c5f64656e6f6d696e61746f722c0a20202020202020202020292c0a20202020202020207d001640c502c40d46eb400605681c0c0d40050331bad0013034002814206a303200140c06eb4004c0c400a04a8190c0bc00502d1bad001302e002811205e302c00140a860506ea8006040812a041020810408102d407d0291815000a0503026375400301d408d01d80ec07603a8158c966002602a604a6ea800626052604c6ea80062a660489201f265787065637420496e6c696e65446174756d28646174756d29203d0a202020206d7573745f66696e64280a202020202020696e707574732c0a202020202020666e28696e70757429207b0a2020202020202020657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730a0a202020202020202061735f646174612861737365747329203d3d2061735f64617461285b5061697228706f6c6963792c205b506169722822222c2031295d295d290a2020202020207d2c0a20202020292e6f75747075742e646174756d0016408c602c604a6ea8c054c094dd51980c0031192cc0040062a6604a920140657870656374205b5f2c202e2e6173736574735d203d20696e7075742e6f75747075742e76616c7565207c3e20746f5f64696374207c3e20746f5f70616972730016899baf374c60560026e98cc0a4cdd826011e581c8234e676cd5419e650da8a97ca371747cc2d96017aef6c82acb1c9ce004c0103a14001004bd6f7b63020503756602c604c6ea8c058c098dd5000c54cc08d2401326578706563742061735f646174612865787065637465645f6e66745f696429203d3d2061735f64617461286e66745f6964290016408860500028128dd598131813801454cc0852414065787065637420536372697074286f776e5f6861736829206173207061795f63726564203d20616464726573732e7061796d656e745f63726564656e7469616c00164080604a60446ea8c094004c084dd51812181298109baa3301400323375e604a60446ea8004008c08cc080dd5005c5901d203a180e800980e000980b9baa0032293454cc0252411856616c696461746f722072657475726e65642066616c7365001365640201";
+            pub const HASH: &'static str = "a79c38ac07491192634e5f88ef699ee8211444305f0763eb77ac2850";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+}
+pub mod upgradable {
+    use super::*;
+    pub mod types {
+        use super::super::*;
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct TwoStageRedeemer {
+            pub update_field: UpdateField,
+            pub which_stage: WhichStage,
+        }
+        impl ToPlutusData for TwoStageRedeemer {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                let mut fields = Vec::with_capacity(2);
+                let field_0_metadata = metadata.and_then(|meta| meta.project_field("update_field"));
+                fields.push(self.update_field.to_plutus_data_with(field_0_metadata.as_ref()));
+                let field_1_metadata = metadata.and_then(|meta| meta.project_field("which_stage"));
+                fields.push(self.which_stage.to_plutus_data_with(field_1_metadata.as_ref()));
+                let (tag, any_constructor) = encode_variant_index(0usize);
+                let wrapped = if metadata
+                    .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                {
+                    MaybeIndefArray::Indef(fields)
+                } else {
+                    MaybeIndefArray::Def(fields)
+                };
+                PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+            }
+        }
+        impl FromPlutusData for TwoStageRedeemer {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "TwoStageRedeemer")?;
+                if constr.constr_index() != 0u64 {
+                    return Err(PlutusDataError::UnexpectedTag { context: "TwoStageRedeemer", found: constr.constr_index() });
+                }
+                let fields_decoded = decode_constructor_fields(constr, "TwoStageRedeemer", 2)?;
+                let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                    .metadata
+                    .as_ref()
+                    .map_or(Vec::new(), |meta| meta.issues().to_vec());
+                let items = fields_decoded.value;
+                if items.len() < 2 {
+                    return Err(PlutusDataError::FieldCountMismatch { context: "TwoStageRedeemer", expected: 2, found: items.len() });
+                }
+                let value = TwoStageRedeemer {
+                    update_field: {
+                        let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("update_field")], decoded.metadata());
+                        decoded.value
+                    },
+                    which_stage: {
+                        let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                        extend_with_metadata(&mut issues, vec![PathSegment::Field("which_stage")], decoded.metadata());
+                        decoded.value
+                    },
+                };
+                Ok(Decoded::from_parts(value, issues))
+            }
+        }
+
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub enum UpdateField {
+            Logic,
+            Auth,
+            MitigationLogic,
+            MitigationAuth,
+        }
+        impl ToPlutusData for UpdateField {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                match self {
+                    Self::Logic => {
+                        let variant_metadata = metadata.and_then(|meta| meta.project_variant("Logic"));
+                        let (tag, any_constructor) = encode_variant_index(0);
+                        let wrapped = if variant_metadata
+                            .as_ref()
+                            .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                        {
+                            MaybeIndefArray::Indef(Vec::new())
+                        } else {
+                            MaybeIndefArray::Def(Vec::new())
+                        };
+                        PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+                    },
+                    Self::Auth => {
+                        let variant_metadata = metadata.and_then(|meta| meta.project_variant("Auth"));
+                        let (tag, any_constructor) = encode_variant_index(1);
+                        let wrapped = if variant_metadata
+                            .as_ref()
+                            .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                        {
+                            MaybeIndefArray::Indef(Vec::new())
+                        } else {
+                            MaybeIndefArray::Def(Vec::new())
+                        };
+                        PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+                    },
+                    Self::MitigationLogic => {
+                        let variant_metadata = metadata.and_then(|meta| meta.project_variant("MitigationLogic"));
+                        let (tag, any_constructor) = encode_variant_index(2);
+                        let wrapped = if variant_metadata
+                            .as_ref()
+                            .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                        {
+                            MaybeIndefArray::Indef(Vec::new())
+                        } else {
+                            MaybeIndefArray::Def(Vec::new())
+                        };
+                        PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+                    },
+                    Self::MitigationAuth => {
+                        let variant_metadata = metadata.and_then(|meta| meta.project_variant("MitigationAuth"));
+                        let (tag, any_constructor) = encode_variant_index(3);
+                        let wrapped = if variant_metadata
+                            .as_ref()
+                            .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                        {
+                            MaybeIndefArray::Indef(Vec::new())
+                        } else {
+                            MaybeIndefArray::Def(Vec::new())
+                        };
+                        PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+                    },
+                }
+            }
+        }
+        impl FromPlutusData for UpdateField {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "UpdateField")?;
+                match constr.constr_index() {
+                    0u64 => {
+                        let fields_decoded = decode_constructor_fields(constr, "UpdateField::Logic", 0)?;
+                        let issues: Vec<NonCanonicalIssue> = fields_decoded
+                            .metadata
+                            .as_ref()
+                            .map_or(Vec::new(), |meta| meta
+                                .issues()
+                                .iter()
+                                .cloned()
+                                .map(|issue| issue.with_prefix(PathSegment::Variant("Logic")))
+                                .collect());
+                        let _items = fields_decoded.value;
+                        Ok(Decoded::from_parts(Self::Logic, issues))
+                    }
+                    1u64 => {
+                        let fields_decoded = decode_constructor_fields(constr, "UpdateField::Auth", 0)?;
+                        let issues: Vec<NonCanonicalIssue> = fields_decoded
+                            .metadata
+                            .as_ref()
+                            .map_or(Vec::new(), |meta| meta
+                                .issues()
+                                .iter()
+                                .cloned()
+                                .map(|issue| issue.with_prefix(PathSegment::Variant("Auth")))
+                                .collect());
+                        let _items = fields_decoded.value;
+                        Ok(Decoded::from_parts(Self::Auth, issues))
+                    }
+                    2u64 => {
+                        let fields_decoded = decode_constructor_fields(constr, "UpdateField::MitigationLogic", 0)?;
+                        let issues: Vec<NonCanonicalIssue> = fields_decoded
+                            .metadata
+                            .as_ref()
+                            .map_or(Vec::new(), |meta| meta
+                                .issues()
+                                .iter()
+                                .cloned()
+                                .map(|issue| issue.with_prefix(PathSegment::Variant("MitigationLogic")))
+                                .collect());
+                        let _items = fields_decoded.value;
+                        Ok(Decoded::from_parts(Self::MitigationLogic, issues))
+                    }
+                    3u64 => {
+                        let fields_decoded = decode_constructor_fields(constr, "UpdateField::MitigationAuth", 0)?;
+                        let issues: Vec<NonCanonicalIssue> = fields_decoded
+                            .metadata
+                            .as_ref()
+                            .map_or(Vec::new(), |meta| meta
+                                .issues()
+                                .iter()
+                                .cloned()
+                                .map(|issue| issue.with_prefix(PathSegment::Variant("MitigationAuth")))
+                                .collect());
+                        let _items = fields_decoded.value;
+                        Ok(Decoded::from_parts(Self::MitigationAuth, issues))
+                    }
+                    found => Err(PlutusDataError::UnexpectedTag { context: "UpdateField", found }),
+                }
+            }
+        }
+
+        pub type UpgradeState = (super::super::aiken::crypto::ScriptHash, super::super::aiken::crypto::ScriptHash, super::super::aiken::crypto::ScriptHash, super::super::aiken::crypto::ScriptHash, Int);
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub enum WhichStage {
+            Main { output_reference: super::super::cardano::transaction::OutputReference },
+            Staging { output_reference: super::super::cardano::transaction::OutputReference, script_hash: super::super::aiken::crypto::ScriptHash },
+        }
+        impl ToPlutusData for WhichStage {
+            fn to_plutus_data_with(&self, metadata: Option<&CanonicalMetadata>) -> PlutusData {
+                match self {
+                    Self::Main { output_reference } => {
+                        let variant_metadata = metadata.and_then(|meta| meta.project_variant("Main"));
+                        let mut fields = Vec::with_capacity(1);
+                        let field_0_metadata = variant_metadata.as_ref().and_then(|meta| meta.project_field("output_reference"));
+                        fields.push(output_reference.to_plutus_data_with(field_0_metadata.as_ref()));
+                        let (tag, any_constructor) = encode_variant_index(0);
+                        let wrapped = if variant_metadata
+                            .as_ref()
+                            .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                        {
+                            MaybeIndefArray::Indef(fields)
+                        } else {
+                            MaybeIndefArray::Def(fields)
+                        };
+                        PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+                    },
+                    Self::Staging { output_reference, script_hash } => {
+                        let variant_metadata = metadata.and_then(|meta| meta.project_variant("Staging"));
+                        let mut fields = Vec::with_capacity(2);
+                        let field_0_metadata = variant_metadata.as_ref().and_then(|meta| meta.project_field("output_reference"));
+                        fields.push(output_reference.to_plutus_data_with(field_0_metadata.as_ref()));
+                        let field_1_metadata = variant_metadata.as_ref().and_then(|meta| meta.project_field("script_hash"));
+                        fields.push(script_hash.to_plutus_data_with(field_1_metadata.as_ref()));
+                        let (tag, any_constructor) = encode_variant_index(1);
+                        let wrapped = if variant_metadata
+                            .as_ref()
+                            .map_or(false, |meta| meta.contains_root_kind(NonCanonicalKind::IndefiniteConstructorFields))
+                        {
+                            MaybeIndefArray::Indef(fields)
+                        } else {
+                            MaybeIndefArray::Def(fields)
+                        };
+                        PlutusData::Constr(Constr { tag, any_constructor, fields: wrapped })
+                    },
+                }
+            }
+        }
+        impl FromPlutusData for WhichStage {
+            fn from_plutus_data(data: &PlutusData) -> Result<Decoded<Self>, PlutusDataError> {
+                let constr = expect_constr(data, "WhichStage")?;
+                match constr.constr_index() {
+                    0u64 => {
+                        let fields_decoded = decode_constructor_fields(constr, "WhichStage::Main", 1)?;
+                        let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                            .metadata
+                            .as_ref()
+                            .map_or(Vec::new(), |meta| meta
+                                .issues()
+                                .iter()
+                                .cloned()
+                                .map(|issue| issue.with_prefix(PathSegment::Variant("Main")))
+                                .collect());
+                        let items = fields_decoded.value;
+                        if items.len() < 1 {
+                            return Err(PlutusDataError::FieldCountMismatch { context: "WhichStage::Main", expected: 1, found: items.len() });
+                        }
+                        let value = Self::Main {
+                            output_reference: {
+                                let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                                extend_with_metadata(&mut issues, vec![PathSegment::Variant("Main"), PathSegment::Field("output_reference")], decoded.metadata());
+                                decoded.value
+                            },
+                        };
+                        Ok(Decoded::from_parts(value, issues))
+                    }
+                    1u64 => {
+                        let fields_decoded = decode_constructor_fields(constr, "WhichStage::Staging", 2)?;
+                        let mut issues: Vec<NonCanonicalIssue> = fields_decoded
+                            .metadata
+                            .as_ref()
+                            .map_or(Vec::new(), |meta| meta
+                                .issues()
+                                .iter()
+                                .cloned()
+                                .map(|issue| issue.with_prefix(PathSegment::Variant("Staging")))
+                                .collect());
+                        let items = fields_decoded.value;
+                        if items.len() < 2 {
+                            return Err(PlutusDataError::FieldCountMismatch { context: "WhichStage::Staging", expected: 2, found: items.len() });
+                        }
+                        let value = Self::Staging {
+                            output_reference: {
+                                let decoded = FromPlutusData::from_plutus_data(items[0])?;
+                                extend_with_metadata(&mut issues, vec![PathSegment::Variant("Staging"), PathSegment::Field("output_reference")], decoded.metadata());
+                                decoded.value
+                            },
+                            script_hash: {
+                                let decoded = FromPlutusData::from_plutus_data(items[1])?;
+                                extend_with_metadata(&mut issues, vec![PathSegment::Variant("Staging"), PathSegment::Field("script_hash")], decoded.metadata());
+                                decoded.value
+                            },
+                        };
+                        Ok(Decoded::from_parts(value, issues))
+                    }
+                    found => Err(PlutusDataError::UnexpectedTag { context: "WhichStage", found }),
+                }
+            }
+        }
+
+    }
+}
+pub mod validator_types {
+    use super::*;
+    pub mod z_committee_bridge_types {
+        use super::super::*;
+        // Validator: validator_types.z_committee_bridge_types.spend
+        pub type SpendDatum = super::super::bridge::types::BeefyConsensusState;
+        pub type SpendRedeemer = super::super::bridge::types::RelayChainProof;
+        pub struct SpendValidator;
+        impl SpendValidator {
+            pub const TITLE: &'static str = "validator_types.z_committee_bridge_types.spend";
+            pub const COMPILED_CODE: &'static str = "5904d501010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cc0240092225980099b8748008c024dd500144c8cc896600200d1332259800980098071baa0088992cc00400601913259800800c4c96600200300e8992cc004006264b300100180844cc89660020030128992cc004c06800a2b300130093016375400f13259800800c052264b30010018992cc00400602d13259800800c05e02f13259800980f801c566002601c60366ea8012264b300100180cc4c96600200301a80d44cc896600200301c8992cc00400603b01d80ec4cc896600200301f8992cc00400604102081044c9660026050007133018007225980080144cc0680308966002005159800980d98141baa0178992cc00400604d13259800800c09e04f027899912cc00400605313259800800c0aa05502a899912cc00400605913259800800c0b605b02d816c4cc896600200302f8992cc004006264b3001001818c4c96600200303281940ca0651332259800800c0d2264b300100181ac0d606b1332259800800c0de264b300100181c40e2071132598009820001c566002605e60786ea802a264b300100181d44c96600200303b81dc0ee26644b300100181ec4c96600200303e81f40fa26644b300100182044c966002003041820c106083132598009824801c5a0848238dd7000a092304600141146eb4004c11400a07c8230c10c0050421bad001304200281da086304000140fc607a6ea802a07281d207281f0dd6800c0e1040181e800a078375a002607800503540f4607400281c8dd7000981c8012074303700140d8606e00503081840c206081c0c0d40050341bae001303400240d460640028188dd6800981880140a90321817800a05c375a002605c00502740bc60580028158c0a4dd500bc09502644c966002003159800980e18149baa0018992cc00400604f13259800800c0a205102881444cc896600200302a8992cc00400605702b815c4cc896600200302d8992cc00400605d02e81740ba264b3001303600389805981b00640bd0341bae00140d860660028190dd6800981900140ad0331818000a05e375c002605e0048180c0b400502c18151baa001813204e813409a04d02640b860560048152264b30010018acc004c068c09cdd5000c4c9660020030258992cc00400604d026813409a26644b300100181444c966002003029814c0a6053132598009818801c4c020c0c40260548178dd7000a062302e00140b46eb8004c0b400902e1815800a05430283754003024409502481240920488160c0a400902840850261bad0018102050302500140906eb4004c09000a03a8128c0880050211bac001302100280d4069022180f800a03c301c3754009018406501840746eb000602f017407c603800280d8c07000a02b01580ac05501d180d000a0323017375400f01340510134060603000280b8c058004c05c005015180b001403e01f00f807a02e3014001404c602800500d806c03601a80a8c04800501118079baa008805a01822323300100100322330030013002002370e90004026013009804a022300d001300d300e001300a375400516401c300900130053754015149a2a660069211856616c696461746f722072657475726e65642066616c7365001365640082a6600492011a5f72656465656d65723a2052656c6179436861696e50726f6f66001601";
+            pub const HASH: &'static str = "da371ec308a8822c36eab101822cf41b0fab90dae08c0341d69d7d7b";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+        // Validator: validator_types.z_committee_bridge_types.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "validator_types.z_committee_bridge_types.else";
+            pub const COMPILED_CODE: &'static str = "5904d501010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cc0240092225980099b8748008c024dd500144c8cc896600200d1332259800980098071baa0088992cc00400601913259800800c4c96600200300e8992cc004006264b300100180844cc89660020030128992cc004c06800a2b300130093016375400f13259800800c052264b30010018992cc00400602d13259800800c05e02f13259800980f801c566002601c60366ea8012264b300100180cc4c96600200301a80d44cc896600200301c8992cc00400603b01d80ec4cc896600200301f8992cc00400604102081044c9660026050007133018007225980080144cc0680308966002005159800980d98141baa0178992cc00400604d13259800800c09e04f027899912cc00400605313259800800c0aa05502a899912cc00400605913259800800c0b605b02d816c4cc896600200302f8992cc004006264b3001001818c4c96600200303281940ca0651332259800800c0d2264b300100181ac0d606b1332259800800c0de264b300100181c40e2071132598009820001c566002605e60786ea802a264b300100181d44c96600200303b81dc0ee26644b300100181ec4c96600200303e81f40fa26644b300100182044c966002003041820c106083132598009824801c5a0848238dd7000a092304600141146eb4004c11400a07c8230c10c0050421bad001304200281da086304000140fc607a6ea802a07281d207281f0dd6800c0e1040181e800a078375a002607800503540f4607400281c8dd7000981c8012074303700140d8606e00503081840c206081c0c0d40050341bae001303400240d460640028188dd6800981880140a90321817800a05c375a002605c00502740bc60580028158c0a4dd500bc09502644c966002003159800980e18149baa0018992cc00400604f13259800800c0a205102881444cc896600200302a8992cc00400605702b815c4cc896600200302d8992cc00400605d02e81740ba264b3001303600389805981b00640bd0341bae00140d860660028190dd6800981900140ad0331818000a05e375c002605e0048180c0b400502c18151baa001813204e813409a04d02640b860560048152264b30010018acc004c068c09cdd5000c4c9660020030258992cc00400604d026813409a26644b300100181444c966002003029814c0a6053132598009818801c4c020c0c40260548178dd7000a062302e00140b46eb8004c0b400902e1815800a05430283754003024409502481240920488160c0a400902840850261bad0018102050302500140906eb4004c09000a03a8128c0880050211bac001302100280d4069022180f800a03c301c3754009018406501840746eb000602f017407c603800280d8c07000a02b01580ac05501d180d000a0323017375400f01340510134060603000280b8c058004c05c005015180b001403e01f00f807a02e3014001404c602800500d806c03601a80a8c04800501118079baa008805a01822323300100100322330030013002002370e90004026013009804a022300d001300d300e001300a375400516401c300900130053754015149a2a660069211856616c696461746f722072657475726e65642066616c7365001365640082a6600492011a5f72656465656d65723a2052656c6179436861696e50726f6f66001601";
+            pub const HASH: &'static str = "da371ec308a8822c36eab101822cf41b0fab90dae08c0341d69d7d7b";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod z_generates_dust {
+        use super::super::*;
+        // Validator: validator_types.z_generates_dust.spend
+        pub type SpendDatum = super::super::cnight_generates_dust::DustMappingDatum;
+        pub type SpendRedeemer = super::super::cnight_generates_dust::DustAction;
+        pub struct SpendValidator;
+        impl SpendValidator {
+            pub const TITLE: &'static str = "validator_types.z_generates_dust.spend";
+            pub const COMPILED_CODE: &'static str = "58e601010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cc0240092225980099b8748008c024dd500144c8cc896600200d1325980099b87480000062b3001300e375400f16805201e8acc004cdc3a400400315980098071baa0078b402900f402900b2016300c375400d009804c0260128088c034004c034c038004c028dd50014590070c024004c014dd500545268a99801a4811856616c696461746f722072657475726e65642066616c7365001365640082a660049201155f72656465656d65723a2044757374416374696f6e001601";
+            pub const HASH: &'static str = "46ca1de144d3411fa827d196f978b0c3686fa855f9f14f08cb02c331";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+        // Validator: validator_types.z_generates_dust.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "validator_types.z_generates_dust.else";
+            pub const COMPILED_CODE: &'static str = "58e601010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cc0240092225980099b8748008c024dd500144c8cc896600200d1325980099b87480000062b3001300e375400f16805201e8acc004cdc3a400400315980098071baa0078b402900f402900b2016300c375400d009804c0260128088c034004c034c038004c028dd50014590070c024004c014dd500545268a99801a4811856616c696461746f722072657475726e65642066616c7365001365640082a660049201155f72656465656d65723a2044757374416374696f6e001601";
+            pub const HASH: &'static str = "46ca1de144d3411fa827d196f978b0c3686fa855f9f14f08cb02c331";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod z_permissioned_types {
+        use super::super::*;
+        // Validator: validator_types.z_permissioned_types.spend
+        pub type SpendDatum = super::super::multisig::types::Multisig;
+        pub type SpendRedeemer = Vec<super::super::aiken::crypto::VerificationKeyHash>;
+        pub struct SpendValidator;
+        impl SpendValidator {
+            pub const TITLE: &'static str = "validator_types.z_permissioned_types.spend";
+            pub const COMPILED_CODE: &'static str = "58eb01010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cc0240092225980099b8748008c024dd500144c8cc896600200d009804c4c8cc004004dd6003912cc0040062d13259800800c03201900c80644c8cc010010c05000cdd7000a02830110014041009804a022300d001300d300e001300a375400516401c300900130053754015149a2a660069211856616c696461746f722072657475726e65642066616c7365001365640082a660049201245f72656465656d65723a204c6973743c566572696669636174696f6e4b6579486173683e001601";
+            pub const HASH: &'static str = "416f1bcb1e34617f9f2a9f9efb0b8a8b3175873533f8699269ea0478";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+        // Validator: validator_types.z_permissioned_types.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "validator_types.z_permissioned_types.else";
+            pub const COMPILED_CODE: &'static str = "58eb01010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cc0240092225980099b8748008c024dd500144c8cc896600200d009804c4c8cc004004dd6003912cc0040062d13259800800c03201900c80644c8cc010010c05000cdd7000a02830110014041009804a022300d001300d300e001300a375400516401c300900130053754015149a2a660069211856616c696461746f722072657475726e65642066616c7365001365640082a660049201245f72656465656d65723a204c6973743c566572696669636174696f6e4b6579486173683e001601";
+            pub const HASH: &'static str = "416f1bcb1e34617f9f2a9f9efb0b8a8b3175873533f8699269ea0478";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod z_threshold_types {
+        use super::super::*;
+        // Validator: validator_types.z_threshold_types.spend
+        pub type SpendDatum = super::super::multisig::types::MultisigThreshold;
+        pub type SpendRedeemer = Data;
+        pub struct SpendValidator;
+        impl SpendValidator {
+            pub const TITLE: &'static str = "validator_types.z_threshold_types.spend";
+            pub const COMPILED_CODE: &'static str = "587c01010029800aba2aba1aab9eaab9dab9cab9a48888896600264653001300700198039804000cc01c0092225980099b8748008c020dd500144c8cc898c02c004c02cc030004c024dd50014590060c01c004c010dd5003c5268a998012491856616c696461746f722072657475726e65642066616c7365001365640041";
+            pub const HASH: &'static str = "a51fdc4c8695b8f7d38e583f18c721af522afda403b8a14464212b18";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+        // Validator: validator_types.z_threshold_types.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "validator_types.z_threshold_types.else";
+            pub const COMPILED_CODE: &'static str = "587c01010029800aba2aba1aab9eaab9dab9cab9a48888896600264653001300700198039804000cc01c0092225980099b8748008c020dd500144c8cc898c02c004c02cc030004c024dd50014590060c01c004c010dd5003c5268a998012491856616c696461746f722072657475726e65642066616c7365001365640041";
+            pub const HASH: &'static str = "a51fdc4c8695b8f7d38e583f18c721af522afda403b8a14464212b18";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+    pub mod z_two_stage_upgrade_types {
+        use super::super::*;
+        // Validator: validator_types.z_two_stage_upgrade_types.spend
+        pub type SpendDatum = super::super::upgradable::types::UpgradeState;
+        pub type SpendRedeemer = super::super::upgradable::types::TwoStageRedeemer;
+        pub struct SpendValidator;
+        impl SpendValidator {
+            pub const TITLE: &'static str = "validator_types.z_two_stage_upgrade_types.spend";
+            pub const COMPILED_CODE: &'static str = "59027f01010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cdc3a400530090024888966002600460146ea800e2646644b3001007899192cc004c008c03cdd5004c4c96600200300d8992cc004006264b3001001807c4c966002003159800980b80144cc89660026010003159800980b1baa00580140490174566002601a003159800980b1baa0058014049017456600266e1d20040018acc004c058dd5002c00a02480ba2b30013370e9003000c566002602c6ea8016005012405d012404c80990132026132598009803800c4c9660020030128992cc0040062b3001301a0028cc0040062d01340210134061013809c04e02680d8c060005017180a9baa0028acc004c030006264b300100180944c96600200313259800800c052264b300100180ac05602b0158992cc004c07400e330010048b405900b405901b1bae0014074603400280c8c06800a027013809c04d01b180c000a02e3015375400501140488090c04cdd500098099baa003808202a80840420210104060602a00280a0c05400a01d00e80740390161809800a0243010375401300c4034444b300130043011375400713259800800c00a264b3001001801c00e007003899912cc00400600b13259800800c01a00d0068992cc004c06c00e01100740646eb400600c80d8c0600050171bae00130170024060602a00280a0c048dd5001c00500f1b874800201500a805402901218070009807180780098059baa0038b2010180480098029baa00a8a4d153300349011856616c696461746f722072657475726e65642066616c7365001365640082a6600492011b5f72656465656d65723a2054776f537461676552656465656d6572001601";
+            pub const HASH: &'static str = "c42220be6384b25f138160a16278b698c13864034917964623880ce5";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+        // Validator: validator_types.z_two_stage_upgrade_types.else
+        pub type ElseRedeemer = ();
+        pub struct ElseValidator;
+        impl ElseValidator {
+            pub const TITLE: &'static str = "validator_types.z_two_stage_upgrade_types.else";
+            pub const COMPILED_CODE: &'static str = "59027f01010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cdc3a400530090024888966002600460146ea800e2646644b3001007899192cc004c008c03cdd5004c4c96600200300d8992cc004006264b3001001807c4c966002003159800980b80144cc89660026010003159800980b1baa00580140490174566002601a003159800980b1baa0058014049017456600266e1d20040018acc004c058dd5002c00a02480ba2b30013370e9003000c566002602c6ea8016005012405d012404c80990132026132598009803800c4c9660020030128992cc0040062b3001301a0028cc0040062d01340210134061013809c04e02680d8c060005017180a9baa0028acc004c030006264b300100180944c96600200313259800800c052264b300100180ac05602b0158992cc004c07400e330010048b405900b405901b1bae0014074603400280c8c06800a027013809c04d01b180c000a02e3015375400501140488090c04cdd500098099baa003808202a80840420210104060602a00280a0c05400a01d00e80740390161809800a0243010375401300c4034444b300130043011375400713259800800c00a264b3001001801c00e007003899912cc00400600b13259800800c01a00d0068992cc004c06c00e01100740646eb400600c80d8c0600050171bae00130170024060602a00280a0c048dd5001c00500f1b874800201500a805402901218070009807180780098059baa0038b2010180480098029baa00a8a4d153300349011856616c696461746f722072657475726e65642066616c7365001365640082a6600492011b5f72656465656d65723a2054776f537461676552656465656d6572001601";
+            pub const HASH: &'static str = "c42220be6384b25f138160a16278b698c13864034917964623880ce5";
+            pub fn script() -> ValidatorScript<()> {
+                ValidatorScript { title: Self::TITLE, compiled_code: Self::COMPILED_CODE, hash: Self::HASH, parameters: () }
+            }
+        }
+    }
+}
