@@ -182,6 +182,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const foreverAddress = addressFromValidator(
@@ -297,6 +298,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -544,6 +546,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -672,6 +675,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -931,6 +935,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -1059,6 +1064,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -1193,6 +1199,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         await emulator.expectValidTransaction(
@@ -1338,6 +1345,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -1466,6 +1474,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -1673,6 +1682,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -1801,6 +1811,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -2009,6 +2020,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -2137,6 +2149,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -2347,6 +2360,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -2475,6 +2489,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -2684,6 +2699,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -2812,6 +2828,7 @@ describe("Basic Deploy", () => {
               fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
             ],
           }),
+          [],
         ];
 
         const councilForeverAddress = addressFromValidator(
