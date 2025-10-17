@@ -12,8 +12,8 @@ use multisig/script.{check_for_multisig}
 use multisig/types.{MultisigThreshold} as t
 use upgradable/two_stage_upgrade.{logic_is_on_main}
 use utils.{
-  get_input_state_by_policy, get_output_state_by_policy, must_find,
-  one_shot_mint,
+  get_input_state_by_policy, get_output_state_by_policy, input_linked_mint,
+  must_find,
 }
 
 pub fn unused_logic_merge_next_version(
@@ -71,7 +71,8 @@ pub fn unused_logic_merge_next_version(
 
   when info is {
     Minting(own_policy) -> {
-      let datum = one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
+      let datum =
+        input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
       expect StagingState { cnight_test_policy, forever_script_hash } = datum
 
@@ -172,7 +173,8 @@ pub fn unused_logic_multisig_validation_nft_input_next_version(
 
   when info is {
     Minting(own_policy) -> {
-      let datum = one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
+      let datum =
+        input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
       expect StagingState { cnight_test_policy, forever_script_hash } = datum
 

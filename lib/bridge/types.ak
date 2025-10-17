@@ -2,6 +2,7 @@ pub type Vote {
   signature: ByteArray,
   authority_index: Int,
   public_key: ByteArray,
+  vote_strength: Int,
 }
 
 pub type Payload {

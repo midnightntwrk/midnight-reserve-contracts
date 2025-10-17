@@ -12,7 +12,7 @@ use cardano/transaction.{
 use config
 use forever/script.{forever_contract}
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
-use utils.{must_find, one_shot_mint}
+use utils.{input_linked_mint, must_find}
 
 validator simple_bridge {
   else(ctx: ScriptContext) {
@@ -62,7 +62,7 @@ validator simple_bridge {
 
       Minting(own_policy) -> {
         let datum =
-          one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
+          input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
         expect BeefyConsensusState {
           current_authority_set,
