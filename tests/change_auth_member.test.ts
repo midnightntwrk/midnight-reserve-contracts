@@ -219,6 +219,7 @@ describe("Change Auth Member", () => {
           PlutusData.fromCore({
             items: initialTechAuthMembers,
           }),
+          [],
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -402,6 +403,7 @@ describe("Change Auth Member", () => {
           PlutusData.fromCore({
             items: initialCouncilMembers,
           }),
+          [],
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -558,6 +560,7 @@ describe("Change Auth Member", () => {
             PlutusData.fromCore({
               items: newTechAuthMembers,
             }),
+            [],
           ];
 
           // Create redeemer with new member public key hashes
