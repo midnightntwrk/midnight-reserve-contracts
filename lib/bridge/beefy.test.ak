@@ -52,7 +52,7 @@ const votes =
             let (key, sig) = x
             expect Some(sig) = sig
             let sig = bytearray.take(sig, 64)
-            Some(Vote(sig, i, key))
+            Some(Vote(sig, i, key, 0))
           }
         },
       )

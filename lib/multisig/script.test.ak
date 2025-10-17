@@ -31,6 +31,7 @@ test native_script_creation() {
     Multisig {
       total_signers: 2,
       signers: [signer |> create_signer, signer2 |> create_signer],
+      sr25519: [],
     }
 
   let native_script = build_native_script(multisig, 99, 100)

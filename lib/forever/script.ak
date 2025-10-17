@@ -9,7 +9,7 @@ use cardano/transaction.{
 }
 use config
 use upgradable/two_stage_upgrade.{validate_running}
-use utils.{must_find, one_shot_mint}
+use utils.{input_linked_mint, must_find}
 
 pub fn forever_contract(
   transaction: Transaction,
@@ -22,7 +22,8 @@ pub fn forever_contract(
   when info is {
     Minting(own_policy) -> {
       let Transaction { inputs, mint, outputs, .. } = transaction
-      let datum = one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
+      let datum =
+        input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
       and {
         initial_state_validation(datum, redeemer),
