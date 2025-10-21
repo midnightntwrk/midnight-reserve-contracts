@@ -77,7 +77,7 @@ pub fn get_input_state_by_policy(inputs: List<Input>, policy: PolicyId) {
   datum
 }
 
-pub fn one_shot_mint(
+pub fn input_linked_mint(
   inputs: List<Input>,
   mint: Value,
   outputs: List<Output>,

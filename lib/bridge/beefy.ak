@@ -168,7 +168,7 @@ pub fn find_auth_in_leaves(
   if k_index < vote.authority_index {
     find_auth_in_leaves(rest, vote, msg_hash)
   } else {
-    let Vote { authority_index, public_key, signature } = vote
+    let Vote { authority_index, public_key, signature, .. } = vote
 
     expect k_index == authority_index
 

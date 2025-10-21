@@ -2,7 +2,11 @@
 pub type Multisig {
   total_signers: Int,
   signers: Data<List<NativeScriptSigner>>,
+  sr25519: List<Sr25519PubKey>,
 }
+
+pub type Sr25519PubKey =
+  ByteArray
 
 pub type NativeScript =
   ByteArray

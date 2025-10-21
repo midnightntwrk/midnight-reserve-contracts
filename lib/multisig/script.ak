@@ -13,7 +13,7 @@ use config
 use multisig/types.{
   Multisig, MultisigThreshold, NativeScript, NativeScriptSigner,
 }
-use utils.{get_input_state_by_policy, must_find, one_shot_mint}
+use utils.{get_input_state_by_policy, input_linked_mint, must_find}
 
 const empty_list_length_byte = #"80" |> builtin.bytearray_to_integer(True, _)
 
@@ -28,7 +28,7 @@ pub fn build_native_script(
   threshold_numerator,
   threshold_denominator,
 ) -> NativeScript {
-  let Multisig { total_signers, signers } = multisig
+  let Multisig { total_signers, signers, .. } = multisig
 
   // ceil always
   let min_signers =
@@ -120,7 +120,8 @@ pub fn threshold_validation(
 
   when info is {
     Minting(own_policy) -> {
-      let datum = one_shot_mint(inputs, mint, outputs, own_policy, one_shot_ref)
+      let datum =
+        input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
       and {
         own_policy != config.cnight_policy,

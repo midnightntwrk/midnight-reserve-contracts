@@ -4,11 +4,9 @@ use aiken/math.{log2}
 use aiken/primitive/bytearray
 use bridge/codec.{scale_encode_beefy_mmr_leaf}
 use bridge/types.{
-  AuthoritySetCommitment, BeefyMmrLeaf, MmrLeaf, Node, RelayChainProof,
+  AuthoritySetCommitment, BeefyMmrLeaf, MmrLeaf, Node, ProofNodeRec,
+  RelayChainProof,
 }
-
-pub type ProofNodeRec =
-  List<Data>
 
 pub type Leaf =
   ByteArray
@@ -166,6 +164,8 @@ pub fn verify_merkle_multi_proof_get_leaves(
     leaves,
   <- do_verify_merkle_multi_proof_get_leaves(proof, [])
 
+  trace calculated_hash
+
   expect calculated_hash == root
 
   leaves
@@ -292,9 +292,54 @@ fn do_verify_merkle_multi_proof_get_leaves(
   }
 }
 
+test verify_merkle_multi_proof_get_leaves_1() {
+  let x: ProofNodeRec =
+    [
+      as_data(
+        [
+          [
+            as_data(
+              [
+                #"2b61e2fc26f9440e8ab4dac2a9257510a5c11d56db1fa56f5f7e24cfa227e464",
+                #"3d5e37ef0229d121e6e644c4a0d8680cc3af892eec11b865c0d83e9d9cb0b087",
+              ],
+            ),
+            as_data(
+              #"d2e4d978b047dbd39f53bbcc249f07bc3ca4ed154499cf055df8124bb81db9c1",
+            ),
+          ],
+          [
+            as_data(
+              #"d7d428326173db529e5207b6d907b69aa9288fcd37b792c7458706ea8603c86c",
+            ),
+            as_data(
+              [
+                #"9b862519cc6f905c7baf6741bb7593ed7d63655e4e4a5d38d68204aa9b3c43d6",
+                #"0ca08abbdcbe73bd5350e1b83b5b4db36913936173ba62587f7a8c6985f9aa20",
+              ],
+            ),
+          ],
+        ],
+      ),
+      as_data(
+        [
+          #"71d1061a002931d5f7b622705a864c507166d2694a581006bda0aa545fc5145c",
+          #"819a9ac0e4050a01b8f38fd987a294c8032924f6cf14428a2e89621766ad49e8",
+        ],
+      ),
+    ]
+
+  let leaves =
+    verify_merkle_multi_proof_get_leaves(
+      #"ef2a9efb4752054f1717a5aa928721986f7bd6c6e5144d627e1691a4a77bc047",
+      x,
+    )
+
+  leaves != []
+}
+
 fn merge_nodes(a: ByteArray, b: ByteArray) -> ByteArray {
-  bytearray.concat(builtin.un_b_data(a), builtin.un_b_data(b))
-    |> builtin.keccak_256
+  bytearray.concat(a, b) |> builtin.keccak_256
 }
 
 pub fn verify_merkle_multi_proof(
