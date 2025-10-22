@@ -11,7 +11,7 @@ use cardano/transaction.{
 }
 use config
 use multisig/types.{
-  Multisig, MultisigThreshold, NativeScript, NativeScriptSigner,
+  Multisig, MultisigThreshold, NativeScript, NativeScriptSigner, Sr25519PubKey,
 }
 use utils.{get_input_state_by_policy, input_linked_mint, must_find}
 
@@ -28,7 +28,7 @@ pub fn build_native_script(
   threshold_numerator,
   threshold_denominator,
 ) -> NativeScript {
-  let Multisig { total_signers, signers, .. } = multisig
+  let Multisig { total_signers, signers } = multisig
 
   // ceil always
   let min_signers =
@@ -36,7 +36,7 @@ pub fn build_native_script(
 
   let min_signer_serialized = builtin.serialise_data(min_signers)
 
-  let list_bytes = native_script_signer_list(signers |> builtin.un_list_data)
+  let list_bytes = native_script_signer_list(signers |> builtin.un_map_data)
 
   let serialized_list =
     if total_signers <= 23 {
@@ -58,17 +58,18 @@ pub fn build_native_script(
 }
 
 fn native_script_signer_list(
-  signers: List<Data<NativeScriptSigner>>,
+  signers: Pairs<Data<NativeScriptSigner>, Data<Sr25519PubKey>>,
 ) -> ByteArray {
   when signers is {
     [] -> #""
-    [x] -> builtin.un_b_data(x)
-    [x, y] -> x |> builtin.un_b_data |> bytearray.concat(builtin.un_b_data(y))
+    [x] -> x.1st |> builtin.un_b_data
+    [x, y] ->
+      x.1st |> builtin.un_b_data |> bytearray.concat(builtin.un_b_data(y.1st))
     [x, y, z, ..rest] ->
-      x
+      x.1st
         |> builtin.un_b_data
-        |> bytearray.concat(builtin.un_b_data(y))
-        |> bytearray.concat(builtin.un_b_data(z))
+        |> bytearray.concat(builtin.un_b_data(y.1st))
+        |> bytearray.concat(builtin.un_b_data(z.1st))
         |> bytearray.concat(native_script_signer_list(rest))
   }
 }

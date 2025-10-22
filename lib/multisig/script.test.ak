@@ -27,11 +27,19 @@ test native_script_creation() {
   let signer = #"5999dcd91e41b3e4c2ba037ea3b03db88e3ba566595161e7d73e857a"
   let signer2 = #"ccc4a58ebc9aa058cd0dee6f84e4de39e23574a054e405b0ca467a88"
 
+  let sr_25519_1 =
+    #"f91ce11e138996c24c900d6a2afd3074ce1ed2330e244c7df0dab9ceac19bb57"
+
+  let sr_25519_2 =
+    #"463ea1ecc2649218a254664a0c7a0598862852db1862882b96ba550fd9289370"
+
   let multisig =
     Multisig {
       total_signers: 2,
-      signers: [signer |> create_signer, signer2 |> create_signer],
-      sr25519: [],
+      signers: [
+        Pair(signer |> create_signer, sr_25519_1),
+        Pair(signer2 |> create_signer, sr_25519_2),
+      ],
     }
 
   let native_script = build_native_script(multisig, 99, 100)
