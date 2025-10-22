@@ -1,10 +1,10 @@
 @list
 pub type Multisig {
   total_signers: Int,
-  signers: Data<List<NativeScriptSigner>>,
-  sr25519: List<Sr25519PubKey>,
+  signers: Data<Pairs<NativeScriptSigner, Sr25519PubKey>>,
 }
 
+/// length is  32
 pub type Sr25519PubKey =
   ByteArray
 
@@ -14,6 +14,7 @@ pub type NativeScript =
 /// A signer pubkey hash plus extra bytes
 /// in front to be a native script signer
 /// #8200581C will be enforced to preprend each pubkey hash
+/// total length is 32 bytes
 pub type NativeScriptSigner =
   ByteArray
 
