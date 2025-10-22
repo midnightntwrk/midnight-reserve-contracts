@@ -91,7 +91,7 @@ bytes = "aa10582873380d3cf97d1703c06f34e5598f56b0754b6b7a780122a7"
 encoding = "hex"
 
 [config.default.council_forever_hash]
-bytes = "36d92f90601eee753b47b779b38556e79b0191e97e91642e6205809d"
+bytes = "fbfaf279f60150d1d4f66e20f67deabafc3e2602040780b2a394c41d"
 encoding = "hex"
 
 [config.default.ics_two_stage_hash]
@@ -107,7 +107,7 @@ bytes = "f03624f20930128c0d6dafe0219caf690d34d02a00aec7214a3cc708"
 encoding = "hex"
 
 [config.default.technical_authority_forever_hash]
-bytes = "5604c365981c4eab67dabb301dcaed817ee36ff61ce7e56a18b2bf8d"
+bytes = "4645ffb381878291997d3a18cab93cf7feb46e3c70ef83e85a87ca68"
 encoding = "hex"
 
 [config.default.federated_operators_two_stage_hash]
@@ -115,27 +115,27 @@ bytes = "ede796cf17038a5c067c21bcba92b426b245d403e1c8ae549ca66054"
 encoding = "hex"
 
 [config.default.federated_operators_forever_hash]
-bytes = "1fa46bb3eec9fd0ab3e6f335a74adc41d87f302c66ce809294935396"
+bytes = "2def843eb2c4b18ee2cf799d39f6d7d9eebe726089e3e91d52159ee0"
 encoding = "hex"
 
 [config.default.main_gov_threshold_hash]
-bytes = "18879da97b125bcc5117519ed42b3cdc2d28e06725b4a94598eadb17"
+bytes = "3b7942e2ccbf9fa7c0957b6246dc906cee4131eed4b9d916eb1eaa3e"
 encoding = "hex"
 
 [config.default.staging_gov_threshold_hash]
-bytes = "d30a2f9165fd0e7d51b367f201a7b4b5ac34ff6175dde1ab10eb04f3"
+bytes = "73fd66e4882f05d6ca22d4a12ae06f6f7992024bc3ab91cede1984d7"
 encoding = "hex"
 
 [config.default.main_council_update_threshold_hash]
-bytes = "150ae864ea74c7b25ce829205b07f4f926fce9a109791f9e04c67dd5"
+bytes = "4e468a28be184dfab3a959877367696f632c0d51d4cfa91cb5edfa56"
 encoding = "hex"
 
 [config.default.main_tech_auth_update_threshold_hash]
-bytes = "f04a813737505104801bed32668d688e881eff0ded55da3883848ff6"
+bytes = "21645e6da00010b16912c9d15c548a70f7dcf180d48be45a309d2895"
 encoding = "hex"
 
 [config.default.main_federated_ops_update_threshold_hash]
-bytes = "ef45ec6850cfe79891d4b381a7ca5b0523b22d71f0dadc2af45309d1"
+bytes = "4f665afb39e4ee64d72c3b44d86b748eb1953942fe48454a473ed670"
 encoding = "hex"
 
 [config.default.committee_bridge_two_stage_hash]

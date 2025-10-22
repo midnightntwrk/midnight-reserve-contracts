@@ -10,9 +10,9 @@ use upgradable/two_stage_upgrade.{two_stage_upgradable}
 use utils.{foldr2}
 
 fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
-  expect Multisig { total_signers, signers, .. }: Multisig = datum
+  expect Multisig { total_signers, signers }: Multisig = datum
 
-  let given_signers = redeemer |> builtin.un_list_data
+  let given_signers = redeemer |> builtin.un_map_data
 
   let
     expected_signers,
