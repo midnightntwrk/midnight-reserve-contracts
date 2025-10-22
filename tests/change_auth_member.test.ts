@@ -736,590 +736,708 @@ describe("Change Auth Member", () => {
       });
     });
 
-    // test("Can change council member", async () => {
-    //   await emulator.as("deployer", async (blaze, addr) => {
-    //     // Add initial UTxO for deployer
-    //     emulator.addUtxo(
-    //       TransactionUnspentOutput.fromCore([
-    //         {
-    //           index: 0,
-    //           txId: TransactionId(
-    //             "1111111111111111111111111111111111111111111111111111111111111111",
-    //           ),
-    //         },
-    //         {
-    //           address: PaymentAddress(addr.toBech32()),
-    //           value: {
-    //             coins: amount * 10n,
-    //           },
-    //         },
-    //       ]),
-    //     );
+    test("Can change council member", async () => {
+      await emulator.as("deployer", async (blaze, addr) => {
+        // Add initial UTxO for deployer
+        emulator.addUtxo(
+          TransactionUnspentOutput.fromCore([
+            {
+              index: 0,
+              txId: TransactionId(
+                "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              ),
+            },
+            {
+              address: PaymentAddress(addr.toBech32()),
+              value: {
+                coins: amount * 10n,
+              },
+            },
+          ]),
+        );
 
-    //     // Deploy Tech Auth Update Threshold first
-    //     const techAuthUpdateThresholdOneShotUtxo =
-    //       TransactionUnspentOutput.fromCore([
-    //         {
-    //           index: config.main_tech_auth_update_one_shot_index,
-    //           txId: TransactionId(config.main_tech_auth_update_one_shot_hash),
-    //         },
-    //         {
-    //           address: PaymentAddress(addr.toBech32()),
-    //           value: {
-    //             coins: 10_000_000n,
-    //           },
-    //         },
-    //       ]);
+        // Deploy Tech Auth Update Threshold first
+        const techAuthUpdateThresholdOneShotUtxo =
+          TransactionUnspentOutput.fromCore([
+            {
+              index: config.main_tech_auth_update_one_shot_index,
+              txId: TransactionId(config.main_tech_auth_update_one_shot_hash),
+            },
+            {
+              address: PaymentAddress(addr.toBech32()),
+              value: {
+                coins: 10_000_000n,
+              },
+            },
+          ]);
 
-    //     emulator.addUtxo(techAuthUpdateThresholdOneShotUtxo);
+        emulator.addUtxo(techAuthUpdateThresholdOneShotUtxo);
 
-    //     const techAuthUpdateThresholdAddress = addressFromValidator(
-    //       NetworkId.Testnet,
-    //       mainTechAuthUpdateThreshold.Script,
-    //     );
+        const techAuthUpdateThresholdAddress = addressFromValidator(
+          NetworkId.Testnet,
+          mainTechAuthUpdateThreshold.Script,
+        );
 
-    //     const thresholdDatum: Contracts.MultisigThreshold = {
-    //       technical_auth_numerator: 2n,
-    //       technical_auth_denominator: 3n,
-    //       council_numerator: 2n,
-    //       council_denominator: 3n,
-    //     };
+        const thresholdDatum: Contracts.MultisigThreshold = {
+          technical_auth_numerator: 2n,
+          technical_auth_denominator: 3n,
+          council_numerator: 2n,
+          council_denominator: 3n,
+        };
 
-    //     await emulator.expectValidTransaction(
-    //       blaze,
-    //       blaze
-    //         .newTransaction()
-    //         .addInput(techAuthUpdateThresholdOneShotUtxo)
-    //         .addMint(
-    //           PolicyId(mainTechAuthUpdateThreshold.Script.hash()),
-    //           new Map([[AssetName(""), 1n]]),
-    //           PlutusData.newInteger(0n),
-    //         )
-    //         .provideScript(mainTechAuthUpdateThreshold.Script)
-    //         .addOutput(
-    //           TransactionOutput.fromCore({
-    //             address: PaymentAddress(
-    //               techAuthUpdateThresholdAddress.toBech32(),
-    //             ),
-    //             value: {
-    //               coins: 2_000_000n,
-    //               assets: new Map([
-    //                 [AssetId(mainTechAuthUpdateThreshold.Script.hash()), 1n],
-    //               ]),
-    //             },
-    //             datum: serialize(
-    //               Contracts.MultisigThreshold,
-    //               thresholdDatum,
-    //             ).toCore(),
-    //           }),
-    //         ),
-    //     );
+        await emulator.expectValidTransaction(
+          blaze,
+          blaze
+            .newTransaction()
+            .addInput(techAuthUpdateThresholdOneShotUtxo)
+            .addMint(
+              PolicyId(mainTechAuthUpdateThreshold.Script.hash()),
+              new Map([[AssetName(""), 1n]]),
+              PlutusData.newInteger(0n),
+            )
+            .provideScript(mainTechAuthUpdateThreshold.Script)
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(
+                  techAuthUpdateThresholdAddress.toBech32(),
+                ),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [AssetId(mainTechAuthUpdateThreshold.Script.hash()), 1n],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.MultisigThreshold,
+                  thresholdDatum,
+                ).toCore(),
+              }),
+            ),
+        );
 
-    //     // Deploy Council Update Threshold
-    //     const councilUpdateThresholdOneShotUtxo =
-    //       TransactionUnspentOutput.fromCore([
-    //         {
-    //           index: config.main_council_update_one_shot_index,
-    //           txId: TransactionId(config.main_council_update_one_shot_hash),
-    //         },
-    //         {
-    //           address: PaymentAddress(addr.toBech32()),
-    //           value: {
-    //             coins: 10_000_000n,
-    //           },
-    //         },
-    //       ]);
+        // Deploy Council Update Threshold
+        const councilUpdateThresholdOneShotUtxo =
+          TransactionUnspentOutput.fromCore([
+            {
+              index: config.main_council_update_one_shot_index,
+              txId: TransactionId(config.main_council_update_one_shot_hash),
+            },
+            {
+              address: PaymentAddress(addr.toBech32()),
+              value: {
+                coins: 10_000_000n,
+              },
+            },
+          ]);
 
-    //     emulator.addUtxo(councilUpdateThresholdOneShotUtxo);
+        emulator.addUtxo(councilUpdateThresholdOneShotUtxo);
 
-    //     const councilUpdateThresholdAddress = addressFromValidator(
-    //       NetworkId.Testnet,
-    //       mainCouncilUpdateThreshold.Script,
-    //     );
+        const councilUpdateThresholdAddress = addressFromValidator(
+          NetworkId.Testnet,
+          mainCouncilUpdateThreshold.Script,
+        );
 
-    //     await emulator.expectValidTransaction(
-    //       blaze,
-    //       blaze
-    //         .newTransaction()
-    //         .addInput(councilUpdateThresholdOneShotUtxo)
-    //         .addMint(
-    //           PolicyId(mainCouncilUpdateThreshold.Script.hash()),
-    //           new Map([[AssetName(""), 1n]]),
-    //           PlutusData.newInteger(0n),
-    //         )
-    //         .provideScript(mainCouncilUpdateThreshold.Script)
-    //         .addOutput(
-    //           TransactionOutput.fromCore({
-    //             address: PaymentAddress(
-    //               councilUpdateThresholdAddress.toBech32(),
-    //             ),
-    //             value: {
-    //               coins: 2_000_000n,
-    //               assets: new Map([
-    //                 [AssetId(mainCouncilUpdateThreshold.Script.hash()), 1n],
-    //               ]),
-    //             },
-    //             datum: serialize(
-    //               Contracts.MultisigThreshold,
-    //               thresholdDatum,
-    //             ).toCore(),
-    //           }),
-    //         ),
-    //     );
+        await emulator.expectValidTransaction(
+          blaze,
+          blaze
+            .newTransaction()
+            .addInput(councilUpdateThresholdOneShotUtxo)
+            .addMint(
+              PolicyId(mainCouncilUpdateThreshold.Script.hash()),
+              new Map([[AssetName(""), 1n]]),
+              PlutusData.newInteger(0n),
+            )
+            .provideScript(mainCouncilUpdateThreshold.Script)
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(
+                  councilUpdateThresholdAddress.toBech32(),
+                ),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [AssetId(mainCouncilUpdateThreshold.Script.hash()), 1n],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.MultisigThreshold,
+                  thresholdDatum,
+                ).toCore(),
+              }),
+            ),
+        );
 
-    //     // Deploy Technical Authority contracts
-    //     const techAuthOneShotUtxo = TransactionUnspentOutput.fromCore([
-    //       {
-    //         index: config.technical_authority_one_shot_index,
-    //         txId: TransactionId(config.technical_authority_one_shot_hash),
-    //       },
-    //       {
-    //         address: PaymentAddress(addr.toBech32()),
-    //         value: {
-    //           coins: 10_000_000n,
-    //         },
-    //       },
-    //     ]);
+        // Deploy Technical Authority contracts
+        const techAuthOneShotUtxo = TransactionUnspentOutput.fromCore([
+          {
+            index: config.technical_authority_one_shot_index,
+            txId: TransactionId(config.technical_authority_one_shot_hash),
+          },
+          {
+            address: PaymentAddress(addr.toBech32()),
+            value: {
+              coins: 10_000_000n,
+            },
+          },
+        ]);
 
-    //     emulator.addUtxo(techAuthOneShotUtxo);
+        emulator.addUtxo(techAuthOneShotUtxo);
 
-    //     const techAuthTwoStageAddress = addressFromValidator(
-    //       NetworkId.Testnet,
-    //       techAuthTwoStage.Script,
-    //     );
+        const techAuthTwoStageAddress = addressFromValidator(
+          NetworkId.Testnet,
+          techAuthTwoStage.Script,
+        );
 
-    //     const techAuthUpgradeState: Contracts.UpgradeState = [
-    //       techAuthLogic.Script.hash(),
-    //       "",
-    //       mainTechAuthUpdateThreshold.Script.hash(),
-    //       "",
-    //       0n,
-    //     ];
+        const techAuthUpgradeState: Contracts.UpgradeState = [
+          techAuthLogic.Script.hash(),
+          "",
+          new Contracts.GovAuthMainGovAuthElse().Script.hash(),
+          "",
+          0n,
+        ];
 
-    //     const initialTechAuthMembers = [
-    //       fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-    //       fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-    //     ];
+        const techAuthForeverState: Contracts.Multisig = [
+          2n,
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
+        ];
 
-    //     const techAuthForeverState: Contracts.Multisig = [
-    //       2n,
-    //       PlutusData.fromCore({
-    //         items: initialTechAuthMembers,
-    //       }),
-    //     ];
+        const techAuthForeverAddress = addressFromValidator(
+          NetworkId.Testnet,
+          techAuthForever.Script,
+        );
 
-    //     const techAuthForeverAddress = addressFromValidator(
-    //       NetworkId.Testnet,
-    //       techAuthForever.Script,
-    //     );
+        await emulator.expectValidTransaction(
+          blaze,
+          blaze
+            .newTransaction()
+            .addInput(techAuthOneShotUtxo)
+            .addMint(
+              PolicyId(techAuthForever.Script.hash()),
+              new Map([[AssetName(""), 1n]]),
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+              }),
+            )
+            .addMint(
+              PolicyId(techAuthTwoStage.Script.hash()),
+              new Map([
+                [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
+                [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
+              ]),
+              PlutusData.newInteger(0n),
+            )
+            .provideScript(techAuthTwoStage.Script)
+            .provideScript(techAuthForever.Script)
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(techAuthTwoStageAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [
+                      AssetId(
+                        techAuthTwoStage.Script.hash() +
+                          toHex(new TextEncoder().encode("main")),
+                      ),
+                      1n,
+                    ],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.UpgradeState,
+                  techAuthUpgradeState,
+                ).toCore(),
+              }),
+            )
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(techAuthTwoStageAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [
+                      AssetId(
+                        techAuthTwoStage.Script.hash() +
+                          toHex(new TextEncoder().encode("staging")),
+                      ),
+                      1n,
+                    ],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.UpgradeState,
+                  techAuthUpgradeState,
+                ).toCore(),
+              }),
+            )
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(techAuthForeverAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [AssetId(techAuthForever.Script.hash()), 1n],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.Multisig,
+                  techAuthForeverState,
+                ).toCore(),
+              }),
+            ),
+        );
 
-    //     await emulator.expectValidTransaction(
-    //       blaze,
-    //       blaze
-    //         .newTransaction()
-    //         .addInput(techAuthOneShotUtxo)
-    //         .addMint(
-    //           PolicyId(techAuthForever.Script.hash()),
-    //           new Map([[AssetName(""), 1n]]),
-    //           PlutusData.fromCore({
-    //             items: [
-    //               fromHex(addr.asBase()?.getPaymentCredential().hash!),
-    //               fromHex(addr.asBase()?.getStakeCredential().hash!),
-    //             ],
-    //           }),
-    //         )
-    //         .addMint(
-    //           PolicyId(techAuthTwoStage.Script.hash()),
-    //           new Map([
-    //             [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
-    //             [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
-    //           ]),
-    //           PlutusData.newInteger(0n),
-    //         )
-    //         .provideScript(techAuthTwoStage.Script)
-    //         .provideScript(techAuthForever.Script)
-    //         .addOutput(
-    //           TransactionOutput.fromCore({
-    //             address: PaymentAddress(techAuthTwoStageAddress.toBech32()),
-    //             value: {
-    //               coins: 2_000_000n,
-    //               assets: new Map([
-    //                 [
-    //                   AssetId(
-    //                     techAuthTwoStage.Script.hash() +
-    //                       toHex(new TextEncoder().encode("main")),
-    //                   ),
-    //                   1n,
-    //                 ],
-    //               ]),
-    //             },
-    //             datum: serialize(
-    //               Contracts.UpgradeState,
-    //               techAuthUpgradeState,
-    //             ).toCore(),
-    //           }),
-    //         )
-    //         .addOutput(
-    //           TransactionOutput.fromCore({
-    //             address: PaymentAddress(techAuthTwoStageAddress.toBech32()),
-    //             value: {
-    //               coins: 2_000_000n,
-    //               assets: new Map([
-    //                 [
-    //                   AssetId(
-    //                     techAuthTwoStage.Script.hash() +
-    //                       toHex(new TextEncoder().encode("staging")),
-    //                   ),
-    //                   1n,
-    //                 ],
-    //               ]),
-    //             },
-    //             datum: serialize(
-    //               Contracts.UpgradeState,
-    //               techAuthUpgradeState,
-    //             ).toCore(),
-    //           }),
-    //         )
-    //         .addOutput(
-    //           TransactionOutput.fromCore({
-    //             address: PaymentAddress(techAuthForeverAddress.toBech32()),
-    //             value: {
-    //               coins: 2_000_000n,
-    //               assets: new Map([
-    //                 [AssetId(techAuthForever.Script.hash()), 1n],
-    //               ]),
-    //             },
-    //             datum: serialize(
-    //               Contracts.Multisig,
-    //               techAuthForeverState,
-    //             ).toCore(),
-    //           }),
-    //         ),
-    //     );
+        // Deploy Council contracts
+        const councilOneShotUtxo = TransactionUnspentOutput.fromCore([
+          {
+            index: config.council_one_shot_index,
+            txId: TransactionId(config.council_one_shot_hash),
+          },
+          {
+            address: PaymentAddress(addr.toBech32()),
+            value: {
+              coins: 10_000_000n,
+            },
+          },
+        ]);
 
-    //     // Deploy Council contracts
-    //     const councilOneShotUtxo = TransactionUnspentOutput.fromCore([
-    //       {
-    //         index: config.council_one_shot_index,
-    //         txId: TransactionId(config.council_one_shot_hash),
-    //       },
-    //       {
-    //         address: PaymentAddress(addr.toBech32()),
-    //         value: {
-    //           coins: 10_000_000n,
-    //         },
-    //       },
-    //     ]);
+        emulator.addUtxo(councilOneShotUtxo);
 
-    //     emulator.addUtxo(councilOneShotUtxo);
+        const councilTwoStageAddress = addressFromValidator(
+          NetworkId.Testnet,
+          councilTwoStage.Script,
+        );
 
-    //     const councilTwoStageAddress = addressFromValidator(
-    //       NetworkId.Testnet,
-    //       councilTwoStage.Script,
-    //     );
+        const councilUpgradeState: Contracts.UpgradeState = [
+          councilLogic.Script.hash(),
+          "",
+          mainCouncilUpdateThreshold.Script.hash(),
+          "",
+          0n,
+        ];
 
-    //     const councilUpgradeState: Contracts.UpgradeState = [
-    //       councilLogic.Script.hash(),
-    //       "",
-    //       mainCouncilUpdateThreshold.Script.hash(),
-    //       "",
-    //       0n,
-    //     ];
+        const councilForeverState: Contracts.Multisig = [
+          2n,
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
+        ];
 
-    //     const initialCouncilMembers = [
-    //       fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-    //       fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-    //     ];
+        const councilForeverAddress = addressFromValidator(
+          NetworkId.Testnet,
+          councilForever.Script,
+        );
 
-    //     const councilForeverState: Contracts.Multisig = [
-    //       2n,
-    //       PlutusData.fromCore({
-    //         items: initialCouncilMembers,
-    //       }),
-    //     ];
+        await emulator.expectValidTransaction(
+          blaze,
+          blaze
+            .newTransaction()
+            .addInput(councilOneShotUtxo)
+            .addMint(
+              PolicyId(councilForever.Script.hash()),
+              new Map([[AssetName(""), 1n]]),
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+              }),
+            )
+            .addMint(
+              PolicyId(councilTwoStage.Script.hash()),
+              new Map([
+                [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
+                [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
+              ]),
+              PlutusData.newInteger(0n),
+            )
+            .provideScript(councilTwoStage.Script)
+            .provideScript(councilForever.Script)
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(councilTwoStageAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [
+                      AssetId(
+                        councilTwoStage.Script.hash() +
+                          toHex(new TextEncoder().encode("main")),
+                      ),
+                      1n,
+                    ],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.UpgradeState,
+                  councilUpgradeState,
+                ).toCore(),
+              }),
+            )
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(councilTwoStageAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [
+                      AssetId(
+                        councilTwoStage.Script.hash() +
+                          toHex(new TextEncoder().encode("staging")),
+                      ),
+                      1n,
+                    ],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.UpgradeState,
+                  councilUpgradeState,
+                ).toCore(),
+              }),
+            )
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(councilForeverAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [AssetId(councilForever.Script.hash()), 1n],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.Multisig,
+                  councilForeverState,
+                ).toCore(),
+              }),
+            ),
+        );
 
-    //     const councilForeverAddress = addressFromValidator(
-    //       NetworkId.Testnet,
-    //       councilForever.Script,
-    //     );
+        // Add the created tech auth and council UTxOs to emulator
+        emulator.addUtxo(
+          TransactionUnspentOutput.fromCore([
+            {
+              index: 0,
+              txId: TransactionId(
+                "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+              ),
+            },
+            {
+              address: PaymentAddress(techAuthForeverAddress.toBech32()),
+              value: {
+                coins: 2_000_000n,
+                assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
+              },
+              datum: serialize(
+                Contracts.Multisig,
+                techAuthForeverState,
+              ).toCore(),
+            },
+          ]),
+        );
 
-    //     await emulator.expectValidTransaction(
-    //       blaze,
-    //       blaze
-    //         .newTransaction()
-    //         .addInput(councilOneShotUtxo)
-    //         .addMint(
-    //           PolicyId(councilForever.Script.hash()),
-    //           new Map([[AssetName(""), 1n]]),
-    //           PlutusData.fromCore({
-    //             items: [
-    //               fromHex(addr.asBase()?.getPaymentCredential().hash!),
-    //               fromHex(addr.asBase()?.getStakeCredential().hash!),
-    //             ],
-    //           }),
-    //         )
-    //         .addMint(
-    //           PolicyId(councilTwoStage.Script.hash()),
-    //           new Map([
-    //             [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
-    //             [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
-    //           ]),
-    //           PlutusData.newInteger(0n),
-    //         )
-    //         .provideScript(councilTwoStage.Script)
-    //         .provideScript(councilForever.Script)
-    //         .addOutput(
-    //           TransactionOutput.fromCore({
-    //             address: PaymentAddress(councilTwoStageAddress.toBech32()),
-    //             value: {
-    //               coins: 2_000_000n,
-    //               assets: new Map([
-    //                 [
-    //                   AssetId(
-    //                     councilTwoStage.Script.hash() +
-    //                       toHex(new TextEncoder().encode("main")),
-    //                   ),
-    //                   1n,
-    //                 ],
-    //               ]),
-    //             },
-    //             datum: serialize(
-    //               Contracts.UpgradeState,
-    //               councilUpgradeState,
-    //             ).toCore(),
-    //           }),
-    //         )
-    //         .addOutput(
-    //           TransactionOutput.fromCore({
-    //             address: PaymentAddress(councilTwoStageAddress.toBech32()),
-    //             value: {
-    //               coins: 2_000_000n,
-    //               assets: new Map([
-    //                 [
-    //                   AssetId(
-    //                     councilTwoStage.Script.hash() +
-    //                       toHex(new TextEncoder().encode("staging")),
-    //                   ),
-    //                   1n,
-    //                 ],
-    //               ]),
-    //             },
-    //             datum: serialize(
-    //               Contracts.UpgradeState,
-    //               councilUpgradeState,
-    //             ).toCore(),
-    //           }),
-    //         )
-    //         .addOutput(
-    //           TransactionOutput.fromCore({
-    //             address: PaymentAddress(councilForeverAddress.toBech32()),
-    //             value: {
-    //               coins: 2_000_000n,
-    //               assets: new Map([
-    //                 [AssetId(councilForever.Script.hash()), 1n],
-    //               ]),
-    //             },
-    //             datum: serialize(
-    //               Contracts.Multisig,
-    //               councilForeverState,
-    //             ).toCore(),
-    //           }),
-    //         ),
-    //     );
+        emulator.addUtxo(
+          TransactionUnspentOutput.fromCore([
+            {
+              index: 0,
+              txId: TransactionId(
+                "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              ),
+            },
+            {
+              address: PaymentAddress(councilForeverAddress.toBech32()),
+              value: {
+                coins: 2_000_000n,
+                assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
+              },
+              datum: serialize(
+                Contracts.Multisig,
+                councilForeverState,
+              ).toCore(),
+            },
+          ]),
+        );
 
-    //     // Now change the council member
-    //     await emulator.as("newCouncilMember", async (newBlaze, newAddr) => {
-    //       // Add UTxO for new member
-    //       emulator.addUtxo(
-    //         TransactionUnspentOutput.fromCore([
-    //           {
-    //             index: 0,
-    //             txId: TransactionId(
-    //               "6666666666666666666666666666666666666666666666666666666666666666",
-    //             ),
-    //           },
-    //           {
-    //             address: PaymentAddress(newAddr.toBech32()),
-    //             value: {
-    //               coins: amount,
-    //             },
-    //           },
-    //         ]),
-    //       );
+        // Add threshold UTxOs to emulator for reference
+        emulator.addUtxo(
+          TransactionUnspentOutput.fromCore([
+            {
+              index: 0,
+              txId: TransactionId(
+                "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+              ),
+            },
+            {
+              address: PaymentAddress(councilUpdateThresholdAddress.toBech32()),
+              value: {
+                coins: 2_000_000n,
+                assets: new Map([
+                  [AssetId(mainCouncilUpdateThreshold.Script.hash()), 1n],
+                ]),
+              },
+              datum: serialize(
+                Contracts.MultisigThreshold,
+                thresholdDatum,
+              ).toCore(),
+            },
+          ]),
+        );
 
-    //       // Create new multisig state with changed member
-    //       const newCouncilMembers = [
-    //         fromHex("8200581c" + newAddr.asBase()?.getPaymentCredential().hash), // Changed member
-    //         fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash), // Keep one original
-    //       ];
+        // Add two-stage UTxO to emulator for reference
+        emulator.addUtxo(
+          TransactionUnspentOutput.fromCore([
+            {
+              index: 0,
+              txId: TransactionId(
+                "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+              ),
+            },
+            {
+              address: PaymentAddress(councilTwoStageAddress.toBech32()),
+              value: {
+                coins: 2_000_000n,
+                assets: new Map([
+                  [
+                    AssetId(
+                      councilTwoStage.Script.hash() +
+                        toHex(new TextEncoder().encode("main")),
+                    ),
+                    1n,
+                  ],
+                ]),
+              },
+              datum: serialize(
+                Contracts.UpgradeState,
+                councilUpgradeState,
+              ).toCore(),
+            },
+          ]),
+        );
 
-    //       const newCouncilForeverState: Contracts.Multisig = [
-    //         2n,
-    //         PlutusData.fromCore({
-    //           items: newCouncilMembers,
-    //         }),
-    //       ];
+        // Now change the council member
+        await emulator.as("newCouncilMember", async (newBlaze, newAddr) => {
+          // Add UTxO for new member
+          emulator.addUtxo(
+            TransactionUnspentOutput.fromCore([
+              {
+                index: 0,
+                txId: TransactionId(
+                  "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                ),
+              },
+              {
+                address: PaymentAddress(newAddr.toBech32()),
+                value: {
+                  coins: amount,
+                },
+              },
+            ]),
+          );
 
-    //       // Create redeemer with new member public key hashes
-    //       const memberRedeemer = PlutusData.fromCore({
-    //         items: [
-    //           fromHex(newAddr.asBase()?.getPaymentCredential().hash!),
-    //           fromHex(addr.asBase()?.getStakeCredential().hash!),
-    //         ],
-    //       });
+          // Add reward account balance for council logic withdrawal
+          const councilLogicRewardAccount = RewardAccount.fromCredential(
+            Credential.fromCore({
+              hash: councilLogic.Script.hash(),
+              type: CredentialType.ScriptHash,
+            }).toCore(),
+            NetworkId.Testnet,
+          );
+          emulator.accounts.set(councilLogicRewardAccount, 0n);
 
-    //       const councilLogicAddress = addressFromValidator(
-    //         NetworkId.Testnet,
-    //         councilLogic.Script,
-    //       );
+          // Create new multisig state with changed member
+          const newCouncilForeverState: Contracts.Multisig = [
+            3n,
+            {
+              ["8200581c" + newAddr.asBase()?.getPaymentCredential().hash]:
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF",
+            },
+          ];
 
-    //       // Change member transaction using logic validator
-    //       await emulator.expectValidTransaction(
-    //         newBlaze,
-    //         newBlaze
-    //           .newTransaction()
-    //           .addInput(
-    //             TransactionUnspentOutput.fromCore([
-    //               {
-    //                 index: 0,
-    //                 txId: TransactionId(
-    //                   "7777777777777777777777777777777777777777777777777777777777777777",
-    //                 ),
-    //               },
-    //               {
-    //                 address: PaymentAddress(councilForeverAddress.toBech32()),
-    //                 value: {
-    //                   coins: 2_000_000n,
-    //                   assets: new Map([
-    //                     [AssetId(councilForever.Script.hash()), 1n],
-    //                   ]),
-    //                 },
-    //                 datum: serialize(
-    //                   Contracts.Multisig,
-    //                   councilForeverState,
-    //                 ).toCore(),
-    //               },
-    //             ]),
-    //             memberRedeemer,
-    //           )
-    //           .addReferenceInput(
-    //             TransactionUnspentOutput.fromCore([
-    //               {
-    //                 index: 0,
-    //                 txId: TransactionId(
-    //                   "8888888888888888888888888888888888888888888888888888888888888888",
-    //                 ),
-    //               },
-    //               {
-    //                 address: PaymentAddress(
-    //                   councilUpdateThresholdAddress.toBech32(),
-    //                 ),
-    //                 value: {
-    //                   coins: 2_000_000n,
-    //                   assets: new Map([
-    //                     [AssetId(mainCouncilUpdateThreshold.Script.hash()), 1n],
-    //                   ]),
-    //                 },
-    //                 datum: serialize(
-    //                   Contracts.MultisigThreshold,
-    //                   thresholdDatum,
-    //                 ).toCore(),
-    //               },
-    //             ]),
-    //           )
-    //           .addReferenceInput(
-    //             TransactionUnspentOutput.fromCore([
-    //               {
-    //                 index: 0,
-    //                 txId: TransactionId(
-    //                   "9999999999999999999999999999999999999999999999999999999999999999",
-    //                 ),
-    //               },
-    //               {
-    //                 address: PaymentAddress(techAuthForeverAddress.toBech32()),
-    //                 value: {
-    //                   coins: 2_000_000n,
-    //                   assets: new Map([
-    //                     [AssetId(techAuthForever.Script.hash()), 1n],
-    //                   ]),
-    //                 },
-    //                 datum: serialize(
-    //                   Contracts.Multisig,
-    //                   techAuthForeverState,
-    //                 ).toCore(),
-    //               },
-    //             ]),
-    //           )
-    //           .addReferenceInput(
-    //             TransactionUnspentOutput.fromCore([
-    //               {
-    //                 index: 0,
-    //                 txId: TransactionId(
-    //                   "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-    //                 ),
-    //               },
-    //               {
-    //                 address: PaymentAddress(councilTwoStageAddress.toBech32()),
-    //                 value: {
-    //                   coins: 2_000_000n,
-    //                   assets: new Map([
-    //                     [
-    //                       AssetId(
-    //                         councilTwoStage.Script.hash() +
-    //                           toHex(new TextEncoder().encode("main")),
-    //                       ),
-    //                       1n,
-    //                     ],
-    //                   ]),
-    //                 },
-    //                 datum: serialize(
-    //                   Contracts.UpgradeState,
-    //                   councilUpgradeState,
-    //                 ).toCore(),
-    //               },
-    //             ]),
-    //           )
-    //           .addMint(
-    //             PolicyId(
-    //               "8200581c" + newAddr.asBase()?.getPaymentCredential().hash!,
-    //             ),
-    //             new Map([[AssetName(""), 1n]]),
-    //             PlutusData.newInteger(0n),
-    //           )
-    //           .addMint(
-    //             PolicyId(
-    //               "8200581c" + addr.asBase()?.getStakeCredential().hash!,
-    //             ),
-    //             new Map([[AssetName(""), 1n]]),
-    //             PlutusData.newInteger(0n),
-    //           )
-    //           .provideScript(councilForever.Script)
-    //           .addOutput(
-    //             TransactionOutput.fromCore({
-    //               address: PaymentAddress(councilForeverAddress.toBech32()),
-    //               value: {
-    //                 coins: 2_000_000n,
-    //                 assets: new Map([
-    //                   [AssetId(councilForever.Script.hash()), 1n],
-    //                 ]),
-    //               },
-    //               datum: serialize(
-    //                 Contracts.Multisig,
-    //                 newCouncilForeverState,
-    //               ).toCore(),
-    //             }),
-    //           )
-    //           .addWithdrawal(
-    //             RewardAccount(
-    //               `stake_test1u${councilLogic.Script.hash().slice(2)}`,
-    //             ),
-    //             0n,
-    //             PlutusData.newInteger(0n),
-    //           )
-    //           .provideScript(councilLogic.Script),
-    //       );
-    //     });
-    //   });
-    // });
+          // Create redeemer with new member public key hashes
+          const memberRedeemer: Contracts.PermissionedRedeemer = {
+            [newAddr.asBase()?.getPaymentCredential().hash!]:
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            [addr.asBase()?.getPaymentCredential().hash!]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            [addr.asBase()?.getStakeCredential().hash!]:
+              "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF",
+          };
+
+          const nativeScriptCouncil: NativeScript = NativeScripts.atLeastNOfK(
+            2,
+            NativeScripts.justAddress(
+              addressFromCredential(
+                NetworkId.Testnet,
+                Credential.fromCore(addr.getProps().paymentPart!),
+              ).toBech32(),
+              NetworkId.Testnet,
+            ),
+            NativeScripts.justAddress(
+              addressFromCredential(
+                NetworkId.Testnet,
+                Credential.fromCore(addr.getProps().delegationPart!),
+              ).toBech32(),
+              NetworkId.Testnet,
+            ),
+          );
+
+          // Change member transaction using logic validator
+          await emulator.expectValidTransaction(
+            newBlaze,
+            newBlaze
+              .newTransaction()
+              .addInput(
+                TransactionUnspentOutput.fromCore([
+                  {
+                    index: 0,
+                    txId: TransactionId(
+                      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    ),
+                  },
+                  {
+                    address: PaymentAddress(councilForeverAddress.toBech32()),
+                    value: {
+                      coins: 2_000_000n,
+                      assets: new Map([
+                        [AssetId(councilForever.Script.hash()), 1n],
+                      ]),
+                    },
+                    datum: serialize(
+                      Contracts.Multisig,
+                      councilForeverState,
+                    ).toCore(),
+                  },
+                ]),
+                PlutusData.newInteger(0n),
+              )
+              .addReferenceInput(
+                TransactionUnspentOutput.fromCore([
+                  {
+                    index: 0,
+                    txId: TransactionId(
+                      "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+                    ),
+                  },
+                  {
+                    address: PaymentAddress(
+                      councilUpdateThresholdAddress.toBech32(),
+                    ),
+                    value: {
+                      coins: 2_000_000n,
+                      assets: new Map([
+                        [AssetId(mainCouncilUpdateThreshold.Script.hash()), 1n],
+                      ]),
+                    },
+                    datum: serialize(
+                      Contracts.MultisigThreshold,
+                      thresholdDatum,
+                    ).toCore(),
+                  },
+                ]),
+              )
+              .addReferenceInput(
+                TransactionUnspentOutput.fromCore([
+                  {
+                    index: 0,
+                    txId: TransactionId(
+                      "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                    ),
+                  },
+                  {
+                    address: PaymentAddress(techAuthForeverAddress.toBech32()),
+                    value: {
+                      coins: 2_000_000n,
+                      assets: new Map([
+                        [AssetId(techAuthForever.Script.hash()), 1n],
+                      ]),
+                    },
+                    datum: serialize(
+                      Contracts.Multisig,
+                      techAuthForeverState,
+                    ).toCore(),
+                  },
+                ]),
+              )
+              .addReferenceInput(
+                TransactionUnspentOutput.fromCore([
+                  {
+                    index: 0,
+                    txId: TransactionId(
+                      "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+                    ),
+                  },
+                  {
+                    address: PaymentAddress(councilTwoStageAddress.toBech32()),
+                    value: {
+                      coins: 2_000_000n,
+                      assets: new Map([
+                        [
+                          AssetId(
+                            councilTwoStage.Script.hash() +
+                              toHex(new TextEncoder().encode("main")),
+                          ),
+                          1n,
+                        ],
+                      ]),
+                    },
+                    datum: serialize(
+                      Contracts.UpgradeState,
+                      councilUpgradeState,
+                    ).toCore(),
+                  },
+                ]),
+              )
+              .provideScript(councilForever.Script)
+              .addMint(
+                PolicyId(nativeScriptCouncil.hash()),
+                new Map([[AssetName(""), 1n]]),
+              )
+              .provideScript(Script.newNativeScript(nativeScriptCouncil))
+              .addOutput(
+                TransactionOutput.fromCore({
+                  address: PaymentAddress(councilForeverAddress.toBech32()),
+                  value: {
+                    coins: 2_000_000n,
+                    assets: new Map([
+                      [AssetId(councilForever.Script.hash()), 1n],
+                    ]),
+                  },
+                  datum: serialize(
+                    Contracts.Multisig,
+                    newCouncilForeverState,
+                  ).toCore(),
+                }),
+              )
+              .addWithdrawal(
+                RewardAccount.fromCredential(
+                  Credential.fromCore({
+                    hash: councilLogic.Script.hash(),
+                    type: CredentialType.ScriptHash,
+                  }).toCore(),
+                  NetworkId.Testnet,
+                ),
+                0n,
+                serialize(Contracts.PermissionedRedeemer, memberRedeemer),
+              )
+              .provideScript(councilLogic.Script),
+          );
+        });
+      });
+    });
   });
 });
