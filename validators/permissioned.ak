@@ -23,7 +23,13 @@ fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
       [],
       0,
       fn(signer, acc_signers, len, return) {
-        return([create_signer(signer), ..acc_signers], len + 1)
+        return(
+          [
+            Pair(signer.1st |> builtin.un_b_data |> create_signer, signer.2nd),
+            ..acc_signers
+          ],
+          len + 1,
+        )
       },
     )
 
