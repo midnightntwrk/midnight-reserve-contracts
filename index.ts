@@ -162,7 +162,7 @@ const getDeployerAddress = (): string => {
 };
 
 // Helper function to create multisig state with real credentials
-const createMultisigState = (threshold: bigint): Contracts.Multisig => {
+const createMultisigState = (totalSigners: bigint): Contracts.Multisig => {
   const deployerAddr = getDeployerAddress();
   const addr = Core.addressFromBech32(deployerAddr);
 
@@ -173,7 +173,7 @@ const createMultisigState = (threshold: bigint): Contracts.Multisig => {
   }
 
   return [
-    threshold,
+    totalSigners,
     PlutusData.fromCore({
       items: [
         fromHex("8200581c" + addr.asBase()!.getPaymentCredential().hash),
