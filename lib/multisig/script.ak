@@ -74,7 +74,7 @@ fn native_script_signer_list(
   }
 }
 
-pub fn create_signer(pkh: Data<VerificationKeyHash>) -> ByteArray {
+pub fn create_signer(pkh: VerificationKeyHash) -> ByteArray {
   let pkh = pkh |> builtin.un_b_data
 
   expect builtin.length_of_bytearray(pkh) == 28

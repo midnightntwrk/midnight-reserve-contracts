@@ -204,22 +204,20 @@ describe("Change Auth Member", () => {
         const techAuthUpgradeState: Contracts.UpgradeState = [
           techAuthLogic.Script.hash(),
           "",
-          mainTechAuthUpdateThreshold.Script.hash(),
+          new Contracts.GovAuthMainGovAuthElse().Script.hash(),
           "",
           0n,
         ];
 
-        const initialTechAuthMembers = [
-          fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-          fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-        ];
-
         const techAuthForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: initialTechAuthMembers,
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -235,11 +233,11 @@ describe("Change Auth Member", () => {
             .addMint(
               PolicyId(techAuthForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -393,17 +391,15 @@ describe("Change Auth Member", () => {
           0n,
         ];
 
-        const initialCouncilMembers = [
-          fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-          fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-        ];
-
         const councilForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: initialCouncilMembers,
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -419,11 +415,11 @@ describe("Change Auth Member", () => {
             .addMint(
               PolicyId(councilForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -549,28 +545,28 @@ describe("Change Auth Member", () => {
           emulator.accounts.set(techAuthLogicRewardAccount, 0n);
 
           // Create new multisig state with changed member
-          const newTechAuthMembers = [
-            fromHex("8200581c" + newAddr.asBase()?.getPaymentCredential().hash), // Changed member
-            fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash), // Keep one original
-            fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash), // Keep one original
-          ];
-
           const newTechAuthForeverState: Contracts.Multisig = [
             3n,
-            PlutusData.fromCore({
-              items: newTechAuthMembers,
-            }),
-            [],
+            {
+              ["8200581c" + newAddr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF",
+            },
           ];
 
           // Create redeemer with new member public key hashes
-          const memberRedeemer = PlutusData.fromCore({
-            items: [
-              fromHex(newAddr.asBase()?.getPaymentCredential().hash!),
-              fromHex(addr.asBase()?.getPaymentCredential().hash!),
-              fromHex(addr.asBase()?.getStakeCredential().hash!),
-            ],
-          });
+          const memberRedeemer: Contracts.PermissionedRedeemer = {
+            [newAddr.asBase()?.getPaymentCredential().hash!]:
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            [addr.asBase()?.getPaymentCredential().hash!]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            [addr.asBase()?.getStakeCredential().hash!]:
+              "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF",
+          };
 
           fromHex(addr.asBase()?.getPaymentCredential().hash!);
           fromHex(addr.asBase()?.getStakeCredential().hash!);
@@ -702,7 +698,6 @@ describe("Change Auth Member", () => {
                   },
                 ]),
               )
-
               .provideScript(techAuthForever.Script)
               .addMint(
                 PolicyId(nativeScriptTechAuth.hash()),
@@ -733,7 +728,7 @@ describe("Change Auth Member", () => {
                   NetworkId.Testnet,
                 ),
                 0n,
-                memberRedeemer,
+                serialize(Contracts.PermissionedRedeemer, memberRedeemer),
               )
               .provideScript(techAuthLogic.Script),
           );

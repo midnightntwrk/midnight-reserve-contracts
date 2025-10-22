@@ -283,6 +283,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+
+sleep 2
+
 echo "=========================================="
 echo "Successfully compiled midnight-reserve-contracts for $NETWORK network."
 echo "All validators have been compiled and hashes updated in aiken.toml"
