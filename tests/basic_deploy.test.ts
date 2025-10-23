@@ -176,14 +176,21 @@ describe("Basic Deploy", () => {
         // Create upgrade state datum for technical authority two-stage
         const techAuthForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
+
+        const redeemerForever: Contracts.PermissionedRedeemer = {
+          [addr.asBase()?.getPaymentCredential().hash!]:
+            "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+          [addr.asBase()?.getStakeCredential().hash!]:
+            "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+        };
 
         const foreverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -198,12 +205,7 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(techAuthForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
-              }),
+              serialize(Contracts.PermissionedRedeemer, redeemerForever),
             )
             .addMint(
               PolicyId(techAuthTwoStage.Script.hash()),
@@ -292,13 +294,13 @@ describe("Basic Deploy", () => {
 
         const councilForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -314,11 +316,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(councilForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -540,13 +542,13 @@ describe("Basic Deploy", () => {
 
         const techAuthForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -562,11 +564,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(techAuthForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -669,13 +671,13 @@ describe("Basic Deploy", () => {
 
         const councilForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -691,11 +693,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(councilForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -929,13 +931,13 @@ describe("Basic Deploy", () => {
 
         const techAuthForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -951,11 +953,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(techAuthForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -1058,13 +1060,13 @@ describe("Basic Deploy", () => {
 
         const councilForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -1080,11 +1082,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(councilForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -1193,13 +1195,13 @@ describe("Basic Deploy", () => {
 
         const federatedOpsForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         await emulator.expectValidTransaction(
@@ -1210,11 +1212,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(federatedOpsForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -1339,13 +1341,13 @@ describe("Basic Deploy", () => {
 
         const techAuthForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -1361,11 +1363,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(techAuthForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -1468,13 +1470,13 @@ describe("Basic Deploy", () => {
 
         const councilForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -1490,11 +1492,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(councilForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -1676,13 +1678,13 @@ describe("Basic Deploy", () => {
 
         const techAuthForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -1698,11 +1700,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(techAuthForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -1805,13 +1807,13 @@ describe("Basic Deploy", () => {
 
         const councilForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -1827,11 +1829,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(councilForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -2014,13 +2016,13 @@ describe("Basic Deploy", () => {
 
         const techAuthForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -2036,11 +2038,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(techAuthForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -2143,13 +2145,13 @@ describe("Basic Deploy", () => {
 
         const councilForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -2165,11 +2167,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(councilForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -2354,13 +2356,13 @@ describe("Basic Deploy", () => {
 
         const techAuthForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -2376,11 +2378,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(techAuthForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -2483,13 +2485,13 @@ describe("Basic Deploy", () => {
 
         const councilForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -2505,11 +2507,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(councilForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -2693,13 +2695,13 @@ describe("Basic Deploy", () => {
 
         const techAuthForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const techAuthForeverAddress = addressFromValidator(
@@ -2715,11 +2717,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(techAuthForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
@@ -2822,13 +2824,13 @@ describe("Basic Deploy", () => {
 
         const councilForeverState: Contracts.Multisig = [
           2n,
-          PlutusData.fromCore({
-            items: [
-              fromHex("8200581c" + addr.asBase()?.getPaymentCredential().hash),
-              fromHex("8200581c" + addr.asBase()?.getStakeCredential().hash),
-            ],
-          }),
-          [],
+          {
+            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+              // 32 byte Sr25519 PubKey
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
         ];
 
         const councilForeverAddress = addressFromValidator(
@@ -2844,11 +2846,11 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(councilForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              PlutusData.fromCore({
-                items: [
-                  fromHex(addr.asBase()?.getPaymentCredential().hash!),
-                  fromHex(addr.asBase()?.getStakeCredential().hash!),
-                ],
+              serialize(Contracts.PermissionedRedeemer, {
+                [addr.asBase()?.getPaymentCredential().hash!]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                [addr.asBase()?.getStakeCredential().hash!]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
               }),
             )
             .addMint(
