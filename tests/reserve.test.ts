@@ -1,123 +1,284 @@
-// import {
-//   addressFromValidator,
-//   fromHex,
-//   HexBlob,
-//   NetworkId,
-//   PaymentAddress,
-//   PlutusData,
-//   PlutusList,
-//   toHex,
-//   TransactionId,
-//   TransactionUnspentOutput,
-// } from "@blaze-cardano/core";
-// import { Type, serialize } from "@blaze-cardano/data";
-// import { Emulator } from "@blaze-cardano/emulator";
-// import * as Contracts from "../contract_blueprint";
-// import { beforeEach, describe, test } from "bun:test";
-// import * as U from "uplc-node";
+import {
+  Address,
+  addressFromValidator,
+  AssetId,
+  AssetName,
+  Credential,
+  CredentialType,
+  HexBlob,
+  NetworkId,
+  PaymentAddress,
+  PlutusData,
+  PolicyId,
+  RewardAccount,
+  toHex,
+  TransactionId,
+  TransactionOutput,
+  TransactionUnspentOutput,
+} from "@blaze-cardano/core";
+import { serialize } from "@blaze-cardano/data";
+import { Emulator } from "@blaze-cardano/emulator";
+import * as Contracts from "../contract_blueprint";
+import { describe, test } from "bun:test";
 
-// describe("Verify Signers", () => {
-//   const amount = 340_000_000_000_000n;
+describe("Reserve Deploy and Merge", () => {
+  const amount = 100_000_000n;
 
-//   const emulator = new Emulator([]);
+  const emulator = new Emulator([]);
 
-//   const reserveForever = new Contracts.ReserveReserveForeverElse();
+  const reserveForever = new Contracts.ReserveReserveForeverElse();
+  const reserveTwoStage = new Contracts.ReserveReserveTwoStageUpgradeElse();
+  const reserveLogic = new Contracts.ReserveReserveLogicElse();
+  const govAuth = new Contracts.GovAuthMainGovAuthElse();
 
-//   beforeEach(async () => {});
+  const config = {
+    reserve_one_shot_hash:
+      "0000000000000000000000000000000000000000000000000000000000000001",
+    reserve_one_shot_index: 1,
+  };
 
-//   describe("the midnight beefy committee", () => {
-//     test("can verify beefy", async () => {
-//       await emulator.as("beef", async (blaze, addr) => {
-//         emulator.addUtxo(
-//           TransactionUnspentOutput.fromCore([
-//             {
-//               index: 0,
-//               txId: TransactionId(
-//                 "0000000000000000000000000000000000000000000000000000000000000000",
-//               ),
-//             },
-//             {
-//               address: PaymentAddress(addr.toBech32()),
-//               value: {
-//                 coins: amount,
-//               },
-//             },
-//           ]),
-//         );
+  test("Deploy Reserve and merge UTxOs", async () => {
+    await emulator.as("deployer", async (blaze, addr) => {
+      // Add initial UTxO for deployer
+      emulator.addUtxo(
+        TransactionUnspentOutput.fromCore([
+          {
+            index: 0,
+            txId: TransactionId(
+              "1111111111111111111111111111111111111111111111111111111111111111",
+            ),
+          },
+          {
+            address: PaymentAddress(addr.toBech32()),
+            value: {
+              coins: amount * 10n,
+            },
+          },
+        ]),
+      );
 
-//         const scriptInput = TransactionUnspentOutput.fromCore([
-//           {
-//             index: 1,
-//             txId: TransactionId(
-//               "0000000000000000000000000000000000000000000000000000000000000000",
-//             ),
-//           },
-//           {
-//             address: PaymentAddress(
-//               addressFromValidator(
-//                 NetworkId.Mainnet,
-//                 reserveForever.Script,
-//               ).toBech32(),
-//             ),
-//             value: {
-//               coins: 5_000_000n,
-//             },
-//             datum: serialize(Contracts.BeefyConsensusState, {
-//               beefy_activation_block: 0n,
-//               latest_height: 200n,
-//               next_authority_set: {
-//                 id: 1n,
-//                 len: 12n,
-//                 root: "",
-//               },
-//               current_authority_set: {
-//                 id: 0n,
-//                 len: 12n,
-//                 root: "",
-//               },
-//             }).toCore(),
-//           },
-//         ]);
+      // Create one-shot UTxO for minting
+      const reserveOneShotUtxo = TransactionUnspentOutput.fromCore([
+        {
+          index: config.reserve_one_shot_index,
+          txId: TransactionId(config.reserve_one_shot_hash),
+        },
+        {
+          address: PaymentAddress(addr.toBech32()),
+          value: {
+            coins: 10_000_000n,
+          },
+        },
+      ]);
 
-//         const refScript = TransactionUnspentOutput.fromCore([
-//           {
-//             index: 2,
-//             txId: TransactionId(
-//               "0000000000000000000000000000000000000000000000000000000000000000",
-//             ),
-//           },
-//           {
-//             address: PaymentAddress(
-//               addressFromValidator(
-//                 NetworkId.Mainnet,
-//                 reserveForever.Script,
-//               ).toBech32(),
-//             ),
-//             value: {
-//               coins: 20_000_000n,
-//             },
-//             scriptReference: reserveForever.Script.toCore(),
-//           },
-//         ]);
+      emulator.addUtxo(reserveOneShotUtxo);
 
-//         emulator.addUtxo(scriptInput);
-//         emulator.addUtxo(refScript);
+      const reserveForeverAddress = addressFromValidator(
+        NetworkId.Testnet,
+        reserveForever.Script,
+      );
 
-//         await emulator.expectValidTransaction(
-//           blaze,
-//           blaze
-//             .newTransaction()
-//             .addInput(
-//               scriptInput,
-//               PlutusData.fromCbor(
-//                 HexBlob(
-//                   "d8799fd8799fd8799f9fd8799f426d685820aa43cbc681b698e869041ae92d4fae7b08c86f826d443207815df07a07637b1fffff18c900ff9fd8799f584060f00c5d82b223eaf7aec3cd9181730ea0db96bb37b643a38cdf19fec54c737e0e06ef53dcf4ac0479f4e0b77b1ba4ced913cb72f5865c108e0af0d906b1d6c70158210390084fdbf27d2b79d26a4f13f0ccd982cb755a661969143c37cbc49ef5b91f27ffd8799f5840d4c7afdb464cc1f91bc7ca8b4cf3019caa9ca05c380010f3090c250c5fc3c1667255d51ae6aac7d1c566d785ed3dafbc7a66f1b6f31452f02e0151b7f4960e2e0258210389411795514af1627765eceffcbd002719f031604fadd7d188e2dc585b4e1afbffd8799f5840fa0307b12f2a4414b1f032b01551f15d5f99203e2eed144999b2d3e464443f2553a9de43a0ef91442beaddda19a5da82bdf43d5e3bbea38944117a1097e977dc03582103bc9d0ca094bd5b8b3225d7651eac5d18c1c04bf8ae8f8b263eebca4e1410ed0cffd8799f5840d0415772357049b627a633d0f8adabbe73f0f7295c25d43c382a6bc0594949d33c7edb2f38b959a207f6593d6f84a4cd1ff5337844662dc95534ad9f515b7976045821031d10105e323c4afce225208f71a6441ee327a65b9e646e772500c74d31f669aaffd8799f58400cace548756cfd59aece686470dd81c8c327f041dcf42fd4a2889c4903aa64c8454c17ae394f73d1636716c38e05413a2ca98cd3e7ab47d02f0f873cf28701ed065821036c6ae73d36d0c02b54d7877a57b1734b8e096134bd2c1b829431aa38f18bcce1ffd8799f58409e59a7fafd4c6d35edc3d7f8386cdffb12f96d3a0d2968f55e4f5b63d7cde7531eca2886d88f75005fbaad422cf24416b94a7c3fcc58649e2bb5b959e60f20b6075821020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8ffd8799f5840f51e398981a09a03acec5f8f5025c824012f792b67ecab0cad178056d5d644b72474e18fc2ba19de9460eb1ccb3048f02ff54a9b8a1fc88c948a654d2e05ade708582103c766411432fae7483fe9f0c175985fbbc5ca108bffb5b94db7d52dafd6f98beaffd8799f5840ba41187e9c5f4df9bf10a5f166623996a4ca155629376fc691e2e0a55af30b93357515571deac620b4e96a1edb243ffc30cbd7c6557340cc5eea6661f09579ee09582102b8beaa492309f2332dd5445e20b8f74e26336c226daecf63cc4cd95a1ef3b140ffd8799f5840ae5a2cf065db287356d363155ea63b297e3f8fac1b82924a8bb549005e3874e8295c65e4dd3826277771a8f2a66b1a629904798d875d746c3a2ca1d4365b69410b5821035d35454a9671ccf959def176822d38e9e9aa5bbcfe50a7cbe69834dde9147ce5ffffffff",
-//                 ),
-//               ),
-//             )
-//             .addReferenceInput(refScript),
-//         );
-//       });
-//     });
-//   });
-// });
+      const reserveTwoStageAddress = addressFromValidator(
+        NetworkId.Testnet,
+        reserveTwoStage.Script,
+      );
+
+      const reserveUpgradeState: Contracts.UpgradeState = [
+        reserveLogic.Script.hash(),
+        "",
+        govAuth.Script.hash(),
+        "",
+        0n,
+      ];
+
+      // Step 1: Deploy Reserve contracts
+      await emulator.expectValidTransaction(
+        blaze,
+        blaze
+          .newTransaction()
+          .addInput(reserveOneShotUtxo)
+          .addMint(
+            PolicyId(reserveForever.Script.hash()),
+            new Map([[AssetName(""), 1n]]),
+            PlutusData.newInteger(0n),
+          )
+          .addMint(
+            PolicyId(reserveTwoStage.Script.hash()),
+            new Map([
+              [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
+              [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
+            ]),
+            PlutusData.newInteger(0n),
+          )
+          .provideScript(reserveForever.Script)
+          .provideScript(reserveTwoStage.Script)
+          .addOutput(
+            TransactionOutput.fromCore({
+              address: PaymentAddress(reserveTwoStageAddress.toBech32()),
+              value: {
+                coins: 2_000_000n,
+                assets: new Map([
+                  [
+                    AssetId(
+                      reserveTwoStage.Script.hash() +
+                        toHex(new TextEncoder().encode("main")),
+                    ),
+                    1n,
+                  ],
+                ]),
+              },
+              datum: serialize(
+                Contracts.UpgradeState,
+                reserveUpgradeState,
+              ).toCore(),
+            }),
+          )
+          .addOutput(
+            TransactionOutput.fromCore({
+              address: PaymentAddress(reserveTwoStageAddress.toBech32()),
+              value: {
+                coins: 2_000_000n,
+                assets: new Map([
+                  [
+                    AssetId(
+                      reserveTwoStage.Script.hash() +
+                        toHex(new TextEncoder().encode("staging")),
+                    ),
+                    1n,
+                  ],
+                ]),
+              },
+              datum: serialize(
+                Contracts.UpgradeState,
+                reserveUpgradeState,
+              ).toCore(),
+            }),
+          )
+          .addOutput(
+            TransactionOutput.fromCore({
+              address: PaymentAddress(reserveForeverAddress.toBech32()),
+              value: {
+                coins: 2_000_000n,
+                assets: new Map([[AssetId(reserveForever.Script.hash()), 1n]]),
+              },
+              datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
+            }),
+          ),
+      );
+
+      // Add the two-stage main state as a reference input for future transactions
+      const twoStageMainUtxo = TransactionUnspentOutput.fromCore([
+        {
+          index: 0,
+          txId: TransactionId(
+            "4444444444444444444444444444444444444444444444444444444444444444",
+          ),
+        },
+        {
+          address: PaymentAddress(reserveTwoStageAddress.toBech32()),
+          value: {
+            coins: 2_000_000n,
+            assets: new Map([
+              [
+                AssetId(
+                  reserveTwoStage.Script.hash() +
+                    toHex(new TextEncoder().encode("main")),
+                ),
+                1n,
+              ],
+            ]),
+          },
+          datum: serialize(
+            Contracts.UpgradeState,
+            reserveUpgradeState,
+          ).toCore(),
+        },
+      ]);
+
+      emulator.addUtxo(twoStageMainUtxo);
+
+      // Step 2: Create two UTxOs at the reserve address with different token amounts
+      const utxo1 = TransactionUnspentOutput.fromCore([
+        {
+          index: 0,
+          txId: TransactionId(
+            "2222222222222222222222222222222222222222222222222222222222222222",
+          ),
+        },
+        {
+          address: PaymentAddress(reserveForeverAddress.toBech32()),
+          value: {
+            coins: 5_000_000n,
+            assets: new Map([[AssetId(reserveForever.Script.hash()), 3n]]),
+          },
+          datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
+        },
+      ]);
+
+      const utxo2 = TransactionUnspentOutput.fromCore([
+        {
+          index: 1,
+          txId: TransactionId(
+            "3333333333333333333333333333333333333333333333333333333333333333",
+          ),
+        },
+        {
+          address: PaymentAddress(reserveForeverAddress.toBech32()),
+          value: {
+            coins: 3_000_000n,
+            assets: new Map([
+              [AssetId(reserveForever.Script.hash()), 2n],
+              [AssetId(reserveTwoStage.Script.hash() + "abababab"), 2n],
+            ]),
+          },
+          datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
+        },
+      ]);
+
+      // Add the two UTxOs to the emulator
+      emulator.addUtxo(utxo1);
+      emulator.addUtxo(utxo2);
+
+      // Step 3: Merge the two UTxOs using logic_merge
+      const reserveLogicCredential = RewardAccount.fromCredential(
+        Credential.fromCore({
+          hash: reserveLogic.Script.hash(),
+          type: CredentialType.ScriptHash,
+        }).toCore(),
+        NetworkId.Testnet,
+      );
+
+      // Register the reward account with zero balance for withdrawal
+      emulator.accounts.set(reserveLogicCredential, 0n);
+
+      await emulator.expectValidTransaction(
+        blaze,
+        blaze
+          .newTransaction()
+          .addInput(utxo1, PlutusData.fromCbor(HexBlob("01")))
+          .addInput(utxo2, PlutusData.fromCbor(HexBlob("01")))
+          .addReferenceInput(twoStageMainUtxo)
+          .provideScript(reserveForever.Script)
+          .addWithdrawal(
+            reserveLogicCredential,
+            0n,
+            PlutusData.fromCbor(HexBlob("01")),
+          )
+          .provideScript(reserveLogic.Script)
+          .addOutput(
+            TransactionOutput.fromCore({
+              address: PaymentAddress(reserveForeverAddress.toBech32()),
+              value: {
+                coins: 8_000_000n,
+                assets: new Map([
+                  [AssetId(reserveForever.Script.hash()), 5n],
+                  [AssetId(reserveTwoStage.Script.hash() + "abababab"), 2n],
+                ]),
+              },
+              datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
+            }),
+          ),
+      );
+    });
+  });
+});
