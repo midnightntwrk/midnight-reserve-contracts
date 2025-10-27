@@ -13,7 +13,9 @@ use config
 use multisig/types.{
   Multisig, MultisigThreshold, NativeScript, NativeScriptSigner, Sr25519PubKey,
 }
-use utils.{get_input_state_by_policy, input_linked_mint, must_find}
+use utils.{
+  get_input_state_by_policy, input_linked_mint, is_singleton, must_find,
+}
 
 const empty_list_length_byte = #"80" |> builtin.bytearray_to_integer(True, _)
 
@@ -138,11 +140,7 @@ pub fn threshold_validation(
 
       expect Script(own_hash) as pay_cred = address.payment_credential
 
-      let expected_nft_id = [Pair(own_hash, [Pair("", 1)])]
-
-      expect [_, ..nft_id] = value |> to_dict |> to_pairs
-
-      expect as_data(expected_nft_id) == as_data(nft_id)
+      expect is_singleton(value, own_hash, "")
 
       expect InlineDatum(ref_datum) =
         get_input_state_by_policy(
@@ -179,13 +177,11 @@ pub fn threshold_validation(
         ..
       ] = outputs
 
-      expect [_, ..out_nft_id] = out_value |> to_dict |> to_pairs
-
       expect InlineDatum(out_datum) = out_datum
 
       and {
         out_addr.payment_credential == pay_cred,
-        nft_id == out_nft_id,
+        is_singleton(out_value, own_hash, ""),
         datum_validation(out_datum),
       }
     }

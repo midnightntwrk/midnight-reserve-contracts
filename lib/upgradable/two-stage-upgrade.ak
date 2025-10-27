@@ -265,6 +265,7 @@ fn validate_staging_update(
       validate_running(auth_cred, mitigation_auth, withdrawals),
       // Special case for MitigationAuth
       if update_field == MitigationAuth {
+        // fixes highlighting issue with tree sitter
         empty
       } else {
         main_mitigation_auth
@@ -451,7 +452,7 @@ pub fn logic_is_on_main(
           {
             expect [_, ..nft_id] = value |> to_dict |> to_pairs
 
-            as_data(main_nft_id) == as_data(nft_id)
+            main_nft_id == as_data(nft_id)
           },
         }
       },
