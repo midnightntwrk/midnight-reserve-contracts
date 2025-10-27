@@ -2,7 +2,7 @@ use aiken/builtin
 use aiken/collection/dict.{to_pairs}
 use aiken/collection/list
 use cardano/address.{Script}
-use cardano/assets.{PolicyId, Value, to_dict}
+use cardano/assets.{AssetName, PolicyId, Value, to_dict}
 use cardano/transaction.{InlineDatum, Input, Output, OutputReference}
 
 pub fn must_find_key(pairs: Pairs<ByteArray, a>, key: ByteArray) -> a {
@@ -54,9 +54,7 @@ pub fn get_output_state_by_policy(outputs: List<Output>, policy: PolicyId) {
       fn(output) { output.address.payment_credential == pay_cred },
     )
 
-  expect [_, ..nft_id] = value |> to_dict |> to_pairs
-
-  expect as_data(nft_id) == as_data([Pair(policy, [Pair("", 1)])])
+  expect is_singleton(value, policy, "")
 
   expect InlineDatum(datum) = datum
 
@@ -67,11 +65,7 @@ pub fn get_input_state_by_policy(inputs: List<Input>, policy: PolicyId) {
   expect InlineDatum(datum) =
     must_find(
       inputs,
-      fn(input) {
-        expect [_, ..assets] = input.output.value |> to_dict |> to_pairs
-
-        as_data(assets) == as_data([Pair(policy, [Pair("", 1)])])
-      },
+      fn(input) { is_singleton(input.output.value, policy, "") },
     ).output.datum
 
   datum
@@ -102,4 +96,9 @@ pub fn input_linked_mint(
   let datum = get_output_state_by_policy(outputs, own_policy)
 
   datum
+}
+
+pub fn is_singleton(value: Value, policy: PolicyId, name: AssetName) -> Bool {
+  expect [_, ..nft] = value |> to_dict |> to_pairs
+  as_data(nft) == as_data([Pair(policy, [Pair(name, 1)])])
 }
