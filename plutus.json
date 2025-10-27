@@ -228,6 +228,14 @@
       "hash": "ff3e7de6030a2675bb9d0fa7ac626c98e1dac8589e757a4fae3b6416"
     },
     {
+      "title": "validator_types.yeah.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "compiledCode": "58550101002332259800cc004cdd7a6114d8799fd87b80d87a9fd8799f41ab01ff41cdffff00003a50a514005149a2a6600492011856616c696461746f722072657475726e65642066616c736500136564004ae715cd01",
+      "hash": "f9e3f2014ef7435a4c6e38b1c3f45778f23663268ae7c45005a572c9"
+    },
+    {
       "title": "validator_types.z_committee_bridge_types.spend",
       "datum": {
         "title": "_datum",
