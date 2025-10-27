@@ -178,10 +178,8 @@ fn validate_main_update(
   expect UpgradeState { logic, mitigation_logic, auth, mitigation_auth, .. }: UpgradeState =
     spending_datum
 
-  let auth_cred = Script(auth)
-
   // validate auth scripts are run
-  expect validate_running(auth_cred, mitigation_auth, withdrawals)
+  expect validate_running(auth, mitigation_auth, withdrawals)
 
   when update_field is {
     Logic -> {
@@ -254,15 +252,11 @@ fn validate_staging_update(
     ..
   } = main_datum
 
-  let auth_cred = Script(auth)
-
-  let main_auth_cred = Script(main_auth)
-
   // validate auth scripts are run
   // We allow either staging auth or main auth
   // (In case staging auth is accidentally stuck)
   expect or {
-      validate_running(auth_cred, mitigation_auth, withdrawals),
+      validate_running(auth, mitigation_auth, withdrawals),
       // Special case for MitigationAuth
       if update_field == MitigationAuth {
         // fixes highlighting issue with tree sitter
@@ -270,7 +264,7 @@ fn validate_staging_update(
       } else {
         main_mitigation_auth
       }
-        |> validate_running(main_auth_cred, _, withdrawals),
+        |> validate_running(main_auth, _, withdrawals),
     }
 
   when update_field is {
@@ -321,10 +315,12 @@ fn validate_staging_update(
 }
 
 pub fn validate_running(
-  auth_cred: Credential,
+  auth: ScriptHash,
   mitigation_auth: ScriptHash,
   withdrawals,
 ) -> Bool {
+  let auth_cred = Script(auth)
+
   and {
     list.any(
       withdrawals,
