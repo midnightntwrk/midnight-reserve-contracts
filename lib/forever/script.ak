@@ -27,6 +27,8 @@ pub fn forever_contract(
 
       and {
         initial_state_validation(datum, redeemer),
+        // This trick is simply to include cnight policy in the script hash
+        // without the compiler optimizing the policy away
         own_policy != config.cnight_policy,
       }
     }

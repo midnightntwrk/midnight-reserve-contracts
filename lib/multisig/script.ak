@@ -127,6 +127,8 @@ pub fn threshold_validation(
         input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
       and {
+        // This trick is simply to include cnight policy in the script hash
+        // without the compiler optimizing the policy away
         own_policy != config.cnight_policy,
         datum_validation(datum),
       }
