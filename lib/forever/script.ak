@@ -3,7 +3,7 @@ use aiken/collection/dict.{to_pairs}
 use aiken/crypto.{ScriptHash}
 use cardano/address.{Script}
 use cardano/assets.{to_dict}
-use cardano/script_context.{Minting, ScriptInfo}
+use cardano/script_context.{Minting, ScriptContext}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Redeemer, Transaction,
 }
@@ -12,13 +12,13 @@ use upgradable/two_stage_upgrade.{validate_running}
 use utils.{input_linked_mint, must_find}
 
 pub fn forever_contract(
-  transaction: Transaction,
-  redeemer: Redeemer,
-  info: ScriptInfo,
+  ctx: ScriptContext,
   one_shot_ref: OutputReference,
   two_stage_hash: ScriptHash,
   initial_state_validation: fn(Data, Redeemer) -> Bool,
 ) {
+  let ScriptContext { transaction, redeemer, info } = ctx
+
   when info is {
     Minting(own_policy) -> {
       let Transaction { inputs, mint, outputs, .. } = transaction
