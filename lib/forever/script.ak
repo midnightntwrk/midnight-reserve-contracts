@@ -1,7 +1,6 @@
 use aiken/builtin
 use aiken/collection/dict.{to_pairs}
 use aiken/crypto.{ScriptHash}
-use cardano/address.{Script}
 use cardano/assets.{to_dict}
 use cardano/script_context.{Minting, ScriptContext}
 use cardano/transaction.{
@@ -54,7 +53,7 @@ pub fn forever_contract(
 
       expect [logic, mitigation_logic, ..] = main_state |> builtin.un_list_data
 
-      let logic = Script(logic |> builtin.un_b_data)
+      let logic = logic |> builtin.un_b_data
 
       let mitigation_logic = mitigation_logic |> builtin.un_b_data
 
