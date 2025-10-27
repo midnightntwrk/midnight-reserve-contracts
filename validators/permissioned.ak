@@ -41,20 +41,14 @@ fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
 
 validator council_forever {
   else(ctx: ScriptContext) {
-    let ScriptContext { transaction, redeemer, info } = ctx
-
     let one_shot_ref =
       OutputReference(
         config.council_one_shot_hash,
         config.council_one_shot_index,
       )
 
-    trace config.council_two_stage_hash
-
     forever_contract(
-      transaction,
-      redeemer,
-      info,
+      ctx,
       one_shot_ref,
       config.council_two_stage_hash,
       validate_multisig_structure,
@@ -93,8 +87,6 @@ validator council_logic {
 
 validator tech_auth_forever {
   else(ctx: ScriptContext) {
-    let ScriptContext { transaction, redeemer, info } = ctx
-
     let one_shot_ref =
       OutputReference(
         config.technical_authority_one_shot_hash,
@@ -102,9 +94,7 @@ validator tech_auth_forever {
       )
 
     forever_contract(
-      transaction,
-      redeemer,
-      info,
+      ctx,
       one_shot_ref,
       config.technical_authority_two_stage_hash,
       validate_multisig_structure,
@@ -145,8 +135,6 @@ validator tech_auth_logic {
 // Based on what I know I don't think so
 validator federated_ops_forever {
   else(ctx: ScriptContext) {
-    let ScriptContext { transaction, redeemer, info } = ctx
-
     let one_shot_ref =
       OutputReference(
         config.federated_operators_one_shot_hash,
@@ -154,9 +142,7 @@ validator federated_ops_forever {
       )
 
     forever_contract(
-      transaction,
-      redeemer,
-      info,
+      ctx,
       one_shot_ref,
       config.federated_operators_two_stage_hash,
       validate_multisig_structure,

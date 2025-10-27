@@ -80,8 +80,6 @@ validator simple_bridge {
 
 validator committee_bridge_forever {
   else(ctx: ScriptContext) {
-    let ScriptContext { transaction, redeemer, info } = ctx
-
     let one_shot_ref =
       OutputReference(
         config.committee_bridge_one_shot_hash,
@@ -89,9 +87,7 @@ validator committee_bridge_forever {
       )
 
     forever_contract(
-      transaction,
-      redeemer,
-      info,
+      ctx,
       one_shot_ref,
       config.committee_bridge_two_stage_hash,
       fn(datum, _redeemer) {

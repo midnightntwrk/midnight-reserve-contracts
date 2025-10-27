@@ -11,8 +11,6 @@ fn reserve_init_validation(_datum: Data, _redeemer: Redeemer) {
 
 validator reserve_forever {
   else(ctx: ScriptContext) {
-    let ScriptContext { transaction, redeemer, info } = ctx
-
     let one_shot_ref =
       OutputReference(
         config.reserve_one_shot_hash,
@@ -20,9 +18,7 @@ validator reserve_forever {
       )
 
     forever_contract(
-      transaction,
-      redeemer,
-      info,
+      ctx,
       one_shot_ref,
       config.reserve_two_stage_hash,
       reserve_init_validation,
