@@ -50,7 +50,10 @@ pub fn auth_multisig_validation(transaction: Transaction, info: ScriptInfo) {
     Publishing {
       certificate: RegisterCredential { credential: Script(own_hash), .. },
       ..
-    } -> config.cnight_policy != own_hash
+    } ->
+      // This trick is simply to include cnight policy in the script hash
+      // without the compiler optimizing the policy away
+      config.cnight_policy != own_hash
 
     _ -> fail
   }
