@@ -133,7 +133,7 @@ validator cnight_generates_dust {
                   output_datum
 
                 // TODO: How long is Midnight Address?
-                expect builtin.length_of_bytearray(dust_address) == 32
+                expect builtin.length_of_bytearray(dust_address) == 33
 
                 expect
                   when c_wallet is {
