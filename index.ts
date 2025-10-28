@@ -11,6 +11,7 @@ import {
   PaymentAddress,
   PlutusData,
   PolicyId,
+  Script,
   toHex,
   TransactionId,
   TransactionOutput,
@@ -161,31 +162,62 @@ const getDeployerAddress = (): string => {
   return "addr_test1qruhen60uwzpwnnr7gjs50z2v8u9zyfw6zunet4k42zrpr54mrlv55f93rs6j48wt29w90hlxt4rvpvshe55k5r9mpvqjv2wt4";
 };
 
-// Helper function to create multisig state with real credentials
-const createMultisigState = (totalSigners: bigint): Contracts.Multisig => {
-  const deployerAddr = getDeployerAddress();
-  const addr = Core.addressFromBech32(deployerAddr);
+// Helper function to parse signers from environment
+const parseSigners = (): {
+  totalSigners: bigint;
+  signers: { [x: string]: string };
+} => {
+  const signersEnv = process.env.SIGNERS;
 
-  if (!addr.asBase()) {
-    throw new Error(
-      "Deployer address must be a Base address with payment and stake credentials",
+  if (!signersEnv) {
+    console.error("Error: SIGNERS environment variable is required.");
+    console.error("Set this in your .env file:");
+    console.error(
+      "SIGNERS=cardano_key_hash1:sr25519_key1,cardano_key_hash2:sr25519_key2",
     );
+    process.exit(1);
   }
 
-  return [
-    totalSigners,
-    PlutusData.fromCore({
-      items: [
-        fromHex("8200581c" + addr.asBase()!.getPaymentCredential().hash),
-        fromHex("8200581c" + addr.asBase()!.getStakeCredential().hash),
-      ],
-    }),
-  ];
+  const signers: { [x: string]: string } = {};
+
+  const signerPairs = signersEnv.split(",");
+  for (const pair of signerPairs) {
+    const [paymentHash, stakeHash] = pair.trim().split(":");
+    if (paymentHash && stakeHash) {
+      signers[paymentHash] = stakeHash;
+    }
+  }
+
+  const totalSigners = BigInt(Object.keys(signers).length);
+
+  return { totalSigners, signers };
 };
 
-// Transaction 1: Technical Authority Deployment
-async function generateTechAuthDeployment() {
-  console.log("Generating Technical Authority deployment transaction...");
+// Helper function to create multisig state with CBOR-prefixed credentials
+const createMultisigState = (
+  totalSigners: bigint,
+  signers: { [x: string]: string },
+): Contracts.Multisig => {
+  // Add CBOR prefix "8200581c" to each key for Multisig state
+  const prefixedSigners: { [x: string]: string } = {};
+  for (const [hash, sr25519Key] of Object.entries(signers)) {
+    prefixedSigners["8200581c" + hash] = sr25519Key;
+  }
+  return [totalSigners, prefixedSigners];
+};
+
+// Consolidated function for tech_auth, council, and federated_ops deployments
+async function generateMultisigDeployment(params: {
+  name: string;
+  oneShotHash: string;
+  oneShotIndex: number;
+  twoStageContract: { Script: Script };
+  foreverContract: { Script: Script };
+  logicContract: { Script: Script };
+  totalSigners: bigint;
+  signers: { [x: string]: string };
+}) {
+  console.log(`Generating ${params.name} deployment transaction...`);
 
   const blaze = await Blaze.from(
     provider,
@@ -198,11 +230,10 @@ async function generateTechAuthDeployment() {
   const deployerAddr = getDeployerAddress();
 
   try {
-    // Create one-shot UTxO from config
-    const techAuthOneShotUtxo = TransactionUnspentOutput.fromCore([
+    const oneShotUtxo = TransactionUnspentOutput.fromCore([
       {
-        index: config.technical_authority_one_shot_index,
-        txId: TransactionId(config.technical_authority_one_shot_hash),
+        index: params.oneShotIndex,
+        txId: TransactionId(params.oneShotHash),
       },
       {
         address: PaymentAddress(deployerAddr),
@@ -212,121 +243,114 @@ async function generateTechAuthDeployment() {
       },
     ]);
 
-    const techAuthTwoStageAddress = addressFromValidator(
+    const twoStageAddress = addressFromValidator(
       networkId,
-      techAuthTwoStage.Script,
+      params.twoStageContract.Script,
     );
-    const techAuthForeverAddress = addressFromValidator(
+    const foreverAddress = addressFromValidator(
       networkId,
-      techAuthForever.Script,
+      params.foreverContract.Script,
     );
 
-    const techAuthUpgradeState: Contracts.UpgradeState = [
-      techAuthLogic.Script.hash(),
+    const upgradeState: Contracts.UpgradeState = [
+      params.logicContract.Script.hash(),
       "",
       govAuth.Script.hash(),
       "",
       0n,
     ];
 
-    const techAuthForeverState = createMultisigState(2n);
+    const foreverState = createMultisigState(
+      params.totalSigners,
+      params.signers,
+    );
 
-    // Build real transaction with Blaze
-    const tx = await blaze
-      .newTransaction()
-      .addInput(techAuthOneShotUtxo)
+    let txBuilder = blaze.newTransaction().addInput(oneShotUtxo);
+
+    // Add two-stage mint
+    txBuilder = txBuilder
       .addMint(
-        PolicyId(techAuthForever.Script.hash()),
+        PolicyId(params.foreverContract.Script.hash()),
         new Map([[AssetName(""), 1n]]),
-        PlutusData.fromCore({
-          items: [
-            fromHex(
-              Core.addressFromBech32(deployerAddr)
-                .asBase()!
-                .getPaymentCredential().hash,
-            ),
-            fromHex(
-              Core.addressFromBech32(deployerAddr)
-                .asBase()!
-                .getStakeCredential().hash,
-            ),
-          ],
-        }),
+        serialize(Contracts.PermissionedRedeemer, params.signers),
       )
       .addMint(
-        PolicyId(techAuthTwoStage.Script.hash()),
+        PolicyId(params.twoStageContract.Script.hash()),
         new Map([
           [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
           [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
         ]),
         PlutusData.newInteger(0n),
       )
-      .provideScript(techAuthTwoStage.Script)
-      .provideScript(techAuthForever.Script)
+      .provideScript(params.twoStageContract.Script)
+      .provideScript(params.foreverContract.Script)
       .addOutput(
         TransactionOutput.fromCore({
-          address: PaymentAddress(techAuthTwoStageAddress.toBech32()),
+          address: PaymentAddress(twoStageAddress.toBech32()),
           value: {
-            coins: 2_000_000n,
+            coins: 1_000_000n,
             assets: new Map([
               [
                 AssetId(
-                  techAuthTwoStage.Script.hash() +
+                  params.twoStageContract.Script.hash() +
                     toHex(new TextEncoder().encode("main")),
                 ),
                 1n,
               ],
             ]),
           },
-          datum: serialize(
-            Contracts.UpgradeState,
-            techAuthUpgradeState,
-          ).toCore(),
+          datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
         }),
       )
       .addOutput(
         TransactionOutput.fromCore({
-          address: PaymentAddress(techAuthTwoStageAddress.toBech32()),
+          address: PaymentAddress(twoStageAddress.toBech32()),
           value: {
-            coins: 2_000_000n,
+            coins: 1_000_000n,
             assets: new Map([
               [
                 AssetId(
-                  techAuthTwoStage.Script.hash() +
+                  params.twoStageContract.Script.hash() +
                     toHex(new TextEncoder().encode("staging")),
                 ),
                 1n,
               ],
             ]),
           },
-          datum: serialize(
-            Contracts.UpgradeState,
-            techAuthUpgradeState,
-          ).toCore(),
+          datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
         }),
       )
       .addOutput(
         TransactionOutput.fromCore({
-          address: PaymentAddress(techAuthForeverAddress.toBech32()),
+          address: PaymentAddress(foreverAddress.toBech32()),
           value: {
-            coins: 2_000_000n,
-            assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
+            coins: 1_000_000n,
+            assets: new Map([
+              [AssetId(params.foreverContract.Script.hash()), 1n],
+            ]),
           },
-          datum: serialize(Contracts.Multisig, techAuthForeverState).toCore(),
+          datum: serialize(Contracts.Multisig, foreverState).toCore(),
         }),
-      )
-      .complete();
+      );
 
+    const tx = await txBuilder.complete();
     return tx;
   } catch (error) {
-    console.error("Error generating Technical Authority deployment:", error);
+    console.error(`Error generating ${params.name} deployment:`, error);
     throw error;
   }
 }
 
-// Transaction 2: Council Deployment
-async function generateCouncilDeployment() {
-  console.log("Generating Council deployment transaction...");
+// Consolidated function for ICS and Reserve deployments
+async function generateSimpleDeployment(params: {
+  name: string;
+  oneShotHash: string;
+  oneShotIndex: number;
+  twoStageContract: { Script: Script };
+  foreverContract: { Script: Script };
+  logicContract: { Script: Script };
+}) {
+  console.log(`Generating ${params.name} deployment transaction...`);
 
   const blaze = await Blaze.from(
     provider,
@@ -339,10 +363,10 @@ async function generateCouncilDeployment() {
   const deployerAddr = getDeployerAddress();
 
   try {
-    const councilOneShotUtxo = TransactionUnspentOutput.fromCore([
+    const oneShotUtxo = TransactionUnspentOutput.fromCore([
       {
-        index: config.council_one_shot_index,
-        txId: TransactionId(config.council_one_shot_hash),
+        index: params.oneShotIndex,
+        txId: TransactionId(params.oneShotHash),
       },
       {
         address: PaymentAddress(deployerAddr),
@@ -352,156 +376,17 @@ async function generateCouncilDeployment() {
       },
     ]);
 
-    const councilTwoStageAddress = addressFromValidator(
+    const foreverAddress = addressFromValidator(
       networkId,
-      councilTwoStage.Script,
+      params.foreverContract.Script,
     );
-    const councilForeverAddress = addressFromValidator(
+    const twoStageAddress = addressFromValidator(
       networkId,
-      councilForever.Script,
-    );
-
-    const councilUpgradeState: Contracts.UpgradeState = [
-      councilLogic.Script.hash(),
-      "",
-      govAuth.Script.hash(),
-      "",
-      0n,
-    ];
-
-    const councilForeverState = createMultisigState(2n);
-
-    const tx = await blaze
-      .newTransaction()
-      .addInput(councilOneShotUtxo)
-      .addMint(
-        PolicyId(councilForever.Script.hash()),
-        new Map([[AssetName(""), 1n]]),
-        PlutusData.fromCore({
-          items: [
-            fromHex(
-              Core.addressFromBech32(deployerAddr)
-                .asBase()!
-                .getPaymentCredential().hash,
-            ),
-            fromHex(
-              Core.addressFromBech32(deployerAddr)
-                .asBase()!
-                .getStakeCredential().hash,
-            ),
-          ],
-        }),
-      )
-      .addMint(
-        PolicyId(councilTwoStage.Script.hash()),
-        new Map([
-          [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
-          [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
-        ]),
-        PlutusData.newInteger(0n),
-      )
-      .provideScript(councilTwoStage.Script)
-      .provideScript(councilForever.Script)
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(councilTwoStageAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([
-              [
-                AssetId(
-                  councilTwoStage.Script.hash() +
-                    toHex(new TextEncoder().encode("main")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(
-            Contracts.UpgradeState,
-            councilUpgradeState,
-          ).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(councilTwoStageAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([
-              [
-                AssetId(
-                  councilTwoStage.Script.hash() +
-                    toHex(new TextEncoder().encode("staging")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(
-            Contracts.UpgradeState,
-            councilUpgradeState,
-          ).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(councilForeverAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
-          },
-          datum: serialize(Contracts.Multisig, councilForeverState).toCore(),
-        }),
-      )
-      .complete();
-
-    return tx;
-  } catch (error) {
-    console.error("Error generating Council deployment:", error);
-    throw error;
-  }
-}
-
-// Transaction 3: Reserve Deployment
-async function generateReserveDeployment() {
-  console.log("Generating Reserve deployment transaction...");
-
-  const blaze = await Blaze.from(
-    provider,
-    new ColdWallet(
-      Address.fromBech32(getDeployerAddress()),
-      network === "mainnet" ? NetworkId.Mainnet : NetworkId.Testnet,
-      provider,
-    ),
-  );
-  const deployerAddr = getDeployerAddress();
-
-  try {
-    const reserveOneShotUtxo = TransactionUnspentOutput.fromCore([
-      {
-        index: config.reserve_one_shot_index,
-        txId: TransactionId(config.reserve_one_shot_hash),
-      },
-      {
-        address: PaymentAddress(deployerAddr),
-        value: {
-          coins: 100_000_000n,
-        },
-      },
-    ]);
-
-    const reserveForeverAddress = addressFromValidator(
-      networkId,
-      reserveForever.Script,
-    );
-    const reserveTwoStageAddress = addressFromValidator(
-      networkId,
-      reserveTwoStage.Script,
+      params.twoStageContract.Script,
     );
 
-    const reserveUpgradeState: Contracts.UpgradeState = [
-      reserveLogic.Script.hash(),
+    const upgradeState: Contracts.UpgradeState = [
+      params.logicContract.Script.hash(),
       "",
       govAuth.Script.hash(),
       "",
@@ -510,70 +395,66 @@ async function generateReserveDeployment() {
 
     const tx = await blaze
       .newTransaction()
-      .addInput(reserveOneShotUtxo)
+      .addInput(oneShotUtxo)
       .addMint(
-        PolicyId(reserveForever.Script.hash()),
+        PolicyId(params.foreverContract.Script.hash()),
         new Map([[AssetName(""), 1n]]),
         PlutusData.newInteger(0n),
       )
       .addMint(
-        PolicyId(reserveTwoStage.Script.hash()),
+        PolicyId(params.twoStageContract.Script.hash()),
         new Map([
           [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
           [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
         ]),
         PlutusData.newInteger(0n),
       )
-      .provideScript(reserveForever.Script)
-      .provideScript(reserveTwoStage.Script)
+      .provideScript(params.foreverContract.Script)
+      .provideScript(params.twoStageContract.Script)
       .addOutput(
         TransactionOutput.fromCore({
-          address: PaymentAddress(reserveTwoStageAddress.toBech32()),
+          address: PaymentAddress(twoStageAddress.toBech32()),
           value: {
-            coins: 2_000_000n,
+            coins: 1_000_000n,
             assets: new Map([
               [
                 AssetId(
-                  reserveTwoStage.Script.hash() +
+                  params.twoStageContract.Script.hash() +
                     toHex(new TextEncoder().encode("main")),
                 ),
                 1n,
               ],
             ]),
           },
-          datum: serialize(
-            Contracts.UpgradeState,
-            reserveUpgradeState,
-          ).toCore(),
+          datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
         }),
       )
       .addOutput(
         TransactionOutput.fromCore({
-          address: PaymentAddress(reserveTwoStageAddress.toBech32()),
+          address: PaymentAddress(twoStageAddress.toBech32()),
           value: {
-            coins: 2_000_000n,
+            coins: 1_000_000n,
             assets: new Map([
               [
                 AssetId(
-                  reserveTwoStage.Script.hash() +
+                  params.twoStageContract.Script.hash() +
                     toHex(new TextEncoder().encode("staging")),
                 ),
                 1n,
               ],
             ]),
           },
-          datum: serialize(
-            Contracts.UpgradeState,
-            reserveUpgradeState,
-          ).toCore(),
+          datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
         }),
       )
       .addOutput(
         TransactionOutput.fromCore({
-          address: PaymentAddress(reserveForeverAddress.toBech32()),
+          address: PaymentAddress(foreverAddress.toBech32()),
           value: {
-            coins: 2_000_000n,
-            assets: new Map([[AssetId(reserveForever.Script.hash()), 1n]]),
+            coins: 1_000_000n,
+            assets: new Map([
+              [AssetId(params.foreverContract.Script.hash()), 1n],
+            ]),
           },
           datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
         }),
@@ -582,14 +463,20 @@ async function generateReserveDeployment() {
 
     return tx;
   } catch (error) {
-    console.error("Error generating Reserve deployment:", error);
+    console.error(`Error generating ${params.name} deployment:`, error);
     throw error;
   }
 }
 
-// Transaction 4: ICS Deployment
-async function generateIcsDeployment() {
-  console.log("Generating ICS deployment transaction...");
+// Consolidated function for threshold deployments
+async function generateThresholdDeployment(params: {
+  name: string;
+  oneShotHash: string;
+  oneShotIndex: number;
+  thresholdContract: { Script: Script };
+  thresholdDatum: Contracts.MultisigThreshold;
+}) {
+  console.log(`Generating ${params.name} deployment transaction...`);
 
   const blaze = await Blaze.from(
     provider,
@@ -602,10 +489,10 @@ async function generateIcsDeployment() {
   const deployerAddr = getDeployerAddress();
 
   try {
-    const icsOneShotUtxo = TransactionUnspentOutput.fromCore([
+    const oneShotUtxo = TransactionUnspentOutput.fromCore([
       {
-        index: config.ics_one_shot_index,
-        txId: TransactionId(config.ics_one_shot_hash),
+        index: params.oneShotIndex,
+        txId: TransactionId(params.oneShotHash),
       },
       {
         address: PaymentAddress(deployerAddr),
@@ -615,451 +502,32 @@ async function generateIcsDeployment() {
       },
     ]);
 
-    const icsForeverAddress = addressFromValidator(
+    const thresholdAddress = addressFromValidator(
       networkId,
-      icsForever.Script,
+      params.thresholdContract.Script,
     );
-    const icsTwoStageAddress = addressFromValidator(
-      networkId,
-      icsTwoStage.Script,
-    );
-
-    const icsUpgradeState: Contracts.UpgradeState = [
-      icsLogic.Script.hash(),
-      "",
-      govAuth.Script.hash(),
-      "",
-      0n,
-    ];
 
     const tx = await blaze
       .newTransaction()
-      .addInput(icsOneShotUtxo)
+      .addInput(oneShotUtxo)
       .addMint(
-        PolicyId(icsForever.Script.hash()),
+        PolicyId(params.thresholdContract.Script.hash()),
         new Map([[AssetName(""), 1n]]),
         PlutusData.newInteger(0n),
       )
-      .addMint(
-        PolicyId(icsTwoStage.Script.hash()),
-        new Map([
-          [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
-          [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
-        ]),
-        PlutusData.newInteger(0n),
-      )
-      .provideScript(icsForever.Script)
-      .provideScript(icsTwoStage.Script)
+      .provideScript(params.thresholdContract.Script)
       .addOutput(
         TransactionOutput.fromCore({
-          address: PaymentAddress(icsTwoStageAddress.toBech32()),
+          address: PaymentAddress(thresholdAddress.toBech32()),
           value: {
             coins: 2_000_000n,
             assets: new Map([
-              [
-                AssetId(
-                  icsTwoStage.Script.hash() +
-                    toHex(new TextEncoder().encode("main")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(Contracts.UpgradeState, icsUpgradeState).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(icsTwoStageAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([
-              [
-                AssetId(
-                  icsTwoStage.Script.hash() +
-                    toHex(new TextEncoder().encode("staging")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(Contracts.UpgradeState, icsUpgradeState).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(icsForeverAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([[AssetId(icsForever.Script.hash()), 1n]]),
-          },
-          datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
-        }),
-      )
-      .complete();
-
-    return tx;
-  } catch (error) {
-    console.error("Error generating ICS deployment:", error);
-    throw error;
-  }
-}
-
-// Transaction 5: Federated Operators Deployment
-async function generateFederatedOpsDeployment() {
-  console.log("Generating Federated Operators deployment transaction...");
-
-  const blaze = await Blaze.from(
-    provider,
-    new ColdWallet(
-      Address.fromBech32(getDeployerAddress()),
-      network === "mainnet" ? NetworkId.Mainnet : NetworkId.Testnet,
-      provider,
-    ),
-  );
-  const deployerAddr = getDeployerAddress();
-
-  try {
-    const federatedOpsOneShotUtxo = TransactionUnspentOutput.fromCore([
-      {
-        index: config.federated_operators_one_shot_index,
-        txId: TransactionId(config.federated_operators_one_shot_hash),
-      },
-      {
-        address: PaymentAddress(deployerAddr),
-        value: {
-          coins: 100_000_000n,
-        },
-      },
-    ]);
-
-    const federatedOpsForeverAddress = addressFromValidator(
-      networkId,
-      federatedOpsForever.Script,
-    );
-    const federatedOpsTwoStageAddress = addressFromValidator(
-      networkId,
-      federatedOpsTwoStage.Script,
-    );
-
-    const federatedOpsUpgradeState: Contracts.UpgradeState = [
-      federatedOpsLogic.Script.hash(),
-      "",
-      govAuth.Script.hash(),
-      "",
-      0n,
-    ];
-
-    const federatedOpsForeverState = createMultisigState(2n);
-
-    const tx = await blaze
-      .newTransaction()
-      .addInput(federatedOpsOneShotUtxo)
-      .addMint(
-        PolicyId(federatedOpsForever.Script.hash()),
-        new Map([[AssetName(""), 1n]]),
-        PlutusData.fromCore({
-          items: [
-            fromHex(
-              Core.addressFromBech32(deployerAddr)
-                .asBase()!
-                .getPaymentCredential().hash,
-            ),
-            fromHex(
-              Core.addressFromBech32(deployerAddr)
-                .asBase()!
-                .getStakeCredential().hash,
-            ),
-          ],
-        }),
-      )
-      .addMint(
-        PolicyId(federatedOpsTwoStage.Script.hash()),
-        new Map([
-          [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
-          [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
-        ]),
-        PlutusData.newInteger(0n),
-      )
-      .provideScript(federatedOpsForever.Script)
-      .provideScript(federatedOpsTwoStage.Script)
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([
-              [
-                AssetId(
-                  federatedOpsTwoStage.Script.hash() +
-                    toHex(new TextEncoder().encode("main")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(
-            Contracts.UpgradeState,
-            federatedOpsUpgradeState,
-          ).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([
-              [
-                AssetId(
-                  federatedOpsTwoStage.Script.hash() +
-                    toHex(new TextEncoder().encode("staging")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(
-            Contracts.UpgradeState,
-            federatedOpsUpgradeState,
-          ).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(federatedOpsForeverAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([[AssetId(federatedOpsForever.Script.hash()), 1n]]),
-          },
-          datum: serialize(
-            Contracts.Multisig,
-            federatedOpsForeverState,
-          ).toCore(),
-        }),
-      )
-      .complete();
-
-    return tx;
-  } catch (error) {
-    console.error("Error generating Federated Operators deployment:", error);
-    throw error;
-  }
-}
-
-// Transaction 6: Main Government Threshold Deployment
-async function generateMainGovThresholdDeployment() {
-  console.log("Generating Main Government Threshold deployment transaction...");
-
-  const blaze = await Blaze.from(
-    provider,
-    new ColdWallet(
-      Address.fromBech32(getDeployerAddress()),
-      network === "mainnet" ? NetworkId.Mainnet : NetworkId.Testnet,
-      provider,
-    ),
-  );
-  const deployerAddr = getDeployerAddress();
-
-  try {
-    const mainGovThresholdOneShotUtxo = TransactionUnspentOutput.fromCore([
-      {
-        index: config.main_gov_one_shot_index,
-        txId: TransactionId(config.main_gov_one_shot_hash),
-      },
-      {
-        address: PaymentAddress(deployerAddr),
-        value: {
-          coins: 100_000_000n,
-        },
-      },
-    ]);
-
-    const mainGovThresholdAddress = addressFromValidator(
-      networkId,
-      mainGovThreshold.Script,
-    );
-
-    const thresholdDatum: Contracts.MultisigThreshold = {
-      technical_auth_numerator: 2n,
-      technical_auth_denominator: 3n,
-      council_numerator: 2n,
-      council_denominator: 3n,
-    };
-
-    const tx = await blaze
-      .newTransaction()
-      .addInput(mainGovThresholdOneShotUtxo)
-      .addMint(
-        PolicyId(mainGovThreshold.Script.hash()),
-        new Map([[AssetName(""), 1n]]),
-        PlutusData.newInteger(0n),
-      )
-      .provideScript(mainGovThreshold.Script)
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(mainGovThresholdAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([[AssetId(mainGovThreshold.Script.hash()), 1n]]),
-          },
-          datum: serialize(
-            Contracts.MultisigThreshold,
-            thresholdDatum,
-          ).toCore(),
-        }),
-      )
-      .complete();
-
-    return tx;
-  } catch (error) {
-    console.error(
-      "Error generating Main Government Threshold deployment:",
-      error,
-    );
-    throw error;
-  }
-}
-
-// Transaction 7: Staging Government Threshold Deployment
-async function generateStagingGovThresholdDeployment() {
-  console.log(
-    "Generating Staging Government Threshold deployment transaction...",
-  );
-
-  const blaze = await Blaze.from(
-    provider,
-    new ColdWallet(
-      Address.fromBech32(getDeployerAddress()),
-      network === "mainnet" ? NetworkId.Mainnet : NetworkId.Testnet,
-      provider,
-    ),
-  );
-  const deployerAddr = getDeployerAddress();
-
-  try {
-    const stagingGovThresholdOneShotUtxo = TransactionUnspentOutput.fromCore([
-      {
-        index: config.staging_gov_one_shot_index,
-        txId: TransactionId(config.staging_gov_one_shot_hash),
-      },
-      {
-        address: PaymentAddress(deployerAddr),
-        value: {
-          coins: 100_000_000n,
-        },
-      },
-    ]);
-
-    const stagingGovThresholdAddress = addressFromValidator(
-      networkId,
-      stagingGovThreshold.Script,
-    );
-
-    const thresholdDatum: Contracts.MultisigThreshold = {
-      technical_auth_numerator: 1n,
-      technical_auth_denominator: 2n,
-      council_numerator: 1n,
-      council_denominator: 2n,
-    };
-
-    const tx = await blaze
-      .newTransaction()
-      .addInput(stagingGovThresholdOneShotUtxo)
-      .addMint(
-        PolicyId(stagingGovThreshold.Script.hash()),
-        new Map([[AssetName(""), 1n]]),
-        PlutusData.newInteger(0n),
-      )
-      .provideScript(stagingGovThreshold.Script)
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(stagingGovThresholdAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([[AssetId(stagingGovThreshold.Script.hash()), 1n]]),
-          },
-          datum: serialize(
-            Contracts.MultisigThreshold,
-            thresholdDatum,
-          ).toCore(),
-        }),
-      )
-      .complete();
-
-    return tx;
-  } catch (error) {
-    console.error(
-      "Error generating Staging Government Threshold deployment:",
-      error,
-    );
-    throw error;
-  }
-}
-
-// Transaction 8: Council Update Threshold Deployment
-async function generateCouncilUpdateThresholdDeployment() {
-  console.log("Generating Council Update Threshold deployment transaction...");
-
-  const blaze = await Blaze.from(
-    provider,
-    new ColdWallet(
-      Address.fromBech32(getDeployerAddress()),
-      network === "mainnet" ? NetworkId.Mainnet : NetworkId.Testnet,
-      provider,
-    ),
-  );
-  const deployerAddr = getDeployerAddress();
-
-  try {
-    const councilUpdateThresholdOneShotUtxo = TransactionUnspentOutput.fromCore(
-      [
-        {
-          index: config.main_council_update_one_shot_index,
-          txId: TransactionId(config.main_council_update_one_shot_hash),
-        },
-        {
-          address: PaymentAddress(deployerAddr),
-          value: {
-            coins: 100_000_000n,
-          },
-        },
-      ],
-    );
-
-    const councilUpdateThresholdAddress = addressFromValidator(
-      networkId,
-      mainCouncilUpdateThreshold.Script,
-    );
-
-    const thresholdDatum: Contracts.MultisigThreshold = {
-      technical_auth_numerator: 2n,
-      technical_auth_denominator: 3n,
-      council_numerator: 2n,
-      council_denominator: 3n,
-    };
-
-    const tx = await blaze
-      .newTransaction()
-      .addInput(councilUpdateThresholdOneShotUtxo)
-      .addMint(
-        PolicyId(mainCouncilUpdateThreshold.Script.hash()),
-        new Map([[AssetName(""), 1n]]),
-        PlutusData.newInteger(0n),
-      )
-      .provideScript(mainCouncilUpdateThreshold.Script)
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(councilUpdateThresholdAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([
-              [AssetId(mainCouncilUpdateThreshold.Script.hash()), 1n],
+              [AssetId(params.thresholdContract.Script.hash()), 1n],
             ]),
           },
           datum: serialize(
             Contracts.MultisigThreshold,
-            thresholdDatum,
+            params.thresholdDatum,
           ).toCore(),
         }),
       )
@@ -1067,170 +535,7 @@ async function generateCouncilUpdateThresholdDeployment() {
 
     return tx;
   } catch (error) {
-    console.error(
-      "Error generating Council Update Threshold deployment:",
-      error,
-    );
-    throw error;
-  }
-}
-
-// Transaction 9: Tech Auth Update Threshold Deployment
-async function generateTechAuthUpdateThresholdDeployment() {
-  console.log(
-    "Generating Tech Auth Update Threshold deployment transaction...",
-  );
-
-  const blaze = await Blaze.from(
-    provider,
-    new ColdWallet(
-      Address.fromBech32(getDeployerAddress()),
-      network === "mainnet" ? NetworkId.Mainnet : NetworkId.Testnet,
-      provider,
-    ),
-  );
-  const deployerAddr = getDeployerAddress();
-
-  try {
-    const techAuthUpdateThresholdOneShotUtxo =
-      TransactionUnspentOutput.fromCore([
-        {
-          index: config.main_tech_auth_update_one_shot_index,
-          txId: TransactionId(config.main_tech_auth_update_one_shot_hash),
-        },
-        {
-          address: PaymentAddress(deployerAddr),
-          value: {
-            coins: 100_000_000n,
-          },
-        },
-      ]);
-
-    const techAuthUpdateThresholdAddress = addressFromValidator(
-      networkId,
-      mainTechAuthUpdateThreshold.Script,
-    );
-
-    const thresholdDatum: Contracts.MultisigThreshold = {
-      technical_auth_numerator: 2n,
-      technical_auth_denominator: 3n,
-      council_numerator: 2n,
-      council_denominator: 3n,
-    };
-
-    const tx = await blaze
-      .newTransaction()
-      .addInput(techAuthUpdateThresholdOneShotUtxo)
-      .addMint(
-        PolicyId(mainTechAuthUpdateThreshold.Script.hash()),
-        new Map([[AssetName(""), 1n]]),
-        PlutusData.newInteger(0n),
-      )
-      .provideScript(mainTechAuthUpdateThreshold.Script)
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(techAuthUpdateThresholdAddress.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([
-              [AssetId(mainTechAuthUpdateThreshold.Script.hash()), 1n],
-            ]),
-          },
-          datum: serialize(
-            Contracts.MultisigThreshold,
-            thresholdDatum,
-          ).toCore(),
-        }),
-      )
-      .complete();
-
-    return tx;
-  } catch (error) {
-    console.error(
-      "Error generating Tech Auth Update Threshold deployment:",
-      error,
-    );
-    throw error;
-  }
-}
-
-// Transaction 10: Federated Ops Update Threshold Deployment
-async function generateFederatedOpsUpdateThresholdDeployment() {
-  console.log(
-    "Generating Federated Ops Update Threshold deployment transaction...",
-  );
-
-  const blaze = await Blaze.from(
-    provider,
-    new ColdWallet(
-      Address.fromBech32(getDeployerAddress()),
-      network === "mainnet" ? NetworkId.Mainnet : NetworkId.Testnet,
-      provider,
-    ),
-  );
-  const deployerAddr = getDeployerAddress();
-
-  try {
-    const federatedOpsUpdateThresholdOneShotUtxo =
-      TransactionUnspentOutput.fromCore([
-        {
-          index: config.main_federated_ops_update_one_shot_index,
-          txId: TransactionId(config.main_federated_ops_update_one_shot_hash),
-        },
-        {
-          address: PaymentAddress(deployerAddr),
-          value: {
-            coins: 100_000_000n,
-          },
-        },
-      ]);
-
-    const federatedOpsUpdateThresholdAddress = addressFromValidator(
-      networkId,
-      mainFederatedOpsUpdateThreshold.Script,
-    );
-
-    const thresholdDatum: Contracts.MultisigThreshold = {
-      technical_auth_numerator: 2n,
-      technical_auth_denominator: 3n,
-      council_numerator: 2n,
-      council_denominator: 3n,
-    };
-
-    const tx = await blaze
-      .newTransaction()
-      .addInput(federatedOpsUpdateThresholdOneShotUtxo)
-      .addMint(
-        PolicyId(mainFederatedOpsUpdateThreshold.Script.hash()),
-        new Map([[AssetName(""), 1n]]),
-        PlutusData.newInteger(0n),
-      )
-      .provideScript(mainFederatedOpsUpdateThreshold.Script)
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(
-            federatedOpsUpdateThresholdAddress.toBech32(),
-          ),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([
-              [AssetId(mainFederatedOpsUpdateThreshold.Script.hash()), 1n],
-            ]),
-          },
-          datum: serialize(
-            Contracts.MultisigThreshold,
-            thresholdDatum,
-          ).toCore(),
-        }),
-      )
-      .complete();
-
-    return tx;
-  } catch (error) {
-    console.error(
-      "Error generating Federated Ops Update Threshold deployment:",
-      error,
-    );
+    console.error(`Error generating ${params.name} deployment:`, error);
     throw error;
   }
 }
@@ -1242,38 +547,159 @@ async function main() {
     console.log(`Generating deployment transactions for ${network}`);
     console.log(`===========================================`);
 
+    // Parse signers from environment
+    const { totalSigners, signers } = parseSigners();
+
+    console.log(`Total signers: ${totalSigners}`);
+    console.log(`Number of signer pairs: ${Object.keys(signers).length}`);
+
     // Generate all deployment transactions
     const transactions = [
       {
         name: "technical-authority-deployment",
-        generator: generateTechAuthDeployment,
+        generator: () =>
+          generateMultisigDeployment({
+            name: "Technical Authority",
+            oneShotHash: config.technical_authority_one_shot_hash,
+            oneShotIndex: config.technical_authority_one_shot_index,
+            twoStageContract: techAuthTwoStage,
+            foreverContract: techAuthForever,
+            logicContract: techAuthLogic,
+            totalSigners,
+            signers,
+          }),
       },
-      { name: "council-deployment", generator: generateCouncilDeployment },
-      { name: "reserve-deployment", generator: generateReserveDeployment },
-      { name: "ics-deployment", generator: generateIcsDeployment },
+      {
+        name: "council-deployment",
+        generator: () =>
+          generateMultisigDeployment({
+            name: "Council",
+            oneShotHash: config.council_one_shot_hash,
+            oneShotIndex: config.council_one_shot_index,
+            twoStageContract: councilTwoStage,
+            foreverContract: councilForever,
+            logicContract: councilLogic,
+            totalSigners,
+            signers,
+          }),
+      },
       {
         name: "federated-ops-deployment",
-        generator: generateFederatedOpsDeployment,
+        generator: () =>
+          generateMultisigDeployment({
+            name: "Federated Operators",
+            oneShotHash: config.federated_operators_one_shot_hash,
+            oneShotIndex: config.federated_operators_one_shot_index,
+            twoStageContract: federatedOpsTwoStage,
+            foreverContract: federatedOpsForever,
+            logicContract: federatedOpsLogic,
+            totalSigners,
+            signers,
+          }),
+      },
+      {
+        name: "reserve-deployment",
+        generator: () =>
+          generateSimpleDeployment({
+            name: "Reserve",
+            oneShotHash: config.reserve_one_shot_hash,
+            oneShotIndex: config.reserve_one_shot_index,
+            twoStageContract: reserveTwoStage,
+            foreverContract: reserveForever,
+            logicContract: reserveLogic,
+          }),
+      },
+      {
+        name: "ics-deployment",
+        generator: () =>
+          generateSimpleDeployment({
+            name: "ICS",
+            oneShotHash: config.ics_one_shot_hash,
+            oneShotIndex: config.ics_one_shot_index,
+            twoStageContract: icsTwoStage,
+            foreverContract: icsForever,
+            logicContract: icsLogic,
+          }),
       },
       {
         name: "main-gov-threshold-deployment",
-        generator: generateMainGovThresholdDeployment,
+        generator: () =>
+          generateThresholdDeployment({
+            name: "Main Government Threshold",
+            oneShotHash: config.main_gov_one_shot_hash,
+            oneShotIndex: config.main_gov_one_shot_index,
+            thresholdContract: mainGovThreshold,
+            thresholdDatum: {
+              technical_auth_numerator: 2n,
+              technical_auth_denominator: 3n,
+              council_numerator: 2n,
+              council_denominator: 3n,
+            },
+          }),
       },
       {
         name: "staging-gov-threshold-deployment",
-        generator: generateStagingGovThresholdDeployment,
+        generator: () =>
+          generateThresholdDeployment({
+            name: "Staging Government Threshold",
+            oneShotHash: config.staging_gov_one_shot_hash,
+            oneShotIndex: config.staging_gov_one_shot_index,
+            thresholdContract: stagingGovThreshold,
+            thresholdDatum: {
+              technical_auth_numerator: 1n,
+              technical_auth_denominator: 2n,
+              council_numerator: 1n,
+              council_denominator: 2n,
+            },
+          }),
       },
       {
         name: "council-update-threshold-deployment",
-        generator: generateCouncilUpdateThresholdDeployment,
+        generator: () =>
+          generateThresholdDeployment({
+            name: "Council Update Threshold",
+            oneShotHash: config.main_council_update_one_shot_hash,
+            oneShotIndex: config.main_council_update_one_shot_index,
+            thresholdContract: mainCouncilUpdateThreshold,
+            thresholdDatum: {
+              technical_auth_numerator: 2n,
+              technical_auth_denominator: 3n,
+              council_numerator: 2n,
+              council_denominator: 3n,
+            },
+          }),
       },
       {
         name: "tech-auth-update-threshold-deployment",
-        generator: generateTechAuthUpdateThresholdDeployment,
+        generator: () =>
+          generateThresholdDeployment({
+            name: "Tech Auth Update Threshold",
+            oneShotHash: config.main_tech_auth_update_one_shot_hash,
+            oneShotIndex: config.main_tech_auth_update_one_shot_index,
+            thresholdContract: mainTechAuthUpdateThreshold,
+            thresholdDatum: {
+              technical_auth_numerator: 2n,
+              technical_auth_denominator: 3n,
+              council_numerator: 2n,
+              council_denominator: 3n,
+            },
+          }),
       },
       {
         name: "federated-ops-update-threshold-deployment",
-        generator: generateFederatedOpsUpdateThresholdDeployment,
+        generator: () =>
+          generateThresholdDeployment({
+            name: "Federated Ops Update Threshold",
+            oneShotHash: config.main_federated_ops_update_one_shot_hash,
+            oneShotIndex: config.main_federated_ops_update_one_shot_index,
+            thresholdContract: mainFederatedOpsUpdateThreshold,
+            thresholdDatum: {
+              technical_auth_numerator: 2n,
+              technical_auth_denominator: 3n,
+              council_numerator: 2n,
+              council_denominator: 3n,
+            },
+          }),
       },
     ];
 
@@ -1325,5 +751,4 @@ async function main() {
   }
 }
 
-// Run the script
 main();
