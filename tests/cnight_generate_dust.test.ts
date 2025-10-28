@@ -22,11 +22,11 @@ describe("CNIGHT Generate Dust", () => {
   const dustGenerator =
     new Contracts.CnightGeneratesDustCnightGeneratesDustElse();
 
-  // Mock 32-byte dust address (64 hex characters)
+  // Mock 33-byte dust address (66 hex characters)
   const mockDustAddress =
-    "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+    "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefff";
 
-  test("User can mint one dust token", async () => {
+  test("User can assign one dust address", async () => {
     const emulator = new Emulator([]);
 
     await emulator.as("user", async (blaze, addr) => {
@@ -56,12 +56,12 @@ describe("CNIGHT Generate Dust", () => {
       // Create dust mapping datum with user's credential and dust address
       const dustMappingDatum: Contracts.DustMappingDatum = {
         c_wallet: {
-          VerificationKey: [addr.asBase()?.getPaymentCredential().hash!],
+          VerificationKey: [addr.asBase()?.getStakeCredential().hash!],
         },
         dust_address: mockDustAddress,
       };
 
-      // Mint 1 dust token and create output UTxO
+      // Mint 1 nft and create output UTxO
       await emulator.expectValidTransaction(
         blaze,
         blaze
