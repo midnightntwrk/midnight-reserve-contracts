@@ -5,6 +5,8 @@ import {
   addressFromValidator,
   AssetId,
   AssetName,
+  Credential,
+  CredentialType,
   fromHex,
   HexBlob,
   NetworkId,
@@ -163,11 +165,18 @@ const getDeployerAddress = (): string => {
 };
 
 // Helper function to parse signers from environment
-const parseSigners = (): {
+const parseSigners = (
+  techAuthSigner: boolean,
+): {
   totalSigners: bigint;
   signers: { [x: string]: string };
 } => {
-  const signersEnv = process.env.SIGNERS;
+  let signersEnv: string | undefined;
+  if (techAuthSigner) {
+    signersEnv = process.env.TECH_AUTH_SIGNERS;
+  } else {
+    signersEnv = process.env.COUNCIL_SIGNERS;
+  }
 
   if (!signersEnv) {
     console.error("Error: SIGNERS environment variable is required.");
@@ -187,6 +196,8 @@ const parseSigners = (): {
       signers[paymentHash] = stakeHash;
     }
   }
+
+  console.log(signerPairs);
 
   const totalSigners = BigInt(Object.keys(signers).length);
 
@@ -330,6 +341,12 @@ async function generateMultisigDeployment(params: {
             ]),
           },
           datum: serialize(Contracts.Multisig, foreverState).toCore(),
+        }),
+      )
+      .addRegisterStake(
+        Credential.fromCore({
+          hash: params.logicContract.Script.hash(),
+          type: CredentialType.ScriptHash,
         }),
       );
 
@@ -548,10 +565,21 @@ async function main() {
     console.log(`===========================================`);
 
     // Parse signers from environment
-    const { totalSigners, signers } = parseSigners();
+    const { totalSigners: techAuthTotalSigners, signers: techAuthSigners } =
+      parseSigners(true);
 
-    console.log(`Total signers: ${totalSigners}`);
-    console.log(`Number of signer pairs: ${Object.keys(signers).length}`);
+    // Parse signers from environment
+    const { totalSigners: councilTotalSigners, signers: councilSigners } =
+      parseSigners(true);
+
+    console.log(`Total tech auth signers: ${techAuthTotalSigners}`);
+    console.log(
+      `Number of tech auth signer pairs: ${Object.keys(techAuthSigners).length}`,
+    );
+    console.log(`Total council signers: ${councilTotalSigners}`);
+    console.log(
+      `Number of council signer pairs: ${Object.keys(councilSigners).length}`,
+    );
 
     // Generate all deployment transactions
     const transactions = [
@@ -565,8 +593,8 @@ async function main() {
             twoStageContract: techAuthTwoStage,
             foreverContract: techAuthForever,
             logicContract: techAuthLogic,
-            totalSigners,
-            signers,
+            totalSigners: techAuthTotalSigners,
+            signers: techAuthSigners,
           }),
       },
       {
@@ -579,8 +607,8 @@ async function main() {
             twoStageContract: councilTwoStage,
             foreverContract: councilForever,
             logicContract: councilLogic,
-            totalSigners,
-            signers,
+            totalSigners: councilTotalSigners,
+            signers: councilSigners,
           }),
       },
       {
@@ -593,8 +621,8 @@ async function main() {
             twoStageContract: federatedOpsTwoStage,
             foreverContract: federatedOpsForever,
             logicContract: federatedOpsLogic,
-            totalSigners,
-            signers,
+            totalSigners: councilTotalSigners,
+            signers: councilSigners,
           }),
       },
       {
@@ -662,7 +690,7 @@ async function main() {
             oneShotIndex: config.main_council_update_one_shot_index,
             thresholdContract: mainCouncilUpdateThreshold,
             thresholdDatum: {
-              technical_auth_numerator: 2n,
+              technical_auth_numerator: 1n,
               technical_auth_denominator: 3n,
               council_numerator: 2n,
               council_denominator: 3n,
