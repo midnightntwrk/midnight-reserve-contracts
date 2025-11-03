@@ -447,7 +447,6 @@ pub fn logic_is_on_main(
           address.payment_credential == pay_cred,
           {
             expect [_, ..nft_id] = value |> to_dict |> to_pairs
-
             main_nft_id == as_data(nft_id)
           },
         }

@@ -8,7 +8,7 @@ use cardano/transaction.{
 }
 use config
 use upgradable/two_stage_upgrade.{validate_running}
-use utils.{input_linked_mint, must_find}
+use utils.{input_linked_mint, is_singleton, must_find}
 
 pub fn forever_contract(
   ctx: ScriptContext,
@@ -35,15 +35,11 @@ pub fn forever_contract(
     _ -> {
       let Transaction { reference_inputs, withdrawals, .. } = transaction
 
-      let main_nft_id = [Pair(two_stage_hash, [Pair("main", 1)])] |> as_data
-
       let input =
         reference_inputs
           |> must_find(
               fn(input) {
-                expect [_, ..assets] = input.output.value |> to_dict |> to_pairs
-
-                as_data(assets) == main_nft_id
+                is_singleton(input.output.value, two_stage_hash, "main")
               },
             )
 
