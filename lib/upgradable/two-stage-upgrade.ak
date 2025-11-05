@@ -56,7 +56,7 @@ pub fn two_stage_upgradable(
         ..
       } = own_input
 
-      // (TS-3) Ensure the spent UTXO is locked by this script.
+      // (TS-3) Extract this validator’s script hash from the spent input credential.
       expect Script(own_hash) as pay_cred = address.payment_credential
 
       // (TS-4) Decode the redeemer into the staged update request.
@@ -159,7 +159,7 @@ pub fn two_stage_upgradable(
 
       let expected_output_datum = InlineDatum(expected_output_datum)
 
-      // (TS-6) Demand the updated script output remains at the same payment credential with the same NFT.
+      // (TS-6) Read the leading output that should hold the updated script state.
       expect [
         Output { address: out_addr, value: out_value, datum: out_datum, .. },
         ..
@@ -235,7 +235,7 @@ fn validate_main_update(
     }
 
     MitigationAuth -> {
-      // Can only set the mitigation logic script once
+      // Allow the mitigation auth script to change only when the main datum still records the empty hash.
       expect mitigation_auth == ""
 
       expect UpgradeState { mitigation_auth: new_mitigation, round, .. } =
@@ -469,8 +469,6 @@ fn validate_mint_tokens(
     builtin.length_of_bytearray(logic) == 28,
     // (TSM-17) Ensure the initial staging auth hash is 28 bytes.
     builtin.length_of_bytearray(auth) == 28,
-    // This trick is simply to include cnight policy in the script hash
-    // without the compiler optimizing the policy away
     // (TSM-18) Touch `cnight_policy` so it contributes to the script hash; the inequality is only to stop the optimizer removing it.
     own_policy != config.cnight_policy,
   }

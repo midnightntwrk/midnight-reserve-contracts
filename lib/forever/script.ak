@@ -22,17 +22,14 @@ pub fn forever_contract(
     Minting(own_policy) -> {
       let Transaction { inputs, mint, outputs, .. } = transaction
 
-      // (FC-1) Gather the minted datum, failing if the one-shot input or NFT layout is invalid.
+      // (FC-1) Read the inline datum emitted by the mint, enforcing the one-shot spend and NFT layout.
       let datum =
         input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
       and {
         // (FC-2) Validate the inline datum content for the initial state.
         initial_state_validation(datum, redeemer),
-        // This trick is simply to include cnight policy in the script hash
-        // without the compiler optimizing the policy away
-        // (FC-3) Touch `cnight_policy` so it contributes to the script hash; the inequality is only
-        // to prevent the optimizer from removing it
+        // (FC-3) Touch `config.cnight_policy` so it contributes to the script hash.
         own_policy != config.cnight_policy,
       }
     }
