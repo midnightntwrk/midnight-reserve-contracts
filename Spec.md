@@ -78,8 +78,8 @@
   Operational constraints:
   - LM-0: transaction must produce an output at the reserve script credential.
   - LM-1: aggregate all reserve-script inputs to compute the expected value.
-  - LM-2: replacement reserve output must equal the aggregated reserve value.
-  - LM-3: replacement reserve output must keep the serialised size below 2048 bytes.
+  - LM-2: replacement reserve output must return the merged reserve balance to the script credential.
+  - LM-3: replacement reserve output must keep the serialised size below 2048 bytes (half the ledger limit).
 
 ## Council Validators
 - `council_forever`
@@ -166,7 +166,7 @@
   - ML-2: outputs must keep the council forever state at the script credential.
   - ML-3: mint must contain the native script rebuilt from the technical-authority `Multisig` datum and threshold fraction.
   - ML-4: mint must contain the native script rebuilt from the council `Multisig` datum and threshold fraction.
-  - ML-5: redeemer signer map must pass `validate_multisig_structure` against the council forever datum.
+  - ML-5: redeemer signer map must satisfy MS-1 through MS-4 when validated against the council forever datum.
   - CM-1: inputs or references must expose the council forever NFT.
   - CM-2: council forever datum must be inline.
   - CM-3: council forever datum must decode to `Multisig`.
@@ -265,7 +265,7 @@
   - ML-2: outputs must keep the technical-authority forever state at the script credential.
   - ML-3: mint must contain the native script rebuilt from the technical-authority `Multisig` datum and threshold fraction.
   - ML-4: mint must also contain the native script rebuilt from the council `Multisig` datum and threshold fraction.
-  - ML-5: redeemer signer map must pass `validate_multisig_structure` against the technical-authority forever datum.
+  - ML-5: redeemer signer map must satisfy MS-1 through MS-4 when validated against the technical-authority forever datum.
   - CM-1: inputs or references must expose the technical-authority forever NFT.
   - CM-2: technical-authority forever datum must be inline.
   - CM-3: technical-authority forever datum must decode to `Multisig`.
@@ -364,7 +364,7 @@
   - ML-2: outputs must keep the federated forever state at the script credential.
   - ML-3: mint must contain the native script rebuilt from the technical-authority `Multisig` datum and threshold fraction.
   - ML-4: mint must contain the native script rebuilt from the council `Multisig` datum and threshold fraction.
-  - ML-5: redeemer signer map must pass `validate_multisig_structure` against the federated forever datum.
+  - ML-5: redeemer signer map must satisfy MS-1 through MS-4 when validated against the federated forever datum.
   - CM-1: inputs or references must expose the federated forever NFT.
   - CM-2: federated forever datum must be inline.
   - CM-3: federated forever datum must decode to `Multisig`.
@@ -641,5 +641,5 @@
   - IL-1: delegate to `logic_merge` using `config.ics_forever_hash`.
   - LM-0: transaction must produce an output at the iliq forever script credential.
   - LM-1: aggregate all iliq-script inputs to compute the expected value.
-  - LM-2: replacement iliq output must equal the aggregated value.
-  - LM-3: replacement iliq output must keep the serialised size below 2048 bytes.
+  - LM-2: replacement iliq output must return the merged balance to the script credential.
+  - LM-3: replacement iliq output must keep the serialised size below 2048 bytes (half the ledger limit).

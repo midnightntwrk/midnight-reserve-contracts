@@ -43,9 +43,9 @@ pub fn logic_merge(
         must_find(outputs, fn(output) { output.address == guarded_address })
 
       and {
-        // (LM-2) Require the transaction to emit exactly the same value back to the forever address.
+        // (LM-2) Require the transaction to return the merged balance to the forever address.
         output.value == guarded_value,
-        // (LM-3) Enforce the merged output to stay within the ledger’s size limit.
+        // (LM-3) Cap the merged output at 2048 bytes (half the ledger size limit).
         builtin.length_of_bytearray(builtin.serialise_data(output.value)) < 2048,
       }
     }
@@ -75,7 +75,7 @@ pub fn logic_multisig_validation_nft_input(
       let threshold_datum =
         get_input_state_by_policy(reference_inputs, main_threshold)
 
-      // (ML-1) Require a threshold reference input under `main_threshold`.
+      // (ML-1) Decode the threshold datum to recover the configured fractions.
       expect MultisigThreshold {
         technical_auth_numerator,
         technical_auth_denominator,
@@ -113,7 +113,7 @@ pub fn logic_multisig_validation_nft_input(
           council_numerator,
           council_denominator,
         ),
-        // (ML-5) The redeemer signer map must match the stored multisig datum (MS-*).
+        // (ML-5) Enforce the multisig signer constraints defined by MS-1, MS-2, MS-3, and MS-4.
         logic_state_validation(datum, redeemer),
       }
     }

@@ -75,8 +75,6 @@ pub fn staging_auth_multisig_validation(
       certificate: RegisterCredential { credential: Script(own_hash), .. },
       ..
     } ->
-      // This trick is simply to include cnight policy in the script hash
-      // without the compiler optimizing the policy away
       // (GAS-5) Touch `cnight_policy` so it contributes to the script hash; the inequality is only to stop the optimizer removing it.
       config.cnight_policy != own_hash
 

@@ -77,9 +77,6 @@ pub fn unused_logic_merge_next_version(
       expect StagingState { cnight_test_policy, forever_script_hash } = datum
 
       and {
-        // This trick is simply to include cnight policy in the script hash
-        // without the compiler optimizing the policy away
-        // Touch `cnight_policy` so it contributes to the script hash; the inequality is only to stop the optimizer removing it.
         own_policy != config.cnight_policy,
         builtin.length_of_bytearray(cnight_test_policy) == 28,
         builtin.length_of_bytearray(forever_script_hash) == 28,
@@ -182,9 +179,6 @@ pub fn unused_logic_multisig_validation_nft_input_next_version(
       expect StagingState { cnight_test_policy, forever_script_hash } = datum
 
       and {
-        // This trick is simply to include cnight policy in the script hash
-        // without the compiler optimizing the policy away
-        // Touch `cnight_policy` so it contributes to the script hash; the inequality is only to stop the optimizer removing it.
         own_policy != config.cnight_policy,
         builtin.length_of_bytearray(cnight_test_policy) == 28,
         builtin.length_of_bytearray(forever_script_hash) == 28,
