@@ -16,6 +16,7 @@ pub fn staging_auth_multisig_validation(
 
   let validation =
     fn(own_hash) {
+      // (GAS-1) Select the appropriate threshold state based on whether the logic currently runs on main.
       let threshold_datum =
         if logic_is_on_main(
           reference_inputs,
@@ -33,6 +34,7 @@ pub fn staging_auth_multisig_validation(
           )
         }
 
+      // (GAS-2) Decode the chosen threshold datum into numerator and denominator components.
       expect MultisigThreshold {
         technical_auth_numerator,
         technical_auth_denominator,
@@ -41,6 +43,7 @@ pub fn staging_auth_multisig_validation(
       }: MultisigThreshold = threshold_datum
 
       and {
+        // (GAS-3) Require the technical-authority native script derived from the datum to appear in mint.
         check_for_multisig(
           reference_inputs,
           mint,
@@ -48,6 +51,7 @@ pub fn staging_auth_multisig_validation(
           technical_auth_numerator,
           technical_auth_denominator,
         ),
+        // (GAS-4) Require the council native script derived from the datum to appear in mint.
         check_for_multisig(
           reference_inputs,
           mint,
@@ -63,7 +67,9 @@ pub fn staging_auth_multisig_validation(
     Publishing {
       certificate: UnregisterCredential { credential: Script(own_hash), .. },
       ..
-    } -> validation(own_hash)
+    } ->
+      // (GAS-6) Enforce multisig thresholds for withdrawals and credential revocations.
+      validation(own_hash)
 
     Publishing {
       certificate: RegisterCredential { credential: Script(own_hash), .. },
@@ -71,6 +77,7 @@ pub fn staging_auth_multisig_validation(
     } ->
       // This trick is simply to include cnight policy in the script hash
       // without the compiler optimizing the policy away
+      // (GAS-5) Touch `cnight_policy` so it contributes to the script hash; the inequality is only to stop the optimizer removing it.
       config.cnight_policy != own_hash
 
     _ -> fail
