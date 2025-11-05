@@ -28,6 +28,7 @@ pub fn logic_merge(
           fn(input, acc) {
             let output = input.output
             if output.address.payment_credential == guarded_cred {
+              // (LM-1) Accumulate every input locked by the forever script.
               assets.merge(output.value, acc)
             } else {
               acc
@@ -37,11 +38,14 @@ pub fn logic_merge(
 
       let guarded_address = Address(Script(forever_script_hash), None)
 
+      // (LM-0) Require the transaction to create an output for the forever address.
       let output =
         must_find(outputs, fn(output) { output.address == guarded_address })
 
       and {
+        // (LM-2) Require the transaction to emit exactly the same value back to the forever address.
         output.value == guarded_value,
+        // (LM-3) Enforce the merged output to stay within the ledger’s size limit.
         builtin.length_of_bytearray(builtin.serialise_data(output.value)) < 2048,
       }
     }
@@ -67,9 +71,11 @@ pub fn logic_multisig_validation_nft_input(
 
   let validation =
     fn() {
+      // (ML-0) Fetch the threshold state referenced by `main_threshold`.
       let threshold_datum =
         get_input_state_by_policy(reference_inputs, main_threshold)
 
+      // (ML-1) Require a threshold reference input under `main_threshold`.
       expect MultisigThreshold {
         technical_auth_numerator,
         technical_auth_denominator,
@@ -77,9 +83,11 @@ pub fn logic_multisig_validation_nft_input(
         council_denominator,
       } = threshold_datum
 
+      // (ML-2) Require the transaction to preserve the forever state at the script address.
       let datum = get_output_state_by_policy(outputs, main_forever_script_hash)
 
       and {
+        // (ML-3) Ensure the technical-authority native script built from the datum and threshold appears in the mint field.
         check_for_multisig(
           // Used in the case we are spending multisig state rather than referencing it
           if main_forever_script_hash == config.technical_authority_forever_hash {
@@ -92,6 +100,7 @@ pub fn logic_multisig_validation_nft_input(
           technical_auth_numerator,
           technical_auth_denominator,
         ),
+        // (ML-4) Ensure the council native script built from the datum and threshold appears in the mint field.
         check_for_multisig(
           // Used in the case we are spending multisig state rather than referencing it
           if main_forever_script_hash == config.council_forever_hash {
@@ -104,6 +113,7 @@ pub fn logic_multisig_validation_nft_input(
           council_numerator,
           council_denominator,
         ),
+        // (ML-5) The redeemer signer map must match the stored multisig datum (MS-*).
         logic_state_validation(datum, redeemer),
       }
     }
