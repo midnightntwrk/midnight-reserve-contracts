@@ -159,20 +159,19 @@ pub fn two_stage_upgradable(
 
       let expected_output_datum = InlineDatum(expected_output_datum)
 
-      // (TS-6) Read the leading output that should hold the updated script state.
-      expect [
-        Output { address: out_addr, value: out_value, datum: out_datum, .. },
-        ..
-      ] = outputs
+      // (TS-6) Find the output with updated script state by payment credential.
+      let Output { value: out_value, datum: out_datum, .. } =
+        must_find(
+          outputs,
+          fn(output) { output.address.payment_credential == pay_cred },
+        )
 
       expect [_, ..out_nft_id] = out_value |> to_dict |> to_pairs
 
       and {
-        // (TS-7) Preserve the payment credential on the evolved output.
-        out_addr.payment_credential == pay_cred,
-        // (TS-8) Ensure the NFT identity is unchanged across the spend.
+        // (TS-7) Ensure the NFT identity is unchanged across the spend.
         out_nft_id == nft_id,
-        // (TS-9) Require the evolved state to be written as an inline datum.
+        // (TS-8) Require the evolved state to be written as an inline datum.
         out_datum == expected_output_datum,
       }?
     }
@@ -235,7 +234,7 @@ fn validate_main_update(
     }
 
     MitigationAuth -> {
-      // Allow the mitigation auth script to change only when the main datum still records the empty hash.
+      // (TM-9) Allow the mitigation auth script to change only when the main datum still records the empty hash.
       expect mitigation_auth == ""
 
       expect UpgradeState { mitigation_auth: new_mitigation, round, .. } =
