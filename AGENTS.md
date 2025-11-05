@@ -27,7 +27,7 @@
 ## Specification & Inline Commentary
 - Keep inline validator comments aligned with `Spec.md`; each `(TAG-#)` covers a single statement and is mirrored when behaviour changes.
 - **Do:** keep helper tags unique and descriptive, separate Minting/Setup and Operational updates, and restate constraints per validator instead of referencing substitutions.
-- **Don't:** use ranges like `TS-1..TS-9`, say “same constraints,” or rely on vague notes such as “touch `cnight_policy`.”
+- **Don't:** use ranges like `TS-1..TS-8`, say “same constraints,” or rely on vague notes such as “touch `cnight_policy`.”
 
 ## Commit & Pull Request Guidelines
 - Commits follow the conventional prefixes already in history (`chore:`, `fix:`, `feat:`) and stay focused on single concerns.

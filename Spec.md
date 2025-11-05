@@ -61,6 +61,7 @@
   - TM-6: staging datum must provide the next auth hash.
   - TM-7: mitigation logic hash may only transition from empty once.
   - TM-8: staging datum must provide the new mitigation logic hash when set.
+  - TM-9: mitigation auth hash may only transition from empty once.
   - TSG-1: redeemer script hash must be 28 bytes.
   - TSG-2: staging datum must be inline.
   - TSG-3: referenced main datum must be inline.
@@ -69,10 +70,9 @@
   - TSG-6: withdrawals must include either the staging auth pair or the main auth pair.
   - TSG-7: staging branch may not set mitigation logic once the main datum already holds one.
   - TSG-8: staging branch may not set mitigation auth once the main datum already holds one.
-  - TS-6: outputs must include a replacement reserve UTXO at the script credential.
-  - TS-7: replacement output must keep the reserve credential.
-  - TS-8: replacement output must carry the same NFT that was spent.
-  - TS-9: replacement output must carry the evolved state as an inline datum.
+  - TS-6: outputs must include a replacement reserve UTXO locked by the script credential.
+  - TS-7: replacement output must carry the same NFT that was spent.
+  - TS-8: replacement output must carry the evolved state as an inline datum.
   - RUN-1, RUN-2, RUN-3: same withdrawal credential requirements as above.
 - `reserve_logic`
   Operational constraints:
@@ -146,6 +146,7 @@
   - TM-6: staging datum must provide the next auth hash.
   - TM-7: mitigation logic hash may only transition from empty once.
   - TM-8: staging datum must provide the new mitigation logic hash when set.
+  - TM-9: mitigation auth hash may only transition from empty once.
   - TSG-1: redeemer script hash must be 28 bytes.
   - TSG-2: staging datum must be inline.
   - TSG-3: referenced main datum must be inline.
@@ -154,10 +155,9 @@
   - TSG-6: withdrawals must include either the staging auth pair or the main auth pair.
   - TSG-7: staging branch may not set mitigation logic once the main datum holds one.
   - TSG-8: staging branch may not set mitigation auth once the main datum holds one.
-  - TS-6: outputs must include a replacement council UTXO at the script credential.
-  - TS-7: replacement output must keep the council credential.
-  - TS-8: replacement output must carry the same NFT that was spent.
-  - TS-9: replacement output must store the evolved state as an inline datum.
+  - TS-6: outputs must include a replacement council UTXO locked by the script credential.
+  - TS-7: replacement output must carry the same NFT that was spent.
+  - TS-8: replacement output must store the evolved state as an inline datum.
   - RUN-1, RUN-2, RUN-3: withdrawal credential checks described above must be satisfied.
 - `council_logic`
   Operational constraints:
@@ -245,6 +245,7 @@
   - TM-6: staging datum must provide the next auth hash.
   - TM-7: mitigation logic hash may only transition from empty once.
   - TM-8: staging datum must provide the new mitigation logic hash when set.
+  - TM-9: mitigation auth hash may only transition from empty once.
   - TSG-1: redeemer script hash must be 28 bytes.
   - TSG-2: staging datum must be inline.
   - TSG-3: referenced main datum must be inline.
@@ -253,10 +254,9 @@
   - TSG-6: withdrawals must include either the staging auth pair or the main auth pair.
   - TSG-7: staging branch may not set mitigation logic once the main datum holds one.
   - TSG-8: staging branch may not set mitigation auth once the main datum holds one.
-  - TS-6: outputs must include a replacement technical-authority UTXO at the script credential.
-  - TS-7: replacement output must keep the technical-authority credential.
-  - TS-8: replacement output must carry the same NFT that was spent.
-  - TS-9: replacement output must carry the evolved state as an inline datum.
+  - TS-6: outputs must include a replacement technical-authority UTXO locked by the script credential.
+  - TS-7: replacement output must carry the same NFT that was spent.
+  - TS-8: replacement output must carry the evolved state as an inline datum.
   - RUN-1, RUN-2, RUN-3: withdrawal credential checks described above must be satisfied.
 - `tech_auth_logic`
   Operational constraints:
@@ -344,6 +344,7 @@
   - TM-6: staging datum must provide the next auth hash.
   - TM-7: mitigation logic hash may only transition from empty once.
   - TM-8: staging datum must provide the new mitigation logic hash when set.
+  - TM-9: mitigation auth hash may only transition from empty once.
   - TSG-1: redeemer script hash must be 28 bytes.
   - TSG-2: staging datum must be inline.
   - TSG-3: referenced main datum must be inline.
@@ -352,10 +353,9 @@
   - TSG-6: withdrawals must include either the staging auth pair or the main auth pair.
   - TSG-7: staging branch may not set mitigation logic once the main datum holds one.
   - TSG-8: staging branch may not set mitigation auth once the main datum holds one.
-  - TS-6: outputs must include a replacement federated UTXO at the script credential.
-  - TS-7: replacement output must keep the federated credential.
-  - TS-8: replacement output must carry the same NFT that was spent.
-  - TS-9: replacement output must store the evolved state as an inline datum.
+  - TS-6: outputs must include a replacement federated UTXO locked by the script credential.
+  - TS-7: replacement output must carry the same NFT that was spent.
+  - TS-8: replacement output must store the evolved state as an inline datum.
   - RUN-1, RUN-2, RUN-3: withdrawal credential checks described above must be satisfied.
 - `federated_ops_logic`
   Operational constraints:
@@ -621,6 +621,7 @@
   - TM-6: staging datum must provide the next auth hash.
   - TM-7: mitigation logic hash may only transition from empty once.
   - TM-8: staging datum must provide the new mitigation logic hash when set.
+  - TM-9: mitigation auth hash may only transition from empty once.
   - TSG-1: redeemer script hash must be 28 bytes.
   - TSG-2: staging datum must be inline.
   - TSG-3: referenced main datum must be inline.
@@ -629,10 +630,9 @@
   - TSG-6: withdrawals must include either the staging auth pair or the main auth pair.
   - TSG-7: staging branch may not set mitigation logic once the main datum holds one.
   - TSG-8: staging branch may not set mitigation auth once the main datum holds one.
-  - TS-6: outputs must include a replacement iliq UTXO at the script credential.
-  - TS-7: replacement output must keep the iliq credential.
-  - TS-8: replacement output must carry the same NFT that was spent.
-  - TS-9: replacement output must store the evolved state as an inline datum.
+  - TS-6: outputs must include a replacement iliq UTXO locked by the script credential.
+  - TS-7: replacement output must carry the same NFT that was spent.
+  - TS-8: replacement output must store the evolved state as an inline datum.
   - RUN-1, RUN-2, RUN-3: withdrawal credential checks described above must be satisfied.
   Implementation notes:
   - IU-2: minting and spending rules are enforced by `two_stage_upgradable`.

@@ -1,7 +1,5 @@
 use aiken/builtin
-use aiken/collection/dict.{to_pairs}
 use aiken/crypto.{ScriptHash}
-use cardano/assets.{to_dict}
 use cardano/script_context.{Minting, ScriptContext}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Redeemer, Transaction,

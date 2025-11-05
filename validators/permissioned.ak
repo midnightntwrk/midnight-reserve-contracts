@@ -73,7 +73,7 @@ validator council_two_stage_upgrade {
         config.council_one_shot_index,
       )
 
-    // (CT-3) Apply the shared two-stage checks (TS-1, TS-2, TS-3, TS-4, TS-5, TS-6, TS-7, TS-8, TS-9,
+    // (CT-3) Apply the shared two-stage checks (TS-1, TS-2, TS-3, TS-4, TS-5, TS-6, TS-7, TS-8,
     //        TSM-1, TSM-2, TSM-3, TSM-4, TSM-5, TSM-6, TSM-7, TSM-8, TSM-9, TSM-10, TSM-11, TSM-12,
     //        TSM-13, TSM-14, TSM-15, TSM-16, TSM-17, TSM-18, TSS-1, TSS-2, TSS-3, TM-1, TM-2, TM-3,
     //        TM-4, TM-5, TM-6, TM-7, TM-8, TSG-1, TSG-2, TSG-3, TSG-4, TSG-5, TSG-6, TSG-7, TSG-8,
@@ -131,7 +131,7 @@ validator tech_auth_two_stage_upgrade {
         config.technical_authority_one_shot_index,
       )
 
-    // (TAU-3) Apply the shared two-stage checks (TS-1, TS-2, TS-3, TS-4, TS-5, TS-6, TS-7, TS-8, TS-9,
+    // (TAU-3) Apply the shared two-stage checks (TS-1, TS-2, TS-3, TS-4, TS-5, TS-6, TS-7, TS-8,
     //        TSM-1, TSM-2, TSM-3, TSM-4, TSM-5, TSM-6, TSM-7, TSM-8, TSM-9, TSM-10, TSM-11, TSM-12,
     //        TSM-13, TSM-14, TSM-15, TSM-16, TSM-17, TSM-18, TSS-1, TSS-2, TSS-3, TM-1, TM-2, TM-3,
     //        TM-4, TM-5, TM-6, TM-7, TM-8, TSG-1, TSG-2, TSG-3, TSG-4, TSG-5, TSG-6, TSG-7, TSG-8,
@@ -189,7 +189,7 @@ validator federated_ops_two_stage_upgrade {
         config.federated_operators_one_shot_index,
       )
 
-    // (FTU-3) Apply the shared two-stage checks (TS-1, TS-2, TS-3, TS-4, TS-5, TS-6, TS-7, TS-8, TS-9,
+    // (FTU-3) Apply the shared two-stage checks (TS-1, TS-2, TS-3, TS-4, TS-5, TS-6, TS-7, TS-8,
     //        TSM-1, TSM-2, TSM-3, TSM-4, TSM-5, TSM-6, TSM-7, TSM-8, TSM-9, TSM-10, TSM-11, TSM-12,
     //        TSM-13, TSM-14, TSM-15, TSM-16, TSM-17, TSM-18, TSS-1, TSS-2, TSS-3, TM-1, TM-2, TM-3,
     //        TM-4, TM-5, TM-6, TM-7, TM-8, TSG-1, TSG-2, TSG-3, TSG-4, TSG-5, TSG-6, TSG-7, TSG-8,
