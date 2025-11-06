@@ -1,6 +1,6 @@
 use aiken/collection/dict.{to_pairs}
-use bridge/beefy.{verify_mmr_update_proof}
-use bridge/types.{BeefyConsensusState, RelayChainProof}
+use bridge/beefy.{verify_consensus, verify_mmr_update_proof}
+use bridge/types.{BeefyConsensusProof, BeefyConsensusState, RelayChainProof}
 use cardano/assets.{to_dict}
 use cardano/certificate.{RegisterCredential, UnregisterCredential}
 use cardano/script_context.{
@@ -12,7 +12,10 @@ use cardano/transaction.{
 use config
 use forever/script.{forever_contract}
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
-use utils.{input_linked_mint, must_find}
+use utils.{
+  get_input_state_by_policy, get_output_state_by_policy, input_linked_mint,
+  must_find,
+}
 
 validator simple_bridge {
   else(ctx: ScriptContext) {
@@ -119,11 +122,25 @@ validator committee_bridge_two_stage_upgrade {
 
 validator committee_bridge_logic {
   else(ctx: ScriptContext) {
-    let ScriptContext { info, .. } = ctx
+    let ScriptContext { info, transaction, redeemer } = ctx
 
     when info is {
       Withdrawing(_) |
-      Publishing { certificate: UnregisterCredential { .. }, .. } -> todo
+      Publishing { certificate: UnregisterCredential { .. }, .. } -> {
+        let Transaction { inputs, outputs, .. } = transaction
+
+        expect proof: BeefyConsensusProof = redeemer
+
+        let beefy_nft = config.committee_bridge_forever_hash
+
+        expect trusted_state: BeefyConsensusState =
+          get_input_state_by_policy(inputs, beefy_nft)
+
+        expect out_trusted_state: BeefyConsensusState =
+          get_output_state_by_policy(outputs, beefy_nft)
+
+        verify_consensus(trusted_state, proof, out_trusted_state)
+      }
 
       Publishing { certificate: RegisterCredential { .. }, .. } -> True
 
