@@ -13,10 +13,10 @@ import { writeFileSync } from "fs";
 async function main() {
   const councilLogic = new Contracts.PermissionedCouncilLogicElse();
 
-  const args = process.argv.slice(1);
+  const args = process.argv.slice(2);
   if (args.length !== 1) {
-    console.error("Usage: bun run simple-tx.ts <network> <deployer_address>");
-    console.error("Example: bun run simple-tx.ts preview addr_test1...");
+    console.error("Usage: bun run simple-tx.ts <network>");
+    console.error("Example: bun run simple-tx.ts preview");
     process.exit(1);
   }
 
