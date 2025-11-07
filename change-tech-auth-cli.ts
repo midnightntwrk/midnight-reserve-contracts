@@ -87,10 +87,10 @@ async function main() {
   const args = process.argv.slice(2);
   if (args.length !== 3) {
     console.error(
-      "Usage: bun run change-council-cli.ts <network> <tx_hash> <tx_index>",
+      "Usage: bun run change-tech-auth-cli.ts <network> <tx_hash> <tx_index>",
     );
     console.error(
-      "Example: bun run change-council-cli.ts preview b451d1433cd54772f42dff46fecc76ba6d1c89202ffe10309fda5bb3313fbd48 11",
+      "Example: bun run change-tech-auth-cli.ts preview b451d1433cd54772f42dff46fecc76ba6d1c89202ffe10309fda5bb3313fbd48 11",
     );
     process.exit(1);
   }
@@ -128,31 +128,13 @@ async function main() {
     apiKey: apiKey,
   });
 
-  const councilForever = new Contracts.PermissionedCouncilForeverElse();
-  const councilLogic = new Contracts.PermissionedCouncilLogicElse();
-  const mainCouncilUpdateThreshold =
-    new Contracts.ThresholdsMainCouncilUpdateThresholdElse();
   const techAuthForever = new Contracts.PermissionedTechAuthForeverElse();
-  const councilTwoStage =
-    new Contracts.PermissionedCouncilTwoStageUpgradeElse();
-
-  const councilForeverAddress = addressFromCredential(
-    NetworkId.Testnet,
-    Credential.fromCore({
-      type: CredentialType.ScriptHash,
-      hash: councilForever.Script.hash(),
-    }),
-  );
-
-  console.log("\nCouncil Forever Address:", councilForeverAddress.toBech32());
-
-  const councilUpdateThresholdAddress = addressFromCredential(
-    NetworkId.Testnet,
-    Credential.fromCore({
-      type: CredentialType.ScriptHash,
-      hash: mainCouncilUpdateThreshold.Script.hash(),
-    }),
-  );
+  const techAuthLogic = new Contracts.PermissionedTechAuthLogicElse();
+  const mainTechAuthUpdateThreshold =
+    new Contracts.ThresholdsMainTechAuthUpdateThresholdElse();
+  const councilForever = new Contracts.PermissionedCouncilForeverElse();
+  const techAuthTwoStage =
+    new Contracts.PermissionedTechAuthTwoStageUpgradeElse();
 
   const techAuthForeverAddress = addressFromCredential(
     NetworkId.Testnet,
@@ -162,51 +144,69 @@ async function main() {
     }),
   );
 
-  const councilTwoStageAddress = addressFromCredential(
+  console.log("\nTech Auth Forever Address:", techAuthForeverAddress.toBech32());
+
+  const techAuthUpdateThresholdAddress = addressFromCredential(
     NetworkId.Testnet,
     Credential.fromCore({
       type: CredentialType.ScriptHash,
-      hash: councilTwoStage.Script.hash(),
+      hash: mainTechAuthUpdateThreshold.Script.hash(),
+    }),
+  );
+
+  const councilForeverAddress = addressFromCredential(
+    NetworkId.Testnet,
+    Credential.fromCore({
+      type: CredentialType.ScriptHash,
+      hash: councilForever.Script.hash(),
+    }),
+  );
+
+  const techAuthTwoStageAddress = addressFromCredential(
+    NetworkId.Testnet,
+    Credential.fromCore({
+      type: CredentialType.ScriptHash,
+      hash: techAuthTwoStage.Script.hash(),
     }),
   );
 
   // Fetch contract UTxOs
-  const councilForeverUtxos = await provider.getUnspentOutputs(
-    councilForeverAddress,
-  );
-  const councilThresholdUtxos = await provider.getUnspentOutputs(
-    councilUpdateThresholdAddress,
-  );
   const techAuthForeverUtxos = await provider.getUnspentOutputs(
     techAuthForeverAddress,
   );
-  const councilTwoStageUtxos = await provider.getUnspentOutputs(
-    councilTwoStageAddress,
+  const techAuthThresholdUtxos = await provider.getUnspentOutputs(
+    techAuthUpdateThresholdAddress,
+  );
+  const councilForeverUtxos = await provider.getUnspentOutputs(
+    councilForeverAddress,
+  );
+  const techAuthTwoStageUtxos = await provider.getUnspentOutputs(
+    techAuthTwoStageAddress,
   );
 
   console.log("\nFound contract UTxOs:");
-  console.log("  Council forever:", councilForeverUtxos.length);
-  console.log("  Council threshold:", councilThresholdUtxos.length);
   console.log("  Tech auth forever:", techAuthForeverUtxos.length);
-  console.log("  Council two stage:", councilTwoStageUtxos.length);
+  console.log("  Tech auth threshold:", techAuthThresholdUtxos.length);
+  console.log("  Council forever:", councilForeverUtxos.length);
+  console.log("  Tech auth two stage:", techAuthTwoStageUtxos.length);
 
   if (
-    !councilForeverUtxos.length ||
-    !councilThresholdUtxos.length ||
     !techAuthForeverUtxos.length ||
-    !councilTwoStageUtxos.length
+    !techAuthThresholdUtxos.length ||
+    !councilForeverUtxos.length ||
+    !techAuthTwoStageUtxos.length
   ) {
     console.error("Missing required contract UTxOs");
     process.exit(1);
   }
 
-  const councilForeverUtxo = councilForeverUtxos[0];
-  const councilThresholdUtxo = councilThresholdUtxos[0];
   const techAuthForeverUtxo = techAuthForeverUtxos[0];
+  const techAuthThresholdUtxo = techAuthThresholdUtxos[0];
+  const councilForeverUtxo = councilForeverUtxos[0];
 
-  // Filter for the "main" council two-stage UTxO (not "staging")
+  // Filter for the "main" tech auth two-stage UTxO (not "staging")
   const mainAssetName = Buffer.from("main").toString("hex");
-  const councilTwoStageUtxo = councilTwoStageUtxos.find((utxo) => {
+  const techAuthTwoStageUtxo = techAuthTwoStageUtxos.find((utxo) => {
     const assets = utxo.output().amount().multiasset();
     if (!assets) return false;
 
@@ -218,26 +218,61 @@ async function main() {
     return false;
   });
 
-  if (!councilTwoStageUtxo) {
-    console.error('Could not find council two-stage UTxO with "main" asset');
+  if (!techAuthTwoStageUtxo) {
+    console.error('Could not find tech auth two-stage UTxO with "main" asset');
     process.exit(1);
   }
 
-  console.log("\nCurrent council forever datum:");
-  const currentDatum = councilForeverUtxo.output().datum();
+  console.log("\nCurrent tech auth forever datum:");
+  const currentDatum = techAuthForeverUtxo.output().datum();
   if (!currentDatum?.asInlineData()) {
     console.log("  Missing inline datum!");
     process.exit(1);
   }
 
   console.log("  Has inline datum");
-  const currentCouncilState = parse(
+  const currentTechAuthState = parse(
     Contracts.Multisig,
     currentDatum.asInlineData()!,
   );
-  const [_currentThreshold, currentSignerMap] = currentCouncilState;
+  const [currentThreshold, currentTechAuthMap] = currentTechAuthState;
+  console.log("  Current threshold:", currentThreshold);
 
-  const currentCouncilSigners = Object.entries(currentSignerMap).map(
+  const currentTechAuthSigners = Object.entries(currentTechAuthMap).map(
+    ([credHex, sr25519Key]) => {
+      const paymentHash = credHex.slice(8);
+      return { paymentHash, sr25519Key };
+    },
+  );
+
+  if (!currentTechAuthSigners.length) {
+    console.error("No tech auth signers found in tech auth forever datum");
+    process.exit(1);
+  }
+
+  const newTechAuthSigners = parseSigners("TECH_AUTH_SIGNERS");
+  const newTechAuthForeverState = createMultisigState(newTechAuthSigners);
+  const memberRedeemer = createRedeemerMap(newTechAuthSigners);
+
+  // Use exact threshold from test: 2-of-3 multisig
+  const requiredSigners = 2;
+  const councilRequiredSigners = 2;
+
+  // For ML-3 validation, we need council native script from CURRENT on-chain state
+  console.log("\nReading current council state for ML-3 validation...");
+  const councilDatum = councilForeverUtxo.output().datum();
+  if (!councilDatum?.asInlineData()) {
+    console.error("Council forever UTxO missing inline datum");
+    process.exit(1);
+  }
+
+  const currentCouncilState = parse(
+    Contracts.Multisig,
+    councilDatum.asInlineData()!,
+  );
+  const [_threshold, currentCouncilMap] = currentCouncilState;
+
+  const currentCouncilSigners = Object.entries(currentCouncilMap).map(
     ([credHex, sr25519Key]) => {
       const paymentHash = credHex.slice(8);
       return { paymentHash, sr25519Key };
@@ -248,38 +283,6 @@ async function main() {
     console.error("No council signers found in council forever datum");
     process.exit(1);
   }
-
-  const newCouncilSigners = parseSigners("COUNCIL_SIGNERS");
-  const newCouncilForeverState = createMultisigState(newCouncilSigners);
-  const memberRedeemer = createRedeemerMap(newCouncilSigners);
-
-  // Use exact threshold from test: 2-of-3 multisig
-  const requiredSigners = 2;
-  const councilRequiredSigners = 2;
-
-  // For ML-3 validation, we need tech auth native script from CURRENT on-chain state
-  console.log("\nReading current tech auth state for ML-3 validation...");
-  const techAuthDatum = techAuthForeverUtxo.output().datum();
-  if (!techAuthDatum?.asInlineData()) {
-    console.error("Tech auth forever UTxO missing inline datum");
-    process.exit(1);
-  }
-
-  // Parse current tech auth multisig state from on-chain datum
-  const currentTechAuthState = parse(
-    Contracts.Multisig,
-    techAuthDatum.asInlineData()!,
-  );
-  const [_threshold, currentTechAuthMap] = currentTechAuthState;
-
-  // Extract current tech auth signers from the on-chain state
-  const techAuthSigners = Object.entries(currentTechAuthMap).map(
-    ([credHex, sr25519Key]) => {
-      // credHex format is "8200581c<hash>" - extract just the hash
-      const paymentHash = credHex.slice(8);
-      return { paymentHash, sr25519Key };
-    },
-  );
 
   const nativeScriptCouncil = NativeScripts.atLeastNOfK(
     councilRequiredSigners,
@@ -297,7 +300,7 @@ async function main() {
 
   const nativeScriptTechAuth = NativeScripts.atLeastNOfK(
     requiredSigners,
-    ...techAuthSigners.map((s) => {
+    ...currentTechAuthSigners.map((s) => {
       const bech32 = addressFromCredential(
         NetworkId.Testnet,
         Credential.fromCore({
@@ -312,10 +315,10 @@ async function main() {
   const councilPolicyId = PolicyId(nativeScriptCouncil.hash());
   const techAuthPolicyId = PolicyId(nativeScriptTechAuth.hash());
 
-  const councilLogicRewardAccount = RewardAccount.fromCredential(
+  const techAuthLogicRewardAccount = RewardAccount.fromCredential(
     Credential.fromCore({
       type: CredentialType.ScriptHash,
-      hash: councilLogic.Script.hash(),
+      hash: techAuthLogic.Script.hash(),
     }).toCore(),
     NetworkId.Testnet,
   );
@@ -346,31 +349,31 @@ async function main() {
   try {
     const txBuilder = blaze
       .newTransaction()
-      .addInput(councilForeverUtxo, PlutusData.newInteger(0n))
-      .addReferenceInput(councilThresholdUtxo)
-      .addReferenceInput(techAuthForeverUtxo)
-      .addReferenceInput(councilTwoStageUtxo)
-      .provideScript(councilForever.Script)
+      .addInput(techAuthForeverUtxo, PlutusData.newInteger(0n))
+      .addReferenceInput(techAuthThresholdUtxo)
+      .addReferenceInput(councilForeverUtxo)
+      .addReferenceInput(techAuthTwoStageUtxo)
+      .provideScript(techAuthForever.Script)
       .addMint(councilPolicyId, new Map([[AssetName(""), 1n]]))
       .provideScript(Script.newNativeScript(nativeScriptCouncil))
       .addMint(techAuthPolicyId, new Map([[AssetName(""), 1n]]))
       .provideScript(Script.newNativeScript(nativeScriptTechAuth))
       .addOutput(
         TransactionOutput.fromCore({
-          address: PaymentAddress(councilForeverAddress.toBech32()),
+          address: PaymentAddress(techAuthForeverAddress.toBech32()),
           value: {
-            coins: councilForeverUtxo.output().amount().coin(),
-            assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
+            coins: techAuthForeverUtxo.output().amount().coin(),
+            assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
           },
-          datum: serialize(Contracts.Multisig, newCouncilForeverState).toCore(),
+          datum: serialize(Contracts.Multisig, newTechAuthForeverState).toCore(),
         }),
       )
       .addWithdrawal(
-        councilLogicRewardAccount,
+        techAuthLogicRewardAccount,
         0n,
         serialize(Contracts.PermissionedRedeemer, memberRedeemer),
       )
-      .provideScript(councilLogic.Script)
+      .provideScript(techAuthLogic.Script)
       .setChangeAddress(changeAddress)
       .setFeePadding(50000n);
 
