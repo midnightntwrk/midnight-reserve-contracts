@@ -243,7 +243,7 @@ async function main() {
   const memberRedeemer = createRedeemerMap(newCouncilSigners);
 
   // Use exact threshold from test: 2-of-3 multisig
-  const requiredSigners = 1;
+  const requiredSigners = 2;
   const councilRequiredSigners = 2;
 
   // For ML-3 validation, we need tech auth native script from CURRENT on-chain state
