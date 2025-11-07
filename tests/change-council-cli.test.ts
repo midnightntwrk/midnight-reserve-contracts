@@ -469,13 +469,7 @@ describe("Change Council CLI Test", () => {
             )
             .provideScript(councilLogic.Script);
 
-          // Write CBOR to file before complete
-          const txCbor = txBuilder.toCbor();
-          writeFileSync("emulator-tx.cbor", txCbor, "utf-8");
-          console.log("📝 Transaction CBOR written to emulator-tx.cbor");
-
           await emulator.expectValidTransaction(blaze, txBuilder);
-          console.log("✅ Transaction valid in emulator");
         });
       });
     });
