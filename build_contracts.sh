@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Midnight Reserve Contracts Build Script
 #
@@ -23,6 +24,51 @@
 # Define files
 JSON_FILE="plutus.json"
 TOML_FILE="aiken.toml"
+
+current_epoch_seconds() {
+    date +%s
+}
+
+file_mtime() {
+    local file="$1"
+    if stat -f %m "$file" >/dev/null 2>&1; then
+        stat -f %m "$file"
+    else
+        stat -c %Y "$file"
+    fi
+}
+
+ensure_blueprint_is_current() {
+    local description="$1"
+    local started_at="$2"
+
+    if [ ! -f "$JSON_FILE" ]; then
+        echo "Error: $JSON_FILE not found after $description." >&2
+        exit 1
+    fi
+
+    local blueprint_mtime
+    blueprint_mtime=$(file_mtime "$JSON_FILE")
+
+    if [ "$blueprint_mtime" -lt "$started_at" ]; then
+        echo "Error: $JSON_FILE was not refreshed after $description." >&2
+        exit 1
+    fi
+
+    if ! jq empty "$JSON_FILE" >/dev/null 2>&1; then
+        echo "Error: $JSON_FILE could not be parsed after $description." >&2
+        exit 1
+    fi
+}
+
+write_toml_content() {
+    local content="$1"
+    local tmp_file
+    tmp_file=$(mktemp "${TOML_FILE}.XXXXXX")
+    printf '%s' "$content" > "$tmp_file"
+    chmod 644 "$tmp_file"
+    mv "$tmp_file" "$TOML_FILE"
+}
 
 # Define validator positions and TOML keys in dependency order
 # Order: two_stage -> forever -> logic/auth -> thresholds -> committee_bridge
@@ -119,10 +165,20 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
+if [ $# -gt 2 ]; then
+    echo "Error: Too many arguments provided."
+    echo ""
+    show_help
+    exit 1
+fi
+
 # Convert parameter to lowercase for consistent comparison
 NETWORK=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 
-TRACE_LEVEL=$([ $# -eq 2 ] && echo "-t $2" || echo "")
+TRACE_ARGS=()
+if [ $# -ge 2 ]; then
+    TRACE_ARGS=(-t "$2")
+fi
 
 # Function to check if a command exists
 command_exists() {
@@ -149,30 +205,32 @@ fi
 update_hash() {
     local plutus_key="$1"
     local toml_key="$2"
+    local JSON_VALUE
+    local NEW_TOML_CONTENT
 
     # Read value from JSON file
-    JSON_VALUE=$(jq -r "$plutus_key" "$JSON_FILE" 2>/dev/null)
+    if ! JSON_VALUE=$(jq -r "$plutus_key" "$JSON_FILE"); then
+        echo "Error: Failed to read value from JSON file for key $plutus_key" >&2
+        exit 1
+    fi
 
-    # Check if jq command was successful and returned a value
-    if [ $? -ne 0 ] || [ "$JSON_VALUE" == "null" ]; then
-        echo "Error: Failed to read value from JSON file for key $plutus_key"
+    if [ -z "$JSON_VALUE" ] || [ "$JSON_VALUE" == "null" ]; then
+        echo "Error: Key $plutus_key returned no value in $JSON_FILE" >&2
         exit 1
     fi
 
     # Write value to TOML file using hex encoding format for all networks
-    NEW_TOML_CONTENT=$(toml set "$TOML_FILE" "config.$NETWORK.$toml_key.bytes" "$JSON_VALUE" 2>/dev/null)
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to write value to TOML file for key $toml_key"
+    if ! NEW_TOML_CONTENT=$(toml set "$TOML_FILE" "config.$NETWORK.$toml_key.bytes" "$JSON_VALUE"); then
+        echo "Error: Failed to write value to TOML file for key $toml_key" >&2
         exit 1
     fi
-    echo "$NEW_TOML_CONTENT" > "$TOML_FILE"
+    write_toml_content "$NEW_TOML_CONTENT"
 
-    NEW_TOML_CONTENT=$(toml set "$TOML_FILE" "config.$NETWORK.$toml_key.encoding" "hex" 2>/dev/null)
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to set encoding for key $toml_key"
+    if ! NEW_TOML_CONTENT=$(toml set "$TOML_FILE" "config.$NETWORK.$toml_key.encoding" "hex"); then
+        echo "Error: Failed to set encoding for key $toml_key" >&2
         exit 1
     fi
-    echo "$NEW_TOML_CONTENT" > "$TOML_FILE"
+    write_toml_content "$NEW_TOML_CONTENT"
 }
 
 # Function to set static config value
@@ -180,38 +238,36 @@ set_config_value() {
     local toml_key="$1"
     local value="$2"
     local value_type="$3"  # "hex", "string", or "number"
+    local NEW_TOML_CONTENT
 
     if [ "$value_type" == "hex" ]; then
         # Use hex encoding format for all networks
-        NEW_TOML_CONTENT=$(toml set "$TOML_FILE" "config.$NETWORK.$toml_key.bytes" "$value" 2>/dev/null)
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to set hex value for key $toml_key"
+        if ! NEW_TOML_CONTENT=$(toml set "$TOML_FILE" "config.$NETWORK.$toml_key.bytes" "$value"); then
+            echo "Error: Failed to set hex value for key $toml_key" >&2
             exit 1
         fi
-        echo "$NEW_TOML_CONTENT" > "$TOML_FILE"
+        write_toml_content "$NEW_TOML_CONTENT"
 
-        NEW_TOML_CONTENT=$(toml set "$TOML_FILE" "config.$NETWORK.$toml_key.encoding" "hex" 2>/dev/null)
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to set encoding for key $toml_key"
+        if ! NEW_TOML_CONTENT=$(toml set "$TOML_FILE" "config.$NETWORK.$toml_key.encoding" "hex"); then
+            echo "Error: Failed to set encoding for key $toml_key" >&2
             exit 1
         fi
-        echo "$NEW_TOML_CONTENT" > "$TOML_FILE"
+        write_toml_content "$NEW_TOML_CONTENT"
     elif [ "$value_type" == "number" ]; then
         # Use sed to set integer values to avoid toml-cli string conversion
-        if sed -i '' "s/${toml_key} = \"[^\"]*\"/${toml_key} = ${value}/g" "$TOML_FILE" 2>/dev/null; then
+        if sed -i '' "s/${toml_key} = \"[^\"]*\"/${toml_key} = ${value}/g" "$TOML_FILE"; then
             # Also handle cases where the value might already be an integer
-            sed -i '' "s/${toml_key} = [0-9]*/${toml_key} = ${value}/g" "$TOML_FILE" 2>/dev/null
+            sed -i '' "s/${toml_key} = [0-9]*/${toml_key} = ${value}/g" "$TOML_FILE"
         else
-            echo "Error: Failed to set number value for key $toml_key"
+            echo "Error: Failed to set number value for key $toml_key" >&2
             exit 1
         fi
     else  # string
-        NEW_TOML_CONTENT=$(toml set "$TOML_FILE" "config.$NETWORK.$toml_key" "$value" 2>/dev/null)
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to set string value for key $toml_key"
+        if ! NEW_TOML_CONTENT=$(toml set "$TOML_FILE" "config.$NETWORK.$toml_key" "$value"); then
+            echo "Error: Failed to set string value for key $toml_key" >&2
             exit 1
         fi
-        echo "$NEW_TOML_CONTENT" > "$TOML_FILE"
+        write_toml_content "$NEW_TOML_CONTENT"
     fi
 }
 
@@ -221,12 +277,15 @@ compile_phase() {
 
     echo "Building $description..."
 
-    # Compile code
-    aiken build --env "$NETWORK" $TRACE_LEVEL 2>/dev/null
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to build aiken for $description"
+    local compile_started_at
+    compile_started_at=$(current_epoch_seconds)
+
+    if ! aiken build --env "$NETWORK" "${TRACE_ARGS[@]}"; then
+        echo "Error: Failed to build aiken for $description" >&2
         exit 1
     fi
+
+    ensure_blueprint_is_current "$description" "$compile_started_at"
 }
 
 # Check if files exist
@@ -277,14 +336,12 @@ update_hash "$MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_PLUTUS_KEY" "$MAIN_FEDERATED_O
 
 # Final compilation with all hashes in place
 echo "Final compilation..."
-aiken build --env "$NETWORK" $TRACE_LEVEL 2>/dev/null
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to perform final build"
+final_compile_started_at=$(current_epoch_seconds)
+if ! aiken build --env "$NETWORK" "${TRACE_ARGS[@]}"; then
+    echo "Error: Failed to perform final build" >&2
     exit 1
 fi
-
-
-sleep 2
+ensure_blueprint_is_current "Final compilation" "$final_compile_started_at"
 
 echo "=========================================="
 echo "Successfully compiled midnight-reserve-contracts for $NETWORK network."
