@@ -1,10 +1,11 @@
 use aiken/builtin
 use bridge/codec.{scale_encode_commitment}
-use bridge/merkle.{verify_merkle_multi_proof}
+use bridge/merkle.{verify_merkle_multi_proof, verify_mmr_leaf}
 use bridge/types.{
   BeefyConsensusProof, BeefyConsensusState, Commitment, Node,
-  PartialConsensusProof, RelayChainProof, Vote,
+  PartialConsensusProof, Payload, RelayChainProof, Vote, mmr_root_payload_id,
 }
+use utils.{must_find}
 
 pub fn verify_consensus(
   trusted_state: BeefyConsensusState,
@@ -97,6 +98,13 @@ pub fn verify_mmr_update_proof(
   let is_current_authorities =
     commitment.validator_set_id == current_authority_set.id
 
+  let mmr_root =
+    //Does the role of revert MmrRootHashMissing
+    must_find(
+      commitment.payloads,
+      fn(x: Payload) { x.id == mmr_root_payload_id },
+    )
+
   if is_current_authorities {
     expect
       verify_merkle_multi_proof(current_authority_set.root, leaves, rest_proof)
@@ -104,6 +112,8 @@ pub fn verify_mmr_update_proof(
     expect
       verify_merkle_multi_proof(next_authority_set.root, leaves, rest_proof)
   }
+
+  expect verify_mmr_leaf(beefy_activation_block, relay_proof, mmr_root.data)
 
   let current_authority_set, next_authority_set <-
     fn(callback) {
