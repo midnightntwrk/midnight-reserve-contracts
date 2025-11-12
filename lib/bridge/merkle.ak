@@ -1,36 +1,24 @@
 use aiken/builtin
 use aiken/collection/list
-use aiken/math.{log2}
 use aiken/primitive/bytearray
 use bridge/codec.{scale_encode_beefy_mmr_leaf}
 use bridge/types.{
-  AuthoritySetCommitment, BeefyMmrLeaf, MmrLeaf, Node, ProofNodeRec,
-  RelayChainProof,
+  AuthoritySetCommitment, BeefyMmrLeaf, Leaf, MmrLeaf, Peak, ProofNodeRec,
 }
 
-pub type Leaf =
-  ByteArray
-
-pub type Peak =
-  ByteArray
-
-const shift_array =
-  #"0000000000000000000000000000000000000000000000000000000000000001"
+// const shift_array =
+//   #"0000000000000000000000000000000000000000000000000000000000000001"
 
 pub fn verify_mmr_leaf(
   _beefy_activation_block: Int,
-  relay_proof: RelayChainProof,
+  latest_mmr_leaf: BeefyMmrLeaf,
+  mmr_proof: Data<List<ByteArray>>,
   mmr_root: ByteArray,
 ) {
-  let RelayChainProof {
-    latest_mmr_leaf: BeefyMmrLeaf { k_index, leaf_index, .. } as latest,
-    mmr_proof,
-    ..
-  } = relay_proof
+  let BeefyMmrLeaf { k_index, leaf_index, .. } = latest_mmr_leaf
 
-  let hash = scale_encode_beefy_mmr_leaf(latest) |> builtin.keccak_256
+  let hash = scale_encode_beefy_mmr_leaf(latest_mmr_leaf) |> builtin.keccak_256
 
-  // let mmr_leaf_count = parent_number - beefy_activation_block + 1
   mmr_root == calculate_mmr_root(
     mmr_proof |> builtin.un_list_data,
     MmrLeaf(k_index, leaf_index, hash),

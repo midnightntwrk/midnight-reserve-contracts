@@ -105,3 +105,9 @@ pub type BeefyThreshold {
   numerator: Int,
   denominator: Int,
 }
+
+pub type Leaf =
+  ByteArray
+
+pub type Peak =
+  ByteArray
