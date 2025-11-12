@@ -1,7 +1,7 @@
 use aiken/builtin
 use aiken/collection/list
 use aiken/primitive/bytearray
-use bridge/beefy.{check_auth_sigs_and_get_len}
+use bridge/beefy.{check_auth_sigs_and_get_stake}
 use bridge/beefy_example.{leaves, validator_set}
 use bridge/types.{Vote}
 
@@ -69,9 +69,10 @@ fn at(l: List<a>, index: Int) -> a {
 }
 
 test beefy_candidate_sig() {
-  let i = check_auth_sigs_and_get_len(leaves, votes, msg |> builtin.keccak_256)
+  let i =
+    check_auth_sigs_and_get_stake(leaves, votes, msg |> builtin.keccak_256)
 
-  i == 9
+  i == 9000
 }
 
 test single_sig_check() {
