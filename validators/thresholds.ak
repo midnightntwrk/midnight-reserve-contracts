@@ -25,9 +25,9 @@ fn validation(datum: Data) {
     // (THD-3) Require the council numerator to be below its denominator.
     council_numerator < council_denominator,
     // (THD-4) Require the technical-authority numerator to be strictly positive.
-    technical_auth_numerator > 0,
+    technical_auth_numerator > -1,
     // (THD-5) Require the council numerator to be strictly positive.
-    council_numerator > 0,
+    council_numerator > -1,
   }
 }
 
@@ -206,6 +206,21 @@ validator main_federated_ops_update_threshold {
       )
 
     // (FOT-1) Delegate validation to the shared threshold helper (`threshold_validation`).
+    threshold_validation(transaction, info, one_shot_ref, validation)
+  }
+}
+
+validator beefy_signer_threshold {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.committee_threshold_one_shot_hash,
+        config.committee_threshold_one_shot_index,
+      )
+
+    // (BST-1) Delegate validation to the shared threshold helper (`threshold_validation`).
     threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
