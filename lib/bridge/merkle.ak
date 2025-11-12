@@ -129,29 +129,24 @@ fn calculate_mmr_root(mmr_proof: List<Data<Peak>>, leaf: MmrLeaf) {
         |> builtin.keccak_256
     },
   )
-  // let subtree = subtree_heights(mmr_leaf_count)
 }
 
-fn subtree_heights(leaves_length: Int) -> List<Pair<Int, Int>> {
-  if leaves_length == 0 {
-    []
-  } else {
-    let log = log2(leaves_length)
+// fn subtree_heights(leaves_length: Int) -> List<Pair<Int, Int>> {
+//   if leaves_length == 0 {
+//     []
+//   } else {
+//     let log = log2(leaves_length)
 
-    let two_exp =
-      builtin.bytearray_to_integer(
-        True,
-        builtin.shift_bytearray(shift_array, log),
-      )
-    let current = leaves_length - two_exp
+//     let two_exp =
+//       builtin.bytearray_to_integer(
+//         True,
+//         builtin.shift_bytearray(shift_array, log),
+//       )
+//     let current = leaves_length - two_exp
 
-    [Pair(log, two_exp), ..subtree_heights(current)]
-  }
-}
-
-pub fn calculate_subtree_proof() {
-  fail
-}
+//     [Pair(log, two_exp), ..subtree_heights(current)]
+//   }
+// }
 
 /// Verify the give multi member merkle proof while
 /// also extracting the leaves during traversal
@@ -163,8 +158,6 @@ pub fn verify_merkle_multi_proof_get_leaves(
     calculated_hash,
     leaves,
   <- do_verify_merkle_multi_proof_get_leaves(proof, [])
-
-  trace calculated_hash
 
   expect calculated_hash == root
 
@@ -198,7 +191,7 @@ fn do_verify_merkle_multi_proof_get_leaves(
       // case for odd numbered tree items
       let leaf = leaf |> builtin.un_b_data
 
-      callback(leaf, [leaf, ..leaves_found])
+      callback(leaf |> builtin.keccak_256, [leaf, ..leaves_found])
     }
     [branch1, branch2] ->
       builtin.choose_data(
@@ -283,7 +276,13 @@ fn do_verify_merkle_multi_proof_get_leaves(
             let leaf1 = branch1 |> builtin.un_b_data
             let leaf2 = branch2 |> builtin.un_b_data
 
-            callback(merge_nodes(leaf1, leaf2), [leaf1, leaf2, ..leaves_found])
+            callback(
+              merge_nodes(
+                leaf1 |> builtin.keccak_256,
+                leaf2 |> builtin.keccak_256,
+              ),
+              [leaf1, leaf2, ..leaves_found],
+            )
           },
         ),
       )
@@ -341,113 +340,111 @@ test verify_merkle_multi_proof_get_leaves_1() {
 fn merge_nodes(a: ByteArray, b: ByteArray) -> ByteArray {
   bytearray.concat(a, b) |> builtin.keccak_256
 }
+// pub fn verify_merkle_multi_proof(
+//   root: ByteArray,
+//   leaves: List<Node>,
+//   proof: Data<List<List<Node>>>,
+// ) -> Bool {
+//   expect [upper, ..rest] = proof |> builtin.un_list_data
 
-pub fn verify_merkle_multi_proof(
-  root: ByteArray,
-  leaves: List<Node>,
-  proof: Data<List<List<Node>>>,
-) -> Bool {
-  expect [upper, ..rest] = proof |> builtin.un_list_data
+//   expect [root_node] =
+//     calculate_root(leaves, upper |> builtin.un_list_data, rest)
 
-  expect [root_node] =
-    calculate_root(leaves, upper |> builtin.un_list_data, rest)
+//   root == root_node.hash
+// }
 
-  root == root_node.hash
-}
+// fn combine_nodes(x: Node, y: Node, callback) {
+//   let Node { k_index, hash } = x
+//   let next_k_index = k_index / 2
+//   let next_hash = do_hash(hash, y.hash)
 
-fn combine_nodes(x: Node, y: Node, callback) {
-  let Node { k_index, hash } = x
-  let next_k_index = k_index / 2
-  let next_hash = do_hash(hash, y.hash)
+//   callback(next_k_index, next_hash)
+// }
 
-  callback(next_k_index, next_hash)
-}
+// fn calculate_root(
+//   current_layer: List<Node>,
+//   upper_layer: List<Data<Node>>,
+//   rest: List<Data<List<Node>>>,
+// ) -> List<Node> {
+//   when current_layer is {
+//     [] -> []
+//     [x] -> {
+//       let Node { k_index, hash } = x
+//       let next_k_index = k_index / 2
+//       let next_hash = hash
 
-fn calculate_root(
-  current_layer: List<Node>,
-  upper_layer: List<Data<Node>>,
-  rest: List<Data<List<Node>>>,
-) -> List<Node> {
-  when current_layer is {
-    [] -> []
-    [x] -> {
-      let Node { k_index, hash } = x
-      let next_k_index = k_index / 2
-      let next_hash = hash
+//       merge_next_layer(next_k_index, next_hash, [], upper_layer, rest)
+//     }
+//     [x, y, ..xs] -> {
+//       let next_k_index, next_hash <- combine_nodes(x, y)
 
-      merge_next_layer(next_k_index, next_hash, [], upper_layer, rest)
-    }
-    [x, y, ..xs] -> {
-      let next_k_index, next_hash <- combine_nodes(x, y)
+//       merge_next_layer(next_k_index, next_hash, xs, upper_layer, rest)
+//     }
+//   }
+// }
+// fn fold_rest(current_layer: List<Node>) {
+//   when current_layer is {
+//     [] -> current_layer
+//     [x] -> {
+//       let Node { k_index, hash } = x
+//       let next_k_index = k_index / 2
+//       let next_hash = hash
 
-      merge_next_layer(next_k_index, next_hash, xs, upper_layer, rest)
-    }
-  }
-}
+//       [Node(next_k_index, next_hash)]
+//     }
+//     [x, y, ..xs] -> {
+//       let next_k_index, next_hash <- combine_nodes(x, y)
 
-fn fold_rest(current_layer: List<Node>) {
-  when current_layer is {
-    [] -> current_layer
-    [x] -> {
-      let Node { k_index, hash } = x
-      let next_k_index = k_index / 2
-      let next_hash = hash
+//       [Node(next_k_index, next_hash), ..fold_rest(xs)]
+//     }
+//   }
+// }
 
-      [Node(next_k_index, next_hash)]
-    }
-    [x, y, ..xs] -> {
-      let next_k_index, next_hash <- combine_nodes(x, y)
+// fn do_hash(hash1: ByteArray, hash2: ByteArray) -> ByteArray {
+//   bytearray.concat(hash1, hash2) |> builtin.keccak_256
+// }
 
-      [Node(next_k_index, next_hash), ..fold_rest(xs)]
-    }
-  }
-}
+// fn merge_next_layer(
+//   k_index: Int,
+//   hash: ByteArray,
+//   current_layer: List<Node>,
+//   upper_nodes: List<Data<Node>>,
+//   remaining_proofs: List<Data<List<Node>>>,
+// ) -> List<Node> {
+//   let next_layer =
+//     when upper_nodes is {
+//       [] -> [Node(k_index, hash), ..fold_rest(current_layer)]
+//       [upper_item, ..others] -> {
+//         expect Node { k_index: upper_k_index, .. } as upper_item = upper_item
+//         let upper_k_index = upper_k_index |> builtin.un_i_data
 
-fn do_hash(hash1: ByteArray, hash2: ByteArray) -> ByteArray {
-  bytearray.concat(hash1, hash2) |> builtin.keccak_256
-}
+//         if upper_k_index > k_index {
+//           [
+//             Node(k_index, hash),
+//             ..calculate_root(current_layer, upper_nodes, remaining_proofs)
+//           ]
+//         } else {
+//           [
+//             upper_item,
+//             ..merge_next_layer(
+//               k_index,
+//               hash,
+//               current_layer,
+//               others,
+//               remaining_proofs,
+//             )
+//           ]
+//         }
+//       }
+//     }
 
-fn merge_next_layer(
-  k_index: Int,
-  hash: ByteArray,
-  current_layer: List<Node>,
-  upper_nodes: List<Data<Node>>,
-  remaining_proofs: List<Data<List<Node>>>,
-) -> List<Node> {
-  let next_layer =
-    when upper_nodes is {
-      [] -> [Node(k_index, hash), ..fold_rest(current_layer)]
-      [upper_item, ..others] -> {
-        expect Node { k_index: upper_k_index, .. } as upper_item = upper_item
-        let upper_k_index = upper_k_index |> builtin.un_i_data
-
-        if upper_k_index > k_index {
-          [
-            Node(k_index, hash),
-            ..calculate_root(current_layer, upper_nodes, remaining_proofs)
-          ]
-        } else {
-          [
-            upper_item,
-            ..merge_next_layer(
-              k_index,
-              hash,
-              current_layer,
-              others,
-              remaining_proofs,
-            )
-          ]
-        }
-      }
-    }
-
-  when remaining_proofs is {
-    [] -> fold_rest(next_layer)
-    [next_upper, ..remaining_proofs] ->
-      calculate_root(
-        next_layer,
-        next_upper |> builtin.un_list_data,
-        remaining_proofs,
-      )
-  }
-}
+//   when remaining_proofs is {
+//     [] -> fold_rest(next_layer)
+//     [next_upper, ..remaining_proofs] ->
+//       calculate_root(
+//         next_layer,
+//         next_upper |> builtin.un_list_data,
+//         remaining_proofs,
+//       )
+//   }
+// }

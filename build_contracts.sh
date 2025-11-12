@@ -86,6 +86,11 @@ validator_compiled_code() {
     jq -r --arg title "$validator_title" '.validators[] | select(.title==$title) | .compiledCode' "$JSON_FILE"
 }
 
+toml_bytes_value() {
+    local toml_key="$1"
+    toml get "$TOML_FILE" "config.$NETWORK.$toml_key.bytes" 2>/dev/null | tr -d '"'
+}
+
 verify_logic_dependency() {
     local logic_validator="$1"
     local dependency_validator="$2"
@@ -115,11 +120,40 @@ verify_logic_dependency() {
     return 0
 }
 
+verify_threshold_config_entry() {
+    local display_name="$1"
+    local toml_key="$2"
+    local validator_title="$3"
+
+    local expected_hash
+    expected_hash=$(validator_hash_by_title "$validator_title")
+    if [ -z "$expected_hash" ] || [ "$expected_hash" == "null" ]; then
+        echo "Error: Validator $validator_title not found in $JSON_FILE" >&2
+        return 1
+    fi
+
+    local toml_hash
+    toml_hash=$(toml_bytes_value "$toml_key")
+    if [ -z "$toml_hash" ] || [ "$toml_hash" == "null" ]; then
+        echo "Error: Failed to read $display_name hash for $NETWORK from $TOML_FILE" >&2
+        return 1
+    fi
+
+    if [ "$toml_hash" != "$expected_hash" ]; then
+        echo "Error: $display_name hash mismatch ($toml_hash != $expected_hash)" >&2
+        return 1
+    fi
+
+    return 0
+}
+
 verify_logic_dependencies() {
     echo "Verifying logic validators reference updated threshold hashes..."
     verify_logic_dependency "permissioned.council_logic.else" "thresholds.main_council_update_threshold.else" || return 1
     verify_logic_dependency "permissioned.tech_auth_logic.else" "thresholds.main_tech_auth_update_threshold.else" || return 1
     verify_logic_dependency "permissioned.federated_ops_logic.else" "thresholds.main_federated_ops_update_threshold.else" || return 1
+    verify_logic_dependency "gov_auth.main_gov_auth.else" "thresholds.main_gov_threshold.else" || return 1
+    verify_threshold_config_entry "committee_signer_threshold" "bridge_signer_threshold_hash" "thresholds.beefy_signer_threshold.else" || return 1
     return 0
 }
 
@@ -128,7 +162,7 @@ final_compile_run() {
     local compile_started_at
     compile_started_at=$(current_epoch_seconds)
 
-    if ! aiken build --env "$NETWORK" "${TRACE_ARGS[@]}"; then
+    if ! aiken build -S --env "$NETWORK" "${TRACE_ARGS[@]}"; then
         echo "Error: Failed to perform final build" >&2
         exit 1
     fi
@@ -193,6 +227,9 @@ MAIN_TECH_AUTH_UPDATE_THRESHOLD_TOML_KEY="main_tech_auth_update_threshold_hash"
 
 MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_TITLE="thresholds.main_federated_ops_update_threshold.else"
 MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_TOML_KEY="main_federated_ops_update_threshold_hash"
+
+BRIDGE_SIGNER_THRESHOLD_TITLE="thresholds.beefy_signer_threshold.else"
+BRIDGE_SIGNER_THRESHOLD_TOML_KEY="bridge_signer_threshold_hash"
 
 # Help function
 show_help() {
@@ -360,6 +397,7 @@ update_threshold_hashes() {
     update_hash "$MAIN_COUNCIL_UPDATE_THRESHOLD_TITLE" "$MAIN_COUNCIL_UPDATE_THRESHOLD_TOML_KEY"
     update_hash "$MAIN_TECH_AUTH_UPDATE_THRESHOLD_TITLE" "$MAIN_TECH_AUTH_UPDATE_THRESHOLD_TOML_KEY"
     update_hash "$MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_TITLE" "$MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_TOML_KEY"
+    update_hash "$BRIDGE_SIGNER_THRESHOLD_TITLE" "$BRIDGE_SIGNER_THRESHOLD_TOML_KEY"
 }
 
 refresh_all_validator_hashes() {
@@ -378,7 +416,7 @@ compile_phase() {
     local compile_started_at
     compile_started_at=$(current_epoch_seconds)
 
-    if ! aiken build --env "$NETWORK" "${TRACE_ARGS[@]}"; then
+    if ! aiken build -S --env "$NETWORK" "${TRACE_ARGS[@]}"; then
         echo "Error: Failed to build aiken for $description" >&2
         exit 1
     fi

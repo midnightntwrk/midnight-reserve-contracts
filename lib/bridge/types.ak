@@ -68,14 +68,8 @@ pub type Parachain {
   header: ByteArray,
 }
 
-pub type ParachainProof {
-  parachain: Parachain,
-  proof: List<List<Node>>,
-}
-
 pub type BeefyConsensusProof {
   relay: RelayChainProof,
-  parachain: ParachainProof,
 }
 
 pub const mmr_root_payload_id = "mh"
@@ -84,7 +78,9 @@ pub type BeefyConsensusState {
   latest_height: Int,
   beefy_activation_block: Int,
   current_authority_set: AuthoritySetCommitment,
+  current_stake_total: Int,
   next_authority_set: AuthoritySetCommitment,
+  next_stake_total: Int,
 }
 
 pub type StateCommitment {
@@ -103,4 +99,9 @@ pub type MmrLeaf {
   k_index: Int,
   leaf_index: Int,
   hash: ByteArray,
+}
+
+pub type BeefyThreshold {
+  numerator: Int,
+  denominator: Int,
 }
