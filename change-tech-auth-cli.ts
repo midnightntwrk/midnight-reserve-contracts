@@ -144,7 +144,10 @@ async function main() {
     }),
   );
 
-  console.log("\nTech Auth Forever Address:", techAuthForeverAddress.toBech32());
+  console.log(
+    "\nTech Auth Forever Address:",
+    techAuthForeverAddress.toBech32(),
+  );
 
   const techAuthUpdateThresholdAddress = addressFromCredential(
     NetworkId.Testnet,
@@ -349,6 +352,7 @@ async function main() {
   try {
     const txBuilder = blaze
       .newTransaction()
+      .addInput(userUtxo)
       .addInput(techAuthForeverUtxo, PlutusData.newInteger(0n))
       .addReferenceInput(techAuthThresholdUtxo)
       .addReferenceInput(councilForeverUtxo)
@@ -365,7 +369,10 @@ async function main() {
             coins: techAuthForeverUtxo.output().amount().coin(),
             assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
           },
-          datum: serialize(Contracts.Multisig, newTechAuthForeverState).toCore(),
+          datum: serialize(
+            Contracts.Multisig,
+            newTechAuthForeverState,
+          ).toCore(),
         }),
       )
       .addWithdrawal(
