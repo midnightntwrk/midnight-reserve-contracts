@@ -1,11 +1,14 @@
 use aiken/builtin
+use aiken/collection/dict.{to_pairs}
 use aiken/collection/list
 use aiken/crypto.{ScriptHash}
 use cardano/address.{Address, Script}
-use cardano/assets
+use cardano/assets.{ada_asset_name, ada_policy_id, to_dict}
 use cardano/certificate.{RegisterCredential, UnregisterCredential}
 use cardano/script_context.{Minting, Publishing, ScriptInfo, Withdrawing}
-use cardano/transaction.{OutputReference, Redeemer, Transaction}
+use cardano/transaction.{
+  DatumHash, Output, OutputReference, Redeemer, Transaction,
+}
 use config
 use logic/types.{StagingState}
 use multisig/script.{check_for_multisig}
@@ -32,9 +35,15 @@ pub fn unused_logic_merge_next_version(
           inputs,
           assets.zero,
           fn(input, acc) {
-            let output = input.output
-            if output.address.payment_credential == guarded_cred {
-              assets.merge(output.value, acc)
+            let Output { address, value, .. } = input.output
+            if address.payment_credential == guarded_cred {
+              // (LM-3) Don't allow the permanent state token to be
+              // spent in this version
+              expect
+                assets.quantity_of(value, main_forever_script_hash, "") == 0
+
+              // (LM-1) Accumulate every input locked by the forever script.
+              assets.merge(value, acc)
             } else {
               acc
             }
@@ -43,12 +52,28 @@ pub fn unused_logic_merge_next_version(
 
       let guarded_address = Address(Script(forever_script_hash), None)
 
-      let output =
+      // (LM-0) Require the transaction to create an output for the forever address.
+      let Output { value, datum, .. } =
         must_find(outputs, fn(output) { output.address == guarded_address })
 
+      expect [Pair("", ada_tokens),
+        Pair(cnight_policy, cnight_tokens)] = value |> to_dict |> to_pairs
+
+      expect [Pair(_, ada_amount)] = ada_tokens |> to_pairs
+
+      expect [Pair(cnight_name, cnight_amount)] = cnight_tokens |> to_pairs
+
       and {
-        output.value == guarded_value,
-        builtin.length_of_bytearray(builtin.serialise_data(output.value)) < 2048,
+        // (LM-2) Require the output to not be a datumhash
+        when datum is {
+          DatumHash(_) -> False
+          _ -> True
+        },
+        // (LM-4) Require the transaction to return the merged balance to the forever address.
+        config.cnight_policy == cnight_policy,
+        cnight_name == "cnight",
+        assets.quantity_of(guarded_value, ada_policy_id, ada_asset_name) <= ada_amount,
+        assets.quantity_of(guarded_value, cnight_policy, cnight_name) <= cnight_amount,
       }
     }
 
