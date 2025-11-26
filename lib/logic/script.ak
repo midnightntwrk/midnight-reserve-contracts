@@ -62,7 +62,7 @@ pub fn logic_merge(
         },
         // (LM-4) Require the transaction to return the merged balance to the forever address.
         config.cnight_policy == cnight_policy,
-        cnight_name == "cnight",
+        cnight_name == "NIGHT",
         assets.quantity_of(guarded_value, ada_policy_id, ada_asset_name) <= ada_amount,
         assets.quantity_of(guarded_value, cnight_policy, cnight_name) <= cnight_amount,
       }
