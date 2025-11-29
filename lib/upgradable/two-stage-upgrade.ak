@@ -470,7 +470,6 @@ fn validate_mint_tokens(
   } = staging_datum
 
   and {
-    validate_running(auth, "", withdrawals),
     // (TSM-15) Require the staging output to carry the staging NFT.
     expected_staging_nft_id(own_policy) == ( staging_nft_id |> as_data ),
     // (TSM-16) Ensure the initial staging logic hash is 28 bytes.
