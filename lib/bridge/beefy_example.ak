@@ -1,6 +1,6 @@
 use aiken/builtin
 use aiken/collection/list
-use bridge/types.{Node}
+use aiken/primitive/bytearray
 
 pub const validator_set =
   [
@@ -19,4 +19,12 @@ pub const validator_set =
   ]
 
 pub const leaves =
-  list.indexed_map(validator_set, fn(i, x) { Node(i, x |> builtin.keccak_256) })
+  list.map(
+    validator_set,
+    fn(x) {
+      bytearray.concat(
+        x |> builtin.keccak_256,
+        1000 |> builtin.integer_to_bytearray(True, 0, _),
+      )
+    },
+  )

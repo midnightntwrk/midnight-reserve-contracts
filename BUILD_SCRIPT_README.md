@@ -61,6 +61,7 @@ The script automatically:
 - Sets proper integer values for indexes (not strings)
 - Maintains consistent configuration format across all networks
 - Handles both direct key-value pairs (one_shot_hash, one_shot_index) and hex-encoded table entries (two_stage_hash, forever_hash, threshold_hash)
+- Refreshes the committee signer (`bridge_signer_threshold_hash`) entry so those script IDs stay synchronised across every environment
 
 ## Prerequisites
 
@@ -121,6 +122,10 @@ If the build fails:
 3. **Permission errors** - Ensure the script is executable (`chmod +x build_contracts.sh`) and you have write permissions for `aiken.toml`.
 
 4. **Network configuration** - Ensure the specified network configuration section exists in `aiken.toml`.
+
+## Verification
+
+After the final compilation the script confirms that all logic validators embed the refreshed threshold hashes (council, tech-auth, federated-ops, and main-governance flows) and that the `bridge_signer_threshold_hash` entry in `aiken.toml` matches the hash emitted for `thresholds.beefy_signer_threshold.else`.
 
 ## Help
 
