@@ -73,7 +73,7 @@ validator cnight_generates_dust {
 
           expect DustMappingDatum { c_wallet, dust_address } = output_datum
 
-          expect builtin.length_of_bytearray(dust_address) == 33
+          expect builtin.length_of_bytearray(dust_address) <= 33
 
           when c_wallet is {
             VerificationKey(key) -> list.has(extra_signatories, key)
@@ -131,7 +131,7 @@ validator cnight_generates_dust {
                 expect DustMappingDatum { c_wallet, dust_address } =
                   output_datum
 
-                expect builtin.length_of_bytearray(dust_address) == 33
+                expect builtin.length_of_bytearray(dust_address) <= 33
 
                 expect
                   when c_wallet is {

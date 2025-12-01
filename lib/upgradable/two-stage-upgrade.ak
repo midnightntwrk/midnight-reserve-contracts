@@ -43,7 +43,14 @@ pub fn two_stage_upgradable(
     // Used for initial 2 stage setup
     Minting(own_policy) ->
       // (TS-1) Validate that minting spends the one-shot input and issues the main/staging NFTs with correct inline datums.
-      validate_mint_tokens(own_policy, one_shot_ref, inputs, outputs, mint)
+      validate_mint_tokens(
+        own_policy,
+        one_shot_ref,
+        inputs,
+        outputs,
+        mint,
+        withdrawals,
+      )
 
     Spending { output, .. } -> {
       // (TS-2) Require the spending transaction to consume the script UTXO targeted by the ledger.
@@ -381,6 +388,7 @@ fn validate_mint_tokens(
   inputs: List<Input>,
   outputs: List<Output>,
   mint: Value,
+  withdrawals,
 ) {
   // (TSM-5) Extract the tokens minted under this policy; fail if the policy is absent.
   let own_tokens = mint |> to_dict |> to_pairs |> must_find_key(own_policy)

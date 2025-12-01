@@ -570,7 +570,7 @@ async function main() {
 
     // Parse signers from environment
     const { totalSigners: councilTotalSigners, signers: councilSigners } =
-      parseSigners(true);
+      parseSigners(false);
 
     console.log(`Total tech auth signers: ${techAuthTotalSigners}`);
     console.log(
@@ -690,7 +690,7 @@ async function main() {
             oneShotIndex: config.main_council_update_one_shot_index,
             thresholdContract: mainCouncilUpdateThreshold,
             thresholdDatum: {
-              technical_auth_numerator: 1n,
+              technical_auth_numerator: 2n,
               technical_auth_denominator: 3n,
               council_numerator: 2n,
               council_denominator: 3n,

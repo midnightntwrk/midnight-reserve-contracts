@@ -1,7 +1,6 @@
 use aiken/crypto.{VerificationKeyHash}
-use bridge/merkle.{Peak}
 use bridge/types.{
-  BeefyConsensusState, BeefyMmrLeaf, ProofNodeRec, SignedCommitment,
+  BeefyConsensusState, BeefyMmrLeaf, Peak, ProofNodeRec, SignedCommitment,
 } as bridge_types
 use cnight_generates_dust.{DustAction, DustMappingDatum}
 use multisig/types.{MultisigThreshold, Sr25519PubKey}

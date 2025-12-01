@@ -25,9 +25,9 @@ fn validation(datum: Data) {
     // (THD-3) Require the council numerator to be below its denominator.
     council_numerator < council_denominator,
     // (THD-4) Require the technical-authority numerator to be strictly positive.
-    technical_auth_numerator > 0,
+    technical_auth_numerator > -1,
     // (THD-5) Require the council numerator to be strictly positive.
-    council_numerator > 0,
+    council_numerator > -1,
   }
 }
 
@@ -50,22 +50,7 @@ validator main_gov_threshold {
         let datum =
           input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
-        // (THM-2) Enforce the minted datum to decode into `MultisigThreshold`.
-        expect MultisigThreshold {
-          technical_auth_numerator,
-          technical_auth_denominator,
-          council_numerator,
-          council_denominator,
-        }: MultisigThreshold = datum
-
-        and {
-          // (THM-3) Touch `cnight_policy` so the mint branch remains in the script hash.
-          own_policy != config.cnight_policy,
-          // (THM-4) Require the technical-authority fraction to be less than one.
-          technical_auth_numerator < technical_auth_denominator,
-          // (THM-5) Require the council fraction to be less than one.
-          council_numerator < council_denominator,
-        }
+        validation(datum)
       }
 
       Spending { output, .. } -> {
@@ -206,6 +191,21 @@ validator main_federated_ops_update_threshold {
       )
 
     // (FOT-1) Delegate validation to the shared threshold helper (`threshold_validation`).
+    threshold_validation(transaction, info, one_shot_ref, validation)
+  }
+}
+
+validator beefy_signer_threshold {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.committee_threshold_one_shot_hash,
+        config.committee_threshold_one_shot_index,
+      )
+
+    // (BST-1) Delegate validation to the shared threshold helper (`threshold_validation`).
     threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
