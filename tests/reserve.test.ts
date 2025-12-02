@@ -35,7 +35,12 @@ describe("Reserve Deploy and Merge", () => {
     reserve_one_shot_hash:
       "0000000000000000000000000000000000000000000000000000000000000001",
     reserve_one_shot_index: 1,
+    cnight_policy:
+      "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69",
   };
+
+  const cnightAsset =
+    config.cnight_policy + toHex(new TextEncoder().encode("NIGHT"));
 
   test("Deploy Reserve and merge UTxOs", async () => {
     await emulator.as("deployer", async (blaze, addr) => {
@@ -209,7 +214,7 @@ describe("Reserve Deploy and Merge", () => {
           address: PaymentAddress(reserveForeverAddress.toBech32()),
           value: {
             coins: 5_000_000n,
-            assets: new Map([[AssetId(reserveForever.Script.hash()), 3n]]),
+            assets: new Map([[AssetId(cnightAsset), 3n]]),
           },
           datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
         },
@@ -227,8 +232,7 @@ describe("Reserve Deploy and Merge", () => {
           value: {
             coins: 3_000_000n,
             assets: new Map([
-              [AssetId(reserveForever.Script.hash()), 2n],
-              [AssetId(reserveTwoStage.Script.hash() + "abababab"), 2n],
+              [AssetId(cnightAsset), 2n],
             ]),
           },
           datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
@@ -271,8 +275,7 @@ describe("Reserve Deploy and Merge", () => {
               value: {
                 coins: 8_000_000n,
                 assets: new Map([
-                  [AssetId(reserveForever.Script.hash()), 5n],
-                  [AssetId(reserveTwoStage.Script.hash() + "abababab"), 2n],
+                  [AssetId(cnightAsset), 5n],
                 ]),
               },
               datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
