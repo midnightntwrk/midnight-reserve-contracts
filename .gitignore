@@ -12,3 +12,4 @@ node_modules/
 blueprint-rs
 
 *.cbor
+*.db*
