@@ -111,7 +111,7 @@
   - DG-10: replacement datums must decode to `DustMappingDatum`, satisfy the 33-byte limit, and re-check DG-4/DG-5.
   Spending / operational constraints (`Spending`):
   - DG-13: script inputs must provide inline `DustMappingDatum` records.
-  - DG-14: the ledger-selected input must be locked by the dust script credential.
+  - DG-14: retrieve the ledger-selected input’s script credential and reuse it for the mint/withdrawal gates below.
   - DG-15: each spend must either burn dust NFTs (negative mint quantity) or include a script withdrawal when mint quantity is zero.
 
 ## Council Validators

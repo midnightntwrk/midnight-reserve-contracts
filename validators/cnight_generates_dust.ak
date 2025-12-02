@@ -23,26 +23,6 @@ pub type DustAction {
   Burn
 }
 
-// script cnight_generates_dust
-
-// UTxO
-
-// Address(ScriptPayment(cnight_generates_dust), None)
-
-// Value(Token(Policy(cnight_generates_dust), AssetName(""), 1))
-
-// DustMappingDatum (Credential, DustAddress)
-
-// script cnight_generates_dustv2
-
-// UTxO
-
-// Address(ScriptPayment(cnight_generates_dustv2), None)
-
-// Value(Token(Policy(cnight_generates_dustv2), AssetName(""), 1))
-
-// DustMappingDatum (Credential, DustAddress)
-
 validator cnight_generates_dust {
   else(ctx: ScriptContext) {
     let ScriptContext { redeemer, info, transaction } = ctx
@@ -173,7 +153,7 @@ validator cnight_generates_dust {
         expect Some(datum) = datum
         expect DustMappingDatum { c_wallet, .. } = datum
 
-        // (DG-14) Ensure the ledger-selected input is locked by the dust script.
+        // (DG-14) Recover the dust script credential from the ledger-selected input for later checks.
         expect Script(own_hash) as script =
           must_find(inputs, fn(input) { input.output_reference == output }).output.address.payment_credential
 
