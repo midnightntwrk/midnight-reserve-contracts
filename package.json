@@ -19,7 +19,15 @@
   "scripts": {
     "clean": "rm -rf ./dist",
     "lint": "eslint src --ignore-pattern '**/dist/**'",
-    "lint:fix": "bun lint --fix"
+    "lint:fix": "bun lint --fix",
+    "cli": "bun run cli/index.ts",
+    "cli:deploy": "bun run cli/index.ts deploy",
+    "cli:deploy:local": "bun run cli/index.ts deploy -n local",
+    "cli:deploy:preview": "bun run cli/index.ts deploy -n preview",
+    "cli:deploy:preprod": "bun run cli/index.ts deploy -n preprod",
+    "cli:info": "bun run cli/index.ts info",
+    "cli:info:preview": "bun run cli/index.ts info -n preview",
+    "cli:simple-tx": "bun run cli/index.ts simple-tx"
   },
   "devDependencies": {
     "@blaze-cardano/emulator": "^0.3.34",

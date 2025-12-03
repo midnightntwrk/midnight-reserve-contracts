@@ -598,6 +598,22 @@ async function main() {
           }),
       },
       {
+        name: "tech-auth-update-threshold-deployment",
+        generator: () =>
+          generateThresholdDeployment({
+            name: "Tech Auth Update Threshold",
+            oneShotHash: config.main_tech_auth_update_one_shot_hash,
+            oneShotIndex: config.main_tech_auth_update_one_shot_index,
+            thresholdContract: mainTechAuthUpdateThreshold,
+            thresholdDatum: {
+              technical_auth_numerator: 2n,
+              technical_auth_denominator: 3n,
+              council_numerator: 2n,
+              council_denominator: 3n,
+            },
+          }),
+      },
+      {
         name: "council-deployment",
         generator: () =>
           generateMultisigDeployment({
@@ -612,17 +628,19 @@ async function main() {
           }),
       },
       {
-        name: "federated-ops-deployment",
+        name: "council-update-threshold-deployment",
         generator: () =>
-          generateMultisigDeployment({
-            name: "Federated Operators",
-            oneShotHash: config.federated_operators_one_shot_hash,
-            oneShotIndex: config.federated_operators_one_shot_index,
-            twoStageContract: federatedOpsTwoStage,
-            foreverContract: federatedOpsForever,
-            logicContract: federatedOpsLogic,
-            totalSigners: councilTotalSigners,
-            signers: councilSigners,
+          generateThresholdDeployment({
+            name: "Council Update Threshold",
+            oneShotHash: config.main_council_update_one_shot_hash,
+            oneShotIndex: config.main_council_update_one_shot_index,
+            thresholdContract: mainCouncilUpdateThreshold,
+            thresholdDatum: {
+              technical_auth_numerator: 2n,
+              technical_auth_denominator: 3n,
+              council_numerator: 2n,
+              council_denominator: 3n,
+            },
           }),
       },
       {
@@ -682,35 +700,17 @@ async function main() {
           }),
       },
       {
-        name: "council-update-threshold-deployment",
+        name: "federated-ops-deployment",
         generator: () =>
-          generateThresholdDeployment({
-            name: "Council Update Threshold",
-            oneShotHash: config.main_council_update_one_shot_hash,
-            oneShotIndex: config.main_council_update_one_shot_index,
-            thresholdContract: mainCouncilUpdateThreshold,
-            thresholdDatum: {
-              technical_auth_numerator: 2n,
-              technical_auth_denominator: 3n,
-              council_numerator: 2n,
-              council_denominator: 3n,
-            },
-          }),
-      },
-      {
-        name: "tech-auth-update-threshold-deployment",
-        generator: () =>
-          generateThresholdDeployment({
-            name: "Tech Auth Update Threshold",
-            oneShotHash: config.main_tech_auth_update_one_shot_hash,
-            oneShotIndex: config.main_tech_auth_update_one_shot_index,
-            thresholdContract: mainTechAuthUpdateThreshold,
-            thresholdDatum: {
-              technical_auth_numerator: 2n,
-              technical_auth_denominator: 3n,
-              council_numerator: 2n,
-              council_denominator: 3n,
-            },
+          generateMultisigDeployment({
+            name: "Federated Operators",
+            oneShotHash: config.federated_operators_one_shot_hash,
+            oneShotIndex: config.federated_operators_one_shot_index,
+            twoStageContract: federatedOpsTwoStage,
+            foreverContract: federatedOpsForever,
+            logicContract: federatedOpsLogic,
+            totalSigners: councilTotalSigners,
+            signers: councilSigners,
           }),
       },
       {

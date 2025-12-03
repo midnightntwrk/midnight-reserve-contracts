@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__orchestrator__init",
+      "mcp__orchestrator__watch",
+      "mcp__orchestrator__code-search",
+      "Bash(ls:*)",
+      "Bash(bun run cli:*)",
+      "Bash(bun -e 'console.log(process.env.BLOCKFROST_PREVIEW_API_KEY)')",
+      "Bash(bun cli/index.ts deploy:*)",
+      "Bash(bun --no-cache -e 'console.log(process.env.BLOCKFROST_PREVIEW_API_KEY)')",
+      "Bash(source:*)",
+      "Bash(echo:*)",
+      "Bash(BLOCKFROST_PREVIEW_API_KEY=preview6cKyicPKz2S5DAj2eCMIkHWYRjjHPM21 bun cli/index.ts deploy:*)",
+      "Bash(BLOCKFROST_PREVIEW_API_KEY=preview6cKyicPKz2S5DAj2eCMIkHWYRjjHPM21 bun index.ts:*)",
+      "Bash(bun cli/index.ts info:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
