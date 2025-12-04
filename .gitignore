@@ -13,3 +13,5 @@ blueprint-rs
 
 *.cbor
 *.db*
+
+code-search*
