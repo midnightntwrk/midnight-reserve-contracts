@@ -1,0 +1,33 @@
+{
+  "name": "midnight-governance-test-plan",
+  "version": "0.1.0",
+  "description": "CLI testing suite for Midnight governance contracts",
+  "type": "module",
+  "main": "./index.ts",
+  "scripts": {
+    "test": "bun run index.ts",
+    "test:deploy": "bun run index.ts --test deployment",
+    "test:all": "bun run index.ts --run-all"
+  },
+  "keywords": [
+    "cardano",
+    "midnight",
+    "governance",
+    "testing",
+    "cli"
+  ],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@sundaeswap/sprinkles": "link:@sundaeswap/sprinkles",
+    "@blaze-cardano/blueprint": "^0.6.1",
+    "@blaze-cardano/data": "^0.6.4",
+    "@blaze-cardano/emulator": "^0.3.34",
+    "@blaze-cardano/query": "^0.5.2",
+    "@blaze-cardano/sdk": "^0.2.43",
+    "@blaze-cardano/uplc": "^0.3.9"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.2"
+  }
+}
