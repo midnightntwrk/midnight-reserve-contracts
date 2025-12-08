@@ -15,3 +15,4 @@ blueprint-rs
 *.db*
 
 code-search*
+.claude/

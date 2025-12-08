@@ -3,6 +3,7 @@ use bridge/types.{
   BeefyConsensusState, BeefyMmrLeaf, Peak, ProofNodeRec, SignedCommitment,
 } as bridge_types
 use cnight_generates_dust.{DustAction, DustMappingDatum}
+use forever/types.{TermsAndConditions, Versioned} as ft
 use multisig/types.{MultisigThreshold, Sr25519PubKey}
 use upgradable/types.{TwoStageRedeemer, UpgradeState} as t
 
@@ -11,6 +12,12 @@ pub type Multisig {
   total_signers: Int,
   signers: Pairs<ByteArray, Sr25519PubKey>,
 }
+
+pub type VersionedMultisig =
+  Versioned<Multisig>
+
+pub type VersionedTermsAndConditions =
+  Versioned<TermsAndConditions>
 
 validator z_threshold_types {
   spend(_datum: Option<MultisigThreshold>, _redeemer, _output, _tx) {
@@ -26,7 +33,27 @@ type PermissionedRedeemer =
   Pairs<VerificationKeyHash, Sr25519PubKey>
 
 validator z_permissioned_types {
-  spend(_datum: Option<Multisig>, _redeemer: PermissionedRedeemer, _output, _tx) {
+  spend(
+    _datum: Option<VersionedMultisig>,
+    _redeemer: PermissionedRedeemer,
+    _output,
+    _tx,
+  ) {
+    fail
+  }
+
+  else(_) {
+    fail
+  }
+}
+
+validator z_terms_and_cond_types {
+  spend(
+    _datum: Option<VersionedTermsAndConditions>,
+    _redeemer: PermissionedRedeemer,
+    _output,
+    _tx,
+  ) {
     fail
   }
 

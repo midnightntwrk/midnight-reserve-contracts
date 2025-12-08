@@ -10,6 +10,7 @@ use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
 }
 use config
+use forever/types.{Versioned} as t
 use multisig/types.{
   Multisig, MultisigThreshold, NativeScript, NativeScriptSigner, Sr25519PubKey,
 }
@@ -106,8 +107,8 @@ pub fn check_for_multisig(
   // (CM-2) Require the NFT input to expose an inline datum.
   expect InlineDatum(datum) = input.output.datum
 
-  // (CM-3) Decode the datum into a multisig configuration.
-  expect multisig: Multisig = datum
+  // (CM-3) Decode the datum into a versioned multisig configuration.
+  expect Versioned { data: multisig, round: 0 }: Versioned<Multisig> = datum
 
   let minting_policy =
     build_native_script(multisig, threshold_numerator, threshold_denominator)
