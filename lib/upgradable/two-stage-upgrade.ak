@@ -193,8 +193,14 @@ fn validate_main_update(
   expect InlineDatum(staging_datum) = staging_datum
 
   // (TM-3) Decode the spending datum into an `UpgradeState` record.
-  expect UpgradeState { logic, mitigation_logic, auth, mitigation_auth, .. }: UpgradeState =
-    spending_datum
+  expect UpgradeState {
+    logic,
+    mitigation_logic,
+    auth,
+    mitigation_auth,
+    round,
+    logic_round,
+  }: UpgradeState = spending_datum
 
   // validate auth scripts are run
   // (TM-4) Ensure both main auth hashes appear in withdrawals.
@@ -203,16 +209,31 @@ fn validate_main_update(
   when update_field is {
     Logic -> {
       // (TM-5) Pull the staged logic payload for comparison.
-      expect UpgradeState { logic, round, .. }: UpgradeState = staging_datum
+      expect UpgradeState { logic, logic_round, .. }: UpgradeState =
+        staging_datum
 
-      UpgradeState { logic, mitigation_logic, auth, mitigation_auth, round }
+      UpgradeState {
+        logic,
+        mitigation_logic,
+        auth,
+        mitigation_auth,
+        round,
+        logic_round,
+      }
     }
 
     Auth -> {
       // (TM-6) Pull the staged auth payload for comparison.
       expect UpgradeState { auth, round, .. }: UpgradeState = staging_datum
 
-      UpgradeState { logic, mitigation_logic, auth, mitigation_auth, round }
+      UpgradeState {
+        logic,
+        mitigation_logic,
+        auth,
+        mitigation_auth,
+        round,
+        logic_round,
+      }
     }
 
     MitigationLogic -> {
@@ -230,6 +251,7 @@ fn validate_main_update(
         auth,
         mitigation_auth,
         round,
+        logic_round,
       }
     }
 
@@ -246,6 +268,7 @@ fn validate_main_update(
         auth,
         mitigation_auth: new_mitigation,
         round,
+        logic_round,
       }
     }
   }
@@ -269,8 +292,14 @@ fn validate_staging_update(
   expect InlineDatum(main_datum) = main_datum
 
   // (TSG-4) Decode the staging datum into an `UpgradeState`.
-  expect UpgradeState { logic, mitigation_logic, auth, mitigation_auth, round } =
-    spending_datum
+  expect UpgradeState {
+    logic,
+    mitigation_logic,
+    auth,
+    mitigation_auth,
+    round,
+    logic_round,
+  } = spending_datum
 
   // (TSG-5) Decode the main datum for comparison.
   expect UpgradeState {
@@ -303,7 +332,8 @@ fn validate_staging_update(
         mitigation_logic,
         auth,
         mitigation_auth,
-        round: round + 1,
+        round,
+        logic_round: logic_round + 1,
       }
 
     Auth ->
@@ -313,6 +343,7 @@ fn validate_staging_update(
         auth: new_val,
         mitigation_auth,
         round: round + 1,
+        logic_round,
       }
 
     MitigationLogic -> {
@@ -326,6 +357,7 @@ fn validate_staging_update(
         auth,
         mitigation_auth,
         round: round + 1,
+        logic_round,
       }
     }
 
@@ -340,6 +372,7 @@ fn validate_staging_update(
         auth,
         mitigation_auth: new_val,
         round: round + 1,
+        logic_round,
       }
     }
   }
@@ -428,6 +461,7 @@ fn validate_mint_tokens(
     auth,
     mitigation_auth: "",
     round: 0,
+    logic_round: 0,
   } = main_datum
 
   // (TSM-11) Ensure the initial main logic hash is 28 bytes.
@@ -459,6 +493,7 @@ fn validate_mint_tokens(
     auth,
     mitigation_auth: "",
     round: 0,
+    logic_round: 0,
   } = staging_datum
 
   and {
