@@ -209,16 +209,19 @@ describe("Change Auth Member", () => {
           0n,
         ];
 
-        const techAuthForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const techAuthForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -302,7 +305,7 @@ describe("Change Auth Member", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   techAuthForeverState,
                 ).toCore(),
               }),
@@ -355,7 +358,7 @@ describe("Change Auth Member", () => {
                 assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
               },
               datum: serialize(
-                Contracts.Multisig,
+                Contracts.VersionedMultisig,
                 techAuthForeverState,
               ).toCore(),
             },
@@ -391,16 +394,19 @@ describe("Change Auth Member", () => {
           0n,
         ];
 
-        const councilForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const councilForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -484,7 +490,7 @@ describe("Change Auth Member", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   councilForeverState,
                 ).toCore(),
               }),
@@ -507,7 +513,7 @@ describe("Change Auth Member", () => {
                 assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
               },
               datum: serialize(
-                Contracts.Multisig,
+                Contracts.VersionedMultisig,
                 councilForeverState,
               ).toCore(),
             },
@@ -545,18 +551,21 @@ describe("Change Auth Member", () => {
           emulator.accounts.set(techAuthLogicRewardAccount, 0n);
 
           // Create new multisig state with changed member
-          const newTechAuthForeverState: Contracts.Multisig = [
-            3n,
-            {
-              ["8200581c" + newAddr.asBase()?.getPaymentCredential().hash]:
-                // 32 byte Sr25519 PubKey
-                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-                "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF",
-            },
-          ];
+          const newTechAuthForeverState: Contracts.VersionedMultisig = {
+            data: [
+              3n,
+              {
+                ["8200581c" + newAddr.asBase()?.getPaymentCredential().hash]:
+                  // 32 byte Sr25519 PubKey
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+                ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                  "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF",
+              },
+            ],
+            round: 0n,
+          };
 
           // Create redeemer with new member public key hashes
           const memberRedeemer: Contracts.PermissionedRedeemer = {
@@ -611,7 +620,7 @@ describe("Change Auth Member", () => {
                       ]),
                     },
                     datum: serialize(
-                      Contracts.Multisig,
+                      Contracts.VersionedMultisig,
                       techAuthForeverState,
                     ).toCore(),
                   },
@@ -663,7 +672,7 @@ describe("Change Auth Member", () => {
                       ]),
                     },
                     datum: serialize(
-                      Contracts.Multisig,
+                      Contracts.VersionedMultisig,
                       councilForeverState,
                     ).toCore(),
                   },
@@ -714,7 +723,7 @@ describe("Change Auth Member", () => {
                     ]),
                   },
                   datum: serialize(
-                    Contracts.Multisig,
+                    Contracts.VersionedMultisig,
                     newTechAuthForeverState,
                   ).toCore(),
                 }),
@@ -896,16 +905,19 @@ describe("Change Auth Member", () => {
           0n,
         ];
 
-        const techAuthForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const techAuthForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -989,7 +1001,7 @@ describe("Change Auth Member", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   techAuthForeverState,
                 ).toCore(),
               }),
@@ -1025,15 +1037,18 @@ describe("Change Auth Member", () => {
           0n,
         ];
 
-        const councilForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const councilForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1117,7 +1132,7 @@ describe("Change Auth Member", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   councilForeverState,
                 ).toCore(),
               }),
@@ -1140,7 +1155,7 @@ describe("Change Auth Member", () => {
                 assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
               },
               datum: serialize(
-                Contracts.Multisig,
+                Contracts.VersionedMultisig,
                 techAuthForeverState,
               ).toCore(),
             },
@@ -1162,7 +1177,7 @@ describe("Change Auth Member", () => {
                 assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
               },
               datum: serialize(
-                Contracts.Multisig,
+                Contracts.VersionedMultisig,
                 councilForeverState,
               ).toCore(),
             },
@@ -1256,17 +1271,20 @@ describe("Change Auth Member", () => {
           emulator.accounts.set(councilLogicRewardAccount, 0n);
 
           // Create new multisig state with changed member
-          const newCouncilForeverState: Contracts.Multisig = [
-            3n,
-            {
-              ["8200581c" + newAddr.asBase()?.getPaymentCredential().hash]:
-                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-                "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF",
-            },
-          ];
+          const newCouncilForeverState: Contracts.VersionedMultisig = {
+            data: [
+              3n,
+              {
+                ["8200581c" + newAddr.asBase()?.getPaymentCredential().hash]:
+                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+                ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+                ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                  "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF",
+              },
+            ],
+            round: 0n,
+          };
 
           // Create redeemer with new member public key hashes
           const memberRedeemer: Contracts.PermissionedRedeemer = {
@@ -1318,7 +1336,7 @@ describe("Change Auth Member", () => {
                       ]),
                     },
                     datum: serialize(
-                      Contracts.Multisig,
+                      Contracts.VersionedMultisig,
                       councilForeverState,
                     ).toCore(),
                   },
@@ -1367,7 +1385,7 @@ describe("Change Auth Member", () => {
                       ]),
                     },
                     datum: serialize(
-                      Contracts.Multisig,
+                      Contracts.VersionedMultisig,
                       techAuthForeverState,
                     ).toCore(),
                   },
@@ -1418,7 +1436,7 @@ describe("Change Auth Member", () => {
                     ]),
                   },
                   datum: serialize(
-                    Contracts.Multisig,
+                    Contracts.VersionedMultisig,
                     newCouncilForeverState,
                   ).toCore(),
                 }),

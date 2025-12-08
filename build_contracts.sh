@@ -188,6 +188,9 @@ TECH_AUTH_TWO_STAGE_TOML_KEY="technical_authority_two_stage_hash"
 FEDERATED_OPS_TWO_STAGE_TITLE="permissioned.federated_ops_two_stage_upgrade.else"
 FEDERATED_OPS_TWO_STAGE_TOML_KEY="federated_operators_two_stage_hash"
 
+TERMS_AND_CONDITIONS_TWO_STAGE_TITLE="permissioned.terms_and_conditions_two_stage_upgrade.else"
+TERMS_AND_CONDITIONS_TWO_STAGE_TOML_KEY="terms_and_conditions_two_stage_hash"
+
 # Forever validators (compiled second)
 RESERVE_FOREVER_TITLE="reserve.reserve_forever.else"
 RESERVE_FOREVER_TOML_KEY="reserve_forever_hash"
@@ -204,7 +207,8 @@ TECH_AUTH_FOREVER_TOML_KEY="technical_authority_forever_hash"
 FEDERATED_OPS_FOREVER_TITLE="permissioned.federated_ops_forever.else"
 FEDERATED_OPS_FOREVER_TOML_KEY="federated_operators_forever_hash"
 
-
+TERMS_AND_CONDITIONS_FOREVER_TITLE="permissioned.terms_and_conditions_forever.else"
+TERMS_AND_CONDITIONS_FOREVER_TOML_KEY="terms_and_conditions_forever_hash"
 
 # Committee Bridge validators
 COMMITTEE_BRIDGE_FOREVER_TITLE="committee_bridge.committee_bridge_forever.else"
@@ -379,6 +383,7 @@ update_two_stage_hashes() {
     update_hash "$ICS_TWO_STAGE_TITLE" "$ICS_TWO_STAGE_TOML_KEY"
     update_hash "$TECH_AUTH_TWO_STAGE_TITLE" "$TECH_AUTH_TWO_STAGE_TOML_KEY"
     update_hash "$FEDERATED_OPS_TWO_STAGE_TITLE" "$FEDERATED_OPS_TWO_STAGE_TOML_KEY"
+    update_hash "$TERMS_AND_CONDITIONS_TWO_STAGE_TITLE" "$TERMS_AND_CONDITIONS_TWO_STAGE_TOML_KEY"
     update_hash "$COMMITTEE_BRIDGE_TWO_STAGE_TITLE" "$COMMITTEE_BRIDGE_TWO_STAGE_TOML_KEY"
 }
 
@@ -388,6 +393,7 @@ update_forever_hashes() {
     update_hash "$ICS_FOREVER_TITLE" "$ICS_FOREVER_TOML_KEY"
     update_hash "$TECH_AUTH_FOREVER_TITLE" "$TECH_AUTH_FOREVER_TOML_KEY"
     update_hash "$FEDERATED_OPS_FOREVER_TITLE" "$FEDERATED_OPS_FOREVER_TOML_KEY"
+    update_hash "$TERMS_AND_CONDITIONS_FOREVER_TITLE" "$TERMS_AND_CONDITIONS_FOREVER_TOML_KEY"
     update_hash "$COMMITTEE_BRIDGE_FOREVER_TITLE" "$COMMITTEE_BRIDGE_FOREVER_TOML_KEY"
 }
 

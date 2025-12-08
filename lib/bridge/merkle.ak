@@ -279,6 +279,8 @@ fn do_verify_merkle_multi_proof_get_leaves(
   }
 }
 
+// fails because each leaf contains member + stake |> keccak_256
+// test needs to be replaced with updated values
 test verify_merkle_multi_proof_get_leaves_1() {
   let x: ProofNodeRec =
     [

@@ -103,11 +103,11 @@ const expectDatum = (
 };
 
 const buildNativeScriptFromState = (
-  state: Contracts.Multisig,
+  state: Contracts.VersionedMultisig,
   numerator: bigint,
   denominator: bigint,
 ) => {
-  const [totalSigners, signers] = state;
+  const [totalSigners, signers] = state.data;
   const signerScripts = Object.keys(signers)
     .sort()
     .map((key) => {
@@ -193,21 +193,27 @@ describe("Tech + Council upgrade path", () => {
       const paymentHash = addr.asBase()?.getPaymentCredential().hash!;
       const stakeHash = addr.asBase()?.getStakeCredential().hash!;
 
-      const techAuthForeverState: Contracts.Multisig = [
-        1n,
-        {
-          ["8200581c" + paymentHash]:
-            "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-        },
-      ];
+      const techAuthForeverState: Contracts.VersionedMultisig = {
+        data: [
+          1n,
+          {
+            ["8200581c" + paymentHash]:
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+          },
+        ],
+        round: 0n,
+      };
 
-      const councilForeverState: Contracts.Multisig = [
-        1n,
-        {
-          ["8200581c" + stakeHash]:
-            "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-        },
-      ];
+      const councilForeverState: Contracts.VersionedMultisig = {
+        data: [
+          1n,
+          {
+            ["8200581c" + stakeHash]:
+              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+          },
+        ],
+        round: 0n,
+      };
 
       const thresholdDatum: Contracts.MultisigThreshold = {
         technical_auth_numerator: 1n,
@@ -257,7 +263,7 @@ describe("Tech + Council upgrade path", () => {
             coins: 3_000_000n,
             assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
           },
-          datum: serialize(Contracts.Multisig, techAuthForeverState).toCore(),
+          datum: serialize(Contracts.VersionedMultisig, techAuthForeverState).toCore(),
         },
       ]);
 
@@ -277,7 +283,7 @@ describe("Tech + Council upgrade path", () => {
             coins: 3_000_000n,
             assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
           },
-          datum: serialize(Contracts.Multisig, councilForeverState).toCore(),
+          datum: serialize(Contracts.VersionedMultisig, councilForeverState).toCore(),
         },
       ]);
 

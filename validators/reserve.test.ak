@@ -586,7 +586,7 @@ test reserve_logic_merge() {
           input1_ref,
           Output(
             forever_script_address,
-            from_lovelace(5000000) |> add(policy, "", 1),
+            from_lovelace(5000000) |> add(config.cnight_policy, "NIGHT", 100),
             InlineDatum(initial_datum),
             None,
           ),
@@ -595,7 +595,7 @@ test reserve_logic_merge() {
           input2_ref,
           Output(
             forever_script_address,
-            from_lovelace(3000000) |> add(policy, "", 2),
+            from_lovelace(3000000) |> add(config.cnight_policy, "NIGHT", 200),
             InlineDatum(initial_datum),
             None,
           ),
@@ -604,7 +604,70 @@ test reserve_logic_merge() {
       outputs: [
         Output(
           forever_script_address,
-          from_lovelace(8000000) |> add(policy, "", 3),
+          from_lovelace(8000000) |> add(config.cnight_policy, "NIGHT", 300),
+          InlineDatum(initial_datum),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(logic_script_hash), 0)],
+    }
+
+  let ctx = ScriptContext(tx, 0, Withdrawing(withdrawal_ref))
+
+  reserve.reserve_logic.else(ctx)
+}
+
+test reserve_logic_merge_unrelated_token_fail() fail {
+  let forever_script_address =
+    Address(Script(config.reserve_forever_hash), None)
+
+  let unrelated_policy =
+    #"77777777777777777777777777777777777777777777777777777777"
+
+  let input1_ref =
+    OutputReference(
+      #"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      0,
+    )
+
+  let input2_ref =
+    OutputReference(
+      #"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      1,
+    )
+
+  let withdrawal_ref =
+    Script(#"cccccccccccccccccccccccccccccccccccccccccccccccccccccccc")
+
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          input1_ref,
+          Output(
+            forever_script_address,
+            from_lovelace(5000000) |> add(config.cnight_policy, "NIGHT", 100),
+            InlineDatum(initial_datum),
+            None,
+          ),
+        ),
+        Input(
+          input2_ref,
+          Output(
+            forever_script_address,
+            from_lovelace(3000000) |> add(config.cnight_policy, "NIGHT", 200),
+            InlineDatum(initial_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          forever_script_address,
+          from_lovelace(8000000)
+            |> add(config.cnight_policy, "NIGHT", 300)
+            |> add(unrelated_policy, "FAKE", 50),
           InlineDatum(initial_datum),
           None,
         ),
