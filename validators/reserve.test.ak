@@ -48,6 +48,7 @@ const main_state_datum =
     auth_script_hash,
     mitigation_auth_script_hash,
     0,
+    0,
   )
 
 const spending_out_ref =
@@ -298,6 +299,7 @@ test forever_spending_empty_mitigation() {
       auth_script_hash,
       mitigation_auth_script_hash,
       0,
+      0,
     )
 
   let tx =
@@ -519,6 +521,7 @@ test forever_spending_wrong_withdrawal_with_empty_mitigation_fail() fail {
       "",
       auth_script_hash,
       mitigation_auth_script_hash,
+      0,
       0,
     )
 
