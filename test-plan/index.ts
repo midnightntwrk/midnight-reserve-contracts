@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import { Sprinkle } from "@sundaeswap/sprinkles";
+import { select } from "@inquirer/prompts";
 import { SettingsSchema, type Settings, type TestContext } from "./lib/types";
 import { StateManager } from "./lib/state-manager";
 import { createProvider } from "./lib/provider";
@@ -34,12 +35,7 @@ async function main() {
           {
             title: "Run Single Test",
             action: async (sprinkle: Sprinkle<typeof SettingsSchema>) => {
-              console.log("\nAvailable tests:");
-              const allTests = testCategories.flatMap((c) => c.tests);
-              allTests.forEach((test, idx) => {
-                console.log(`  ${idx + 1}. ${test.name}`);
-              });
-              console.log("\nUse the menu to select a category instead");
+              await runSingleTest(sprinkle.settings);
             },
           },
         ],
@@ -60,18 +56,6 @@ async function main() {
             },
           },
         ],
-      },
-      {
-        title: "Settings",
-        action: async (sprinkle: Sprinkle<typeof SettingsSchema>) => {
-          const newSettings = await sprinkle.EditStruct(
-            SettingsSchema,
-            sprinkle.settings
-          );
-          sprinkle.settings = newSettings;
-          sprinkle.saveSettings();
-          console.log("\nSettings updated");
-        },
       },
     ],
   };
@@ -163,6 +147,63 @@ async function runCategory(categoryId: string, settings: Settings) {
   }
 }
 
+async function runSingleTest(settings: Settings) {
+  const allTests = testCategories.flatMap((c) => c.tests);
+
+  const choices = allTests.map((test) => ({
+    name: test.name,
+    value: test,
+  }));
+  choices.push({ name: "← Back", value: null });
+
+  const selectedTest = await select({
+    message: "Select a test to run:",
+    choices,
+  });
+
+  if (!selectedTest) {
+    return;
+  }
+
+  console.log(`\nRunning test: ${selectedTest.name}\n`);
+
+  const provider = createProvider(settings.mode);
+  await provider.setup();
+
+  const stateManager = await StateManager.Load("./test-plan/.config");
+  const state = stateManager.getState();
+  state.mode = settings.mode;
+
+  const ctx: TestContext = { provider, state };
+
+  if (selectedTest.prerequisites) {
+    const allPassed = selectedTest.prerequisites.every((prereq) =>
+      stateManager.hasTestPassed(prereq)
+    );
+    if (!allPassed) {
+      console.log(`[SKIPPED] ${selectedTest.name} (prerequisites not met)`);
+      console.log(`Required: ${selectedTest.prerequisites.join(", ")}`);
+      await provider.cleanup();
+      return;
+    }
+  }
+
+  await stateManager.setCurrentTest(selectedTest.id);
+  const result = await selectedTest.execute(ctx);
+  await stateManager.recordTestResult(result);
+
+  await provider.cleanup();
+
+  if (settings.outputFormat === "console" || settings.outputFormat === "both") {
+    console.log("\n" + formatConsoleReport(state));
+  }
+
+  if (settings.saveReports || settings.outputFormat === "json" || settings.outputFormat === "both") {
+    await saveJsonReport(state, "./test-plan/.config/reports");
+    console.log(`\nReport saved: ./test-plan/.config/reports/report-${state.runId}.json`);
+  }
+}
+
 async function showCurrentRun() {
   const stateManager = await StateManager.Load("./test-plan/.config");
   const state = stateManager.getState();
@@ -171,10 +212,46 @@ async function showCurrentRun() {
 
 async function listPastRuns() {
   const runs = await StateManager.listRuns("./test-plan/.config");
-  console.log("\nPast test runs:");
-  runs.forEach((run) => {
-    console.log(`  ${run}`);
+
+  if (runs.length === 0) {
+    console.log("\nNo past test runs found.");
+    return;
+  }
+
+  const choices = await Promise.all(
+    runs.map(async (run) => {
+      try {
+        const stateManager = await StateManager.Load("./test-plan/.config", run);
+        const state = stateManager.getState();
+        const passed = state.testResults.filter((r) => r.status === "passed").length;
+        const failed = state.testResults.filter((r) => r.status === "failed").length;
+        const total = state.testResults.length;
+
+        return {
+          name: `${run} (${state.mode}) - ${passed}/${total} passed, ${failed} failed`,
+          value: run,
+        };
+      } catch {
+        return {
+          name: `${run} (error loading)`,
+          value: run,
+        };
+      }
+    })
+  );
+
+  choices.push({ name: "← Back", value: null });
+
+  const selected = await select({
+    message: "Select a test run to view:",
+    choices,
   });
+
+  if (selected) {
+    const stateManager = await StateManager.Load("./test-plan/.config", selected);
+    const state = stateManager.getState();
+    console.log("\n" + formatConsoleReport(state));
+  }
 }
 
 main().catch((error) => {

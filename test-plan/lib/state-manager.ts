@@ -42,11 +42,17 @@ export class StateManager {
       }
     }
 
-    // Create new run
+    // Create new run with human-readable timestamp
+    const now = new Date();
+    const timestamp = now.toISOString()
+      .replace(/T/, '_')
+      .replace(/:/g, '-')
+      .replace(/\..+/, '');
+
     const newState: TestRunState = {
-      runId: runId || `run-${Date.now()}`,
+      runId: runId || timestamp,
       mode: "emulator",
-      startTime: new Date(),
+      startTime: now,
       deployments: {},
       testResults: [],
       metadata: {},
@@ -121,7 +127,7 @@ export class StateManager {
   }
 
   /**
-   * List all test runs
+   * List all test runs sorted by date (newest first)
    */
   static async listRuns(storagePath: string): Promise<string[]> {
     const statePath = join(storagePath, "test-runs");
@@ -133,6 +139,7 @@ export class StateManager {
     const files = await readdir(statePath);
     return files
       .filter((f) => f.endsWith(".json"))
-      .map((f) => f.replace(".json", ""));
+      .map((f) => f.replace(".json", ""))
+      .sort((a, b) => b.localeCompare(a)); // Sort descending (newest first)
   }
 }

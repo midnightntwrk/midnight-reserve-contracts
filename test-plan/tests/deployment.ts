@@ -22,8 +22,11 @@ const deploymentPositive: TestDefinition = {
       const config = getDefaultConfig();
       const blaze = await ctx.provider.getBlaze("deployer");
 
-      console.log("Deployer address:", await blaze.wallet.getChangeAddress());
-      console.log("Deployer balance:", await blaze.wallet.getBalance());
+      const address = await blaze.wallet.getChangeAddress();
+      const balance = await blaze.wallet.getBalance();
+
+      console.log("Deployer address:", address.toBech32());
+      console.log("Deployer balance:", balance.coin(), "lovelace");
 
       console.log("\nLoading contract instances...");
       const reserve = await contracts.getReserve();

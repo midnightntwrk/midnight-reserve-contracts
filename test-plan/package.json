@@ -19,6 +19,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@sundaeswap/sprinkles": "link:@sundaeswap/sprinkles",
+    "@inquirer/prompts": "^7.5.3",
     "@blaze-cardano/blueprint": "^0.6.1",
     "@blaze-cardano/data": "^0.6.4",
     "@blaze-cardano/emulator": "^0.3.34",
