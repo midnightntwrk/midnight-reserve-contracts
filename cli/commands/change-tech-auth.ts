@@ -111,10 +111,10 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
 
   console.log("  Has inline datum");
   const currentTechAuthState = parse(
-    Contracts.Multisig,
+    Contracts.VersionedMultisig,
     currentDatum.asInlineData()!,
   );
-  const [currentThreshold] = currentTechAuthState;
+  const [currentThreshold] = currentTechAuthState.data;
   console.log("  Current threshold:", currentThreshold);
 
   const currentTechAuthSigners = extractSignersFromMultisigState(currentTechAuthState);
@@ -131,7 +131,7 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
   }
 
   const currentCouncilState = parse(
-    Contracts.Multisig,
+    Contracts.VersionedMultisig,
     councilDatum.asInlineData()!,
   );
   const currentCouncilSigners = extractSignersFromMultisigState(currentCouncilState);
@@ -142,7 +142,10 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
 
   // Parse new tech auth signers
   const newTechAuthSigners = parseSigners("TECH_AUTH_SIGNERS");
-  const newTechAuthForeverState = createMultisigState(newTechAuthSigners);
+  const newTechAuthForeverState = createMultisigState(
+    newTechAuthSigners,
+    currentTechAuthState.round,
+  );
   const memberRedeemer = createRedeemerMap(newTechAuthSigners);
 
   // Create native scripts for multisig validation
@@ -202,7 +205,7 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
             coins: techAuthForeverUtxo.output().amount().coin(),
             assets: new Map([[AssetId(contracts.techAuthForever.Script.hash()), 1n]]),
           },
-          datum: serialize(Contracts.Multisig, newTechAuthForeverState).toCore(),
+          datum: serialize(Contracts.VersionedMultisig, newTechAuthForeverState).toCore(),
         }),
       )
       .addWithdrawal(

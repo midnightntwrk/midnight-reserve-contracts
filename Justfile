@@ -9,9 +9,27 @@ build env="default" verbosity="verbose":
     bunx @blaze-cardano/blueprint@latest plutus.json -o contract_blueprint.ts
 
 
-check verbosity="verbose":
+aiken-check verbosity="verbose":
     #!/bin/bash
     aiken check -S -t {{verbosity}}
+
+
+check:
+    bun run check
+
+
+lint:
+    bun run lint
+
+
+fmt:
+    bun run fmt
+    aiken fmt
+
+
+fmt-check:
+    bun run fmt:check
+    aiken fmt --check
 
 
 deploy env:

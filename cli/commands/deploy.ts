@@ -187,7 +187,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
             coins: outputAmount,
             assets: new Map([[AssetId(params.foreverContract.Script.hash()), 1n]]),
           },
-          datum: serialize(Contracts.Multisig, foreverState).toCore(),
+          datum: serialize(Contracts.VersionedMultisig, foreverState).toCore(),
         }),
       )
       .addRegisterStake(

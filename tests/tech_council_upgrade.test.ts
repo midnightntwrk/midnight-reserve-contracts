@@ -21,6 +21,7 @@ import {
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
+import type { TxBuilder } from "@blaze-cardano/tx";
 import * as Contracts from "../contract_blueprint";
 import { describe, expect, test } from "bun:test";
 
@@ -317,7 +318,7 @@ describe("Tech + Council upgrade path", () => {
       addTwoStageState(emulator, techActors);
       addTwoStageState(emulator, councilActors);
 
-      const applyGovernanceWitnesses = (txBuilder) =>
+      const applyGovernanceWitnesses = (txBuilder: TxBuilder) =>
         txBuilder
           .addMint(
             PolicyId(techWitnessPolicy),
