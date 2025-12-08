@@ -112,7 +112,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
 
   console.log("  Has inline datum");
   const currentCouncilState = parse(
-    Contracts.Multisig,
+    Contracts.VersionedMultisig,
     currentDatum.asInlineData()!,
   );
   const currentCouncilSigners = extractSignersFromMultisigState(currentCouncilState);
@@ -129,14 +129,17 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   }
 
   const currentTechAuthState = parse(
-    Contracts.Multisig,
+    Contracts.VersionedMultisig,
     techAuthDatum.asInlineData()!,
   );
   const techAuthSigners = extractSignersFromMultisigState(currentTechAuthState);
 
   // Parse new council signers
   const newCouncilSigners = parseSigners("COUNCIL_SIGNERS");
-  const newCouncilForeverState = createMultisigState(newCouncilSigners);
+  const newCouncilForeverState = createMultisigState(
+    newCouncilSigners,
+    currentCouncilState.round,
+  );
   const memberRedeemer = createRedeemerMap(newCouncilSigners);
 
   // Create native scripts for multisig validation
@@ -195,7 +198,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
             coins: councilForeverUtxo.output().amount().coin(),
             assets: new Map([[AssetId(contracts.councilForever.Script.hash()), 1n]]),
           },
-          datum: serialize(Contracts.Multisig, newCouncilForeverState).toCore(),
+          datum: serialize(Contracts.VersionedMultisig, newCouncilForeverState).toCore(),
         }),
       )
       .addWithdrawal(

@@ -3,6 +3,7 @@ import {
   addressFromCredential,
   Credential,
   CredentialType,
+  Hash28ByteBase16,
   Script,
 } from "@blaze-cardano/core";
 import type { Network } from "./types";
@@ -114,7 +115,7 @@ export function getCredentialAddress(
     networkId,
     Credential.fromCore({
       type: CredentialType.ScriptHash,
-      hash: scriptHash as any,
+      hash: Hash28ByteBase16(scriptHash),
     }),
   );
 }

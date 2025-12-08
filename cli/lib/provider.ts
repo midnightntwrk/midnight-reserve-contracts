@@ -1,6 +1,6 @@
-import { Address, NetworkId } from "@blaze-cardano/core";
+import { Address } from "@blaze-cardano/core";
 import { Blaze, ColdWallet, type Provider } from "@blaze-cardano/sdk";
-import { Blockfrost } from "@blaze-cardano/query";
+import { Blockfrost, type NetworkName } from "@blaze-cardano/query";
 import { Maestro } from "@blaze-cardano/query";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { Network, ProviderType } from "./types";
@@ -15,13 +15,13 @@ export function createProvider(
 
   switch (type) {
     case "emulator":
-      return new Emulator([]);
+      return new Emulator([]) as unknown as Provider;
 
     case "blockfrost": {
       const apiKeyVar = `BLOCKFROST_${network.toUpperCase()}_API_KEY`;
       const apiKey = getEnvVar(apiKeyVar);
 
-      const networkNameMap: Record<string, string> = {
+      const networkNameMap: Record<Network, NetworkName> = {
         local: "cardano-preview", // fallback for local
         preview: "cardano-preview",
         preprod: "cardano-preprod",
@@ -29,7 +29,7 @@ export function createProvider(
       };
 
       return new Blockfrost({
-        network: networkNameMap[network] as any,
+        network: networkNameMap[network],
         projectId: apiKey,
       });
     }
@@ -38,8 +38,12 @@ export function createProvider(
       const apiKeyVar = `MAESTRO_${network.toUpperCase()}_API_KEY`;
       const apiKey = getEnvVar(apiKeyVar);
 
+      if (network === "local") {
+        throw new Error("Maestro provider does not support local network");
+      }
+
       return new Maestro({
-        network: network as any,
+        network: network,
         apiKey: apiKey,
       });
     }

@@ -43,25 +43,35 @@ export function parseSignersWithCount(envVar: string): {
   return { totalSigners, signers };
 }
 
-export function createMultisigState(signers: Signer[]): Contracts.Multisig {
+export function createMultisigState(
+  signers: Signer[],
+  round: bigint = 0n,
+): Contracts.VersionedMultisig {
   const signerMap: Record<string, string> = {};
   for (const signer of signers) {
     // Add CBOR prefix "8200581c" to each key for Multisig state
     signerMap[`8200581c${signer.paymentHash}`] = signer.sr25519Key;
   }
-  return [BigInt(signers.length), signerMap];
+  return {
+    data: [BigInt(signers.length), signerMap],
+    round,
+  };
 }
 
 export function createMultisigStateFromMap(
   totalSigners: bigint,
   signers: Record<string, string>,
-): Contracts.Multisig {
+  round: bigint = 0n,
+): Contracts.VersionedMultisig {
   // Add CBOR prefix "8200581c" to each key for Multisig state
   const prefixedSigners: Record<string, string> = {};
   for (const [hash, sr25519Key] of Object.entries(signers)) {
     prefixedSigners["8200581c" + hash] = sr25519Key;
   }
-  return [totalSigners, prefixedSigners];
+  return {
+    data: [totalSigners, prefixedSigners],
+    round,
+  };
 }
 
 export function createRedeemerMap(
@@ -87,9 +97,9 @@ export function parsePrivateKeys(envVar: string): string[] {
 }
 
 export function extractSignersFromMultisigState(
-  multisigState: Contracts.Multisig,
+  versionedState: Contracts.VersionedMultisig,
 ): Signer[] {
-  const [_threshold, signerMap] = multisigState;
+  const [_threshold, signerMap] = versionedState.data;
   return Object.entries(signerMap).map(([credHex, sr25519Key]) => {
     // credHex format is "8200581c<hash>" - extract just the hash
     const paymentHash = credHex.slice(8);

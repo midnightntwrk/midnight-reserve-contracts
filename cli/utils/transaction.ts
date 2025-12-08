@@ -136,7 +136,7 @@ export function createRewardAccount(
   return RewardAccount.fromCredential(
     Credential.fromCore({
       type: CredentialType.ScriptHash,
-      hash: scriptHash as any,
+      hash: Hash28ByteBase16(scriptHash),
     }).toCore(),
     networkId,
   );
