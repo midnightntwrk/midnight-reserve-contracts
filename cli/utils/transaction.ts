@@ -56,7 +56,7 @@ export function createUpgradeState(
   logicScriptHash: string,
   govAuthScriptHash: string,
 ): Contracts.UpgradeState {
-  return [logicScriptHash, "", govAuthScriptHash, "", 0n];
+  return [logicScriptHash, "", govAuthScriptHash, "", 0n, 0n];
 }
 
 export function createContractOutput(

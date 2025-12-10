@@ -1,14 +1,11 @@
 import {
-  Address,
   addressFromValidator,
   AssetId,
   AssetName,
-  fromHex,
   HexBlob,
   NetworkId,
   PaymentAddress,
   PlutusData,
-  PlutusList,
   PolicyId,
   toHex,
   TransactionId,
@@ -22,7 +19,6 @@ import { beforeEach, describe, test } from "bun:test";
 
 describe("Basic Deploy", () => {
   const amount = 100_000_000n; // 100 ADA
-  const scriptAmount = 10_000_000n; // 10 ADA for script outputs
 
   const emulator = new Emulator([]);
 
