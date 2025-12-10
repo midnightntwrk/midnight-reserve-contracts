@@ -212,6 +212,7 @@ describe("Change Council CLI Test", () => {
             councilForever.Script.hash(),
             "",
             0n,
+            0n,
           ];
 
           emulator.addUtxo(

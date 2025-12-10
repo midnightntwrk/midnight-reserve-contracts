@@ -89,63 +89,63 @@ bytes = "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69"
 encoding = "hex"
 
 [config.default.reserve_two_stage_hash]
-bytes = "b480ed11361a6f95056d829c78c770393ebc0059ee947e6cacf15fec"
+bytes = "2c30916af6d012b39d6a38e89b2e772356592c55bd0d76e7f8715fcb"
 encoding = "hex"
 
 [config.default.reserve_forever_hash]
-bytes = "afb6c171aa83aa6967859f5f3e280b5143af59ef56026bacb73efc68"
+bytes = "0fc7ca639b8ddb7e083a608d6f777c98c48f6b793e59034b711206ca"
 encoding = "hex"
 
 [config.default.council_two_stage_hash]
-bytes = "d56cc2717dfce352f3d892c16024e9675da870df832c3824b88216a3"
+bytes = "d6d71642d1598dfad8fd427f736e99f703da01d2850eafd4727541fe"
 encoding = "hex"
 
 [config.default.council_forever_hash]
-bytes = "cec85a541805d98d1ad8c766a596258bccf13f3fd9a66f1c38c8d604"
+bytes = "bf15a13f60c449d6f00668aaae21dfd7da3eaaca52082b7942934733"
 encoding = "hex"
 
 [config.default.ics_two_stage_hash]
-bytes = "7483baa686f9d9592df45ed39cff9def54478d1de30c776bfcfb7816"
+bytes = "e44b899d8b103ab76994bed330fd6274ffaf76f287b138970e051bac"
 encoding = "hex"
 
 [config.default.ics_forever_hash]
-bytes = "b06cbda0d203f13dbab8d97afb530ade085ea911589c7409b65d10db"
+bytes = "0dfd78b1597ea128bee4f300b0d723cd56aec677484f7cf09322657b"
 encoding = "hex"
 
 [config.default.technical_authority_two_stage_hash]
-bytes = "016417cf7ef43aeab787a00803571b6a4a169718440655338ab32f2c"
+bytes = "6c6e8a7330a4053bd12630f19c8dde18ad3db0e8d4a81fbcea1a0117"
 encoding = "hex"
 
 [config.default.technical_authority_forever_hash]
-bytes = "794baf3d6ca0c0d4b32205dedb72bb1eadafcb72d793929f5df3341b"
+bytes = "b9c4a8331a72b7113dd96a7d6e01d389318176c8f61349f7f326c8e3"
 encoding = "hex"
 
 [config.default.federated_operators_two_stage_hash]
-bytes = "2d3d2594359571091ea7ae284c97cc908ca5502680b1f10199ed3a70"
+bytes = "f74b1c9fdf03e462a2da836833ca425727fbc924a10ee4325635e4a8"
 encoding = "hex"
 
 [config.default.federated_operators_forever_hash]
-bytes = "4346c02f788c686711fe132b1a126a3989d96b5ec3e7ba9557fd8452"
+bytes = "7710c4a7ca93a6b58df41bf9cf1b5e5c2a219edbff8b6f32f74e79d1"
 encoding = "hex"
 
 [config.default.main_gov_threshold_hash]
-bytes = "bde39aa2bf36cfc862f376637b8d364c3b7e9ae7bbd497ed073598d7"
+bytes = "5afb55b3557ef8e27349671363e870d3b15bc3b351b26e1353c3cd4b"
 encoding = "hex"
 
 [config.default.staging_gov_threshold_hash]
-bytes = "8f52a4aeb39eee2cefdd974e234c7e2e37e893a3203b3b77e4856c4a"
+bytes = "6b97b3b7092df6aba1190f7b45bfd0f2057c107e8dbac70a51cdf488"
 encoding = "hex"
 
 [config.default.main_council_update_threshold_hash]
-bytes = "5eec3ecfb17fa999d15d6156771a7f5b43ad94dcafafab5615737f27"
+bytes = "7411267cfa8802ea742f60f030e25d52ffb89068a5702cb4d173e219"
 encoding = "hex"
 
 [config.default.main_tech_auth_update_threshold_hash]
-bytes = "6e1e4fb8ce23072366ea329713013a642704ccb7022f75e3f1e53e0d"
+bytes = "fa407f2c8651483b39c9fff704a9a746ea2bbad99a4fe8b608f17f2c"
 encoding = "hex"
 
 [config.default.main_federated_ops_update_threshold_hash]
-bytes = "1d97cd3f9b0fc8361d0903439cf961e49591ec5cc533a79f212075bf"
+bytes = "9a853d2f1e5a004979821bfd47c721dc52246c687550de52e54f0bd6"
 encoding = "hex"
 
 [config.default.beefy_signer_threshold_hash]
@@ -153,23 +153,23 @@ bytes = "f6a94508bf423ac9189c3a1f0013d238c5f19964da1b30bc98ea0ea6f8b155bb"
 encoding = "hex"
 
 [config.default.committee_bridge_two_stage_hash]
-bytes = "5e77f3edb3da354c43b7720beca4a9681d07654a592497ac39fa2a1d"
+bytes = "bcb7db8d4ab4010c95ea486dad47aebaa8c21ba681f97bedc6da6fdb"
 encoding = "hex"
 
 [config.default.committee_bridge_forever_hash]
-bytes = "8b6c65b547a6225d598156b176ab6076c615c5b0e458223d0477b892"
+bytes = "a0ef99f948d6366a3d40baca5969cd95c453c2797a9e94591e3c537c"
 encoding = "hex"
 
 [config.default.bridge_signer_threshold_hash]
-bytes = "75949f8235965b525209044ca42f829cd9cf1e3ef221d24da6ad7a9b"
+bytes = "a54973a348912ead7bc5693ef27c20e2f671ac80c11edffa0946bb84"
 encoding = "hex"
 
 [config.default.terms_and_conditions_two_stage_hash]
-bytes = "00000000000000000000000000000000000000000000000000000000"
+bytes = "1423f10576cf794face1dae2da4f14bb659458576e4e1abd8b0182d9"
 encoding = "hex"
 
 [config.default.terms_and_conditions_forever_hash]
-bytes = "00000000000000000000000000000000000000000000000000000000"
+bytes = "f18fe4af19185265d61aac02e5a7c0503e0b78b8dcd12ac80fceb0ff"
 encoding = "hex"
 
 [config.preview]
