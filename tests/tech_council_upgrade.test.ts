@@ -7,7 +7,6 @@ import {
   CredentialType,
   Hash28ByteBase16,
   PolicyId,
-  NativeScript,
   NativeScripts,
   NetworkId,
   PaymentAddress,
