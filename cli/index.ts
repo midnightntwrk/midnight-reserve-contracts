@@ -2,8 +2,6 @@
 
 import { resolve } from "path";
 import type {
-  Network,
-  ProviderType,
   DeployOptions,
   ChangeAuthOptions,
   SimpleTxOptions,
@@ -23,7 +21,13 @@ import {
   VALID_COMPONENTS,
 } from "./utils/validation";
 import { printError } from "./utils/output";
-import { deploy, changeCouncil, changeTechAuth, simpleTx, info } from "./commands";
+import {
+  deploy,
+  changeCouncil,
+  changeTechAuth,
+  simpleTx,
+  info,
+} from "./commands";
 
 function printUsage(): void {
   console.log(`
@@ -142,7 +146,12 @@ function parseArgs(args: string[]): {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
-  if (args.length === 0 || args[0] === "help" || args[0] === "--help" || args[0] === "-h") {
+  if (
+    args.length === 0 ||
+    args[0] === "help" ||
+    args[0] === "--help" ||
+    args[0] === "-h"
+  ) {
     printUsage();
     process.exit(0);
   }
@@ -195,7 +204,9 @@ async function main(): Promise<void> {
       case "change-council": {
         if (positional.length < 2) {
           printError("Missing required arguments: <tx_hash> <tx_index>");
-          console.log("Usage: bun cli change-council [options] <tx_hash> <tx_index>");
+          console.log(
+            "Usage: bun cli change-council [options] <tx_hash> <tx_index>",
+          );
           process.exit(1);
         }
 
@@ -216,7 +227,8 @@ async function main(): Promise<void> {
             ? parseAmount(options["utxo-amount"] as string)
             : undefined,
           sign: options.sign !== false,
-          outputFile: (options["output-file"] as string) || "cli-tx-signed.cbor",
+          outputFile:
+            (options["output-file"] as string) || "cli-tx-signed.cbor",
         };
 
         await changeCouncil(changeOptions);
@@ -226,7 +238,9 @@ async function main(): Promise<void> {
       case "change-tech-auth": {
         if (positional.length < 2) {
           printError("Missing required arguments: <tx_hash> <tx_index>");
-          console.log("Usage: bun cli change-tech-auth [options] <tx_hash> <tx_index>");
+          console.log(
+            "Usage: bun cli change-tech-auth [options] <tx_hash> <tx_index>",
+          );
           process.exit(1);
         }
 
@@ -247,7 +261,8 @@ async function main(): Promise<void> {
             ? parseAmount(options["utxo-amount"] as string)
             : undefined,
           sign: options.sign !== false,
-          outputFile: (options["output-file"] as string) || "cli-tx-signed.cbor",
+          outputFile:
+            (options["output-file"] as string) || "cli-tx-signed.cbor",
         };
 
         await changeTechAuth(changeOptions);
@@ -292,7 +307,9 @@ async function main(): Promise<void> {
         process.exit(1);
     }
   } catch (error) {
-    printError(`Command failed: ${error instanceof Error ? error.message : error}`);
+    printError(
+      `Command failed: ${error instanceof Error ? error.message : error}`,
+    );
     if (error instanceof Error && error.stack) {
       console.error("\nStack trace:", error.stack);
     }

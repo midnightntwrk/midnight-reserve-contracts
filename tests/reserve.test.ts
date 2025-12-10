@@ -19,6 +19,7 @@ import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import * as Contracts from "../contract_blueprint";
 import { describe, test } from "bun:test";
+import { loadAikenConfig } from "../cli/lib/config";
 
 describe("Reserve Deploy and Merge", () => {
   const amount = 100_000_000n;
@@ -30,12 +31,7 @@ describe("Reserve Deploy and Merge", () => {
   const reserveLogic = new Contracts.ReserveReserveLogicElse();
   const govAuth = new Contracts.GovAuthMainGovAuthElse();
 
-  const config = {
-    reserve_one_shot_hash:
-      "0000000000000000000000000000000000000000000000000000000000000001",
-    reserve_one_shot_index: 1,
-    cnight_policy: "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69",
-  };
+  const config = loadAikenConfig("local");
 
   const cnightAsset =
     config.cnight_policy + toHex(new TextEncoder().encode("NIGHT"));

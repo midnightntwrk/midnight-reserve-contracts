@@ -49,6 +49,7 @@ export function loadAikenConfig(network: Network): NetworkConfig {
       networkConfig.main_federated_ops_update_one_shot_hash.bytes,
     main_federated_ops_update_one_shot_index:
       networkConfig.main_federated_ops_update_one_shot_index,
+    cnight_policy: networkConfig.cnight_policy.bytes,
   };
 }
 
