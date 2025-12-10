@@ -270,10 +270,10 @@ validator terms_and_conditions_two_stage_upgrade {
 
 validator terms_and_conditions_logic {
   else(ctx: ScriptContext) {
-    // (FL-1) Gather the transaction data required to verify federated operator multisig participation.
+    // (TCL-1) Gather the transaction data required to verify terms and conditions updates.
     let ScriptContext { transaction, redeemer, info } = ctx
 
-    // (FL-2) Enforce federated multisig via the logic helper (ML-0, ML-1, ML-2, ML-3, ML-4, ML-5,
+    // (TCL-2) Enforce terms and conditions via the logic helper (ML-0, ML-1, ML-2, ML-3, ML-4, ML-5,
     //        CM-1, CM-2, CM-3, CM-4, GOS-1, GOS-2, GOS-3, GIS-1, SING-1, MS-1, MS-2, MS-3, MS-4);
     //        RegisterCredential stays open.
     logic_multisig_validation_nft_input(
@@ -282,7 +282,7 @@ validator terms_and_conditions_logic {
       info,
       config.terms_and_conditions_forever_hash,
       validate_terms_structure,
-      config.main_gov_threshold_hash,
+      config.terms_and_conditions_threshold_hash,
     )
   }
 }

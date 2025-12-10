@@ -66,6 +66,7 @@ export interface NetworkConfig {
   main_tech_auth_update_one_shot_index: number;
   main_federated_ops_update_one_shot_hash: string;
   main_federated_ops_update_one_shot_index: number;
+  cnight_policy: string;
 }
 
 export interface TransactionOutput {

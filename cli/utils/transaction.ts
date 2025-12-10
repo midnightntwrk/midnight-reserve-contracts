@@ -1,8 +1,6 @@
 import {
-  Address,
   addressFromCredential,
   AssetId,
-  AssetName,
   CborSet,
   Credential,
   CredentialType,
@@ -16,9 +14,7 @@ import {
   NetworkId,
   PaymentAddress,
   PlutusData,
-  PolicyId,
   RewardAccount,
-  Script,
   signMessage,
   toHex,
   Transaction,
@@ -90,9 +86,7 @@ export function createTwoStageOutputs(
       address: PaymentAddress(twoStageAddress),
       value: {
         coins,
-        assets: new Map([
-          [AssetId(twoStageScriptHash + mainAssetName), 1n],
-        ]),
+        assets: new Map([[AssetId(twoStageScriptHash + mainAssetName), 1n]]),
       },
       datum: serializedState.toCore(),
     }),
@@ -100,9 +94,7 @@ export function createTwoStageOutputs(
       address: PaymentAddress(twoStageAddress),
       value: {
         coins,
-        assets: new Map([
-          [AssetId(twoStageScriptHash + stagingAssetName), 1n],
-        ]),
+        assets: new Map([[AssetId(twoStageScriptHash + stagingAssetName), 1n]]),
       },
       datum: serializedState.toCore(),
     }),
