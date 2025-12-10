@@ -155,6 +155,7 @@ describe("Tech + Council upgrade path", () => {
         govAuth.Script.hash(),
         "",
         0n,
+        0n,
       ],
       mainTx: "aa".repeat(32),
       stagingTx: "bb".repeat(32),
@@ -167,6 +168,7 @@ describe("Tech + Council upgrade path", () => {
         "",
         govAuth.Script.hash(),
         "",
+        0n,
         0n,
       ],
       mainTx: "cc".repeat(32),
@@ -242,11 +244,6 @@ describe("Tech + Council upgrade path", () => {
 
       const techWitnessPolicy = techNativeScript.hash();
       const councilWitnessPolicy = councilNativeScript.hash();
-      const buildWitnessValue = () =>
-        new Map([
-          [AssetId(techWitnessPolicy + TECH_WITNESS_ASSET), 1n],
-          [AssetId(councilWitnessPolicy + COUNCIL_WITNESS_ASSET), 1n],
-        ]);
 
       const techForeverUtxo = TransactionUnspentOutput.fromCore([
         {
@@ -264,7 +261,10 @@ describe("Tech + Council upgrade path", () => {
             coins: 3_000_000n,
             assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
           },
-          datum: serialize(Contracts.VersionedMultisig, techAuthForeverState).toCore(),
+          datum: serialize(
+            Contracts.VersionedMultisig,
+            techAuthForeverState,
+          ).toCore(),
         },
       ]);
 
@@ -284,7 +284,10 @@ describe("Tech + Council upgrade path", () => {
             coins: 3_000_000n,
             assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
           },
-          datum: serialize(Contracts.VersionedMultisig, councilForeverState).toCore(),
+          datum: serialize(
+            Contracts.VersionedMultisig,
+            councilForeverState,
+          ).toCore(),
         },
       ]);
 
@@ -397,6 +400,7 @@ describe("Tech + Council upgrade path", () => {
                   "",
                   govAuth.Script.hash(),
                   "",
+                  0n,
                   1n,
                 ]).toCore(),
               }),
@@ -471,6 +475,7 @@ describe("Tech + Council upgrade path", () => {
                   "",
                   govAuth.Script.hash(),
                   "",
+                  0n,
                   1n,
                 ]).toCore(),
               }),
@@ -501,7 +506,7 @@ describe("Tech + Council upgrade path", () => {
           techActors.twoStage.Script.hash(),
           MAIN_TOKEN_HEX,
         ),
-        [techStagedHash, "", govAuth.Script.hash(), "", 1n],
+        [techStagedHash, "", govAuth.Script.hash(), "", 0n, 1n],
       );
 
       expectDatum(
@@ -510,7 +515,7 @@ describe("Tech + Council upgrade path", () => {
           councilActors.twoStage.Script.hash(),
           MAIN_TOKEN_HEX,
         ),
-        [councilStagedHash, "", govAuth.Script.hash(), "", 1n],
+        [councilStagedHash, "", govAuth.Script.hash(), "", 0n, 1n],
       );
     });
   });

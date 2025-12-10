@@ -171,6 +171,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(), // auth script hash
           "", // mitigation_auth (empty initially)
           0n, // round
+          0n, // logic_round
         ];
 
         // Create upgrade state datum for technical authority two-stage
@@ -293,6 +294,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(), // auth script hash
           "", // mitigation_auth (empty initially)
           0n, // round
+          0n, // logic_round
         ];
 
         const councilForeverState: Contracts.VersionedMultisig = {
@@ -417,6 +419,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(), // auth script hash
           "", // mitigation_auth (empty initially)
           0n, // round
+          0n, // logic_round
         ];
 
         await emulator.expectValidTransaction(
@@ -543,6 +546,7 @@ describe("Basic Deploy", () => {
           "",
           govAuth.Script.hash(),
           "",
+          0n,
           0n,
         ];
 
@@ -675,6 +679,7 @@ describe("Basic Deploy", () => {
           "",
           govAuth.Script.hash(),
           "",
+          0n,
           0n,
         ];
 
@@ -814,6 +819,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(), // auth script hash
           "", // mitigation_auth (empty initially)
           0n, // round
+          0n, // logic_round
         ];
 
         await emulator.expectValidTransaction(
@@ -938,6 +944,7 @@ describe("Basic Deploy", () => {
           "",
           govAuth.Script.hash(),
           "",
+          0n,
           0n,
         ];
 
@@ -1070,6 +1077,7 @@ describe("Basic Deploy", () => {
           "",
           govAuth.Script.hash(),
           "",
+          0n,
           0n,
         ];
 
@@ -1209,6 +1217,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(), // auth script hash
           "", // mitigation_auth (empty initially)
           0n, // round
+          0n, // logic_round
         ];
 
         const federatedOpsForeverState: Contracts.VersionedMultisig = {
@@ -1358,6 +1367,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
         const techAuthForeverState: Contracts.VersionedMultisig = {
@@ -1489,6 +1499,7 @@ describe("Basic Deploy", () => {
           "",
           govAuth.Script.hash(),
           "",
+          0n,
           0n,
         ];
 
@@ -1701,6 +1712,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
         const techAuthForeverState: Contracts.VersionedMultisig = {
@@ -1832,6 +1844,7 @@ describe("Basic Deploy", () => {
           "",
           govAuth.Script.hash(),
           "",
+          0n,
           0n,
         ];
 
@@ -2045,6 +2058,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
         const techAuthForeverState: Contracts.VersionedMultisig = {
@@ -2176,6 +2190,7 @@ describe("Basic Deploy", () => {
           "",
           govAuth.Script.hash(),
           "",
+          0n,
           0n,
         ];
 
@@ -2391,6 +2406,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
         const techAuthForeverState: Contracts.VersionedMultisig = {
@@ -2522,6 +2538,7 @@ describe("Basic Deploy", () => {
           "",
           govAuth.Script.hash(),
           "",
+          0n,
           0n,
         ];
 
@@ -2736,6 +2753,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
         const techAuthForeverState: Contracts.VersionedMultisig = {
@@ -2867,6 +2885,7 @@ describe("Basic Deploy", () => {
           "",
           govAuth.Script.hash(),
           "",
+          0n,
           0n,
         ];
 

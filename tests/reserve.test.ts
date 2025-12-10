@@ -35,8 +35,7 @@ describe("Reserve Deploy and Merge", () => {
     reserve_one_shot_hash:
       "0000000000000000000000000000000000000000000000000000000000000001",
     reserve_one_shot_index: 1,
-    cnight_policy:
-      "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69",
+    cnight_policy: "3e8b3d0bda81efcd1ce86d17b7764e55551cec6783f90bbc31069d69",
   };
 
   const cnightAsset =
@@ -93,6 +92,7 @@ describe("Reserve Deploy and Merge", () => {
         "",
         govAuth.Script.hash(),
         "",
+        0n,
         0n,
       ];
 
@@ -231,9 +231,7 @@ describe("Reserve Deploy and Merge", () => {
           address: PaymentAddress(reserveForeverAddress.toBech32()),
           value: {
             coins: 3_000_000n,
-            assets: new Map([
-              [AssetId(cnightAsset), 2n],
-            ]),
+            assets: new Map([[AssetId(cnightAsset), 2n]]),
           },
           datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
         },
@@ -274,9 +272,7 @@ describe("Reserve Deploy and Merge", () => {
               address: PaymentAddress(reserveForeverAddress.toBech32()),
               value: {
                 coins: 8_000_000n,
-                assets: new Map([
-                  [AssetId(cnightAsset), 5n],
-                ]),
+                assets: new Map([[AssetId(cnightAsset), 5n]]),
               },
               datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
             }),

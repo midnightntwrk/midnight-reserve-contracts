@@ -207,6 +207,7 @@ describe("Change Auth Member", () => {
           new Contracts.GovAuthMainGovAuthElse().Script.hash(),
           "",
           0n,
+          0n,
         ];
 
         const techAuthForeverState: Contracts.VersionedMultisig = {
@@ -391,6 +392,7 @@ describe("Change Auth Member", () => {
           "",
           mainCouncilUpdateThreshold.Script.hash(),
           "",
+          0n,
           0n,
         ];
 
@@ -903,6 +905,7 @@ describe("Change Auth Member", () => {
           new Contracts.GovAuthMainGovAuthElse().Script.hash(),
           "",
           0n,
+          0n,
         ];
 
         const techAuthForeverState: Contracts.VersionedMultisig = {
@@ -1034,6 +1037,7 @@ describe("Change Auth Member", () => {
           "",
           mainCouncilUpdateThreshold.Script.hash(),
           "",
+          0n,
           0n,
         ];
 
