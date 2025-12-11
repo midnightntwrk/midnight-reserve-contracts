@@ -48,6 +48,7 @@ const main_state_datum =
     auth_script_hash,
     mitigation_auth_script_hash,
     0,
+    0,
   )
 
 const spending_out_ref =
@@ -298,6 +299,7 @@ test forever_spending_empty_mitigation() {
       auth_script_hash,
       mitigation_auth_script_hash,
       0,
+      0,
     )
 
   let tx =
@@ -520,6 +522,7 @@ test forever_spending_wrong_withdrawal_with_empty_mitigation_fail() fail {
       auth_script_hash,
       mitigation_auth_script_hash,
       0,
+      0,
     )
 
   let wrong_script_hash =
@@ -586,7 +589,7 @@ test reserve_logic_merge() {
           input1_ref,
           Output(
             forever_script_address,
-            from_lovelace(5000000) |> add(policy, "", 1),
+            from_lovelace(5000000) |> add(config.cnight_policy, "NIGHT", 100),
             InlineDatum(initial_datum),
             None,
           ),
@@ -595,7 +598,7 @@ test reserve_logic_merge() {
           input2_ref,
           Output(
             forever_script_address,
-            from_lovelace(3000000) |> add(policy, "", 2),
+            from_lovelace(3000000) |> add(config.cnight_policy, "NIGHT", 200),
             InlineDatum(initial_datum),
             None,
           ),
@@ -604,7 +607,70 @@ test reserve_logic_merge() {
       outputs: [
         Output(
           forever_script_address,
-          from_lovelace(8000000) |> add(policy, "", 3),
+          from_lovelace(8000000) |> add(config.cnight_policy, "NIGHT", 300),
+          InlineDatum(initial_datum),
+          None,
+        ),
+      ],
+      withdrawals: [Pair(Script(logic_script_hash), 0)],
+    }
+
+  let ctx = ScriptContext(tx, 0, Withdrawing(withdrawal_ref))
+
+  reserve.reserve_logic.else(ctx)
+}
+
+test reserve_logic_merge_unrelated_token_fail() fail {
+  let forever_script_address =
+    Address(Script(config.reserve_forever_hash), None)
+
+  let unrelated_policy =
+    #"77777777777777777777777777777777777777777777777777777777"
+
+  let input1_ref =
+    OutputReference(
+      #"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      0,
+    )
+
+  let input2_ref =
+    OutputReference(
+      #"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      1,
+    )
+
+  let withdrawal_ref =
+    Script(#"cccccccccccccccccccccccccccccccccccccccccccccccccccccccc")
+
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          input1_ref,
+          Output(
+            forever_script_address,
+            from_lovelace(5000000) |> add(config.cnight_policy, "NIGHT", 100),
+            InlineDatum(initial_datum),
+            None,
+          ),
+        ),
+        Input(
+          input2_ref,
+          Output(
+            forever_script_address,
+            from_lovelace(3000000) |> add(config.cnight_policy, "NIGHT", 200),
+            InlineDatum(initial_datum),
+            None,
+          ),
+        ),
+      ],
+      outputs: [
+        Output(
+          forever_script_address,
+          from_lovelace(8000000)
+            |> add(config.cnight_policy, "NIGHT", 300)
+            |> add(unrelated_policy, "FAKE", 50),
           InlineDatum(initial_datum),
           None,
         ),

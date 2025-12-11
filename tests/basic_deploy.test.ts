@@ -1,14 +1,11 @@
 import {
-  Address,
   addressFromValidator,
   AssetId,
   AssetName,
-  fromHex,
   HexBlob,
   NetworkId,
   PaymentAddress,
   PlutusData,
-  PlutusList,
   PolicyId,
   toHex,
   TransactionId,
@@ -22,7 +19,6 @@ import { beforeEach, describe, test } from "bun:test";
 
 describe("Basic Deploy", () => {
   const amount = 100_000_000n; // 100 ADA
-  const scriptAmount = 10_000_000n; // 10 ADA for script outputs
 
   const emulator = new Emulator([]);
 
@@ -171,19 +167,23 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(), // auth script hash
           "", // mitigation_auth (empty initially)
           0n, // round
+          0n, // logic_round
         ];
 
         // Create upgrade state datum for technical authority two-stage
-        const techAuthForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const techAuthForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const redeemerForever: Contracts.PermissionedRedeemer = {
           [addr.asBase()?.getPaymentCredential().hash!]:
@@ -269,7 +269,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   techAuthForeverState,
                 ).toCore(),
               }),
@@ -290,18 +290,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(), // auth script hash
           "", // mitigation_auth (empty initially)
           0n, // round
+          0n, // logic_round
         ];
 
-        const councilForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const councilForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -385,7 +389,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   councilForeverState,
                 ).toCore(),
               }),
@@ -411,6 +415,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(), // auth script hash
           "", // mitigation_auth (empty initially)
           0n, // round
+          0n, // logic_round
         ];
 
         await emulator.expectValidTransaction(
@@ -538,18 +543,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const techAuthForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const techAuthForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -633,7 +642,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   techAuthForeverState,
                 ).toCore(),
               }),
@@ -667,18 +676,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const councilForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const councilForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -762,7 +775,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   councilForeverState,
                 ).toCore(),
               }),
@@ -802,6 +815,7 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(), // auth script hash
           "", // mitigation_auth (empty initially)
           0n, // round
+          0n, // logic_round
         ];
 
         await emulator.expectValidTransaction(
@@ -927,18 +941,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const techAuthForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const techAuthForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1022,7 +1040,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   techAuthForeverState,
                 ).toCore(),
               }),
@@ -1056,18 +1074,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const councilForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const councilForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1151,7 +1173,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   councilForeverState,
                 ).toCore(),
               }),
@@ -1191,18 +1213,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(), // auth script hash
           "", // mitigation_auth (empty initially)
           0n, // round
+          0n, // logic_round
         ];
 
-        const federatedOpsForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const federatedOpsForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         await emulator.expectValidTransaction(
           blaze,
@@ -1281,7 +1307,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   federatedOpsForeverState,
                 ).toCore(),
               }),
@@ -1337,18 +1363,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const techAuthForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const techAuthForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1432,7 +1462,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   techAuthForeverState,
                 ).toCore(),
               }),
@@ -1466,18 +1496,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const councilForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const councilForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1561,7 +1595,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   councilForeverState,
                 ).toCore(),
               }),
@@ -1674,18 +1708,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const techAuthForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const techAuthForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1769,7 +1807,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   techAuthForeverState,
                 ).toCore(),
               }),
@@ -1803,18 +1841,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const councilForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const councilForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1898,7 +1940,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   councilForeverState,
                 ).toCore(),
               }),
@@ -2012,18 +2054,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const techAuthForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const techAuthForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -2107,7 +2153,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   techAuthForeverState,
                 ).toCore(),
               }),
@@ -2141,18 +2187,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const councilForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const councilForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -2236,7 +2286,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   councilForeverState,
                 ).toCore(),
               }),
@@ -2352,18 +2402,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const techAuthForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const techAuthForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -2447,7 +2501,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   techAuthForeverState,
                 ).toCore(),
               }),
@@ -2481,18 +2535,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const councilForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const councilForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -2576,7 +2634,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   councilForeverState,
                 ).toCore(),
               }),
@@ -2691,18 +2749,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const techAuthForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const techAuthForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -2786,7 +2848,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   techAuthForeverState,
                 ).toCore(),
               }),
@@ -2820,18 +2882,22 @@ describe("Basic Deploy", () => {
           govAuth.Script.hash(),
           "",
           0n,
+          0n,
         ];
 
-        const councilForeverState: Contracts.Multisig = [
-          2n,
-          {
-            ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-              // 32 byte Sr25519 PubKey
-              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-            ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-              "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-          },
-        ];
+        const councilForeverState: Contracts.VersionedMultisig = {
+          data: [
+            2n,
+            {
+              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
+                // 32 byte Sr25519 PubKey
+                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
+                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
+            },
+          ],
+          round: 0n,
+        };
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -2915,7 +2981,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   councilForeverState,
                 ).toCore(),
               }),

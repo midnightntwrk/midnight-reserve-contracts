@@ -18,20 +18,35 @@
   },
   "scripts": {
     "clean": "rm -rf ./dist",
-    "lint": "eslint src --ignore-pattern '**/dist/**'",
-    "lint:fix": "bun lint --fix"
+    "check": "tsc --noEmit",
+    "lint": "eslint 'cli/**/*.ts' 'tests/**/*.ts' --ignore-pattern '**/dist/**'",
+    "lint:fix": "bun lint --fix",
+    "fmt": "prettier --write 'cli/**/*.ts' 'tests/**/*.ts'",
+    "fmt:check": "prettier --check 'cli/**/*.ts' 'tests/**/*.ts'",
+    "cli": "bun run cli/index.ts",
+    "cli:deploy": "bun run cli/index.ts deploy",
+    "cli:deploy:local": "bun run cli/index.ts deploy -n local",
+    "cli:deploy:preview": "bun run cli/index.ts deploy -n preview",
+    "cli:deploy:preprod": "bun run cli/index.ts deploy -n preprod",
+    "cli:info": "bun run cli/index.ts info",
+    "cli:info:preview": "bun run cli/index.ts info -n preview",
+    "cli:simple-tx": "bun run cli/index.ts simple-tx"
   },
   "devDependencies": {
-    "@blaze-cardano/emulator": "^0.3.34",
     "@blaze-cardano/blueprint": "^0.6.1",
+    "@blaze-cardano/data": "^0.6.4",
+    "@blaze-cardano/emulator": "^0.3.34",
+    "@blaze-cardano/query": "^0.5.2",
+    "@blaze-cardano/sdk": "^0.2.43",
+    "@blaze-cardano/uplc": "^0.3.9",
     "@types/bun": "latest",
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
+    "cbor": "^10.0.11",
     "eslint": "^9.37.0",
     "globals": "^16.4.0",
-    "cbor": "^10.0.11",
-    "@blaze-cardano/sdk": "^0.2.43",
-    "@blaze-cardano/data": "^0.6.4",
-    "@blaze-cardano/query": "^0.5.2",
-    "@blaze-cardano/uplc": "^0.3.9"
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
   },
   "dependencies": {
     "toml": "^3.0.0"

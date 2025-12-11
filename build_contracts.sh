@@ -188,6 +188,9 @@ TECH_AUTH_TWO_STAGE_TOML_KEY="technical_authority_two_stage_hash"
 FEDERATED_OPS_TWO_STAGE_TITLE="permissioned.federated_ops_two_stage_upgrade.else"
 FEDERATED_OPS_TWO_STAGE_TOML_KEY="federated_operators_two_stage_hash"
 
+TERMS_AND_CONDITIONS_TWO_STAGE_TITLE="permissioned.terms_and_conditions_two_stage_upgrade.else"
+TERMS_AND_CONDITIONS_TWO_STAGE_TOML_KEY="terms_and_conditions_two_stage_hash"
+
 # Forever validators (compiled second)
 RESERVE_FOREVER_TITLE="reserve.reserve_forever.else"
 RESERVE_FOREVER_TOML_KEY="reserve_forever_hash"
@@ -204,7 +207,8 @@ TECH_AUTH_FOREVER_TOML_KEY="technical_authority_forever_hash"
 FEDERATED_OPS_FOREVER_TITLE="permissioned.federated_ops_forever.else"
 FEDERATED_OPS_FOREVER_TOML_KEY="federated_operators_forever_hash"
 
-
+TERMS_AND_CONDITIONS_FOREVER_TITLE="permissioned.terms_and_conditions_forever.else"
+TERMS_AND_CONDITIONS_FOREVER_TOML_KEY="terms_and_conditions_forever_hash"
 
 # Committee Bridge validators
 COMMITTEE_BRIDGE_FOREVER_TITLE="committee_bridge.committee_bridge_forever.else"
@@ -230,6 +234,9 @@ MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_TOML_KEY="main_federated_ops_update_threshol
 
 BRIDGE_SIGNER_THRESHOLD_TITLE="thresholds.beefy_signer_threshold.else"
 BRIDGE_SIGNER_THRESHOLD_TOML_KEY="bridge_signer_threshold_hash"
+
+TERMS_AND_CONDITIONS_THRESHOLD_TITLE="thresholds.terms_and_conditions_threshold.else"
+TERMS_AND_CONDITIONS_THRESHOLD_TOML_KEY="terms_and_conditions_threshold_hash"
 
 # Help function
 show_help() {
@@ -373,12 +380,35 @@ set_config_value() {
     fi
 }
 
+# Function to update cnight_policy for non-mainnet networks
+# Uses the tcnight_mint_infinite validator hash for testing
+# Mainnet cnight_policy is managed separately and should never be auto-updated
+update_cnight_policy_if_not_mainnet() {
+    if [ "$NETWORK" == "mainnet" ]; then
+        echo "Skipping cnight_policy update for mainnet (managed separately)"
+        return 0
+    fi
+
+    # Use the tcnight_mint_infinite validator hash for test networks
+    local tcnight_hash
+    tcnight_hash=$(validator_hash_by_title "test_cnight_no_audit.tcnight_mint_infinite.else")
+
+    if [ -z "$tcnight_hash" ] || [ "$tcnight_hash" == "null" ]; then
+        echo "Warning: Could not get tcnight_mint_infinite hash, keeping existing cnight_policy"
+        return 0
+    fi
+
+    echo "Updating cnight_policy for $NETWORK network to tcnight_mint_infinite hash..."
+    set_config_value "cnight_policy" "$tcnight_hash" "hex"
+}
+
 update_two_stage_hashes() {
     update_hash "$RESERVE_TWO_STAGE_TITLE" "$RESERVE_TWO_STAGE_TOML_KEY"
     update_hash "$COUNCIL_TWO_STAGE_TITLE" "$COUNCIL_TWO_STAGE_TOML_KEY"
     update_hash "$ICS_TWO_STAGE_TITLE" "$ICS_TWO_STAGE_TOML_KEY"
     update_hash "$TECH_AUTH_TWO_STAGE_TITLE" "$TECH_AUTH_TWO_STAGE_TOML_KEY"
     update_hash "$FEDERATED_OPS_TWO_STAGE_TITLE" "$FEDERATED_OPS_TWO_STAGE_TOML_KEY"
+    update_hash "$TERMS_AND_CONDITIONS_TWO_STAGE_TITLE" "$TERMS_AND_CONDITIONS_TWO_STAGE_TOML_KEY"
     update_hash "$COMMITTEE_BRIDGE_TWO_STAGE_TITLE" "$COMMITTEE_BRIDGE_TWO_STAGE_TOML_KEY"
 }
 
@@ -388,6 +418,7 @@ update_forever_hashes() {
     update_hash "$ICS_FOREVER_TITLE" "$ICS_FOREVER_TOML_KEY"
     update_hash "$TECH_AUTH_FOREVER_TITLE" "$TECH_AUTH_FOREVER_TOML_KEY"
     update_hash "$FEDERATED_OPS_FOREVER_TITLE" "$FEDERATED_OPS_FOREVER_TOML_KEY"
+    update_hash "$TERMS_AND_CONDITIONS_FOREVER_TITLE" "$TERMS_AND_CONDITIONS_FOREVER_TOML_KEY"
     update_hash "$COMMITTEE_BRIDGE_FOREVER_TITLE" "$COMMITTEE_BRIDGE_FOREVER_TOML_KEY"
 }
 
@@ -398,6 +429,7 @@ update_threshold_hashes() {
     update_hash "$MAIN_TECH_AUTH_UPDATE_THRESHOLD_TITLE" "$MAIN_TECH_AUTH_UPDATE_THRESHOLD_TOML_KEY"
     update_hash "$MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_TITLE" "$MAIN_FEDERATED_OPS_UPDATE_THRESHOLD_TOML_KEY"
     update_hash "$BRIDGE_SIGNER_THRESHOLD_TITLE" "$BRIDGE_SIGNER_THRESHOLD_TOML_KEY"
+    update_hash "$TERMS_AND_CONDITIONS_THRESHOLD_TITLE" "$TERMS_AND_CONDITIONS_THRESHOLD_TOML_KEY"
 }
 
 refresh_all_validator_hashes() {
@@ -437,6 +469,11 @@ fi
 
 echo "Starting compilation for network: $NETWORK"
 echo "=========================================="
+
+# Initial compile to get tcnight_mint_infinite hash for cnight_policy
+echo "Initial compilation for cnight_policy..."
+compile_phase "Initial Build"
+update_cnight_policy_if_not_mainnet
 
 # Phase 1: Two-stage validators (batch compile)
 echo "Phase 1: Setting up two-stage validators..."

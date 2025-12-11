@@ -8,6 +8,7 @@ pub type UpgradeState {
   auth: ScriptHash,
   mitigation_auth: ScriptHash,
   round: Int,
+  logic_round: Int,
 }
 
 pub type TwoStageRedeemer {

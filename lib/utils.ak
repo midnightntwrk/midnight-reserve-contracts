@@ -51,11 +51,11 @@ pub fn get_output_state_by_policy(outputs: List<Output>, policy: PolicyId) {
   let Output { value, datum, .. } =
     must_find(
       outputs,
-      // (GOS-1) Require an output locked by the script policy.
+      // (GOS-1) Require an output locked by the script credential derived from the policy (the forever address).
       fn(output) { output.address.payment_credential == pay_cred },
     )
 
-  // (GOS-2) Ensure the output holds exactly one NFT under the policy.
+  // (GOS-2) Ensure the output holds exactly one token under that policy (asset name "") and nothing else.
   expect is_singleton(value, policy, "")
 
   // (GOS-3) Require the datum to be provided inline.
@@ -65,7 +65,7 @@ pub fn get_output_state_by_policy(outputs: List<Output>, policy: PolicyId) {
 }
 
 pub fn get_input_state_by_policy(inputs: List<Input>, policy: PolicyId) {
-  // (GIS-1) Find an input carrying exactly one NFT under the policy.
+  // (GIS-1) Find an input carrying exactly one NFT under the policy and insist its datum is provided inline.
   expect InlineDatum(datum) =
     must_find(
       inputs,

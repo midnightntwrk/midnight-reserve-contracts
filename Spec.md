@@ -3,6 +3,8 @@
 ## Reserve Validators
 - `reserve_forever`
   Minting / setup constraints:
+  - RF-1: rebuild `config.reserve_one_shot_{hash,index}` as the authorising input for forever minting.
+  - RF-2: delegate mint-time enforcement to `forever_contract`, which applies FC-1 through FC-9 plus the ILM series.
   - FC-1: spend `config.reserve_one_shot_{hash,index}` while minting exactly one reserve forever NFT (asset name "") and expose its datum.
   - FC-2: inline datum provided to `reserve_init_validation` must exist (trivial True for reserve).
   - FC-3: touch `config.cnight_policy` to keep the helper code in the script hash (no ledger constraint).
@@ -24,6 +26,8 @@
   - RUN-1: withdrawals must include the credential encoded by the reserve main auth hash.
   - RUN-2: mitigation auth credential may be omitted only when the datum stores the empty hash.
   - RUN-3: when the datum stores a mitigation auth hash, withdrawals must include that credential.
+  Implementation notes:
+  - RV-1: `reserve_init_validation` intentionally adds no extra datum or redeemer checks beyond the forever helper.
 - `reserve_two_stage_upgrade`
   Minting / setup constraints (when info is `Minting`):
   - TS-1: mint both reserve stage NFTs with inline datums while spending the reserve one-shot UTXO.
@@ -74,16 +78,47 @@
   - TS-7: replacement output must carry the same NFT that was spent.
   - TS-8: replacement output must carry the evolved state as an inline datum.
   - RUN-1, RUN-2, RUN-3: same withdrawal credential requirements as above.
+  Implementation notes:
+  - RU-2: upgrade transactions must reference `config.reserve_one_shot_{hash,index}` as the gating one-shot input.
+  - RU-3: two-stage validation is delegated to `two_stage_upgradable`, which enforces the TS, TSM, TSS, TM, TSG, and RUN constraints listed above.
 - `reserve_logic`
   Operational constraints:
-  - LM-0: transaction must produce an output at the reserve script credential.
-  - LM-1: aggregate all reserve-script inputs to compute the expected value.
-  - LM-2: replacement reserve output must return the merged reserve balance to the script credential.
-  - LM-3: replacement reserve output must keep the serialised size below 2048 bytes (half the ledger limit).
+  - LM-0: transaction must create an output locked by the reserve script credential.
+  - LM-1: sum every input guarded by the reserve credential to determine the required post-merge balance.
+  - LM-2: replacement reserve output must carry inline datum data (datum hashes are rejected).
+  - LM-3: reserve logic must never consume the reserve forever NFT while merging values.
+  - LM-4: replacement reserve output must return at least the aggregated ADA and NIGHT balances under the reserve policy.
+  Implementation notes:
+  - RL-1: the validator exposes its `ScriptContext` to the shared logic helper.
+  - RL-2: balance enforcement is delegated to `logic_merge`, which applies LM-0 through LM-4.
+
+## Dust Production Validator
+- `cnight_generates_dust`
+  Minting / setup constraints (redeemer = `Create`):
+  - DG-1: transactions must consume the ledger-selected input captured by `input_linked_mint` to keep each NFT tied to a single UTxO.
+  - DG-2: emitted datums must decode to `DustMappingDatum`.
+  - DG-3: recorded `dust_address` values must not exceed 33 bytes.
+  - DG-4: if `c_wallet` is a verification key, that key must be present in `extra_signatories`.
+  - DG-5: if `c_wallet` is a script credential, that credential must appear in withdrawals.
+  Burn constraints (redeemer ≠ `Create`):
+  - DG-11: the mint map must record the negated count of consumed dust NFTs so every burn is balanced.
+  - DG-12: the minted policy id must differ from `config.cnight_policy` to keep the helper anchored in the hash.
+  Withdrawal / batch update constraints (`Withdrawing`):
+  - DG-6: reward withdrawals must reference the dust script credential.
+  - DG-7: each paired replacement output must carry exactly one dust NFT.
+  - DG-8: replacement outputs must retain the same NFT identity as the spent input.
+  - DG-9: replacement outputs must store inline datums.
+  - DG-10: replacement datums must decode to `DustMappingDatum`, satisfy the 33-byte limit, and re-check DG-4/DG-5.
+  Spending / operational constraints (`Spending`):
+  - DG-13: script inputs must provide inline `DustMappingDatum` records.
+  - DG-14: retrieve the ledger-selected input’s script credential and reuse it for the mint/withdrawal gates below.
+  - DG-15: each spend must either burn dust NFTs (negative mint quantity) or include a script withdrawal when mint quantity is zero.
 
 ## Council Validators
 - `council_forever`
   Minting / setup constraints:
+  - CF-1: rebuild `config.council_one_shot_{hash,index}` as the mint authoriser.
+  - CF-2: execution delegates to `forever_contract`, which enforces FC-1 through FC-9 plus the ILM series for council parameters.
   - FC-1: consume `config.council_one_shot_{hash,index}` while minting exactly one council forever NFT (asset name "") and expose its datum.
   - FC-2: inline datum must satisfy `validate_multisig_structure`.
   - FC-3: touch `config.cnight_policy` to keep the helper in the script hash (no ledger constraint).
@@ -159,6 +194,9 @@
   - TS-7: replacement output must carry the same NFT that was spent.
   - TS-8: replacement output must store the evolved state as an inline datum.
   - RUN-1, RUN-2, RUN-3: withdrawal credential checks described above must be satisfied.
+  Implementation notes:
+  - CT-2: upgrade transactions must reference `config.council_one_shot_{hash,index}` before proceeding.
+  - CT-3: the validator delegates all TS/TSM/TSS/TM/TSG/RUN enforcement to `two_stage_upgradable`.
 - `council_logic`
   Operational constraints:
   - ML-0: reference inputs must include the council threshold UTXO (`config.main_council_update_threshold_hash`).
@@ -171,6 +209,7 @@
   - CM-2: council forever datum must be inline.
   - CM-3: council forever datum must decode to `Multisig`.
   - CM-4: mint must contain an asset under the native script derived from that `Multisig` and threshold fraction.
+  - GIS-1: every council input consulted via helper lookups must carry exactly one council NFT under the policy and expose inline datum data.
   - GOS-1: council forever output must remain at the script credential.
   - GOS-2: council forever output must carry only that NFT.
   - GOS-3: council forever output must provide inline state.
@@ -179,10 +218,15 @@
   - MS-2: redeemer must be a map of signer payloads.
   - MS-3: rebuilding the signer list from the redeemer must succeed.
   - MS-4: reconstructed signer list and total must match the datum.
+  Implementation notes:
+  - CL-1: the validator captures the transaction, redeemer, and script info before applying quorum checks.
+  - CL-2: multisig quorum enforcement is delegated to `logic_multisig_validation_nft_input`, which applies ML-0 through MS-4 plus GIS-1.
 
 ## Technical Authority Validators
 - `tech_auth_forever`
   Minting / setup constraints:
+  - TAF-1: rebuild `config.technical_authority_one_shot_{hash,index}` as the mint authoriser.
+  - TAF-2: delegate to `forever_contract`, which enforces FC-1 through FC-9 plus the ILM series for the technical authority.
   - FC-1: consume `config.technical_authority_one_shot_{hash,index}` while minting exactly one technical-authority forever NFT (asset name "") and expose its datum.
   - FC-2: inline datum must satisfy `validate_multisig_structure`.
   - FC-3: touch `config.cnight_policy` to keep the helper in the script hash (no ledger constraint).
@@ -210,6 +254,8 @@
   - MS-4: reconstructed technical-authority signer list and total must match the datum.
 - `tech_auth_two_stage_upgrade`
   Minting / setup constraints (info = `Minting`):
+  - TAU-2: upgrades must also consume `config.technical_authority_one_shot_{hash,index}`.
+  - TAU-3: enforcement is delegated to `two_stage_upgradable`, which applies the shared TS/TSM/TSS/TM/TSG/RUN rules for the technical authority.
   - TS-1: mint both technical-authority stage NFTs with inline datums while spending the technical-authority one-shot UTXO.
   - TSM-5: mint must include entries under the technical-authority policy id.
   - TSM-6: minted assets must be exactly one "main" and one "staging" technical-authority upgrade NFT.
@@ -270,6 +316,7 @@
   - CM-2: technical-authority forever datum must be inline.
   - CM-3: technical-authority forever datum must decode to `Multisig`.
   - CM-4: mint must contain an asset under the native script derived from that `Multisig` and threshold fraction.
+  - GIS-1: every technical-authority input consulted via helper lookups must carry exactly one technical-authority NFT and provide inline datum data.
   - GOS-1: technical-authority forever output must remain at the script credential.
   - GOS-2: technical-authority forever output must carry only that NFT.
   - GOS-3: technical-authority forever output must provide inline state.
@@ -278,10 +325,15 @@
   - MS-2: redeemer must be a map of signer payloads.
   - MS-3: rebuilding the signer list from the redeemer must succeed.
   - MS-4: reconstructed signer list and total must match the datum.
+  Implementation notes:
+  - TAL-1: the validator surfaces the transaction, redeemer, and script info to the multisig helper.
+  - TAL-2: quorum enforcement delegates to `logic_multisig_validation_nft_input`, which applies ML-0 through MS-4 plus GIS-1.
 
 ## Federated Operator Validators
 - `federated_ops_forever`
   Minting / setup constraints:
+  - FF-1: rebuild `config.federated_operators_one_shot_{hash,index}` as the mint authoriser.
+  - FF-2: delegate to `forever_contract`, which enforces FC-1 through FC-9 plus the ILM series for the federated operators.
   - FC-1: consume `config.federated_operators_one_shot_{hash,index}` while minting exactly one federated forever NFT (asset name "") and expose its datum.
   - FC-2: inline datum must satisfy `validate_multisig_structure`.
   - FC-3: touch `config.cnight_policy` to keep the helper in the script hash (no ledger constraint).
@@ -309,6 +361,8 @@
   - MS-4: reconstructed federated signer list and total must match the datum.
 - `federated_ops_two_stage_upgrade`
   Minting / setup constraints (info = `Minting`):
+  - FTU-2: upgrades must consume `config.federated_operators_one_shot_{hash,index}`.
+  - FTU-3: enforcement is delegated to `two_stage_upgradable`, which applies the shared TS/TSM/TSS/TM/TSG/RUN rules for the federated operators.
   - TS-1: mint both federated stage NFTs with inline datums while spending the federated one-shot UTXO.
   - TSM-5: mint must include entries under the federated policy id.
   - TSM-6: minted assets must be exactly one "main" and one "staging" federated upgrade NFT.
@@ -369,6 +423,7 @@
   - CM-2: federated forever datum must be inline.
   - CM-3: federated forever datum must decode to `Multisig`.
   - CM-4: mint must contain an asset under the native script derived from that `Multisig` and threshold fraction.
+  - GIS-1: every federated input consulted via helper lookups must carry exactly one federated NFT and provide inline datum data.
   - GOS-1: federated forever output must remain at the script credential.
   - GOS-2: federated forever output must carry only that NFT.
   - GOS-3: federated forever output must provide inline state.
@@ -377,6 +432,9 @@
   - MS-2: redeemer must be a map of signer payloads.
   - MS-3: rebuilding the signer list from the redeemer must succeed.
   - MS-4: reconstructed signer list and total must match the datum.
+  Implementation notes:
+  - FL-1: the validator exposes the transaction, redeemer, and script info to the multisig helper.
+  - FL-2: quorum enforcement delegates to `logic_multisig_validation_nft_input`, which applies ML-0 through MS-4 plus GIS-1.
 
 
 ## Governance Threshold Validators
@@ -385,8 +443,6 @@
   - THM-1: spend `config.main_gov_one_shot_{hash,index}` while capturing the inline threshold datum during minting.
   - THM-2: minted datum must decode to `MultisigThreshold`.
   - THM-3: touch `config.cnight_policy` so the helper logic remains in the script hash.
-  - THM-4: minted technical-authority numerator must be strictly less than its denominator.
-  - THM-5: minted council numerator must be strictly less than its denominator.
   Spending / operational constraints:
   - THS-1: locate the ledger-selected main governance threshold input.
   - THS-2: consume an input locked by the threshold script credential.
@@ -528,6 +584,36 @@
   - THD-5: replacement council numerator must be strictly positive.
   Implementation notes:
   - FOT-1: enforcement is delegated to `threshold_validation`.
+- `beefy_signer_threshold`
+  Minting / setup constraints:
+  - THM-1: spend `config.committee_threshold_one_shot_{hash,index}` while capturing the inline beefy threshold datum during minting.
+  - THM-2: minted datum must satisfy `validation`.
+  - THM-3: touch `config.cnight_policy` so the helper logic remains in the script hash.
+  - THD-1: minted datum must decode to `MultisigThreshold`.
+  - THD-2: minted technical-authority numerator must be strictly less than its denominator.
+  - THD-3: minted council numerator must be strictly less than its denominator.
+  - THD-4: minted technical-authority numerator must be strictly positive.
+  - THD-5: minted council numerator must be strictly positive.
+  Spending / operational constraints:
+  - THS-1: locate the ledger-selected beefy signer threshold input.
+  - THS-2: consume an input locked by the beefy threshold script credential.
+  - THS-5: the spending input must expose exactly one beefy threshold NFT.
+  - THS-7: reference datum must decode to `MultisigThreshold`.
+  - THS-8: mint must include the technical-authority native script rebuilt from the datum and threshold fraction.
+  - THS-9: mint must include the council native script rebuilt from the datum and threshold fraction.
+  - THS-10: inspect the first output as the replacement threshold state.
+  - THS-12: replacement datum must be provided inline.
+  - THS-13: replacement output must retain the threshold script credential.
+  - THS-14: replacement output must carry exactly one beefy threshold NFT.
+  - THS-15: replacement datum must satisfy `validation`.
+  - THS-16: reference inputs must expose the main governance threshold state as an inline datum.
+  - THD-1: replacement datum must decode to `MultisigThreshold`.
+  - THD-2: replacement technical-authority numerator must be strictly less than its denominator.
+  - THD-3: replacement council numerator must be strictly less than its denominator.
+  - THD-4: replacement technical-authority numerator must be strictly positive.
+  - THD-5: replacement council numerator must be strictly positive.
+  Implementation notes:
+  - BST-1: enforcement is delegated to `threshold_validation`.
 
 ## Governance Auth Validators
 - `main_gov_auth`
@@ -639,7 +725,8 @@
 - `ics_logic`
   Operational constraints:
   - IL-1: delegate to `logic_merge` using `config.ics_forever_hash`.
-  - LM-0: transaction must produce an output at the iliq forever script credential.
-  - LM-1: aggregate all iliq-script inputs to compute the expected value.
-  - LM-2: replacement iliq output must return the merged balance to the script credential.
-  - LM-3: replacement iliq output must keep the serialised size below 2048 bytes (half the ledger limit).
+  - LM-0: transaction must create an output locked by the iliq script credential.
+  - LM-1: sum every input guarded by the iliq credential to determine the required post-merge balance.
+  - LM-2: replacement iliq output must carry inline datum data (datum hashes are rejected).
+  - LM-3: iliq logic must never consume the iliq forever NFT while merging values.
+  - LM-4: replacement iliq output must return at least the aggregated ADA and NIGHT balances under the iliq policy.

@@ -209,3 +209,18 @@ validator beefy_signer_threshold {
     threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
+
+validator terms_and_conditions_threshold {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+
+    let one_shot_ref =
+      OutputReference(
+        config.terms_and_conditions_threshold_one_shot_hash,
+        config.terms_and_conditions_threshold_one_shot_index,
+      )
+
+    // (TCT-1) Delegate validation to the shared threshold helper (`threshold_validation`).
+    threshold_validation(transaction, info, one_shot_ref, validation)
+  }
+}
