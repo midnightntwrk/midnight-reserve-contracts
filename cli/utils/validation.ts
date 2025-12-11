@@ -22,7 +22,21 @@ export const VALID_COMPONENTS = [
   "staging-gov",
   "federated-ops",
   "federated-ops-threshold",
+  "tcnight-mint-infinite",
+  "terms-and-conditions",
+  "terms-and-conditions-threshold",
 ];
+
+export const VALID_TWO_STAGE_VALIDATORS = [
+  "tech-auth",
+  "council",
+  "reserve",
+  "ics",
+  "federated-ops",
+  "terms-and-conditions",
+] as const;
+
+export type TwoStageValidator = (typeof VALID_TWO_STAGE_VALIDATORS)[number];
 
 export function validateNetwork(network: string): Network {
   if (!VALID_NETWORKS.includes(network as Network)) {
@@ -103,4 +117,26 @@ export function parseAmount(amountStr: string): bigint {
     throw new Error(`Amount must be positive, got ${amount}`);
   }
   return amount;
+}
+
+export function validateTwoStageValidator(validator: string): TwoStageValidator {
+  if (!VALID_TWO_STAGE_VALIDATORS.includes(validator as TwoStageValidator)) {
+    throw new Error(
+      `Invalid two-stage validator '${validator}'. Must be one of: ${VALID_TWO_STAGE_VALIDATORS.join(", ")}`,
+    );
+  }
+  return validator as TwoStageValidator;
+}
+
+export function validateScriptHash(hash: string): void {
+  if (!hash || hash.length !== 56) {
+    throw new Error(
+      `Invalid script hash '${hash}'. Must be 56 hex characters.`,
+    );
+  }
+  if (!/^[a-fA-F0-9]+$/.test(hash)) {
+    throw new Error(
+      `Invalid script hash '${hash}'. Must contain only hex characters.`,
+    );
+  }
 }

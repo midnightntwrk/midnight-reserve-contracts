@@ -1,5 +1,4 @@
 import {
-  Address,
   addressFromCredential,
   addressFromValidator,
   AssetId,
@@ -27,7 +26,6 @@ import { beforeEach, describe, test } from "bun:test";
 
 describe("Change Auth Member", () => {
   const amount = 100_000_000n; // 100 ADA
-  const scriptAmount = 10_000_000n; // 10 ADA for script outputs
 
   let emulator = new Emulator([]);
 

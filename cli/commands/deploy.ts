@@ -73,7 +73,8 @@ export async function deploy(options: DeployOptions): Promise<void> {
     thresholdOutputAmount,
     techAuthThreshold,
     councilThreshold,
-    stagingThreshold,
+    councilStagingThreshold,
+    techAuthStagingThreshold,
     components,
   } = options;
 
@@ -120,7 +121,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
     const upgradeState = createUpgradeState(
       params.logicContract.Script.hash(),
-      contracts.govAuth.Script.hash(),
+      contracts.stagingGovAuth.Script.hash(),
     );
 
     const foreverState = createMultisigStateFromMap(params.totalSigners, params.signers);
@@ -215,7 +216,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
     const upgradeState = createUpgradeState(
       params.logicContract.Script.hash(),
-      contracts.govAuth.Script.hash(),
+      contracts.stagingGovAuth.Script.hash(),
     );
 
     const tx = await blaze
@@ -442,10 +443,10 @@ export async function deploy(options: DeployOptions): Promise<void> {
           oneShotIndex: config.staging_gov_one_shot_index,
           thresholdContract: contracts.stagingGovThreshold,
           thresholdDatum: {
-            technical_auth_numerator: stagingThreshold.numerator,
-            technical_auth_denominator: stagingThreshold.denominator,
-            council_numerator: stagingThreshold.numerator,
-            council_denominator: stagingThreshold.denominator,
+            technical_auth_numerator: techAuthStagingThreshold.numerator,
+            technical_auth_denominator: techAuthStagingThreshold.denominator,
+            council_numerator: councilStagingThreshold.numerator,
+            council_denominator: councilStagingThreshold.denominator,
           },
         }),
     },
@@ -473,6 +474,159 @@ export async function deploy(options: DeployOptions): Promise<void> {
           oneShotHash: config.main_federated_ops_update_one_shot_hash,
           oneShotIndex: config.main_federated_ops_update_one_shot_index,
           thresholdContract: contracts.mainFederatedOpsUpdateThreshold,
+          thresholdDatum: {
+            technical_auth_numerator: techAuthThreshold.numerator,
+            technical_auth_denominator: techAuthThreshold.denominator,
+            council_numerator: councilThreshold.numerator,
+            council_denominator: councilThreshold.denominator,
+          },
+        }),
+    },
+    {
+      name: "tcnight-mint-infinite-deployment",
+      component: "tcnight-mint-infinite",
+      generator: async () => {
+        printProgress("Generating TCnight Mint Infinite deployment transaction...");
+
+        const tx = await blaze
+          .newTransaction()
+          .provideScript(contracts.tcnightMintInfinite.Script)
+          .addRegisterStake(
+            Credential.fromCore({
+              hash: contracts.tcnightMintInfinite.Script.hash(),
+              type: CredentialType.ScriptHash,
+            }),
+          )
+          .complete();
+
+        return tx;
+      },
+    },
+    {
+      name: "terms-and-conditions-deployment",
+      component: "terms-and-conditions",
+      generator: async () => {
+        printProgress("Generating Terms and Conditions deployment transaction...");
+
+        const oneShotUtxo = createOneShotUtxo(
+          config.terms_and_conditions_one_shot_hash,
+          config.terms_and_conditions_one_shot_index,
+          deployerAddr,
+          utxoAmount,
+        );
+
+        const foreverAddress = addressFromValidator(
+          networkId,
+          contracts.termsAndConditionsForever.Script,
+        );
+        const twoStageAddress = addressFromValidator(
+          networkId,
+          contracts.termsAndConditionsTwoStage.Script,
+        );
+
+        const upgradeState = createUpgradeState(
+          contracts.termsAndConditionsLogic.Script.hash(),
+          contracts.stagingGovAuth.Script.hash(),
+        );
+
+        const initialTermsAndConditions: Contracts.VersionedTermsAndConditions = {
+          data: {
+            // Hash must be exactly 32 bytes (64 hex chars) per validate_terms_structure
+            hash: "0000000000000000000000000000000000000000000000000000000000000000",
+            link: "",
+          },
+          round: 0n,
+        };
+
+        const tx = await blaze
+          .newTransaction()
+          .addInput(oneShotUtxo)
+          .addMint(
+            PolicyId(contracts.termsAndConditionsForever.Script.hash()),
+            new Map([[AssetName(""), 1n]]),
+            PlutusData.newInteger(0n),
+          )
+          .addMint(
+            PolicyId(contracts.termsAndConditionsTwoStage.Script.hash()),
+            new Map([
+              [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
+              [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
+            ]),
+            PlutusData.newInteger(0n),
+          )
+          .provideScript(contracts.termsAndConditionsForever.Script)
+          .provideScript(contracts.termsAndConditionsTwoStage.Script)
+          .addOutput(
+            TransactionOutput.fromCore({
+              address: PaymentAddress(twoStageAddress.toBech32()),
+              value: {
+                coins: outputAmount,
+                assets: new Map([
+                  [
+                    AssetId(
+                      contracts.termsAndConditionsTwoStage.Script.hash() +
+                        toHex(new TextEncoder().encode("main")),
+                    ),
+                    1n,
+                  ],
+                ]),
+              },
+              datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
+            }),
+          )
+          .addOutput(
+            TransactionOutput.fromCore({
+              address: PaymentAddress(twoStageAddress.toBech32()),
+              value: {
+                coins: outputAmount,
+                assets: new Map([
+                  [
+                    AssetId(
+                      contracts.termsAndConditionsTwoStage.Script.hash() +
+                        toHex(new TextEncoder().encode("staging")),
+                    ),
+                    1n,
+                  ],
+                ]),
+              },
+              datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
+            }),
+          )
+          .addOutput(
+            TransactionOutput.fromCore({
+              address: PaymentAddress(foreverAddress.toBech32()),
+              value: {
+                coins: outputAmount,
+                assets: new Map([
+                  [AssetId(contracts.termsAndConditionsForever.Script.hash()), 1n],
+                ]),
+              },
+              datum: serialize(
+                Contracts.VersionedTermsAndConditions,
+                initialTermsAndConditions,
+              ).toCore(),
+            }),
+          )
+          .addRegisterStake(
+            Credential.fromCore({
+              hash: contracts.termsAndConditionsLogic.Script.hash(),
+              type: CredentialType.ScriptHash,
+            }),
+          )
+          .complete();
+
+        return tx;
+      },
+    },
+    {
+      name: "terms-and-conditions-threshold-deployment",
+      component: "terms-and-conditions-threshold",
+      generator: () =>
+        generateThresholdDeployment({
+          name: "Terms and Conditions Threshold",
+          oneShotHash: config.terms_and_conditions_threshold_one_shot_hash,
+          oneShotIndex: config.terms_and_conditions_threshold_one_shot_index,
+          thresholdContract: contracts.termsAndConditionsThreshold,
           thresholdDatum: {
             technical_auth_numerator: techAuthThreshold.numerator,
             technical_auth_denominator: techAuthThreshold.denominator,

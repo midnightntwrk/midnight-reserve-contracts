@@ -7,7 +7,6 @@ import {
   Ed25519KeyHashHex,
   NetworkId,
   PaymentAddress,
-  PlutusData,
   PolicyId,
   RewardAccount,
   TransactionId,

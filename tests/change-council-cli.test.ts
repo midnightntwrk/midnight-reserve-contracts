@@ -1,12 +1,10 @@
 import {
-  Address,
   addressFromCredential,
   AssetId,
   AssetName,
   Credential,
   CredentialType,
   Hash28ByteBase16,
-  NativeScript,
   NativeScripts,
   NetworkId,
   PaymentAddress,
@@ -21,8 +19,8 @@ import {
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import * as Contracts from "../contract_blueprint";
+import { createMultisigStateCbor, createRedeemerMapCbor } from "../cli/lib/signers";
 import { describe, test } from "bun:test";
-import { writeFileSync } from "fs";
 
 describe("Change Council CLI Test", () => {
   test("Build change council transaction", async () => {
@@ -200,7 +198,10 @@ describe("Change Council CLI Test", () => {
                     [AssetId(techAuthForever.Script.hash()), 1n],
                   ]),
                 },
-                datum: serialize(Contracts.VersionedMultisig, techAuthState).toCore(),
+                datum: serialize(
+                  Contracts.VersionedMultisig,
+                  techAuthState,
+                ).toCore(),
               },
             ]),
           );
@@ -264,27 +265,9 @@ describe("Change Council CLI Test", () => {
             },
           ];
 
-          // Create new state
-          const newCouncilForeverState: Contracts.VersionedMultisig = {
-            data: [
-              3n,
-              {
-                ["8200581c" + newCouncilSigners[0].paymentHash]:
-                  newCouncilSigners[0].sr25519Key,
-                ["8200581c" + newCouncilSigners[1].paymentHash]:
-                  newCouncilSigners[1].sr25519Key,
-                ["8200581c" + newCouncilSigners[2].paymentHash]:
-                  newCouncilSigners[2].sr25519Key,
-              },
-            ],
-            round: 0n,
-          };
-
-          const memberRedeemer: Contracts.PermissionedRedeemer = {
-            [newCouncilSigners[0].paymentHash]: newCouncilSigners[0].sr25519Key,
-            [newCouncilSigners[1].paymentHash]: newCouncilSigners[1].sr25519Key,
-            [newCouncilSigners[2].paymentHash]: newCouncilSigners[2].sr25519Key,
-          };
+          // Create new state using CBOR functions that support duplicate keys
+          const newCouncilForeverStateCbor = createMultisigStateCbor(newCouncilSigners, 0n);
+          const memberRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
 
           const requiredSigners = 2;
 
@@ -419,7 +402,10 @@ describe("Change Council CLI Test", () => {
                       [AssetId(techAuthForever.Script.hash()), 1n],
                     ]),
                   },
-                  datum: serialize(Contracts.VersionedMultisig, techAuthState).toCore(),
+                  datum: serialize(
+                    Contracts.VersionedMultisig,
+                    techAuthState,
+                  ).toCore(),
                 },
               ]),
             )
@@ -466,16 +452,13 @@ describe("Change Council CLI Test", () => {
                     [AssetId(councilForever.Script.hash()), 1n],
                   ]),
                 },
-                datum: serialize(
-                  Contracts.VersionedMultisig,
-                  newCouncilForeverState,
-                ).toCore(),
+                datum: newCouncilForeverStateCbor.toCore(),
               }),
             )
             .addWithdrawal(
               councilLogicRewardAccount,
               0n,
-              serialize(Contracts.PermissionedRedeemer, memberRedeemer),
+              memberRedeemerCbor,
             )
             .provideScript(councilLogic.Script);
 
