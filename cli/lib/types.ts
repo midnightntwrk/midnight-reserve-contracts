@@ -33,6 +33,7 @@ export interface SimpleTxOptions extends GlobalOptions {
   count: number;
   amount: bigint;
   to?: string;
+  outputFile: string;
 }
 
 export interface InfoOptions extends GlobalOptions {
@@ -101,6 +102,12 @@ export interface TransactionOutput {
   name: string;
   cbor: string;
   hash: string;
+}
+
+export interface TransactionFileOutput {
+  cbor: string;
+  txHash: string;
+  signed: boolean;
 }
 
 export interface DeploymentOutput {
