@@ -1,4 +1,5 @@
 import { Address } from "@blaze-cardano/core";
+import { resolve } from "path";
 
 import type { SimpleTxOptions } from "../lib/types";
 import { getDeployerAddress } from "../lib/config";
@@ -7,11 +8,14 @@ import {
   printSuccess,
   printError,
   printProgress,
-  writeCborFile,
+  writeTransactionFile,
+  ensureDirectory,
 } from "../utils/output";
 
 export async function simpleTx(options: SimpleTxOptions): Promise<void> {
-  const { network, count, amount, to } = options;
+  const { network, output, count, amount, to, outputFile } = options;
+  const deploymentDir = resolve(output, network);
+  const outputPath = resolve(deploymentDir, outputFile);
 
   const recipientAddress = to || getDeployerAddress();
 
@@ -27,7 +31,6 @@ export async function simpleTx(options: SimpleTxOptions): Promise<void> {
   try {
     const txBuilder = blaze.newTransaction();
 
-    // Add outputs
     for (let i = 0; i < count; i++) {
       txBuilder.payLovelace(address, amount);
     }
@@ -35,9 +38,8 @@ export async function simpleTx(options: SimpleTxOptions): Promise<void> {
     printProgress("Completing transaction (with evaluation)...");
     const tx = await txBuilder.complete();
 
-    // Write transaction CBOR to file
-    const txCbor = tx.toCbor();
-    writeCborFile("simple-tx.cbor", txCbor);
+    ensureDirectory(deploymentDir);
+    writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
 
     printSuccess("Transaction built successfully!");
     console.log("Transaction ID:", tx.getId());
@@ -45,7 +47,7 @@ export async function simpleTx(options: SimpleTxOptions): Promise<void> {
     console.log(`  - Outputs: ${count}`);
     console.log(`  - Amount per output: ${Number(amount) / 1_000_000} ADA`);
     console.log(`  - Total sent: ${(Number(amount) * count) / 1_000_000} ADA`);
-    console.log(`\nTransaction CBOR written to simple-tx.cbor`);
+    console.log(`\nTransaction written to ${outputPath}`);
   } catch (error) {
     printError("Transaction build failed");
     console.error(error);

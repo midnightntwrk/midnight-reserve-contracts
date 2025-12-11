@@ -1,14 +1,6 @@
 import { writeFileSync, mkdirSync, existsSync } from "fs";
-import { resolve, dirname } from "path";
-import type { DeploymentOutput, TransactionOutput } from "../lib/types";
-
-// Custom JSON replacer to handle BigInt values
-export function jsonReplacer(_key: string, value: unknown): unknown {
-  if (typeof value === "bigint") {
-    return value.toString();
-  }
-  return value;
-}
+import { dirname } from "path";
+import type { DeploymentOutput, TransactionOutput, TransactionFileOutput } from "../lib/types";
 
 export function ensureDirectory(dirPath: string): void {
   if (!existsSync(dirPath)) {
@@ -18,12 +10,17 @@ export function ensureDirectory(dirPath: string): void {
 
 export function writeJsonFile(filePath: string, data: unknown): void {
   ensureDirectory(dirname(filePath));
-  writeFileSync(filePath, JSON.stringify(data, jsonReplacer, 2));
+  writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
-export function writeCborFile(filePath: string, cbor: string): void {
-  ensureDirectory(dirname(filePath));
-  writeFileSync(filePath, cbor, "utf-8");
+export function writeTransactionFile(
+  filePath: string,
+  cbor: string,
+  txHash: string,
+  signed: boolean,
+): void {
+  const output: TransactionFileOutput = { cbor, txHash, signed };
+  writeJsonFile(filePath, output);
 }
 
 export function createDeploymentOutput(

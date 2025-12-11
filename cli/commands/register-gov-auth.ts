@@ -8,7 +8,7 @@ import {
   printSuccess,
   printError,
   printProgress,
-  writeCborFile,
+  writeTransactionFile,
 } from "../utils/output";
 
 export async function registerGovAuth(
@@ -55,7 +55,7 @@ export async function registerGovAuth(
 
     printSuccess(`Transaction built: ${tx.getId()}`);
 
-    writeCborFile(outputPath, tx.toCbor());
+    writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
     printSuccess(`Transaction written to ${outputPath}`);
 
     console.log("\nTransaction ID:", tx.getId());

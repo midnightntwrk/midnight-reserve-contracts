@@ -25,7 +25,7 @@ import {
   printSuccess,
   printError,
   printProgress,
-  writeCborFile,
+  writeTransactionFile,
 } from "../utils/output";
 import {
   createNativeMultisigScript,
@@ -340,10 +340,10 @@ export async function stageUpgrade(
       console.log(`  Created ${signatures.length} signatures`);
 
       const signedTx = attachWitnesses(tx.toCbor(), signatures);
-      writeCborFile(outputPath, signedTx.toCbor());
+      writeTransactionFile(outputPath, signedTx.toCbor(), tx.getId(), true);
       printSuccess(`Signed transaction written to ${outputPath}`);
     } else {
-      writeCborFile(outputPath, tx.toCbor());
+      writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
       printSuccess(`Unsigned transaction written to ${outputPath}`);
     }
 

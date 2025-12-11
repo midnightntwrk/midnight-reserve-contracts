@@ -196,3 +196,18 @@ export function getTwoStageContracts(
       throw new Error(`Unknown two-stage validator: ${validatorName}`);
   }
 }
+
+export function findScriptByHash(hash: string): Script | null {
+  const contracts = getContractInstances();
+  const scriptMap: Record<string, Script> = {
+    [contracts.councilLogic.Script.hash()]: contracts.councilLogic.Script,
+    [contracts.techAuthLogic.Script.hash()]: contracts.techAuthLogic.Script,
+    [contracts.reserveLogic.Script.hash()]: contracts.reserveLogic.Script,
+    [contracts.icsLogic.Script.hash()]: contracts.icsLogic.Script,
+    [contracts.federatedOpsLogic.Script.hash()]: contracts.federatedOpsLogic.Script,
+    [contracts.termsAndConditionsLogic.Script.hash()]: contracts.termsAndConditionsLogic.Script,
+    [contracts.govAuth.Script.hash()]: contracts.govAuth.Script,
+    [contracts.stagingGovAuth.Script.hash()]: contracts.stagingGovAuth.Script,
+  };
+  return scriptMap[hash] ?? null;
+}

@@ -100,9 +100,8 @@ export function parsePrivateKeys(envVar: string): string[] {
 export function extractSignersFromMultisigState(
   versionedState: Contracts.VersionedMultisig,
 ): Signer[] {
-  const [_threshold, signerMap] = versionedState.data;
+  const [, signerMap] = versionedState.data;
   return Object.entries(signerMap).map(([credHex, sr25519Key]) => {
-    // credHex format is "8200581c<hash>" - extract just the hash
     const paymentHash = credHex.slice(8);
     return { paymentHash, sr25519Key };
   });

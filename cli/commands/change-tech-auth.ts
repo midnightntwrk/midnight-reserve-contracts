@@ -8,14 +8,14 @@ import {
   TransactionOutput,
   PaymentAddress,
 } from "@blaze-cardano/core";
-import { serialize, parse } from "@blaze-cardano/data";
+import { parse } from "@blaze-cardano/data";
 import { resolve } from "path";
 
 import type { ChangeAuthOptions } from "../lib/types";
 import { getNetworkId } from "../lib/types";
 import { getDeployerAddress } from "../lib/config";
 import { createBlaze } from "../lib/provider";
-import { getContractInstances, getCredentialAddress } from "../lib/contracts";
+import { getContractInstances, getCredentialAddress, findScriptByHash } from "../lib/contracts";
 import {
   parseSigners,
   parsePrivateKeys,
@@ -27,7 +27,7 @@ import {
   printSuccess,
   printError,
   printProgress,
-  writeCborFile,
+  writeTransactionFile,
 } from "../utils/output";
 import {
   createNativeMultisigScript,
@@ -38,21 +38,6 @@ import {
   findUtxoByTxRef,
 } from "../utils/transaction";
 import * as Contracts from "../../contract_blueprint";
-
-// Helper to find a script instance by its hash
-function findScriptByHash(hash: string, contracts: ReturnType<typeof getContractInstances>): Script | null {
-  const scriptMap: Record<string, Script> = {
-    [contracts.councilLogic.Script.hash()]: contracts.councilLogic.Script,
-    [contracts.techAuthLogic.Script.hash()]: contracts.techAuthLogic.Script,
-    [contracts.reserveLogic.Script.hash()]: contracts.reserveLogic.Script,
-    [contracts.icsLogic.Script.hash()]: contracts.icsLogic.Script,
-    [contracts.federatedOpsLogic.Script.hash()]: contracts.federatedOpsLogic.Script,
-    [contracts.termsAndConditionsLogic.Script.hash()]: contracts.termsAndConditionsLogic.Script,
-    [contracts.govAuth.Script.hash()]: contracts.govAuth.Script,
-    [contracts.stagingGovAuth.Script.hash()]: contracts.stagingGovAuth.Script,
-  };
-  return scriptMap[hash] ?? null;
-}
 
 export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> {
   const { network, output, txHash, txIndex, sign, outputFile } = options;
@@ -135,15 +120,14 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
   console.log("  Logic hash:", logicHash);
   console.log("  Mitigation logic hash:", mitigationLogicHash || "(empty)");
 
-  // Validate we have the required scripts
-  const logicScript = findScriptByHash(logicHash, contracts);
+  const logicScript = findScriptByHash(logicHash);
   if (!logicScript) {
     throw new Error(`Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.techAuthLogic.Script.hash()}`);
   }
 
   let mitigationLogicScript: Script | null = null;
   if (mitigationLogicHash && mitigationLogicHash !== "") {
-    mitigationLogicScript = findScriptByHash(mitigationLogicHash, contracts);
+    mitigationLogicScript = findScriptByHash(mitigationLogicHash);
     if (!mitigationLogicScript) {
       throw new Error(`Unknown mitigation logic script hash in UpgradeState: ${mitigationLogicHash}`);
     }
@@ -306,10 +290,10 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
       }
 
       const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
-      writeCborFile(outputPath, signedTx.toCbor());
+      writeTransactionFile(outputPath, signedTx.toCbor(), tx.getId(), true);
       printSuccess(`Signed transaction written to ${outputPath}`);
     } else {
-      writeCborFile(outputPath, tx.toCbor());
+      writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
       printSuccess(`Unsigned transaction written to ${outputPath}`);
     }
 
