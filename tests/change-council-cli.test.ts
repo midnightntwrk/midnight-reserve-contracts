@@ -94,17 +94,20 @@ describe("Change Council CLI Test", () => {
           );
 
           // Current council state - exact on-chain state from preview
-          const currentCouncilState: Contracts.Multisig = [
-            3n,
-            {
-              ["8200581c3958ae4a79fa36f52c9e0f5fab7aac2d4c4446a290b44e2d2f53d387"]:
-                "d2a9e63d7a883dfe271d2ca91c06917fdb459126162c77ff83b480d6415a551f",
-              ["8200581cc6f2de5adbbf0b77adcc6883d562a4f5a535017eaedc6804c5e55b33"]:
-                "9e6619809817313de02029b0b9232ccc880d8ee37e2fed8cabc73694045fee29",
-              ["8200581ca7b42151bbc97e9ecd40f454d6dd0a24cf3e579c675f6552bd059c82"]:
-                "ecfc4d62911bae419efea459f9f2271da3f9df5b8cebbda599116aa034b15c55",
-            },
-          ];
+          const currentCouncilState: Contracts.VersionedMultisig = {
+            data: [
+              3n,
+              {
+                ["8200581c3958ae4a79fa36f52c9e0f5fab7aac2d4c4446a290b44e2d2f53d387"]:
+                  "d2a9e63d7a883dfe271d2ca91c06917fdb459126162c77ff83b480d6415a551f",
+                ["8200581cc6f2de5adbbf0b77adcc6883d562a4f5a535017eaedc6804c5e55b33"]:
+                  "9e6619809817313de02029b0b9232ccc880d8ee37e2fed8cabc73694045fee29",
+                ["8200581ca7b42151bbc97e9ecd40f454d6dd0a24cf3e579c675f6552bd059c82"]:
+                  "ecfc4d62911bae419efea459f9f2271da3f9df5b8cebbda599116aa034b15c55",
+              },
+            ],
+            round: 0n,
+          };
 
           // Add council forever UTxO
           emulator.addUtxo(
@@ -124,7 +127,7 @@ describe("Change Council CLI Test", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   currentCouncilState,
                 ).toCore(),
               },
@@ -166,17 +169,20 @@ describe("Change Council CLI Test", () => {
           );
 
           // Add tech auth forever UTxO - exact on-chain state from preview (same as council)
-          const techAuthState: Contracts.Multisig = [
-            3n,
-            {
-              ["8200581c3958ae4a79fa36f52c9e0f5fab7aac2d4c4446a290b44e2d2f53d387"]:
-                "d2a9e63d7a883dfe271d2ca91c06917fdb459126162c77ff83b480d6415a551f",
-              ["8200581cc6f2de5adbbf0b77adcc6883d562a4f5a535017eaedc6804c5e55b33"]:
-                "9e6619809817313de02029b0b9232ccc880d8ee37e2fed8cabc73694045fee29",
-              ["8200581ca7b42151bbc97e9ecd40f454d6dd0a24cf3e579c675f6552bd059c82"]:
-                "ecfc4d62911bae419efea459f9f2271da3f9df5b8cebbda599116aa034b15c55",
-            },
-          ];
+          const techAuthState: Contracts.VersionedMultisig = {
+            data: [
+              3n,
+              {
+                ["8200581c3958ae4a79fa36f52c9e0f5fab7aac2d4c4446a290b44e2d2f53d387"]:
+                  "d2a9e63d7a883dfe271d2ca91c06917fdb459126162c77ff83b480d6415a551f",
+                ["8200581cc6f2de5adbbf0b77adcc6883d562a4f5a535017eaedc6804c5e55b33"]:
+                  "9e6619809817313de02029b0b9232ccc880d8ee37e2fed8cabc73694045fee29",
+                ["8200581ca7b42151bbc97e9ecd40f454d6dd0a24cf3e579c675f6552bd059c82"]:
+                  "ecfc4d62911bae419efea459f9f2271da3f9df5b8cebbda599116aa034b15c55",
+              },
+            ],
+            round: 0n,
+          };
 
           emulator.addUtxo(
             TransactionUnspentOutput.fromCore([
@@ -194,7 +200,7 @@ describe("Change Council CLI Test", () => {
                     [AssetId(techAuthForever.Script.hash()), 1n],
                   ]),
                 },
-                datum: serialize(Contracts.Multisig, techAuthState).toCore(),
+                datum: serialize(Contracts.VersionedMultisig, techAuthState).toCore(),
               },
             ]),
           );
@@ -205,6 +211,7 @@ describe("Change Council CLI Test", () => {
             "",
             councilForever.Script.hash(),
             "",
+            0n,
             0n,
           ];
 
@@ -258,17 +265,20 @@ describe("Change Council CLI Test", () => {
           ];
 
           // Create new state
-          const newCouncilForeverState: Contracts.Multisig = [
-            3n,
-            {
-              ["8200581c" + newCouncilSigners[0].paymentHash]:
-                newCouncilSigners[0].sr25519Key,
-              ["8200581c" + newCouncilSigners[1].paymentHash]:
-                newCouncilSigners[1].sr25519Key,
-              ["8200581c" + newCouncilSigners[2].paymentHash]:
-                newCouncilSigners[2].sr25519Key,
-            },
-          ];
+          const newCouncilForeverState: Contracts.VersionedMultisig = {
+            data: [
+              3n,
+              {
+                ["8200581c" + newCouncilSigners[0].paymentHash]:
+                  newCouncilSigners[0].sr25519Key,
+                ["8200581c" + newCouncilSigners[1].paymentHash]:
+                  newCouncilSigners[1].sr25519Key,
+                ["8200581c" + newCouncilSigners[2].paymentHash]:
+                  newCouncilSigners[2].sr25519Key,
+              },
+            ],
+            round: 0n,
+          };
 
           const memberRedeemer: Contracts.PermissionedRedeemer = {
             [newCouncilSigners[0].paymentHash]: newCouncilSigners[0].sr25519Key,
@@ -361,7 +371,7 @@ describe("Change Council CLI Test", () => {
                     ]),
                   },
                   datum: serialize(
-                    Contracts.Multisig,
+                    Contracts.VersionedMultisig,
                     currentCouncilState,
                   ).toCore(),
                 },
@@ -409,7 +419,7 @@ describe("Change Council CLI Test", () => {
                       [AssetId(techAuthForever.Script.hash()), 1n],
                     ]),
                   },
-                  datum: serialize(Contracts.Multisig, techAuthState).toCore(),
+                  datum: serialize(Contracts.VersionedMultisig, techAuthState).toCore(),
                 },
               ]),
             )
@@ -457,7 +467,7 @@ describe("Change Council CLI Test", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.Multisig,
+                  Contracts.VersionedMultisig,
                   newCouncilForeverState,
                 ).toCore(),
               }),

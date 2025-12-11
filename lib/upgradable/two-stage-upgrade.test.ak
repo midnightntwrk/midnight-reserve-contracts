@@ -33,6 +33,7 @@ const main_datum =
     #"44444444444444444444444444444444444444444444444444444444",
     "",
     0,
+    0,
   )
 
 const staging_datum =
@@ -41,6 +42,7 @@ const staging_datum =
     "",
     #"66666666666666666666666666666666666666666666666666666666",
     "",
+    0,
     0,
   )
 
@@ -369,9 +371,7 @@ test spending_main_logic_change() {
           Output(
             script_address,
             from_lovelace(10000000) |> add(policy, "staging", 1),
-            InlineDatum(
-              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
-            ),
+            InlineDatum(UpgradeState { ..staging_datum, logic_round: 3 }),
             None,
           ),
         ),
@@ -384,7 +384,7 @@ test spending_main_logic_change() {
             UpgradeState {
               ..main_datum,
               logic: staging_datum.logic,
-              round: staging_datum.round + 2,
+              logic_round: 3,
             },
           ),
           None,
@@ -752,7 +752,7 @@ test spending_main_output_logic_does_not_match_staging() fail {
   two_stage_upgradable(tx, redeemer, info, one_shot_ref)
 }
 
-test spending_main_output_round_does_not_match_staging() fail {
+test spending_main_output_logic_round_does_not_match_staging() fail {
   let tx =
     Transaction {
       ..placeholder,
@@ -773,9 +773,7 @@ test spending_main_output_round_does_not_match_staging() fail {
           Output(
             script_address,
             from_lovelace(10000000) |> add(policy, "staging", 1),
-            InlineDatum(
-              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
-            ),
+            InlineDatum(UpgradeState { ..staging_datum, logic_round: 3 }),
             None,
           ),
         ),
@@ -788,7 +786,7 @@ test spending_main_output_round_does_not_match_staging() fail {
             UpgradeState {
               ..main_datum,
               logic: staging_datum.logic,
-              round: main_datum.round,
+              logic_round: main_datum.logic_round,
             },
           ),
           None,
@@ -942,7 +940,7 @@ test spending_staging_logic_change() {
             UpgradeState {
               ..staging_datum,
               logic: #"51515151515151515151515151515151515151515151515151515151",
-              round: staging_datum.round + 1,
+              logic_round: staging_datum.logic_round + 1,
             },
           ),
           None,
@@ -1621,7 +1619,7 @@ test spending_staging_logic_change_w_main_auth() {
             UpgradeState {
               ..staging_datum,
               logic: #"51515151515151515151515151515151515151515151515151515151",
-              round: staging_datum.round + 1,
+              logic_round: staging_datum.logic_round + 1,
             },
           ),
           None,
@@ -1658,7 +1656,6 @@ test spending_staging_logic_change_w_mitigation() {
               UpgradeState {
                 ..staging_datum,
                 logic: #"51515151515151515151515151515151515151515151515151515151",
-                round: staging_datum.round,
                 mitigation_auth: #"72727272727272727272727272727272727272727272727272727272",
               },
             ),
@@ -1685,7 +1682,7 @@ test spending_staging_logic_change_w_mitigation() {
             UpgradeState {
               ..staging_datum,
               logic: #"51515151515151515151515151515151515151515151515151515151",
-              round: staging_datum.round + 1,
+              logic_round: staging_datum.logic_round + 1,
               mitigation_auth: #"72727272727272727272727272727272727272727272727272727272",
             },
           ),
@@ -1729,7 +1726,6 @@ test spending_staging_logic_change_w_main_auth_ignore_staging_mitigation() {
               UpgradeState {
                 ..staging_datum,
                 logic: #"51515151515151515151515151515151515151515151515151515151",
-                round: staging_datum.round,
                 mitigation_auth: #"72727272727272727272727272727272727272727272727272727272",
               },
             ),
@@ -1756,7 +1752,7 @@ test spending_staging_logic_change_w_main_auth_ignore_staging_mitigation() {
             UpgradeState {
               ..staging_datum,
               logic: #"51515151515151515151515151515151515151515151515151515152",
-              round: staging_datum.round + 1,
+              logic_round: staging_datum.logic_round + 1,
               mitigation_auth: #"72727272727272727272727272727272727272727272727272727272",
             },
           ),

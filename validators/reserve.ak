@@ -54,7 +54,7 @@ validator reserve_logic {
     // (RL-1) Access the transaction and script info necessary to analyse reserve withdrawals.
     let ScriptContext { transaction, info, .. } = ctx
 
-    // (RL-2) Delegate to logic merge (LM-0, LM-1, LM-2, LM-3).
+    // (RL-2) Delegate to logic merge (LM-0, LM-1, LM-2, LM-3, LM-4).
     logic_merge(transaction, info, config.reserve_forever_hash)
   }
 }

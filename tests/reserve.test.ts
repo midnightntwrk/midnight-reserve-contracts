@@ -1,5 +1,4 @@
 import {
-  Address,
   addressFromValidator,
   AssetId,
   AssetName,
@@ -20,6 +19,7 @@ import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import * as Contracts from "../contract_blueprint";
 import { describe, test } from "bun:test";
+import { loadAikenConfig } from "../cli/lib/config";
 
 describe("Reserve Deploy and Merge", () => {
   const amount = 100_000_000n;
@@ -31,11 +31,10 @@ describe("Reserve Deploy and Merge", () => {
   const reserveLogic = new Contracts.ReserveReserveLogicElse();
   const govAuth = new Contracts.GovAuthMainGovAuthElse();
 
-  const config = {
-    reserve_one_shot_hash:
-      "0000000000000000000000000000000000000000000000000000000000000001",
-    reserve_one_shot_index: 1,
-  };
+  const config = loadAikenConfig("local");
+
+  const cnightAsset =
+    config.cnight_policy + toHex(new TextEncoder().encode("NIGHT"));
 
   test("Deploy Reserve and merge UTxOs", async () => {
     await emulator.as("deployer", async (blaze, addr) => {
@@ -88,6 +87,7 @@ describe("Reserve Deploy and Merge", () => {
         "",
         govAuth.Script.hash(),
         "",
+        0n,
         0n,
       ];
 
@@ -209,7 +209,7 @@ describe("Reserve Deploy and Merge", () => {
           address: PaymentAddress(reserveForeverAddress.toBech32()),
           value: {
             coins: 5_000_000n,
-            assets: new Map([[AssetId(reserveForever.Script.hash()), 3n]]),
+            assets: new Map([[AssetId(cnightAsset), 3n]]),
           },
           datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
         },
@@ -226,10 +226,7 @@ describe("Reserve Deploy and Merge", () => {
           address: PaymentAddress(reserveForeverAddress.toBech32()),
           value: {
             coins: 3_000_000n,
-            assets: new Map([
-              [AssetId(reserveForever.Script.hash()), 2n],
-              [AssetId(reserveTwoStage.Script.hash() + "abababab"), 2n],
-            ]),
+            assets: new Map([[AssetId(cnightAsset), 2n]]),
           },
           datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
         },
@@ -270,10 +267,7 @@ describe("Reserve Deploy and Merge", () => {
               address: PaymentAddress(reserveForeverAddress.toBech32()),
               value: {
                 coins: 8_000_000n,
-                assets: new Map([
-                  [AssetId(reserveForever.Script.hash()), 5n],
-                  [AssetId(reserveTwoStage.Script.hash() + "abababab"), 2n],
-                ]),
+                assets: new Map([[AssetId(cnightAsset), 5n]]),
               },
               datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
             }),

@@ -28,10 +28,9 @@ pub fn logic_merge(
           fn(input, acc) {
             let Output { address, value, .. } = input.output
             if address.payment_credential == guarded_cred {
-              // (LM-3) Don't allow the permanent state token to be
-              // spent in this version
-              expect
-                assets.quantity_of(value, main_forever_script_hash, "") == 0
+              // (LM-3) Forbid consuming the forever NFT (policy `main_forever_script_hash`, name "")
+              // while computing the merged value for this transaction.
+              expect assets.quantity_of(value, main_forever_script_hash, "") == 0
 
               // (LM-1) Accumulate every input locked by the forever script.
               assets.merge(value, acc)
@@ -43,7 +42,7 @@ pub fn logic_merge(
 
       let guarded_address = Address(Script(forever_script_hash), None)
 
-      // (LM-0) Require the transaction to create an output for the forever address.
+      // (LM-0) Require the transaction to create an output locked by the forever script credential.
       let Output { value, datum, .. } =
         must_find(outputs, fn(output) { output.address == guarded_address })
 
@@ -55,16 +54,18 @@ pub fn logic_merge(
       expect [Pair(cnight_name, cnight_amount)] = cnight_tokens |> to_pairs
 
       and {
-        // (LM-2) Require the output to not be a datumhash
+        // (LM-2) Reject datum hashes so the replacement state remains inline and readable.
         when datum is {
           DatumHash(_) -> False
           _ -> True
         },
-        // (LM-4) Require the transaction to return the merged balance to the forever address.
+        // (LM-4) Enforce that the replacement output returns at least the accumulated ADA and NIGHT balances.
         config.cnight_policy == cnight_policy,
         cnight_name == "NIGHT",
-        assets.quantity_of(guarded_value, ada_policy_id, ada_asset_name) <= ada_amount,
-        assets.quantity_of(guarded_value, cnight_policy, cnight_name) <= cnight_amount,
+        assets.quantity_of(guarded_value, ada_policy_id, ada_asset_name)
+          <= ada_amount,
+        assets.quantity_of(guarded_value, cnight_policy, cnight_name)
+          <= cnight_amount,
       }
     }
 
