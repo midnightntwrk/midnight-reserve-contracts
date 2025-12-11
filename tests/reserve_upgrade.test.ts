@@ -333,8 +333,9 @@ describe("Reserve upgrade path", () => {
         newLogicHash: string,
         fundingUtxo: TransactionUnspentOutput,
       ) => {
-        const scriptUtxos =
-          await blaze.provider.getUnspentOutputs(reserveTwoStageAddress);
+        const scriptUtxos = await blaze.provider.getUnspentOutputs(
+          reserveTwoStageAddress,
+        );
 
         const mainRef = findUtxoByToken(
           scriptUtxos,
@@ -380,7 +381,9 @@ describe("Reserve upgrade path", () => {
                   coins: 2_000_000n,
                   assets: new Map([
                     [
-                      AssetId(reserveTwoStage.Script.hash() + STAGING_TOKEN_HEX),
+                      AssetId(
+                        reserveTwoStage.Script.hash() + STAGING_TOKEN_HEX,
+                      ),
                       1n,
                     ],
                   ]),
@@ -404,8 +407,9 @@ describe("Reserve upgrade path", () => {
         stagedHash: string,
         fundingUtxo: TransactionUnspentOutput,
       ) => {
-        const scriptUtxos =
-          await blaze.provider.getUnspentOutputs(reserveTwoStageAddress);
+        const scriptUtxos = await blaze.provider.getUnspentOutputs(
+          reserveTwoStageAddress,
+        );
 
         const mainInput = findUtxoByToken(
           scriptUtxos,
@@ -479,8 +483,9 @@ describe("Reserve upgrade path", () => {
       await promoteReserveMain(newReserveLogicHash, fundingUtxos[1]);
 
       // Verify final state
-      const reserveUtxos =
-        await blaze.provider.getUnspentOutputs(reserveTwoStageAddress);
+      const reserveUtxos = await blaze.provider.getUnspentOutputs(
+        reserveTwoStageAddress,
+      );
 
       expectDatum(
         findUtxoByToken(

@@ -196,3 +196,21 @@ export function findUtxoByTxRef(
       utxo.input().index() === BigInt(txIndex),
   );
 }
+
+export function findUtxoWithStagingAsset(
+  utxos: TransactionUnspentOutput[],
+): TransactionUnspentOutput | undefined {
+  const stagingAssetName = Buffer.from("staging").toString("hex");
+
+  return utxos.find((utxo) => {
+    const assets = utxo.output().amount().multiasset();
+    if (!assets) return false;
+
+    for (const [assetId] of assets) {
+      if (assetId.endsWith(stagingAssetName)) {
+        return true;
+      }
+    }
+    return false;
+  });
+}
