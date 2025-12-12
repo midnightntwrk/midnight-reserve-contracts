@@ -165,9 +165,10 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   // Parse new council signers
   const newCouncilSigners = parseSigners("COUNCIL_SIGNERS");
   // Use CBOR functions that preserve duplicate keys
+  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
   const newCouncilForeverStateCbor = createMultisigStateCbor(
     newCouncilSigners,
-    currentCouncilState.round,
+    currentCouncilState[1], // round is second element of tuple
   );
   const memberRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
 

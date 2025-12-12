@@ -171,8 +171,9 @@ describe("Basic Deploy", () => {
         ];
 
         // Create upgrade state datum for technical authority two-stage
-        const techAuthForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const techAuthForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -182,8 +183,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const redeemerForever: Contracts.PermissionedRedeemer = {
           [addr.asBase()?.getPaymentCredential().hash!]:
@@ -293,8 +294,9 @@ describe("Basic Deploy", () => {
           0n, // logic_round
         ];
 
-        const councilForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const councilForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -304,8 +306,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -546,8 +548,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const techAuthForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const techAuthForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -557,8 +560,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -679,8 +682,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const councilForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const councilForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -690,8 +694,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -944,8 +948,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const techAuthForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const techAuthForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -955,8 +960,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1077,8 +1082,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const councilForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const councilForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -1088,8 +1094,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1216,8 +1222,9 @@ describe("Basic Deploy", () => {
           0n, // logic_round
         ];
 
-        const federatedOpsForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const federatedOpsForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -1227,8 +1234,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         await emulator.expectValidTransaction(
           blaze,
@@ -1366,8 +1373,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const techAuthForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const techAuthForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -1377,8 +1385,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1499,8 +1507,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const councilForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const councilForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -1510,8 +1519,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1624,12 +1633,8 @@ describe("Basic Deploy", () => {
           mainGovThreshold.Script,
         );
 
-        const thresholdDatum: Contracts.MultisigThreshold = {
-          technical_auth_numerator: 2n,
-          technical_auth_denominator: 3n,
-          council_numerator: 2n,
-          council_denominator: 3n,
-        };
+        // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+        const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
 
         await emulator.expectValidTransaction(
           blaze,
@@ -1711,8 +1716,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const techAuthForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const techAuthForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -1722,8 +1728,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1844,8 +1850,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const councilForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const councilForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -1855,8 +1862,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1970,12 +1977,8 @@ describe("Basic Deploy", () => {
           stagingGovThreshold.Script,
         );
 
-        const thresholdDatum: Contracts.MultisigThreshold = {
-          technical_auth_numerator: 1n,
-          technical_auth_denominator: 2n,
-          council_numerator: 1n,
-          council_denominator: 2n,
-        };
+        // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+        const thresholdDatum: Contracts.MultisigThreshold = [1n, 2n, 1n, 2n];
 
         await emulator.expectValidTransaction(
           blaze,
@@ -2057,8 +2060,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const techAuthForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const techAuthForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -2068,8 +2072,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -2190,8 +2194,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const councilForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const councilForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -2201,8 +2206,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -2316,12 +2321,8 @@ describe("Basic Deploy", () => {
           mainCouncilUpdateThreshold.Script,
         );
 
-        const thresholdDatum: Contracts.MultisigThreshold = {
-          technical_auth_numerator: 2n,
-          technical_auth_denominator: 3n,
-          council_numerator: 2n,
-          council_denominator: 3n,
-        };
+        // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+        const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
 
         await emulator.expectValidTransaction(
           blaze,
@@ -2405,8 +2406,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const techAuthForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const techAuthForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -2416,8 +2418,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -2538,8 +2540,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const councilForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const councilForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -2549,8 +2552,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -2663,12 +2666,8 @@ describe("Basic Deploy", () => {
           mainTechAuthUpdateThreshold.Script,
         );
 
-        const thresholdDatum: Contracts.MultisigThreshold = {
-          technical_auth_numerator: 2n,
-          technical_auth_denominator: 3n,
-          council_numerator: 2n,
-          council_denominator: 3n,
-        };
+        // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+        const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
 
         await emulator.expectValidTransaction(
           blaze,
@@ -2752,8 +2751,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const techAuthForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const techAuthForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -2763,8 +2763,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -2885,8 +2885,9 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const councilForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const councilForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -2896,8 +2897,8 @@ describe("Basic Deploy", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -3013,12 +3014,8 @@ describe("Basic Deploy", () => {
           mainFederatedOpsUpdateThreshold.Script,
         );
 
-        const thresholdDatum: Contracts.MultisigThreshold = {
-          technical_auth_numerator: 2n,
-          technical_auth_denominator: 3n,
-          council_numerator: 2n,
-          council_denominator: 3n,
-        };
+        // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+        const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
 
         await emulator.expectValidTransaction(
           blaze,

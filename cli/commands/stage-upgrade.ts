@@ -177,15 +177,17 @@ export async function stageUpgrade(
   );
 
   // Calculate required signers based on threshold
+  // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+  const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
   const techAuthRequiredSigners = Number(
-    (BigInt(techAuthSigners.length) * thresholdState.technical_auth_numerator +
-      (thresholdState.technical_auth_denominator - 1n)) /
-      thresholdState.technical_auth_denominator,
+    (BigInt(techAuthSigners.length) * techAuthNum +
+      (techAuthDenom - 1n)) /
+      techAuthDenom,
   );
   const councilRequiredSigners = Number(
-    (BigInt(councilSigners.length) * thresholdState.council_numerator +
-      (thresholdState.council_denominator - 1n)) /
-      thresholdState.council_denominator,
+    (BigInt(councilSigners.length) * councilNum +
+      (councilDenom - 1n)) /
+      councilDenom,
   );
 
   console.log(
@@ -221,9 +223,10 @@ export async function stageUpgrade(
   const mainInput = mainUtxo.input();
 
   // Build redeemer
-  const redeemer = serialize(Contracts.TwoStageRedeemer, {
-    update_field: "Logic",
-    which_stage: {
+  // TwoStageRedeemer is now a tuple: [UpdateField, WhichStage]
+  const redeemer = serialize(Contracts.TwoStageRedeemer, [
+    "Logic",
+    {
       Staging: [
         {
           transaction_id: mainInput.transactionId(),
@@ -232,7 +235,7 @@ export async function stageUpgrade(
         newLogicHash,
       ],
     },
-  });
+  ]);
 
   // Parse current staging datum to get round
   const stagingDatum = stagingUtxo.output().datum();

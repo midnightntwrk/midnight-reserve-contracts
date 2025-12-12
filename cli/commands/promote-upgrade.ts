@@ -157,15 +157,17 @@ export async function promoteUpgrade(options: PromoteUpgradeOptions): Promise<vo
   console.log(`\nStaged logic hash to promote: ${stagedLogicHash}`);
 
   // Calculate required signers based on threshold
+  // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+  const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
   const techAuthRequiredSigners = Number(
-    (BigInt(techAuthSigners.length) * thresholdState.technical_auth_numerator +
-      (thresholdState.technical_auth_denominator - 1n)) /
-      thresholdState.technical_auth_denominator,
+    (BigInt(techAuthSigners.length) * techAuthNum +
+      (techAuthDenom - 1n)) /
+      techAuthDenom,
   );
   const councilRequiredSigners = Number(
-    (BigInt(councilSigners.length) * thresholdState.council_numerator +
-      (thresholdState.council_denominator - 1n)) /
-      thresholdState.council_denominator,
+    (BigInt(councilSigners.length) * councilNum +
+      (councilDenom - 1n)) /
+      councilDenom,
   );
 
   console.log(`\nRequired tech auth signers: ${techAuthRequiredSigners}/${techAuthSigners.length}`);
@@ -196,9 +198,10 @@ export async function promoteUpgrade(options: PromoteUpgradeOptions): Promise<vo
   const stagingInput = stagingUtxo.input();
 
   // Build redeemer - Main variant references the staging UTxO
-  const redeemer = serialize(Contracts.TwoStageRedeemer, {
-    update_field: "Logic",
-    which_stage: {
+  // TwoStageRedeemer is now a tuple: [UpdateField, WhichStage]
+  const redeemer = serialize(Contracts.TwoStageRedeemer, [
+    "Logic",
+    {
       Main: [
         {
           transaction_id: stagingInput.transactionId(),
@@ -206,7 +209,7 @@ export async function promoteUpgrade(options: PromoteUpgradeOptions): Promise<vo
         },
       ],
     },
-  });
+  ]);
 
   // Parse current main datum to get round
   const mainDatum = mainUtxo.output().datum();

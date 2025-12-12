@@ -145,7 +145,9 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
     Contracts.VersionedMultisig,
     currentDatum.asInlineData()!,
   );
-  const [currentThreshold] = currentTechAuthState.data;
+  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+  const [multisig] = currentTechAuthState;
+  const [currentThreshold] = multisig;
   console.log("  Current threshold:", currentThreshold);
 
   // Use CBOR-aware extraction to preserve duplicate keys
@@ -172,9 +174,10 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
   // Parse new tech auth signers
   const newTechAuthSigners = parseSigners("TECH_AUTH_SIGNERS");
   // Use CBOR functions that preserve duplicate keys
+  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
   const newTechAuthForeverStateCbor = createMultisigStateCbor(
     newTechAuthSigners,
-    currentTechAuthState.round,
+    currentTechAuthState[1], // round is second element of tuple
   );
   const memberRedeemerCbor = createRedeemerMapCbor(newTechAuthSigners);
 
