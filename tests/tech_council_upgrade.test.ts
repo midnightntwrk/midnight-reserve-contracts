@@ -107,7 +107,9 @@ const buildNativeScriptFromState = (
   numerator: bigint,
   denominator: bigint,
 ) => {
-  const [totalSigners, signers] = state.data;
+  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+  const [multisig] = state;
+  const [totalSigners, signers] = multisig;
   const signerScripts = Object.keys(signers)
     .sort()
     .map((key) => {
@@ -195,50 +197,49 @@ describe("Tech + Council upgrade path", () => {
       const paymentHash = addr.asBase()?.getPaymentCredential().hash!;
       const stakeHash = addr.asBase()?.getStakeCredential().hash!;
 
-      const techAuthForeverState: Contracts.VersionedMultisig = {
-        data: [
+      // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+      const techAuthForeverState: Contracts.VersionedMultisig = [
+        [
           1n,
           {
             ["8200581c" + paymentHash]:
               "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
           },
         ],
-        round: 0n,
-      };
+        0n,
+      ];
 
-      const councilForeverState: Contracts.VersionedMultisig = {
-        data: [
+      // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+      const councilForeverState: Contracts.VersionedMultisig = [
+        [
           1n,
           {
             ["8200581c" + stakeHash]:
               "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
           },
         ],
-        round: 0n,
-      };
+        0n,
+      ];
 
-      const thresholdDatum: Contracts.MultisigThreshold = {
-        technical_auth_numerator: 1n,
-        technical_auth_denominator: 2n,
-        council_numerator: 1n,
-        council_denominator: 2n,
-      };
+      // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+      const thresholdDatum: Contracts.MultisigThreshold = [1n, 2n, 1n, 2n];
 
       const govAuthRedeemerData = serialize(Contracts.PermissionedRedeemer, {
         [paymentHash]:
           "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
       });
 
+      // MultisigThreshold tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
       const techNativeScript = buildNativeScriptFromState(
         techAuthForeverState,
-        thresholdDatum.technical_auth_numerator,
-        thresholdDatum.technical_auth_denominator,
+        thresholdDatum[0], // technical_auth_numerator
+        thresholdDatum[1], // technical_auth_denominator
       );
 
       const councilNativeScript = buildNativeScriptFromState(
         councilForeverState,
-        thresholdDatum.council_numerator,
-        thresholdDatum.council_denominator,
+        thresholdDatum[2], // council_numerator
+        thresholdDatum[3], // council_denominator
       );
 
       const techWitnessPolicy = techNativeScript.hash();
@@ -357,9 +358,10 @@ describe("Tech + Council upgrade path", () => {
         );
 
         const [mainInput] = mainRef.toCore();
-        const redeemer = serialize(Contracts.TwoStageRedeemer, {
-          update_field: "Logic",
-          which_stage: {
+        // TwoStageRedeemer is now a tuple: [UpdateField, WhichStage]
+        const redeemer = serialize(Contracts.TwoStageRedeemer, [
+          "Logic",
+          {
             Staging: [
               {
                 transaction_id: mainInput.txId.toString(),
@@ -368,7 +370,7 @@ describe("Tech + Council upgrade path", () => {
               newLogicHash,
             ],
           },
-        });
+        ]);
 
         const tx = applyGovernanceWitnesses(
           blaze
@@ -433,9 +435,10 @@ describe("Tech + Council upgrade path", () => {
         );
         const [stagingInput] = stagingRef.toCore();
 
-        const redeemer = serialize(Contracts.TwoStageRedeemer, {
-          update_field: "Logic",
-          which_stage: {
+        // TwoStageRedeemer is now a tuple: [UpdateField, WhichStage]
+        const redeemer = serialize(Contracts.TwoStageRedeemer, [
+          "Logic",
+          {
             Main: [
               {
                 transaction_id: stagingInput.txId.toString(),
@@ -443,7 +446,7 @@ describe("Tech + Council upgrade path", () => {
               },
             ],
           },
-        });
+        ]);
 
         const tx = applyGovernanceWitnesses(
           blaze

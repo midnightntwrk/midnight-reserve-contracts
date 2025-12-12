@@ -73,8 +73,9 @@ describe("Change Council with Duplicate Signers", () => {
       );
 
       // Current council state - 3 different signers
-      const currentCouncilState: Contracts.VersionedMultisig = {
-        data: [
+      // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+      const currentCouncilState: Contracts.VersionedMultisig = [
+        [
           3n,
           {
             ["8200581c3958ae4a79fa36f52c9e0f5fab7aac2d4c4446a290b44e2d2f53d387"]:
@@ -85,8 +86,8 @@ describe("Change Council with Duplicate Signers", () => {
               "ecfc4d62911bae419efea459f9f2271da3f9df5b8cebbda599116aa034b15c55",
           },
         ],
-        round: 0n,
-      };
+        0n,
+      ];
 
       // Add council forever UTxO
       emulator.addUtxo(
@@ -107,12 +108,8 @@ describe("Change Council with Duplicate Signers", () => {
       );
 
       // Add threshold UTxO
-      const thresholdDatum: Contracts.MultisigThreshold = {
-        technical_auth_numerator: 2n,
-        technical_auth_denominator: 3n,
-        council_numerator: 2n,
-        council_denominator: 3n,
-      };
+      // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+      const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
 
       emulator.addUtxo(
         TransactionUnspentOutput.fromCore([
@@ -132,8 +129,9 @@ describe("Change Council with Duplicate Signers", () => {
       );
 
       // Add tech auth forever UTxO - different signers from council (28 bytes = 56 hex chars)
-      const techAuthState: Contracts.VersionedMultisig = {
-        data: [
+      // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+      const techAuthState: Contracts.VersionedMultisig = [
+        [
           3n,
           {
             ["8200581c11111111111111111111111111111111111111111111111111111111"]:
@@ -144,8 +142,8 @@ describe("Change Council with Duplicate Signers", () => {
               "cccc333333333333333333333333333333333333333333333333333333333333",
           },
         ],
-        round: 0n,
-      };
+        0n,
+      ];
 
       emulator.addUtxo(
         TransactionUnspentOutput.fromCore([

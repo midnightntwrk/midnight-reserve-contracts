@@ -53,10 +53,8 @@ export function createMultisigState(
     // Add CBOR prefix "8200581c" to each key for Multisig state
     signerMap[`8200581c${signer.paymentHash}`] = signer.sr25519Key;
   }
-  return {
-    data: [BigInt(signers.length), signerMap],
-    round,
-  };
+  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+  return [[BigInt(signers.length), signerMap], round];
 }
 
 export function createMultisigStateFromMap(
@@ -69,10 +67,8 @@ export function createMultisigStateFromMap(
   for (const [hash, sr25519Key] of Object.entries(signers)) {
     prefixedSigners["8200581c" + hash] = sr25519Key;
   }
-  return {
-    data: [totalSigners, prefixedSigners],
-    round,
-  };
+  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+  return [[totalSigners, prefixedSigners], round];
 }
 
 export function createRedeemerMap(
@@ -100,7 +96,9 @@ export function parsePrivateKeys(envVar: string): string[] {
 export function extractSignersFromMultisigState(
   versionedState: Contracts.VersionedMultisig,
 ): Signer[] {
-  const [, signerMap] = versionedState.data;
+  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+  const [multisig] = versionedState;
+  const [, signerMap] = multisig;
   return Object.entries(signerMap).map(([credHex, sr25519Key]) => {
     const paymentHash = credHex.slice(8);
     return { paymentHash, sr25519Key };
@@ -115,20 +113,14 @@ export function extractSignersFromMultisigState(
 export function extractSignersFromCbor(datum: PlutusData): Signer[] {
   const signers: Signer[] = [];
 
-  // VersionedMultisig is Constr 0 with fields [data, round]
-  // data is a list [total_signers, signers_map]
-  const constr = datum.asConstrPlutusData();
-  if (!constr || constr.getAlternative() !== 0n) {
-    throw new Error("Expected Constr 0 for VersionedMultisig");
+  // VersionedMultisig with @list is a plain list: [[totalSigners, signers], round]
+  const outerList = datum.asList();
+  if (!outerList || outerList.getLength() < 2) {
+    throw new Error("Expected list with at least 2 elements for VersionedMultisig");
   }
 
-  const fields = constr.getData();
-  if (fields.getLength() < 2) {
-    throw new Error("VersionedMultisig should have at least 2 fields");
-  }
-
-  // First field is the data tuple [total_signers, signers_map]
-  const dataTuple = fields.get(0).asList();
+  // First element is the Multisig tuple [total_signers, signers_map]
+  const dataTuple = outerList.get(0).asList();
   if (!dataTuple || dataTuple.getLength() < 2) {
     throw new Error("Data tuple should have at least 2 items");
   }
@@ -262,12 +254,12 @@ export function createMultisigStateCbor(
 
   const mapCbor = Buffer.concat([mapHeader, ...mapEntries]);
 
-  // VersionedMultisig structure (Constr 0):
-  // d8799f      - constr(0) with indefinite array
-  //   9f        - indefinite array (for data tuple)
+  // VersionedMultisig with @list is a plain CBOR list:
+  // 9f          - indefinite array (outer list)
+  //   9f        - indefinite array (Multisig tuple)
   //     <int>   - total_signers
   //     <map>   - signers map
-  //   ff        - end data array
+  //   ff        - end Multisig array
   //   <int>     - round
   // ff          - end outer array
 
@@ -290,11 +282,11 @@ export function createMultisigStateCbor(
   }
 
   const versionedMultisigCbor = Buffer.concat([
-    Buffer.from([0xd8, 0x79, 0x9f]), // constr(0), indefinite array
-    Buffer.from([0x9f]), // indefinite array for data tuple
+    Buffer.from([0x9f]), // indefinite array (outer list)
+    Buffer.from([0x9f]), // indefinite array for Multisig tuple
     totalSignersEncoded, // total_signers
     mapCbor, // signers map with duplicates preserved
-    Buffer.from([0xff]), // end data array
+    Buffer.from([0xff]), // end Multisig array
     roundEncoded, // round
     Buffer.from([0xff]), // end outer array
   ]);

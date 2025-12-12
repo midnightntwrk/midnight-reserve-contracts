@@ -114,12 +114,8 @@ describe("Change Auth Member", () => {
           mainTechAuthUpdateThreshold.Script,
         );
 
-        const thresholdDatum: Contracts.MultisigThreshold = {
-          technical_auth_numerator: 2n,
-          technical_auth_denominator: 3n,
-          council_numerator: 2n,
-          council_denominator: 3n,
-        };
+        // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+        const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
 
         await emulator.expectValidTransaction(
           blaze,
@@ -208,8 +204,9 @@ describe("Change Auth Member", () => {
           0n,
         ];
 
-        const techAuthForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const techAuthForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -219,8 +216,8 @@ describe("Change Auth Member", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -394,8 +391,9 @@ describe("Change Auth Member", () => {
           0n,
         ];
 
-        const councilForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const councilForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -405,8 +403,8 @@ describe("Change Auth Member", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -551,8 +549,9 @@ describe("Change Auth Member", () => {
           emulator.accounts.set(techAuthLogicRewardAccount, 0n);
 
           // Create new multisig state with changed member
-          const newTechAuthForeverState: Contracts.VersionedMultisig = {
-            data: [
+          // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+          const newTechAuthForeverState: Contracts.VersionedMultisig = [
+            [
               3n,
               {
                 ["8200581c" + newAddr.asBase()?.getPaymentCredential().hash]:
@@ -564,8 +563,8 @@ describe("Change Auth Member", () => {
                   "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF",
               },
             ],
-            round: 0n,
-          };
+            0n,
+          ];
 
           // Create redeemer with new member public key hashes
           const memberRedeemer: Contracts.PermissionedRedeemer = {
@@ -787,12 +786,8 @@ describe("Change Auth Member", () => {
           mainTechAuthUpdateThreshold.Script,
         );
 
-        const thresholdDatum: Contracts.MultisigThreshold = {
-          technical_auth_numerator: 2n,
-          technical_auth_denominator: 3n,
-          council_numerator: 2n,
-          council_denominator: 3n,
-        };
+        // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+        const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
 
         await emulator.expectValidTransaction(
           blaze,
@@ -906,8 +901,9 @@ describe("Change Auth Member", () => {
           0n,
         ];
 
-        const techAuthForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const techAuthForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -917,8 +913,8 @@ describe("Change Auth Member", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const techAuthForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1039,8 +1035,9 @@ describe("Change Auth Member", () => {
           0n,
         ];
 
-        const councilForeverState: Contracts.VersionedMultisig = {
-          data: [
+        // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+        const councilForeverState: Contracts.VersionedMultisig = [
+          [
             2n,
             {
               ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
@@ -1049,8 +1046,8 @@ describe("Change Auth Member", () => {
                 "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
             },
           ],
-          round: 0n,
-        };
+          0n,
+        ];
 
         const councilForeverAddress = addressFromValidator(
           NetworkId.Testnet,
@@ -1273,8 +1270,9 @@ describe("Change Auth Member", () => {
           emulator.accounts.set(councilLogicRewardAccount, 0n);
 
           // Create new multisig state with changed member
-          const newCouncilForeverState: Contracts.VersionedMultisig = {
-            data: [
+          // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+          const newCouncilForeverState: Contracts.VersionedMultisig = [
+            [
               3n,
               {
                 ["8200581c" + newAddr.asBase()?.getPaymentCredential().hash]:
@@ -1285,8 +1283,8 @@ describe("Change Auth Member", () => {
                   "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF",
               },
             ],
-            round: 0n,
-          };
+            0n,
+          ];
 
           // Create redeemer with new member public key hashes
           const memberRedeemer: Contracts.PermissionedRedeemer = {
