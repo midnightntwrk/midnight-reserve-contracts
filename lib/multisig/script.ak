@@ -78,8 +78,6 @@ fn native_script_signer_list(
 }
 
 pub fn create_signer(pkh: VerificationKeyHash) -> ByteArray {
-  let pkh = pkh |> builtin.un_b_data
-
   expect builtin.length_of_bytearray(pkh) == 28
 
   bytearray.concat(#"8200581c", pkh)
