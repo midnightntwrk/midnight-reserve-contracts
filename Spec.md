@@ -641,29 +641,29 @@
   Implementation notes:
   - GAVS-1: the validator delegates to `staging_auth_multisig_validation`.
 
-## Iliquid Circulation Supply Validators
+## illiquid Circulation Supply Validators
 - `ics_forever`
   Minting / setup constraints:
   - IF-1: rebuild `config.ics_one_shot_{hash,index}` as the one-shot reference for minting.
-  - FC-1: consume the iliq one-shot UTXO while minting exactly one forever NFT (asset name "") and expose its datum.
+  - FC-1: consume the illiq one-shot UTXO while minting exactly one forever NFT (asset name "") and expose its datum.
   - FC-2: inline datum must satisfy `ics_init_validation`.
   - ICS-1: `ics_init_validation` imposes no additional checks beyond the forever helper.
   - FC-3: touch `config.cnight_policy` to retain the helper in the script hash.
-  - ILM-1: inputs must spend the iliq one-shot UTXO.
-  - ILM-2: mint must include the iliq policy id.
+  - ILM-1: inputs must spend the illiq one-shot UTXO.
+  - ILM-2: mint must include the illiq policy id.
   - ILM-3: minted assets under that policy must be exactly one NFT named "".
-  - ILM-4: outputs must deliver that NFT to the iliq script address with an inline datum.
+  - ILM-4: outputs must deliver that NFT to the illiq script address with an inline datum.
   Spending / operational constraints:
-  - FC-4: reference inputs must include the iliq two-stage main NFT (`config.ics_two_stage_hash`, name "main").
+  - FC-4: reference inputs must include the illiq two-stage main NFT (`config.ics_two_stage_hash`, name "main").
   - FC-5: referenced upgrade datum must be inline.
-  - FC-6: datum must encode iliq main and mitigation logic hashes.
-  - FC-7: datum must provide a 28-byte iliq main logic hash.
-  - FC-8: datum must provide a 28-byte iliq mitigation logic hash.
+  - FC-6: datum must encode illiq main and mitigation logic hashes.
+  - FC-7: datum must provide a 28-byte illiq main logic hash.
+  - FC-8: datum must provide a 28-byte illiq mitigation logic hash.
   - FC-9: withdrawals must include credentials for both hashes (RUN tags below).
-  - GOS-1: outputs must pay the iliq forever NFT to the iliq script credential.
-  - GOS-2: iliq forever output must hold only that NFT.
-  - GOS-3: iliq forever output must provide an inline datum.
-  - SING-1: iliq forever value must not carry additional assets.
+  - GOS-1: outputs must pay the illiq forever NFT to the illiq script credential.
+  - GOS-2: illiq forever output must hold only that NFT.
+  - GOS-3: illiq forever output must provide an inline datum.
+  - SING-1: illiq forever value must not carry additional assets.
   - RUN-1: withdrawals must include the credential recorded as the main auth hash.
   - RUN-2: mitigation auth credential may be omitted only when the datum records the empty hash.
   - RUN-3: when the datum records a mitigation auth hash, withdrawals must include that credential.
@@ -672,32 +672,32 @@
 - `ics_two_stage_upgrade`
   Minting / setup constraints (info = `Minting`):
   - IU-1: rebuild `config.ics_one_shot_{hash,index}` as the one-shot reference for minting.
-  - TS-1: mint both iliq stage NFTs with inline datums while spending the iliq one-shot UTXO.
-  - TSM-5: mint must include entries under the iliq policy id.
-  - TSM-6: minted assets must be exactly one "main" and one "staging" iliq upgrade NFT.
-  - TSM-7: iliq one-shot UTXO must be spent.
-  - TSM-8: main upgrade output must pay the iliq script with an inline datum.
-  - TSM-9: main upgrade output must use the iliq script credential.
-  - TSM-10: main upgrade output must carry the iliq main NFT.
+  - TS-1: mint both illiq stage NFTs with inline datums while spending the illiq one-shot UTXO.
+  - TSM-5: mint must include entries under the illiq policy id.
+  - TSM-6: minted assets must be exactly one "main" and one "staging" illiq upgrade NFT.
+  - TSM-7: illiq one-shot UTXO must be spent.
+  - TSM-8: main upgrade output must pay the illiq script with an inline datum.
+  - TSM-9: main upgrade output must use the illiq script credential.
+  - TSM-10: main upgrade output must carry the illiq main NFT.
   - TSM-11: initial main logic hash must be 28 bytes.
   - TSM-12: initial main auth hash must be 28 bytes.
-  - TSM-13: staging upgrade output must pay the iliq script with an inline datum.
-  - TSM-14: staging upgrade output must use the iliq script credential.
+  - TSM-13: staging upgrade output must pay the illiq script with an inline datum.
+  - TSM-14: staging upgrade output must use the illiq script credential.
   - TSM-15: staging upgrade output must carry the staging NFT.
   - TSM-16: initial staging logic hash must be 28 bytes.
   - TSM-17: initial staging auth hash must be 28 bytes.
   - TSM-18: cnight comparison remains as the compiler touch.
   Spending / operational constraints (info = `Spending`):
-  - TS-2: consume the ledger-selected iliq script input.
-  - TS-3: consumed input must be locked by the iliq script.
+  - TS-2: consume the ledger-selected illiq script input.
+  - TS-3: consumed input must be locked by the illiq script.
   - TS-4: redeemer must decode into `TwoStageRedeemer`.
   - TS-5: record the NFT identity from the spending input.
-  - TSM-1: main branch must spend the iliq main NFT.
+  - TSM-1: main branch must spend the illiq main NFT.
   - TSM-2: main branch must reference the staging UTXO named in the redeemer.
-  - TSM-3: referenced staging UTXO must be locked by the iliq script.
+  - TSM-3: referenced staging UTXO must be locked by the illiq script.
   - TSM-4: referenced staging UTXO must hold the staging NFT.
   - TSS-1: staging branch must spend the staging NFT.
-  - TSS-2: staging branch must reference the main UTXO locked by the iliq script.
+  - TSS-2: staging branch must reference the main UTXO locked by the illiq script.
   - TSS-3: referenced main UTXO must hold the main NFT.
   - TM-1: spending datum must be inline.
   - TM-2: referenced staging datum must be inline.
@@ -716,7 +716,7 @@
   - TSG-6: withdrawals must include either the staging auth pair or the main auth pair.
   - TSG-7: staging branch may not set mitigation logic once the main datum holds one.
   - TSG-8: staging branch may not set mitigation auth once the main datum holds one.
-  - TS-6: outputs must include a replacement iliq UTXO locked by the script credential.
+  - TS-6: outputs must include a replacement illiq UTXO locked by the script credential.
   - TS-7: replacement output must carry the same NFT that was spent.
   - TS-8: replacement output must store the evolved state as an inline datum.
   - RUN-1, RUN-2, RUN-3: withdrawal credential checks described above must be satisfied.
@@ -725,8 +725,8 @@
 - `ics_logic`
   Operational constraints:
   - IL-1: delegate to `logic_merge` using `config.ics_forever_hash`.
-  - LM-0: transaction must create an output locked by the iliq script credential.
-  - LM-1: sum every input guarded by the iliq credential to determine the required post-merge balance.
-  - LM-2: replacement iliq output must carry inline datum data (datum hashes are rejected).
-  - LM-3: iliq logic must never consume the iliq forever NFT while merging values.
-  - LM-4: replacement iliq output must return at least the aggregated ADA and NIGHT balances under the iliq policy.
+  - LM-0: transaction must create an output locked by the illiq script credential.
+  - LM-1: sum every input guarded by the illiq credential to determine the required post-merge balance.
+  - LM-2: replacement illiq output must carry inline datum data (datum hashes are rejected).
+  - LM-3: illiq logic must never consume the illiq forever NFT while merging values.
+  - LM-4: replacement illiq output must return at least the aggregated ADA and NIGHT balances under the illiq policy.

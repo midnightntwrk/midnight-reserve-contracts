@@ -38,7 +38,13 @@ describe("Basic Deploy", () => {
           amount * 10n,
         );
 
-        await deployTechAuthAndCouncil(emulator, blaze, addr, contracts, config);
+        await deployTechAuthAndCouncil(
+          emulator,
+          blaze,
+          addr,
+          contracts,
+          config,
+        );
 
         const reserveOneShotUtxo = createOneShotUtxo(
           addr,
@@ -144,7 +150,7 @@ describe("Basic Deploy", () => {
       });
     });
 
-    test("can deploy ICS (Iliquid Circulation Supply) contracts", async () => {
+    test("can deploy ICS (illiquid Circulation Supply) contracts", async () => {
       await emulator.as("deployer", async (blaze, addr) => {
         addFundingUtxo(
           emulator,
@@ -153,7 +159,13 @@ describe("Basic Deploy", () => {
           amount * 10n,
         );
 
-        await deployTechAuthAndCouncil(emulator, blaze, addr, contracts, config);
+        await deployTechAuthAndCouncil(
+          emulator,
+          blaze,
+          addr,
+          contracts,
+          config,
+        );
 
         const icsOneShotUtxo = createOneShotUtxo(
           addr,
@@ -268,7 +280,13 @@ describe("Basic Deploy", () => {
           amount * 10n,
         );
 
-        await deployTechAuthAndCouncil(emulator, blaze, addr, contracts, config);
+        await deployTechAuthAndCouncil(
+          emulator,
+          blaze,
+          addr,
+          contracts,
+          config,
+        );
 
         const federatedOpsOneShotUtxo = createOneShotUtxo(
           addr,
