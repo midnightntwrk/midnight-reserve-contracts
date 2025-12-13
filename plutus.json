@@ -76,7 +76,7 @@
       "hash": "fb2b3269b571d3bc89cf2d9a4bbc1b866c1cfecd1e86f754f042b234"
     },
     {
-      "title": "iliquid_circulation_supply.ics_forever.else",
+      "title": "illiquid_circulation_supply.ics_forever.else",
       "redeemer": {
         "schema": {}
       },
@@ -84,7 +84,7 @@
       "hash": "d6f3544dd4c3c28892d2fa7be362fb4e04d6b35ae723ecfca89e232a"
     },
     {
-      "title": "iliquid_circulation_supply.ics_logic.else",
+      "title": "illiquid_circulation_supply.ics_logic.else",
       "redeemer": {
         "schema": {}
       },
@@ -92,7 +92,7 @@
       "hash": "35b6968fc12779fd1697834f35145180ba9749fea15f12c47939d6f3"
     },
     {
-      "title": "iliquid_circulation_supply.ics_two_stage_upgrade.else",
+      "title": "illiquid_circulation_supply.ics_two_stage_upgrade.else",
       "redeemer": {
         "schema": {}
       },

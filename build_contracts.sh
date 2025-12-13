@@ -179,7 +179,7 @@ RESERVE_TWO_STAGE_TOML_KEY="reserve_two_stage_hash"
 COUNCIL_TWO_STAGE_TITLE="permissioned.council_two_stage_upgrade.else"
 COUNCIL_TWO_STAGE_TOML_KEY="council_two_stage_hash"
 
-ICS_TWO_STAGE_TITLE="iliquid_circulation_supply.ics_two_stage_upgrade.else"
+ICS_TWO_STAGE_TITLE="illiquid_circulation_supply.ics_two_stage_upgrade.else"
 ICS_TWO_STAGE_TOML_KEY="ics_two_stage_hash"
 
 TECH_AUTH_TWO_STAGE_TITLE="permissioned.tech_auth_two_stage_upgrade.else"
@@ -198,7 +198,7 @@ RESERVE_FOREVER_TOML_KEY="reserve_forever_hash"
 COUNCIL_FOREVER_TITLE="permissioned.council_forever.else"
 COUNCIL_FOREVER_TOML_KEY="council_forever_hash"
 
-ICS_FOREVER_TITLE="iliquid_circulation_supply.ics_forever.else"
+ICS_FOREVER_TITLE="illiquid_circulation_supply.ics_forever.else"
 ICS_FOREVER_TOML_KEY="ics_forever_hash"
 
 TECH_AUTH_FOREVER_TITLE="permissioned.tech_auth_forever.else"

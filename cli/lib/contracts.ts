@@ -31,9 +31,9 @@ export interface ContractInstances {
   stagingGovAuth: Contracts.GovAuthStagingGovAuthElse;
 
   // ICS
-  icsForever: Contracts.IliquidCirculationSupplyIcsForeverElse;
-  icsTwoStage: Contracts.IliquidCirculationSupplyIcsTwoStageUpgradeElse;
-  icsLogic: Contracts.IliquidCirculationSupplyIcsLogicElse;
+  icsForever: Contracts.illiquidCirculationSupplyIcsForeverElse;
+  icsTwoStage: Contracts.illiquidCirculationSupplyIcsTwoStageUpgradeElse;
+  icsLogic: Contracts.illiquidCirculationSupplyIcsLogicElse;
 
   // Federated Ops
   federatedOpsForever: Contracts.PermissionedFederatedOpsForeverElse;
@@ -85,9 +85,10 @@ export function getContractInstances(): ContractInstances {
     stagingGovAuth: new Contracts.GovAuthStagingGovAuthElse(),
 
     // ICS
-    icsForever: new Contracts.IliquidCirculationSupplyIcsForeverElse(),
-    icsTwoStage: new Contracts.IliquidCirculationSupplyIcsTwoStageUpgradeElse(),
-    icsLogic: new Contracts.IliquidCirculationSupplyIcsLogicElse(),
+    icsForever: new Contracts.illiquidCirculationSupplyIcsForeverElse(),
+    icsTwoStage:
+      new Contracts.illiquidCirculationSupplyIcsTwoStageUpgradeElse(),
+    icsLogic: new Contracts.illiquidCirculationSupplyIcsLogicElse(),
 
     // Federated Ops
     federatedOpsForever: new Contracts.PermissionedFederatedOpsForeverElse(),
@@ -106,7 +107,8 @@ export function getContractInstances(): ContractInstances {
       new Contracts.ThresholdsMainFederatedOpsUpdateThresholdElse(),
 
     // TCnight Mint Infinite (testnet only)
-    tcnightMintInfinite: new Contracts.TestCnightNoAuditTcnightMintInfiniteElse(),
+    tcnightMintInfinite:
+      new Contracts.TestCnightNoAuditTcnightMintInfiniteElse(),
 
     // Terms and Conditions
     termsAndConditionsForever:
@@ -150,9 +152,7 @@ export interface TwoStageContracts {
   logic: { Script: Script };
 }
 
-export function getTwoStageContracts(
-  validatorName: string,
-): TwoStageContracts {
+export function getTwoStageContracts(validatorName: string): TwoStageContracts {
   const contracts = getContractInstances();
 
   switch (validatorName) {
@@ -204,8 +204,10 @@ export function findScriptByHash(hash: string): Script | null {
     [contracts.techAuthLogic.Script.hash()]: contracts.techAuthLogic.Script,
     [contracts.reserveLogic.Script.hash()]: contracts.reserveLogic.Script,
     [contracts.icsLogic.Script.hash()]: contracts.icsLogic.Script,
-    [contracts.federatedOpsLogic.Script.hash()]: contracts.federatedOpsLogic.Script,
-    [contracts.termsAndConditionsLogic.Script.hash()]: contracts.termsAndConditionsLogic.Script,
+    [contracts.federatedOpsLogic.Script.hash()]:
+      contracts.federatedOpsLogic.Script,
+    [contracts.termsAndConditionsLogic.Script.hash()]:
+      contracts.termsAndConditionsLogic.Script,
     [contracts.govAuth.Script.hash()]: contracts.govAuth.Script,
     [contracts.stagingGovAuth.Script.hash()]: contracts.stagingGovAuth.Script,
   };
