@@ -119,7 +119,12 @@ export async function deploy(options: DeployOptions): Promise<void> {
     const twoStageAddress = addressFromValidator(networkId, params.twoStageContract.Script);
     const foreverAddress = addressFromValidator(networkId, params.foreverContract.Script);
 
-    const upgradeState = createUpgradeState(
+    // Main uses govAuth, staging uses stagingGovAuth
+    const mainUpgradeState = createUpgradeState(
+      params.logicContract.Script.hash(),
+      contracts.govAuth.Script.hash(),
+    );
+    const stagingUpgradeState = createUpgradeState(
       params.logicContract.Script.hash(),
       contracts.stagingGovAuth.Script.hash(),
     );
@@ -160,7 +165,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
               ],
             ]),
           },
-          datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
+          datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
         }),
       )
       .addOutput(
@@ -178,7 +183,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
               ],
             ]),
           },
-          datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
+          datum: serialize(Contracts.UpgradeState, stagingUpgradeState).toCore(),
         }),
       )
       .addOutput(
@@ -214,7 +219,12 @@ export async function deploy(options: DeployOptions): Promise<void> {
     const foreverAddress = addressFromValidator(networkId, params.foreverContract.Script);
     const twoStageAddress = addressFromValidator(networkId, params.twoStageContract.Script);
 
-    const upgradeState = createUpgradeState(
+    // Main uses govAuth, staging uses stagingGovAuth
+    const mainUpgradeState = createUpgradeState(
+      params.logicContract.Script.hash(),
+      contracts.govAuth.Script.hash(),
+    );
+    const stagingUpgradeState = createUpgradeState(
       params.logicContract.Script.hash(),
       contracts.stagingGovAuth.Script.hash(),
     );
@@ -252,7 +262,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
               ],
             ]),
           },
-          datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
+          datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
         }),
       )
       .addOutput(
@@ -270,7 +280,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
               ],
             ]),
           },
-          datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
+          datum: serialize(Contracts.UpgradeState, stagingUpgradeState).toCore(),
         }),
       )
       .addOutput(
@@ -350,12 +360,12 @@ export async function deploy(options: DeployOptions): Promise<void> {
           oneShotHash: config.main_tech_auth_update_one_shot_hash,
           oneShotIndex: config.main_tech_auth_update_one_shot_index,
           thresholdContract: contracts.mainTechAuthUpdateThreshold,
-          thresholdDatum: {
-            technical_auth_numerator: techAuthThreshold.numerator,
-            technical_auth_denominator: techAuthThreshold.denominator,
-            council_numerator: councilThreshold.numerator,
-            council_denominator: councilThreshold.denominator,
-          },
+          thresholdDatum: [
+            techAuthThreshold.numerator,
+            techAuthThreshold.denominator,
+            councilThreshold.numerator,
+            councilThreshold.denominator,
+          ],
         }),
     },
     {
@@ -382,12 +392,12 @@ export async function deploy(options: DeployOptions): Promise<void> {
           oneShotHash: config.main_council_update_one_shot_hash,
           oneShotIndex: config.main_council_update_one_shot_index,
           thresholdContract: contracts.mainCouncilUpdateThreshold,
-          thresholdDatum: {
-            technical_auth_numerator: techAuthThreshold.numerator,
-            technical_auth_denominator: techAuthThreshold.denominator,
-            council_numerator: councilThreshold.numerator,
-            council_denominator: councilThreshold.denominator,
-          },
+          thresholdDatum: [
+            techAuthThreshold.numerator,
+            techAuthThreshold.denominator,
+            councilThreshold.numerator,
+            councilThreshold.denominator,
+          ],
         }),
     },
     {
@@ -425,12 +435,12 @@ export async function deploy(options: DeployOptions): Promise<void> {
           oneShotHash: config.main_gov_one_shot_hash,
           oneShotIndex: config.main_gov_one_shot_index,
           thresholdContract: contracts.mainGovThreshold,
-          thresholdDatum: {
-            technical_auth_numerator: techAuthThreshold.numerator,
-            technical_auth_denominator: techAuthThreshold.denominator,
-            council_numerator: councilThreshold.numerator,
-            council_denominator: councilThreshold.denominator,
-          },
+          thresholdDatum: [
+            techAuthThreshold.numerator,
+            techAuthThreshold.denominator,
+            councilThreshold.numerator,
+            councilThreshold.denominator,
+          ],
         }),
     },
     {
@@ -442,12 +452,12 @@ export async function deploy(options: DeployOptions): Promise<void> {
           oneShotHash: config.staging_gov_one_shot_hash,
           oneShotIndex: config.staging_gov_one_shot_index,
           thresholdContract: contracts.stagingGovThreshold,
-          thresholdDatum: {
-            technical_auth_numerator: techAuthStagingThreshold.numerator,
-            technical_auth_denominator: techAuthStagingThreshold.denominator,
-            council_numerator: councilStagingThreshold.numerator,
-            council_denominator: councilStagingThreshold.denominator,
-          },
+          thresholdDatum: [
+            techAuthStagingThreshold.numerator,
+            techAuthStagingThreshold.denominator,
+            councilStagingThreshold.numerator,
+            councilStagingThreshold.denominator,
+          ],
         }),
     },
     {
@@ -474,12 +484,12 @@ export async function deploy(options: DeployOptions): Promise<void> {
           oneShotHash: config.main_federated_ops_update_one_shot_hash,
           oneShotIndex: config.main_federated_ops_update_one_shot_index,
           thresholdContract: contracts.mainFederatedOpsUpdateThreshold,
-          thresholdDatum: {
-            technical_auth_numerator: techAuthThreshold.numerator,
-            technical_auth_denominator: techAuthThreshold.denominator,
-            council_numerator: councilThreshold.numerator,
-            council_denominator: councilThreshold.denominator,
-          },
+          thresholdDatum: [
+            techAuthThreshold.numerator,
+            techAuthThreshold.denominator,
+            councilThreshold.numerator,
+            councilThreshold.denominator,
+          ],
         }),
     },
     {
@@ -524,19 +534,22 @@ export async function deploy(options: DeployOptions): Promise<void> {
           contracts.termsAndConditionsTwoStage.Script,
         );
 
-        const upgradeState = createUpgradeState(
+        // Main uses govAuth, staging uses stagingGovAuth
+        const mainUpgradeState = createUpgradeState(
+          contracts.termsAndConditionsLogic.Script.hash(),
+          contracts.govAuth.Script.hash(),
+        );
+        const stagingUpgradeState = createUpgradeState(
           contracts.termsAndConditionsLogic.Script.hash(),
           contracts.stagingGovAuth.Script.hash(),
         );
 
-        const initialTermsAndConditions: Contracts.VersionedTermsAndConditions = {
-          data: {
-            // Hash must be exactly 32 bytes (64 hex chars) per validate_terms_structure
-            hash: "0000000000000000000000000000000000000000000000000000000000000000",
-            link: "",
-          },
-          round: 0n,
-        };
+        // VersionedTermsAndConditions is a tuple: [[hash, link], round]
+        // Hash must be exactly 32 bytes (64 hex chars) per validate_terms_structure
+        const initialTermsAndConditions: Contracts.VersionedTermsAndConditions = [
+          ["0000000000000000000000000000000000000000000000000000000000000000", ""],
+          0n,
+        ];
 
         const tx = await blaze
           .newTransaction()
@@ -571,7 +584,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
                   ],
                 ]),
               },
-              datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
+              datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
             }),
           )
           .addOutput(
@@ -589,7 +602,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
                   ],
                 ]),
               },
-              datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
+              datum: serialize(Contracts.UpgradeState, stagingUpgradeState).toCore(),
             }),
           )
           .addOutput(
@@ -627,12 +640,12 @@ export async function deploy(options: DeployOptions): Promise<void> {
           oneShotHash: config.terms_and_conditions_threshold_one_shot_hash,
           oneShotIndex: config.terms_and_conditions_threshold_one_shot_index,
           thresholdContract: contracts.termsAndConditionsThreshold,
-          thresholdDatum: {
-            technical_auth_numerator: techAuthThreshold.numerator,
-            technical_auth_denominator: techAuthThreshold.denominator,
-            council_numerator: councilThreshold.numerator,
-            council_denominator: councilThreshold.denominator,
-          },
+          thresholdDatum: [
+            techAuthThreshold.numerator,
+            techAuthThreshold.denominator,
+            councilThreshold.numerator,
+            councilThreshold.denominator,
+          ],
         }),
     },
   ];
