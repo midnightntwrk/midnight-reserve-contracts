@@ -1,19 +1,14 @@
 import {
-  addressFromCredential,
   addressFromValidator,
   AssetId,
   AssetName,
   Credential,
   CredentialType,
-  Hash28ByteBase16,
   PolicyId,
-  NativeScripts,
   NetworkId,
   PaymentAddress,
-  PlutusData,
   RewardAccount,
   Script,
-  toHex,
   TransactionId,
   TransactionOutput,
   TransactionUnspentOutput,
@@ -22,114 +17,18 @@ import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { TxBuilder } from "@blaze-cardano/tx";
 import * as Contracts from "../contract_blueprint";
-import { describe, expect, test } from "bun:test";
-
-const MAIN_TOKEN_HEX = toHex(new TextEncoder().encode("main"));
-const STAGING_TOKEN_HEX = toHex(new TextEncoder().encode("staging"));
-const TECH_WITNESS_ASSET = toHex(new TextEncoder().encode("tech-auth-witness"));
-const COUNCIL_WITNESS_ASSET = toHex(
-  new TextEncoder().encode("council-auth-witness"),
-);
-
-type UpgradeActors = {
-  twoStage: { Script: Script };
-  initialDatum: Contracts.UpgradeState;
-  mainTx: string;
-  stagingTx: string;
-};
-
-const addTwoStageState = (emulator: Emulator, actor: UpgradeActors) => {
-  const address = addressFromValidator(
-    NetworkId.Testnet,
-    actor.twoStage.Script,
-  );
-
-  const buildUtxo = (txId: string, tokenHex: string) =>
-    TransactionUnspentOutput.fromCore([
-      {
-        index: 0,
-        txId: TransactionId(txId),
-      },
-      {
-        address: PaymentAddress(address.toBech32()),
-        value: {
-          coins: 2_000_000n,
-          assets: new Map([
-            [AssetId(actor.twoStage.Script.hash() + tokenHex), 1n],
-          ]),
-        },
-        datum: serialize(Contracts.UpgradeState, actor.initialDatum).toCore(),
-      },
-    ]);
-
-  emulator.addUtxo(buildUtxo(actor.mainTx, MAIN_TOKEN_HEX));
-  emulator.addUtxo(buildUtxo(actor.stagingTx, STAGING_TOKEN_HEX));
-};
-
-const findUtxoByToken = (
-  utxos: TransactionUnspentOutput[],
-  scriptHash: string,
-  tokenHex: string,
-) => {
-  const target = AssetId(scriptHash + tokenHex);
-  const match = utxos.find((utxo) => {
-    const [, output] = utxo.toCore();
-    const assets = output.value.assets;
-    return assets ? (assets.get(target) ?? 0n) === 1n : false;
-  });
-
-  if (!match) {
-    throw new Error(`Missing ${tokenHex} UTxO for ${scriptHash}`);
-  }
-
-  return match;
-};
-
-const datumCbor = (datum: PlutusData) => datum.toCbor();
-
-const expectDatum = (
-  utxo: TransactionUnspentOutput,
-  expected: Contracts.UpgradeState,
-) => {
-  const [, output] = utxo.toCore();
-  if (!output.datum) throw new Error("Missing datum on output");
-
-  const actual = PlutusData.fromCore(output.datum);
-  const expectedDatum = serialize(
-    Contracts.UpgradeState,
-    expected,
-  ) as PlutusData;
-  expect(datumCbor(actual)).toBe(datumCbor(expectedDatum));
-};
-
-const buildNativeScriptFromState = (
-  state: Contracts.VersionedMultisig,
-  numerator: bigint,
-  denominator: bigint,
-) => {
-  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
-  const [multisig] = state;
-  const [totalSigners, signers] = multisig;
-  const signerScripts = Object.keys(signers)
-    .sort()
-    .map((key) => {
-      const paymentHash = key.slice("8200581c".length);
-      const addr = addressFromCredential(
-        NetworkId.Testnet,
-        Credential.fromCore({
-          type: CredentialType.KeyHash,
-          hash: Hash28ByteBase16(paymentHash),
-        }),
-      );
-      return NativeScripts.justAddress(addr.toBech32(), NetworkId.Testnet);
-    });
-
-  const minSigners = Number(
-    (totalSigners * numerator + (denominator - 1n)) / denominator,
-  );
-
-  return NativeScripts.atLeastNOfK(minSigners, ...signerScripts);
-};
+import { describe, test } from "bun:test";
+import {
+  addTwoStageState,
+  buildNativeScriptFromState,
+  COUNCIL_WITNESS_ASSET,
+  expectDatum,
+  findUtxoByToken,
+  MAIN_TOKEN_HEX,
+  STAGING_TOKEN_HEX,
+  TECH_WITNESS_ASSET,
+  type UpgradeActors,
+} from "./helpers/upgrade";
 
 describe("Tech + Council upgrade path", () => {
   test("deploy, stage new logic, then promote to main", async () => {
