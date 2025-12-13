@@ -9,6 +9,8 @@ import type {
   StageUpgradeOptions,
   PromoteUpgradeOptions,
   RegisterGovAuthOptions,
+  GenerateKeyOptions,
+  SignAndSubmitOptions,
 } from "./lib/types";
 import { getDefaultProvider } from "./lib/types";
 import {
@@ -36,6 +38,8 @@ import {
   stageUpgrade,
   promoteUpgrade,
   registerGovAuth,
+  generateKey,
+  signAndSubmit,
 } from "./commands";
 
 function printUsage(): void {
@@ -53,6 +57,8 @@ Commands:
   register-gov-auth   Register main and staging gov auth scripts as stake credentials
   simple-tx           Create simple transactions for testing
   info                Display contract information
+  generate-key        Generate a new signing key and Cardano address
+  sign-and-submit     Sign and submit transactions from a JSON file
 
 Run 'bun cli <command> --help' for more information on a command.
 `);
@@ -235,6 +241,43 @@ Options:
   printGlobalOptions();
   console.log(`Examples:
   bun cli info -n preview --format json
+`);
+}
+
+function printGenerateKeyHelp(): void {
+  console.log(`
+Usage: bun cli generate-key [options]
+
+Generate a new Ed25519 signing key and Cardano address.
+Outputs values suitable for adding to your .env file.
+
+Options:
+  -n, --network       Network: ${VALID_NETWORKS.join(", ")} (default: preview)
+
+Examples:
+  bun cli generate-key -n preview
+  bun cli generate-key -n mainnet
+`);
+}
+
+function printSignAndSubmitHelp(): void {
+  console.log(`
+Usage: bun cli sign-and-submit [options] <json_file>
+
+Sign and submit transactions from a JSON file.
+Supports both single transaction files and deployment-transactions.json format.
+
+Arguments:
+  <json_file>         Path to the JSON file containing transaction(s)
+
+Options:
+  --signing-key       Environment variable name containing the signing key
+                      (default: SIGNING_PRIVATE_KEY)
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli sign-and-submit -n preview ./deployments/preview/simple-tx.json
+  bun cli sign-and-submit -n preview --signing-key MY_KEY ./tx.json
 `);
 }
 
@@ -594,6 +637,46 @@ async function main(): Promise<void> {
         };
 
         await registerGovAuth(registerOptions);
+        break;
+      }
+
+      case "generate-key": {
+        if (options.help) {
+          printGenerateKeyHelp();
+          process.exit(0);
+        }
+
+        const generateKeyOptions: GenerateKeyOptions = {
+          network: network || "preview",
+        };
+
+        await generateKey(generateKeyOptions);
+        break;
+      }
+
+      case "sign-and-submit": {
+        if (options.help) {
+          printSignAndSubmitHelp();
+          process.exit(0);
+        }
+
+        if (positional.length < 1) {
+          printError("Missing required argument: <json_file>");
+          printSignAndSubmitHelp();
+          process.exit(1);
+        }
+
+        const jsonFile = positional[0];
+
+        const signAndSubmitOptions: SignAndSubmitOptions = {
+          network,
+          provider,
+          jsonFile,
+          signingKeyEnvVar:
+            (options["signing-key"] as string) || "SIGNING_PRIVATE_KEY",
+        };
+
+        await signAndSubmit(signAndSubmitOptions);
         break;
       }
 

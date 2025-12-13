@@ -189,6 +189,7 @@ export async function promoteUpgrade(options: PromoteUpgradeOptions): Promise<vo
   const councilWitnessPolicy = PolicyId(councilNativeScript.hash());
 
   // Create gov auth reward account
+  // Main datum should use main govAuth
   const govAuthRewardAccount = createRewardAccount(
     contracts.govAuth.Script.hash(),
     networkId,

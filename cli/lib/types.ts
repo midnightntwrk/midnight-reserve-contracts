@@ -65,6 +65,17 @@ export interface RegisterGovAuthOptions extends GlobalOptions {
   outputFile: string;
 }
 
+export interface GenerateKeyOptions {
+  network: Network;
+}
+
+export interface SignAndSubmitOptions {
+  network: Network;
+  provider: ProviderType;
+  jsonFile: string;
+  signingKeyEnvVar: string;
+}
+
 export interface Signer {
   paymentHash: string;
   sr25519Key: string;

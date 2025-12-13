@@ -7,3 +7,5 @@ export { info } from "./info";
 export { stageUpgrade } from "./stage-upgrade";
 export { promoteUpgrade } from "./promote-upgrade";
 export { registerGovAuth } from "./register-gov-auth";
+export { generateKey } from "./generate-key";
+export { signAndSubmit } from "./sign-and-submit";
