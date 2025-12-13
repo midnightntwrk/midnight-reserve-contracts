@@ -314,15 +314,14 @@ fn validate_staging_update(
   // (In case staging auth is accidentally stuck)
   // (TSG-6) Accept the spend only if either the staging auth pair or the main auth pair appears in withdrawals.
   expect or {
-      validate_running(auth, mitigation_auth, withdrawals),
-      // Special case for MitigationAuth
       if update_field == MitigationAuth {
-        // fixes highlighting issue with tree sitter
         empty
       } else {
-        main_mitigation_auth
+        mitigation_auth
       }
-        |> validate_running(main_auth, _, withdrawals),
+        |> validate_running(auth, _, withdrawals),
+      // Special case for MitigationAuth
+      validate_running(main_auth, main_mitigation_auth, withdrawals),
     }
 
   when update_field is {
