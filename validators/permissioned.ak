@@ -1,9 +1,10 @@
 use aiken/builtin
+use aiken/collection/list
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
 use forever/script.{forever_contract}
-use forever/types.{TermsAndConditions, Versioned}
+use forever/types.{FederatedOps, TermsAndConditions, Versioned}
 use logic/script.{logic_multisig_validation_nft_input} as logic_script
 use multisig/script.{create_signer} as multisig_script
 use multisig/types.{Multisig} as multisig_types
@@ -44,6 +45,21 @@ fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
     as_data(expected_signers) == signers,
     total_signers == len,
   }
+}
+
+fn validate_federated_ops(datum: Data, _redeemer) {
+  // (MS-1) Assert the datum encodes a Multisig value so signer lists are well typed.
+  expect FederatedOps { appendix, .. } = datum
+
+  list.all(
+    appendix,
+    fn(candidate) {
+      list.all(
+        candidate.keys,
+        fn(key) { builtin.length_of_bytearray(key.id) == 4 },
+      )
+    },
+  )
 }
 
 fn validate_terms_structure(datum: Data, _redeemer) {
@@ -185,7 +201,7 @@ validator federated_ops_forever {
       ctx,
       one_shot_ref,
       config.federated_operators_two_stage_hash,
-      validate_multisig_structure,
+      validate_federated_ops,
     )
   }
 }
@@ -223,7 +239,7 @@ validator federated_ops_logic {
       redeemer,
       info,
       config.federated_operators_forever_hash,
-      validate_multisig_structure,
+      validate_federated_ops,
       config.main_federated_ops_update_threshold_hash,
     )
   }
