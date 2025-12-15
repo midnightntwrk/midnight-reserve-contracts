@@ -62,7 +62,7 @@ pub fn logic_merge(
         },
         // (LM-4) Enforce that the replacement output returns at least the accumulated ADA and NIGHT balances.
         config.cnight_policy == cnight_policy,
-        cnight_name == "NIGHT",
+        cnight_name == config.cnight_name,
         assets.quantity_of(guarded_value, ada_policy_id, ada_asset_name) <= ada_amount,
         assets.quantity_of(guarded_value, cnight_policy, cnight_name) <= cnight_amount,
       }
