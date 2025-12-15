@@ -108,7 +108,9 @@ validator cnight_generates_dust {
             outputs,
             fn(input, outputs) {
               if input.output.address.payment_credential == own_cred {
-                expect [Output { value, datum, .. }, ..rest] = outputs
+                expect [Output { address, value, datum, .. }, ..rest] = outputs
+
+                expect address.payment_credential == own_cred
 
                 // (DG-7) Each paired output must carry exactly one script NFT.
                 expect [_, ..nft_id] = value |> to_dict |> to_pairs
