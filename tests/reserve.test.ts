@@ -34,7 +34,7 @@ describe("Reserve Deploy and Merge", () => {
   const config = loadAikenConfig("local");
 
   const cnightAsset =
-    config.cnight_policy + toHex(new TextEncoder().encode("NIGHT"));
+    config.cnight_policy + toHex(new TextEncoder().encode(config.cnight_name));
 
   test("Deploy Reserve and merge UTxOs", async () => {
     await emulator.as("deployer", async (blaze, addr) => {

@@ -16,6 +16,7 @@ version = "v2.2.0"
 source = "github"
 
 [config.default]
+cnight_name = "NIGHT"
 reserve_one_shot_index = 1
 council_one_shot_index = 1
 ics_one_shot_index = 1
@@ -182,6 +183,7 @@ bytes = "32b64c9f7d33274a1ed8e4ae30a2d7930fa350398d3f17da08a1c471"
 encoding = "hex"
 
 [config.preview]
+cnight_name = "NIGHT"
 reserve_one_shot_index = 0
 council_one_shot_index = 1
 ics_one_shot_index = 2
@@ -347,6 +349,7 @@ bytes = "83421c3176a21e23af27ad3503c07f5fc7c209f2653164b36857a789"
 encoding = "hex"
 
 [config.preprod]
+cnight_name = "NIGHT"
 reserve_one_shot_index = 0
 council_one_shot_index = 1
 ics_one_shot_index = 2
@@ -513,6 +516,7 @@ bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.mainnet]
+cnight_name = "NIGHT"
 reserve_one_shot_index = 1
 council_one_shot_index = 1
 ics_one_shot_index = 1

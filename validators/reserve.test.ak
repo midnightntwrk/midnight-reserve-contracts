@@ -589,7 +589,7 @@ test reserve_logic_merge() {
           input1_ref,
           Output(
             forever_script_address,
-            from_lovelace(5000000) |> add(config.cnight_policy, "NIGHT", 100),
+            from_lovelace(5000000) |> add(config.cnight_policy, config.cnight_name, 100),
             InlineDatum(initial_datum),
             None,
           ),
@@ -598,7 +598,7 @@ test reserve_logic_merge() {
           input2_ref,
           Output(
             forever_script_address,
-            from_lovelace(3000000) |> add(config.cnight_policy, "NIGHT", 200),
+            from_lovelace(3000000) |> add(config.cnight_policy, config.cnight_name, 200),
             InlineDatum(initial_datum),
             None,
           ),
@@ -607,7 +607,7 @@ test reserve_logic_merge() {
       outputs: [
         Output(
           forever_script_address,
-          from_lovelace(8000000) |> add(config.cnight_policy, "NIGHT", 300),
+          from_lovelace(8000000) |> add(config.cnight_policy, config.cnight_name, 300),
           InlineDatum(initial_datum),
           None,
         ),
@@ -650,7 +650,7 @@ test reserve_logic_merge_unrelated_token_fail() fail {
           input1_ref,
           Output(
             forever_script_address,
-            from_lovelace(5000000) |> add(config.cnight_policy, "NIGHT", 100),
+            from_lovelace(5000000) |> add(config.cnight_policy, config.cnight_name, 100),
             InlineDatum(initial_datum),
             None,
           ),
@@ -659,7 +659,7 @@ test reserve_logic_merge_unrelated_token_fail() fail {
           input2_ref,
           Output(
             forever_script_address,
-            from_lovelace(3000000) |> add(config.cnight_policy, "NIGHT", 200),
+            from_lovelace(3000000) |> add(config.cnight_policy, config.cnight_name, 200),
             InlineDatum(initial_datum),
             None,
           ),
@@ -669,7 +669,7 @@ test reserve_logic_merge_unrelated_token_fail() fail {
         Output(
           forever_script_address,
           from_lovelace(8000000)
-            |> add(config.cnight_policy, "NIGHT", 300)
+            |> add(config.cnight_policy, config.cnight_name, 300)
             |> add(unrelated_policy, "FAKE", 50),
           InlineDatum(initial_datum),
           None,

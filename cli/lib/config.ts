@@ -58,6 +58,7 @@ export function loadAikenConfig(network: Network): NetworkConfig {
     terms_and_conditions_threshold_one_shot_index:
       networkConfig.terms_and_conditions_threshold_one_shot_index,
     cnight_policy: networkConfig.cnight_policy.bytes,
+    cnight_name: networkConfig.cnight_name,
   };
 }
 
