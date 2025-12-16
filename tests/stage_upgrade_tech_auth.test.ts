@@ -57,7 +57,8 @@ describe("Stage upgrade for tech-auth (CLI reproduction)", () => {
     const councilLogic = new Contracts.PermissionedCouncilLogicElse();
 
     // stagingGovAuth uses stagingGovThreshold when logic is not on main
-    const stagingGovThreshold = new Contracts.ThresholdsStagingGovThresholdElse();
+    const stagingGovThreshold =
+      new Contracts.ThresholdsStagingGovThresholdElse();
 
     // The withdrawal must match the auth in the datum (staging_gov_auth)
     const govAuthRewardAccount = RewardAccount.fromCredential(
@@ -302,7 +303,10 @@ describe("Stage upgrade for tech-auth (CLI reproduction)", () => {
               [AssetId(councilTwoStage.Script.hash() + MAIN_TOKEN_HEX), 1n],
             ]),
           },
-          datum: serialize(Contracts.UpgradeState, councilTwoStageState).toCore(),
+          datum: serialize(
+            Contracts.UpgradeState,
+            councilTwoStageState,
+          ).toCore(),
         },
       ]);
       emulator.addUtxo(councilTwoStageMainUtxo);

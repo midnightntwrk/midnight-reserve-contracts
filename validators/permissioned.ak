@@ -1,5 +1,4 @@
 use aiken/builtin
-use aiken/collection/list
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
@@ -48,18 +47,9 @@ fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
 }
 
 fn validate_federated_ops(datum: Data, _redeemer) {
-  // (MS-1) Assert the datum encodes a Multisig value so signer lists are well typed.
-  expect FederatedOps { appendix, .. } = datum
+  expect _: FederatedOps = datum
 
-  list.all(
-    appendix,
-    fn(candidate) {
-      list.all(
-        candidate.keys,
-        fn(key) { builtin.length_of_bytearray(key.id) == 4 },
-      )
-    },
-  )
+  True
 }
 
 fn validate_terms_structure(datum: Data, _redeemer) {

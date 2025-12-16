@@ -15,7 +15,10 @@ import {
 import { serialize } from "@blaze-cardano/data";
 import { resolve } from "path";
 
-import type { DeployOptions, TransactionOutput as TxOutput } from "../lib/types";
+import type {
+  DeployOptions,
+  TransactionOutput as TxOutput,
+} from "../lib/types";
 import { getNetworkId } from "../lib/types";
 import { loadAikenConfig, getDeployerAddress } from "../lib/config";
 import { createBlaze } from "../lib/provider";
@@ -24,6 +27,7 @@ import {
   parseSignersWithCount,
   createMultisigStateFromMap,
 } from "../lib/signers";
+import { createFederatedOpsDatum } from "../lib/candidates";
 import {
   writeJsonFile,
   createDeploymentOutput,
@@ -64,6 +68,16 @@ interface ThresholdDeployParams {
   thresholdDatum: Contracts.MultisigThreshold;
 }
 
+interface FederatedOpsDeployParams {
+  name: string;
+  oneShotHash: string;
+  oneShotIndex: number;
+  twoStageContract: { Script: Script };
+  foreverContract: { Script: Script };
+  logicContract: { Script: Script };
+  federatedOpsDatum: Contracts.FederatedOps;
+}
+
 export async function deploy(options: DeployOptions): Promise<void> {
   const {
     network,
@@ -98,9 +112,13 @@ export async function deploy(options: DeployOptions): Promise<void> {
     parseSignersWithCount("COUNCIL_SIGNERS");
 
   console.log(`\nTotal tech auth signers: ${techAuthTotalSigners}`);
-  console.log(`Number of tech auth signer pairs: ${Object.keys(techAuthSigners).length}`);
+  console.log(
+    `Number of tech auth signer pairs: ${Object.keys(techAuthSigners).length}`,
+  );
   console.log(`Total council signers: ${councilTotalSigners}`);
-  console.log(`Number of council signer pairs: ${Object.keys(councilSigners).length}`);
+  console.log(
+    `Number of council signer pairs: ${Object.keys(councilSigners).length}`,
+  );
 
   // Create Blaze instance
   const { blaze } = await createBlaze(network, options.provider);
@@ -116,8 +134,14 @@ export async function deploy(options: DeployOptions): Promise<void> {
       utxoAmount,
     );
 
-    const twoStageAddress = addressFromValidator(networkId, params.twoStageContract.Script);
-    const foreverAddress = addressFromValidator(networkId, params.foreverContract.Script);
+    const twoStageAddress = addressFromValidator(
+      networkId,
+      params.twoStageContract.Script,
+    );
+    const foreverAddress = addressFromValidator(
+      networkId,
+      params.foreverContract.Script,
+    );
 
     // Main uses govAuth, staging uses stagingGovAuth
     const mainUpgradeState = createUpgradeState(
@@ -129,7 +153,10 @@ export async function deploy(options: DeployOptions): Promise<void> {
       contracts.stagingGovAuth.Script.hash(),
     );
 
-    const foreverState = createMultisigStateFromMap(params.totalSigners, params.signers);
+    const foreverState = createMultisigStateFromMap(
+      params.totalSigners,
+      params.signers,
+    );
 
     let txBuilder = blaze.newTransaction().addInput(oneShotUtxo);
 
@@ -183,7 +210,10 @@ export async function deploy(options: DeployOptions): Promise<void> {
               ],
             ]),
           },
-          datum: serialize(Contracts.UpgradeState, stagingUpgradeState).toCore(),
+          datum: serialize(
+            Contracts.UpgradeState,
+            stagingUpgradeState,
+          ).toCore(),
         }),
       )
       .addOutput(
@@ -191,7 +221,9 @@ export async function deploy(options: DeployOptions): Promise<void> {
           address: PaymentAddress(foreverAddress.toBech32()),
           value: {
             coins: outputAmount,
-            assets: new Map([[AssetId(params.foreverContract.Script.hash()), 1n]]),
+            assets: new Map([
+              [AssetId(params.foreverContract.Script.hash()), 1n],
+            ]),
           },
           datum: serialize(Contracts.VersionedMultisig, foreverState).toCore(),
         }),
@@ -216,8 +248,14 @@ export async function deploy(options: DeployOptions): Promise<void> {
       utxoAmount,
     );
 
-    const foreverAddress = addressFromValidator(networkId, params.foreverContract.Script);
-    const twoStageAddress = addressFromValidator(networkId, params.twoStageContract.Script);
+    const foreverAddress = addressFromValidator(
+      networkId,
+      params.foreverContract.Script,
+    );
+    const twoStageAddress = addressFromValidator(
+      networkId,
+      params.twoStageContract.Script,
+    );
 
     // Main uses govAuth, staging uses stagingGovAuth
     const mainUpgradeState = createUpgradeState(
@@ -280,7 +318,10 @@ export async function deploy(options: DeployOptions): Promise<void> {
               ],
             ]),
           },
-          datum: serialize(Contracts.UpgradeState, stagingUpgradeState).toCore(),
+          datum: serialize(
+            Contracts.UpgradeState,
+            stagingUpgradeState,
+          ).toCore(),
         }),
       )
       .addOutput(
@@ -288,7 +329,9 @@ export async function deploy(options: DeployOptions): Promise<void> {
           address: PaymentAddress(foreverAddress.toBech32()),
           value: {
             coins: outputAmount,
-            assets: new Map([[AssetId(params.foreverContract.Script.hash()), 1n]]),
+            assets: new Map([
+              [AssetId(params.foreverContract.Script.hash()), 1n],
+            ]),
           },
           datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
         }),
@@ -308,7 +351,10 @@ export async function deploy(options: DeployOptions): Promise<void> {
       utxoAmount,
     );
 
-    const thresholdAddress = addressFromValidator(networkId, params.thresholdContract.Script);
+    const thresholdAddress = addressFromValidator(
+      networkId,
+      params.thresholdContract.Script,
+    );
 
     const tx = await blaze
       .newTransaction()
@@ -324,9 +370,128 @@ export async function deploy(options: DeployOptions): Promise<void> {
           address: PaymentAddress(thresholdAddress.toBech32()),
           value: {
             coins: thresholdOutputAmount,
-            assets: new Map([[AssetId(params.thresholdContract.Script.hash()), 1n]]),
+            assets: new Map([
+              [AssetId(params.thresholdContract.Script.hash()), 1n],
+            ]),
           },
-          datum: serialize(Contracts.MultisigThreshold, params.thresholdDatum).toCore(),
+          datum: serialize(
+            Contracts.MultisigThreshold,
+            params.thresholdDatum,
+          ).toCore(),
+        }),
+      )
+      .complete();
+
+    return tx;
+  }
+
+  async function generateFederatedOpsDeployment(
+    params: FederatedOpsDeployParams,
+  ) {
+    printProgress(`Generating ${params.name} deployment transaction...`);
+
+    const oneShotUtxo = createOneShotUtxo(
+      params.oneShotHash,
+      params.oneShotIndex,
+      deployerAddr,
+      utxoAmount,
+    );
+
+    const twoStageAddress = addressFromValidator(
+      networkId,
+      params.twoStageContract.Script,
+    );
+    const foreverAddress = addressFromValidator(
+      networkId,
+      params.foreverContract.Script,
+    );
+
+    // Main uses govAuth, staging uses stagingGovAuth
+    const mainUpgradeState = createUpgradeState(
+      params.logicContract.Script.hash(),
+      contracts.govAuth.Script.hash(),
+    );
+    const stagingUpgradeState = createUpgradeState(
+      params.logicContract.Script.hash(),
+      contracts.stagingGovAuth.Script.hash(),
+    );
+
+    const tx = await blaze
+      .newTransaction()
+      .addInput(oneShotUtxo)
+      .addMint(
+        PolicyId(params.foreverContract.Script.hash()),
+        new Map([[AssetName(""), 1n]]),
+        PlutusData.newInteger(0n),
+      )
+      .addMint(
+        PolicyId(params.twoStageContract.Script.hash()),
+        new Map([
+          [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
+          [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
+        ]),
+        PlutusData.newInteger(0n),
+      )
+      .provideScript(params.twoStageContract.Script)
+      .provideScript(params.foreverContract.Script)
+      .addOutput(
+        TransactionOutput.fromCore({
+          address: PaymentAddress(twoStageAddress.toBech32()),
+          value: {
+            coins: outputAmount,
+            assets: new Map([
+              [
+                AssetId(
+                  params.twoStageContract.Script.hash() +
+                    toHex(new TextEncoder().encode("main")),
+                ),
+                1n,
+              ],
+            ]),
+          },
+          datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
+        }),
+      )
+      .addOutput(
+        TransactionOutput.fromCore({
+          address: PaymentAddress(twoStageAddress.toBech32()),
+          value: {
+            coins: outputAmount,
+            assets: new Map([
+              [
+                AssetId(
+                  params.twoStageContract.Script.hash() +
+                    toHex(new TextEncoder().encode("staging")),
+                ),
+                1n,
+              ],
+            ]),
+          },
+          datum: serialize(
+            Contracts.UpgradeState,
+            stagingUpgradeState,
+          ).toCore(),
+        }),
+      )
+      .addOutput(
+        TransactionOutput.fromCore({
+          address: PaymentAddress(foreverAddress.toBech32()),
+          value: {
+            coins: outputAmount,
+            assets: new Map([
+              [AssetId(params.foreverContract.Script.hash()), 1n],
+            ]),
+          },
+          datum: serialize(
+            Contracts.FederatedOps,
+            params.federatedOpsDatum,
+          ).toCore(),
+        }),
+      )
+      .addRegisterStake(
+        Credential.fromCore({
+          hash: params.logicContract.Script.hash(),
+          type: CredentialType.ScriptHash,
         }),
       )
       .complete();
@@ -464,15 +629,17 @@ export async function deploy(options: DeployOptions): Promise<void> {
       name: "federated-ops-deployment",
       component: "federated-ops",
       generator: () =>
-        generateMultisigDeployment({
+        generateFederatedOpsDeployment({
           name: "Federated Operators",
           oneShotHash: config.federated_operators_one_shot_hash,
           oneShotIndex: config.federated_operators_one_shot_index,
           twoStageContract: contracts.federatedOpsTwoStage,
           foreverContract: contracts.federatedOpsForever,
           logicContract: contracts.federatedOpsLogic,
-          totalSigners: councilTotalSigners,
-          signers: councilSigners,
+          federatedOpsDatum: createFederatedOpsDatum(
+            "PERMISSIONED_CANDIDATES",
+            0n,
+          ),
         }),
     },
     {
@@ -496,7 +663,9 @@ export async function deploy(options: DeployOptions): Promise<void> {
       name: "tcnight-mint-infinite-deployment",
       component: "tcnight-mint-infinite",
       generator: async () => {
-        printProgress("Generating TCnight Mint Infinite deployment transaction...");
+        printProgress(
+          "Generating TCnight Mint Infinite deployment transaction...",
+        );
 
         const tx = await blaze
           .newTransaction()
@@ -516,7 +685,9 @@ export async function deploy(options: DeployOptions): Promise<void> {
       name: "terms-and-conditions-deployment",
       component: "terms-and-conditions",
       generator: async () => {
-        printProgress("Generating Terms and Conditions deployment transaction...");
+        printProgress(
+          "Generating Terms and Conditions deployment transaction...",
+        );
 
         const oneShotUtxo = createOneShotUtxo(
           config.terms_and_conditions_one_shot_hash,
@@ -546,10 +717,14 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
         // VersionedTermsAndConditions is a tuple: [[hash, link], round]
         // Hash must be exactly 32 bytes (64 hex chars) per validate_terms_structure
-        const initialTermsAndConditions: Contracts.VersionedTermsAndConditions = [
-          ["0000000000000000000000000000000000000000000000000000000000000000", ""],
-          0n,
-        ];
+        const initialTermsAndConditions: Contracts.VersionedTermsAndConditions =
+          [
+            [
+              "0000000000000000000000000000000000000000000000000000000000000000",
+              "",
+            ],
+            0n,
+          ];
 
         const tx = await blaze
           .newTransaction()
@@ -584,7 +759,10 @@ export async function deploy(options: DeployOptions): Promise<void> {
                   ],
                 ]),
               },
-              datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
+              datum: serialize(
+                Contracts.UpgradeState,
+                mainUpgradeState,
+              ).toCore(),
             }),
           )
           .addOutput(
@@ -602,7 +780,10 @@ export async function deploy(options: DeployOptions): Promise<void> {
                   ],
                 ]),
               },
-              datum: serialize(Contracts.UpgradeState, stagingUpgradeState).toCore(),
+              datum: serialize(
+                Contracts.UpgradeState,
+                stagingUpgradeState,
+              ).toCore(),
             }),
           )
           .addOutput(
@@ -611,7 +792,10 @@ export async function deploy(options: DeployOptions): Promise<void> {
               value: {
                 coins: outputAmount,
                 assets: new Map([
-                  [AssetId(contracts.termsAndConditionsForever.Script.hash()), 1n],
+                  [
+                    AssetId(contracts.termsAndConditionsForever.Script.hash()),
+                    1n,
+                  ],
                 ]),
               },
               datum: serialize(

@@ -3,7 +3,7 @@ use bridge/types.{
   BeefyConsensusState, BeefyMmrLeaf, Peak, ProofNodeRec, SignedCommitment,
 } as bridge_types
 use cnight_generates_dust.{DustAction, DustMappingDatum}
-use forever/types.{TermsAndConditions, Versioned} as ft
+use forever/types.{FederatedOps, TermsAndConditions, Versioned} as ft
 use multisig/types.{MultisigThreshold, Sr25519PubKey}
 use upgradable/types.{TwoStageRedeemer, UpgradeState} as t
 
@@ -39,6 +39,16 @@ validator z_permissioned_types {
     _output,
     _tx,
   ) {
+    fail
+  }
+
+  else(_) {
+    fail
+  }
+}
+
+validator z_federated_ops_types {
+  spend(_datum: Option<FederatedOps>, _redeemer, _output, _tx) {
     fail
   }
 

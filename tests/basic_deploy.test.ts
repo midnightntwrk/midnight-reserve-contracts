@@ -314,17 +314,11 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        const federatedOpsForeverState: Contracts.VersionedMultisig = [
-          [
-            2n,
-            {
-              ["8200581c" + addr.asBase()?.getPaymentCredential().hash]:
-                "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-              ["8200581c" + addr.asBase()?.getStakeCredential().hash]:
-                "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-            },
-          ],
-          0n,
+        // FederatedOps datum: [Unit, List<PermissionedCandidateDatumV1>, version]
+        const federatedOpsForeverState: Contracts.FederatedOps = [
+          {}, // Unit
+          [], // Empty appendix (no permissioned candidates for this test)
+          0n, // version
         ];
 
         await emulator.expectValidTransaction(
@@ -335,12 +329,7 @@ describe("Basic Deploy", () => {
             .addMint(
               PolicyId(contracts.federatedOpsForever.Script.hash()),
               new Map([[AssetName(""), 1n]]),
-              serialize(Contracts.PermissionedRedeemer, {
-                [addr.asBase()?.getPaymentCredential().hash!]:
-                  "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
-                [addr.asBase()?.getStakeCredential().hash!]:
-                  "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
-              }),
+              PlutusData.newInteger(0n),
             )
             .addMint(
               PolicyId(contracts.federatedOpsTwoStage.Script.hash()),
@@ -404,7 +393,7 @@ describe("Basic Deploy", () => {
                   ]),
                 },
                 datum: serialize(
-                  Contracts.VersionedMultisig,
+                  Contracts.FederatedOps,
                   federatedOpsForeverState,
                 ).toCore(),
               }),

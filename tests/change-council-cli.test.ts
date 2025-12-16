@@ -19,7 +19,10 @@ import {
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import * as Contracts from "../contract_blueprint";
-import { createMultisigStateCbor, createRedeemerMapCbor } from "../cli/lib/signers";
+import {
+  createMultisigStateCbor,
+  createRedeemerMapCbor,
+} from "../cli/lib/signers";
 import { describe, test } from "bun:test";
 
 describe("Change Council CLI Test", () => {
@@ -264,7 +267,10 @@ describe("Change Council CLI Test", () => {
           ];
 
           // Create new state using CBOR functions that support duplicate keys
-          const newCouncilForeverStateCbor = createMultisigStateCbor(newCouncilSigners, 0n);
+          const newCouncilForeverStateCbor = createMultisigStateCbor(
+            newCouncilSigners,
+            0n,
+          );
           const memberRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
 
           const requiredSigners = 2;
@@ -453,11 +459,7 @@ describe("Change Council CLI Test", () => {
                 datum: newCouncilForeverStateCbor.toCore(),
               }),
             )
-            .addWithdrawal(
-              councilLogicRewardAccount,
-              0n,
-              memberRedeemerCbor,
-            )
+            .addWithdrawal(councilLogicRewardAccount, 0n, memberRedeemerCbor)
             .provideScript(councilLogic.Script);
 
           await emulator.expectValidTransaction(blaze, txBuilder);

@@ -1,6 +1,6 @@
 use aiken/builtin
 use aiken/crypto.{ScriptHash}
-use cardano/script_context.{Minting, ScriptContext}
+use cardano/script_context.{Minting, ScriptContext, Spending}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Redeemer, Transaction,
 }
@@ -32,7 +32,7 @@ pub fn forever_contract(
       }
     }
 
-    _ -> {
+    Spending { .. } -> {
       let Transaction { reference_inputs, withdrawals, .. } = transaction
 
       // (FC-4) Require a reference input that holds exactly one `main` NFT under the two-stage script.
@@ -61,5 +61,7 @@ pub fn forever_contract(
       // (FC-9) Require both recorded scripts to appear in withdrawals before allowing the spend.
       validate_running(logic, mitigation_logic, withdrawals)
     }
+
+    _ -> fail
   }
 }

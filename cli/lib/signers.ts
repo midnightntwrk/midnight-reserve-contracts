@@ -116,7 +116,9 @@ export function extractSignersFromCbor(datum: PlutusData): Signer[] {
   // VersionedMultisig with @list is a plain list: [[totalSigners, signers], round]
   const outerList = datum.asList();
   if (!outerList || outerList.getLength() < 2) {
-    throw new Error("Expected list with at least 2 elements for VersionedMultisig");
+    throw new Error(
+      "Expected list with at least 2 elements for VersionedMultisig",
+    );
   }
 
   // First element is the Multisig tuple [total_signers, signers_map]

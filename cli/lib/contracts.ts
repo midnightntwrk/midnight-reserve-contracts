@@ -31,9 +31,9 @@ export interface ContractInstances {
   stagingGovAuth: Contracts.GovAuthStagingGovAuthElse;
 
   // ICS
-  icsForever: Contracts.illiquidCirculationSupplyIcsForeverElse;
-  icsTwoStage: Contracts.illiquidCirculationSupplyIcsTwoStageUpgradeElse;
-  icsLogic: Contracts.illiquidCirculationSupplyIcsLogicElse;
+  icsForever: Contracts.IlliquidCirculationSupplyIcsForeverElse;
+  icsTwoStage: Contracts.IlliquidCirculationSupplyIcsTwoStageUpgradeElse;
+  icsLogic: Contracts.IlliquidCirculationSupplyIcsLogicElse;
 
   // Federated Ops
   federatedOpsForever: Contracts.PermissionedFederatedOpsForeverElse;
@@ -85,10 +85,10 @@ export function getContractInstances(): ContractInstances {
     stagingGovAuth: new Contracts.GovAuthStagingGovAuthElse(),
 
     // ICS
-    icsForever: new Contracts.illiquidCirculationSupplyIcsForeverElse(),
+    icsForever: new Contracts.IlliquidCirculationSupplyIcsForeverElse(),
     icsTwoStage:
-      new Contracts.illiquidCirculationSupplyIcsTwoStageUpgradeElse(),
-    icsLogic: new Contracts.illiquidCirculationSupplyIcsLogicElse(),
+      new Contracts.IlliquidCirculationSupplyIcsTwoStageUpgradeElse(),
+    icsLogic: new Contracts.IlliquidCirculationSupplyIcsLogicElse(),
 
     // Federated Ops
     federatedOpsForever: new Contracts.PermissionedFederatedOpsForeverElse(),

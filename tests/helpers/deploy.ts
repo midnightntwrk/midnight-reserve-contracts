@@ -61,9 +61,9 @@ export const createContracts = () => ({
   reserveTwoStage: new Contracts.ReserveReserveTwoStageUpgradeElse(),
   reserveLogic: new Contracts.ReserveReserveLogicElse(),
   govAuth: new Contracts.GovAuthMainGovAuthElse(),
-  icsForever: new Contracts.illiquidCirculationSupplyIcsForeverElse(),
-  icsTwoStage: new Contracts.illiquidCirculationSupplyIcsTwoStageUpgradeElse(),
-  icsLogic: new Contracts.illiquidCirculationSupplyIcsLogicElse(),
+  icsForever: new Contracts.IlliquidCirculationSupplyIcsForeverElse(),
+  icsTwoStage: new Contracts.IlliquidCirculationSupplyIcsTwoStageUpgradeElse(),
+  icsLogic: new Contracts.IlliquidCirculationSupplyIcsLogicElse(),
   federatedOpsForever: new Contracts.PermissionedFederatedOpsForeverElse(),
   federatedOpsTwoStage:
     new Contracts.PermissionedFederatedOpsTwoStageUpgradeElse(),

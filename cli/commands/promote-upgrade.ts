@@ -38,12 +38,17 @@ import {
 } from "../utils/transaction";
 import * as Contracts from "../../contract_blueprint";
 
-export async function promoteUpgrade(options: PromoteUpgradeOptions): Promise<void> {
-  const { network, output, validator, txHash, txIndex, sign, outputFile } = options;
+export async function promoteUpgrade(
+  options: PromoteUpgradeOptions,
+): Promise<void> {
+  const { network, output, validator, txHash, txIndex, sign, outputFile } =
+    options;
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);
 
-  console.log(`\nPromoting staged upgrade to main for ${validator} on ${network} network`);
+  console.log(
+    `\nPromoting staged upgrade to main for ${validator} on ${network} network`,
+  );
   console.log(`Using UTxO: ${txHash}#${txIndex}`);
 
   const networkId = getNetworkId(network);
@@ -77,9 +82,15 @@ export async function promoteUpgrade(options: PromoteUpgradeOptions): Promise<vo
   printProgress("Fetching contract UTxOs...");
 
   const twoStageUtxos = await provider.getUnspentOutputs(twoStageAddress);
-  const techAuthForeverUtxos = await provider.getUnspentOutputs(techAuthForeverAddress);
-  const councilForeverUtxos = await provider.getUnspentOutputs(councilForeverAddress);
-  const mainGovThresholdUtxos = await provider.getUnspentOutputs(mainGovThresholdAddress);
+  const techAuthForeverUtxos = await provider.getUnspentOutputs(
+    techAuthForeverAddress,
+  );
+  const councilForeverUtxos = await provider.getUnspentOutputs(
+    councilForeverAddress,
+  );
+  const mainGovThresholdUtxos = await provider.getUnspentOutputs(
+    mainGovThresholdAddress,
+  );
 
   console.log("\nFound contract UTxOs:");
   console.log("  Two stage:", twoStageUtxos.length);
@@ -160,18 +171,20 @@ export async function promoteUpgrade(options: PromoteUpgradeOptions): Promise<vo
   // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
   const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
   const techAuthRequiredSigners = Number(
-    (BigInt(techAuthSigners.length) * techAuthNum +
-      (techAuthDenom - 1n)) /
+    (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
       techAuthDenom,
   );
   const councilRequiredSigners = Number(
-    (BigInt(councilSigners.length) * councilNum +
-      (councilDenom - 1n)) /
+    (BigInt(councilSigners.length) * councilNum + (councilDenom - 1n)) /
       councilDenom,
   );
 
-  console.log(`\nRequired tech auth signers: ${techAuthRequiredSigners}/${techAuthSigners.length}`);
-  console.log(`Required council signers: ${councilRequiredSigners}/${councilSigners.length}`);
+  console.log(
+    `\nRequired tech auth signers: ${techAuthRequiredSigners}/${techAuthSigners.length}`,
+  );
+  console.log(
+    `Required council signers: ${councilRequiredSigners}/${councilSigners.length}`,
+  );
 
   // Create native scripts for multisig validation
   const techAuthNativeScript = createNativeMultisigScript(
@@ -251,8 +264,12 @@ export async function promoteUpgrade(options: PromoteUpgradeOptions): Promise<vo
   printProgress("Building transaction...");
 
   const MAIN_TOKEN_HEX = toHex(new TextEncoder().encode("main"));
-  const TECH_WITNESS_ASSET = toHex(new TextEncoder().encode("tech-auth-witness"));
-  const COUNCIL_WITNESS_ASSET = toHex(new TextEncoder().encode("council-auth-witness"));
+  const TECH_WITNESS_ASSET = toHex(
+    new TextEncoder().encode("tech-auth-witness"),
+  );
+  const COUNCIL_WITNESS_ASSET = toHex(
+    new TextEncoder().encode("council-auth-witness"),
+  );
 
   try {
     const txBuilder = blaze
@@ -265,9 +282,15 @@ export async function promoteUpgrade(options: PromoteUpgradeOptions): Promise<vo
       .addReferenceInput(councilForeverUtxo)
       .provideScript(targetContracts.twoStage.Script)
       .provideScript(contracts.govAuth.Script)
-      .addMint(techAuthWitnessPolicy, new Map([[AssetName(TECH_WITNESS_ASSET), 1n]]))
+      .addMint(
+        techAuthWitnessPolicy,
+        new Map([[AssetName(TECH_WITNESS_ASSET), 1n]]),
+      )
       .provideScript(Script.newNativeScript(techAuthNativeScript))
-      .addMint(councilWitnessPolicy, new Map([[AssetName(COUNCIL_WITNESS_ASSET), 1n]]))
+      .addMint(
+        councilWitnessPolicy,
+        new Map([[AssetName(COUNCIL_WITNESS_ASSET), 1n]]),
+      )
       .provideScript(Script.newNativeScript(councilNativeScript))
       .addWithdrawal(govAuthRewardAccount, 0n, govAuthRedeemerData)
       .addOutput(
@@ -277,7 +300,9 @@ export async function promoteUpgrade(options: PromoteUpgradeOptions): Promise<vo
             coins: mainUtxo.output().amount().coin(),
             assets: new Map([
               [
-                AssetId(targetContracts.twoStage.Script.hash() + MAIN_TOKEN_HEX),
+                AssetId(
+                  targetContracts.twoStage.Script.hash() + MAIN_TOKEN_HEX,
+                ),
                 1n,
               ],
             ]),
@@ -297,7 +322,10 @@ export async function promoteUpgrade(options: PromoteUpgradeOptions): Promise<vo
       // Sign with both tech auth and council keys
       const { parsePrivateKeys } = await import("../lib/signers");
       const signerKeyGroups = [
-        { label: "tech auth", keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS") },
+        {
+          label: "tech auth",
+          keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS"),
+        },
         { label: "council", keys: parsePrivateKeys("COUNCIL_PRIVATE_KEYS") },
       ];
 
