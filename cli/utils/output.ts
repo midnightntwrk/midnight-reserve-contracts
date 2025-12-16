@@ -1,6 +1,10 @@
 import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { dirname } from "path";
-import type { DeploymentOutput, TransactionOutput, TransactionFileOutput } from "../lib/types";
+import type {
+  DeploymentOutput,
+  TransactionOutput,
+  TransactionFileOutput,
+} from "../lib/types";
 
 export function ensureDirectory(dirPath: string): void {
   if (!existsSync(dirPath)) {
@@ -25,7 +29,11 @@ export function writeTransactionFile(
 
 export function createDeploymentOutput(
   network: string,
-  config: { utxoAmount: bigint; outputAmount: bigint; thresholdOutputAmount: bigint },
+  config: {
+    utxoAmount: bigint;
+    outputAmount: bigint;
+    thresholdOutputAmount: bigint;
+  },
   transactions: TransactionOutput[],
 ): DeploymentOutput {
   return {
@@ -65,11 +73,11 @@ export function printTable(
 }
 
 export function printSuccess(message: string): void {
-  console.log(`\n✅ ${message}`);
+  console.log(`✅ ${message}\n`);
 }
 
 export function printError(message: string): void {
-  console.error(`\n❌ ${message}`);
+  console.error(`❌ ${message}\n`);
 }
 
 export function printInfo(message: string): void {
@@ -80,7 +88,9 @@ export function printProgress(message: string): void {
   console.log(`⏳ ${message}`);
 }
 
-export function printTransactionSummary(transactions: TransactionOutput[]): void {
+export function printTransactionSummary(
+  transactions: TransactionOutput[],
+): void {
   console.log(`\nTransaction Summary:`);
   transactions.forEach((tx, index) => {
     console.log(`${index + 1}. ${tx.name}`);

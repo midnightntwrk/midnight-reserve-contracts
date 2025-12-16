@@ -34,7 +34,7 @@ pub type PermissionedCandidateDatumV1 {
 
 @list
 pub type FederatedOps {
-  data: Unit,
+  data: Data,
   appendix: List<PermissionedCandidateDatumV1>,
   version: Int,
 }

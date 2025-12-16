@@ -19,7 +19,10 @@ import {
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import * as Contracts from "../contract_blueprint";
-import { createMultisigStateCbor, createRedeemerMapCbor } from "../cli/lib/signers";
+import {
+  createMultisigStateCbor,
+  createRedeemerMapCbor,
+} from "../cli/lib/signers";
 import { describe, test, expect } from "bun:test";
 
 describe("Change Council with Duplicate Signers", () => {
@@ -47,29 +50,43 @@ describe("Change Council with Duplicate Signers", () => {
       // Create contract instances
       const councilForever = new Contracts.PermissionedCouncilForeverElse();
       const councilLogic = new Contracts.PermissionedCouncilLogicElse();
-      const mainCouncilUpdateThreshold = new Contracts.ThresholdsMainCouncilUpdateThresholdElse();
+      const mainCouncilUpdateThreshold =
+        new Contracts.ThresholdsMainCouncilUpdateThresholdElse();
       const techAuthForever = new Contracts.PermissionedTechAuthForeverElse();
-      const councilTwoStage = new Contracts.PermissionedCouncilTwoStageUpgradeElse();
+      const councilTwoStage =
+        new Contracts.PermissionedCouncilTwoStageUpgradeElse();
 
       // Create addresses
       const councilForeverAddress = addressFromCredential(
         NetworkId.Testnet,
-        Credential.fromCore({ type: CredentialType.ScriptHash, hash: councilForever.Script.hash() }),
+        Credential.fromCore({
+          type: CredentialType.ScriptHash,
+          hash: councilForever.Script.hash(),
+        }),
       );
 
       const councilUpdateThresholdAddress = addressFromCredential(
         NetworkId.Testnet,
-        Credential.fromCore({ type: CredentialType.ScriptHash, hash: mainCouncilUpdateThreshold.Script.hash() }),
+        Credential.fromCore({
+          type: CredentialType.ScriptHash,
+          hash: mainCouncilUpdateThreshold.Script.hash(),
+        }),
       );
 
       const techAuthForeverAddress = addressFromCredential(
         NetworkId.Testnet,
-        Credential.fromCore({ type: CredentialType.ScriptHash, hash: techAuthForever.Script.hash() }),
+        Credential.fromCore({
+          type: CredentialType.ScriptHash,
+          hash: techAuthForever.Script.hash(),
+        }),
       );
 
       const councilTwoStageAddress = addressFromCredential(
         NetworkId.Testnet,
-        Credential.fromCore({ type: CredentialType.ScriptHash, hash: councilTwoStage.Script.hash() }),
+        Credential.fromCore({
+          type: CredentialType.ScriptHash,
+          hash: councilTwoStage.Script.hash(),
+        }),
       );
 
       // Current council state - 3 different signers
@@ -94,7 +111,9 @@ describe("Change Council with Duplicate Signers", () => {
         TransactionUnspentOutput.fromCore([
           {
             index: 0,
-            txId: TransactionId("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
+            txId: TransactionId(
+              "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            ),
           },
           {
             address: PaymentAddress(councilForeverAddress.toBech32()),
@@ -102,7 +121,10 @@ describe("Change Council with Duplicate Signers", () => {
               coins: 2_000_000n,
               assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
             },
-            datum: serialize(Contracts.VersionedMultisig, currentCouncilState).toCore(),
+            datum: serialize(
+              Contracts.VersionedMultisig,
+              currentCouncilState,
+            ).toCore(),
           },
         ]),
       );
@@ -115,15 +137,22 @@ describe("Change Council with Duplicate Signers", () => {
         TransactionUnspentOutput.fromCore([
           {
             index: 0,
-            txId: TransactionId("c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"),
+            txId: TransactionId(
+              "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+            ),
           },
           {
             address: PaymentAddress(councilUpdateThresholdAddress.toBech32()),
             value: {
               coins: 2_000_000n,
-              assets: new Map([[AssetId(mainCouncilUpdateThreshold.Script.hash()), 1n]]),
+              assets: new Map([
+                [AssetId(mainCouncilUpdateThreshold.Script.hash()), 1n],
+              ]),
             },
-            datum: serialize(Contracts.MultisigThreshold, thresholdDatum).toCore(),
+            datum: serialize(
+              Contracts.MultisigThreshold,
+              thresholdDatum,
+            ).toCore(),
           },
         ]),
       );
@@ -149,7 +178,9 @@ describe("Change Council with Duplicate Signers", () => {
         TransactionUnspentOutput.fromCore([
           {
             index: 0,
-            txId: TransactionId("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"),
+            txId: TransactionId(
+              "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            ),
           },
           {
             address: PaymentAddress(techAuthForeverAddress.toBech32()),
@@ -157,7 +188,10 @@ describe("Change Council with Duplicate Signers", () => {
               coins: 2_000_000n,
               assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
             },
-            datum: serialize(Contracts.VersionedMultisig, techAuthState).toCore(),
+            datum: serialize(
+              Contracts.VersionedMultisig,
+              techAuthState,
+            ).toCore(),
           },
         ]),
       );
@@ -176,16 +210,23 @@ describe("Change Council with Duplicate Signers", () => {
         TransactionUnspentOutput.fromCore([
           {
             index: 0,
-            txId: TransactionId("c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"),
+            txId: TransactionId(
+              "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+            ),
           },
           {
             address: PaymentAddress(councilTwoStageAddress.toBech32()),
             value: {
               coins: 2_000_000n,
-              assets: new Map([[
-                AssetId(councilTwoStage.Script.hash() + Buffer.from("main").toString("hex")),
-                1n,
-              ]]),
+              assets: new Map([
+                [
+                  AssetId(
+                    councilTwoStage.Script.hash() +
+                      Buffer.from("main").toString("hex"),
+                  ),
+                  1n,
+                ],
+              ]),
             },
             datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
           },
@@ -193,36 +234,64 @@ describe("Change Council with Duplicate Signers", () => {
       );
 
       // NEW COUNCIL - SAME SIGNER APPEARING 3 TIMES WITH DIFFERENT SR25519 KEYS!
-      const singlePaymentHash = "f932cb4c0de84606b3da87214324887270f5fb0e04a6870dc7df5f23";
+      const singlePaymentHash =
+        "f932cb4c0de84606b3da87214324887270f5fb0e04a6870dc7df5f23";
       const newCouncilSigners = [
-        { paymentHash: singlePaymentHash, sr25519Key: "de2306334193be59122367e5a774769e59de84baacfd8e136fba8e18dbcd0833" },
-        { paymentHash: singlePaymentHash, sr25519Key: "8c457a4b2383443ff5b30420aea92bfca65971fd0b76d21715529e4e8192be1d" },
-        { paymentHash: singlePaymentHash, sr25519Key: "f6aa16d4c6892575af371fd14e1e40a7c4675876e8f331e2e2466a28e950765f" },
+        {
+          paymentHash: singlePaymentHash,
+          sr25519Key:
+            "de2306334193be59122367e5a774769e59de84baacfd8e136fba8e18dbcd0833",
+        },
+        {
+          paymentHash: singlePaymentHash,
+          sr25519Key:
+            "8c457a4b2383443ff5b30420aea92bfca65971fd0b76d21715529e4e8192be1d",
+        },
+        {
+          paymentHash: singlePaymentHash,
+          sr25519Key:
+            "f6aa16d4c6892575af371fd14e1e40a7c4675876e8f331e2e2466a28e950765f",
+        },
       ];
 
-      console.log("New council: 3 entries with same payment hash, different sr25519 keys");
-      console.log("  Payment hash:", singlePaymentHash);
-      console.log("  SR25519 keys:", newCouncilSigners.map(s => s.sr25519Key.slice(0, 16) + "..."));
-
       // Use the new CBOR functions that preserve duplicate keys
-      const newCouncilForeverStateCbor = createMultisigStateCbor(newCouncilSigners, 0n);
+      const newCouncilForeverStateCbor = createMultisigStateCbor(
+        newCouncilSigners,
+        0n,
+      );
       const memberRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
-
-      console.log("New council state CBOR:", newCouncilForeverStateCbor.toCbor());
 
       // Current signers for native script
       const currentCouncilSigners = [
-        { paymentHash: "3958ae4a79fa36f52c9e0f5fab7aac2d4c4446a290b44e2d2f53d387" },
-        { paymentHash: "c6f2de5adbbf0b77adcc6883d562a4f5a535017eaedc6804c5e55b33" },
-        { paymentHash: "a7b42151bbc97e9ecd40f454d6dd0a24cf3e579c675f6552bd059c82" },
+        {
+          paymentHash:
+            "3958ae4a79fa36f52c9e0f5fab7aac2d4c4446a290b44e2d2f53d387",
+        },
+        {
+          paymentHash:
+            "c6f2de5adbbf0b77adcc6883d562a4f5a535017eaedc6804c5e55b33",
+        },
+        {
+          paymentHash:
+            "a7b42151bbc97e9ecd40f454d6dd0a24cf3e579c675f6552bd059c82",
+        },
       ];
 
       // Use different signers for tech auth to avoid duplicate policy IDs
       // Payment hash must be 28 bytes = 56 hex chars
       const techAuthSigners = [
-        { paymentHash: "11111111111111111111111111111111111111111111111111111111" },
-        { paymentHash: "22222222222222222222222222222222222222222222222222222222" },
-        { paymentHash: "33333333333333333333333333333333333333333333333333333333" },
+        {
+          paymentHash:
+            "11111111111111111111111111111111111111111111111111111111",
+        },
+        {
+          paymentHash:
+            "22222222222222222222222222222222222222222222222222222222",
+        },
+        {
+          paymentHash:
+            "33333333333333333333333333333333333333333333333333333333",
+        },
       ];
 
       const requiredSigners = 2;
@@ -232,7 +301,10 @@ describe("Change Council with Duplicate Signers", () => {
         ...currentCouncilSigners.map((s) => {
           const bech32 = addressFromCredential(
             NetworkId.Testnet,
-            Credential.fromCore({ type: CredentialType.KeyHash, hash: Hash28ByteBase16(s.paymentHash) }),
+            Credential.fromCore({
+              type: CredentialType.KeyHash,
+              hash: Hash28ByteBase16(s.paymentHash),
+            }),
           ).toBech32();
           return NativeScripts.justAddress(bech32, NetworkId.Testnet);
         }),
@@ -245,7 +317,10 @@ describe("Change Council with Duplicate Signers", () => {
         ...techAuthSigners.map((s) => {
           const bech32 = addressFromCredential(
             NetworkId.Testnet,
-            Credential.fromCore({ type: CredentialType.KeyHash, hash: Hash28ByteBase16(s.paymentHash) }),
+            Credential.fromCore({
+              type: CredentialType.KeyHash,
+              hash: Hash28ByteBase16(s.paymentHash),
+            }),
           ).toBech32();
           return NativeScripts.justAddress(bech32, NetworkId.Testnet);
         }),
@@ -254,7 +329,10 @@ describe("Change Council with Duplicate Signers", () => {
       const techAuthPolicyId = PolicyId(nativeScriptTechAuth.hash());
 
       const councilLogicRewardAccount = RewardAccount.fromCredential(
-        Credential.fromCore({ type: CredentialType.ScriptHash, hash: councilLogic.Script.hash() }).toCore(),
+        Credential.fromCore({
+          type: CredentialType.ScriptHash,
+          hash: councilLogic.Script.hash(),
+        }).toCore(),
         NetworkId.Testnet,
       );
       emulator.accounts.set(councilLogicRewardAccount, 0n);
@@ -266,7 +344,9 @@ describe("Change Council with Duplicate Signers", () => {
           TransactionUnspentOutput.fromCore([
             {
               index: 0,
-              txId: TransactionId("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
+              txId: TransactionId(
+                "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              ),
             },
             {
               address: PaymentAddress(councilForeverAddress.toBech32()),
@@ -274,7 +354,10 @@ describe("Change Council with Duplicate Signers", () => {
                 coins: 2_000_000n,
                 assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
               },
-              datum: serialize(Contracts.VersionedMultisig, currentCouncilState).toCore(),
+              datum: serialize(
+                Contracts.VersionedMultisig,
+                currentCouncilState,
+              ).toCore(),
             },
           ]),
           PlutusData.newInteger(0n),
@@ -283,15 +366,22 @@ describe("Change Council with Duplicate Signers", () => {
           TransactionUnspentOutput.fromCore([
             {
               index: 0,
-              txId: TransactionId("c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"),
+              txId: TransactionId(
+                "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+              ),
             },
             {
               address: PaymentAddress(councilUpdateThresholdAddress.toBech32()),
               value: {
                 coins: 2_000_000n,
-                assets: new Map([[AssetId(mainCouncilUpdateThreshold.Script.hash()), 1n]]),
+                assets: new Map([
+                  [AssetId(mainCouncilUpdateThreshold.Script.hash()), 1n],
+                ]),
               },
-              datum: serialize(Contracts.MultisigThreshold, thresholdDatum).toCore(),
+              datum: serialize(
+                Contracts.MultisigThreshold,
+                thresholdDatum,
+              ).toCore(),
             },
           ]),
         )
@@ -299,7 +389,9 @@ describe("Change Council with Duplicate Signers", () => {
           TransactionUnspentOutput.fromCore([
             {
               index: 0,
-              txId: TransactionId("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"),
+              txId: TransactionId(
+                "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+              ),
             },
             {
               address: PaymentAddress(techAuthForeverAddress.toBech32()),
@@ -307,7 +399,10 @@ describe("Change Council with Duplicate Signers", () => {
                 coins: 2_000_000n,
                 assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
               },
-              datum: serialize(Contracts.VersionedMultisig, techAuthState).toCore(),
+              datum: serialize(
+                Contracts.VersionedMultisig,
+                techAuthState,
+              ).toCore(),
             },
           ]),
         )
@@ -315,16 +410,23 @@ describe("Change Council with Duplicate Signers", () => {
           TransactionUnspentOutput.fromCore([
             {
               index: 0,
-              txId: TransactionId("c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"),
+              txId: TransactionId(
+                "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+              ),
             },
             {
               address: PaymentAddress(councilTwoStageAddress.toBech32()),
               value: {
                 coins: 2_000_000n,
-                assets: new Map([[
-                  AssetId(councilTwoStage.Script.hash() + Buffer.from("main").toString("hex")),
-                  1n,
-                ]]),
+                assets: new Map([
+                  [
+                    AssetId(
+                      councilTwoStage.Script.hash() +
+                        Buffer.from("main").toString("hex"),
+                    ),
+                    1n,
+                  ],
+                ]),
               },
               datum: serialize(Contracts.UpgradeState, upgradeState).toCore(),
             },
@@ -352,9 +454,7 @@ describe("Change Council with Duplicate Signers", () => {
         )
         .provideScript(councilLogic.Script);
 
-      console.log("\nBuilding and validating transaction...");
       await emulator.expectValidTransaction(blaze, txBuilder);
-      console.log("Transaction validated successfully with duplicate signers!");
     });
   });
 });

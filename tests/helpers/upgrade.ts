@@ -36,7 +36,10 @@ export type UpgradeActors = {
 };
 
 export const addTwoStageState = (emulator: Emulator, actor: UpgradeActors) => {
-  const address = addressFromValidator(NetworkId.Testnet, actor.twoStage.Script);
+  const address = addressFromValidator(
+    NetworkId.Testnet,
+    actor.twoStage.Script,
+  );
 
   const buildUtxo = (txId: string, tokenHex: string) =>
     TransactionUnspentOutput.fromCore([

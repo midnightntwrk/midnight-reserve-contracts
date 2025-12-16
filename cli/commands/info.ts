@@ -22,25 +22,37 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Tech Auth Forever",
       component: "tech-auth",
       scriptHash: contracts.techAuthForever.Script.hash(),
-      address: getCredentialAddress(network, contracts.techAuthForever.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.techAuthForever.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Tech Auth Two Stage",
       component: "tech-auth",
       scriptHash: contracts.techAuthTwoStage.Script.hash(),
-      address: getCredentialAddress(network, contracts.techAuthTwoStage.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.techAuthTwoStage.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Tech Auth Logic",
       component: "tech-auth",
       scriptHash: contracts.techAuthLogic.Script.hash(),
-      address: getCredentialAddress(network, contracts.techAuthLogic.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.techAuthLogic.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Tech Auth Update Threshold",
       component: "tech-auth-threshold",
       scriptHash: contracts.mainTechAuthUpdateThreshold.Script.hash(),
-      address: getCredentialAddress(network, contracts.mainTechAuthUpdateThreshold.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.mainTechAuthUpdateThreshold.Script.hash(),
+      ).toBech32(),
     },
 
     // Council
@@ -48,25 +60,37 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Council Forever",
       component: "council",
       scriptHash: contracts.councilForever.Script.hash(),
-      address: getCredentialAddress(network, contracts.councilForever.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.councilForever.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Council Two Stage",
       component: "council",
       scriptHash: contracts.councilTwoStage.Script.hash(),
-      address: getCredentialAddress(network, contracts.councilTwoStage.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.councilTwoStage.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Council Logic",
       component: "council",
       scriptHash: contracts.councilLogic.Script.hash(),
-      address: getCredentialAddress(network, contracts.councilLogic.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.councilLogic.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Council Update Threshold",
       component: "council-threshold",
       scriptHash: contracts.mainCouncilUpdateThreshold.Script.hash(),
-      address: getCredentialAddress(network, contracts.mainCouncilUpdateThreshold.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.mainCouncilUpdateThreshold.Script.hash(),
+      ).toBech32(),
     },
 
     // Reserve
@@ -74,19 +98,28 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Reserve Forever",
       component: "reserve",
       scriptHash: contracts.reserveForever.Script.hash(),
-      address: getCredentialAddress(network, contracts.reserveForever.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.reserveForever.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Reserve Two Stage",
       component: "reserve",
       scriptHash: contracts.reserveTwoStage.Script.hash(),
-      address: getCredentialAddress(network, contracts.reserveTwoStage.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.reserveTwoStage.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Reserve Logic",
       component: "reserve",
       scriptHash: contracts.reserveLogic.Script.hash(),
-      address: getCredentialAddress(network, contracts.reserveLogic.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.reserveLogic.Script.hash(),
+      ).toBech32(),
     },
 
     // ICS
@@ -94,19 +127,28 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "ICS Forever",
       component: "ics",
       scriptHash: contracts.icsForever.Script.hash(),
-      address: getCredentialAddress(network, contracts.icsForever.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.icsForever.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "ICS Two Stage",
       component: "ics",
       scriptHash: contracts.icsTwoStage.Script.hash(),
-      address: getCredentialAddress(network, contracts.icsTwoStage.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.icsTwoStage.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "ICS Logic",
       component: "ics",
       scriptHash: contracts.icsLogic.Script.hash(),
-      address: getCredentialAddress(network, contracts.icsLogic.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.icsLogic.Script.hash(),
+      ).toBech32(),
     },
 
     // Gov
@@ -114,19 +156,28 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Gov Auth",
       component: "gov",
       scriptHash: contracts.govAuth.Script.hash(),
-      address: getCredentialAddress(network, contracts.govAuth.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.govAuth.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Main Gov Threshold",
       component: "main-gov",
       scriptHash: contracts.mainGovThreshold.Script.hash(),
-      address: getCredentialAddress(network, contracts.mainGovThreshold.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.mainGovThreshold.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Staging Gov Threshold",
       component: "staging-gov",
       scriptHash: contracts.stagingGovThreshold.Script.hash(),
-      address: getCredentialAddress(network, contracts.stagingGovThreshold.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.stagingGovThreshold.Script.hash(),
+      ).toBech32(),
     },
 
     // Federated Ops
@@ -134,25 +185,37 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Federated Ops Forever",
       component: "federated-ops",
       scriptHash: contracts.federatedOpsForever.Script.hash(),
-      address: getCredentialAddress(network, contracts.federatedOpsForever.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.federatedOpsForever.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Federated Ops Two Stage",
       component: "federated-ops",
       scriptHash: contracts.federatedOpsTwoStage.Script.hash(),
-      address: getCredentialAddress(network, contracts.federatedOpsTwoStage.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.federatedOpsTwoStage.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Federated Ops Logic",
       component: "federated-ops",
       scriptHash: contracts.federatedOpsLogic.Script.hash(),
-      address: getCredentialAddress(network, contracts.federatedOpsLogic.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.federatedOpsLogic.Script.hash(),
+      ).toBech32(),
     },
     {
       name: "Federated Ops Update Threshold",
       component: "federated-ops-threshold",
       scriptHash: contracts.mainFederatedOpsUpdateThreshold.Script.hash(),
-      address: getCredentialAddress(network, contracts.mainFederatedOpsUpdateThreshold.Script.hash()).toBech32(),
+      address: getCredentialAddress(
+        network,
+        contracts.mainFederatedOpsUpdateThreshold.Script.hash(),
+      ).toBech32(),
     },
   ];
 

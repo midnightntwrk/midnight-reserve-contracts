@@ -180,13 +180,11 @@ export async function stageUpgrade(
   // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
   const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
   const techAuthRequiredSigners = Number(
-    (BigInt(techAuthSigners.length) * techAuthNum +
-      (techAuthDenom - 1n)) /
+    (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
       techAuthDenom,
   );
   const councilRequiredSigners = Number(
-    (BigInt(councilSigners.length) * councilNum +
-      (councilDenom - 1n)) /
+    (BigInt(councilSigners.length) * councilNum + (councilDenom - 1n)) /
       councilDenom,
   );
 

@@ -33,7 +33,9 @@ interface DeploymentTransactionsJson {
   }>;
 }
 
-function isDeploymentTransactions(data: unknown): data is DeploymentTransactionsJson {
+function isDeploymentTransactions(
+  data: unknown,
+): data is DeploymentTransactionsJson {
   return (
     typeof data === "object" &&
     data !== null &&
@@ -51,8 +53,15 @@ function isSingleTransaction(data: unknown): data is TransactionJson {
   );
 }
 
-export async function signAndSubmit(options: SignAndSubmitOptions): Promise<void> {
-  const { network, provider: providerType, jsonFile, signingKeyEnvVar } = options;
+export async function signAndSubmit(
+  options: SignAndSubmitOptions,
+): Promise<void> {
+  const {
+    network,
+    provider: providerType,
+    jsonFile,
+    signingKeyEnvVar,
+  } = options;
 
   // Get private key from environment variable
   const privateKeyHex = getEnvVar(signingKeyEnvVar);
@@ -70,7 +79,9 @@ export async function signAndSubmit(options: SignAndSubmitOptions): Promise<void
 
   if (isDeploymentTransactions(jsonData)) {
     // Handle deployment-transactions.json format (multiple transactions)
-    printProgress(`Found ${jsonData.transactions.length} transactions to process`);
+    printProgress(
+      `Found ${jsonData.transactions.length} transactions to process`,
+    );
 
     for (const tx of jsonData.transactions) {
       try {
@@ -107,13 +118,17 @@ export async function signAndSubmit(options: SignAndSubmitOptions): Promise<void
       printError(`Failed to submit transaction: ${errorMsg}`);
     }
   } else {
-    throw new Error("Unrecognized JSON format. Expected transaction file or deployment-transactions.json");
+    throw new Error(
+      "Unrecognized JSON format. Expected transaction file or deployment-transactions.json",
+    );
   }
 
   // Final summary
   console.log("\n--- Submission Summary ---");
   if (submittedHashes.length > 0) {
-    console.log(`\nSuccessfully submitted ${submittedHashes.length} transaction(s):`);
+    console.log(
+      `\nSuccessfully submitted ${submittedHashes.length} transaction(s):`,
+    );
     for (const hash of submittedHashes) {
       console.log(`  ${hash}`);
     }

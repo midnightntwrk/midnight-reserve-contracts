@@ -119,7 +119,9 @@ export function parseAmount(amountStr: string): bigint {
   return amount;
 }
 
-export function validateTwoStageValidator(validator: string): TwoStageValidator {
+export function validateTwoStageValidator(
+  validator: string,
+): TwoStageValidator {
   if (!VALID_TWO_STAGE_VALIDATORS.includes(validator as TwoStageValidator)) {
     throw new Error(
       `Invalid two-stage validator '${validator}'. Must be one of: ${VALID_TWO_STAGE_VALIDATORS.join(", ")}`,

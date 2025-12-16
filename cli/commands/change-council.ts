@@ -15,7 +15,11 @@ import type { ChangeAuthOptions } from "../lib/types";
 import { getNetworkId } from "../lib/types";
 import { getDeployerAddress } from "../lib/config";
 import { createBlaze } from "../lib/provider";
-import { getContractInstances, getCredentialAddress, findScriptByHash } from "../lib/contracts";
+import {
+  getContractInstances,
+  getCredentialAddress,
+  findScriptByHash,
+} from "../lib/contracts";
 import {
   parseSigners,
   parsePrivateKeys,
@@ -76,10 +80,18 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
 
   printProgress("Fetching contract UTxOs...");
 
-  const councilForeverUtxos = await provider.getUnspentOutputs(councilForeverAddress);
-  const councilThresholdUtxos = await provider.getUnspentOutputs(councilUpdateThresholdAddress);
-  const techAuthForeverUtxos = await provider.getUnspentOutputs(techAuthForeverAddress);
-  const councilTwoStageUtxos = await provider.getUnspentOutputs(councilTwoStageAddress);
+  const councilForeverUtxos = await provider.getUnspentOutputs(
+    councilForeverAddress,
+  );
+  const councilThresholdUtxos = await provider.getUnspentOutputs(
+    councilUpdateThresholdAddress,
+  );
+  const techAuthForeverUtxos = await provider.getUnspentOutputs(
+    techAuthForeverAddress,
+  );
+  const councilTwoStageUtxos = await provider.getUnspentOutputs(
+    councilTwoStageAddress,
+  );
 
   console.log("\nFound contract UTxOs:");
   console.log("  Council forever:", councilForeverUtxos.length);
@@ -122,14 +134,18 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
 
   const logicScript = findScriptByHash(logicHash);
   if (!logicScript) {
-    throw new Error(`Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.councilLogic.Script.hash()}`);
+    throw new Error(
+      `Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.councilLogic.Script.hash()}`,
+    );
   }
 
   let mitigationLogicScript: Script | null = null;
   if (mitigationLogicHash && mitigationLogicHash !== "") {
     mitigationLogicScript = findScriptByHash(mitigationLogicHash);
     if (!mitigationLogicScript) {
-      throw new Error(`Unknown mitigation logic script hash in UpgradeState: ${mitigationLogicHash}`);
+      throw new Error(
+        `Unknown mitigation logic script hash in UpgradeState: ${mitigationLogicHash}`,
+      );
     }
   }
 
@@ -146,7 +162,9 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     currentDatum.asInlineData()!,
   );
   // Use CBOR-aware extraction to preserve duplicate keys
-  const currentCouncilSigners = extractSignersFromCbor(currentDatum.asInlineData()!);
+  const currentCouncilSigners = extractSignersFromCbor(
+    currentDatum.asInlineData()!,
+  );
 
   if (!currentCouncilSigners.length) {
     throw new Error("No council signers found in council forever datum");
@@ -173,7 +191,10 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   const memberRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
 
   console.log("New council signers count:", newCouncilSigners.length);
-  console.log("  Unique payment hashes:", new Set(newCouncilSigners.map(s => s.paymentHash)).size);
+  console.log(
+    "  Unique payment hashes:",
+    new Set(newCouncilSigners.map((s) => s.paymentHash)).size,
+  );
 
   // Create native scripts for multisig validation
   const requiredSigners = 2;
@@ -198,7 +219,9 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   console.log("Council native script hash:", councilPolicyId);
   console.log("Tech auth native script hash:", techAuthPolicyId);
   console.log("Current council signers:");
-  currentCouncilSigners.forEach((s, i) => console.log(`  ${i}: ${s.paymentHash}`));
+  currentCouncilSigners.forEach((s, i) =>
+    console.log(`  ${i}: ${s.paymentHash}`),
+  );
   console.log("Tech auth signers:");
   techAuthSigners.forEach((s, i) => console.log(`  ${i}: ${s.paymentHash}`));
 
@@ -206,10 +229,18 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   const logicRewardAccount = createRewardAccount(logicHash, networkId);
   console.log("\nLogic reward account:", logicRewardAccount);
 
-  let mitigationLogicRewardAccount: ReturnType<typeof createRewardAccount> | null = null;
+  let mitigationLogicRewardAccount: ReturnType<
+    typeof createRewardAccount
+  > | null = null;
   if (mitigationLogicScript) {
-    mitigationLogicRewardAccount = createRewardAccount(mitigationLogicHash, networkId);
-    console.log("Mitigation logic reward account:", mitigationLogicRewardAccount);
+    mitigationLogicRewardAccount = createRewardAccount(
+      mitigationLogicHash,
+      networkId,
+    );
+    console.log(
+      "Mitigation logic reward account:",
+      mitigationLogicRewardAccount,
+    );
   }
 
   // Fetch user UTxO
@@ -242,17 +273,15 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
           address: PaymentAddress(councilForeverAddress.toBech32()),
           value: {
             coins: councilForeverUtxo.output().amount().coin(),
-            assets: new Map([[AssetId(contracts.councilForever.Script.hash()), 1n]]),
+            assets: new Map([
+              [AssetId(contracts.councilForever.Script.hash()), 1n],
+            ]),
           },
           datum: newCouncilForeverStateCbor.toCore(),
         }),
       )
       // Add logic withdrawal (from UpgradeState)
-      .addWithdrawal(
-        logicRewardAccount,
-        0n,
-        memberRedeemerCbor,
-      )
+      .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
       .provideScript(logicScript)
       .setChangeAddress(changeAddress)
       .setFeePadding(50000n);
@@ -261,11 +290,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     if (mitigationLogicScript && mitigationLogicRewardAccount) {
       console.log("  Adding mitigation logic withdrawal...");
       txBuilder
-        .addWithdrawal(
-          mitigationLogicRewardAccount,
-          0n,
-          memberRedeemerCbor,
-        )
+        .addWithdrawal(mitigationLogicRewardAccount, 0n, memberRedeemerCbor)
         .provideScript(mitigationLogicScript);
     }
 
@@ -277,7 +302,10 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     if (sign) {
       // Sign with both tech auth and council keys
       const signerKeyGroups = [
-        { label: "tech auth", keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS") },
+        {
+          label: "tech auth",
+          keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS"),
+        },
         { label: "council", keys: parsePrivateKeys("COUNCIL_PRIVATE_KEYS") },
       ];
 
@@ -304,7 +332,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     // Log detailed error info
     if (error instanceof Error) {
       console.error("Error message:", error.message);
-      if ('cause' in error && error.cause) {
+      if ("cause" in error && error.cause) {
         console.error("Error cause:", JSON.stringify(error.cause, null, 2));
       }
     }
