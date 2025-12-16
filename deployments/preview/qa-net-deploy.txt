@@ -1,0 +1,70 @@
+bun cli/index.ts deploy -n preview
+===========================================
+Generating deployment transactions for preview
+===========================================
+UTxO Amount: 100000000 lovelace
+Output Amount: 1000000 lovelace
+Threshold Output Amount: 2000000 lovelace
+
+Total tech auth signers: 3
+Number of tech auth signer pairs: 3
+Total council signers: 3
+Number of council signer pairs: 3
+⏳ Generating Technical Authority deployment transaction...
+⏳ Generating Tech Auth Update Threshold deployment transaction...
+⏳ Generating Council deployment transaction...
+⏳ Generating Council Update Threshold deployment transaction...
+⏳ Generating Reserve deployment transaction...
+⏳ Generating ICS deployment transaction...
+⏳ Generating Main Government Threshold deployment transaction...
+⏳ Generating Staging Government Threshold deployment transaction...
+⏳ Generating Federated Operators deployment transaction...
+⏳ Generating Federated Ops Update Threshold deployment transaction...
+⏳ Generating TCnight Mint Infinite deployment transaction...
+⏳ Generating Terms and Conditions deployment transaction...
+⏳ Generating Terms and Conditions Threshold deployment transaction...
+===========================================
+✅ Generated 13 deployment transactions
+
+Output file: /Users/kcwhite/work/scm/IOHK/midnight-reserve-contracts/deployments/preview/deployment-transactions.json
+===========================================
+
+Transaction Summary:
+1. technical-authority-deployment
+   Hash: 5c6f67bcf4f5db6ca6bccee3f6469a54a7d08debb01894945a97b282ec5f2b41
+
+2. tech-auth-update-threshold-deployment
+   Hash: be3b6c451320563fe1a8ea7e5ca86142421bd57e6310151c0a80b1a7b50f2021
+
+3. council-deployment
+   Hash: eca9c5cf9cfa747c8ce4213e19d15b3f0932fa1f6bb5df23943f2b32ed6cb52a
+
+4. council-update-threshold-deployment
+   Hash: 720cec607d289da56a875805c643729d44741c253b56998efe3704db520e058a
+
+5. reserve-deployment
+   Hash: 105c3c16c948495d7465e3e29664701ecea1ff6a0845d0aed342f0f6fd1cf3a4
+
+6. ics-deployment
+   Hash: 1f7a689fea148fff2b996984d7e436ffee353ba7d265e40dde304b36ea6377a6
+
+7. main-gov-threshold-deployment
+   Hash: 098a104b25809d3c7fa84c084c1749eb18f6ef89adcc7c2fe063b25bda75c705
+
+8. staging-gov-threshold-deployment
+   Hash: ce83963c103ecc2a6ff660e1fec62404255f07e1cfba4c7bb0e7066c5e1c71c8
+
+9. federated-ops-deployment
+   Hash: 3df6aa77106503b54608667d7391685824b732c23a093f36aa75a5e0115be0f3
+
+10. federated-ops-update-threshold-deployment
+   Hash: bf08aada58558b23866e2b0ba0fcaeb26d5056553fb592afce4eff2bdc6454f7
+
+11. tcnight-mint-infinite-deployment
+   Hash: 83b8764811808ceef88bb634ade36f28c691e0ec11e0a870ccc1ab17bc104616
+
+12. terms-and-conditions-deployment
+   Hash: dec3ade32e46fc4c80daadc6cbdc6dea01b24b144c130cb5294e53a29a1fdffc
+
+13. terms-and-conditions-threshold-deployment
+   Hash: 178e7a5f9f300e4c922b04271af36eeccd75ad52dc9678695c9ca5e309d857db
