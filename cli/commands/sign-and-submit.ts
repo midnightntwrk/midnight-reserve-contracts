@@ -1,10 +1,5 @@
 import { readFileSync } from "fs";
-import {
-  Ed25519PrivateNormalKeyHex,
-  HexBlob,
-  Transaction,
-  TxCBOR,
-} from "@blaze-cardano/core";
+import { HexBlob, Transaction, TxCBOR } from "@blaze-cardano/core";
 import type { Provider } from "@blaze-cardano/sdk";
 import type { Network, ProviderType } from "../lib/types";
 import { createProvider } from "../lib/provider";
