@@ -106,6 +106,8 @@ export interface NetworkConfig {
   terms_and_conditions_one_shot_index: number;
   terms_and_conditions_threshold_one_shot_hash: string;
   terms_and_conditions_threshold_one_shot_index: number;
+  collateral_utxo_hash: string;
+  collateral_utxo_index: number;
   cnight_policy: string;
   cnight_name: string;
 }

@@ -39,6 +39,7 @@ import {
 } from "../utils/output";
 import { createOneShotUtxo, createUpgradeState } from "../utils/transaction";
 import * as Contracts from "../../contract_blueprint";
+import type { TransactionUnspentOutput } from "@blaze-cardano/core";
 
 interface MultisigDeployParams {
   name: string;
@@ -122,6 +123,21 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
   // Create Blaze instance
   const { blaze } = await createBlaze(network, options.provider);
+
+  // Create collateral UTxO - this UTxO is NOT spent by any deployment transaction,
+  // so it can be safely reused as collateral across all transactions
+  let collateralUtxo: TransactionUnspentOutput | undefined;
+  if (config.collateral_utxo_hash) {
+    collateralUtxo = createOneShotUtxo(
+      config.collateral_utxo_hash,
+      config.collateral_utxo_index,
+      deployerAddr,
+      utxoAmount,
+    );
+    console.log(
+      `\nUsing collateral UTxO: ${config.collateral_utxo_hash}#${config.collateral_utxo_index}`,
+    );
+  }
 
   // Helper functions
   async function generateMultisigDeployment(params: MultisigDeployParams) {
@@ -235,6 +251,10 @@ export async function deploy(options: DeployOptions): Promise<void> {
         }),
       );
 
+    if (collateralUtxo) {
+      txBuilder = txBuilder.provideCollateral([collateralUtxo]);
+    }
+
     return await txBuilder.complete();
   }
 
@@ -267,7 +287,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
       contracts.stagingGovAuth.Script.hash(),
     );
 
-    const tx = await blaze
+    let txBuilder = blaze
       .newTransaction()
       .addInput(oneShotUtxo)
       .addMint(
@@ -335,10 +355,13 @@ export async function deploy(options: DeployOptions): Promise<void> {
           },
           datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
         }),
-      )
-      .complete();
+      );
 
-    return tx;
+    if (collateralUtxo) {
+      txBuilder = txBuilder.provideCollateral([collateralUtxo]);
+    }
+
+    return await txBuilder.complete();
   }
 
   async function generateThresholdDeployment(params: ThresholdDeployParams) {
@@ -356,7 +379,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
       params.thresholdContract.Script,
     );
 
-    const tx = await blaze
+    let txBuilder = blaze
       .newTransaction()
       .addInput(oneShotUtxo)
       .addMint(
@@ -379,10 +402,13 @@ export async function deploy(options: DeployOptions): Promise<void> {
             params.thresholdDatum,
           ).toCore(),
         }),
-      )
-      .complete();
+      );
 
-    return tx;
+    if (collateralUtxo) {
+      txBuilder = txBuilder.provideCollateral([collateralUtxo]);
+    }
+
+    return await txBuilder.complete();
   }
 
   async function generateFederatedOpsDeployment(
@@ -416,7 +442,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
       contracts.stagingGovAuth.Script.hash(),
     );
 
-    const tx = await blaze
+    let txBuilder = blaze
       .newTransaction()
       .addInput(oneShotUtxo)
       .addMint(
@@ -493,10 +519,13 @@ export async function deploy(options: DeployOptions): Promise<void> {
           hash: params.logicContract.Script.hash(),
           type: CredentialType.ScriptHash,
         }),
-      )
-      .complete();
+      );
 
-    return tx;
+    if (collateralUtxo) {
+      txBuilder = txBuilder.provideCollateral([collateralUtxo]);
+    }
+
+    return await txBuilder.complete();
   }
 
   // Define all transactions
@@ -667,7 +696,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
           "Generating TCnight Mint Infinite deployment transaction...",
         );
 
-        const tx = await blaze
+        let txBuilder = blaze
           .newTransaction()
           .provideScript(contracts.tcnightMintInfinite.Script)
           .addRegisterStake(
@@ -675,10 +704,13 @@ export async function deploy(options: DeployOptions): Promise<void> {
               hash: contracts.tcnightMintInfinite.Script.hash(),
               type: CredentialType.ScriptHash,
             }),
-          )
-          .complete();
+          );
 
-        return tx;
+        if (collateralUtxo) {
+          txBuilder = txBuilder.provideCollateral([collateralUtxo]);
+        }
+
+        return await txBuilder.complete();
       },
     },
     {
@@ -726,7 +758,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
             0n,
           ];
 
-        const tx = await blaze
+        let txBuilder = blaze
           .newTransaction()
           .addInput(oneShotUtxo)
           .addMint(
@@ -809,10 +841,13 @@ export async function deploy(options: DeployOptions): Promise<void> {
               hash: contracts.termsAndConditionsLogic.Script.hash(),
               type: CredentialType.ScriptHash,
             }),
-          )
-          .complete();
+          );
 
-        return tx;
+        if (collateralUtxo) {
+          txBuilder = txBuilder.provideCollateral([collateralUtxo]);
+        }
+
+        return await txBuilder.complete();
       },
     },
     {
