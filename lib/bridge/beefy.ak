@@ -1,10 +1,10 @@
 use aiken/builtin
-use bridge/codec.{scale_encode_commitment}
-use bridge/merkle.{verify_merkle_multi_proof_get_leaves, verify_mmr_leaf}
+use bridge/codec.{scale_encode_beefy_mmr_leaf, scale_encode_commitment}
+use bridge/merkle.{verify_merkle_multi_proof_get_leaves}
 use bridge/types.{
   BeefyConsensusProof, BeefyConsensusState, BeefyThreshold, Commitment, Leaf,
   PartialConsensusProof, Payload, RelayChainProof, SignedCommitment, Vote,
-  mmr_root_payload_id,
+  next_committee_payload_id,
 }
 use utils.{must_find}
 
@@ -70,7 +70,7 @@ pub fn verify_mmr_update_proof(
     next_stake_total,
   } = trusted_state
 
-  let RelayChainProof { signed_commitment, latest_mmr_leaf, mmr_proof, proof } =
+  let RelayChainProof { signed_commitment, latest_mmr_leaf, proof } =
     relay_proof
 
   let SignedCommitment { commitment, votes } = signed_commitment
@@ -95,9 +95,8 @@ pub fn verify_mmr_update_proof(
       }
     }
 
-  let mmr_root =
-    //Does the role of revert MmrRootHashMissing
-    must_find(payloads, fn(x: Payload) { x.id == mmr_root_payload_id })
+  let nc_payload =
+    must_find(payloads, fn(x: Payload) { x.id == next_committee_payload_id })
 
   let leaves =
     verify_merkle_multi_proof_get_leaves(
@@ -116,12 +115,7 @@ pub fn verify_mmr_update_proof(
   expect signed_stake >= validating_threshold
 
   expect
-    verify_mmr_leaf(
-      beefy_activation_block,
-      latest_mmr_leaf,
-      mmr_proof,
-      mmr_root.data,
-    )
+    nc_payload.data == ( scale_encode_beefy_mmr_leaf(latest_mmr_leaf) |> builtin.keccak_256 )
 
   let
     current_authority_set,
