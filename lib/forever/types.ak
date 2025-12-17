@@ -1,7 +1,7 @@
 @list
 pub type Versioned<a> {
   data: a,
-  round: Int,
+  logic_round: Int,
 }
 
 @list
@@ -36,7 +36,7 @@ pub type PermissionedCandidateDatumV1 {
 pub type FederatedOps {
   data: Data,
   appendix: List<PermissionedCandidateDatumV1>,
-  version: Int,
+  logic_round: Int,
 }
 // 4 bytes
 // key:  [#"bytes", #"bytes"]

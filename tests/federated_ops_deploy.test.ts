@@ -99,9 +99,11 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
       );
 
       // Verify datum structure
-      expect(federatedOpsDatum[0]).toEqual({}); // Unit
+      expect(federatedOpsDatum[0]).toEqual(
+        PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }),
+      ); // Unit
       expect(federatedOpsDatum[1]).toHaveLength(3); // 3 candidates
-      expect(federatedOpsDatum[2]).toBe(0n); // version
+      expect(federatedOpsDatum[2]).toBe(0n); // logic_round
 
       await emulator.expectValidTransaction(
         blaze,
@@ -230,9 +232,9 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
 
       // Create FederatedOps datum with empty appendix
       const emptyFederatedOpsDatum: Contracts.FederatedOps = [
-        {}, // Unit
+        PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }), // Unit
         [], // Empty appendix
-        0n, // version
+        0n, // logic_round
       ];
 
       await emulator.expectValidTransaction(
@@ -352,7 +354,11 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
     expect(beefKey[1]).toBe(candidate.beefy_pub_key);
 
     // Verify serialization doesn't throw
-    const federatedOpsDatum: Contracts.FederatedOps = [{}, [datum], 0n];
+    const federatedOpsDatum: Contracts.FederatedOps = [
+      PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }),
+      [datum],
+      0n,
+    ];
     const serialized = serialize(Contracts.FederatedOps, federatedOpsDatum);
     expect(serialized).toBeDefined();
   });
