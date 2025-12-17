@@ -58,7 +58,6 @@ pub type ProofNodeRec =
 pub type RelayChainProof {
   signed_commitment: SignedCommitment,
   latest_mmr_leaf: BeefyMmrLeaf,
-  mmr_proof: Data<List<ByteArray>>,
   proof: Data<ProofNodeRec>,
 }
 
@@ -73,6 +72,8 @@ pub type BeefyConsensusProof {
 }
 
 pub const mmr_root_payload_id = "mh"
+
+pub const next_committee_payload_id = "nc"
 
 pub type BeefyConsensusState {
   latest_height: Int,
