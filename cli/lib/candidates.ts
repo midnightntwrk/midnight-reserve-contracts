@@ -192,17 +192,17 @@ export function parsePermissionedCandidatesToAppendix(
 /**
  * Creates a complete FederatedOps datum from environment variable.
  *
- * FederatedOps = [Unit, List<PermissionedCandidateDatumV1>, version]
+ * FederatedOps = [Unit, List<PermissionedCandidateDatumV1>, logic_round]
  */
 export function createFederatedOpsDatum(
   envVar: string = "PERMISSIONED_CANDIDATES",
-  version: bigint = 0n,
+  logic_round: bigint = 0n,
 ): Contracts.FederatedOps {
   const appendix = parsePermissionedCandidatesToAppendix(envVar);
   return [
     PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }),
     appendix,
-    version,
+    logic_round,
   ];
 }
 
@@ -211,13 +211,13 @@ export function createFederatedOpsDatum(
  */
 export function createFederatedOpsDatumFromString(
   input: string,
-  version: bigint = 0n,
+  logic_round: bigint = 0n,
 ): Contracts.FederatedOps {
   const candidates = parsePermissionedCandidatesString(input);
   const appendix = candidates.map(candidateToPermissionedDatum);
   return [
     PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }),
     appendix,
-    version,
+    logic_round,
   ];
 }

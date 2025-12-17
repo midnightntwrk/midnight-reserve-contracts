@@ -76,6 +76,14 @@ export interface SignAndSubmitOptions {
   signingKeyEnvVar: string;
 }
 
+export interface MintTcnightOptions extends GlobalOptions {
+  userAddress: string;
+  destinationAddress?: string;
+  amount: bigint;
+  burn: boolean;
+  outputFile: string;
+}
+
 export interface Signer {
   paymentHash: string;
   sr25519Key: string;

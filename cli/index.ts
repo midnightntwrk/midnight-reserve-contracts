@@ -11,6 +11,7 @@ import type {
   RegisterGovAuthOptions,
   GenerateKeyOptions,
   SignAndSubmitOptions,
+  MintTcnightOptions,
 } from "./lib/types";
 import { getDefaultProvider } from "./lib/types";
 import {
@@ -40,6 +41,7 @@ import {
   registerGovAuth,
   generateKey,
   signAndSubmit,
+  mintTcnight,
 } from "./commands";
 
 function printUsage(): void {
@@ -56,6 +58,7 @@ Commands:
   promote-upgrade     Promote staged logic to main for a two-stage upgrade validator
   register-gov-auth   Register main and staging gov auth scripts as stake credentials
   simple-tx           Create simple transactions for testing
+  mint-tcnight        Mint or burn TCnight tokens (preview/preprod only)
   info                Display contract information
   generate-key        Generate a new signing key and Cardano address
   sign-and-submit     Sign and submit transactions from a JSON file
@@ -281,6 +284,29 @@ Options:
 `);
 }
 
+function printMintTcnightHelp(): void {
+  console.log(`
+Usage: bun cli mint-tcnight [options] <amount>
+
+Mint or burn TCnight tokens on preview/preprod networks.
+
+Arguments:
+  <amount>            Amount of NIGHT tokens to mint or burn
+
+Options:
+  -u, --user-address  User address (required) - wallet for signing and burn source
+  -d, --destination   Destination address for minted tokens (default: user address)
+  -b, --burn          Burn tokens instead of minting
+  --output-file       Output file name (default: mint-tcnight-tx.json)
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli mint-tcnight -n preview -u addr_test1... 1000
+  bun cli mint-tcnight -n preview -u addr_test1... -d addr_test1... 500
+  bun cli mint-tcnight -n preprod -u addr_test1... -b 100
+`);
+}
+
 function parseArgs(args: string[]): {
   command: string;
   options: Record<string, string | boolean>;
@@ -318,6 +344,9 @@ function parseArgs(args: string[]): {
         n: "network",
         o: "output",
         p: "provider",
+        u: "user-address",
+        d: "destination",
+        b: "burn",
       };
       const fullKey = keyMap[key] || key;
 
@@ -677,6 +706,42 @@ async function main(): Promise<void> {
         };
 
         await signAndSubmit(signAndSubmitOptions);
+        break;
+      }
+
+      case "mint-tcnight": {
+        if (options.help) {
+          printMintTcnightHelp();
+          process.exit(0);
+        }
+
+        const userAddress = options["user-address"] as string | undefined;
+        if (!userAddress) {
+          printError("Missing required option: -u, --user-address");
+          printMintTcnightHelp();
+          process.exit(1);
+        }
+
+        if (positional.length < 1) {
+          printError("Missing required argument: <amount>");
+          printMintTcnightHelp();
+          process.exit(1);
+        }
+
+        const mintTcnightOptions: MintTcnightOptions = {
+          network,
+          output,
+          provider,
+          dryRun,
+          userAddress,
+          destinationAddress: options.destination as string | undefined,
+          amount: parseAmount(positional[0]),
+          burn: options.burn === true,
+          outputFile:
+            (options["output-file"] as string) || "mint-tcnight-tx.json",
+        };
+
+        await mintTcnight(mintTcnightOptions);
         break;
       }
 

@@ -12,7 +12,7 @@ use utils.{foldr2}
 
 fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
   // (MS-1) Assert the datum encodes a Multisig value so signer lists are well typed.
-  expect Versioned { data: Multisig { total_signers, signers }, round: 0 }: Versioned<
+  expect Versioned { data: Multisig { total_signers, signers }, logic_round: 0 }: Versioned<
     Multisig,
   > = datum
 
@@ -54,7 +54,7 @@ fn validate_federated_ops(datum: Data, _redeemer) {
 
 fn validate_terms_structure(datum: Data, _redeemer) {
   // (MS-1) Assert the datum encodes a Multisig value so signer lists are well typed.
-  expect Versioned { data: TermsAndConditions { hash, .. }, round: 0 }: Versioned<
+  expect Versioned { data: TermsAndConditions { hash, .. }, logic_round: 0 }: Versioned<
     TermsAndConditions,
   > = datum
 
