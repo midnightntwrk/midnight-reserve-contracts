@@ -106,8 +106,7 @@ pub fn check_for_multisig(
   expect InlineDatum(datum) = input.output.datum
 
   // (CM-3) Decode the datum into a versioned multisig configuration.
-  expect Versioned { data: multisig, logic_round: 0 }: Versioned<Multisig> =
-    datum
+  expect Versioned { data: multisig, .. }: Versioned<Multisig> = datum
 
   let minting_policy =
     build_native_script(multisig, threshold_numerator, threshold_denominator)
