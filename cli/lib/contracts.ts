@@ -51,9 +51,9 @@ export interface ContractInstances {
   tcnightMintInfinite: Contracts.TestCnightNoAuditTcnightMintInfiniteElse;
 
   // Terms and Conditions
-  termsAndConditionsForever: Contracts.PermissionedTermsAndConditionsForeverElse;
-  termsAndConditionsTwoStage: Contracts.PermissionedTermsAndConditionsTwoStageUpgradeElse;
-  termsAndConditionsLogic: Contracts.PermissionedTermsAndConditionsLogicElse;
+  termsAndConditionsForever: Contracts.TermsAndConditionsTermsAndConditionsForeverElse;
+  termsAndConditionsTwoStage: Contracts.TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse;
+  termsAndConditionsLogic: Contracts.TermsAndConditionsTermsAndConditionsLogicElse;
   termsAndConditionsThreshold: Contracts.ThresholdsTermsAndConditionsThresholdElse;
 }
 
@@ -112,11 +112,11 @@ export function getContractInstances(): ContractInstances {
 
     // Terms and Conditions
     termsAndConditionsForever:
-      new Contracts.PermissionedTermsAndConditionsForeverElse(),
+      new Contracts.TermsAndConditionsTermsAndConditionsForeverElse(),
     termsAndConditionsTwoStage:
-      new Contracts.PermissionedTermsAndConditionsTwoStageUpgradeElse(),
+      new Contracts.TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse(),
     termsAndConditionsLogic:
-      new Contracts.PermissionedTermsAndConditionsLogicElse(),
+      new Contracts.TermsAndConditionsTermsAndConditionsLogicElse(),
     termsAndConditionsThreshold:
       new Contracts.ThresholdsTermsAndConditionsThresholdElse(),
   };
