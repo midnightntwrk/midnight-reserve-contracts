@@ -100,21 +100,6 @@ pub fn scale_encode_bytes(data: ByteArray) -> ByteArray {
   scale_encode_length(length) |> bytearray.concat(data)
 }
 
-/// This is actually unneeded
-/// In solidity they have to pad bytes to u64, u128, or u256
-/// to little endian encode an integer. In Plutus
-/// we can simply generate an exact size bytearray
-/// in either little or big endian of the integer.
-/// Thus we don't pad extra zeros that need to be stripped off
-/// This is just for reference on how you would do that
-pub fn remove_ending_zeros(b: ByteArray) -> ByteArray {
-  let last_set_bit = builtin.find_first_set_bit(b)
-
-  let last_byte = last_set_bit + 7 / 8
-
-  builtin.slice_bytearray(0, last_byte, b)
-}
-
 // SignedCommitment {
 //     commitment: Commitment {
 //         payload: Payload(

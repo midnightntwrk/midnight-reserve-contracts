@@ -3,8 +3,7 @@ use bridge/codec.{scale_encode_beefy_mmr_leaf, scale_encode_commitment}
 use bridge/merkle.{verify_merkle_multi_proof_get_leaves}
 use bridge/types.{
   BeefyConsensusProof, BeefyConsensusState, BeefyThreshold, Commitment, Leaf,
-  PartialConsensusProof, Payload, RelayChainProof, SignedCommitment, Vote,
-  next_committee_payload_id,
+  Payload, RelayChainProof, SignedCommitment, Vote, next_committee_payload_id,
 }
 use utils.{must_find}
 
@@ -17,43 +16,6 @@ pub fn verify_consensus(
   let state = verify_mmr_update_proof(trusted_state, proof.relay, threshold)
 
   state == out_state
-}
-
-pub fn verify_consensus_no_merkle(
-  trusted_state: BeefyConsensusState,
-  relay_proof: PartialConsensusProof,
-) {
-  let latest_height = relay_proof.signed_commitment.commitment.block_number
-
-  expect trusted_state.latest_height < latest_height
-
-  // let sig_length =
-  //   check_auth_sigs_and_get_len(
-  //     leaves,
-  //     relay_proof.signed_commitment.votes,
-  //     scale_encode_commitment(relay_proof.signed_commitment.commitment)
-  //       |> builtin.keccak_256,
-  //   )
-  //
-  //
-  // expect or {
-  //     check_participation_threshold(
-  //       sig_length,
-  //       trusted_state.current_authority_set.len,
-  //     ),
-  //     check_participation_threshold(
-  //       sig_length,
-  //       trusted_state.next_authority_set.len,
-  //     ),
-  //   }
-  let commitment = relay_proof.signed_commitment.commitment
-
-  expect or {
-      commitment.validator_set_id == trusted_state.current_authority_set.id,
-      commitment.validator_set_id == trusted_state.next_authority_set.id,
-    }
-
-  True
 }
 
 pub fn verify_mmr_update_proof(
