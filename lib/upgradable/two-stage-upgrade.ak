@@ -107,7 +107,7 @@ pub fn two_stage_upgradable(
             // (TSM-4) Require the staging reference to hold the staging NFT.
             expect ( staging_nft_id |> as_data ) == expected_staging_nft_id
 
-            validate_main_update(
+            promote_staging_field_to_main(
               update_field,
               spending_datum,
               staging_datum,
@@ -147,7 +147,7 @@ pub fn two_stage_upgradable(
             // (TSS-3) Require the main reference to hold the main NFT.
             expect ( main_nft_id |> as_data ) == expected_main_nft_id
 
-            validate_staging_update(
+            update_staging_field(
               update_field,
               new_script_hash,
               spending_datum,
@@ -180,7 +180,7 @@ pub fn two_stage_upgradable(
   }
 }
 
-fn validate_main_update(
+fn promote_staging_field_to_main(
   update_field: UpdateField,
   spending_datum: Datum,
   staging_datum: Datum,
@@ -274,7 +274,7 @@ fn validate_main_update(
   }
 }
 
-fn validate_staging_update(
+fn update_staging_field(
   update_field: UpdateField,
   new_val: ScriptHash,
   spending_datum: Datum,
@@ -314,15 +314,14 @@ fn validate_staging_update(
   // (In case staging auth is accidentally stuck)
   // (TSG-6) Accept the spend only if either the staging auth pair or the main auth pair appears in withdrawals.
   expect or {
-      validate_running(auth, mitigation_auth, withdrawals),
-      // Special case for MitigationAuth
       if update_field == MitigationAuth {
-        // fixes highlighting issue with tree sitter
         empty
       } else {
-        main_mitigation_auth
+        mitigation_auth
       }
-        |> validate_running(main_auth, _, withdrawals),
+        |> validate_running(auth, _, withdrawals),
+      // Special case for MitigationAuth
+      validate_running(main_auth, main_mitigation_auth, withdrawals),
     }
 
   when update_field is {

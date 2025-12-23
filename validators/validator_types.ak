@@ -1,9 +1,9 @@
 use aiken/crypto.{VerificationKeyHash}
 use bridge/types.{
-  BeefyConsensusState, BeefyMmrLeaf, Peak, ProofNodeRec, SignedCommitment,
+  BeefyConsensusState, BeefyMmrLeaf, ProofNodeRec, SignedCommitment,
 } as bridge_types
 use cnight_generates_dust.{DustAction, DustMappingDatum}
-use forever/types.{TermsAndConditions, Versioned} as ft
+use forever/types.{FederatedOps, TermsAndConditions, Versioned} as ft
 use multisig/types.{MultisigThreshold, Sr25519PubKey}
 use upgradable/types.{TwoStageRedeemer, UpgradeState} as t
 
@@ -47,6 +47,16 @@ validator z_permissioned_types {
   }
 }
 
+validator z_federated_ops_types {
+  spend(_datum: Option<FederatedOps>, _redeemer, _output, _tx) {
+    fail
+  }
+
+  else(_) {
+    fail
+  }
+}
+
 validator z_terms_and_cond_types {
   spend(
     _datum: Option<VersionedTermsAndConditions>,
@@ -75,7 +85,6 @@ validator z_two_stage_upgrade_types {
 pub type RelayChainProof {
   signed_commitment: SignedCommitment,
   latest_mmr_leaf: BeefyMmrLeaf,
-  mmr_proof: List<Peak>,
   proof: ProofNodeRec,
 }
 

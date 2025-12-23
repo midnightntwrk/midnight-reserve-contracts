@@ -28,11 +28,12 @@ export interface ContractInstances {
 
   // Gov Auth
   govAuth: Contracts.GovAuthMainGovAuthElse;
+  stagingGovAuth: Contracts.GovAuthStagingGovAuthElse;
 
   // ICS
-  icsForever: Contracts.IliquidCirculationSupplyIcsForeverElse;
-  icsTwoStage: Contracts.IliquidCirculationSupplyIcsTwoStageUpgradeElse;
-  icsLogic: Contracts.IliquidCirculationSupplyIcsLogicElse;
+  icsForever: Contracts.IlliquidCirculationSupplyIcsForeverElse;
+  icsTwoStage: Contracts.IlliquidCirculationSupplyIcsTwoStageUpgradeElse;
+  icsLogic: Contracts.IlliquidCirculationSupplyIcsLogicElse;
 
   // Federated Ops
   federatedOpsForever: Contracts.PermissionedFederatedOpsForeverElse;
@@ -45,6 +46,15 @@ export interface ContractInstances {
   mainCouncilUpdateThreshold: Contracts.ThresholdsMainCouncilUpdateThresholdElse;
   mainTechAuthUpdateThreshold: Contracts.ThresholdsMainTechAuthUpdateThresholdElse;
   mainFederatedOpsUpdateThreshold: Contracts.ThresholdsMainFederatedOpsUpdateThresholdElse;
+
+  // TCnight Mint Infinite (testnet only)
+  tcnightMintInfinite: Contracts.TestCnightNoAuditTcnightMintInfiniteElse;
+
+  // Terms and Conditions
+  termsAndConditionsForever: Contracts.TermsAndConditionsTermsAndConditionsForeverElse;
+  termsAndConditionsTwoStage: Contracts.TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse;
+  termsAndConditionsLogic: Contracts.TermsAndConditionsTermsAndConditionsLogicElse;
+  termsAndConditionsThreshold: Contracts.ThresholdsTermsAndConditionsThresholdElse;
 }
 
 let cachedInstances: ContractInstances | null = null;
@@ -72,11 +82,13 @@ export function getContractInstances(): ContractInstances {
 
     // Gov Auth
     govAuth: new Contracts.GovAuthMainGovAuthElse(),
+    stagingGovAuth: new Contracts.GovAuthStagingGovAuthElse(),
 
     // ICS
-    icsForever: new Contracts.IliquidCirculationSupplyIcsForeverElse(),
-    icsTwoStage: new Contracts.IliquidCirculationSupplyIcsTwoStageUpgradeElse(),
-    icsLogic: new Contracts.IliquidCirculationSupplyIcsLogicElse(),
+    icsForever: new Contracts.IlliquidCirculationSupplyIcsForeverElse(),
+    icsTwoStage:
+      new Contracts.IlliquidCirculationSupplyIcsTwoStageUpgradeElse(),
+    icsLogic: new Contracts.IlliquidCirculationSupplyIcsLogicElse(),
 
     // Federated Ops
     federatedOpsForever: new Contracts.PermissionedFederatedOpsForeverElse(),
@@ -93,6 +105,20 @@ export function getContractInstances(): ContractInstances {
       new Contracts.ThresholdsMainTechAuthUpdateThresholdElse(),
     mainFederatedOpsUpdateThreshold:
       new Contracts.ThresholdsMainFederatedOpsUpdateThresholdElse(),
+
+    // TCnight Mint Infinite (testnet only)
+    tcnightMintInfinite:
+      new Contracts.TestCnightNoAuditTcnightMintInfiniteElse(),
+
+    // Terms and Conditions
+    termsAndConditionsForever:
+      new Contracts.TermsAndConditionsTermsAndConditionsForeverElse(),
+    termsAndConditionsTwoStage:
+      new Contracts.TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse(),
+    termsAndConditionsLogic:
+      new Contracts.TermsAndConditionsTermsAndConditionsLogicElse(),
+    termsAndConditionsThreshold:
+      new Contracts.ThresholdsTermsAndConditionsThresholdElse(),
   };
 
   return cachedInstances;
@@ -118,4 +144,72 @@ export function getCredentialAddress(
       hash: Hash28ByteBase16(scriptHash),
     }),
   );
+}
+
+export interface TwoStageContracts {
+  twoStage: { Script: Script };
+  forever: { Script: Script };
+  logic: { Script: Script };
+}
+
+export function getTwoStageContracts(validatorName: string): TwoStageContracts {
+  const contracts = getContractInstances();
+
+  switch (validatorName) {
+    case "tech-auth":
+      return {
+        twoStage: contracts.techAuthTwoStage,
+        forever: contracts.techAuthForever,
+        logic: contracts.techAuthLogic,
+      };
+    case "council":
+      return {
+        twoStage: contracts.councilTwoStage,
+        forever: contracts.councilForever,
+        logic: contracts.councilLogic,
+      };
+    case "reserve":
+      return {
+        twoStage: contracts.reserveTwoStage,
+        forever: contracts.reserveForever,
+        logic: contracts.reserveLogic,
+      };
+    case "ics":
+      return {
+        twoStage: contracts.icsTwoStage,
+        forever: contracts.icsForever,
+        logic: contracts.icsLogic,
+      };
+    case "federated-ops":
+      return {
+        twoStage: contracts.federatedOpsTwoStage,
+        forever: contracts.federatedOpsForever,
+        logic: contracts.federatedOpsLogic,
+      };
+    case "terms-and-conditions":
+      return {
+        twoStage: contracts.termsAndConditionsTwoStage,
+        forever: contracts.termsAndConditionsForever,
+        logic: contracts.termsAndConditionsLogic,
+      };
+    default:
+      throw new Error(`Unknown two-stage validator: ${validatorName}`);
+  }
+}
+
+export function findScriptByHash(hash: string): Script | null {
+  const contracts = getContractInstances();
+  const scriptMap: Record<string, Script> = {
+    [contracts.councilLogic.Script.hash()]: contracts.councilLogic.Script,
+    [contracts.techAuthLogic.Script.hash()]: contracts.techAuthLogic.Script,
+    [contracts.reserveLogic.Script.hash()]: contracts.reserveLogic.Script,
+    [contracts.icsLogic.Script.hash()]: contracts.icsLogic.Script,
+    [contracts.federatedOpsLogic.Script.hash()]:
+      contracts.federatedOpsLogic.Script,
+    [contracts.termsAndConditionsLogic.Script.hash()]:
+      contracts.termsAndConditionsLogic.Script,
+    [contracts.govAuth.Script.hash()]: contracts.govAuth.Script,
+    [contracts.stagingGovAuth.Script.hash()]: contracts.stagingGovAuth.Script,
+  };
+  return scriptMap[hash] ?? null;
 }

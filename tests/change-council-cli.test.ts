@@ -1,12 +1,10 @@
 import {
-  Address,
   addressFromCredential,
   AssetId,
   AssetName,
   Credential,
   CredentialType,
   Hash28ByteBase16,
-  NativeScript,
   NativeScripts,
   NetworkId,
   PaymentAddress,
@@ -21,8 +19,11 @@ import {
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import * as Contracts from "../contract_blueprint";
+import {
+  createMultisigStateCbor,
+  createRedeemerMapCbor,
+} from "../cli/lib/signers";
 import { describe, test } from "bun:test";
-import { writeFileSync } from "fs";
 
 describe("Change Council CLI Test", () => {
   test("Build change council transaction", async () => {
@@ -94,8 +95,9 @@ describe("Change Council CLI Test", () => {
           );
 
           // Current council state - exact on-chain state from preview
-          const currentCouncilState: Contracts.VersionedMultisig = {
-            data: [
+          // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+          const currentCouncilState: Contracts.VersionedMultisig = [
+            [
               3n,
               {
                 ["8200581c3958ae4a79fa36f52c9e0f5fab7aac2d4c4446a290b44e2d2f53d387"]:
@@ -106,8 +108,8 @@ describe("Change Council CLI Test", () => {
                   "ecfc4d62911bae419efea459f9f2271da3f9df5b8cebbda599116aa034b15c55",
               },
             ],
-            round: 0n,
-          };
+            0n,
+          ];
 
           // Add council forever UTxO
           emulator.addUtxo(
@@ -135,12 +137,8 @@ describe("Change Council CLI Test", () => {
           );
 
           // Add council threshold UTxO
-          const thresholdDatum: Contracts.MultisigThreshold = {
-            technical_auth_numerator: 2n,
-            technical_auth_denominator: 3n,
-            council_numerator: 2n,
-            council_denominator: 3n,
-          };
+          // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+          const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
 
           emulator.addUtxo(
             TransactionUnspentOutput.fromCore([
@@ -169,8 +167,9 @@ describe("Change Council CLI Test", () => {
           );
 
           // Add tech auth forever UTxO - exact on-chain state from preview (same as council)
-          const techAuthState: Contracts.VersionedMultisig = {
-            data: [
+          // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+          const techAuthState: Contracts.VersionedMultisig = [
+            [
               3n,
               {
                 ["8200581c3958ae4a79fa36f52c9e0f5fab7aac2d4c4446a290b44e2d2f53d387"]:
@@ -181,8 +180,8 @@ describe("Change Council CLI Test", () => {
                   "ecfc4d62911bae419efea459f9f2271da3f9df5b8cebbda599116aa034b15c55",
               },
             ],
-            round: 0n,
-          };
+            0n,
+          ];
 
           emulator.addUtxo(
             TransactionUnspentOutput.fromCore([
@@ -200,7 +199,10 @@ describe("Change Council CLI Test", () => {
                     [AssetId(techAuthForever.Script.hash()), 1n],
                   ]),
                 },
-                datum: serialize(Contracts.VersionedMultisig, techAuthState).toCore(),
+                datum: serialize(
+                  Contracts.VersionedMultisig,
+                  techAuthState,
+                ).toCore(),
               },
             ]),
           );
@@ -264,27 +266,12 @@ describe("Change Council CLI Test", () => {
             },
           ];
 
-          // Create new state
-          const newCouncilForeverState: Contracts.VersionedMultisig = {
-            data: [
-              3n,
-              {
-                ["8200581c" + newCouncilSigners[0].paymentHash]:
-                  newCouncilSigners[0].sr25519Key,
-                ["8200581c" + newCouncilSigners[1].paymentHash]:
-                  newCouncilSigners[1].sr25519Key,
-                ["8200581c" + newCouncilSigners[2].paymentHash]:
-                  newCouncilSigners[2].sr25519Key,
-              },
-            ],
-            round: 0n,
-          };
-
-          const memberRedeemer: Contracts.PermissionedRedeemer = {
-            [newCouncilSigners[0].paymentHash]: newCouncilSigners[0].sr25519Key,
-            [newCouncilSigners[1].paymentHash]: newCouncilSigners[1].sr25519Key,
-            [newCouncilSigners[2].paymentHash]: newCouncilSigners[2].sr25519Key,
-          };
+          // Create new state using CBOR functions that support duplicate keys
+          const newCouncilForeverStateCbor = createMultisigStateCbor(
+            newCouncilSigners,
+            0n,
+          );
+          const memberRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
 
           const requiredSigners = 2;
 
@@ -419,7 +406,10 @@ describe("Change Council CLI Test", () => {
                       [AssetId(techAuthForever.Script.hash()), 1n],
                     ]),
                   },
-                  datum: serialize(Contracts.VersionedMultisig, techAuthState).toCore(),
+                  datum: serialize(
+                    Contracts.VersionedMultisig,
+                    techAuthState,
+                  ).toCore(),
                 },
               ]),
             )
@@ -466,17 +456,10 @@ describe("Change Council CLI Test", () => {
                     [AssetId(councilForever.Script.hash()), 1n],
                   ]),
                 },
-                datum: serialize(
-                  Contracts.VersionedMultisig,
-                  newCouncilForeverState,
-                ).toCore(),
+                datum: newCouncilForeverStateCbor.toCore(),
               }),
             )
-            .addWithdrawal(
-              councilLogicRewardAccount,
-              0n,
-              serialize(Contracts.PermissionedRedeemer, memberRedeemer),
-            )
+            .addWithdrawal(councilLogicRewardAccount, 0n, memberRedeemerCbor)
             .provideScript(councilLogic.Script);
 
           await emulator.expectValidTransaction(blaze, txBuilder);

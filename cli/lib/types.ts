@@ -16,7 +16,8 @@ export interface DeployOptions extends GlobalOptions {
   thresholdOutputAmount: bigint;
   techAuthThreshold: { numerator: bigint; denominator: bigint };
   councilThreshold: { numerator: bigint; denominator: bigint };
-  stagingThreshold: { numerator: bigint; denominator: bigint };
+  councilStagingThreshold: { numerator: bigint; denominator: bigint };
+  techAuthStagingThreshold: { numerator: bigint; denominator: bigint };
   components: string[];
 }
 
@@ -32,12 +33,55 @@ export interface SimpleTxOptions extends GlobalOptions {
   count: number;
   amount: bigint;
   to?: string;
+  outputFile: string;
 }
 
 export interface InfoOptions extends GlobalOptions {
   format: "json" | "table";
   component: string;
   fetch: boolean;
+}
+
+export interface StageUpgradeOptions extends GlobalOptions {
+  validator: string;
+  newLogicHash: string;
+  txHash: string;
+  txIndex: number;
+  utxoAmount?: bigint;
+  sign: boolean;
+  outputFile: string;
+}
+
+export interface PromoteUpgradeOptions extends GlobalOptions {
+  validator: string;
+  txHash: string;
+  txIndex: number;
+  utxoAmount?: bigint;
+  sign: boolean;
+  outputFile: string;
+}
+
+export interface RegisterGovAuthOptions extends GlobalOptions {
+  outputFile: string;
+}
+
+export interface GenerateKeyOptions {
+  network: Network;
+}
+
+export interface SignAndSubmitOptions {
+  network: Network;
+  provider: ProviderType;
+  jsonFile: string;
+  signingKeyEnvVar: string;
+}
+
+export interface MintTcnightOptions extends GlobalOptions {
+  userAddress: string;
+  destinationAddress?: string;
+  amount: bigint;
+  burn: boolean;
+  outputFile: string;
 }
 
 export interface Signer {
@@ -66,13 +110,26 @@ export interface NetworkConfig {
   main_tech_auth_update_one_shot_index: number;
   main_federated_ops_update_one_shot_hash: string;
   main_federated_ops_update_one_shot_index: number;
+  terms_and_conditions_one_shot_hash: string;
+  terms_and_conditions_one_shot_index: number;
+  terms_and_conditions_threshold_one_shot_hash: string;
+  terms_and_conditions_threshold_one_shot_index: number;
+  collateral_utxo_hash: string;
+  collateral_utxo_index: number;
   cnight_policy: string;
+  cnight_name: string;
 }
 
 export interface TransactionOutput {
   name: string;
   cbor: string;
   hash: string;
+}
+
+export interface TransactionFileOutput {
+  cbor: string;
+  txHash: string;
+  signed: boolean;
 }
 
 export interface DeploymentOutput {
