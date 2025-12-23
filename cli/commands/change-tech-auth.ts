@@ -8,25 +8,30 @@ import {
   TransactionOutput,
   PaymentAddress,
 } from "@blaze-cardano/core";
-import { serialize, parse } from "@blaze-cardano/data";
+import { parse } from "@blaze-cardano/data";
+import { resolve } from "path";
 
 import type { ChangeAuthOptions } from "../lib/types";
 import { getNetworkId } from "../lib/types";
 import { getDeployerAddress } from "../lib/config";
 import { createBlaze } from "../lib/provider";
-import { getContractInstances, getCredentialAddress } from "../lib/contracts";
+import {
+  getContractInstances,
+  getCredentialAddress,
+  findScriptByHash,
+} from "../lib/contracts";
 import {
   parseSigners,
   parsePrivateKeys,
-  createMultisigState,
-  createRedeemerMap,
-  extractSignersFromMultisigState,
+  extractSignersFromCbor,
+  createMultisigStateCbor,
+  createRedeemerMapCbor,
 } from "../lib/signers";
 import {
   printSuccess,
   printError,
   printProgress,
-  writeCborFile,
+  writeTransactionFile,
 } from "../utils/output";
 import {
   createNativeMultisigScript,
@@ -38,8 +43,12 @@ import {
 } from "../utils/transaction";
 import * as Contracts from "../../contract_blueprint";
 
-export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> {
-  const { network, txHash, txIndex, sign, outputFile } = options;
+export async function changeTechAuth(
+  options: ChangeAuthOptions,
+): Promise<void> {
+  const { network, output, txHash, txIndex, sign, outputFile } = options;
+  const deploymentDir = resolve(output, network);
+  const outputPath = resolve(deploymentDir, outputFile);
 
   console.log(`\nChanging Tech Auth members on ${network} network`);
   console.log(`Using UTxO: ${txHash}#${txIndex}`);
@@ -66,17 +75,28 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
     contracts.techAuthTwoStage.Script.hash(),
   );
 
-  console.log("\nTech Auth Forever Address:", techAuthForeverAddress.toBech32());
+  console.log(
+    "\nTech Auth Forever Address:",
+    techAuthForeverAddress.toBech32(),
+  );
 
   // Create provider and fetch UTxOs
   const { blaze, provider } = await createBlaze(network, options.provider);
 
   printProgress("Fetching contract UTxOs...");
 
-  const techAuthForeverUtxos = await provider.getUnspentOutputs(techAuthForeverAddress);
-  const techAuthThresholdUtxos = await provider.getUnspentOutputs(techAuthUpdateThresholdAddress);
-  const councilForeverUtxos = await provider.getUnspentOutputs(councilForeverAddress);
-  const techAuthTwoStageUtxos = await provider.getUnspentOutputs(techAuthTwoStageAddress);
+  const techAuthForeverUtxos = await provider.getUnspentOutputs(
+    techAuthForeverAddress,
+  );
+  const techAuthThresholdUtxos = await provider.getUnspentOutputs(
+    techAuthUpdateThresholdAddress,
+  );
+  const councilForeverUtxos = await provider.getUnspentOutputs(
+    councilForeverAddress,
+  );
+  const techAuthTwoStageUtxos = await provider.getUnspentOutputs(
+    techAuthTwoStageAddress,
+  );
 
   console.log("\nFound contract UTxOs:");
   console.log("  Tech auth forever:", techAuthForeverUtxos.length);
@@ -99,7 +119,41 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
   const techAuthTwoStageUtxo = findUtxoWithMainAsset(techAuthTwoStageUtxos);
 
   if (!techAuthTwoStageUtxo) {
-    throw new Error('Could not find tech auth two-stage UTxO with "main" asset');
+    throw new Error(
+      'Could not find tech auth two-stage UTxO with "main" asset',
+    );
+  }
+
+  // Parse the tech auth two-stage UpgradeState datum
+  console.log("\nReading tech auth two-stage upgrade state...");
+  const techAuthTwoStageDatum = techAuthTwoStageUtxo.output().datum();
+  if (!techAuthTwoStageDatum?.asInlineData()) {
+    throw new Error("Missing inline datum on tech auth two-stage UTxO");
+  }
+
+  const upgradeState = parse(
+    Contracts.UpgradeState,
+    techAuthTwoStageDatum.asInlineData()!,
+  );
+  const [logicHash, mitigationLogicHash] = upgradeState;
+  console.log("  Logic hash:", logicHash);
+  console.log("  Mitigation logic hash:", mitigationLogicHash || "(empty)");
+
+  const logicScript = findScriptByHash(logicHash);
+  if (!logicScript) {
+    throw new Error(
+      `Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.techAuthLogic.Script.hash()}`,
+    );
+  }
+
+  let mitigationLogicScript: Script | null = null;
+  if (mitigationLogicHash && mitigationLogicHash !== "") {
+    mitigationLogicScript = findScriptByHash(mitigationLogicHash);
+    if (!mitigationLogicScript) {
+      throw new Error(
+        `Unknown mitigation logic script hash in UpgradeState: ${mitigationLogicHash}`,
+      );
+    }
   }
 
   // Parse current tech auth state
@@ -114,10 +168,15 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
     Contracts.VersionedMultisig,
     currentDatum.asInlineData()!,
   );
-  const [currentThreshold] = currentTechAuthState.data;
+  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+  const [multisig] = currentTechAuthState;
+  const [currentThreshold] = multisig;
   console.log("  Current threshold:", currentThreshold);
 
-  const currentTechAuthSigners = extractSignersFromMultisigState(currentTechAuthState);
+  // Use CBOR-aware extraction to preserve duplicate keys
+  const currentTechAuthSigners = extractSignersFromCbor(
+    currentDatum.asInlineData()!,
+  );
 
   if (!currentTechAuthSigners.length) {
     throw new Error("No tech auth signers found in tech auth forever datum");
@@ -130,11 +189,10 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
     throw new Error("Council forever UTxO missing inline datum");
   }
 
-  const currentCouncilState = parse(
-    Contracts.VersionedMultisig,
+  // Use CBOR-aware extraction to preserve duplicate keys
+  const currentCouncilSigners = extractSignersFromCbor(
     councilDatum.asInlineData()!,
   );
-  const currentCouncilSigners = extractSignersFromMultisigState(currentCouncilState);
 
   if (!currentCouncilSigners.length) {
     throw new Error("No council signers found in council forever datum");
@@ -142,11 +200,19 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
 
   // Parse new tech auth signers
   const newTechAuthSigners = parseSigners("TECH_AUTH_SIGNERS");
-  const newTechAuthForeverState = createMultisigState(
+  // Use CBOR functions that preserve duplicate keys
+  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+  const newTechAuthForeverStateCbor = createMultisigStateCbor(
     newTechAuthSigners,
-    currentTechAuthState.round,
+    currentTechAuthState[1], // round is second element of tuple
   );
-  const memberRedeemer = createRedeemerMap(newTechAuthSigners);
+  const memberRedeemerCbor = createRedeemerMapCbor(newTechAuthSigners);
+
+  console.log("New tech auth signers count:", newTechAuthSigners.length);
+  console.log(
+    "  Unique payment hashes:",
+    new Set(newTechAuthSigners.map((s) => s.paymentHash)).size,
+  );
 
   // Create native scripts for multisig validation
   const requiredSigners = 2;
@@ -167,10 +233,23 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
   const councilPolicyId = PolicyId(nativeScriptCouncil.hash());
   const techAuthPolicyId = PolicyId(nativeScriptTechAuth.hash());
 
-  const techAuthLogicRewardAccount = createRewardAccount(
-    contracts.techAuthLogic.Script.hash(),
-    networkId,
-  );
+  // Create reward accounts for logic scripts from the UpgradeState
+  const logicRewardAccount = createRewardAccount(logicHash, networkId);
+  console.log("\nLogic reward account:", logicRewardAccount);
+
+  let mitigationLogicRewardAccount: ReturnType<
+    typeof createRewardAccount
+  > | null = null;
+  if (mitigationLogicScript) {
+    mitigationLogicRewardAccount = createRewardAccount(
+      mitigationLogicHash,
+      networkId,
+    );
+    console.log(
+      "Mitigation logic reward account:",
+      mitigationLogicRewardAccount,
+    );
+  }
 
   // Fetch user UTxO
   printProgress("Fetching user UTXO...");
@@ -203,19 +282,26 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
           address: PaymentAddress(techAuthForeverAddress.toBech32()),
           value: {
             coins: techAuthForeverUtxo.output().amount().coin(),
-            assets: new Map([[AssetId(contracts.techAuthForever.Script.hash()), 1n]]),
+            assets: new Map([
+              [AssetId(contracts.techAuthForever.Script.hash()), 1n],
+            ]),
           },
-          datum: serialize(Contracts.VersionedMultisig, newTechAuthForeverState).toCore(),
+          datum: newTechAuthForeverStateCbor.toCore(),
         }),
       )
-      .addWithdrawal(
-        techAuthLogicRewardAccount,
-        0n,
-        serialize(Contracts.PermissionedRedeemer, memberRedeemer),
-      )
-      .provideScript(contracts.techAuthLogic.Script)
+      // Add logic withdrawal (from UpgradeState)
+      .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
+      .provideScript(logicScript)
       .setChangeAddress(changeAddress)
       .setFeePadding(50000n);
+
+    // Add mitigation logic withdrawal if present in UpgradeState
+    if (mitigationLogicScript && mitigationLogicRewardAccount) {
+      console.log("  Adding mitigation logic withdrawal...");
+      txBuilder
+        .addWithdrawal(mitigationLogicRewardAccount, 0n, memberRedeemerCbor)
+        .provideScript(mitigationLogicScript);
+    }
 
     printProgress("Completing transaction (with evaluation)...");
     const tx = await txBuilder.complete();
@@ -225,7 +311,10 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
     if (sign) {
       // Sign with both tech auth and council keys
       const signerKeyGroups = [
-        { label: "tech auth", keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS") },
+        {
+          label: "tech auth",
+          keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS"),
+        },
         { label: "council", keys: parsePrivateKeys("COUNCIL_PRIVATE_KEYS") },
       ];
 
@@ -239,11 +328,11 @@ export async function changeTechAuth(options: ChangeAuthOptions): Promise<void> 
       }
 
       const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
-      writeCborFile(outputFile, signedTx.toCbor());
-      printSuccess(`Signed transaction written to ${outputFile}`);
+      writeTransactionFile(outputPath, signedTx.toCbor(), tx.getId(), true);
+      printSuccess(`Signed transaction written to ${outputPath}`);
     } else {
-      writeCborFile(outputFile, tx.toCbor());
-      printSuccess(`Unsigned transaction written to ${outputFile}`);
+      writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
+      printSuccess(`Unsigned transaction written to ${outputPath}`);
     }
 
     console.log("\nTransaction ID:", tx.getId());

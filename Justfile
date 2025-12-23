@@ -32,10 +32,5 @@ fmt-check:
     aiken fmt --check
 
 
-deploy env:
-    #!/bin/bash
-    echo "Building contracts for {{env}} network..."
-    just build {{env}}
-
-    echo "Generating deployment transactions..."
-    bun run index.ts {{env}}
+cli *args:
+    bun cli/index.ts {{args}}

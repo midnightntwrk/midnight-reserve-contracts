@@ -30,7 +30,8 @@ pub fn logic_merge(
             if address.payment_credential == guarded_cred {
               // (LM-3) Forbid consuming the forever NFT (policy `main_forever_script_hash`, name "")
               // while computing the merged value for this transaction.
-              expect assets.quantity_of(value, main_forever_script_hash, "") == 0
+              expect
+                assets.quantity_of(value, main_forever_script_hash, "") == 0
 
               // (LM-1) Accumulate every input locked by the forever script.
               assets.merge(value, acc)
@@ -61,11 +62,9 @@ pub fn logic_merge(
         },
         // (LM-4) Enforce that the replacement output returns at least the accumulated ADA and NIGHT balances.
         config.cnight_policy == cnight_policy,
-        cnight_name == "NIGHT",
-        assets.quantity_of(guarded_value, ada_policy_id, ada_asset_name)
-          <= ada_amount,
-        assets.quantity_of(guarded_value, cnight_policy, cnight_name)
-          <= cnight_amount,
+        cnight_name == config.cnight_name,
+        assets.quantity_of(guarded_value, ada_policy_id, ada_asset_name) <= ada_amount,
+        assets.quantity_of(guarded_value, cnight_policy, cnight_name) <= cnight_amount,
       }
     }
 

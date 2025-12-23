@@ -1,19 +1,14 @@
 import {
-  addressFromCredential,
   addressFromValidator,
   AssetId,
   AssetName,
   Credential,
   CredentialType,
-  Hash28ByteBase16,
-  NativeScripts,
   NetworkId,
   PaymentAddress,
-  PlutusData,
   PolicyId,
   RewardAccount,
   Script,
-  toHex,
   TransactionId,
   TransactionOutput,
   TransactionUnspentOutput,
@@ -22,77 +17,16 @@ import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { TxBuilder } from "@blaze-cardano/tx";
 import * as Contracts from "../contract_blueprint";
-import { describe, expect, test } from "bun:test";
-
-const MAIN_TOKEN_HEX = toHex(new TextEncoder().encode("main"));
-const STAGING_TOKEN_HEX = toHex(new TextEncoder().encode("staging"));
-const TECH_WITNESS_ASSET = toHex(new TextEncoder().encode("tech-auth-witness"));
-const COUNCIL_WITNESS_ASSET = toHex(
-  new TextEncoder().encode("council-auth-witness"),
-);
-
-const findUtxoByToken = (
-  utxos: TransactionUnspentOutput[],
-  scriptHash: string,
-  tokenHex: string,
-) => {
-  const target = AssetId(scriptHash + tokenHex);
-  const match = utxos.find((utxo) => {
-    const [, output] = utxo.toCore();
-    const assets = output.value.assets;
-    return assets ? (assets.get(target) ?? 0n) === 1n : false;
-  });
-
-  if (!match) {
-    throw new Error(`Missing ${tokenHex} UTxO for ${scriptHash}`);
-  }
-
-  return match;
-};
-
-const datumCbor = (datum: PlutusData) => datum.toCbor();
-
-const expectDatum = (
-  utxo: TransactionUnspentOutput,
-  expected: Contracts.UpgradeState,
-) => {
-  const [, output] = utxo.toCore();
-  if (!output.datum) throw new Error("Missing datum on output");
-
-  const actual = PlutusData.fromCore(output.datum);
-  const expectedDatum = serialize(
-    Contracts.UpgradeState,
-    expected,
-  ) as PlutusData;
-  expect(datumCbor(actual)).toBe(datumCbor(expectedDatum));
-};
-
-const buildNativeScriptFromState = (
-  state: Contracts.VersionedMultisig,
-  numerator: bigint,
-  denominator: bigint,
-) => {
-  const [totalSigners, signers] = state.data;
-  const signerScripts = Object.keys(signers)
-    .sort()
-    .map((key) => {
-      const paymentHash = key.slice("8200581c".length);
-      const addr = addressFromCredential(
-        NetworkId.Testnet,
-        Credential.fromCore({
-          type: CredentialType.KeyHash,
-          hash: Hash28ByteBase16(paymentHash),
-        }),
-      );
-      return NativeScripts.justAddress(addr.toBech32(), NetworkId.Testnet);
-    });
-
-  const minSigners = Number(
-    (totalSigners * numerator + (denominator - 1n)) / denominator,
-  );
-
-  return NativeScripts.atLeastNOfK(minSigners, ...signerScripts);
-};
+import { describe, test } from "bun:test";
+import {
+  buildNativeScriptFromState,
+  COUNCIL_WITNESS_ASSET,
+  expectDatum,
+  findUtxoByToken,
+  MAIN_TOKEN_HEX,
+  STAGING_TOKEN_HEX,
+  TECH_WITNESS_ASSET,
+} from "./helpers/upgrade";
 
 describe("Reserve upgrade path", () => {
   test("deploy reserve, stage new logic, then promote to main", async () => {
@@ -150,50 +84,49 @@ describe("Reserve upgrade path", () => {
       const paymentHash = addr.asBase()?.getPaymentCredential().hash!;
       const stakeHash = addr.asBase()?.getStakeCredential().hash!;
 
-      const techAuthForeverState: Contracts.VersionedMultisig = {
-        data: [
+      // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+      const techAuthForeverState: Contracts.VersionedMultisig = [
+        [
           1n,
           {
             ["8200581c" + paymentHash]:
               "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
           },
         ],
-        round: 0n,
-      };
+        0n,
+      ];
 
-      const councilForeverState: Contracts.VersionedMultisig = {
-        data: [
+      // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+      const councilForeverState: Contracts.VersionedMultisig = [
+        [
           1n,
           {
             ["8200581c" + stakeHash]:
               "72679690ACD6B5186F59F5133B57DA6A38084250D13576FC3C780E3443D78D86",
           },
         ],
-        round: 0n,
-      };
+        0n,
+      ];
 
-      const thresholdDatum: Contracts.MultisigThreshold = {
-        technical_auth_numerator: 1n,
-        technical_auth_denominator: 2n,
-        council_numerator: 1n,
-        council_denominator: 2n,
-      };
+      // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+      const thresholdDatum: Contracts.MultisigThreshold = [1n, 2n, 1n, 2n];
 
       const govAuthRedeemerData = serialize(Contracts.PermissionedRedeemer, {
         [paymentHash]:
           "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
       });
 
+      // MultisigThreshold tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
       const techNativeScript = buildNativeScriptFromState(
         techAuthForeverState,
-        thresholdDatum.technical_auth_numerator,
-        thresholdDatum.technical_auth_denominator,
+        thresholdDatum[0], // technical_auth_numerator
+        thresholdDatum[1], // technical_auth_denominator
       );
 
       const councilNativeScript = buildNativeScriptFromState(
         councilForeverState,
-        thresholdDatum.council_numerator,
-        thresholdDatum.council_denominator,
+        thresholdDatum[2], // council_numerator
+        thresholdDatum[3], // council_denominator
       );
 
       const techWitnessPolicy = techNativeScript.hash();
@@ -333,8 +266,9 @@ describe("Reserve upgrade path", () => {
         newLogicHash: string,
         fundingUtxo: TransactionUnspentOutput,
       ) => {
-        const scriptUtxos =
-          await blaze.provider.getUnspentOutputs(reserveTwoStageAddress);
+        const scriptUtxos = await blaze.provider.getUnspentOutputs(
+          reserveTwoStageAddress,
+        );
 
         const mainRef = findUtxoByToken(
           scriptUtxos,
@@ -348,9 +282,10 @@ describe("Reserve upgrade path", () => {
         );
 
         const [mainInput] = mainRef.toCore();
-        const redeemer = serialize(Contracts.TwoStageRedeemer, {
-          update_field: "Logic",
-          which_stage: {
+        // TwoStageRedeemer is now a tuple: [UpdateField, WhichStage]
+        const redeemer = serialize(Contracts.TwoStageRedeemer, [
+          "Logic",
+          {
             Staging: [
               {
                 transaction_id: mainInput.txId.toString(),
@@ -359,7 +294,7 @@ describe("Reserve upgrade path", () => {
               newLogicHash,
             ],
           },
-        });
+        ]);
 
         const tx = applyGovernanceWitnesses(
           blaze
@@ -380,7 +315,9 @@ describe("Reserve upgrade path", () => {
                   coins: 2_000_000n,
                   assets: new Map([
                     [
-                      AssetId(reserveTwoStage.Script.hash() + STAGING_TOKEN_HEX),
+                      AssetId(
+                        reserveTwoStage.Script.hash() + STAGING_TOKEN_HEX,
+                      ),
                       1n,
                     ],
                   ]),
@@ -404,8 +341,9 @@ describe("Reserve upgrade path", () => {
         stagedHash: string,
         fundingUtxo: TransactionUnspentOutput,
       ) => {
-        const scriptUtxos =
-          await blaze.provider.getUnspentOutputs(reserveTwoStageAddress);
+        const scriptUtxos = await blaze.provider.getUnspentOutputs(
+          reserveTwoStageAddress,
+        );
 
         const mainInput = findUtxoByToken(
           scriptUtxos,
@@ -419,9 +357,10 @@ describe("Reserve upgrade path", () => {
         );
         const [stagingInput] = stagingRef.toCore();
 
-        const redeemer = serialize(Contracts.TwoStageRedeemer, {
-          update_field: "Logic",
-          which_stage: {
+        // TwoStageRedeemer is now a tuple: [UpdateField, WhichStage]
+        const redeemer = serialize(Contracts.TwoStageRedeemer, [
+          "Logic",
+          {
             Main: [
               {
                 transaction_id: stagingInput.txId.toString(),
@@ -429,7 +368,7 @@ describe("Reserve upgrade path", () => {
               },
             ],
           },
-        });
+        ]);
 
         const tx = applyGovernanceWitnesses(
           blaze
@@ -479,8 +418,9 @@ describe("Reserve upgrade path", () => {
       await promoteReserveMain(newReserveLogicHash, fundingUtxos[1]);
 
       // Verify final state
-      const reserveUtxos =
-        await blaze.provider.getUnspentOutputs(reserveTwoStageAddress);
+      const reserveUtxos = await blaze.provider.getUnspentOutputs(
+        reserveTwoStageAddress,
+      );
 
       expectDatum(
         findUtxoByToken(

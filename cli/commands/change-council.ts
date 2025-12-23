@@ -8,26 +8,30 @@ import {
   TransactionOutput,
   PaymentAddress,
 } from "@blaze-cardano/core";
-import { serialize, parse } from "@blaze-cardano/data";
-import { writeFileSync } from "fs";
+import { parse } from "@blaze-cardano/data";
+import { resolve } from "path";
 
-import type { ChangeAuthOptions, Signer } from "../lib/types";
+import type { ChangeAuthOptions } from "../lib/types";
 import { getNetworkId } from "../lib/types";
 import { getDeployerAddress } from "../lib/config";
 import { createBlaze } from "../lib/provider";
-import { getContractInstances, getCredentialAddress } from "../lib/contracts";
+import {
+  getContractInstances,
+  getCredentialAddress,
+  findScriptByHash,
+} from "../lib/contracts";
 import {
   parseSigners,
   parsePrivateKeys,
-  createMultisigState,
-  createRedeemerMap,
-  extractSignersFromMultisigState,
+  extractSignersFromCbor,
+  createMultisigStateCbor,
+  createRedeemerMapCbor,
 } from "../lib/signers";
 import {
   printSuccess,
   printError,
   printProgress,
-  writeCborFile,
+  writeTransactionFile,
 } from "../utils/output";
 import {
   createNativeMultisigScript,
@@ -40,7 +44,9 @@ import {
 import * as Contracts from "../../contract_blueprint";
 
 export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
-  const { network, txHash, txIndex, sign, outputFile } = options;
+  const { network, output, txHash, txIndex, sign, outputFile } = options;
+  const deploymentDir = resolve(output, network);
+  const outputPath = resolve(deploymentDir, outputFile);
 
   console.log(`\nChanging Council members on ${network} network`);
   console.log(`Using UTxO: ${txHash}#${txIndex}`);
@@ -74,10 +80,18 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
 
   printProgress("Fetching contract UTxOs...");
 
-  const councilForeverUtxos = await provider.getUnspentOutputs(councilForeverAddress);
-  const councilThresholdUtxos = await provider.getUnspentOutputs(councilUpdateThresholdAddress);
-  const techAuthForeverUtxos = await provider.getUnspentOutputs(techAuthForeverAddress);
-  const councilTwoStageUtxos = await provider.getUnspentOutputs(councilTwoStageAddress);
+  const councilForeverUtxos = await provider.getUnspentOutputs(
+    councilForeverAddress,
+  );
+  const councilThresholdUtxos = await provider.getUnspentOutputs(
+    councilUpdateThresholdAddress,
+  );
+  const techAuthForeverUtxos = await provider.getUnspentOutputs(
+    techAuthForeverAddress,
+  );
+  const councilTwoStageUtxos = await provider.getUnspentOutputs(
+    councilTwoStageAddress,
+  );
 
   console.log("\nFound contract UTxOs:");
   console.log("  Council forever:", councilForeverUtxos.length);
@@ -103,6 +117,38 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     throw new Error('Could not find council two-stage UTxO with "main" asset');
   }
 
+  // Parse the council two-stage UpgradeState datum
+  console.log("\nReading council two-stage upgrade state...");
+  const councilTwoStageDatum = councilTwoStageUtxo.output().datum();
+  if (!councilTwoStageDatum?.asInlineData()) {
+    throw new Error("Missing inline datum on council two-stage UTxO");
+  }
+
+  const upgradeState = parse(
+    Contracts.UpgradeState,
+    councilTwoStageDatum.asInlineData()!,
+  );
+  const [logicHash, mitigationLogicHash] = upgradeState;
+  console.log("  Logic hash:", logicHash);
+  console.log("  Mitigation logic hash:", mitigationLogicHash || "(empty)");
+
+  const logicScript = findScriptByHash(logicHash);
+  if (!logicScript) {
+    throw new Error(
+      `Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.councilLogic.Script.hash()}`,
+    );
+  }
+
+  let mitigationLogicScript: Script | null = null;
+  if (mitigationLogicHash && mitigationLogicHash !== "") {
+    mitigationLogicScript = findScriptByHash(mitigationLogicHash);
+    if (!mitigationLogicScript) {
+      throw new Error(
+        `Unknown mitigation logic script hash in UpgradeState: ${mitigationLogicHash}`,
+      );
+    }
+  }
+
   // Parse current council state
   console.log("\nCurrent council forever datum:");
   const currentDatum = councilForeverUtxo.output().datum();
@@ -115,7 +161,10 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     Contracts.VersionedMultisig,
     currentDatum.asInlineData()!,
   );
-  const currentCouncilSigners = extractSignersFromMultisigState(currentCouncilState);
+  // Use CBOR-aware extraction to preserve duplicate keys
+  const currentCouncilSigners = extractSignersFromCbor(
+    currentDatum.asInlineData()!,
+  );
 
   if (!currentCouncilSigners.length) {
     throw new Error("No council signers found in council forever datum");
@@ -128,19 +177,24 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     throw new Error("Tech auth forever UTxO missing inline datum");
   }
 
-  const currentTechAuthState = parse(
-    Contracts.VersionedMultisig,
-    techAuthDatum.asInlineData()!,
-  );
-  const techAuthSigners = extractSignersFromMultisigState(currentTechAuthState);
+  // Use CBOR-aware extraction to preserve duplicate keys
+  const techAuthSigners = extractSignersFromCbor(techAuthDatum.asInlineData()!);
 
   // Parse new council signers
   const newCouncilSigners = parseSigners("COUNCIL_SIGNERS");
-  const newCouncilForeverState = createMultisigState(
+  // Use CBOR functions that preserve duplicate keys
+  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
+  const newCouncilForeverStateCbor = createMultisigStateCbor(
     newCouncilSigners,
-    currentCouncilState.round,
+    currentCouncilState[1], // round is second element of tuple
   );
-  const memberRedeemer = createRedeemerMap(newCouncilSigners);
+  const memberRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
+
+  console.log("New council signers count:", newCouncilSigners.length);
+  console.log(
+    "  Unique payment hashes:",
+    new Set(newCouncilSigners.map((s) => s.paymentHash)).size,
+  );
 
   // Create native scripts for multisig validation
   const requiredSigners = 2;
@@ -161,10 +215,33 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   const councilPolicyId = PolicyId(nativeScriptCouncil.hash());
   const techAuthPolicyId = PolicyId(nativeScriptTechAuth.hash());
 
-  const councilLogicRewardAccount = createRewardAccount(
-    contracts.councilLogic.Script.hash(),
-    networkId,
+  console.log("\n=== Debug Info ===");
+  console.log("Council native script hash:", councilPolicyId);
+  console.log("Tech auth native script hash:", techAuthPolicyId);
+  console.log("Current council signers:");
+  currentCouncilSigners.forEach((s, i) =>
+    console.log(`  ${i}: ${s.paymentHash}`),
   );
+  console.log("Tech auth signers:");
+  techAuthSigners.forEach((s, i) => console.log(`  ${i}: ${s.paymentHash}`));
+
+  // Create reward accounts for logic scripts from the UpgradeState
+  const logicRewardAccount = createRewardAccount(logicHash, networkId);
+  console.log("\nLogic reward account:", logicRewardAccount);
+
+  let mitigationLogicRewardAccount: ReturnType<
+    typeof createRewardAccount
+  > | null = null;
+  if (mitigationLogicScript) {
+    mitigationLogicRewardAccount = createRewardAccount(
+      mitigationLogicHash,
+      networkId,
+    );
+    console.log(
+      "Mitigation logic reward account:",
+      mitigationLogicRewardAccount,
+    );
+  }
 
   // Fetch user UTxO
   printProgress("Fetching user UTXO...");
@@ -196,19 +273,26 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
           address: PaymentAddress(councilForeverAddress.toBech32()),
           value: {
             coins: councilForeverUtxo.output().amount().coin(),
-            assets: new Map([[AssetId(contracts.councilForever.Script.hash()), 1n]]),
+            assets: new Map([
+              [AssetId(contracts.councilForever.Script.hash()), 1n],
+            ]),
           },
-          datum: serialize(Contracts.VersionedMultisig, newCouncilForeverState).toCore(),
+          datum: newCouncilForeverStateCbor.toCore(),
         }),
       )
-      .addWithdrawal(
-        councilLogicRewardAccount,
-        0n,
-        serialize(Contracts.PermissionedRedeemer, memberRedeemer),
-      )
-      .provideScript(contracts.councilLogic.Script)
+      // Add logic withdrawal (from UpgradeState)
+      .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
+      .provideScript(logicScript)
       .setChangeAddress(changeAddress)
       .setFeePadding(50000n);
+
+    // Add mitigation logic withdrawal if present in UpgradeState
+    if (mitigationLogicScript && mitigationLogicRewardAccount) {
+      console.log("  Adding mitigation logic withdrawal...");
+      txBuilder
+        .addWithdrawal(mitigationLogicRewardAccount, 0n, memberRedeemerCbor)
+        .provideScript(mitigationLogicScript);
+    }
 
     printProgress("Completing transaction (with evaluation)...");
     const tx = await txBuilder.complete();
@@ -218,7 +302,10 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     if (sign) {
       // Sign with both tech auth and council keys
       const signerKeyGroups = [
-        { label: "tech auth", keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS") },
+        {
+          label: "tech auth",
+          keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS"),
+        },
         { label: "council", keys: parsePrivateKeys("COUNCIL_PRIVATE_KEYS") },
       ];
 
@@ -232,16 +319,23 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
       }
 
       const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
-      writeCborFile(outputFile, signedTx.toCbor());
-      printSuccess(`Signed transaction written to ${outputFile}`);
+      writeTransactionFile(outputPath, signedTx.toCbor(), tx.getId(), true);
+      printSuccess(`Signed transaction written to ${outputPath}`);
     } else {
-      writeCborFile(outputFile, tx.toCbor());
-      printSuccess(`Unsigned transaction written to ${outputFile}`);
+      writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
+      printSuccess(`Unsigned transaction written to ${outputPath}`);
     }
 
     console.log("\nTransaction ID:", tx.getId());
   } catch (error) {
     printError("Transaction build failed");
+    // Log detailed error info
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      if ("cause" in error && error.cause) {
+        console.error("Error cause:", JSON.stringify(error.cause, null, 2));
+      }
+    }
     console.error(error);
     throw error;
   }

@@ -154,13 +154,41 @@ export function attachWitnesses(
   txCbor: string,
   signatures: [Ed25519PublicKeyHex, Ed25519SignatureHex][],
 ): Transaction {
+  const blazeTx = Transaction.fromCbor(TxCBOR(HexBlob(txCbor)));
+  const witnessSet = blazeTx.witnessSet();
+
+  // Get existing vkey witnesses and merge with new ones
+  const existingVkeys = witnessSet.vkeys();
+  const existingSignatures: [Ed25519PublicKeyHex, Ed25519SignatureHex][] = [];
+
+  if (existingVkeys) {
+    for (const vkey of existingVkeys.values()) {
+      existingSignatures.push([vkey.vkey(), vkey.signature()]);
+    }
+  }
+
+  // Merge signatures, deduplicating by public key
+  const signatureMap = new Map<string, Ed25519SignatureHex>();
+  for (const [pubKey, sig] of existingSignatures) {
+    signatureMap.set(pubKey, sig);
+  }
+  for (const [pubKey, sig] of signatures) {
+    signatureMap.set(pubKey, sig);
+  }
+
+  const mergedSignatures: [Ed25519PublicKeyHex, Ed25519SignatureHex][] = [];
+  for (const [pubKey, sig] of signatureMap) {
+    mergedSignatures.push([
+      Ed25519PublicKeyHex(pubKey),
+      Ed25519SignatureHex(sig),
+    ]);
+  }
+
   const cborSet = CborSet.fromCore(
-    signatures,
+    mergedSignatures,
     (i: ReturnType<VkeyWitness["toCore"]>) => VkeyWitness.fromCore(i),
   );
 
-  const blazeTx = Transaction.fromCbor(TxCBOR(HexBlob(txCbor)));
-  const witnessSet = blazeTx.witnessSet();
   witnessSet.setVkeys(cborSet);
   blazeTx.setWitnessSet(witnessSet);
 
@@ -195,4 +223,22 @@ export function findUtxoByTxRef(
       utxo.input().transactionId() === txHash &&
       utxo.input().index() === BigInt(txIndex),
   );
+}
+
+export function findUtxoWithStagingAsset(
+  utxos: TransactionUnspentOutput[],
+): TransactionUnspentOutput | undefined {
+  const stagingAssetName = Buffer.from("staging").toString("hex");
+
+  return utxos.find((utxo) => {
+    const assets = utxo.output().amount().multiasset();
+    if (!assets) return false;
+
+    for (const [assetId] of assets) {
+      if (assetId.endsWith(stagingAssetName)) {
+        return true;
+      }
+    }
+    return false;
+  });
 }

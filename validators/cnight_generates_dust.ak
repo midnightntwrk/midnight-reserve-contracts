@@ -1,6 +1,7 @@
 use aiken/builtin
 use aiken/collection/dict.{to_pairs}
 use aiken/collection/list
+use aiken/crypto.{VerificationKeyHash}
 use cardano/address.{Credential, Script, VerificationKey}
 use cardano/assets.{quantity_of, to_dict}
 use cardano/certificate.{RegisterCredential}
@@ -21,6 +22,21 @@ pub type DustMappingDatum {
 pub type DustAction {
   Create
   Burn
+}
+
+fn check_auth(
+  c_wallet: Credential,
+  extra_signatories: List<VerificationKeyHash>,
+  withdrawals: Pairs<Credential, Int>,
+) {
+  when c_wallet is {
+    // (DG-4) VKey wallets must be represented by an extra signer.
+    VerificationKey(key) -> list.has(extra_signatories, key)
+
+    // (DG-5) Script wallets must appear in withdrawals.
+    Script(_) as script ->
+      list.any(withdrawals, fn(withdraw) { withdraw.1st == script })
+  }
 }
 
 validator cnight_generates_dust {
@@ -58,14 +74,7 @@ validator cnight_generates_dust {
           // (DG-3) Ensure the dust address fits within 33 bytes.
           expect builtin.length_of_bytearray(dust_address) <= 33
 
-          when c_wallet is {
-            // (DG-4) VKey wallets must be represented by an extra signer.
-            VerificationKey(key) -> list.has(extra_signatories, key)
-
-            // (DG-5) Script wallets must appear in withdrawals.
-            Script(_) as script ->
-              list.any(withdrawals, fn(withdraw) { withdraw.1st == script })
-          }
+          check_auth(c_wallet, extra_signatories, withdrawals)
         } else {
           // Burn
           let pay_cred = Script(own_policy)
@@ -108,7 +117,9 @@ validator cnight_generates_dust {
             outputs,
             fn(input, outputs) {
               if input.output.address.payment_credential == own_cred {
-                expect [Output { value, datum, .. }, ..rest] = outputs
+                expect [Output { address, value, datum, .. }, ..rest] = outputs
+
+                expect address.payment_credential == own_cred
 
                 // (DG-7) Each paired output must carry exactly one script NFT.
                 expect [_, ..nft_id] = value |> to_dict |> to_pairs
@@ -126,16 +137,7 @@ validator cnight_generates_dust {
                 // (DG-3) Enforce the 33-byte dust address limit during withdrawals as well.
                 expect builtin.length_of_bytearray(dust_address) <= 33
 
-                expect
-                  when c_wallet is {
-                    VerificationKey(key) -> list.has(extra_signatories, key)
-
-                    Script(_) as script ->
-                      list.any(
-                        withdrawals,
-                        fn(withdraw) { withdraw.1st == script },
-                      )
-                  }
+                expect check_auth(c_wallet, extra_signatories, withdrawals)
 
                 rest
               } else {
@@ -159,12 +161,7 @@ validator cnight_generates_dust {
 
         let minted_quantity = quantity_of(mint, own_hash, "")
         and {
-          when c_wallet is {
-            VerificationKey(key) -> list.has(extra_signatories, key)
-
-            Script(_) as script ->
-              list.any(withdrawals, fn(withdraw) { withdraw.1st == script })
-          },
+          check_auth(c_wallet, extra_signatories, withdrawals),
           // (DG-15) Require the transaction to either burn dust NFTs or prove script withdrawal authority for a no-mint update.
           or {
             minted_quantity < 0,

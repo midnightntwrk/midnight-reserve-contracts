@@ -11,6 +11,7 @@ pub type UpgradeState {
   logic_round: Int,
 }
 
+@list
 pub type TwoStageRedeemer {
   update_field: UpdateField,
   which_stage: WhichStage,
