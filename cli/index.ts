@@ -15,6 +15,17 @@ import type {
 } from "./lib/types";
 import { getDefaultProvider } from "./lib/types";
 import {
+  getDeployUtxoAmount,
+  getDeployOutputAmount,
+  getDeployThresholdOutputAmount,
+  getTechAuthThreshold,
+  getCouncilThreshold,
+  getCouncilStagingThreshold,
+  getTechAuthStagingThreshold,
+  getSimpleTxCount,
+  getSimpleTxAmount,
+} from "./lib/config";
+import {
   validateNetwork,
   validateProvider,
   validateTxHash,
@@ -84,9 +95,9 @@ Usage: bun cli deploy [options]
 Generate deployment transactions for reserve contracts.
 
 Options:
-  --utxo-amount                Lovelace for input UTxO (default: 100000000)
+  --utxo-amount                Lovelace for input UTxO (default: 20000000)
   --output-amount              Lovelace for contract outputs (default: 1000000)
-  --threshold-output-amount    Lovelace for threshold outputs (default: 2000000)
+  --threshold-output-amount    Lovelace for threshold outputs (default: 1000000)
   --tech-auth-threshold        Tech auth threshold e.g. "2/3" (default: 2/3)
   --council-threshold          Council threshold e.g. "2/3" (default: 2/3)
   --council-staging-threshold  Council staging threshold e.g. "0/1" (default: 0/1)
@@ -220,7 +231,7 @@ Create simple transactions for testing.
 
 Options:
   --count             Number of outputs (default: 15)
-  --amount            Lovelace per output (default: 100000000)
+  --amount            Lovelace per output (default: 20000000)
   --to                Recipient address (default: deployer address)
   --output-file       Output file name (default: simple-tx.json)
 `);
@@ -404,25 +415,25 @@ async function main(): Promise<void> {
           dryRun,
           utxoAmount: options["utxo-amount"]
             ? parseAmount(options["utxo-amount"] as string)
-            : 100_000_000n,
+            : getDeployUtxoAmount(),
           outputAmount: options["output-amount"]
             ? parseAmount(options["output-amount"] as string)
-            : 1_000_000n,
+            : getDeployOutputAmount(),
           thresholdOutputAmount: options["threshold-output-amount"]
             ? parseAmount(options["threshold-output-amount"] as string)
-            : 2_000_000n,
+            : getDeployThresholdOutputAmount(),
           techAuthThreshold: options["tech-auth-threshold"]
             ? parseThreshold(options["tech-auth-threshold"] as string)
-            : { numerator: 2n, denominator: 3n },
+            : getTechAuthThreshold(),
           councilThreshold: options["council-threshold"]
             ? parseThreshold(options["council-threshold"] as string)
-            : { numerator: 2n, denominator: 3n },
+            : getCouncilThreshold(),
           councilStagingThreshold: options["council-staging-threshold"]
             ? parseThreshold(options["council-staging-threshold"] as string)
-            : { numerator: 0n, denominator: 1n },
+            : getCouncilStagingThreshold(),
           techAuthStagingThreshold: options["tech-auth-staging-threshold"]
             ? parseThreshold(options["tech-auth-staging-threshold"] as string)
-            : { numerator: 1n, denominator: 2n },
+            : getTechAuthStagingThreshold(),
           components: options.components
             ? validateComponents((options.components as string).split(","))
             : [],
@@ -517,10 +528,12 @@ async function main(): Promise<void> {
           output,
           provider,
           dryRun,
-          count: options.count ? parseInt(options.count as string, 10) : 15,
+          count: options.count
+            ? parseInt(options.count as string, 10)
+            : getSimpleTxCount(),
           amount: options.amount
             ? parseAmount(options.amount as string)
-            : 100_000_000n,
+            : getSimpleTxAmount(),
           to: options.to as string | undefined,
           outputFile: (options["output-file"] as string) || "simple-tx.json",
         };

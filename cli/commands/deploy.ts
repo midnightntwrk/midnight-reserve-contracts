@@ -20,7 +20,12 @@ import type {
   TransactionOutput as TxOutput,
 } from "../lib/types";
 import { getNetworkId } from "../lib/types";
-import { loadAikenConfig, getDeployerAddress } from "../lib/config";
+import {
+  loadAikenConfig,
+  getDeployerAddress,
+  getTermsAndConditionsInitialHash,
+  getTermsAndConditionsInitialLink,
+} from "../lib/config";
 import { createBlaze } from "../lib/provider";
 import { getContractInstances } from "../lib/contracts";
 import {
@@ -747,13 +752,11 @@ export async function deploy(options: DeployOptions): Promise<void> {
           contracts.stagingGovAuth.Script.hash(),
         );
 
-        // VersionedTermsAndConditions is a tuple: [[hash, link], round]
-        // Hash must be exactly 32 bytes (64 hex chars) per validate_terms_structure
         const initialTermsAndConditions: Contracts.VersionedTermsAndConditions =
           [
             [
-              "0000000000000000000000000000000000000000000000000000000000000000",
-              "",
+              getTermsAndConditionsInitialHash(),
+              getTermsAndConditionsInitialLink(),
             ],
             0n,
           ];
