@@ -80,3 +80,80 @@ export function getDeployerAddress(): string {
   // Default test address
   return "addr_test1qruhen60uwzpwnnr7gjs50z2v8u9zyfw6zunet4k42zrpr54mrlv55f93rs6j48wt29w90hlxt4rvpvshe55k5r9mpvqjv2wt4";
 }
+
+export function getDeployUtxoAmount(): bigint {
+  const value = process.env.DEPLOY_UTXO_AMOUNT;
+  return value ? BigInt(value) : 20_000_000n;
+}
+
+export function getDeployOutputAmount(): bigint {
+  const value = process.env.DEPLOY_OUTPUT_AMOUNT;
+  return value ? BigInt(value) : 1_000_000n;
+}
+
+export function getDeployThresholdOutputAmount(): bigint {
+  const value = process.env.DEPLOY_THRESHOLD_OUTPUT_AMOUNT;
+  return value ? BigInt(value) : 1_000_000n;
+}
+
+export interface Threshold {
+  numerator: bigint;
+  denominator: bigint;
+}
+
+function parseThresholdFromEnv(
+  value: string | undefined,
+  defaultNum: bigint,
+  defaultDenom: bigint,
+): Threshold {
+  if (!value) {
+    return { numerator: defaultNum, denominator: defaultDenom };
+  }
+  const parts = value.split("/");
+  if (parts.length !== 2) {
+    throw new Error(
+      `Invalid threshold format '${value}'. Expected format: 'numerator/denominator' (e.g., '2/3')`,
+    );
+  }
+  return {
+    numerator: BigInt(parts[0]),
+    denominator: BigInt(parts[1]),
+  };
+}
+
+export function getTechAuthThreshold(): Threshold {
+  return parseThresholdFromEnv(process.env.TECH_AUTH_THRESHOLD, 2n, 3n);
+}
+
+export function getCouncilThreshold(): Threshold {
+  return parseThresholdFromEnv(process.env.COUNCIL_THRESHOLD, 2n, 3n);
+}
+
+export function getCouncilStagingThreshold(): Threshold {
+  return parseThresholdFromEnv(process.env.COUNCIL_STAGING_THRESHOLD, 0n, 1n);
+}
+
+export function getTechAuthStagingThreshold(): Threshold {
+  return parseThresholdFromEnv(process.env.TECH_AUTH_STAGING_THRESHOLD, 1n, 2n);
+}
+
+export function getTermsAndConditionsInitialHash(): string {
+  const value = process.env.TERMS_AND_CONDITIONS_INITIAL_HASH;
+  const DEFAULT_HASH =
+    "0000000000000000000000000000000000000000000000000000000000000000";
+  return value || DEFAULT_HASH;
+}
+
+export function getTermsAndConditionsInitialLink(): string {
+  return process.env.TERMS_AND_CONDITIONS_INITIAL_LINK || "";
+}
+
+export function getSimpleTxCount(): number {
+  const value = process.env.SIMPLE_TX_COUNT;
+  return value ? parseInt(value, 10) : 15;
+}
+
+export function getSimpleTxAmount(): bigint {
+  const value = process.env.SIMPLE_TX_AMOUNT;
+  return value ? BigInt(value) : 20_000_000n;
+}
