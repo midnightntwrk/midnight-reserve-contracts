@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { toHex } from "@blaze-cardano/core";
+import { PlutusData, toHex } from "@blaze-cardano/core";
 import {
   parsePermissionedCandidatesString,
   candidateToPermissionedDatum,
@@ -171,8 +171,12 @@ describe("Candidates Parser", () => {
     test("creates FederatedOps datum with correct structure", () => {
       const datum = createFederatedOpsDatumFromString(singleCandidateInput, 0n);
 
-      // FederatedOps = [Unit ({}), List<PermissionedCandidateDatumV1>, version]
-      expect(datum[0]).toEqual({});
+      // FederatedOps = [Unit (Constr 0 []), List<PermissionedCandidateDatumV1>, version]
+      const expectedUnit = PlutusData.fromCore({
+        constructor: 0n,
+        fields: { items: [] },
+      });
+      expect(datum[0].toCbor()).toBe(expectedUnit.toCbor());
       expect(datum[1]).toHaveLength(1);
       expect(datum[2]).toBe(0n);
     });
@@ -183,7 +187,11 @@ describe("Candidates Parser", () => {
         0n,
       );
 
-      expect(datum[0]).toEqual({});
+      const expectedUnit = PlutusData.fromCore({
+        constructor: 0n,
+        fields: { items: [] },
+      });
+      expect(datum[0].toCbor()).toBe(expectedUnit.toCbor());
       expect(datum[1]).toHaveLength(3);
       expect(datum[2]).toBe(0n);
 

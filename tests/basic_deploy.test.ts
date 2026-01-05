@@ -143,7 +143,15 @@ describe("Basic Deploy", () => {
                     [AssetId(contracts.reserveForever.Script.hash()), 1n],
                   ]),
                 },
-                datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
+                datum: PlutusData.fromCore({
+                  constructor: 0n,
+                  fields: {
+                    items: [
+                      PlutusData.newInteger(0n).toCore(),
+                      PlutusData.newInteger(0n).toCore(),
+                    ],
+                  },
+                }).toCore(),
               }),
             ),
         );
@@ -264,7 +272,15 @@ describe("Basic Deploy", () => {
                     [AssetId(contracts.icsForever.Script.hash()), 1n],
                   ]),
                 },
-                datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
+                datum: PlutusData.fromCore({
+                  constructor: 0n,
+                  fields: {
+                    items: [
+                      PlutusData.newInteger(0n).toCore(),
+                      PlutusData.newInteger(0n).toCore(),
+                    ],
+                  },
+                }).toCore(),
               }),
             ),
         );
@@ -316,7 +332,7 @@ describe("Basic Deploy", () => {
 
         // FederatedOps datum: [Unit, List<PermissionedCandidateDatumV1>, version]
         const federatedOpsForeverState: Contracts.FederatedOps = [
-          {}, // Unit
+          PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }), // Unit
           [], // Empty appendix (no permissioned candidates for this test)
           0n, // version
         ];

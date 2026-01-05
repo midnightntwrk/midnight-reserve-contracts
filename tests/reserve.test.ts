@@ -161,7 +161,15 @@ describe("Reserve Deploy and Merge", () => {
                 coins: 2_000_000n,
                 assets: new Map([[AssetId(reserveForever.Script.hash()), 1n]]),
               },
-              datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
+              datum: PlutusData.fromCore({
+                constructor: 0n,
+                fields: {
+                  items: [
+                    PlutusData.newInteger(0n).toCore(),
+                    PlutusData.newInteger(0n).toCore(),
+                  ],
+                },
+              }).toCore(),
             }),
           ),
       );
@@ -211,7 +219,15 @@ describe("Reserve Deploy and Merge", () => {
             coins: 5_000_000n,
             assets: new Map([[AssetId(cnightAsset), 3n]]),
           },
-          datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
+          datum: PlutusData.fromCore({
+            constructor: 0n,
+            fields: {
+              items: [
+                PlutusData.newInteger(0n).toCore(),
+                PlutusData.newInteger(0n).toCore(),
+              ],
+            },
+          }).toCore(),
         },
       ]);
 
@@ -228,7 +244,15 @@ describe("Reserve Deploy and Merge", () => {
             coins: 3_000_000n,
             assets: new Map([[AssetId(cnightAsset), 2n]]),
           },
-          datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
+          datum: PlutusData.fromCore({
+            constructor: 0n,
+            fields: {
+              items: [
+                PlutusData.newInteger(0n).toCore(),
+                PlutusData.newInteger(0n).toCore(),
+              ],
+            },
+          }).toCore(),
         },
       ]);
 
@@ -269,7 +293,15 @@ describe("Reserve Deploy and Merge", () => {
                 coins: 8_000_000n,
                 assets: new Map([[AssetId(cnightAsset), 5n]]),
               },
-              datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
+              datum: PlutusData.fromCore({
+                constructor: 0n,
+                fields: {
+                  items: [
+                    PlutusData.newInteger(0n).toCore(),
+                    PlutusData.newInteger(0n).toCore(),
+                  ],
+                },
+              }).toCore(),
             }),
           ),
       );
