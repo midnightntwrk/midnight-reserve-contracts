@@ -358,7 +358,15 @@ export async function deploy(options: DeployOptions): Promise<void> {
               [AssetId(params.foreverContract.Script.hash()), 1n],
             ]),
           },
-          datum: PlutusData.fromCbor(HexBlob("01")).toCore(),
+          datum: PlutusData.fromCore({
+            constructor: 0n,
+            fields: {
+              items: [
+                PlutusData.newInteger(0n).toCore(),
+                PlutusData.newInteger(0n).toCore(),
+              ],
+            },
+          }).toCore(),
         }),
       );
 
