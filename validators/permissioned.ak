@@ -29,6 +29,7 @@ fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
       [],
       0,
       fn(signer, acc_signers, len, return) {
+        expect _ = signer.2nd |> builtin.un_b_data
         return(
           [
             Pair(signer.1st |> builtin.un_b_data |> create_signer, signer.2nd),
