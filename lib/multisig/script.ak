@@ -152,7 +152,7 @@ pub fn threshold_validation(
       expect is_singleton(value, own_hash, "")
 
       // (THS-16) Require the main governance threshold reference input to provide an inline datum.
-      ref_datum =
+      let ref_datum =
         get_input_state_by_policy(
           reference_inputs,
           config.main_gov_threshold_hash,
