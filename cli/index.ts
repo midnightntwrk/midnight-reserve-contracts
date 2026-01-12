@@ -45,6 +45,7 @@ import {
   deploy,
   changeCouncil,
   changeTechAuth,
+  changeFederatedOps,
   simpleTx,
   info,
   stageUpgrade,
@@ -65,6 +66,7 @@ Commands:
   deploy              Generate deployment transactions
   change-council      Update council multisig members
   change-tech-auth    Update tech auth multisig members
+  change-federated-ops  Update federated ops members
   stage-upgrade       Stage a new logic hash for a two-stage upgrade validator
   promote-upgrade     Promote staged logic to main for a two-stage upgrade validator
   register-gov-auth   Register main and staging gov auth scripts as stake credentials
@@ -156,6 +158,32 @@ Options:
   console.log(`Examples:
   bun cli change-tech-auth -n preview abc123...def 5
   bun cli change-tech-auth -n preview abc123...def 5 --no-sign
+`);
+}
+
+function printChangeFederatedOpsHelp(): void {
+  console.log(`
+Usage: bun cli change-federated-ops [options] <tx_hash> <tx_index>
+
+Update federated ops members. Requires both council and tech auth authorization.
+
+Arguments:
+  <tx_hash>           Transaction hash of input UTxO
+  <tx_index>          Output index of input UTxO
+
+Options:
+  --utxo-amount       Override input UTxO amount
+  --sign              Sign transaction (default: true)
+  --no-sign           Do not sign transaction
+  --output-file       Output file name (default: change-federated-ops-tx.json)
+
+Environment variables:
+  PERMISSIONED_CANDIDATES   New federated ops member candidates (required)
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli change-federated-ops -n preview abc123...def 5
+  bun cli change-federated-ops -n preview abc123...def 5 --no-sign
 `);
 }
 
@@ -514,6 +542,43 @@ async function main(): Promise<void> {
         };
 
         await changeTechAuth(changeOptions);
+        break;
+      }
+
+      case "change-federated-ops": {
+        if (options.help) {
+          printChangeFederatedOpsHelp();
+          process.exit(0);
+        }
+
+        if (positional.length < 2) {
+          printError("Missing required arguments: <tx_hash> <tx_index>");
+          printChangeFederatedOpsHelp();
+          process.exit(1);
+        }
+
+        const txHash = positional[0];
+        const txIndex = parseInt(positional[1], 10);
+
+        validateTxHash(txHash);
+        validateTxIndex(txIndex);
+
+        const changeOptions: ChangeAuthOptions = {
+          network,
+          output,
+          provider,
+          dryRun,
+          txHash,
+          txIndex,
+          utxoAmount: options["utxo-amount"]
+            ? parseAmount(options["utxo-amount"] as string)
+            : undefined,
+          sign: options.sign !== false,
+          outputFile:
+            (options["output-file"] as string) || "change-federated-ops-tx.json",
+        };
+
+        await changeFederatedOps(changeOptions);
         break;
       }
 

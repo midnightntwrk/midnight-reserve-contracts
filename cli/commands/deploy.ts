@@ -4,7 +4,6 @@ import {
   AssetName,
   Credential,
   CredentialType,
-  HexBlob,
   PaymentAddress,
   PlutusData,
   PolicyId,
@@ -82,6 +81,12 @@ interface FederatedOpsDeployParams {
   foreverContract: { Script: Script };
   logicContract: { Script: Script };
   federatedOpsDatum: Contracts.FederatedOps;
+}
+
+interface ScriptOutputInfo {
+  address: string;
+  policyId?: string;
+  assetName?: string;
 }
 
 export async function deploy(options: DeployOptions): Promise<void> {
@@ -702,31 +707,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
         }),
     },
     {
-      name: "tcnight-mint-infinite-deployment",
-      component: "tcnight-mint-infinite",
-      generator: async () => {
-        printProgress(
-          "Generating TCnight Mint Infinite deployment transaction...",
-        );
-
-        let txBuilder = blaze
-          .newTransaction()
-          .provideScript(contracts.tcnightMintInfinite.Script)
-          .addRegisterStake(
-            Credential.fromCore({
-              hash: contracts.tcnightMintInfinite.Script.hash(),
-              type: CredentialType.ScriptHash,
-            }),
-          );
-
-        if (collateralUtxo) {
-          txBuilder = txBuilder.provideCollateral([collateralUtxo]);
-        }
-
-        return await txBuilder.complete();
-      },
-    },
-    {
       name: "terms-and-conditions-deployment",
       component: "terms-and-conditions",
       generator: async () => {
@@ -888,6 +868,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
   // Generate transactions
   const allTransactions: TxOutput[] = [];
+  const allScriptOutputs: Map<string, ScriptOutputInfo[]> = new Map();
 
   for (const { name, generator } of transactions) {
     try {
@@ -897,6 +878,63 @@ export async function deploy(options: DeployOptions): Promise<void> {
         cbor: tx.toCbor(),
         hash: tx.getId(),
       });
+
+      // Extract script outputs from transaction
+      const scriptOutputs: ScriptOutputInfo[] = [];
+      const txBody = tx.body();
+      const outputs = txBody.outputs();
+
+      for (let i = 0; i < outputs.length; i++) {
+        const output = outputs[i];
+        const address = output.address();
+        const addressBech32 = address.toBech32();
+
+        // Check if this is a script address (starts with addr_test1w or addr1w for scripts)
+        const isScriptAddress = addressBech32.includes("addr_test1w") ||
+                                addressBech32.includes("addr1w") ||
+                                addressBech32.startsWith("addr_test1z") ||
+                                addressBech32.startsWith("addr1z");
+
+        if (isScriptAddress || output.amount().multiasset()) {
+          const outputInfo: ScriptOutputInfo = {
+            address: addressBech32,
+          };
+
+          // Extract policy ID and asset name from multiasset if present
+          const multiasset = output.amount().multiasset();
+          if (multiasset) {
+            for (const [assetId] of multiasset) {
+              // AssetId is policyId + assetName (28 bytes policy + rest is asset name)
+              const policyId = assetId.slice(0, 56);
+              const assetNameHex = assetId.slice(56);
+              outputInfo.policyId = policyId;
+              if (assetNameHex) {
+                try {
+                  // Try to decode as UTF-8
+                  const bytes = new Uint8Array(assetNameHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+                  const decoded = new TextDecoder().decode(bytes);
+                  if (/^[\x20-\x7E]*$/.test(decoded)) {
+                    outputInfo.assetName = decoded || "(empty)";
+                  } else {
+                    outputInfo.assetName = assetNameHex;
+                  }
+                } catch {
+                  outputInfo.assetName = assetNameHex || "(empty)";
+                }
+              } else {
+                outputInfo.assetName = "(empty)";
+              }
+              break; // Just take the first asset for display
+            }
+          }
+
+          scriptOutputs.push(outputInfo);
+        }
+      }
+
+      if (scriptOutputs.length > 0) {
+        allScriptOutputs.set(name, scriptOutputs);
+      }
     } catch (error) {
       printError(`Error generating ${name}: ${error}`);
       throw error;
@@ -922,4 +960,21 @@ export async function deploy(options: DeployOptions): Promise<void> {
   console.log(`===========================================`);
 
   printTransactionSummary(allTransactions);
+
+  // Print script outputs
+  console.log(`\nScript Outputs:`);
+  console.log(`===========================================`);
+  for (const [txName, outputs] of allScriptOutputs) {
+    console.log(`\n${txName}:`);
+    for (const output of outputs) {
+      console.log(`  Address: ${output.address}`);
+      if (output.policyId) {
+        console.log(`  Policy ID: ${output.policyId}`);
+        if (output.assetName) {
+          console.log(`  Asset Name: ${output.assetName}`);
+        }
+      }
+      console.log(``);
+    }
+  }
 }
