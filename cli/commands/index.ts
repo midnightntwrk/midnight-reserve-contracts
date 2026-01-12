@@ -2,6 +2,7 @@
 export { deploy } from "./deploy";
 export { changeCouncil } from "./change-council";
 export { changeTechAuth } from "./change-tech-auth";
+export { changeFederatedOps } from "./change-federated-ops";
 export { simpleTx } from "./simple-tx";
 export { info } from "./info";
 export { stageUpgrade } from "./stage-upgrade";
