@@ -62,7 +62,7 @@ export async function signAndSubmit(
   const privateKeyHex = getEnvVar(signingKeyEnvVar);
 
   // Create provider for submission
-  const provider = createProvider(network, providerType);
+  const provider = await createProvider(network, providerType);
 
   // Read and parse JSON file
   printProgress(`Reading transaction file: ${jsonFile}`);
@@ -85,7 +85,7 @@ export async function signAndSubmit(
         const hash = await processAndSubmitTransaction(
           cbor,
           privateKeyHex,
-          await provider,
+          provider,
           tx.name,
         );
         submittedHashes.push(hash);
@@ -102,7 +102,7 @@ export async function signAndSubmit(
       const hash = await processAndSubmitTransaction(
         jsonData.cbor,
         privateKeyHex,
-        await provider,
+        provider,
         "transaction",
       );
       submittedHashes.push(hash);
