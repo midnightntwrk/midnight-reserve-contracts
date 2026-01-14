@@ -1,16 +1,17 @@
 import { Address } from "@blaze-cardano/core";
 import { Blaze, ColdWallet, type Provider } from "@blaze-cardano/sdk";
-import { Blockfrost, type NetworkName } from "@blaze-cardano/query";
+import { Blockfrost, Kupmios, type NetworkName } from "@blaze-cardano/query";
 import { Maestro } from "@blaze-cardano/query";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { Network, ProviderType } from "./types";
+import { Unwrapped } from "@blaze-cardano/ogmios";
 import { getNetworkId, getDefaultProvider } from "./types";
 import { getEnvVar, getDeployerAddress } from "./config";
 
-export function createProvider(
+export async function createProvider(
   network: Network,
   providerType?: ProviderType,
-): Provider {
+): Promise<Provider> {
   const type = providerType || getDefaultProvider(network);
 
   switch (type) {
@@ -48,6 +49,16 @@ export function createProvider(
       });
     }
 
+    case "kupmios": {
+      const kupoUrl = getEnvVar("KUPO_URL");
+      const ogmiosUrl = getEnvVar("OGMIOS_URL");
+      if (!kupoUrl || !ogmiosUrl) {
+        throw new Error("Both KUPO_URL and OGMIOS_URL environment variables must be set for kupmios provider");
+      }
+      const ogmios = await Unwrapped.Ogmios.new(ogmiosUrl);
+      return new Kupmios(kupoUrl, ogmios);
+    }
+
     default:
       throw new Error(`Unknown provider type: ${type}`);
   }
@@ -57,7 +68,7 @@ export async function createBlaze(
   network: Network,
   providerType?: ProviderType,
 ): Promise<{ blaze: Blaze<Provider, ColdWallet>; provider: Provider }> {
-  const provider = createProvider(network, providerType);
+  const provider = await createProvider(network, providerType);
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
   const address = Address.fromBech32(deployerAddress);
