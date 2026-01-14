@@ -11,6 +11,13 @@ import { testCategories } from "./tests";
 async function main() {
   const app = await Sprinkle.New(SettingsSchema, "./test-plan/.config");
 
+  // If non-interactive mode, skip menu and run all tests
+  if (app.settings.nonInteractive) {
+    console.log("🤖 Running in non-interactive mode...\n");
+    await runAllTests(app.settings);
+    process.exit(0);
+  }
+
   const menu = {
     title: "Midnight Governance Test Suite",
     items: [
@@ -66,18 +73,54 @@ async function main() {
 async function runAllTests(settings: Settings) {
   console.log("\nRunning all tests...\n");
 
-  const provider = createProvider(settings.mode);
-  await provider.setup();
-
   const stateManager = await StateManager.Load("./test-plan/.config");
   const state = stateManager.getState();
   state.mode = settings.mode;
 
-  const ctx: TestContext = { provider, state };
+  // Create provider with test run ID for contract rebuilding
+  const provider = createProvider(
+    settings.mode,
+    settings.wallet,
+    settings.blockfrostApiKey,
+    state.runId,
+    settings
+  );
 
+  // Setup provider - this will rebuild contracts on testnet if needed
+  await provider.setup();
+
+  const ctx: TestContext = { provider, state, settings };
+
+  let categoryIndex = 0;
   for (const category of testCategories) {
     console.log(`\n=== ${category.name} ===\n`);
 
+    // Reset emulator state between categories (each category = independent journey)
+    if (categoryIndex > 0) {
+      console.log("🔄 Resetting emulator state for next journey...\n");
+      await provider.reset();
+    }
+    categoryIndex++;
+
+    // Run journeys first
+    if (category.journeys && category.journeys.length > 0) {
+      const { JourneyRunner } = await import("./lib/journey-runner");
+      const journeyRunner = new JourneyRunner(provider, state, settings);
+
+      for (const journey of category.journeys) {
+        try {
+          await journeyRunner.executeJourney(journey);
+          await stateManager.save();
+        } catch (error) {
+          console.error(`\n❌ Journey failed: ${error}`);
+          if (!settings.autoProgress) {
+            break;
+          }
+        }
+      }
+    }
+
+    // Then run individual tests
     for (const test of category.tests) {
       if (test.prerequisites) {
         const allPassed = test.prerequisites.every((prereq) =>
@@ -121,14 +164,20 @@ async function runCategory(categoryId: string, settings: Settings) {
 
   console.log(`\nRunning ${category.name}...\n`);
 
-  const provider = createProvider(settings.mode);
-  await provider.setup();
-
   const stateManager = await StateManager.Load("./test-plan/.config");
   const state = stateManager.getState();
   state.mode = settings.mode;
 
-  const ctx: TestContext = { provider, state };
+  const provider = createProvider(
+    settings.mode,
+    settings.wallet,
+    settings.blockfrostApiKey,
+    state.runId,
+    settings
+  );
+  await provider.setup();
+
+  const ctx: TestContext = { provider, state, settings };
 
   for (const test of category.tests) {
     await stateManager.setCurrentTest(test.id);
@@ -167,14 +216,20 @@ async function runSingleTest(settings: Settings) {
 
   console.log(`\nRunning test: ${selectedTest.name}\n`);
 
-  const provider = createProvider(settings.mode);
-  await provider.setup();
-
   const stateManager = await StateManager.Load("./test-plan/.config");
   const state = stateManager.getState();
   state.mode = settings.mode;
 
-  const ctx: TestContext = { provider, state };
+  const provider = createProvider(
+    settings.mode,
+    settings.wallet,
+    settings.blockfrostApiKey,
+    state.runId,
+    settings
+  );
+  await provider.setup();
+
+  const ctx: TestContext = { provider, state, settings };
 
   if (selectedTest.prerequisites) {
     const allPassed = selectedTest.prerequisites.every((prereq) =>

@@ -12,19 +12,52 @@ export function formatConsoleReport(state: TestRunState): string {
   lines.push("=".repeat(60));
   lines.push("");
 
-  const total = state.testResults.length;
-  const passed = state.testResults.filter((r) => r.status === "passed").length;
-  const failed = state.testResults.filter((r) => r.status === "failed").length;
-  const running = state.testResults.filter((r) => r.status === "running").length;
-  const pending = state.testResults.filter((r) => r.status === "pending").length;
+  // Count individual tests
+  const testTotal = state.testResults.length;
+  const testPassed = state.testResults.filter((r) => r.status === "passed").length;
+  const testFailed = state.testResults.filter((r) => r.status === "failed").length;
+  const testRunning = state.testResults.filter((r) => r.status === "running").length;
+  const testPending = state.testResults.filter((r) => r.status === "pending").length;
+
+  // Count journeys
+  const journeys = Object.values(state.journeys);
+  const journeyTotal = journeys.length;
+  const journeyPassed = journeys.filter((j) => j.completedAt !== undefined).length;
+  const journeyFailed = journeys.filter((j) =>
+    j.testResults.some((r) => r.status === "failed")
+  ).length;
 
   lines.push("Summary:");
-  lines.push(`  Total: ${total}`);
-  lines.push(`  Passed: ${passed}`);
-  lines.push(`  Failed: ${failed}`);
-  lines.push(`  Running: ${running}`);
-  lines.push(`  Pending: ${pending}`);
+  lines.push(`  Journeys: ${journeyPassed}/${journeyTotal} completed`);
+  lines.push(`  Tests: ${testPassed}/${testTotal} passed, ${testFailed} failed`);
   lines.push("");
+
+  // Show journey results
+  if (journeys.length > 0) {
+    lines.push("Journey Results:");
+    lines.push("");
+
+    for (const journey of journeys) {
+      const status = journey.completedAt ? "✓ COMPLETED" : "○ IN PROGRESS";
+      const duration = journey.completedAt && journey.startedAt
+        ? `${journey.completedAt.getTime() - journey.startedAt.getTime()}ms`
+        : "";
+
+      lines.push(`  [${status}] ${journey.name}`);
+      if (duration) {
+        lines.push(`    Duration: ${duration}`);
+      }
+      lines.push(`    Steps: ${journey.testResults.length}/${journey.currentStep + 1}`);
+
+      const passed = journey.testResults.filter(r => r.status === "passed").length;
+      const failed = journey.testResults.filter(r => r.status === "failed").length;
+      const todo = journey.testResults.filter(r => r.status === "todo").length;
+      const skipped = journey.testResults.filter(r => r.status === "skipped").length;
+
+      lines.push(`    Passed: ${passed}, Failed: ${failed}, TODO: ${todo}, Skipped: ${skipped}`);
+      lines.push("");
+    }
+  }
 
   if (state.testResults.length > 0) {
     lines.push("Test Results:");
@@ -89,21 +122,27 @@ export async function saveJsonReport(
   }
 
   const reportPath = join(outputPath, `report-${state.runId}.json`);
-  await writeFile(reportPath, JSON.stringify(state, null, 2));
+
+  // Custom replacer to handle BigInt values
+  const replacer = (_key: string, value: any) => {
+    if (typeof value === "bigint") {
+      return value.toString() + "n"; // Add 'n' suffix to indicate it was a BigInt
+    }
+    return value;
+  };
+
+  await writeFile(reportPath, JSON.stringify(state, replacer, 2));
 }
 
 export function printTestResult(result: TestResult): void {
-  console.log(`\n[${result.status.toUpperCase()}] ${result.name}`);
-
-  if (result.txHash) {
-    console.log(`  Tx: ${result.txHash}`);
-  }
+  const statusEmoji = result.status === "passed" ? "✓" : result.status === "failed" ? "✗" : "○";
+  console.log(`${statusEmoji} ${result.name}`);
 
   if (result.error) {
     console.error(`  Error: ${result.error}`);
   }
 
-  if (result.notes) {
+  if (result.notes && result.status === "passed") {
     console.log(`  ${result.notes}`);
   }
 }

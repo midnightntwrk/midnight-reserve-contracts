@@ -33,7 +33,7 @@ export class StateManager {
         const content = await readFile(filePath, "utf-8");
         const state = JSON.parse(content, (key, value) => {
           // Revive Date objects
-          if (key === "startTime" || key === "endTime") {
+          if (key === "startTime" || key === "endTime" || key === "startedAt" || key === "completedAt") {
             return value ? new Date(value) : undefined;
           }
           return value;
@@ -53,6 +53,7 @@ export class StateManager {
       runId: runId || timestamp,
       mode: "emulator",
       startTime: now,
+      journeys: {},
       deployments: {},
       testResults: [],
       metadata: {},
@@ -66,7 +67,16 @@ export class StateManager {
    */
   async save(): Promise<void> {
     const filePath = join(this.statePath, `${this.state.runId}.json`);
-    await writeFile(filePath, JSON.stringify(this.state, null, 2));
+
+    // Custom replacer to handle BigInt values
+    const replacer = (_key: string, value: any) => {
+      if (typeof value === "bigint") {
+        return value.toString() + "n"; // Add 'n' suffix to indicate it was a BigInt
+      }
+      return value;
+    };
+
+    await writeFile(filePath, JSON.stringify(this.state, replacer, 2));
   }
 
   /**
