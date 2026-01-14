@@ -10,6 +10,7 @@ export const VALID_PROVIDERS: ProviderType[] = [
   "blockfrost",
   "maestro",
   "emulator",
+  "kupmios",
 ];
 export const VALID_COMPONENTS = [
   "tech-auth",

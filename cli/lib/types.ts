@@ -1,7 +1,7 @@
 import { NetworkId } from "@blaze-cardano/core";
 
 export type Network = "local" | "preview" | "preprod" | "mainnet";
-export type ProviderType = "blockfrost" | "maestro" | "emulator";
+export type ProviderType = "blockfrost" | "maestro" | "emulator" | "kupmios";
 
 export interface GlobalOptions {
   network: Network;
