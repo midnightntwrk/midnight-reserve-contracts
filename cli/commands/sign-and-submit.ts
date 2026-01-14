@@ -85,7 +85,7 @@ export async function signAndSubmit(
         const hash = await processAndSubmitTransaction(
           cbor,
           privateKeyHex,
-          provider,
+          await provider,
           tx.name,
         );
         submittedHashes.push(hash);
@@ -102,7 +102,7 @@ export async function signAndSubmit(
       const hash = await processAndSubmitTransaction(
         jsonData.cbor,
         privateKeyHex,
-        provider,
+        await provider,
         "transaction",
       );
       submittedHashes.push(hash);
