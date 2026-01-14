@@ -259,15 +259,6 @@ export class CommitteeBridgeCommitteeBridgeTwoStageUpgradeElse {
     );
   }
 }
-export class CommitteeBridgeSimpleBridgeElse {
-  public Script: Script
-  constructor() {
-    this.Script = cborToScript(
-      "58330101002332259800b45268a9980124811856616c696461746f722072657475726e65642066616c736500136564004ae715cd01",
-      "PlutusV3"
-    );
-  }
-}
 export class GovAuthMainGovAuthElse {
   public Script: Script
   constructor() {
