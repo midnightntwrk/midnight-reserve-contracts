@@ -1,36 +1,54 @@
-# Repository Guidelines
+# AGENTS.md
 
-## Project Structure & Module Organization
-- `validators/*.ak` host on-chain entry points; pair new scripts with matching `*.test.ak` files to keep `build_contracts.sh` ordering valid.
-- Shared helpers live in `lib/<domain>`; extend the closest package instead of adding new roots.
-- Emulator suites live in `tests/*.test.ts`; regenerate `contract_blueprint.ts` when `plutus.json` changes.
-- Deployment artefacts land in `deployments/<network>/`; inspect generated CBOR before committing.
+## Build Commands
 
-## Build, Test, and Development Commands
-- `just build preview verbose` compiles validators, updates hashes, and refreshes `contract_blueprint.ts`.
-- `./build_contracts.sh preprod compact` runs the same pipeline with custom trace levels.
-- `just check verbose` wraps `aiken check -S` plus on-chain tests; run before every commit or PR.
-- `bun test` (or `bun test tests/update_gov.test.ts`) executes Blaze suites; keep the blueprint current so script IDs match.
-- `just deploy preview` rebuilds and runs `bun run index.ts`; export `BLOCKFROST_<NETWORK>_API_KEY` first.
+```bash
+just build   # Full build with blueprint generation (defaults: env=default, verbosity=verbose)
+just check   # Aiken fmt + check + on-chain tests
+bun test     # Emulator/integration tests (requires build first)
+```
 
-## Coding Style & Naming Conventions
-- Aiken modules use two-space indents, snake_case identifiers, and numbered spec tags (e.g. `(RF-1)`); keep every new assertion anchored in `Spec.md`.
-- Promote shared logic into `lib/<domain>` and import explicitly; avoid duplicating magic constants across validators.
-- TypeScript keeps `camelCase`, `const` by default, and ES module syntax; run `bun run lint` before pushing.
+Run `just check` and `bun test` before every commit. Always `just build` before `bun test`.
+
+## Commit Style
+
+```bash
+git log --oneline -5  # Check existing style first
+git commit -m "feat: add feature X"  # Match project style, no Co-Authored-By
+```
+
+Never add Co-Authored-By lines to commits.
+
+## Dependencies
+
+```bash
+bun add <package>      # No version - let bun pick
+bun remove <package>
+```
+
+Never edit package.json by hand for dependencies.
+
+## Code Conventions
+
+**Aiken (validators/, lib/):**
+- Two-space indents, snake_case identifiers
+- Numbered spec tags (e.g. `(RF-1)`) anchored in `spec/validators.md`
+- Promote shared logic into `lib/<domain>` and import explicitly
+
+**TypeScript (cli/, tests/):**
+- camelCase, `const` by default, ES module syntax
+- Run `bun run lint` before pushing
 
 ## Testing Guidelines
-- Pair every validator change with a `*.test.ak` case; mark negative paths with `fail` to codify invariants.
-- Use Blaze emulator specs (`bun test`) for cross-contract flows and UTxO wiring.
-- After hash updates, regenerate `plutus.json` and `contract_blueprint.ts`, then refresh hard-coded IDs in tests.
-- Attach `just check` and `bun test` evidence in PRs; failing suites block merges.
 
-## Specification & Inline Commentary
-- Keep inline validator comments aligned with `Spec.md`; each `(TAG-#)` covers a single statement and is mirrored when behaviour changes.
-- **Do:** keep helper tags unique and descriptive, separate Minting/Setup and Operational updates, and restate constraints per validator instead of referencing substitutions.
-- **Don't:** use ranges like `TS-1..TS-8`, say “same constraints,” or rely on vague notes such as “touch `cnight_policy`.”
+- Pair every validator change with a `*.test.ak` case
+- Mark negative paths with `fail` to codify invariants
+- **Run `just build` before `bun test`** - emulator tests depend on one-shot hashes from local build
+- Use Blaze emulator specs (`bun test`) for cross-contract flows
+- After hash updates, regenerate `plutus.json` and `contract_blueprint.ts`
 
-## Commit & Pull Request Guidelines
-- Commits follow the conventional prefixes already in history (`chore:`, `fix:`, `feat:`) and stay focused on single concerns.
-- Name branches `handle/topic` (e.g. `feature/threshold-migration`) and avoid force-pushing once review begins.
-- PRs summarise changes, link issues, list commands, and include screenshots or CBOR diffs when artefacts change.
-- Add Apache 2.0 SPDX headers to new files and confirm the Midnight CLA is signed before requesting review.
+## Critical Guardrails
+
+- **No `sign-and-submit` CLI command without asking** - submits real transactions to the network
+- **Only touch Aiken code (validators/, lib/) with explicit instructions** - this code on-chain is holding very large financial value
+- **No git push** - commit only, user pushes
