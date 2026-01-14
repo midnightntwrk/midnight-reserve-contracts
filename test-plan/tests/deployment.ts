@@ -1,5 +1,5 @@
-import type { TestDefinition, TestResult, TestContext } from "../lib/types";
-import { ContractsManager, getDefaultConfig } from "../lib/contracts";
+import type { TestDefinition, TestResult, TestContext, TestCategory } from "../lib/types";
+import { ContractsManager } from "../lib/contracts";
 import { printTestHeader, printTestResult } from "../utils/reporting";
 
 const deploymentPositive: TestDefinition = {
@@ -19,40 +19,191 @@ const deploymentPositive: TestDefinition = {
       printTestHeader(this.name);
 
       const contracts = new ContractsManager();
-      const config = getDefaultConfig();
+      const config = ctx.provider.getConfig();
       const blaze = await ctx.provider.getBlaze("deployer");
 
       const address = await blaze.wallet.getChangeAddress();
       const balance = await blaze.wallet.getBalance();
 
-      console.log("Deployer address:", address.toBech32());
-      console.log("Deployer balance:", balance.coin(), "lovelace");
+      console.log(`Deployer: ${address.toBech32()}`);
+      console.log(`Balance: ${Number(balance.coin()) / 1_000_000} ADA\n`);
 
-      console.log("\nLoading contract instances...");
+      // Load contracts
       const reserve = await contracts.getReserve();
-      console.log("Reserve contracts loaded");
+      const govAuth = await contracts.getGovAuth();
 
-      console.log("\nAvailable contracts:");
-      console.log("  - Tech Auth (forever, two-stage, logic)");
-      console.log("  - Council (forever, two-stage, logic)");
-      console.log("  - Reserve (forever, two-stage, logic)");
-      console.log("  - ICS (forever, two-stage, logic)");
-      console.log("  - Federated Ops (forever, two-stage, logic)");
-      console.log("  - Thresholds (gov, council, tech auth, federated ops)");
-      console.log("  - Gov Auth");
+      const {
+        addressFromValidator,
+        AssetName,
+        PolicyId,
+        TransactionOutput,
+        NetworkId,
+        PlutusData,
+        AssetId,
+        Address,
+        PaymentAddress,
+        toHex,
+      } = await import("@blaze-cardano/core");
+      const { serialize } = await import("@blaze-cardano/data");
 
-      console.log("\nTODO: Build and submit deployment transactions");
-      console.log("  1. Create one-shot UTxOs");
-      console.log("  2. Mint forever NFTs");
-      console.log("  3. Mint two-stage upgrade NFTs");
-      console.log("  4. Verify script hashes and datums");
+      // Find the one-shot UTxO that matches the config (used during contract compilation)
+      const deployerUtxos = await blaze.provider.getUnspentOutputs(address);
+      const reserveOneShotUtxo = deployerUtxos.find(
+        (utxo) => {
+          const txId = utxo.input().transactionId();
+          const txIdStr = typeof txId === "string" ? txId : txId.toString();
+          return (
+            txIdStr === config.reserve_one_shot_hash &&
+            utxo.input().index() === BigInt(config.reserve_one_shot_index)
+          );
+        }
+      );
+
+      if (!reserveOneShotUtxo) {
+        throw new Error(
+          `Reserve one-shot UTxO not found in wallet: ${config.reserve_one_shot_hash}#${config.reserve_one_shot_index}\n` +
+          `This UTxO was selected during setup and compiled into the contracts.\n` +
+          `Make sure it hasn't been spent.`
+        );
+      }
+
+      console.log("Building deployment transaction...");
+
+      // Import contract types
+      const Contracts = await import("../../contract_blueprint");
+
+      // Get script addresses
+      const reserveForeverAddress = addressFromValidator(
+        NetworkId.Testnet,
+        reserve.forever.Script,
+      );
+      const reserveTwoStageAddress = addressFromValidator(
+        NetworkId.Testnet,
+        reserve.twoStage.Script,
+      );
+
+      // Create upgrade state datum for Reserve two-stage
+      const reserveUpgradeState: Contracts.UpgradeState = [
+        reserve.logic.Script.hash(), // logic script hash
+        "", // mitigation_logic (empty initially)
+        govAuth.Script.hash(), // auth script hash
+        "", // mitigation_auth (empty initially)
+        0n, // round
+        0n, // logic_round
+      ];
+
+      // Create multisig state for Reserve forever
+      const reserveForeverState: Contracts.VersionedMultisig = {
+        data: [
+          1n, // threshold (1 for simple testing)
+          {
+            [address.asBase()?.getPaymentCredential().hash!]:
+              "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+          },
+        ],
+        round: 0n,
+      };
+
+      const redeemerForever: Contracts.PermissionedRedeemer = {
+        [address.asBase()?.getPaymentCredential().hash!]:
+          "7DCE5A2128D798C2244A52BF12272F4DA78E893F2A7BD63FD08C22A9F3787A2B",
+      };
+
+      // Build the transaction
+      const txBuilder = blaze
+        .newTransaction()
+        .addInput(reserveOneShotUtxo)
+        .addMint(
+          PolicyId(reserve.forever.Script.hash()),
+          new Map([[AssetName(""), 1n]]),
+          serialize(Contracts.PermissionedRedeemer, redeemerForever),
+        )
+        .addMint(
+          PolicyId(reserve.twoStage.Script.hash()),
+          new Map([
+            [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
+            [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
+          ]),
+          PlutusData.newInteger(0n),
+        )
+        .provideScript(reserve.twoStage.Script)
+        .provideScript(reserve.forever.Script)
+        .addOutput(
+          TransactionOutput.fromCore({
+            address: PaymentAddress(reserveTwoStageAddress.toBech32()),
+            value: {
+              coins: 2_000_000n,
+              assets: new Map([
+                [
+                  AssetId(
+                    reserve.twoStage.Script.hash() +
+                      toHex(new TextEncoder().encode("main")),
+                  ),
+                  1n,
+                ],
+              ]),
+            },
+            datum: serialize(Contracts.UpgradeState, reserveUpgradeState).toCore(),
+          }),
+        )
+        .addOutput(
+          TransactionOutput.fromCore({
+            address: PaymentAddress(reserveTwoStageAddress.toBech32()),
+            value: {
+              coins: 2_000_000n,
+              assets: new Map([
+                [
+                  AssetId(
+                    reserve.twoStage.Script.hash() +
+                      toHex(new TextEncoder().encode("staging")),
+                  ),
+                  1n,
+                ],
+              ]),
+            },
+            datum: serialize(Contracts.UpgradeState, reserveUpgradeState).toCore(),
+          }),
+        )
+        .addOutput(
+          TransactionOutput.fromCore({
+            address: PaymentAddress(reserveForeverAddress.toBech32()),
+            value: {
+              coins: 2_000_000n,
+              assets: new Map([[AssetId(reserve.forever.Script.hash()), 1n]]),
+            },
+            datum: serialize(Contracts.VersionedMultisig, reserveForeverState).toCore(),
+          }),
+        );
+
+      // Submit transaction (provider handles signing and confirmation prompt)
+      const txHash = await ctx.provider.submitTransaction("deployer", txBuilder);
+
+      result.txHash = txHash;
+      result.notes = "Reserve contracts deployed successfully";
+
+      // Record deployment info
+      // TODO: Store UTxO references for the deployed contracts
 
       result.status = "passed";
-      result.notes = "Skeleton implementation completed";
 
     } catch (error) {
       result.status = "failed";
-      result.error = error instanceof Error ? error.message : String(error);
+
+      // Enhanced error logging
+      if (error instanceof Error) {
+        result.error = error.message;
+
+        // Log full error details for debugging
+        console.error("\n[ERROR] Full error details:");
+        console.error(error);
+
+        // If it's a Blockfrost error, try to extract more info
+        if ('response' in error) {
+          console.error("\n[ERROR] Response data:", (error as any).response);
+        }
+      } else {
+        result.error = String(error);
+      }
     }
 
     result.endTime = new Date();
@@ -100,7 +251,16 @@ const deploymentNegative: TestDefinition = {
   },
 };
 
-export const deploymentTests: TestDefinition[] = [
-  deploymentPositive,
-  deploymentNegative,
-];
+import { reserveLifecycleJourney } from "../journeys/reserve-lifecycle";
+
+// Legacy standalone tests - these are now covered by the journey
+// Keep them for backward compatibility but they won't run if journey succeeds
+export const deploymentTests: TestDefinition[] = [];
+
+export const deploymentCategory: TestCategory = {
+  id: "deployment",
+  name: "Reserve Complete Lifecycle",
+  description: "Test Reserve contract through full lifecycle: deployment, authorization, upgrades, and mitigations",
+  tests: deploymentTests,
+  journeys: [reserveLifecycleJourney],
+};

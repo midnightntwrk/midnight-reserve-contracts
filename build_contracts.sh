@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 # Midnight Reserve Contracts Build Script
@@ -101,13 +101,13 @@ verify_logic_dependency() {
     local dependency_hash compiled_code
     dependency_hash=$(validator_hash_by_title "$dependency_validator")
     if [ -z "$dependency_hash" ] || [ "$dependency_hash" == "null" ]; then
-        echo "Error: Dependency $dependency_validator not found in $JSON_FILE" >&2
+        echo "Warning: Dependency $dependency_validator not found in $JSON_FILE" >&2
         return 1
     fi
 
     compiled_code=$(validator_compiled_code "$logic_validator")
     if [ -z "$compiled_code" ] || [ "$compiled_code" == "null" ]; then
-        echo "Error: Validator $logic_validator not found in $JSON_FILE" >&2
+        echo "Warning: Validator $logic_validator not found in $JSON_FILE" >&2
         return 1
     fi
 
@@ -116,7 +116,7 @@ verify_logic_dependency() {
     compiled_lower=$(echo "$compiled_code" | tr '[:upper:]' '[:lower:]')
 
     if ! grep -q "$dependency_lower" <<<"$compiled_lower"; then
-        echo "Error: $logic_validator does not embed dependency $dependency_validator" >&2
+        echo "Warning: $logic_validator does not embed dependency $dependency_validator" >&2
         return 1
     fi
 
@@ -131,19 +131,19 @@ verify_threshold_config_entry() {
     local expected_hash
     expected_hash=$(validator_hash_by_title "$validator_title")
     if [ -z "$expected_hash" ] || [ "$expected_hash" == "null" ]; then
-        echo "Error: Validator $validator_title not found in $JSON_FILE" >&2
+        echo "Warning: Validator $validator_title not found in $JSON_FILE" >&2
         return 1
     fi
 
     local toml_hash
     toml_hash=$(toml_bytes_value "$toml_key")
     if [ -z "$toml_hash" ] || [ "$toml_hash" == "null" ]; then
-        echo "Error: Failed to read $display_name hash for $NETWORK from $TOML_FILE" >&2
+        echo "Warning: Failed to read $display_name hash for $NETWORK from $TOML_FILE" >&2
         return 1
     fi
 
     if [ "$toml_hash" != "$expected_hash" ]; then
-        echo "Error: $display_name hash mismatch ($toml_hash != $expected_hash)" >&2
+        echo "Warning: $display_name hash mismatch ($toml_hash != $expected_hash)" >&2
         return 1
     fi
 
@@ -322,8 +322,21 @@ if ! command_exists jq; then
 fi
 
 if ! command_exists toml; then
-    echo "Error: toml-cli is not installed. Please install toml-cli first."
-    exit 1
+    echo "toml-cli is not installed. Attempting to install..."
+    if command_exists cargo; then
+        echo "Installing toml-cli via cargo..."
+        cargo install toml-cli
+        if ! command_exists toml; then
+            echo "Error: toml-cli installation failed."
+            echo "Please manually install: cargo install toml-cli"
+            exit 1
+        fi
+        echo "✓ toml-cli installed successfully"
+    else
+        echo "Error: toml-cli is not installed and cargo is not available to install it."
+        echo "Please install Rust and cargo first, then run: cargo install toml-cli"
+        exit 1
+    fi
 fi
 
 # Function to update hash in TOML file

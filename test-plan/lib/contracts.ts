@@ -40,9 +40,9 @@ export class ContractsManager {
   async getICS() {
     const C = await this.loadContracts();
     return {
-      forever: new C.IliquidCirculationSupplyIcsForeverElse(),
-      twoStage: new C.IliquidCirculationSupplyIcsTwoStageUpgradeElse(),
-      logic: new C.IliquidCirculationSupplyIcsLogicElse(),
+      forever: new C.IlliquidCirculationSupplyIcsForeverElse(),
+      twoStage: new C.IlliquidCirculationSupplyIcsTwoStageUpgradeElse(),
+      logic: new C.IlliquidCirculationSupplyIcsLogicElse(),
     };
   }
 
@@ -70,52 +70,12 @@ export class ContractsManager {
     const C = await this.loadContracts();
     return new C.GovAuthMainGovAuthElse();
   }
+
+  async getAlwaysFails() {
+    const C = await this.loadContracts();
+    return new C.AlwaysFailsAlwaysFailsSpend();
+  }
 }
 
-export interface NetworkConfig {
-  technical_authority_one_shot_hash: string;
-  technical_authority_one_shot_index: number;
-  council_one_shot_hash: string;
-  council_one_shot_index: number;
-  reserve_one_shot_hash: string;
-  reserve_one_shot_index: number;
-  ics_one_shot_hash: string;
-  ics_one_shot_index: number;
-  federated_operators_one_shot_hash: string;
-  federated_operators_one_shot_index: number;
-  main_gov_one_shot_hash: string;
-  main_gov_one_shot_index: number;
-  staging_gov_one_shot_hash: string;
-  staging_gov_one_shot_index: number;
-  main_council_update_one_shot_hash: string;
-  main_council_update_one_shot_index: number;
-  main_tech_auth_update_one_shot_hash: string;
-  main_tech_auth_update_one_shot_index: number;
-  main_federated_ops_update_one_shot_hash: string;
-  main_federated_ops_update_one_shot_index: number;
-}
-
-export function getDefaultConfig(): NetworkConfig {
-  return {
-    technical_authority_one_shot_hash: "0".repeat(63) + "4",
-    technical_authority_one_shot_index: 1,
-    council_one_shot_hash: "0".repeat(63) + "2",
-    council_one_shot_index: 1,
-    reserve_one_shot_hash: "0".repeat(63) + "1",
-    reserve_one_shot_index: 1,
-    ics_one_shot_hash: "0".repeat(63) + "3",
-    ics_one_shot_index: 1,
-    federated_operators_one_shot_hash: "0".repeat(63) + "5",
-    federated_operators_one_shot_index: 1,
-    main_gov_one_shot_hash: "0".repeat(63) + "6",
-    main_gov_one_shot_index: 1,
-    staging_gov_one_shot_hash: "0".repeat(63) + "7",
-    staging_gov_one_shot_index: 1,
-    main_council_update_one_shot_hash: "0".repeat(63) + "8",
-    main_council_update_one_shot_index: 1,
-    main_tech_auth_update_one_shot_hash: "0".repeat(63) + "9",
-    main_tech_auth_update_one_shot_index: 1,
-    main_federated_ops_update_one_shot_hash: "0".repeat(63) + "a",
-    main_federated_ops_update_one_shot_index: 1,
-  };
-}
+// Re-export NetworkConfig from provider for convenience
+export type { NetworkConfig } from "./provider";

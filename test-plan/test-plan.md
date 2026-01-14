@@ -22,8 +22,7 @@ Testing is divided into sequential phases to mirror the contract lifecycle and g
         
 2. [**Cross-Contract Interaction Tests**](#cross-contract-interaction-tests)  
      
-- [ ] \[Test\]  
-- [ ] \[Test\]
+- [ ] Reserve \<-\> IlliquidCirculationSupply Cross-Contract Interaction
 
 Each phase includes expected-success and expected-failure scenarios to validate correctness and enforcement conditions.
 
@@ -38,13 +37,11 @@ I propose testing the contracts in the following phases:
 
 Validate that the governance contract suite can be properly deployed with a range of initial configurations.
 
-* **Positive Tests**
-
-  - [ ] Ensure that we can deploy the contracts themselves with a range of initial parameters  
-  - [ ] Confirm deployment artifacts are published correctly.  
-  - [ ] Verify UTxOs contain correct initial validator hashes and script states.  
-          
-* **Negative Tests**  
+- [ ] Ensure that we can deploy the contracts themselves with a range of initial parameters  
+      - [ ] Confirm deployment artifacts are published correctly.  
+      - [ ] Verify UTxOs contain correct initial validator hashes and script states.  
+              
+* **Negative**  
   - [ ] Ensure transactions with invalid parties fail  
   - [ ] Attempt invalid parameter ranges (out-of-bounds thresholds, empty keys, malformed time locks).  
   - [ ] Confirm all invalid configurations are rejected  
@@ -57,7 +54,9 @@ Validate that the governance contract suite can be properly deployed with a rang
          - [ ] A single signature  
          - [ ] An M-of-N threshold signature  
          - [ ] A staged hand-off signature using time locks  
-         - [ ] A 3-deep tree of different overlapping key sets
+         - [ ] A 3-deep tree of different overlapping key sets  
+         - [ ] Weighted threshold signatures using repeated keys  
+         - [ ] 0-of-N threshold signatures are valid. Like in the case of 0 council, ½ tech auth 
 
    
 
@@ -86,10 +85,11 @@ Validate that the governance contract suite can be properly deployed with a rang
    - [ ] Starting from a deployment with permissive settings, upgrade each business logic staging UTxO to a new set of keys  
    - [ ] Confirm new logic applies to staging UTxO  
    - [ ] Promote the staging UTxO to active  
-   - [ ] Confirm new logic applies to main UTxO 
+   - [ ] Confirm new logic applies to main UTxO   
+   - [ ] Confirm staging and main NFTs can not leave the two stage contract, can not accrue other tokens, and must maintain the same datum structure.
 
 5. **Downgrade Logic upgrade**  
-     
+   	  
    Test reversion (downgrade) to a prior logic version.  
      
    - [ ] Starting from a successfully upgraded business logic UTxO, deploy the previous logic to the staging UTxO  
@@ -97,48 +97,84 @@ Validate that the governance contract suite can be properly deployed with a rang
    - [ ] Confirm old logic applies to staging UTxO, and new logic does apply  
    - [ ] Promote the staging UTxO to active  
    - [ ] Confirm old logic applies to both  
-           
-6. **Add Mitigation Logic Script**
+   - [ ] Confirm staging and main NFTs can not leave the two stage contract, can not accrue other tokens, and must maintain the same datum structure.
+
+   
+
+   
+
+6. **Repeat 2-5 with Governance Auth Upgrade**
+
+   
+
+7. **Add Mitigation Logic Script**
 
 Introduce new safety or circuit-breaker logic to business logic UTxOs.
 
 - [ ] Upgrade the protocol to introduce a new mitigation to one of the logic UTxOs  
       - [ ] Confirm the behavior is enforced  
               
-7. **Attempt to remove Mitigation Logic Script**  
+8. **Attempt to remove Mitigation Logic Script**  
      
    Ensure that once a mitigation has been added to the logic scripts, any upgrade attempting to remove or bypass that mitigation is correctly rejected by the protocol.  
      
    - [ ] Build a transaction that attempts to remove the above mitigation via an upgrade  
    - [ ] Confirm the transaction is rejected  
            
-8. **Add Mitigation Auth Script**  
+9. **Add Mitigation Auth Script**  
    Introduce a mitigation at the authorization-script level (e.g., additional approval key, quorum change).  
      
    - [ ] Upgrade the protocol to introduce a new mitigation to the authorization scripts  
    - [ ] Confirm the behavior is enforced  
            
-9. **Attempt to remove Mitigation Auth Script**  
-   Verify that once a mitigation has been added to the authorization scripts, any upgrade attempting to weaken, remove, or circumvent that mitigation is rejected by the protocol.  
-     
-   - [ ] Build a transaction that attempts to remove the above mitigation via an upgrade  
-   - [ ] Confirm the transaction is rejected
-
-10. **Reserve ↔ IlliquidCirculationSupply Cross-Contract Interaction**  
+10. **Attempt to remove Mitigation Auth Script**  
     Verify that once a mitigation has been added to the authorization scripts, any upgrade attempting to weaken, remove, or circumvent that mitigation is rejected by the protocol.  
       
     - [ ] Build a transaction that attempts to remove the above mitigation via an upgrade  
     - [ ] Confirm the transaction is rejected
 
+11. **Reserve ↔ IlliquidCirculationSupply Cross-Contract Interaction**  
+    Verify logic merge script that both ics and reserve share.  
+      
+    - [ ] Verify utxos can be merged into both reserve and ics  
+    - [ ] Verify Night and ada can never be taken only added to ics and reserve  
+    - [ ] Verify forever NFT can not be moved. (Intentional)
+
 2. # Cross-Contract Interaction Tests {#cross-contract-interaction-tests}
 
-     
-1. **\[Test\]**   
    
 
-\[brief description\]
+**Reserve \<-\> IlliquidCirculationSupply Cross-Contract Interaction**
 
-- [ ] \[test\]
+Validate that a staged contract can be tested against test counterpart contracts and test tokens (via a test entry script), and then be promoted to main without further edits, while correctly switching behavior on the main track (e.g., releasing real cNIGHT to the real ICS).
+
+- [ ] Create test entry scripts  
+      - [ ] Prepare test data and test tokens  
+      - [ ] Deploy a staged Reserve that can be tested and later promoted without edits  
+      - [ ] Deploy a test ICS contract (not staged) for the staging-phase interaction  
+      - [ ] Execute staged Reserve \-\> test ICS timed release  
+      - [ ] Confirm staging isolation  
+      - [ ] Promote staged Reserve to main without modification  
+      - [ ] Execute main Reserve to real ICS release  
+      - [ ] Confirm outputs are sent to the correct destination with expected value/datum and that state transitions are correct.  
+              
+* **Negative**   
+  - [ ] Attempt staged Reserve to main ICS (or staged Reserve releasing production tokens). Confirm the transaction is rejected.  
+  - [ ] Attempt main Reserve to test ICS. Confirm the transaction is rejected.  
+  - [ ] Attempt to override or bypass destination-selection logic. Confirm the transaction is rejected.  
+  - [ ] Clean up test data using the test entry script cleanup path (preferred) and confirm test UTxOs/artifacts are removed.  
+        
+
+**Threshold contract interactions**  
+	Verify Threshold contracts updates affect all contracts that utilize that threshold state
+
+- [ ] Main gov auth threshold should affect all two stage upgrade contracts on promoting to main from staging  
+      - [ ] Staging gov auth threshold should affect all two stage upgrade contracts on changes made to staging  
+      - [ ] Council update member threshold should affect only changes to council members  
+      - [ ] tech-auth update member threshold should affect only changes to tech-auth members  
+      - [ ] Federated ops update member threshold should affect only changes to federated ops members  
+      - [ ] Terms & Cs threshold should affect only changes to Terms & Cs state changes  
+      - [ ] A threshold of 0/1 allows for 0 signers
 
 # Test Execution Plan
 
@@ -156,10 +192,16 @@ Tests for example transactions using emulator can be found in the folder tests h
 
 **Deploy transactions**  
 tech\_auth  
-0f3e6204784ba3cd05800396205a390b1ecb3769996c126011433861f7524494  
+61966981d477cf9717166fbe0b4387975e57066915041d7ee5519f23623ee7fa  
 council  
-f26f7551fd1abd5ee67b9bc14de111b7c260a5015ae5552f3f0e50a5d9443db3  
+6875869ff2f99d1fc943597c3dc23ff977eb7d19baf1911440eed3d6e2d9401f  
 tech\_auth\_threshold  
-49ea787af8f953fd6d85706330e3fa22fe169885e72047786cd9ef24c56f0b9a  
+79eb43aeb0243ba1ba8f28310fd73122f4bfe014be6fc8c23ab631b8a777e8ea  
 council\_Threshold  
-9dfef57f2d09bfc91155d5e0ae1513a4ac262f430d2de1746690386446688811
+3a4478cc657f5c953ab9ec7c3c1a6da1eeb4bef6eb5781ef23e7b247d31c0346
+
+I have a series of deploy, change auth for council and tech-auth, update staging, promote staging, and other transactions under addr\_test1qpvenhxereqm8exzhgphagas8kuguwa9vev4zc086ulg275tacf8lywukau5xvyy2z9dt6ttul4487htpgjruq0rynhsuhvxyn
+
+Staging update: 04c62f886140a0f1058569c04e00c2d68e14d6266506c867950273696868e027  
+Change council: fc7dc608a51b7a8053191579bc2442c3f6a21a7090397e67ac80d3fdc527b695  
+Change council with weighted signer: 189894cedbe2407617a950f650500aa56fbe00072f5cf0023da6a8e8c162940c

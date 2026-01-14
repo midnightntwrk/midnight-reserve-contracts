@@ -46,6 +46,7 @@ pub fn two_stage_upgradable(
       validate_mint_tokens(own_policy, one_shot_ref, inputs, outputs, mint)
 
     Spending { output, .. } -> {
+      trace @"TWO_STAGE: Spending branch entered"
       let own_input =
         must_find(inputs, fn(input: Input) { input.output_reference == output })
 
@@ -56,6 +57,7 @@ pub fn two_stage_upgradable(
 
       expect Script(own_hash) as pay_cred = address.payment_credential
 
+      trace @"TWO_STAGE: Decoding redeemer..."
       expect TwoStageRedeemer { update_field, which_stage }: TwoStageRedeemer =
         redeemer
 
@@ -104,15 +106,19 @@ pub fn two_stage_upgradable(
           }
 
           Staging(main_out_ref, new_script_hash) -> {
+            trace @"STAGING: Entry"
+            trace new_script_hash
             // Spending staging NFT to stage a new change
             expect ( nft_id |> as_data ) == expected_staging_nft_id
 
+            trace @"STAGING: NFT validated, finding main reference input"
             let main_input =
               must_find(
                 reference_inputs,
                 fn(input: Input) { input.output_reference == main_out_ref },
               )
 
+            trace @"STAGING: Main reference input found, extracting data"
             let Input {
               output: Output {
                 address: main_addr,
@@ -123,12 +129,15 @@ pub fn two_stage_upgradable(
               ..
             } = main_input
 
+            trace @"STAGING: Validating main reference credential"
             expect main_addr.payment_credential == pay_cred
 
             expect [_, ..main_nft_id] = main_value |> to_dict |> to_pairs
 
+            trace @"STAGING: Validating main reference NFT"
             expect ( main_nft_id |> as_data ) == expected_main_nft_id
 
+            trace @"STAGING: All checks passed, calling update_staging_field"
             update_staging_field(
               update_field,
               new_script_hash,
@@ -255,13 +264,17 @@ fn update_staging_field(
   main_datum: Datum,
   withdrawals,
 ) {
+  trace @"UPDATE_STAGING: Entry"
   // Script hash must be 28 bytes
   expect builtin.length_of_bytearray(new_val) == 28
 
+  trace @"UPDATE_STAGING: Hash length validated"
   expect InlineDatum(spending_datum) = spending_datum
 
+  trace @"UPDATE_STAGING: Staging datum is inline"
   expect InlineDatum(main_datum) = main_datum
 
+  trace @"UPDATE_STAGING: Main datum is inline, decoding staging"
   expect UpgradeState {
     logic,
     mitigation_logic,
@@ -271,6 +284,8 @@ fn update_staging_field(
     logic_round,
   } = spending_datum
 
+  trace @"UPDATE_STAGING: Staging decoded, auth="
+  trace auth
   expect UpgradeState {
     mitigation_logic: main_mitigation_logic,
     auth: main_auth,
@@ -278,6 +293,9 @@ fn update_staging_field(
     ..
   } = main_datum
 
+  trace @"UPDATE_STAGING: Main decoded, auth="
+  trace main_auth
+  trace @"UPDATE_STAGING: Validating auth scripts"
   // Allow either staging auth or main auth (for recovery if staging is stuck)
   expect or {
       if update_field == MitigationAuth {
@@ -347,17 +365,22 @@ pub fn validate_running(
   mitigation_auth: ScriptHash,
   withdrawals,
 ) -> Bool {
+  trace @"VALIDATE_RUNNING: auth="
+  trace auth
   let auth_cred = Script(auth)
 
-  and {
-    list.any(
+  trace @"VALIDATE_RUNNING: Checking for auth withdrawal"
+  let auth_found = list.any(
       withdrawals,
       fn(withdrawal: Pair<Credential, Int>) { withdrawal.1st == auth_cred },
-    ),
-    or {
-      // Mitigation auth not required when empty
+    )
+
+  trace if auth_found { @"VALIDATE_RUNNING: Auth withdrawal found" } else { @"VALIDATE_RUNNING: Auth withdrawal NOT found" }
+
+  let mitigation_check = or {
       mitigation_auth == "",
       {
+        trace @"VALIDATE_RUNNING: Checking for mitigation auth withdrawal"
         let mitigation_auth_cred = Script(mitigation_auth)
         list.any(
           withdrawals,
@@ -366,7 +389,12 @@ pub fn validate_running(
           },
         )
       },
-    },
+    }
+
+  and {
+    // (RUN-1) Require at least one withdrawal signed by the main auth credential.
+    auth_found,
+    mitigation_check,
   }
 }
 
