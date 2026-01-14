@@ -17,9 +17,6 @@ graph TD
     tech_auth_forever --> tech_auth_two_stage_upgrade
     federated_ops_forever --> federated_ops_two_stage_upgrade
 
-    %% Simple bridge validator (no upgrade pattern)
-    simple_bridge
-
     %% Auth validators depend on thresholds and forever contracts
     main_gov_auth --> main_gov_threshold
     main_gov_auth --> tech_auth_forever

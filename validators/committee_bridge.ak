@@ -8,12 +8,6 @@ use forever/script.{forever_contract}
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 use utils.{get_input_state_by_policy, get_output_state_by_policy}
 
-validator simple_bridge {
-  else(_ctx: ScriptContext) {
-    fail
-  }
-}
-
 validator committee_bridge_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =

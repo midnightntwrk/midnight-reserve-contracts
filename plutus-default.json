@@ -44,14 +44,6 @@
       "hash": "2f7047cb95bf7a78c32c9761c01dca59c69838782863e06f75f08a09"
     },
     {
-      "title": "committee_bridge.simple_bridge.else",
-      "redeemer": {
-        "schema": {}
-      },
-      "compiledCode": "58330101002332259800b45268a9980124811856616c696461746f722072657475726e65642066616c736500136564004ae715cd01",
-      "hash": "870590a23a736f480ed45df14c6b0e78139c251fda4e746e59983d62"
-    },
-    {
       "title": "gov_auth.main_gov_auth.else",
       "redeemer": {
         "schema": {}
