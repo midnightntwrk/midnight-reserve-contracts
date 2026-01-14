@@ -4,6 +4,7 @@ import {
   AssetName,
   PolicyId,
   TransactionOutput,
+  TransactionUnspentOutput,
   PaymentAddress,
   toHex,
   PlutusData,
@@ -63,7 +64,7 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
 
   console.log(`\nTCnight Policy ID: ${policyId}`);
 
-  const provider = createProvider(network, options.provider);
+  const provider = await createProvider(network, options.provider);
   const userAddr = Address.fromBech32(userAddress);
   const wallet = new ColdWallet(userAddr, networkId, provider);
   const blaze = await Blaze.from(provider, wallet);
@@ -85,7 +86,7 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
       printProgress("Finding UTxOs with TCnight tokens to burn...");
 
       let totalTokensFound = 0n;
-      const utxosWithTokens = userUtxos.filter((utxo) => {
+      const utxosWithTokens = userUtxos.filter((utxo: TransactionUnspentOutput) => {
         const value = utxo.output().amount();
         const tokenAmount = value.multiasset()?.get(assetId) ?? 0n;
         if (tokenAmount > 0n) {
