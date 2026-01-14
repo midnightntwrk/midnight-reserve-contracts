@@ -21,7 +21,7 @@ set -euo pipefail
 #   compact  - Compact compilation output
 
 # Define files
-JSON_FILE="plutus.json"
+# JSON_FILE is set after NETWORK is parsed (see below)
 TOML_FILE="aiken.toml"
 LOCK_FILE="build/aiken-compile.lock"
 
@@ -162,7 +162,7 @@ final_compile_run() {
     local compile_started_at
     compile_started_at=$(current_epoch_seconds)
 
-    if ! aiken build -S --env "$NETWORK" "${TRACE_ARGS[@]}"; then
+    if ! aiken build -S --env "$NETWORK" -o "$JSON_FILE" "${TRACE_ARGS[@]}"; then
         echo "Error: Failed to perform final build" >&2
         exit 1
     fi
@@ -283,6 +283,9 @@ fi
 
 # Convert parameter to lowercase for consistent comparison
 NETWORK=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+
+# Set output file based on network for multi-env support
+JSON_FILE="plutus-${NETWORK}.json"
 
 TRACE_ARGS=()
 if [ $# -ge 2 ]; then
@@ -448,7 +451,7 @@ compile_phase() {
     local compile_started_at
     compile_started_at=$(current_epoch_seconds)
 
-    if ! aiken build -S --env "$NETWORK" "${TRACE_ARGS[@]}"; then
+    if ! aiken build -S --env "$NETWORK" -o "$JSON_FILE" "${TRACE_ARGS[@]}"; then
         echo "Error: Failed to build aiken for $description" >&2
         exit 1
     fi
@@ -516,6 +519,7 @@ done
 
 echo "=========================================="
 echo "Successfully compiled midnight-reserve-contracts for $NETWORK network."
+echo "Blueprint written to: $JSON_FILE"
 echo "All validators have been compiled and hashes updated in aiken.toml"
 
 exit 0

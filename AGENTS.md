@@ -50,5 +50,5 @@ Never edit package.json by hand for dependencies.
 ## Critical Guardrails
 
 - **No `sign-and-submit` CLI command without asking** - submits real transactions to the network
-- **Only touch Aiken code (validators/, lib/) with explicit instructions** - this code on-chain is holding very large financial value
+- **Only touch Aiken code (validators/, lib/) with explicit todo or user instructions** - this code on-chain is holding very large financial value
 - **No git push** - commit only, user pushes

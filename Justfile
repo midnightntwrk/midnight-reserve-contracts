@@ -1,12 +1,12 @@
-validator_json_indices:
+validator_json_indices env="default":
     #!/bin/bash
-    jq -r '.validators[] | "\(.title)"' plutus.json | nl -v0
+    jq -r '.validators[] | "\(.title)"' plutus-{{env}}.json | nl -v0
 
 
 build env="default" verbosity="verbose":
     #!/bin/bash
     ./build_contracts.sh {{env}} {{verbosity}}
-    bunx @blaze-cardano/blueprint@latest plutus.json -o contract_blueprint.ts
+    bunx @blaze-cardano/blueprint@latest plutus-{{env}}.json -o contract_blueprint.ts
 
 
 aiken-check verbosity="verbose":
