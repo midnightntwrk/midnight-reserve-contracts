@@ -877,6 +877,112 @@ When these tags appear in domain-specific sections below, they refer to these sa
 
 ---
 
+## Committee Bridge Validators
+
+The committee bridge validators manage BEEFY consensus state for Midnight-Cardano bridging. They follow the Forever/Two-Stage/Logic pattern and store `BeefyConsensusState` for tracking authority set transitions.
+
+- `committee_bridge_forever`
+  Minting / setup constraints:
+  - CBF-1: rebuild `config.committee_bridge_one_shot_{hash,index}` as the mint authoriser.
+  - CBF-2: delegate to `forever_contract`, which enforces FC-1 through FC-9 for the committee bridge.
+  - FC-1: consume `config.committee_bridge_one_shot_{hash,index}` while minting exactly one committee-bridge forever NFT (asset name "") and expose its datum.
+  - FC-2: inline datum must satisfy BEEFY consensus state validation.
+  - FC-3: touch `config.cnight_policy` to keep the helper in the script hash (no ledger constraint).
+  - ILM-1: inputs must spend the committee-bridge one-shot UTXO.
+  - ILM-2: mint must include the committee-bridge policy id.
+  - ILM-3: minted assets under that policy must be exactly one committee-bridge forever NFT (asset name "").
+  - ILM-4: outputs must deliver that NFT to the committee-bridge script address with an inline datum.
+  - BCS-1: datum must decode to `BeefyConsensusState`.
+  - BCS-2: `next_authority_set.id` must be strictly greater than `current_authority_set.id`.
+  Operational constraints:
+  - FC-4: reference inputs must include the committee-bridge two-stage main NFT (`config.committee_bridge_two_stage_hash`, name "main").
+  - FC-5: referenced upgrade datum must be inline.
+  - FC-6: datum must encode committee-bridge main and mitigation logic hashes.
+  - FC-7: datum must provide a 28-byte committee-bridge main logic hash.
+  - FC-8: datum must provide a 28-byte committee-bridge mitigation logic hash.
+  - FC-9: withdrawals must include credentials for both hashes (RUN tags below).
+  - GOS-1: committee-bridge forever NFT must remain at the committee-bridge script credential.
+  - GOS-2: committee-bridge forever output must hold only that NFT.
+  - GOS-3: committee-bridge forever output must provide an inline datum.
+  - SING-1: committee-bridge forever value must not carry additional assets.
+  - RUN-1: withdrawals must include the committee-bridge main auth credential.
+  - RUN-2: mitigation auth credential may be omitted only when the datum records the empty hash.
+  - RUN-3: when the datum records a mitigation auth hash, withdrawals must include that credential.
+- `committee_bridge_two_stage_upgrade`
+  Minting / setup constraints (info = `Minting`):
+  - CBTU-1: rebuild `config.committee_bridge_one_shot_{hash,index}` as the one-shot reference.
+  - CBTU-2: enforcement is delegated to `two_stage_upgradable`, which applies the shared TS/TSM/TSS/TM/TSG/RUN rules.
+  - TS-1: mint both committee-bridge stage NFTs with inline datums while spending the committee-bridge one-shot UTXO.
+  - TSM-5: mint must include entries under the committee-bridge policy id.
+  - TSM-6: minted assets must be exactly one "main" and one "staging" committee-bridge upgrade NFT.
+  - TSM-7: committee-bridge one-shot UTXO must be spent.
+  - TSM-8: main upgrade output must pay the committee-bridge script with an inline datum.
+  - TSM-9: main upgrade output must use the committee-bridge script credential.
+  - TSM-10: main upgrade output must carry the committee-bridge main NFT.
+  - TSM-11: initial main logic hash must be 28 bytes.
+  - TSM-12: initial main auth hash must be 28 bytes.
+  - TSM-13: staging upgrade output must pay the committee-bridge script with an inline datum.
+  - TSM-14: staging upgrade output must use the committee-bridge script credential.
+  - TSM-15: staging upgrade output must carry the staging NFT.
+  - TSM-16: initial staging logic hash must be 28 bytes.
+  - TSM-17: initial staging auth hash must be 28 bytes.
+  - TSM-18: cnight comparison remains as the compiler touch.
+  Operational constraints (info = `Spending`):
+  - TS-2: consume the ledger-selected committee-bridge script input.
+  - TS-3: consumed input must be locked by the committee-bridge script.
+  - TS-4: redeemer must decode into `TwoStageRedeemer`.
+  - TS-5: record the NFT identity from the spending input.
+  - TSM-1: main branch must spend the committee-bridge main NFT.
+  - TSM-2: main branch must reference the staging UTXO named in the redeemer.
+  - TSM-3: referenced staging UTXO must be locked by the committee-bridge script.
+  - TSM-4: referenced staging UTXO must hold the staging NFT.
+  - TSS-1: staging branch must spend the staging NFT.
+  - TSS-2: staging branch must reference the main UTXO locked by the committee-bridge script.
+  - TSS-3: referenced main UTXO must hold the main NFT.
+  - TM-1: spending datum must be inline.
+  - TM-2: referenced staging datum must be inline.
+  - TM-3: spending datum must decode to `UpgradeState`.
+  - TM-4: withdrawals must include both auth credentials stored in the main datum.
+  - TM-5: staging datum must provide the next logic hash.
+  - TM-6: staging datum must provide the next auth hash.
+  - TM-7: mitigation logic hash may only transition from empty once.
+  - TM-8: staging datum must provide the new mitigation logic hash when set.
+  - TM-9: mitigation auth hash may only transition from empty once.
+  - TSG-1: redeemer script hash must be 28 bytes.
+  - TSG-2: staging datum must be inline.
+  - TSG-3: referenced main datum must be inline.
+  - TSG-4: staging datum must decode to `UpgradeState`.
+  - TSG-5: main datum must decode to `UpgradeState` for comparison.
+  - TSG-6: withdrawals must include either the staging auth pair or the main auth pair.
+  - TSG-7: staging branch may not set mitigation logic once the main datum holds one.
+  - TSG-8: staging branch may not set mitigation auth once the main datum holds one.
+  - TS-6: outputs must include a replacement committee-bridge UTXO locked by the script credential.
+  - TS-7: replacement output must carry the same NFT that was spent.
+  - TS-8: replacement output must store the evolved state as an inline datum.
+  - RUN-1, RUN-2, RUN-3: withdrawal credential checks described above must be satisfied.
+- `committee_bridge_logic`
+  Operational constraints:
+  - CBL-1: on `Withdrawing` or `UnregisterCredential`, verify BEEFY consensus proof.
+  - CBL-2: on `RegisterCredential`, allow script registration unconditionally.
+  - CBL-3: all other script purposes are rejected.
+  - BCP-1: redeemer must decode to `BeefyConsensusProof`.
+  - BCP-2: inputs must expose the committee-bridge forever NFT with inline datum.
+  - BCP-3: trusted state must decode to `BeefyConsensusState`.
+  - BCP-4: outputs must include the updated committee-bridge forever NFT with inline datum.
+  - BCP-5: output state must decode to `BeefyConsensusState`.
+  - BCP-6: reference inputs must expose the beefy signer threshold (`config.beefy_signer_threshold_hash`) with inline datum.
+  - BCP-7: threshold datum must decode to `BeefyThreshold`.
+  - BCP-8: proof's signed commitment block number must exceed trusted state's `latest_height`.
+  - BCP-9: proof's validator set ID must match either `current_authority_set.id` or `next_authority_set.id`.
+  - BCP-10: total signed stake must meet the threshold fraction of the validating authority set's total stake.
+  - BCP-11: commitment's next-committee payload must match the keccak256 hash of the scale-encoded MMR leaf.
+  - BCP-12: output state must equal the computed new state from `verify_consensus`.
+  Implementation notes:
+  - BEEFY verification is delegated to `verify_consensus` from `lib/bridge/beefy`, which validates MMR proofs and ECDSA signatures.
+  - Authority set transitions occur when `latest_mmr_leaf.next_authority_set.id > trusted_state.next_authority_set.id`.
+
+---
+
 ## Utility Validators (Out-of-Scope)
 
 The following validators are simple utilities that don't participate in the Forever/Two-Stage/Logic governance pattern. They are documented here for completeness but are out-of-scope for detailed constraint tracking.
