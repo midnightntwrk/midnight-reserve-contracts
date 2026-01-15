@@ -1,6 +1,6 @@
 # Transaction Specifications
 
-> **Transaction-organized specification for Midnight Reserve governance contracts.** Each section describes a transaction type, the validators it fires, and the constraints that apply.
+> **Transaction-organized specification for Midnight Reserve governance contracts.** Each section describes a transaction type, the validators it fires, and the constraints that apply. For exhaustive constraint lists per validator, see [validators.md](validators.md).
 
 ---
 
