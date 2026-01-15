@@ -1,5 +1,11 @@
 import type { Network, ProviderType } from "../lib/types";
+import { isKnownEnvironment, getCardanoNetwork } from "../lib/network-mapping";
 
+/**
+ * Core Cardano networks that map 1:1 with the Network type.
+ * Additional environments (qanet, devnet-*, etc.) are also accepted
+ * and map to these networks via getCardanoNetwork().
+ */
 export const VALID_NETWORKS: Network[] = [
   "local",
   "preview",
@@ -39,13 +45,37 @@ export const VALID_TWO_STAGE_VALIDATORS = [
 
 export type TwoStageValidator = (typeof VALID_TWO_STAGE_VALIDATORS)[number];
 
+/**
+ * Validates the network/environment parameter.
+ *
+ * Accepts both core network names (local, preview, preprod, mainnet) and
+ * extended environment names (qanet, devnet-*, node-dev-*). Unknown
+ * environments trigger a warning but are still accepted.
+ *
+ * @param network - The network or environment name to validate
+ * @returns The validated network name (cast to Network type for backward compatibility)
+ */
 export function validateNetwork(network: string): Network {
-  if (!VALID_NETWORKS.includes(network as Network)) {
-    throw new Error(
-      `Invalid network '${network}'. Must be one of: ${VALID_NETWORKS.join(", ")}`,
-    );
+  // First, check if it's a known core network
+  if (VALID_NETWORKS.includes(network as Network)) {
+    return network as Network;
   }
-  return network as Network;
+
+  // Check if it's a known extended environment
+  if (isKnownEnvironment(network)) {
+    // Map to the underlying Cardano network for type purposes
+    const cardanoNetwork = getCardanoNetwork(network);
+    // Return the mapped network for backward compatibility
+    return (cardanoNetwork ?? "local") as Network;
+  }
+
+  // Unknown environment - warn but accept (will default to local/emulator)
+  console.warn(
+    `Warning: Unknown environment '${network}'. ` +
+      `Known values: ${VALID_NETWORKS.join(", ")}, qanet, devnet-*, node-dev-*. ` +
+      `Defaulting to local/emulator.`
+  );
+  return "local";
 }
 
 export function validateProvider(provider: string): ProviderType {

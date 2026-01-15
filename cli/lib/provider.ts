@@ -5,7 +5,7 @@ import { Maestro } from "@blaze-cardano/query";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { Network, ProviderType } from "./types";
 import { Unwrapped } from "@blaze-cardano/ogmios";
-import { getNetworkId, getDefaultProvider } from "./types";
+import { getNetworkId, getDefaultProvider, getCardanoNetwork } from "./types";
 import { getEnvVar, getDeployerAddress } from "./config";
 
 export async function createProvider(
@@ -19,32 +19,46 @@ export async function createProvider(
       return new Emulator([]) as unknown as Provider;
 
     case "blockfrost": {
-      const apiKeyVar = `BLOCKFROST_${network.toUpperCase()}_API_KEY`;
+      // Use getCardanoNetwork to properly map environment to Cardano network
+      const cardanoNetwork = getCardanoNetwork(network);
+
+      if (cardanoNetwork === null) {
+        throw new Error(
+          `Blockfrost provider requires a real Cardano network (preview/preprod/mainnet). ` +
+            `Environment '${network}' maps to local/emulator. Use --provider emulator instead.`
+        );
+      }
+
+      // Determine API key based on Cardano network (not environment name)
+      // This allows qanet, devnet-*, etc. to use the preview API key
+      const apiKeyVar = `BLOCKFROST_${cardanoNetwork.toUpperCase()}_API_KEY`;
       const apiKey = getEnvVar(apiKeyVar);
 
-      const networkNameMap: Record<Network, NetworkName> = {
-        local: "cardano-preview", // fallback for local
+      const networkNameMap: Record<string, NetworkName> = {
         preview: "cardano-preview",
         preprod: "cardano-preprod",
         mainnet: "cardano-mainnet",
       };
 
       return new Blockfrost({
-        network: networkNameMap[network],
+        network: networkNameMap[cardanoNetwork],
         projectId: apiKey,
       });
     }
 
     case "maestro": {
-      const apiKeyVar = `MAESTRO_${network.toUpperCase()}_API_KEY`;
-      const apiKey = getEnvVar(apiKeyVar);
+      // Use getCardanoNetwork to properly map environment to Cardano network
+      const cardanoNetwork = getCardanoNetwork(network);
 
-      if (network === "local") {
-        throw new Error("Maestro provider does not support local network");
+      if (cardanoNetwork === null) {
+        throw new Error("Maestro provider does not support local/emulator environments");
       }
 
+      const apiKeyVar = `MAESTRO_${cardanoNetwork.toUpperCase()}_API_KEY`;
+      const apiKey = getEnvVar(apiKeyVar);
+
       return new Maestro({
-        network: network,
+        network: cardanoNetwork,
         apiKey: apiKey,
       });
     }

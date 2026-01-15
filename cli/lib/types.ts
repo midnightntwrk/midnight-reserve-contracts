@@ -1,5 +1,17 @@
 import { NetworkId } from "@blaze-cardano/core";
+import {
+  getCardanoNetwork as _getCardanoNetwork,
+  getNetworkIdFromEnvironment,
+  getAikenConfigSection as _getAikenConfigSection,
+} from "./network-mapping";
 
+// Re-export for convenience
+export { getCardanoNetwork, getAikenConfigSection } from "./network-mapping";
+
+/**
+ * Legacy network type for backward compatibility.
+ * Use string environment names for new code - they map to Cardano networks via getCardanoNetwork().
+ */
 export type Network = "local" | "preview" | "preprod" | "mainnet";
 export type ProviderType = "blockfrost" | "maestro" | "emulator" | "kupmios";
 
@@ -143,14 +155,27 @@ export interface DeploymentOutput {
   transactions: TransactionOutput[];
 }
 
-export function getNetworkId(network: Network): NetworkId {
-  return network === "mainnet" ? NetworkId.Mainnet : NetworkId.Testnet;
+/**
+ * Gets the Blaze NetworkId for the given network/environment.
+ * Delegates to getNetworkIdFromEnvironment for consistent mapping.
+ */
+export function getNetworkId(network: Network | string): NetworkId {
+  return getNetworkIdFromEnvironment(network);
 }
 
-export function getDefaultProvider(network: Network): ProviderType {
-  return network === "local" ? "emulator" : "blockfrost";
+/**
+ * Gets the default provider for the given network/environment.
+ * Returns "emulator" for local environments, "blockfrost" for real networks.
+ */
+export function getDefaultProvider(network: Network | string): ProviderType {
+  const cardanoNetwork = _getCardanoNetwork(network);
+  return cardanoNetwork === null ? "emulator" : "blockfrost";
 }
 
-export function getConfigSection(network: Network): string {
-  return network === "local" ? "default" : network;
+/**
+ * Gets the aiken.toml config section for the given network/environment.
+ * Delegates to getAikenConfigSection for consistent mapping.
+ */
+export function getConfigSection(network: Network | string): string {
+  return _getAikenConfigSection(network);
 }
