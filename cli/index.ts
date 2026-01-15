@@ -33,12 +33,14 @@ import {
   validateComponents,
   validateTwoStageValidator,
   validateScriptHash,
+  validateTransactionName,
   parseThreshold,
   parseAmount,
   VALID_NETWORKS,
   VALID_PROVIDERS,
   VALID_COMPONENTS,
   VALID_TWO_STAGE_VALIDATORS,
+  VALID_TRANSACTION_NAMES,
 } from "./utils/validation";
 import { printError } from "./utils/output";
 import {
@@ -106,12 +108,18 @@ Options:
   --tech-auth-staging-threshold  Tech auth staging threshold e.g. "1/2" (default: 1/2)
   --components                 Components to deploy (comma-separated, default: all)
                                Options: ${VALID_COMPONENTS.join(", ")}
+  --name                       Deploy a single transaction by name. If deployment file
+                               exists, updates only that transaction; otherwise creates
+                               new file with just that transaction.
+                               Names: ${VALID_TRANSACTION_NAMES.slice(0, 4).join(", ")}...
+                               (run with invalid name to see full list)
 `);
   printGlobalOptions();
   console.log(`Examples:
   bun cli deploy -n local
   bun cli deploy -n preview --utxo-amount 50000000
   bun cli deploy -n preview --components tech-auth,council
+  bun cli deploy -n preview --name council-deployment
 `);
 }
 
@@ -465,6 +473,9 @@ async function main(): Promise<void> {
           components: options.components
             ? validateComponents((options.components as string).split(","))
             : [],
+          name: options.name
+            ? validateTransactionName(options.name as string)
+            : undefined,
         };
 
         await deploy(deployOptions);
