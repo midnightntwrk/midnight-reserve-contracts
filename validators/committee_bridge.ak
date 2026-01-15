@@ -8,8 +8,7 @@ use forever/script.{forever_contract}
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 use utils.{get_input_state_by_policy, get_output_state_by_policy}
 
-/// Committee bridge forever validator: mints and manages the BEEFY consensus state NFT.
-/// Validates that the next authority set ID is greater than the current one.
+/// One-shot minting for BEEFY consensus state NFT. Requires next authority set ID > current.
 validator committee_bridge_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =
@@ -35,8 +34,7 @@ validator committee_bridge_forever {
   }
 }
 
-/// Committee bridge two-stage upgrade validator: manages staged upgrades for the bridge contract.
-/// Delegates to the shared two-stage upgrade helper for minting and spending validation.
+/// Staged upgrades for committee bridge contract.
 validator committee_bridge_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
@@ -51,8 +49,7 @@ validator committee_bridge_two_stage_upgrade {
   }
 }
 
-/// Committee bridge logic validator: verifies BEEFY consensus proofs for authority set updates.
-/// Validates withdrawals and unregistrations via consensus proof verification against threshold requirements.
+/// Verifies BEEFY consensus proofs for authority set updates.
 validator committee_bridge_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { info, transaction, redeemer } = ctx
