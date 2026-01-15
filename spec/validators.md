@@ -743,3 +743,17 @@ When these tags appear in domain-specific sections below, they refer to these sa
   - LM-2: replacement illiq output must carry inline datum data (datum hashes are rejected).
   - LM-3: illiq logic must never consume the illiq forever NFT while merging values.
   - LM-4: replacement illiq output must return at least the aggregated ADA and NIGHT balances under the illiq policy.
+
+---
+
+## Utility Validators (Out-of-Scope)
+
+The following validators are simple utilities that don't participate in the Forever/Two-Stage/Logic governance pattern. They are documented here for completeness but are out-of-scope for detailed constraint tracking.
+
+- `registered_candidate`
+  A basic signer-check spending validator for key-controlled UTxOs.
+  - Datum: A `VerificationKeyHash` identifying the authorized signer
+  - Spending: Succeeds only when the datum's key hash appears in `extra_signatories`
+  - Other purposes: Rejected (validator fails on minting, withdrawing, etc.)
+  - Not used by governance CLI commands or integration tests
+  - No config parameters or NFT-gated state
