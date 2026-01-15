@@ -1,11 +1,16 @@
 import { readFileSync } from "fs";
-import { HexBlob, Transaction, TxCBOR } from "@blaze-cardano/core";
+import { HexBlob, Transaction, TransactionId, TxCBOR } from "@blaze-cardano/core";
 import type { Provider } from "@blaze-cardano/sdk";
 import type { Network, ProviderType } from "../lib/types";
 import { createProvider } from "../lib/provider";
 import { signTransaction, attachWitnesses } from "../utils/transaction";
-import { printError, printSuccess, printProgress } from "../utils/output";
+import { printError, printSuccess, printProgress, printInfo } from "../utils/output";
 import { getEnvVar } from "../lib/config";
+
+// Configuration for transaction confirmation
+const CONFIRMATION_TIMEOUT_MS = 300_000; // 5 minutes
+const MAX_SUBMIT_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 2_000;
 
 export interface SignAndSubmitOptions {
   network: Network;
@@ -85,7 +90,7 @@ export async function signAndSubmit(
           tx.name,
         );
         submittedHashes.push(hash);
-        printSuccess(`Submitted: ${tx.name} - ${hash}`);
+        printSuccess(`Confirmed: ${tx.name} - ${hash}`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         errors.push({ name: tx.name, error: errorMsg });
@@ -102,7 +107,7 @@ export async function signAndSubmit(
         "transaction",
       );
       submittedHashes.push(hash);
-      printSuccess(`Submitted: ${hash}`);
+      printSuccess(`Confirmed: ${hash}`);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       errors.push({ name: "transaction", error: errorMsg });
@@ -114,10 +119,10 @@ export async function signAndSubmit(
     );
   }
 
-  console.log("\n--- Submission Summary ---");
+  console.log("\n--- Summary ---");
   if (submittedHashes.length > 0) {
     console.log(
-      `\nSuccessfully submitted ${submittedHashes.length} transaction(s):`,
+      `\nSuccessfully confirmed ${submittedHashes.length} transaction(s):`,
     );
     for (const hash of submittedHashes) {
       console.log(`  ${hash}`);
@@ -125,12 +130,41 @@ export async function signAndSubmit(
   }
 
   if (errors.length > 0) {
-    console.log(`\nFailed to submit ${errors.length} transaction(s):`);
+    console.log(`\nFailed ${errors.length} transaction(s):`);
     for (const { name, error } of errors) {
       console.log(`  ${name}: ${error}`);
     }
     process.exit(1);
   }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isNetworkError(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("network") ||
+    message.includes("timeout") ||
+    message.includes("econnrefused") ||
+    message.includes("econnreset") ||
+    message.includes("socket") ||
+    message.includes("fetch failed") ||
+    message.includes("502") ||
+    message.includes("503") ||
+    message.includes("504")
+  );
+}
+
+function isAlreadySubmittedError(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("already") ||
+    message.includes("exists") ||
+    message.includes("duplicate") ||
+    message.includes("known")
+  );
 }
 
 async function processAndSubmitTransaction(
@@ -149,9 +183,71 @@ async function processAndSubmitTransaction(
   const signatures = signTransaction(txId, [privateKeyHex]);
   const signedTx = attachWitnesses(tx.toCbor(), signatures);
 
-  // Submit the transaction
-  printProgress(`Submitting: ${name}`);
-  const submittedHash = await provider.postTransactionToChain(signedTx);
+  // Submit with retry logic for network errors
+  let submittedHash: TransactionId = txId;
 
-  return submittedHash;
+  for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
+    try {
+      if (attempt > 1) {
+        printProgress(`Submitting (attempt ${attempt}/${MAX_SUBMIT_RETRIES}): ${name}`);
+      } else {
+        printProgress(`Submitting: ${name}`);
+      }
+      submittedHash = await provider.postTransactionToChain(signedTx);
+      break;
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+
+      // If transaction is already in mempool/chain, proceed to confirmation
+      if (isAlreadySubmittedError(err)) {
+        printInfo(`Transaction may already be submitted, checking confirmation...`);
+        break;
+      }
+
+      // Only retry on network errors
+      if (!isNetworkError(err) || attempt === MAX_SUBMIT_RETRIES) {
+        throw err;
+      }
+
+      const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+      printInfo(`Network error, retrying in ${delay / 1000}s...`);
+      await sleep(delay);
+    }
+  }
+
+  // Await confirmation with retry for network errors
+  printProgress(`Awaiting confirmation: ${name}`);
+
+  for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
+    try {
+      const confirmed = await provider.awaitTransactionConfirmation(
+        submittedHash,
+        CONFIRMATION_TIMEOUT_MS,
+      );
+
+      if (confirmed === false) {
+        throw new Error(
+          `Transaction ${submittedHash} was not confirmed within ${CONFIRMATION_TIMEOUT_MS / 1000 / 60} minutes`,
+        );
+      }
+
+      // Confirmation succeeded
+      return submittedHash;
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+
+      // Only retry on network errors during confirmation polling
+      if (!isNetworkError(err) || attempt === MAX_SUBMIT_RETRIES) {
+        throw new Error(`Confirmation failed for ${name}: ${err.message}`);
+      }
+
+      const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+      printInfo(`Network error during confirmation, retrying in ${delay / 1000}s...`);
+      await sleep(delay);
+      printProgress(`Awaiting confirmation (attempt ${attempt + 1}/${MAX_SUBMIT_RETRIES}): ${name}`);
+    }
+  }
+
+  // This should not be reached due to the throw in the loop
+  throw new Error(`Failed to confirm transaction ${name}`);
 }
