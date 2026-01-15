@@ -147,7 +147,6 @@ describe("Change Auth Member", () => {
             ),
         );
 
-        // Add the created threshold UTxO to emulator
         emulator.addUtxo(
           TransactionUnspentOutput.fromCore([
             {
@@ -308,7 +307,6 @@ describe("Change Auth Member", () => {
             ),
         );
 
-        // Add the created tech auth UTxOs to emulator
         emulator.addUtxo(
           TransactionUnspentOutput.fromCore([
             {
@@ -495,7 +493,6 @@ describe("Change Auth Member", () => {
             ),
         );
 
-        // Add the created council UTxOs to emulator
         emulator.addUtxo(
           TransactionUnspentOutput.fromCore([
             {
@@ -1138,7 +1135,6 @@ describe("Change Auth Member", () => {
             ),
         );
 
-        // Add the created tech auth and council UTxOs to emulator
         emulator.addUtxo(
           TransactionUnspentOutput.fromCore([
             {

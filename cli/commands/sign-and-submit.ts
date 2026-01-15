@@ -175,11 +175,8 @@ async function processAndSubmitTransaction(
 ): Promise<string> {
   printProgress(`Processing: ${name}`);
 
-  // Parse the transaction
   const tx = Transaction.fromCbor(TxCBOR(HexBlob(cbor)));
   const txId = tx.getId();
-
-  // Sign the transaction
   const signatures = signTransaction(txId, [privateKeyHex]);
   const signedTx = attachWitnesses(tx.toCbor(), signatures);
 

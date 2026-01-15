@@ -63,7 +63,6 @@ describe("CNIGHT Generate Dust", () => {
         dust_address: mockDustAddress,
       };
 
-      // Mint 1 nft and create output UTxO
       await emulator.expectValidTransaction(
         blaze,
         blaze

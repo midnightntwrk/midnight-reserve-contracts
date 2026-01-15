@@ -20,16 +20,13 @@ export async function generateKey(options: GenerateKeyOptions): Promise<void> {
   const { network } = options;
   const networkId = getNetworkId(network);
 
-  // Generate a random 32-byte private key
   const privateKeyBytes = randomBytes(32);
   const privateKeyHex = privateKeyBytes.toString("hex");
   const privateKey = Ed25519PrivateNormalKeyHex(privateKeyHex);
 
-  // Derive public key and hash for the address
   const publicKey = derivePublicKey(privateKey);
   const publicKeyHash = blake2b_224(HexBlob(publicKey));
 
-  // Create the address from the credential
   const credential = Credential.fromCore({
     type: CredentialType.KeyHash,
     hash: Hash28ByteBase16(publicKeyHash),

@@ -353,7 +353,6 @@ describe("Stage upgrade for tech-auth (CLI reproduction)", () => {
         },
       ]);
 
-      // New staging state with updated logic and incremented round
       const newStagingState: Contracts.UpgradeState = [
         newLogicHash,
         currentStagingState[1], // keep mitigation_logic

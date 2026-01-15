@@ -63,7 +63,6 @@ export async function stageUpgrade(
   const contracts = getContractInstances(network);
   const targetContracts = getTwoStageContracts(validator, network);
 
-  // Create addresses for required contracts
   const twoStageAddress = getCredentialAddress(
     network,
     targetContracts.twoStage.Script.hash(),
@@ -242,7 +241,6 @@ export async function stageUpgrade(
     stagingDatum.asInlineData()!,
   );
 
-  // New staging state with updated logic and incremented round
   const newStagingState: Contracts.UpgradeState = [
     newLogicHash,
     currentStagingState[1], // keep mitigation_logic
