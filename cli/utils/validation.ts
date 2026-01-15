@@ -45,6 +45,23 @@ export const VALID_TWO_STAGE_VALIDATORS = [
 
 export type TwoStageValidator = (typeof VALID_TWO_STAGE_VALIDATORS)[number];
 
+export const VALID_TRANSACTION_NAMES = [
+  "technical-authority-deployment",
+  "tech-auth-update-threshold-deployment",
+  "council-deployment",
+  "council-update-threshold-deployment",
+  "reserve-deployment",
+  "ics-deployment",
+  "main-gov-threshold-deployment",
+  "staging-gov-threshold-deployment",
+  "federated-ops-deployment",
+  "federated-ops-update-threshold-deployment",
+  "terms-and-conditions-deployment",
+  "terms-and-conditions-threshold-deployment",
+] as const;
+
+export type TransactionName = (typeof VALID_TRANSACTION_NAMES)[number];
+
 /**
  * Validates the network/environment parameter.
  *
@@ -117,6 +134,15 @@ export function validateComponents(components: string[]): string[] {
     }
   }
   return components;
+}
+
+export function validateTransactionName(name: string): TransactionName {
+  if (!VALID_TRANSACTION_NAMES.includes(name as TransactionName)) {
+    throw new Error(
+      `Invalid transaction name '${name}'. Must be one of:\n  ${VALID_TRANSACTION_NAMES.join("\n  ")}`,
+    );
+  }
+  return name as TransactionName;
 }
 
 export function parseThreshold(thresholdStr: string): {

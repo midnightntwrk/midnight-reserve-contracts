@@ -31,6 +31,7 @@ export interface DeployOptions extends GlobalOptions {
   councilStagingThreshold: { numerator: bigint; denominator: bigint };
   techAuthStagingThreshold: { numerator: bigint; denominator: bigint };
   components: string[];
+  name?: string;
 }
 
 export interface ChangeAuthOptions extends GlobalOptions {

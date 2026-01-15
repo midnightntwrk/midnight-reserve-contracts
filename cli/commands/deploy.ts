@@ -38,9 +38,11 @@ import {
   printSuccess,
   printError,
   printProgress,
+  printInfo,
   printTransactionSummary,
   ensureDirectory,
 } from "../utils/output";
+import { readFileSync, existsSync } from "fs";
 import { createOneShotUtxo, createUpgradeState } from "../utils/transaction";
 import * as Contracts from "../../contract_blueprint";
 import type { TransactionUnspentOutput } from "@blaze-cardano/core";
@@ -101,6 +103,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
     councilStagingThreshold,
     techAuthStagingThreshold,
     components,
+    name,
   } = options;
 
   console.log(`===========================================`);
@@ -854,10 +857,25 @@ export async function deploy(options: DeployOptions): Promise<void> {
     },
   ];
 
-  const transactions =
-    components.length === 0 || components.includes("all")
-      ? allTransactionDefs
-      : allTransactionDefs.filter((t) => components.includes(t.component));
+  // Filter transactions based on --name or --components options
+  let transactions = allTransactionDefs;
+
+  if (name) {
+    // Warn if both --name and --components are provided
+    if (components.length > 0 && !components.includes("all")) {
+      printInfo(`Warning: --name overrides --components. Using --name=${name}`);
+    }
+    // Filter by specific transaction name
+    const matched = allTransactionDefs.find((t) => t.name === name);
+    if (!matched) {
+      throw new Error(`Transaction '${name}' not found in deployment definitions`);
+    }
+    transactions = [matched];
+    printInfo(`Targeting single transaction: ${name}`);
+  } else if (components.length > 0 && !components.includes("all")) {
+    // Filter by component(s)
+    transactions = allTransactionDefs.filter((t) => components.includes(t.component));
+  }
 
   const allTransactions: TxOutput[] = [];
   const allScriptOutputs: Map<string, ScriptOutputInfo[]> = new Map();
@@ -936,10 +954,36 @@ export async function deploy(options: DeployOptions): Promise<void> {
   ensureDirectory(deploymentDir);
 
   const outputFile = resolve(deploymentDir, "deployment-transactions.json");
+
+  // If --name is provided and file exists, merge with existing transactions
+  let finalTransactions = allTransactions;
+  if (name && existsSync(outputFile)) {
+    try {
+      const existingData = JSON.parse(readFileSync(outputFile, "utf-8")) as {
+        transactions?: TxOutput[];
+      };
+      if (existingData.transactions && Array.isArray(existingData.transactions)) {
+        // Preserve ordering: replace in-place if exists, otherwise append
+        const existingIdx = existingData.transactions.findIndex((t) => t.name === name);
+        if (existingIdx >= 0) {
+          existingData.transactions[existingIdx] = allTransactions[0];
+          finalTransactions = existingData.transactions;
+          printInfo(`Replaced transaction ${name} in existing deployment file (${existingData.transactions.length} total)`);
+        } else {
+          finalTransactions = [...existingData.transactions, ...allTransactions];
+          printInfo(`Appended transaction ${name} to existing deployment file (${existingData.transactions.length + 1} total)`);
+        }
+      }
+    } catch (err) {
+      // If we can't parse existing file, just use new transactions
+      printInfo(`Could not parse existing deployment file: ${err instanceof Error ? err.message : err}. Creating new one.`);
+    }
+  }
+
   const deploymentOutput = createDeploymentOutput(
     network,
     { utxoAmount, outputAmount, thresholdOutputAmount },
-    allTransactions,
+    finalTransactions,
   );
 
   writeJsonFile(outputFile, deploymentOutput);
