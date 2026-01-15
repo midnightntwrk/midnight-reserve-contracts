@@ -1,6 +1,6 @@
 # Validator Constraints Specification
 
-> **Source of truth for on-chain validation rules.** Each constraint tag (RF-1, FC-2, etc.) maps to inline code comments in validators.
+> **Validator-organized reference for on-chain validation rules.** Documents constraints by validator for audit review. For transaction construction guidance, see [transactions.md](transactions.md).
 
 ---
 
