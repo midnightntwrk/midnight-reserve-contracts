@@ -169,7 +169,7 @@ describe("Candidates Parser", () => {
 
   describe("createFederatedOpsDatumFromString", () => {
     test("creates FederatedOps datum with correct structure", () => {
-      const datum = createFederatedOpsDatumFromString(singleCandidateInput, 0n);
+      const datum = createFederatedOpsDatumFromString(singleCandidateInput, 1n);
 
       // FederatedOps = [Unit (Constr 0 []), List<PermissionedCandidateDatumV1>, version]
       const expectedUnit = PlutusData.fromCore({
@@ -178,13 +178,13 @@ describe("Candidates Parser", () => {
       });
       expect(datum[0].toCbor()).toBe(expectedUnit.toCbor());
       expect(datum[1]).toHaveLength(1);
-      expect(datum[2]).toBe(0n);
+      expect(datum[2]).toBe(1n);
     });
 
     test("creates FederatedOps datum with multiple candidates", () => {
       const datum = createFederatedOpsDatumFromString(
         multipleCandidatesInput,
-        0n,
+        1n,
       );
 
       const expectedUnit = PlutusData.fromCore({
@@ -193,7 +193,7 @@ describe("Candidates Parser", () => {
       });
       expect(datum[0].toCbor()).toBe(expectedUnit.toCbor());
       expect(datum[1]).toHaveLength(3);
-      expect(datum[2]).toBe(0n);
+      expect(datum[2]).toBe(1n);
 
       // Verify each candidate in the appendix
       const appendix = datum[1];

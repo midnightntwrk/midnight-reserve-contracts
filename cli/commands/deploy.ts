@@ -682,7 +682,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
           logicContract: contracts.federatedOpsLogic,
           federatedOpsDatum: createFederatedOpsDatum(
             "PERMISSIONED_CANDIDATES",
-            0n,
+            1n,
           ),
         }),
     },

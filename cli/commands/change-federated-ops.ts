@@ -209,7 +209,7 @@ export async function changeFederatedOps(
   // Create new federated ops datum from environment
   const newFederatedOpsDatum = createFederatedOpsDatum(
     "PERMISSIONED_CANDIDATES",
-    currentLogicRound, // Preserve the logic round
+    1n, // Use logic_round 1
   );
 
   console.log("\nNew federated ops candidates loaded from PERMISSIONED_CANDIDATES");

@@ -95,7 +95,7 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
       // Create FederatedOps datum from test candidates
       const federatedOpsDatum = createFederatedOpsDatumFromString(
         testCandidatesInput,
-        0n,
+        1n,
       );
 
       // Verify datum structure
@@ -103,7 +103,7 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
         PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }),
       ); // Unit
       expect(federatedOpsDatum[1]).toHaveLength(3); // 3 candidates
-      expect(federatedOpsDatum[2]).toBe(0n); // logic_round
+      expect(federatedOpsDatum[2]).toBe(1n); // logic_round
 
       await emulator.expectValidTransaction(
         blaze,
@@ -234,7 +234,7 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
       const emptyFederatedOpsDatum: Contracts.FederatedOps = [
         PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }), // Unit
         [], // Empty appendix
-        0n, // logic_round
+        1n, // logic_round
       ];
 
       await emulator.expectValidTransaction(
@@ -357,7 +357,7 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
     const federatedOpsDatum: Contracts.FederatedOps = [
       PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }),
       [datum],
-      0n,
+      1n,
     ];
     const serialized = serialize(Contracts.FederatedOps, federatedOpsDatum);
     expect(serialized).toBeDefined();
