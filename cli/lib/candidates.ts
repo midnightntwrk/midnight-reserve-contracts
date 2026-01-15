@@ -196,7 +196,7 @@ export function parsePermissionedCandidatesToAppendix(
  */
 export function createFederatedOpsDatum(
   envVar: string = "PERMISSIONED_CANDIDATES",
-  logic_round: bigint = 0n,
+  logic_round: bigint = 1n,
 ): Contracts.FederatedOps {
   const appendix = parsePermissionedCandidatesToAppendix(envVar);
   return [
@@ -211,7 +211,7 @@ export function createFederatedOpsDatum(
  */
 export function createFederatedOpsDatumFromString(
   input: string,
-  logic_round: bigint = 0n,
+  logic_round: bigint = 1n,
 ): Contracts.FederatedOps {
   const candidates = parsePermissionedCandidatesString(input);
   const appendix = candidates.map(candidateToPermissionedDatum);
