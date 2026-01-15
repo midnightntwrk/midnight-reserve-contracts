@@ -19,6 +19,8 @@ use utils.{
   must_find,
 }
 
+/// Next version of reserve logic merge (currently unused).
+/// Supports staging state lookup and different forever addresses based on main/staging context.
 pub fn unused_logic_merge_next_version(
   transaction: Transaction,
   info: ScriptInfo,
@@ -37,12 +39,10 @@ pub fn unused_logic_merge_next_version(
           fn(input, acc) {
             let Output { address, value, .. } = input.output
             if address.payment_credential == guarded_cred {
-              // (LM-3) Don't allow the permanent state token to be
-              // spent in this version
+              // Don't allow the forever NFT to be consumed during merge
               expect
                 assets.quantity_of(value, main_forever_script_hash, "") == 0
 
-              // (LM-1) Accumulate every input locked by the forever script.
               assets.merge(value, acc)
             } else {
               acc
@@ -52,7 +52,6 @@ pub fn unused_logic_merge_next_version(
 
       let guarded_address = Address(Script(forever_script_hash), None)
 
-      // (LM-0) Require the transaction to create an output for the forever address.
       let Output { value, datum, .. } =
         must_find(outputs, fn(output) { output.address == guarded_address })
 
@@ -64,12 +63,12 @@ pub fn unused_logic_merge_next_version(
       expect [Pair(cnight_name, cnight_amount)] = cnight_tokens |> to_pairs
 
       and {
-        // (LM-2) Require the output to not be a datumhash
+        // Datum must be inline (not hash) so state remains readable
         when datum is {
           DatumHash(_) -> False
           _ -> True
         },
-        // (LM-4) Require the transaction to return the merged balance to the forever address.
+        // Output must return at least the accumulated ADA and CNIGHT balances
         config.cnight_policy == cnight_policy,
         cnight_name == config.cnight_name,
         assets.quantity_of(guarded_value, ada_policy_id, ada_asset_name) <= ada_amount,
@@ -120,6 +119,8 @@ pub fn unused_logic_merge_next_version(
   }
 }
 
+/// Next version of multisig validation logic (currently unused).
+/// Supports staging state lookup with different threshold and forever addresses based on main/staging context.
 pub fn unused_logic_multisig_validation_nft_input_next_version(
   transaction: Transaction,
   redeemer: Redeemer,
