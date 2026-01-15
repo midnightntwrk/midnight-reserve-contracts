@@ -2,6 +2,25 @@
 
 > **Source of truth for on-chain validation rules.** Each constraint tag (RF-1, FC-2, etc.) maps to inline code comments in validators.
 
+---
+
+## Common Helper Constraints
+
+The following constraint tags are **reusable helpers** applied wherever the corresponding validation logic occurs. They are defined once here and referenced throughout the domain-specific validator sections.
+
+### Multisig Structure Validation (MS-1 through MS-4)
+
+These constraints are enforced by `validate_multisig_structure` and apply to any validator that stores a `Versioned<Multisig>` datum (council, technical authority):
+
+- **MS-1**: Forever datum must decode to a `Versioned<Multisig>` structure.
+- **MS-2**: Redeemer must be a map of signer payloads.
+- **MS-3**: Reconstructing the signer list from the redeemer map must succeed.
+- **MS-4**: Reconstructed signer list and total must match the values stored in the datum.
+
+When these tags appear in domain-specific sections below, they refer to these same constraints applied to that domain's datum.
+
+---
+
 ## Reserve Validators
 - `reserve_forever`
   Minting / setup constraints:
