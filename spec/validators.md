@@ -356,7 +356,7 @@ When these tags appear in domain-specific sections below, they refer to these sa
   - FF-1: rebuild `config.federated_operators_one_shot_{hash,index}` as the mint authoriser.
   - FF-2: delegate to `forever_contract`, which enforces FC-1 through FC-9 plus the ILM series for the federated operators.
   - FC-1: consume `config.federated_operators_one_shot_{hash,index}` while minting exactly one federated forever NFT (asset name "") and expose its datum.
-  - FC-2: inline datum must satisfy `validate_multisig_structure`.
+  - FC-2: inline datum must satisfy `validate_federated_ops` (type-checks as `FederatedOps`).
   - FC-3: touch `config.cnight_policy` to keep the helper in the script hash (no ledger constraint).
   - ILM-1: inputs must spend the federated one-shot UTXO.
   - ILM-2: mint must include the federated policy id.
@@ -376,10 +376,6 @@ When these tags appear in domain-specific sections below, they refer to these sa
   - RUN-1: withdrawals must include the federated main auth credential.
   - RUN-2: mitigation auth credential may be omitted only when the datum records the empty hash.
   - RUN-3: when the datum records a mitigation auth hash, withdrawals must include that credential.
-  - MS-1: federated forever datum must be a `Multisig`.
-  - MS-2: federated redeemer must be a map of signer payloads.
-  - MS-3: reconstructing the federated signer list from the redeemer must succeed.
-  - MS-4: reconstructed federated signer list and total must match the datum.
 - `federated_ops_two_stage_upgrade`
   Minting / setup constraints (info = `Minting`):
   - FTU-2: upgrades must consume `config.federated_operators_one_shot_{hash,index}`.
@@ -439,23 +435,19 @@ When these tags appear in domain-specific sections below, they refer to these sa
   - ML-2: outputs must keep the federated forever state at the script credential.
   - ML-3: mint must contain the native script rebuilt from the technical-authority `Multisig` datum and threshold fraction.
   - ML-4: mint must contain the native script rebuilt from the council `Multisig` datum and threshold fraction.
-  - ML-5: redeemer signer map must satisfy MS-1 through MS-4 when validated against the federated forever datum.
+  - ML-5: `validate_federated_ops` type-checks the output datum as `FederatedOps` (ignores redeemer).
   - CM-1: inputs or references must expose the federated forever NFT.
   - CM-2: federated forever datum must be inline.
-  - CM-3: federated forever datum must decode to `Multisig`.
-  - CM-4: mint must contain an asset under the native script derived from that `Multisig` and threshold fraction.
+  - CM-3: federated forever datum must decode to `FederatedOps`.
+  - CM-4: mint must contain an asset under the native script derived from the tech auth and council `Multisig` datums and threshold fraction.
   - GIS-1: every federated input consulted via helper lookups must carry exactly one federated NFT and provide inline datum data.
   - GOS-1: federated forever output must remain at the script credential.
   - GOS-2: federated forever output must carry only that NFT.
   - GOS-3: federated forever output must provide inline state.
   - SING-1: no extra assets may accompany the federated forever NFT.
-  - MS-1: federated forever datum must be a `Multisig`.
-  - MS-2: redeemer must be a map of signer payloads.
-  - MS-3: rebuilding the signer list from the redeemer must succeed.
-  - MS-4: reconstructed signer list and total must match the datum.
   Implementation notes:
   - FL-1: the validator exposes the transaction, redeemer, and script info to the multisig helper.
-  - FL-2: quorum enforcement delegates to `logic_multisig_validation_nft_input`, which applies ML-0 through MS-4 plus GIS-1.
+  - FL-2: quorum enforcement delegates to `logic_multisig_validation_nft_input`, which applies ML-0 through ML-5 plus GIS-1.
 
 
 ## Governance Threshold Validators
