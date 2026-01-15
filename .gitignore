@@ -14,8 +14,6 @@ blueprint-rs
 *.cbor
 *.db*
 
-# Environment-specific generated blueprints (contract_blueprint.ts is tracked)
-contract_blueprint_*.ts
 
 code-search*
 .claude/

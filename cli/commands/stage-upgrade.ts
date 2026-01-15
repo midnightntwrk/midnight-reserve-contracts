@@ -60,8 +60,8 @@ export async function stageUpgrade(
 
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
-  const contracts = getContractInstances();
-  const targetContracts = getTwoStageContracts(validator);
+  const contracts = getContractInstances(network);
+  const targetContracts = getTwoStageContracts(validator, network);
 
   // Create addresses for required contracts
   const twoStageAddress = getCredentialAddress(

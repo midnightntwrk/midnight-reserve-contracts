@@ -114,7 +114,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
   console.log(`Threshold Output Amount: ${thresholdOutputAmount} lovelace`);
 
   const config = loadAikenConfig(network);
-  const contracts = getContractInstances();
+  const contracts = getContractInstances(network);
   const networkId = getNetworkId(network);
   const deployerAddr = getDeployerAddress();
 

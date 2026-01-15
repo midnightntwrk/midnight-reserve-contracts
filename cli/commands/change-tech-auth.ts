@@ -55,7 +55,7 @@ export async function changeTechAuth(
 
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
-  const contracts = getContractInstances();
+  const contracts = getContractInstances(network);
 
   const techAuthForeverAddress = getCredentialAddress(
     network,
@@ -136,7 +136,7 @@ export async function changeTechAuth(
   console.log("  Logic hash:", logicHash);
   console.log("  Mitigation logic hash:", mitigationLogicHash || "(empty)");
 
-  const logicScript = findScriptByHash(logicHash);
+  const logicScript = findScriptByHash(logicHash, network);
   if (!logicScript) {
     throw new Error(
       `Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.techAuthLogic.Script.hash()}`,
@@ -145,7 +145,7 @@ export async function changeTechAuth(
 
   let mitigationLogicScript: Script | null = null;
   if (mitigationLogicHash && mitigationLogicHash !== "") {
-    mitigationLogicScript = findScriptByHash(mitigationLogicHash);
+    mitigationLogicScript = findScriptByHash(mitigationLogicHash, network);
     if (!mitigationLogicScript) {
       throw new Error(
         `Unknown mitigation logic script hash in UpgradeState: ${mitigationLogicHash}`,
