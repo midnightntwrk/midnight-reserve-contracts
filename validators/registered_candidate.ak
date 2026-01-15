@@ -3,8 +3,7 @@ use aiken/crypto.{VerificationKeyHash}
 use cardano/script_context.{ScriptContext, Spending}
 use cardano/transaction.{Transaction}
 
-/// Registered candidate validator: allows spending only when the datum's verification key hash
-/// is present in the transaction's extra signatories.
+/// Allows spending only when datum's verification key hash is in extra signatories.
 validator registered_candidate {
   else(ctx: ScriptContext) {
     let ScriptContext { info, transaction, .. } = ctx

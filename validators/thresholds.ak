@@ -120,8 +120,7 @@ validator main_gov_threshold {
   }
 }
 
-/// Staging governance threshold validator: manages threshold NFT for staging governance operations.
-/// Delegates to the shared threshold validation helper.
+/// Threshold NFT for staging governance operations.
 validator staging_gov_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -136,8 +135,7 @@ validator staging_gov_threshold {
   }
 }
 
-/// Council update threshold validator: manages threshold NFT for council membership changes.
-/// Delegates to the shared threshold validation helper.
+/// Threshold NFT for council membership changes.
 validator main_council_update_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -152,8 +150,7 @@ validator main_council_update_threshold {
   }
 }
 
-/// Technical authority update threshold validator: manages threshold NFT for tech auth membership changes.
-/// Delegates to the shared threshold validation helper.
+/// Threshold NFT for tech auth membership changes.
 validator main_tech_auth_update_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -168,8 +165,7 @@ validator main_tech_auth_update_threshold {
   }
 }
 
-/// Federated operators update threshold validator: manages threshold NFT for federated ops membership changes.
-/// Delegates to the shared threshold validation helper.
+/// Threshold NFT for federated ops membership changes.
 validator main_federated_ops_update_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -184,8 +180,7 @@ validator main_federated_ops_update_threshold {
   }
 }
 
-/// BEEFY signer threshold validator: manages threshold NFT for BEEFY protocol signer requirements.
-/// Delegates to the shared threshold validation helper.
+/// Threshold NFT for BEEFY protocol signer requirements.
 validator beefy_signer_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -200,8 +195,7 @@ validator beefy_signer_threshold {
   }
 }
 
-/// Terms and conditions threshold validator: manages threshold NFT for T&C updates.
-/// Delegates to the shared threshold validation helper.
+/// Threshold NFT for T&C updates.
 validator terms_and_conditions_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx

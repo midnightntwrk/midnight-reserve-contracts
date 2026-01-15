@@ -37,8 +37,7 @@ fn check_auth(
   }
 }
 
-/// CNIGHT generates dust validator: manages dust mapping NFTs linking Cardano wallets to Midnight addresses.
-/// Handles minting (create/burn), withdrawing (batch updates), and spending (updates/burns).
+/// Manages dust mapping NFTs linking Cardano wallets to Midnight addresses.
 validator cnight_generates_dust {
   else(ctx: ScriptContext) {
     let ScriptContext { redeemer, info, transaction } = ctx

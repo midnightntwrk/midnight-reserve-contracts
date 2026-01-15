@@ -10,8 +10,7 @@ fn ics_init_validation(_datum: Data, _redeemer: Redeemer) {
   True
 }
 
-/// ICS forever validator: mints and manages the immutable illiquid circulation supply NFT state.
-/// Uses one-shot minting pattern and delegates to the forever contract helper.
+/// One-shot minting for immutable ICS NFT state.
 validator ics_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =
@@ -26,8 +25,7 @@ validator ics_forever {
   }
 }
 
-/// ICS two-stage upgrade validator: manages staged upgrades for the ICS contract.
-/// Delegates to the shared two-stage upgrade helper for minting and spending validation.
+/// Staged upgrades for ICS contract.
 validator ics_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
@@ -39,8 +37,7 @@ validator ics_two_stage_upgrade {
   }
 }
 
-/// ICS logic validator: handles ICS withdrawal operations.
-/// Delegates to the logic merge helper using the ICS forever script hash.
+/// Handles ICS withdrawal operations.
 validator ics_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx

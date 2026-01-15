@@ -10,8 +10,7 @@ fn reserve_init_validation(_datum: Data, _redeemer: Redeemer) {
   True
 }
 
-/// Reserve forever validator: mints and manages the immutable reserve NFT state.
-/// Uses one-shot minting pattern and delegates to the forever contract helper.
+/// One-shot minting for immutable reserve NFT state.
 validator reserve_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =
@@ -29,8 +28,7 @@ validator reserve_forever {
   }
 }
 
-/// Reserve two-stage upgrade validator: manages staged upgrades for the reserve contract.
-/// Delegates to the shared two-stage upgrade helper for minting and spending validation.
+/// Staged upgrades for reserve contract.
 validator reserve_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
@@ -45,8 +43,7 @@ validator reserve_two_stage_upgrade {
   }
 }
 
-/// Reserve logic validator: handles reserve withdrawal operations.
-/// Delegates to the logic merge helper using the reserve forever script hash.
+/// Handles reserve withdrawal operations.
 validator reserve_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx

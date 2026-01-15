@@ -17,8 +17,7 @@ fn validate_terms_structure(datum: Data, _redeemer) {
   builtin.length_of_bytearray(hash) == 32
 }
 
-/// Terms and conditions forever validator: mints and manages the immutable T&C NFT state.
-/// Uses one-shot minting pattern and delegates to the forever contract helper.
+/// One-shot minting for immutable T&C NFT state.
 validator terms_and_conditions_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =
@@ -36,8 +35,7 @@ validator terms_and_conditions_forever {
   }
 }
 
-/// Terms and conditions two-stage upgrade validator: manages staged upgrades for the T&C contract.
-/// Delegates to the shared two-stage upgrade helper for minting and spending validation.
+/// Staged upgrades for T&C contract.
 validator terms_and_conditions_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
@@ -52,8 +50,7 @@ validator terms_and_conditions_two_stage_upgrade {
   }
 }
 
-/// Terms and conditions logic validator: enforces multisig quorum requirements for T&C updates.
-/// Validates via withdrawal and allows stake credential registration.
+/// Enforces multisig quorum for T&C updates via withdrawal.
 validator terms_and_conditions_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx

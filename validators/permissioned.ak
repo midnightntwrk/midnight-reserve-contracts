@@ -45,15 +45,13 @@ fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
   }
 }
 
-/// Validates that the datum is a well-formed FederatedOps structure.
 fn validate_federated_ops(datum: Data, _redeemer) {
   expect _: FederatedOps = datum
 
   True
 }
 
-/// Council forever validator: mints and manages the immutable council NFT state.
-/// Uses one-shot minting pattern and delegates to the forever contract helper.
+/// One-shot minting for immutable council NFT state.
 validator council_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =
@@ -71,8 +69,7 @@ validator council_forever {
   }
 }
 
-/// Council two-stage upgrade validator: manages staged upgrades for the council contract.
-/// Delegates to the shared two-stage upgrade helper for minting and spending validation.
+/// Staged upgrades for council contract.
 validator council_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
@@ -87,8 +84,7 @@ validator council_two_stage_upgrade {
   }
 }
 
-/// Council logic validator: enforces multisig quorum requirements for council operations.
-/// Validates via withdrawal and allows stake credential registration.
+/// Enforces multisig quorum for council operations via withdrawal.
 validator council_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
@@ -104,8 +100,7 @@ validator council_logic {
   }
 }
 
-/// Technical authority forever validator: mints and manages the immutable tech auth NFT state.
-/// Uses one-shot minting pattern and delegates to the forever contract helper.
+/// One-shot minting for immutable tech auth NFT state.
 validator tech_auth_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =
@@ -123,8 +118,7 @@ validator tech_auth_forever {
   }
 }
 
-/// Technical authority two-stage upgrade validator: manages staged upgrades for the tech auth contract.
-/// Delegates to the shared two-stage upgrade helper for minting and spending validation.
+/// Staged upgrades for tech auth contract.
 validator tech_auth_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
@@ -139,8 +133,7 @@ validator tech_auth_two_stage_upgrade {
   }
 }
 
-/// Technical authority logic validator: enforces multisig quorum requirements for tech auth operations.
-/// Validates via withdrawal and allows stake credential registration.
+/// Enforces multisig quorum for tech auth operations via withdrawal.
 validator tech_auth_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
@@ -156,8 +149,7 @@ validator tech_auth_logic {
   }
 }
 
-/// Federated operators forever validator: mints and manages the immutable federated ops NFT state.
-/// Uses one-shot minting pattern and delegates to the forever contract helper.
+/// One-shot minting for immutable federated ops NFT state.
 validator federated_ops_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =
@@ -175,8 +167,7 @@ validator federated_ops_forever {
   }
 }
 
-/// Federated operators two-stage upgrade validator: manages staged upgrades for the federated ops contract.
-/// Delegates to the shared two-stage upgrade helper for minting and spending validation.
+/// Staged upgrades for federated ops contract.
 validator federated_ops_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
@@ -191,8 +182,7 @@ validator federated_ops_two_stage_upgrade {
   }
 }
 
-/// Federated operators logic validator: enforces multisig quorum requirements for federated ops updates.
-/// Validates via withdrawal and allows stake credential registration.
+/// Enforces multisig quorum for federated ops updates via withdrawal.
 validator federated_ops_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
