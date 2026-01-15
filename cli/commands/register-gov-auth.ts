@@ -28,10 +28,8 @@ export async function registerGovAuth(
   console.log(`\nMain Gov Auth script hash: ${mainGovAuthHash}`);
   console.log(`Staging Gov Auth script hash: ${stagingGovAuthHash}`);
 
-  // Create provider
   const { blaze } = await createBlaze(network, options.provider);
 
-  // Build transaction
   printProgress("Building transaction...");
 
   try {

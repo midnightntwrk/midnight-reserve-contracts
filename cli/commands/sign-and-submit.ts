@@ -58,13 +58,9 @@ export async function signAndSubmit(
     signingKeyEnvVar,
   } = options;
 
-  // Get private key from environment variable
   const privateKeyHex = getEnvVar(signingKeyEnvVar);
-
-  // Create provider for submission
   const provider = await createProvider(network, providerType);
 
-  // Read and parse JSON file
   printProgress(`Reading transaction file: ${jsonFile}`);
   const fileContent = readFileSync(jsonFile, "utf-8");
   const jsonData = JSON.parse(fileContent);
@@ -118,7 +114,6 @@ export async function signAndSubmit(
     );
   }
 
-  // Final summary
   console.log("\n--- Submission Summary ---");
   if (submittedHashes.length > 0) {
     console.log(

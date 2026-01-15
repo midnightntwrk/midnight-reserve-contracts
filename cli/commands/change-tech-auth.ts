@@ -57,7 +57,6 @@ export async function changeTechAuth(
   const deployerAddress = getDeployerAddress();
   const contracts = getContractInstances();
 
-  // Create addresses
   const techAuthForeverAddress = getCredentialAddress(
     network,
     contracts.techAuthForever.Script.hash(),
@@ -80,7 +79,6 @@ export async function changeTechAuth(
     techAuthForeverAddress.toBech32(),
   );
 
-  // Create provider and fetch UTxOs
   const { blaze, provider } = await createBlaze(network, options.provider);
 
   printProgress("Fetching contract UTxOs...");
@@ -124,7 +122,6 @@ export async function changeTechAuth(
     );
   }
 
-  // Parse the tech auth two-stage UpgradeState datum
   console.log("\nReading tech auth two-stage upgrade state...");
   const techAuthTwoStageDatum = techAuthTwoStageUtxo.output().datum();
   if (!techAuthTwoStageDatum?.asInlineData()) {
@@ -156,7 +153,6 @@ export async function changeTechAuth(
     }
   }
 
-  // Parse current tech auth state
   console.log("\nCurrent tech auth forever datum:");
   const currentDatum = techAuthForeverUtxo.output().datum();
   if (!currentDatum?.asInlineData()) {
@@ -198,7 +194,6 @@ export async function changeTechAuth(
     throw new Error("No council signers found in council forever datum");
   }
 
-  // Parse new tech auth signers
   const newTechAuthSigners = parseSigners("TECH_AUTH_SIGNERS");
   // Use CBOR functions that preserve duplicate keys
   // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
@@ -214,7 +209,6 @@ export async function changeTechAuth(
     new Set(newTechAuthSigners.map((s) => s.paymentHash)).size,
   );
 
-  // Create native scripts for multisig validation
   const requiredSigners = 2;
   const councilRequiredSigners = 2;
 
@@ -251,7 +245,6 @@ export async function changeTechAuth(
     );
   }
 
-  // Fetch user UTxO
   printProgress("Fetching user UTXO...");
   const changeAddress = Address.fromBech32(deployerAddress);
   const deployerUtxos = await provider.getUnspentOutputs(changeAddress);
@@ -261,7 +254,6 @@ export async function changeTechAuth(
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
 
-  // Build transaction
   printProgress("Building transaction...");
 
   try {
