@@ -47,7 +47,6 @@ describe("Change Council with Duplicate Signers", () => {
         ]),
       );
 
-      // Create contract instances
       const councilForever = new Contracts.PermissionedCouncilForeverElse();
       const councilLogic = new Contracts.PermissionedCouncilLogicElse();
       const mainCouncilUpdateThreshold =
@@ -56,7 +55,6 @@ describe("Change Council with Duplicate Signers", () => {
       const councilTwoStage =
         new Contracts.PermissionedCouncilTwoStageUpgradeElse();
 
-      // Create addresses
       const councilForeverAddress = addressFromCredential(
         NetworkId.Testnet,
         Credential.fromCore({

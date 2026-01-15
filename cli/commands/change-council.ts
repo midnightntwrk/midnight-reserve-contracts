@@ -219,7 +219,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   console.log("Tech auth signers:");
   techAuthSigners.forEach((s, i) => console.log(`  ${i}: ${s.paymentHash}`));
 
-  // Create reward accounts for logic scripts from the UpgradeState
   const logicRewardAccount = createRewardAccount(logicHash, networkId);
   console.log("\nLogic reward account:", logicRewardAccount);
 

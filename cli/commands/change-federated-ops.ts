@@ -240,7 +240,6 @@ export async function changeFederatedOps(
   console.log("Tech auth signers:");
   techAuthSigners.forEach((s, i) => console.log(`  ${i}: ${s.paymentHash}`));
 
-  // Create reward accounts for logic scripts from the UpgradeState
   const logicRewardAccount = createRewardAccount(logicHash, networkId);
   console.log("\nLogic reward account:", logicRewardAccount);
 
@@ -269,7 +268,6 @@ export async function changeFederatedOps(
 
   printProgress("Building transaction...");
 
-  // Create the redeemer for the federated ops logic (empty redeemer)
   const federatedOpsRedeemer = PlutusData.newInteger(0n);
 
   try {

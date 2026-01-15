@@ -38,7 +38,6 @@ describe("Reserve Deploy and Merge", () => {
 
   test("Deploy Reserve and merge UTxOs", async () => {
     await emulator.as("deployer", async (blaze, addr) => {
-      // Add initial UTxO for deployer
       emulator.addUtxo(
         TransactionUnspentOutput.fromCore([
           {
@@ -56,7 +55,6 @@ describe("Reserve Deploy and Merge", () => {
         ]),
       );
 
-      // Create one-shot UTxO for minting
       const reserveOneShotUtxo = TransactionUnspentOutput.fromCore([
         {
           index: config.reserve_one_shot_index,
@@ -256,11 +254,10 @@ describe("Reserve Deploy and Merge", () => {
         },
       ]);
 
-      // Add the two UTxOs to the emulator
       emulator.addUtxo(utxo1);
       emulator.addUtxo(utxo2);
 
-      // Step 3: Merge the two UTxOs using logic_merge
+      // Step 3: Merge UTxOs using logic_merge
       const reserveLogicCredential = RewardAccount.fromCredential(
         Credential.fromCore({
           hash: reserveLogic.Script.hash(),
@@ -269,7 +266,6 @@ describe("Reserve Deploy and Merge", () => {
         NetworkId.Testnet,
       );
 
-      // Register the reward account with zero balance for withdrawal
       emulator.accounts.set(reserveLogicCredential, 0n);
 
       await emulator.expectValidTransaction(

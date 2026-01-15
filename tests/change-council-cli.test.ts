@@ -33,7 +33,6 @@ describe("Change Council CLI Test", () => {
     await emulator.as("deployer", async (blaze, addr) => {
       await emulator.as("signer1", async (_, addr1) => {
         await emulator.as("signer2", async (_, addr2) => {
-          // Add deployer UTxO
           emulator.addUtxo(
             TransactionUnspentOutput.fromCore([
               {
@@ -51,7 +50,6 @@ describe("Change Council CLI Test", () => {
             ]),
           );
 
-          // Create contract instances
           const councilForever = new Contracts.PermissionedCouncilForeverElse();
           const councilLogic = new Contracts.PermissionedCouncilLogicElse();
           const mainCouncilUpdateThreshold =
@@ -61,7 +59,6 @@ describe("Change Council CLI Test", () => {
           const councilTwoStage =
             new Contracts.PermissionedCouncilTwoStageUpgradeElse();
 
-          // Create addresses
           const councilForeverAddress = addressFromCredential(
             NetworkId.Testnet,
             Credential.fromCore({
@@ -111,7 +108,6 @@ describe("Change Council CLI Test", () => {
             0n,
           ];
 
-          // Add council forever UTxO
           emulator.addUtxo(
             TransactionUnspentOutput.fromCore([
               {
@@ -136,8 +132,7 @@ describe("Change Council CLI Test", () => {
             ]),
           );
 
-          // Add council threshold UTxO
-          // MultisigThreshold is now a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+          // MultisigThreshold is a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
           const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
 
           emulator.addUtxo(
@@ -207,7 +202,6 @@ describe("Change Council CLI Test", () => {
             ]),
           );
 
-          // Add council two stage UTxO
           const upgradeState: Contracts.UpgradeState = [
             councilLogic.Script.hash(),
             "",
@@ -338,7 +332,6 @@ describe("Change Council CLI Test", () => {
           );
           emulator.accounts.set(councilLogicRewardAccount, 0n);
 
-          // Build transaction
           const txBuilder = blaze
             .newTransaction()
             .addInput(
