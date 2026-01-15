@@ -110,13 +110,11 @@ export async function deploy(options: DeployOptions): Promise<void> {
   console.log(`Output Amount: ${outputAmount} lovelace`);
   console.log(`Threshold Output Amount: ${thresholdOutputAmount} lovelace`);
 
-  // Load configuration
   const config = loadAikenConfig(network);
   const contracts = getContractInstances();
   const networkId = getNetworkId(network);
   const deployerAddr = getDeployerAddress();
 
-  // Parse signers
   const { totalSigners: techAuthTotalSigners, signers: techAuthSigners } =
     parseSignersWithCount("TECH_AUTH_SIGNERS");
   const { totalSigners: councilTotalSigners, signers: councilSigners } =
@@ -131,7 +129,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
     `Number of council signer pairs: ${Object.keys(councilSigners).length}`,
   );
 
-  // Create Blaze instance
   const { blaze } = await createBlaze(network, options.provider);
 
   // Create collateral UTxO - this UTxO is NOT spent by any deployment transaction,
@@ -149,7 +146,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
     );
   }
 
-  // Helper functions
   async function generateMultisigDeployment(params: MultisigDeployParams) {
     printProgress(`Generating ${params.name} deployment transaction...`);
 
@@ -186,7 +182,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
     let txBuilder = blaze.newTransaction().addInput(oneShotUtxo);
 
-    // Add mints
     txBuilder = txBuilder
       .addMint(
         PolicyId(params.foreverContract.Script.hash()),
@@ -546,7 +541,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
     return await txBuilder.complete();
   }
 
-  // Define all transactions
   const allTransactionDefs = [
     {
       name: "technical-authority-deployment",
@@ -860,13 +854,11 @@ export async function deploy(options: DeployOptions): Promise<void> {
     },
   ];
 
-  // Filter transactions based on components
   const transactions =
     components.length === 0 || components.includes("all")
       ? allTransactionDefs
       : allTransactionDefs.filter((t) => components.includes(t.component));
 
-  // Generate transactions
   const allTransactions: TxOutput[] = [];
   const allScriptOutputs: Map<string, ScriptOutputInfo[]> = new Map();
 
@@ -879,7 +871,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
         hash: tx.getId(),
       });
 
-      // Extract script outputs from transaction
       const scriptOutputs: ScriptOutputInfo[] = [];
       const txBody = tx.body();
       const outputs = txBody.outputs();
@@ -941,7 +932,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
     }
   }
 
-  // Save output
   const deploymentDir = resolve(output, network);
   ensureDirectory(deploymentDir);
 
@@ -961,7 +951,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
   printTransactionSummary(allTransactions);
 
-  // Print script outputs
   console.log(`\nScript Outputs:`);
   console.log(`===========================================`);
   for (const [txName, outputs] of allScriptOutputs) {

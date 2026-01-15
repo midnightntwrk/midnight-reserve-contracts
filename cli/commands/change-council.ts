@@ -55,7 +55,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   const deployerAddress = getDeployerAddress();
   const contracts = getContractInstances();
 
-  // Create addresses
   const councilForeverAddress = getCredentialAddress(
     network,
     contracts.councilForever.Script.hash(),
@@ -75,7 +74,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
 
   console.log("\nCouncil Forever Address:", councilForeverAddress.toBech32());
 
-  // Create provider and fetch UTxOs
   const { blaze, provider } = await createBlaze(network, options.provider);
 
   printProgress("Fetching contract UTxOs...");
@@ -117,7 +115,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     throw new Error('Could not find council two-stage UTxO with "main" asset');
   }
 
-  // Parse the council two-stage UpgradeState datum
   console.log("\nReading council two-stage upgrade state...");
   const councilTwoStageDatum = councilTwoStageUtxo.output().datum();
   if (!councilTwoStageDatum?.asInlineData()) {
@@ -149,7 +146,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     }
   }
 
-  // Parse current council state
   console.log("\nCurrent council forever datum:");
   const currentDatum = councilForeverUtxo.output().datum();
   if (!currentDatum?.asInlineData()) {
@@ -180,7 +176,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   // Use CBOR-aware extraction to preserve duplicate keys
   const techAuthSigners = extractSignersFromCbor(techAuthDatum.asInlineData()!);
 
-  // Parse new council signers
   const newCouncilSigners = parseSigners("COUNCIL_SIGNERS");
   // Use CBOR functions that preserve duplicate keys
   // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
@@ -196,7 +191,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     new Set(newCouncilSigners.map((s) => s.paymentHash)).size,
   );
 
-  // Create native scripts for multisig validation
   const requiredSigners = 2;
   const councilRequiredSigners = 2;
 
@@ -243,7 +237,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     );
   }
 
-  // Fetch user UTxO
   printProgress("Fetching user UTXO...");
   const changeAddress = Address.fromBech32(deployerAddress);
   const deployerUtxos = await provider.getUnspentOutputs(changeAddress);
@@ -253,7 +246,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
 
-  // Build transaction
   printProgress("Building transaction...");
 
   try {

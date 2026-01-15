@@ -55,7 +55,6 @@ export async function changeFederatedOps(
   const deployerAddress = getDeployerAddress();
   const contracts = getContractInstances();
 
-  // Create addresses
   const federatedOpsForeverAddress = getCredentialAddress(
     network,
     contracts.federatedOpsForever.Script.hash(),
@@ -82,7 +81,6 @@ export async function changeFederatedOps(
     federatedOpsForeverAddress.toBech32(),
   );
 
-  // Create provider and fetch UTxOs
   const { blaze, provider } = await createBlaze(network, options.provider);
 
   printProgress("Fetching contract UTxOs...");
@@ -134,7 +132,6 @@ export async function changeFederatedOps(
     );
   }
 
-  // Parse the federated ops two-stage UpgradeState datum
   console.log("\nReading federated ops two-stage upgrade state...");
   const federatedOpsTwoStageDatum = federatedOpsTwoStageUtxo.output().datum();
   if (!federatedOpsTwoStageDatum?.asInlineData()) {
@@ -166,7 +163,6 @@ export async function changeFederatedOps(
     }
   }
 
-  // Parse current federated ops state to get logic_round
   console.log("\nCurrent federated ops forever datum:");
   const currentDatum = federatedOpsForeverUtxo.output().datum();
   if (!currentDatum?.asInlineData()) {
@@ -218,7 +214,6 @@ export async function changeFederatedOps(
 
   console.log("\nNew federated ops candidates loaded from PERMISSIONED_CANDIDATES");
 
-  // Create native scripts for multisig validation
   const requiredSigners = 2;
   const councilRequiredSigners = 2;
 
@@ -263,7 +258,6 @@ export async function changeFederatedOps(
     );
   }
 
-  // Fetch user UTxO
   printProgress("Fetching user UTXO...");
   const changeAddress = Address.fromBech32(deployerAddress);
   const deployerUtxos = await provider.getUnspentOutputs(changeAddress);
@@ -273,7 +267,6 @@ export async function changeFederatedOps(
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
 
-  // Build transaction
   printProgress("Building transaction...");
 
   // Create the redeemer for the federated ops logic (empty redeemer)

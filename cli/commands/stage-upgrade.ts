@@ -90,7 +90,6 @@ export async function stageUpgrade(
 
   console.log("\nTwo Stage Address:", twoStageAddress.toBech32());
 
-  // Create provider and fetch UTxOs
   const { blaze, provider } = await createBlaze(network, options.provider);
 
   printProgress("Fetching contract UTxOs...");
@@ -143,7 +142,6 @@ export async function stageUpgrade(
     throw new Error('Could not find council two-stage UTxO with "main" asset');
   }
 
-  // Parse current states
   console.log("\nReading current tech auth state...");
   const techAuthDatum = techAuthForeverUtxo.output().datum();
   if (!techAuthDatum?.asInlineData()) {
@@ -195,7 +193,6 @@ export async function stageUpgrade(
     `Required council signers: ${councilRequiredSigners}/${councilSigners.length}`,
   );
 
-  // Create native scripts for multisig validation
   const techAuthNativeScript = createNativeMultisigScript(
     techAuthRequiredSigners,
     techAuthSigners,
@@ -260,7 +257,6 @@ export async function stageUpgrade(
     [techAuthSigners[0].paymentHash]: techAuthSigners[0].sr25519Key,
   });
 
-  // Fetch user UTxO
   printProgress("Fetching user UTXO...");
   const changeAddress = Address.fromBech32(deployerAddress);
   const deployerUtxos = await provider.getUnspentOutputs(changeAddress);
@@ -270,7 +266,6 @@ export async function stageUpgrade(
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
 
-  // Build transaction
   printProgress("Building transaction...");
 
   const STAGING_TOKEN_HEX = toHex(new TextEncoder().encode("staging"));
