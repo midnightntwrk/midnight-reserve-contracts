@@ -10,16 +10,15 @@ use multisig/types.{Multisig} as multisig_types
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 use utils.{foldr2}
 
+/// Validates that the datum is a well-formed versioned multisig at logic round 0,
+/// and that the redeemer contains a signer map matching the datum's signer list exactly.
 fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
-  // (MS-1) Assert the datum encodes a Multisig value so signer lists are well typed.
   expect Versioned { data: Multisig { total_signers, signers }, logic_round: 0 }: Versioned<
     Multisig,
   > = datum
 
-  // (MS-2) Convert the redeemer payload into the signer map supplied for this transaction.
   let given_signers = redeemer |> builtin.un_map_data
 
-  // (MS-3) Fold the redeemer entries to rebuild the canonical signer list and its length.
   let
     expected_signers,
     len,
@@ -40,29 +39,29 @@ fn validate_multisig_structure(datum: Data, redeemer: Redeemer) {
       },
     )
 
-  // (MS-4) Require the reconstructed signers and declared cardinality to match the datum exactly.
   and {
     as_data(expected_signers) == signers,
     total_signers == len,
   }
 }
 
+/// Validates that the datum is a well-formed FederatedOps structure.
 fn validate_federated_ops(datum: Data, _redeemer) {
   expect _: FederatedOps = datum
 
   True
 }
 
+/// Council forever validator: mints and manages the immutable council NFT state.
+/// Uses one-shot minting pattern and delegates to the forever contract helper.
 validator council_forever {
   else(ctx: ScriptContext) {
-    // (CF-1) Select the configured council one-shot reference that must be consumed when minting.
     let one_shot_ref =
       OutputReference(
         config.council_one_shot_hash,
         config.council_one_shot_index,
       )
 
-    // (CF-2) Delegate to the forever helper (FC-1, FC-2, FC-3, FC-4, FC-5, FC-6, FC-7, FC-8, FC-9).
     forever_contract(
       ctx,
       one_shot_ref,
@@ -72,34 +71,28 @@ validator council_forever {
   }
 }
 
+/// Council two-stage upgrade validator: manages staged upgrades for the council contract.
+/// Delegates to the shared two-stage upgrade helper for minting and spending validation.
 validator council_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
-    // (CT-2) Reconstruct the council one-shot reference; upgrades are only permitted when this UTXO is spent.
     let one_shot_ref =
       OutputReference(
         config.council_one_shot_hash,
         config.council_one_shot_index,
       )
 
-    // (CT-3) Apply the shared two-stage checks (TS-1, TS-2, TS-3, TS-4, TS-5, TS-6, TS-7, TS-8,
-    //        TSM-1, TSM-2, TSM-3, TSM-4, TSM-5, TSM-6, TSM-7, TSM-8, TSM-9, TSM-10, TSM-11, TSM-12,
-    //        TSM-13, TSM-14, TSM-15, TSM-16, TSM-17, TSM-18, TSS-1, TSS-2, TSS-3, TM-1, TM-2, TM-3,
-    //        TM-4, TM-5, TM-6, TM-7, TM-8, TSG-1, TSG-2, TSG-3, TSG-4, TSG-5, TSG-6, TSG-7, TSG-8,
-    //        RUN-1, RUN-2, RUN-3).
     two_stage_upgradable(transaction, redeemer, info, one_shot_ref)
   }
 }
 
+/// Council logic validator: enforces multisig quorum requirements for council operations.
+/// Validates via withdrawal and allows stake credential registration.
 validator council_logic {
   else(ctx: ScriptContext) {
-    // (CL-1) Capture the transaction, redeemer, and script info used to evaluate quorum rules.
     let ScriptContext { transaction, redeemer, info } = ctx
 
-    // (CL-2) Enforce council multisig via the logic helper (ML-0, ML-1, ML-2, ML-3, ML-4, ML-5,
-    //        CM-1, CM-2, CM-3, CM-4, GOS-1, GOS-2, GOS-3, GIS-1, SING-1, MS-1, MS-2, MS-3, MS-4);
-    //        RegisterCredential stays open.
     logic_multisig_validation_nft_input(
       transaction,
       redeemer,
@@ -111,16 +104,16 @@ validator council_logic {
   }
 }
 
+/// Technical authority forever validator: mints and manages the immutable tech auth NFT state.
+/// Uses one-shot minting pattern and delegates to the forever contract helper.
 validator tech_auth_forever {
   else(ctx: ScriptContext) {
-    // (TAF-1) Identify the technical authority one-shot reference that must back the minting transaction.
     let one_shot_ref =
       OutputReference(
         config.technical_authority_one_shot_hash,
         config.technical_authority_one_shot_index,
       )
 
-    // (TAF-2) Delegate to the forever helper (FC-1, FC-2, FC-3, FC-4, FC-5, FC-6, FC-7, FC-8, FC-9).
     forever_contract(
       ctx,
       one_shot_ref,
@@ -130,34 +123,28 @@ validator tech_auth_forever {
   }
 }
 
+/// Technical authority two-stage upgrade validator: manages staged upgrades for the tech auth contract.
+/// Delegates to the shared two-stage upgrade helper for minting and spending validation.
 validator tech_auth_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
-    // (TAU-2) Recreate the technical authority one-shot reference which must be consumed for any upgrade path.
     let one_shot_ref =
       OutputReference(
         config.technical_authority_one_shot_hash,
         config.technical_authority_one_shot_index,
       )
 
-    // (TAU-3) Apply the shared two-stage checks (TS-1, TS-2, TS-3, TS-4, TS-5, TS-6, TS-7, TS-8,
-    //        TSM-1, TSM-2, TSM-3, TSM-4, TSM-5, TSM-6, TSM-7, TSM-8, TSM-9, TSM-10, TSM-11, TSM-12,
-    //        TSM-13, TSM-14, TSM-15, TSM-16, TSM-17, TSM-18, TSS-1, TSS-2, TSS-3, TM-1, TM-2, TM-3,
-    //        TM-4, TM-5, TM-6, TM-7, TM-8, TSG-1, TSG-2, TSG-3, TSG-4, TSG-5, TSG-6, TSG-7, TSG-8,
-    //        RUN-1, RUN-2, RUN-3).
     two_stage_upgradable(transaction, redeemer, info, one_shot_ref)
   }
 }
 
+/// Technical authority logic validator: enforces multisig quorum requirements for tech auth operations.
+/// Validates via withdrawal and allows stake credential registration.
 validator tech_auth_logic {
   else(ctx: ScriptContext) {
-    // (TAL-1) Expose the transaction context that will feed multisig quorum evaluation for technical authority actions.
     let ScriptContext { transaction, redeemer, info } = ctx
 
-    // (TAL-2) Enforce technical-authority multisig via the logic helper (ML-0, ML-1, ML-2, ML-3,
-    //        ML-4, ML-5, CM-1, CM-2, CM-3, CM-4, GOS-1, GOS-2, GOS-3, GIS-1, SING-1, MS-1, MS-2,
-    //        MS-3, MS-4); RegisterCredential stays open.
     logic_multisig_validation_nft_input(
       transaction,
       redeemer,
@@ -169,16 +156,16 @@ validator tech_auth_logic {
   }
 }
 
+/// Federated operators forever validator: mints and manages the immutable federated ops NFT state.
+/// Uses one-shot minting pattern and delegates to the forever contract helper.
 validator federated_ops_forever {
   else(ctx: ScriptContext) {
-    // (FF-1) Locate the federated operators one-shot reference required to initialise or mint the forever state.
     let one_shot_ref =
       OutputReference(
         config.federated_operators_one_shot_hash,
         config.federated_operators_one_shot_index,
       )
 
-    // (FF-2) Delegate to the forever helper (FC-1, FC-2, FC-3, FC-4, FC-5, FC-6, FC-7, FC-8, FC-9).
     forever_contract(
       ctx,
       one_shot_ref,
@@ -188,34 +175,28 @@ validator federated_ops_forever {
   }
 }
 
+/// Federated operators two-stage upgrade validator: manages staged upgrades for the federated ops contract.
+/// Delegates to the shared two-stage upgrade helper for minting and spending validation.
 validator federated_ops_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
 
-    // (FTU-2) Reference the federated operators one-shot UTXO which must be spent to authorise upgrades.
     let one_shot_ref =
       OutputReference(
         config.federated_operators_one_shot_hash,
         config.federated_operators_one_shot_index,
       )
 
-    // (FTU-3) Apply the shared two-stage checks (TS-1, TS-2, TS-3, TS-4, TS-5, TS-6, TS-7, TS-8,
-    //        TSM-1, TSM-2, TSM-3, TSM-4, TSM-5, TSM-6, TSM-7, TSM-8, TSM-9, TSM-10, TSM-11, TSM-12,
-    //        TSM-13, TSM-14, TSM-15, TSM-16, TSM-17, TSM-18, TSS-1, TSS-2, TSS-3, TM-1, TM-2, TM-3,
-    //        TM-4, TM-5, TM-6, TM-7, TM-8, TSG-1, TSG-2, TSG-3, TSG-4, TSG-5, TSG-6, TSG-7, TSG-8,
-    //        RUN-1, RUN-2, RUN-3).
     two_stage_upgradable(transaction, redeemer, info, one_shot_ref)
   }
 }
 
+/// Federated operators logic validator: enforces multisig quorum requirements for federated ops updates.
+/// Validates via withdrawal and allows stake credential registration.
 validator federated_ops_logic {
   else(ctx: ScriptContext) {
-    // (FL-1) Gather the transaction data required to verify federated operator multisig participation.
     let ScriptContext { transaction, redeemer, info } = ctx
 
-    // (FL-2) Enforce federated multisig via the logic helper (ML-0, ML-1, ML-2, ML-3, ML-4, ML-5,
-    //        CM-1, CM-2, CM-3, CM-4, GOS-1, GOS-2, GOS-3, GIS-1, SING-1, MS-1, MS-2, MS-3, MS-4);
-    //        RegisterCredential stays open.
     logic_multisig_validation_nft_input(
       transaction,
       redeemer,
