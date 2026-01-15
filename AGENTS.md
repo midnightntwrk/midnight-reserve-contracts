@@ -17,8 +17,6 @@ git log --oneline -5  # Check existing style first
 git commit -m "feat: add feature X"  # Match project style, no Co-Authored-By
 ```
 
-Never add Co-Authored-By lines to commits.
-
 ## Dependencies
 
 ```bash
