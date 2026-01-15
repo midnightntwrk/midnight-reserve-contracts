@@ -8,6 +8,9 @@ use config
 use upgradable/two_stage_upgrade.{validate_running}
 use utils.{input_linked_mint, is_singleton, must_find}
 
+/// Shared forever contract logic for both minting and spending.
+/// On minting: validates one-shot spend, NFT output, and initial datum.
+/// On spending: requires both main and mitigation logic scripts to appear in withdrawals.
 pub fn forever_contract(
   ctx: ScriptContext,
   one_shot_ref: OutputReference,
@@ -20,14 +23,12 @@ pub fn forever_contract(
     Minting(own_policy) -> {
       let Transaction { inputs, mint, outputs, .. } = transaction
 
-      // (FC-1) Read the inline datum emitted by the mint, enforcing the one-shot spend and NFT layout.
       let datum =
         input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
       and {
-        // (FC-2) Validate the inline datum content for the initial state.
         initial_state_validation(datum, redeemer),
-        // (FC-3) Touch `config.cnight_policy` so it contributes to the script hash.
+        // Touch cnight_policy so it contributes to the script hash
         own_policy != config.cnight_policy,
       }
     }
@@ -35,7 +36,7 @@ pub fn forever_contract(
     Spending { .. } -> {
       let Transaction { reference_inputs, withdrawals, .. } = transaction
 
-      // (FC-4) Require a reference input that holds exactly one `main` NFT under the two-stage script.
+      // Find reference input with "main" NFT under two-stage script
       let input =
         reference_inputs
           |> must_find(
@@ -46,19 +47,16 @@ pub fn forever_contract(
 
       let main_state = input.output.datum
 
-      // (FC-5) Ensure the reference datum is provided inline.
       expect InlineDatum(main_state) = main_state
 
-      // (FC-6) Require the datum layout to begin with main and mitigation logic hashes.
+      // Datum layout: [logic_hash, mitigation_logic_hash, ...]
       expect [logic, mitigation_logic, ..] = main_state |> builtin.un_list_data
 
-      // (FC-7) Extract the recorded main logic script hash.
       let logic = logic |> builtin.un_b_data
 
-      // (FC-8) Extract the recorded mitigation logic script hash.
       let mitigation_logic = mitigation_logic |> builtin.un_b_data
 
-      // (FC-9) Require both recorded scripts to appear in withdrawals before allowing the spend.
+      // Both logic scripts must appear in withdrawals to authorize the spend
       validate_running(logic, mitigation_logic, withdrawals)
     }
 

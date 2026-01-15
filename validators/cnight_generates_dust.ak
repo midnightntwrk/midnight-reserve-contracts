@@ -12,13 +12,12 @@ use cardano/transaction.{InlineDatum, Input, Output, Transaction}
 use config
 use utils.{input_linked_mint, must_find}
 
-/// Datum for dust mapping: links a Cardano wallet to a Midnight dust address.
+/// Links a Cardano wallet credential to a Midnight dust address.
 pub type DustMappingDatum {
   c_wallet: Credential,
   dust_address: ByteArray,
 }
 
-/// Actions for dust NFT operations.
 pub type DustAction {
   Create
   Burn
