@@ -89,6 +89,13 @@ export interface SignAndSubmitOptions {
   signingKeyEnvVar: string;
 }
 
+export interface CombineSignaturesOptions {
+  network: Network;
+  provider: ProviderType;
+  txFile: string;
+  signaturesFile: string;
+}
+
 export interface MintTcnightOptions extends GlobalOptions {
   userAddress: string;
   destinationAddress?: string;

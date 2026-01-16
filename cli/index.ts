@@ -11,6 +11,7 @@ import type {
   RegisterGovAuthOptions,
   GenerateKeyOptions,
   SignAndSubmitOptions,
+  CombineSignaturesOptions,
   MintTcnightOptions,
 } from "./lib/types";
 import { getDefaultProvider } from "./lib/types";
@@ -55,6 +56,7 @@ import {
   registerGovAuth,
   generateKey,
   signAndSubmit,
+  combineSignatures,
   mintTcnight,
 } from "./commands";
 
@@ -77,6 +79,7 @@ Commands:
   info                Display contract information
   generate-key        Generate a new signing key and Cardano address
   sign-and-submit     Sign and submit transactions from a JSON file
+  combine-signatures  Combine wallet signatures and submit transactions
 
 Run 'bun cli <command> --help' for more information on a command.
 `);
@@ -328,6 +331,35 @@ Options:
   console.log(`Examples:
   bun cli sign-and-submit -n preview ./deployments/preview/simple-tx.json
   bun cli sign-and-submit -n preview --signing-key MY_KEY ./tx.json
+`);
+}
+
+function printCombineSignaturesHelp(): void {
+  console.log(`
+Usage: bun cli combine-signatures [options] --tx <tx_file> --signatures <signatures_file>
+
+Combine pre-collected wallet signatures and submit transactions.
+Unlike sign-and-submit (which signs with env var keys), this command takes
+CBOR-encoded witness sets from CIP-30 wallets and merges them into transactions.
+
+Options:
+  --tx                Path to transaction file (required)
+  --signatures        Path to JSON file containing wallet signatures (required)
+
+Signatures File Format:
+  {
+    "alice": "CBOR_HEX_WITNESS_SET_FROM_WALLET",
+    "bob": "CBOR_HEX_WITNESS_SET_FROM_WALLET"
+  }
+
+  Names (alice, bob) are for logging only. The actual witness data is
+  extracted from the CBOR-encoded TransactionWitnessSet returned by
+  CIP-30 wallet's signTx() method.
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli combine-signatures -n preview --tx ./tx.json --signatures ./sigs.json
+  bun cli combine-signatures -n preprod --tx ./deploy.json --signatures ./multisig.json
 `);
 }
 
@@ -795,6 +827,37 @@ async function main(): Promise<void> {
         };
 
         await signAndSubmit(signAndSubmitOptions);
+        break;
+      }
+
+      case "combine-signatures": {
+        if (options.help) {
+          printCombineSignaturesHelp();
+          process.exit(0);
+        }
+
+        const txFile = options.tx as string | undefined;
+        if (!txFile) {
+          printError("Missing required option: --tx");
+          printCombineSignaturesHelp();
+          process.exit(1);
+        }
+
+        const signaturesFile = options.signatures as string | undefined;
+        if (!signaturesFile) {
+          printError("Missing required option: --signatures");
+          printCombineSignaturesHelp();
+          process.exit(1);
+        }
+
+        const combineSignaturesOptions: CombineSignaturesOptions = {
+          network,
+          provider,
+          txFile,
+          signaturesFile,
+        };
+
+        await combineSignatures(combineSignaturesOptions);
         break;
       }
 
