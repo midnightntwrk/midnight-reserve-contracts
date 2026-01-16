@@ -70,33 +70,61 @@ export async function signAndSubmit(
   const fileContent = readFileSync(jsonFile, "utf-8");
   const jsonData = JSON.parse(fileContent);
 
-  const submittedHashes: string[] = [];
+  const confirmedHashes: TransactionId[] = [];
   const errors: Array<{ name: string; error: string }> = [];
 
   if (isDeploymentTransactions(jsonData)) {
     // Handle deployment-transactions.json format (multiple transactions)
+    // Phase 1: Submit all transactions first to maximize mempool parallelism
+    // Phase 2: Then await confirmations for all submitted transactions
     printProgress(
       `Found ${jsonData.transactions.length} transactions to process`,
     );
 
+    // Phase 1: Submit all transactions
+    const submissions: Array<{ name: string; txId: TransactionId }> = [];
+    const submitErrors: Array<{ name: string; error: string }> = [];
+
     for (const tx of jsonData.transactions) {
       try {
-        // deployment-transactions.json has cbor as an array, take first element
         const cbor = Array.isArray(tx.cbor) ? tx.cbor[0] : tx.cbor;
-        const hash = await processAndSubmitTransaction(
+        const txId = await signAndSubmitTransaction(
           cbor,
           privateKeyHex,
           provider,
           tx.name,
         );
-        submittedHashes.push(hash);
-        printSuccess(`Confirmed: ${tx.name} - ${hash}`);
+        submissions.push({ name: tx.name, txId });
+        printSuccess(`Submitted: ${tx.name} - ${txId}`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        errors.push({ name: tx.name, error: errorMsg });
+        submitErrors.push({ name: tx.name, error: errorMsg });
         printError(`Failed to submit ${tx.name}: ${errorMsg}`);
       }
     }
+
+    // Report submission phase summary
+    if (submissions.length > 0) {
+      printProgress(
+        `\nSubmitted ${submissions.length}/${jsonData.transactions.length} transactions. Awaiting confirmations...`,
+      );
+    }
+
+    // Phase 2: Await confirmations for all submitted transactions
+    for (const { name, txId } of submissions) {
+      try {
+        await awaitTxConfirmation(txId, provider, name);
+        confirmedHashes.push(txId);
+        printSuccess(`Confirmed: ${name} - ${txId}`);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        errors.push({ name, error: errorMsg });
+        printError(`Confirmation failed for ${name}: ${errorMsg}`);
+      }
+    }
+
+    // Add submission errors to the errors list
+    errors.push(...submitErrors);
   } else if (isSingleTransaction(jsonData)) {
     // Handle single transaction format (e.g., simple-tx.json)
     try {
@@ -106,7 +134,7 @@ export async function signAndSubmit(
         provider,
         "transaction",
       );
-      submittedHashes.push(hash);
+      confirmedHashes.push(hash);
       printSuccess(`Confirmed: ${hash}`);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -120,11 +148,11 @@ export async function signAndSubmit(
   }
 
   console.log("\n--- Summary ---");
-  if (submittedHashes.length > 0) {
+  if (confirmedHashes.length > 0) {
     console.log(
-      `\nSuccessfully confirmed ${submittedHashes.length} transaction(s):`,
+      `\nSuccessfully confirmed ${confirmedHashes.length} transaction(s):`,
     );
-    for (const hash of submittedHashes) {
+    for (const hash of confirmedHashes) {
       console.log(`  ${hash}`);
     }
   }
@@ -167,12 +195,16 @@ function isAlreadySubmittedError(error: Error): boolean {
   );
 }
 
-async function processAndSubmitTransaction(
+/**
+ * Signs and submits a transaction, returning the txId.
+ * Does NOT wait for confirmation - use awaitTxConfirmation for that.
+ */
+async function signAndSubmitTransaction(
   cbor: string,
   privateKeyHex: string,
   provider: Provider,
   name: string,
-): Promise<string> {
+): Promise<TransactionId> {
   printProgress(`Processing: ${name}`);
 
   const tx = Transaction.fromCbor(TxCBOR(HexBlob(cbor)));
@@ -181,8 +213,6 @@ async function processAndSubmitTransaction(
   const signedTx = attachWitnesses(tx.toCbor(), signatures);
 
   // Submit with retry logic for network errors
-  let submittedHash: TransactionId = txId;
-
   for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
     try {
       if (attempt > 1) {
@@ -190,15 +220,15 @@ async function processAndSubmitTransaction(
       } else {
         printProgress(`Submitting: ${name}`);
       }
-      submittedHash = await provider.postTransactionToChain(signedTx);
-      break;
+      await provider.postTransactionToChain(signedTx);
+      return txId;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
 
-      // If transaction is already in mempool/chain, proceed to confirmation
+      // If transaction is already in mempool/chain, return the txId for confirmation
       if (isAlreadySubmittedError(err)) {
-        printInfo(`Transaction may already be submitted, checking confirmation...`);
-        break;
+        printInfo(`Transaction may already be submitted: ${name}`);
+        return txId;
       }
 
       // Only retry on network errors
@@ -212,30 +242,39 @@ async function processAndSubmitTransaction(
     }
   }
 
-  // Await confirmation with retry for network errors
+  throw new Error(`Failed to submit transaction ${name}`);
+}
+
+/**
+ * Awaits confirmation for a previously submitted transaction.
+ */
+async function awaitTxConfirmation(
+  txId: TransactionId,
+  provider: Provider,
+  name: string,
+): Promise<void> {
   printProgress(`Awaiting confirmation: ${name}`);
 
   for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
     try {
       const confirmed = await provider.awaitTransactionConfirmation(
-        submittedHash,
+        txId,
         CONFIRMATION_TIMEOUT_MS,
       );
 
       if (confirmed === false) {
         throw new Error(
-          `Transaction ${submittedHash} was not confirmed within ${CONFIRMATION_TIMEOUT_MS / 1000 / 60} minutes`,
+          `Transaction ${txId} was not confirmed within ${CONFIRMATION_TIMEOUT_MS / 1000 / 60} minutes`,
         );
       }
 
-      // Confirmation succeeded
-      return submittedHash;
+      return;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
 
       // Only retry on network errors during confirmation polling
       if (!isNetworkError(err) || attempt === MAX_SUBMIT_RETRIES) {
-        throw new Error(`Confirmation failed for ${name}: ${err.message}`);
+        throw err;
       }
 
       const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
@@ -244,7 +283,19 @@ async function processAndSubmitTransaction(
       printProgress(`Awaiting confirmation (attempt ${attempt + 1}/${MAX_SUBMIT_RETRIES}): ${name}`);
     }
   }
+}
 
-  // This should not be reached due to the throw in the loop
-  throw new Error(`Failed to confirm transaction ${name}`);
+/**
+ * Signs, submits, and awaits confirmation for a single transaction.
+ * Used for single-transaction mode where parallel submission doesn't apply.
+ */
+async function processAndSubmitTransaction(
+  cbor: string,
+  privateKeyHex: string,
+  provider: Provider,
+  name: string,
+): Promise<TransactionId> {
+  const txId = await signAndSubmitTransaction(cbor, privateKeyHex, provider, name);
+  await awaitTxConfirmation(txId, provider, name);
+  return txId;
 }
