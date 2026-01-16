@@ -6,7 +6,6 @@ import {
   Hash28ByteBase16,
   Script,
 } from "@blaze-cardano/core";
-import type { Network } from "./types";
 import { getNetworkId, getConfigSection } from "./types";
 import { resolve } from "path";
 import { existsSync } from "fs";
@@ -218,7 +217,7 @@ export function initContractsForEnvironment(env: string): void {
 }
 
 export function getContractAddress(
-  network: Network,
+  network: string,
   script: Script,
 ): ReturnType<typeof addressFromValidator> {
   const networkId = getNetworkId(network);
@@ -226,7 +225,7 @@ export function getContractAddress(
 }
 
 export function getCredentialAddress(
-  network: Network | string,
+  network: string,
   scriptHash: string,
 ): ReturnType<typeof addressFromCredential> {
   const networkId = getNetworkId(network);

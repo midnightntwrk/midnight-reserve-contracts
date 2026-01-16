@@ -16,7 +16,8 @@ export type Network = "local" | "preview" | "preprod" | "mainnet";
 export type ProviderType = "blockfrost" | "maestro" | "emulator" | "kupmios";
 
 export interface GlobalOptions {
-  network: Network;
+  /** Environment name (e.g., "preview", "qanet", "node-dev-01", "preprod", "mainnet") */
+  network: string;
   output: string;
   provider: ProviderType;
   dryRun: boolean;
@@ -79,18 +80,21 @@ export interface RegisterGovAuthOptions extends GlobalOptions {
 }
 
 export interface GenerateKeyOptions {
-  network: Network;
+  /** Environment name */
+  network: string;
 }
 
 export interface SignAndSubmitOptions {
-  network: Network;
+  /** Environment name */
+  network: string;
   provider: ProviderType;
   jsonFile: string;
   signingKeyEnvVar: string;
 }
 
 export interface CombineSignaturesOptions {
-  network: Network;
+  /** Environment name */
+  network: string;
   provider: ProviderType;
   txFile: string;
   signaturesFile: string;

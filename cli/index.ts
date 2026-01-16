@@ -797,7 +797,7 @@ async function main(): Promise<void> {
         }
 
         const generateKeyOptions: GenerateKeyOptions = {
-          network: network || "preview",
+          network,
         };
 
         await generateKey(generateKeyOptions);

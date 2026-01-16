@@ -9,11 +9,11 @@ import {
   blake2b_224,
   addressFromCredential,
 } from "@blaze-cardano/core";
-import type { Network } from "../lib/types";
 import { getNetworkId } from "../lib/types";
 
 export interface GenerateKeyOptions {
-  network: Network;
+  /** Environment name (e.g., "preview", "qanet", "node-dev-01") */
+  network: string;
 }
 
 export async function generateKey(options: GenerateKeyOptions): Promise<void> {

@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { HexBlob, Transaction, TransactionId, TxCBOR } from "@blaze-cardano/core";
 import type { Provider } from "@blaze-cardano/sdk";
-import type { Network, ProviderType } from "../lib/types";
+import type { ProviderType } from "../lib/types";
 import { createProvider } from "../lib/provider";
 import { signTransaction, attachWitnesses } from "../utils/transaction";
 import { printError, printSuccess, printProgress, printInfo } from "../utils/output";
@@ -13,7 +13,8 @@ const MAX_SUBMIT_RETRIES = 3;
 const INITIAL_RETRY_DELAY_MS = 2_000;
 
 export interface SignAndSubmitOptions {
-  network: Network;
+  /** Environment name (e.g., "preview", "qanet", "node-dev-01") */
+  network: string;
   provider: ProviderType;
   jsonFile: string;
   signingKeyEnvVar: string;

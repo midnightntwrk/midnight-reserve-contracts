@@ -8,12 +8,15 @@ set -euo pipefail
 # 2. Forever validators (batch update then single compile)
 # 3. Threshold validators (batch update then single compile - depend on forever contracts)
 #
-# Usage: ./build_contracts.sh <default|preview|preprod> [silent|verbose|compact]
+# Usage: ./build_contracts.sh <env> [silent|verbose|compact]
 #
-# Network options:
-#   default  - Use for local testing builds
-#   preview  - Use for preview testnet (uses hex encoding)
-#   preprod  - Use for preprod testnet
+# Environment options:
+#   default     - Use for local testing builds
+#   preview     - Use for preview testnet
+#   qanet       - Use for Midnight QA environment (Cardano Preview)
+#   node-dev-01 - Use for node dev environment (Cardano Preview)
+#   preprod     - Use for preprod testnet
+#   mainnet     - Use for mainnet
 #
 # Trace options:
 #   silent   - Minimal output
@@ -242,12 +245,15 @@ TERMS_AND_CONDITIONS_THRESHOLD_TOML_KEY="terms_and_conditions_threshold_hash"
 show_help() {
     echo "Midnight Reserve Contracts Build Script"
     echo ""
-    echo "Usage: $0 <network> [trace_level]"
+    echo "Usage: $0 <env> [trace_level]"
     echo ""
-    echo "Networks:"
-    echo "  default   Use for local testing builds"
-    echo "  preview   Use for preview testnet (uses hex encoding)"
-    echo "  preprod   Use for preprod testnet"
+    echo "Environments:"
+    echo "  default      Use for local testing builds"
+    echo "  preview      Use for preview testnet"
+    echo "  qanet        Use for Midnight QA environment (Cardano Preview)"
+    echo "  node-dev-01  Use for node dev environment (Cardano Preview)"
+    echo "  preprod      Use for preprod testnet"
+    echo "  mainnet      Use for mainnet"
     echo ""
     echo "Trace levels (optional):"
     echo "  silent    Minimal output"
@@ -256,8 +262,8 @@ show_help() {
     echo ""
     echo "Examples:"
     echo "  $0 preview"
-    echo "  $0 default verbose"
-    echo "  $0 preview compact"
+    echo "  $0 qanet verbose"
+    echo "  $0 node-dev-01 compact"
 }
 
 # Check if help is requested
@@ -266,9 +272,9 @@ if [ "$1" == "-h" ] || [ "$1" == "--help" ] || [ "$1" == "help" ]; then
     exit 0
 fi
 
-# Check if network parameter is provided
+# Check if environment parameter is provided
 if [ $# -lt 1 ]; then
-    echo "Error: Network parameter required."
+    echo "Error: Environment parameter required."
     echo ""
     show_help
     exit 1

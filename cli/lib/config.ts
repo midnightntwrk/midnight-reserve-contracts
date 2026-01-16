@@ -1,15 +1,15 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import * as toml from "toml";
-import type { Network, NetworkConfig } from "./types";
+import type { NetworkConfig } from "./types";
 import { getConfigSection } from "./types";
 
-export function loadAikenConfig(network: Network): NetworkConfig {
+export function loadAikenConfig(environment: string): NetworkConfig {
   const aikenTomlPath = resolve(process.cwd(), "aiken.toml");
   const aikenToml = readFileSync(aikenTomlPath, "utf-8");
   const parsedToml = toml.parse(aikenToml);
 
-  const configSection = getConfigSection(network);
+  const configSection = getConfigSection(environment);
   const networkConfig = parsedToml.config[configSection];
 
   if (!networkConfig) {

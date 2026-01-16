@@ -94,16 +94,29 @@ export function getNetworkIdFromEnvironment(environment: string): NetworkId {
 /**
  * Gets the aiken.toml config section name for the given environment.
  *
- * The config section corresponds to the Cardano network, not the Midnight environment:
- * - All Preview environments (preview, qanet, devnet-*, node-dev-*) use [config.preview]
+ * Each environment has its own config section for independent deployments:
+ * - preview uses [config.preview]
+ * - qanet uses [config.qanet]
+ * - node-dev-01 uses [config.node-dev-01]
  * - preprod uses [config.preprod]
  * - mainnet uses [config.mainnet]
  * - local uses [config.default]
+ * - Other devnet-* or node-dev-* environments fall back to [config.preview]
  *
  * @param environment - The deployment environment name
  * @returns The aiken.toml config section name
  */
 export function getAikenConfigSection(environment: string): string {
+  const env = environment.toLowerCase();
+
+  // Environments with dedicated config sections
+  if (env === "qanet") return "qanet";
+  if (env === "node-dev-01") return "node-dev-01";
+  if (env === "preview") return "preview";
+  if (env === "preprod") return "preprod";
+  if (env === "mainnet") return "mainnet";
+
+  // Fallback: other devnet/node-dev patterns use preview config
   const cardanoNetwork = getCardanoNetwork(environment);
   return cardanoNetwork ?? "default";
 }
