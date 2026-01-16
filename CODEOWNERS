@@ -1,13 +1,20 @@
-* @midnightntwrk/mn-security @midnightntwrk/mn-codeowners-node @midnightntwrk/mn-codeowners-smart-contracts
-/cli/ @midnightntwrk/mn-security @midnightntwrk/mn-codeowners-smart-contracts
-/lib/ @midnightntwrk/mn-security @midnightntwrk/mn-codeowners-smart-contracts
-/validators/ @midnightntwrk/mn-security @midnightntwrk/mn-codeowners-smart-contracts
+* @midnightntwrk/mn-security @midnightntwrk/mn-codeowners-smart-contracts
+/.github/ @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
 /.github/ISSUE_TEMPLATE/ @midnightntwrk/mn-security @midnightntwrk/mn-sre
 /.github/PULL_REQUEST_TEMPLATE/ @midnightntwrk/mn-security @midnightntwrk/mn-sre
 /.github/workflows/checkmarx.yaml @midnightntwrk/mn-security @midnightntwrk/mn-sre
 /.github/workflows/dependabot.yml @midnightntwrk/mn-security @midnightntwrk/mn-sre
+/workflows/ @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
 CODE_OF_CONDUCT.md @midnightntwrk/mn-security @midnightntwrk/mn-sre
 CODEOWNERS @midnightntwrk/mn-security @midnightntwrk/mn-sre
 CONTRIBUTING.md @midnightntwrk/mn-security @midnightntwrk/mn-sre
 LICENSE @midnightntwrk/mn-security @midnightntwrk/mn-sre
 SECURITY.md @midnightntwrk/mn-security @midnightntwrk/mn-sre
+
+.gitignore @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+build_contracts.sh @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+bun.lock @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+package.json @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+Justfile @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+tsconfig.json @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+eslint.config.js @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
