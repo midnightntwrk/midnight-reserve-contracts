@@ -3,16 +3,16 @@ import { Blaze, ColdWallet, type Provider } from "@blaze-cardano/sdk";
 import { Blockfrost, Kupmios, type NetworkName } from "@blaze-cardano/query";
 import { Maestro } from "@blaze-cardano/query";
 import { Emulator } from "@blaze-cardano/emulator";
-import type { Network, ProviderType } from "./types";
+import type { ProviderType } from "./types";
 import { Unwrapped } from "@blaze-cardano/ogmios";
 import { getNetworkId, getDefaultProvider, getCardanoNetwork } from "./types";
 import { getEnvVar, getDeployerAddress } from "./config";
 
 export async function createProvider(
-  network: Network,
+  environment: string,
   providerType?: ProviderType,
 ): Promise<Provider> {
-  const type = providerType || getDefaultProvider(network);
+  const type = providerType || getDefaultProvider(environment);
 
   switch (type) {
     case "emulator":
@@ -20,12 +20,12 @@ export async function createProvider(
 
     case "blockfrost": {
       // Use getCardanoNetwork to properly map environment to Cardano network
-      const cardanoNetwork = getCardanoNetwork(network);
+      const cardanoNetwork = getCardanoNetwork(environment);
 
       if (cardanoNetwork === null) {
         throw new Error(
           `Blockfrost provider requires a real Cardano network (preview/preprod/mainnet). ` +
-            `Environment '${network}' maps to local/emulator. Use --provider emulator instead.`
+            `Environment '${environment}' maps to local/emulator. Use --provider emulator instead.`
         );
       }
 
@@ -48,7 +48,7 @@ export async function createProvider(
 
     case "maestro": {
       // Use getCardanoNetwork to properly map environment to Cardano network
-      const cardanoNetwork = getCardanoNetwork(network);
+      const cardanoNetwork = getCardanoNetwork(environment);
 
       if (cardanoNetwork === null) {
         throw new Error("Maestro provider does not support local/emulator environments");
@@ -79,11 +79,11 @@ export async function createProvider(
 }
 
 export async function createBlaze(
-  network: Network,
+  environment: string,
   providerType?: ProviderType,
 ): Promise<{ blaze: Blaze<Provider, ColdWallet>; provider: Provider }> {
-  const provider = await createProvider(network, providerType);
-  const networkId = getNetworkId(network);
+  const provider = await createProvider(environment, providerType);
+  const networkId = getNetworkId(environment);
   const deployerAddress = getDeployerAddress();
   const address = Address.fromBech32(deployerAddress);
   const wallet = new ColdWallet(address, networkId, provider);

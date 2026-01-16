@@ -1,5 +1,5 @@
 import type { Network, ProviderType } from "../lib/types";
-import { isKnownEnvironment, getCardanoNetwork } from "../lib/network-mapping";
+import { isKnownEnvironment } from "../lib/network-mapping";
 
 /**
  * Core Cardano networks that map 1:1 with the Network type.
@@ -69,26 +69,27 @@ export type TransactionName = (typeof VALID_TRANSACTION_NAMES)[number];
  * extended environment names (qanet, devnet-*, node-dev-*). Unknown
  * environments trigger a warning but are still accepted.
  *
- * @param network - The network or environment name to validate
- * @returns The validated network name (cast to Network type for backward compatibility)
+ * The original environment name is preserved so that config loading can
+ * use environment-specific sections (e.g., [config.qanet]).
+ *
+ * @param environment - The network or environment name to validate
+ * @returns The validated environment name (preserves original for config lookup)
  */
-export function validateNetwork(network: string): Network {
+export function validateNetwork(environment: string): string {
   // First, check if it's a known core network
-  if (VALID_NETWORKS.includes(network as Network)) {
-    return network as Network;
+  if (VALID_NETWORKS.includes(environment as Network)) {
+    return environment;
   }
 
   // Check if it's a known extended environment
-  if (isKnownEnvironment(network)) {
-    // Map to the underlying Cardano network for type purposes
-    const cardanoNetwork = getCardanoNetwork(network);
-    // Return the mapped network for backward compatibility
-    return (cardanoNetwork ?? "local") as Network;
+  if (isKnownEnvironment(environment)) {
+    // Preserve the original environment name for config loading
+    return environment;
   }
 
   // Unknown environment - warn but accept (will default to local/emulator)
   console.warn(
-    `Warning: Unknown environment '${network}'. ` +
+    `Warning: Unknown environment '${environment}'. ` +
       `Known values: ${VALID_NETWORKS.join(", ")}, qanet, devnet-*, node-dev-*. ` +
       `Defaulting to local/emulator.`
   );

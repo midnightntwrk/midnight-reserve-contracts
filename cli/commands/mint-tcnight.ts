@@ -38,7 +38,7 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
 
   if (network === "mainnet") {
     throw new Error(
-      "mint-tcnight is only available on preview and preprod networks",
+      "mint-tcnight is only available on test networks (preview, preprod, qanet, devnet-*, node-dev-*)",
     );
   }
 
