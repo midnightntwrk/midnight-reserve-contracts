@@ -17,9 +17,9 @@ jobs:
       - run: aiken check
       - run: aiken build
 
-      - uses: oven-sh/setup-bun@a74d7c3e675a893175d1c9cb22d573f1c6fd0a8d  #v2.0.2
+      - uses: oven-sh/setup-bun@3d267786b128fe76c2f16a390aa2448b815359f3  #v2.0.2
         with:
-          bun-version: 1.1.43
+          bun-version: 1.3.6
       - run: bun install --frozen-lockfile
       - run: bun run fmt:check
       - run: bun run lint
