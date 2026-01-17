@@ -326,11 +326,14 @@ Arguments:
 Options:
   --signing-key       Environment variable name containing the signing key
                       (default: SIGNING_PRIVATE_KEY)
+  --sign-deployer     Sign with deployer key (default: true)
+  --no-sign-deployer  Submit without deployer signature
 `);
   printGlobalOptions();
   console.log(`Examples:
   bun cli sign-and-submit -n preview ./deployments/preview/simple-tx.json
   bun cli sign-and-submit -n preview --signing-key MY_KEY ./tx.json
+  bun cli sign-and-submit -n preview --no-sign-deployer ./already-signed.json
 `);
 }
 
@@ -345,6 +348,10 @@ CBOR-encoded witness sets from CIP-30 wallets and merges them into transactions.
 Options:
   --tx                Path to transaction file (required)
   --signatures        Path to JSON file containing wallet signatures (required)
+  --signing-key       Environment variable name containing the deployer key
+                      (default: SIGNING_PRIVATE_KEY)
+  --sign-deployer     Also sign with deployer key after merging (default: true)
+  --no-sign-deployer  Only merge wallet signatures, don't add deployer signature
 
 Signatures File Format:
   {
@@ -360,6 +367,7 @@ Signatures File Format:
   console.log(`Examples:
   bun cli combine-signatures -n preview --tx ./tx.json --signatures ./sigs.json
   bun cli combine-signatures -n preprod --tx ./deploy.json --signatures ./multisig.json
+  bun cli combine-signatures -n preview --no-sign-deployer --tx ./tx.json --signatures ./sigs.json
 `);
 }
 
@@ -824,6 +832,7 @@ async function main(): Promise<void> {
           jsonFile,
           signingKeyEnvVar:
             (options["signing-key"] as string) || "SIGNING_PRIVATE_KEY",
+          signDeployer: options["sign-deployer"] !== false,
         };
 
         await signAndSubmit(signAndSubmitOptions);
@@ -855,6 +864,9 @@ async function main(): Promise<void> {
           provider,
           txFile,
           signaturesFile,
+          signDeployer: options["sign-deployer"] !== false,
+          signingKeyEnvVar:
+            (options["signing-key"] as string) || "SIGNING_PRIVATE_KEY",
         };
 
         await combineSignatures(combineSignaturesOptions);

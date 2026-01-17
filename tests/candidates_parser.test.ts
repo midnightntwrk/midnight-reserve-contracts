@@ -176,7 +176,7 @@ describe("Candidates Parser", () => {
         constructor: 0n,
         fields: { items: [] },
       });
-      expect(datum[0].toCbor()).toBe(expectedUnit.toCbor());
+      expect((datum[0] as PlutusData).toCbor()).toBe(expectedUnit.toCbor());
       expect(datum[1]).toHaveLength(1);
       expect(datum[2]).toBe(1n);
     });
@@ -191,7 +191,7 @@ describe("Candidates Parser", () => {
         constructor: 0n,
         fields: { items: [] },
       });
-      expect(datum[0].toCbor()).toBe(expectedUnit.toCbor());
+      expect((datum[0] as PlutusData).toCbor()).toBe(expectedUnit.toCbor());
       expect(datum[1]).toHaveLength(3);
       expect(datum[2]).toBe(1n);
 
