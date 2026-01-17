@@ -22,9 +22,9 @@ updates:
 #    schedule:
 #      interval: "weekly"
 #
-registries:
-  github:
-    type: git
-    url: https://github.com
-    username: MidnightCI
-    password: ${{ secrets.MIDNIGHTCI_REPO }}
+# registries:
+#   github:
+#     type: git
+#     url: https://github.com
+#     username: MidnightCI
+#     password: ${{ secrets.MIDNIGHTCI_REPO }}
