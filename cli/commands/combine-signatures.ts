@@ -14,6 +14,8 @@ import type { Provider } from "@blaze-cardano/sdk";
 import type { CombineSignaturesOptions } from "../lib/types";
 import { createProvider } from "../lib/provider";
 import { printError, printSuccess, printProgress, printInfo } from "../utils/output";
+import { signTransaction } from "../utils/transaction";
+import { getEnvVar } from "../lib/config";
 
 // Configuration for transaction confirmation
 const CONFIRMATION_TIMEOUT_MS = 300_000; // 5 minutes
@@ -256,9 +258,21 @@ async function awaitTxConfirmation(
 export async function combineSignatures(
   options: CombineSignaturesOptions,
 ): Promise<void> {
-  const { network, provider: providerType, txFile, signaturesFile } = options;
+  const {
+    network,
+    provider: providerType,
+    txFile,
+    signaturesFile,
+    signDeployer,
+    signingKeyEnvVar,
+  } = options;
 
   const provider = await createProvider(network, providerType);
+  const deployerPrivateKey = signDeployer ? getEnvVar(signingKeyEnvVar) : null;
+
+  if (signDeployer) {
+    printProgress(`Will also sign with deployer key from ${signingKeyEnvVar}`);
+  }
 
   // Load signatures file
   printProgress(`Reading signatures file: ${signaturesFile}`);
@@ -313,7 +327,15 @@ export async function combineSignatures(
         const tx = Transaction.fromCbor(TxCBOR(HexBlob(cbor)));
 
         printProgress(`Merging signatures into: ${txData.name}`);
-        const signedTx = mergeSignaturesIntoTransaction(tx, allSignatures);
+        let signedTx = mergeSignaturesIntoTransaction(tx, allSignatures);
+
+        // Add deployer signature if requested
+        if (deployerPrivateKey) {
+          const txId = signedTx.getId();
+          const deployerSigs = signTransaction(txId as string, [deployerPrivateKey]);
+          signedTx = mergeSignaturesIntoTransaction(signedTx, deployerSigs);
+          printInfo(`  Added deployer signature`);
+        }
 
         const txId = await submitTransaction(signedTx, provider, txData.name);
         submissions.push({ name: txData.name, txId });
@@ -351,7 +373,15 @@ export async function combineSignatures(
       const tx = Transaction.fromCbor(TxCBOR(HexBlob(txJson.cbor)));
 
       printProgress("Merging signatures into transaction");
-      const signedTx = mergeSignaturesIntoTransaction(tx, allSignatures);
+      let signedTx = mergeSignaturesIntoTransaction(tx, allSignatures);
+
+      // Add deployer signature if requested
+      if (deployerPrivateKey) {
+        const txId = signedTx.getId();
+        const deployerSigs = signTransaction(txId as string, [deployerPrivateKey]);
+        signedTx = mergeSignaturesIntoTransaction(signedTx, deployerSigs);
+        printInfo(`Added deployer signature`);
+      }
 
       const txId = await submitTransaction(signedTx, provider, "transaction");
       await awaitTxConfirmation(txId, provider, "transaction");

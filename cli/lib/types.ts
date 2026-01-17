@@ -90,6 +90,8 @@ export interface SignAndSubmitOptions {
   provider: ProviderType;
   jsonFile: string;
   signingKeyEnvVar: string;
+  /** Whether to sign with the deployer key (default: true) */
+  signDeployer: boolean;
 }
 
 export interface CombineSignaturesOptions {
@@ -98,6 +100,10 @@ export interface CombineSignaturesOptions {
   provider: ProviderType;
   txFile: string;
   signaturesFile: string;
+  /** Whether to also sign with the deployer key (default: true) */
+  signDeployer: boolean;
+  /** Environment variable name for the deployer signing key */
+  signingKeyEnvVar: string;
 }
 
 export interface MintTcnightOptions extends GlobalOptions {

@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { HexBlob, Transaction, TransactionId, TxCBOR } from "@blaze-cardano/core";
 import type { Provider } from "@blaze-cardano/sdk";
-import type { ProviderType } from "../lib/types";
+import type { SignAndSubmitOptions } from "../lib/types";
 import { createProvider } from "../lib/provider";
 import { signTransaction, attachWitnesses } from "../utils/transaction";
 import { printError, printSuccess, printProgress, printInfo } from "../utils/output";
@@ -11,14 +11,6 @@ import { getEnvVar } from "../lib/config";
 const CONFIRMATION_TIMEOUT_MS = 300_000; // 5 minutes
 const MAX_SUBMIT_RETRIES = 3;
 const INITIAL_RETRY_DELAY_MS = 2_000;
-
-export interface SignAndSubmitOptions {
-  /** Environment name (e.g., "preview", "qanet", "node-dev-01") */
-  network: string;
-  provider: ProviderType;
-  jsonFile: string;
-  signingKeyEnvVar: string;
-}
 
 interface TransactionJson {
   cbor: string;
@@ -62,10 +54,17 @@ export async function signAndSubmit(
     provider: providerType,
     jsonFile,
     signingKeyEnvVar,
+    signDeployer,
   } = options;
 
-  const privateKeyHex = getEnvVar(signingKeyEnvVar);
+  const privateKeyHex = signDeployer ? getEnvVar(signingKeyEnvVar) : null;
   const provider = await createProvider(network, providerType);
+
+  if (signDeployer) {
+    printProgress(`Signing with deployer key from ${signingKeyEnvVar}`);
+  } else {
+    printProgress(`Submitting without deployer signature (--no-sign-deployer)`);
+  }
 
   printProgress(`Reading transaction file: ${jsonFile}`);
   const fileContent = readFileSync(jsonFile, "utf-8");
@@ -197,12 +196,13 @@ function isAlreadySubmittedError(error: Error): boolean {
 }
 
 /**
- * Signs and submits a transaction, returning the txId.
+ * Optionally signs and submits a transaction, returning the txId.
  * Does NOT wait for confirmation - use awaitTxConfirmation for that.
+ * @param privateKeyHex - If provided, signs the transaction. If null, submits as-is.
  */
 async function signAndSubmitTransaction(
   cbor: string,
-  privateKeyHex: string,
+  privateKeyHex: string | null,
   provider: Provider,
   name: string,
 ): Promise<TransactionId> {
@@ -210,8 +210,15 @@ async function signAndSubmitTransaction(
 
   const tx = Transaction.fromCbor(TxCBOR(HexBlob(cbor)));
   const txId = tx.getId();
-  const signatures = signTransaction(txId, [privateKeyHex]);
-  const signedTx = attachWitnesses(tx.toCbor(), signatures);
+
+  // Sign if private key provided, otherwise submit as-is
+  let signedTx: Transaction;
+  if (privateKeyHex) {
+    const signatures = signTransaction(txId, [privateKeyHex]);
+    signedTx = attachWitnesses(tx.toCbor() as string, signatures);
+  } else {
+    signedTx = tx;
+  }
 
   // Submit with retry logic for network errors
   for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
@@ -287,12 +294,13 @@ async function awaitTxConfirmation(
 }
 
 /**
- * Signs, submits, and awaits confirmation for a single transaction.
+ * Optionally signs, submits, and awaits confirmation for a single transaction.
  * Used for single-transaction mode where parallel submission doesn't apply.
+ * @param privateKeyHex - If provided, signs the transaction. If null, submits as-is.
  */
 async function processAndSubmitTransaction(
   cbor: string,
-  privateKeyHex: string,
+  privateKeyHex: string | null,
   provider: Provider,
   name: string,
 ): Promise<TransactionId> {
