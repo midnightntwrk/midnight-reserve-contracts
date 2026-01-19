@@ -38,7 +38,7 @@
     "@blaze-cardano/emulator": "^0.3.34",
     "@blaze-cardano/query": "^0.5.2",
     "@blaze-cardano/sdk": "^0.2.43",
-    "@blaze-cardano/uplc": "^0.3.9",
+    "@blaze-cardano/uplc": "^0.4.2",
     "@types/bun": "latest",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
