@@ -7,7 +7,7 @@
         "toml": "^3.0.0",
       },
       "devDependencies": {
-        "@blaze-cardano/blueprint": "^0.6.1",
+        "@blaze-cardano/blueprint": "^0.8.2",
         "@blaze-cardano/data": "^0.6.4",
         "@blaze-cardano/emulator": "^0.3.34",
         "@blaze-cardano/query": "^0.5.2",
@@ -27,7 +27,7 @@
   "packages": {
     "@biglup/is-cid": ["@biglup/is-cid@1.0.3", "", { "dependencies": { "@multiformats/mafmt": "^12.1.6", "@multiformats/multiaddr": "^12.1.14", "iso-url": "^1.1.3", "multiformats": "^13.0.1", "uint8arrays": "^5.0.1" } }, "sha512-R0XPZ/IQhU2TtetSFI9vI+7kJOJYNiCncn5ixEBW+/LNaZCo2HK37Mq3pRNzrM4FryuAkyeqY7Ujmj3I3e3t9g=="],
 
-    "@blaze-cardano/blueprint": ["@blaze-cardano/blueprint@0.6.1", "", { "bin": { "blueprint": "dist/cli.js" } }, "sha512-hf1cG3C7Nc9TdcvPP2qY4Lo6x+wUWO+wQB3WulZBR3pk3o71i8mQtOEp/vLCZK+nbsvSTb0awkXWsattkAOPCQ=="],
+    "@blaze-cardano/blueprint": ["@blaze-cardano/blueprint@0.8.2", "", { "bin": { "blueprint": "dist/cli.js" } }, "sha512-Vqoyz/Pl67KdLPalobctnQ/JbrPmm7ooMBgko074f3CC+H2ZqO7ipk67E7G3ZWa+hEcxcNi5REf/J5dY8B4SoA=="],
 
     "@blaze-cardano/core": ["@blaze-cardano/core@0.7.0", "", { "dependencies": { "@cardano-sdk/core": "0.45.0", "@cardano-sdk/crypto": "^0.1.32", "@cardano-sdk/util": "^0.15.5", "@noble/curves": "^1.8.1", "@noble/ed25519": "^2.2.3", "@noble/hashes": "^1.7.1", "@scure/bip39": "^1.5.4", "blakejs": "^1.2.1" } }, "sha512-zVwWKnBfR1pMfAD87cXwTolb39T5n+uFafzUi1soBFzXCnFfqvZaDdxIthWA/Xn9ARZlvDNcvKXZewfskBRXgQ=="],
 

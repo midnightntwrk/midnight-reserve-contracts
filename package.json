@@ -33,7 +33,7 @@
     "cli:simple-tx": "bun run cli/index.ts simple-tx"
   },
   "devDependencies": {
-    "@blaze-cardano/blueprint": "^0.6.1",
+    "@blaze-cardano/blueprint": "^0.8.2",
     "@blaze-cardano/data": "^0.6.4",
     "@blaze-cardano/emulator": "^0.3.34",
     "@blaze-cardano/query": "^0.5.2",
