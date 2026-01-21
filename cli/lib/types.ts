@@ -99,7 +99,7 @@ export interface CombineSignaturesOptions {
   network: string;
   provider: ProviderType;
   txFile: string;
-  signaturesFile: string;
+  witnessFiles: string[];
   /** Whether to also sign with the deployer key (default: true) */
   signDeployer: boolean;
   /** Environment variable name for the deployer signing key */

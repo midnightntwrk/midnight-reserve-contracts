@@ -75,9 +75,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   console.log("\nCouncil Forever Address:", councilForeverAddress.toBech32());
 
   const { blaze, provider } = await createBlaze(network, options.provider);
-
-  printProgress("Fetching contract UTxOs...");
-
   const councilForeverUtxos = await provider.getUnspentOutputs(
     councilForeverAddress,
   );
@@ -191,8 +188,35 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     new Set(newCouncilSigners.map((s) => s.paymentHash)).size,
   );
 
-  const requiredSigners = 2;
-  const councilRequiredSigners = 2;
+  // Read threshold datum from council threshold UTxO
+  console.log("\nReading council update threshold...");
+  const thresholdDatum = councilThresholdUtxo.output().datum();
+  if (!thresholdDatum?.asInlineData()) {
+    throw new Error("Council update threshold UTxO missing inline datum");
+  }
+  const thresholdState = parse(
+    Contracts.MultisigThreshold,
+    thresholdDatum.asInlineData()!,
+  );
+
+  // Calculate required signers based on threshold
+  // MultisigThreshold is a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+  const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
+  const requiredSigners = Number(
+    (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
+      techAuthDenom,
+  );
+  const councilRequiredSigners = Number(
+    (BigInt(currentCouncilSigners.length) * councilNum + (councilDenom - 1n)) /
+      councilDenom,
+  );
+
+  console.log(
+    `\nRequired tech auth signers: ${requiredSigners}/${techAuthSigners.length}`,
+  );
+  console.log(
+    `Required council signers: ${councilRequiredSigners}/${currentCouncilSigners.length}`,
+  );
 
   const nativeScriptCouncil = createNativeMultisigScript(
     councilRequiredSigners,
@@ -236,7 +260,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     );
   }
 
-  printProgress("Fetching user UTXO...");
   const changeAddress = Address.fromBech32(deployerAddress);
   const deployerUtxos = await provider.getUnspentOutputs(changeAddress);
   const userUtxo = findUtxoByTxRef(deployerUtxos, txHash, txIndex);
@@ -244,9 +267,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   if (!userUtxo) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
-
-  printProgress("Building transaction...");
-
   try {
     const txBuilder = blaze
       .newTransaction()
@@ -285,7 +305,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
         .provideScript(mitigationLogicScript);
     }
 
-    printProgress("Completing transaction (with evaluation)...");
     const tx = await txBuilder.complete();
 
     printSuccess(`Transaction built: ${tx.getId()}`);

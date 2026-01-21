@@ -69,8 +69,6 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
   const wallet = new ColdWallet(userAddr, networkId, provider);
   const blaze = await Blaze.from(provider, wallet);
 
-  printProgress("Fetching UTxOs...");
-
   const userUtxos = await provider.getUnspentOutputs(userAddr);
 
   if (userUtxos.length === 0) {
@@ -83,8 +81,6 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
     let txBuilder = blaze.newTransaction();
 
     if (burn) {
-      printProgress("Finding UTxOs with TCnight tokens to burn...");
-
       let totalTokensFound = 0n;
       const utxosWithTokens = userUtxos.filter((utxo: TransactionUnspentOutput) => {
         const value = utxo.output().amount();
@@ -139,8 +135,6 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
         );
       }
     } else {
-      printProgress("Building mint transaction...");
-
       const redeemer = PlutusData.fromCbor(HexBlob("00"));
       txBuilder = txBuilder
         .addMint(policyId, new Map([[assetName, amount]]), redeemer)
@@ -158,7 +152,6 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
       );
     }
 
-    printProgress("Completing transaction...");
     const tx = await txBuilder.complete();
 
     ensureDirectory(deploymentDir);
