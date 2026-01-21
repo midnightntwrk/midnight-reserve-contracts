@@ -150,7 +150,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
   }
 
   async function generateMultisigDeployment(params: MultisigDeployParams) {
-    printProgress(`Generating ${params.name} deployment transaction...`);
 
     const oneShotUtxo = createOneShotUtxo(
       params.oneShotHash,
@@ -267,7 +266,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
   }
 
   async function generateSimpleDeployment(params: SimpleDeployParams) {
-    printProgress(`Generating ${params.name} deployment transaction...`);
 
     const oneShotUtxo = createOneShotUtxo(
       params.oneShotHash,
@@ -381,7 +379,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
   }
 
   async function generateThresholdDeployment(params: ThresholdDeployParams) {
-    printProgress(`Generating ${params.name} deployment transaction...`);
 
     const oneShotUtxo = createOneShotUtxo(
       params.oneShotHash,
@@ -430,7 +427,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
   async function generateFederatedOpsDeployment(
     params: FederatedOpsDeployParams,
   ) {
-    printProgress(`Generating ${params.name} deployment transaction...`);
 
     const oneShotUtxo = createOneShotUtxo(
       params.oneShotHash,
@@ -707,10 +703,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
       name: "terms-and-conditions-deployment",
       component: "terms-and-conditions",
       generator: async () => {
-        printProgress(
-          "Generating Terms and Conditions deployment transaction...",
-        );
-
         const oneShotUtxo = createOneShotUtxo(
           config.terms_and_conditions_one_shot_hash,
           config.terms_and_conditions_one_shot_index,

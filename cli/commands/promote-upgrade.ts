@@ -76,9 +76,6 @@ export async function promoteUpgrade(
   console.log("\nTwo Stage Address:", twoStageAddress.toBech32());
 
   const { blaze, provider } = await createBlaze(network, options.provider);
-
-  printProgress("Fetching contract UTxOs...");
-
   const twoStageUtxos = await provider.getUnspentOutputs(twoStageAddress);
   const techAuthForeverUtxos = await provider.getUnspentOutputs(
     techAuthForeverAddress,
@@ -245,7 +242,6 @@ export async function promoteUpgrade(
     [techAuthSigners[0].paymentHash]: techAuthSigners[0].sr25519Key,
   });
 
-  printProgress("Fetching user UTXO...");
   const changeAddress = Address.fromBech32(deployerAddress);
   const deployerUtxos = await provider.getUnspentOutputs(changeAddress);
   const userUtxo = findUtxoByTxRef(deployerUtxos, txHash, txIndex);
@@ -253,9 +249,6 @@ export async function promoteUpgrade(
   if (!userUtxo) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
-
-  printProgress("Building transaction...");
-
   const MAIN_TOKEN_HEX = toHex(new TextEncoder().encode("main"));
   const TECH_WITNESS_ASSET = toHex(
     new TextEncoder().encode("tech-auth-witness"),
@@ -306,7 +299,6 @@ export async function promoteUpgrade(
       .setChangeAddress(changeAddress)
       .setFeePadding(50000n);
 
-    printProgress("Completing transaction (with evaluation)...");
     const tx = await txBuilder.complete();
 
     printSuccess(`Transaction built: ${tx.getId()}`);

@@ -42,6 +42,15 @@ interface DeploymentTransactionsJson {
  */
 type SignaturesJson = Record<string, string>;
 
+/**
+ * cardano-cli TextEnvelope format for witness files
+ */
+interface TextEnvelope {
+  type: string;
+  description: string;
+  cborHex: string;
+}
+
 function isDeploymentTransactions(
   data: unknown,
 ): data is DeploymentTransactionsJson {
@@ -83,6 +92,139 @@ function extractVkeysFromWitnessSet(
 
   if (!vkeys) {
     printInfo(`No vkey witnesses found for signer: ${signerName}`);
+    return [];
+  }
+
+  const signatures: [Ed25519PublicKeyHex, Ed25519SignatureHex][] = [];
+  for (const vkey of vkeys.values()) {
+    signatures.push([vkey.vkey(), vkey.signature()]);
+  }
+
+  return signatures;
+}
+
+/**
+ * Detects the format of a witness file by examining its structure.
+ * Returns 'cardano-cli' for TextEnvelope format or 'wallet' for raw CBOR hex.
+ */
+function detectWitnessFormat(
+  content: string,
+): "cardano-cli" | "wallet" {
+  try {
+    const parsed = JSON.parse(content);
+
+    // Check if it's a TextEnvelope structure
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "type" in parsed &&
+      "description" in parsed &&
+      "cborHex" in parsed &&
+      typeof parsed.type === "string" &&
+      typeof parsed.cborHex === "string"
+    ) {
+      return "cardano-cli";
+    }
+
+    // If it's JSON but not TextEnvelope, assume it's the old format (wallet)
+    return "wallet";
+  } catch {
+    // Not JSON, assume it's raw CBOR hex string (wallet format)
+    return "wallet";
+  }
+}
+
+/**
+ * Parses a cardano-cli TextEnvelope witness file and extracts vkey witnesses.
+ * The CBOR structure is: [witnessType, witnessData]
+ * where witnessType = 0 for vkeywitness, and witnessData = [vkey, sig]
+ */
+function parseCardanoCliWitness(
+  envelope: TextEnvelope,
+): [Ed25519PublicKeyHex, Ed25519SignatureHex][] {
+  const cborHex = envelope.cborHex;
+
+  // Parse the CBOR array [witnessType, witnessData]
+  let witnessArray: unknown;
+  try {
+    // Use a simple CBOR decoder approach
+    const blob = HexBlob(cborHex);
+    // The CBOR structure is an array, so we need to decode it properly
+    // For now, we'll decode the witness data portion directly
+
+    // cardano-cli format: 82 00 82 5820<vkey> 5840<sig>
+    // This is [0, [vkey, sig]]
+    // We need to extract the [vkey, sig] part
+
+    // Parse as raw bytes to extract the vkeywitness
+    const bytes = Buffer.from(cborHex, "hex");
+
+    // Check CBOR array tag (0x82 = array of 2 elements)
+    if (bytes[0] !== 0x82) {
+      throw new Error(
+        `Expected CBOR array (0x82) at start of cardano-cli witness, got 0x${bytes[0].toString(16)}`,
+      );
+    }
+
+    // Check witness type (0x00 = vkeywitness)
+    if (bytes[1] !== 0x00) {
+      throw new Error(
+        `Expected vkeywitness type (0x00) in cardano-cli witness, got 0x${bytes[1].toString(16)}`,
+      );
+    }
+
+    // Next should be another array [vkey, sig]
+    if (bytes[2] !== 0x82) {
+      throw new Error(
+        `Expected CBOR array (0x82) for vkeywitness data, got 0x${bytes[2].toString(16)}`,
+      );
+    }
+
+    // Extract vkey (0x5820 = bytes of length 32)
+    if (bytes[3] !== 0x58 || bytes[4] !== 0x20) {
+      throw new Error(
+        `Expected byte string of length 32 (0x5820) for vkey, got 0x${bytes[3].toString(16)}${bytes[4].toString(16)}`,
+      );
+    }
+
+    const vkey = bytes.subarray(5, 37).toString("hex");
+
+    // Extract signature (0x5840 = bytes of length 64)
+    if (bytes[37] !== 0x58 || bytes[38] !== 0x40) {
+      throw new Error(
+        `Expected byte string of length 64 (0x5840) for signature, got 0x${bytes[37].toString(16)}${bytes[38].toString(16)}`,
+      );
+    }
+
+    const sig = bytes.subarray(39, 103).toString("hex");
+
+    return [[Ed25519PublicKeyHex(vkey), Ed25519SignatureHex(sig)]];
+  } catch (e) {
+    throw new Error(
+      `Failed to parse cardano-cli witness: ${e instanceof Error ? e.message : e}`,
+    );
+  }
+}
+
+/**
+ * Parses a wallet TransactionWitnessSet (CIP-30 format) and extracts vkey witnesses.
+ * This is the same as extractVkeysFromWitnessSet but with a different name for clarity.
+ */
+function parseWalletWitnessSet(
+  cborHex: string,
+): [Ed25519PublicKeyHex, Ed25519SignatureHex][] {
+  let witnessSet: TransactionWitnessSet;
+  try {
+    witnessSet = TransactionWitnessSet.fromCbor(HexBlob(cborHex));
+  } catch (e) {
+    throw new Error(
+      `Invalid CBOR witness set: ${e instanceof Error ? e.message : e}`,
+    );
+  }
+
+  const vkeys = witnessSet.vkeys();
+
+  if (!vkeys) {
     return [];
   }
 
@@ -190,8 +332,6 @@ async function submitTransaction(
     try {
       if (attempt > 1) {
         printProgress(`Submitting (attempt ${attempt}/${MAX_SUBMIT_RETRIES}): ${name}`);
-      } else {
-        printProgress(`Submitting: ${name}`);
       }
       await provider.postTransactionToChain(tx);
       return txId;
@@ -224,8 +364,6 @@ async function awaitTxConfirmation(
   provider: Provider,
   name: string,
 ): Promise<void> {
-  printProgress(`Awaiting confirmation: ${name}`);
-
   for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
     try {
       const confirmed = await provider.awaitTransactionConfirmation(
@@ -262,7 +400,7 @@ export async function combineSignatures(
     network,
     provider: providerType,
     txFile,
-    signaturesFile,
+    witnessFiles,
     signDeployer,
     signingKeyEnvVar,
   } = options;
@@ -274,37 +412,81 @@ export async function combineSignatures(
     printProgress(`Will also sign with deployer key from ${signingKeyEnvVar}`);
   }
 
-  // Load signatures file
-  printProgress(`Reading signatures file: ${signaturesFile}`);
-  const signaturesContent = readFileSync(signaturesFile, "utf-8");
-  const signaturesJson: SignaturesJson = JSON.parse(signaturesContent);
+  // Load and parse each witness file
+  const allSignatures: [Ed25519PublicKeyHex, Ed25519SignatureHex][] = [];
 
-  // Validate signatures file structure
-  for (const [name, value] of Object.entries(signaturesJson)) {
-    if (typeof value !== "string") {
+  for (const witnessFile of witnessFiles) {
+    let content: string;
+    try {
+      content = readFileSync(witnessFile, "utf-8");
+    } catch (e) {
       throw new Error(
-        `Invalid signature for "${name}": expected hex string, got ${typeof value}`,
+        `Witness file not found: ${witnessFile} (${e instanceof Error ? e.message : e})`,
+      );
+    }
+
+    const format = detectWitnessFormat(content);
+
+    let vkeys: [Ed25519PublicKeyHex, Ed25519SignatureHex][];
+
+    try {
+      switch (format) {
+        case "cardano-cli": {
+          const envelope = JSON.parse(content) as TextEnvelope;
+          vkeys = parseCardanoCliWitness(envelope);
+          break;
+        }
+        case "wallet": {
+          // Check if it's the old JSON format (SignaturesJson) or raw CBOR hex
+          let cborHex: string;
+          try {
+            const parsed = JSON.parse(content);
+            // Old format: { "name": "cborHex", ... }
+            // Just take the first value as CBOR hex
+            if (typeof parsed === "object" && parsed !== null) {
+              const values = Object.values(parsed);
+              if (values.length > 0 && typeof values[0] === "string") {
+                cborHex = values[0] as string;
+                if (values.length > 1) {
+                  printInfo(
+                    `  Note: Old format detected with multiple entries, using first entry only`,
+                  );
+                  printInfo(
+                    `  Consider using separate witness files for each signer`,
+                  );
+                }
+              } else {
+                throw new Error("Invalid wallet witness format");
+              }
+            } else {
+              throw new Error("Invalid wallet witness format");
+            }
+          } catch {
+            // Not JSON, assume it's raw CBOR hex string
+            cborHex = content.trim();
+          }
+
+          vkeys = parseWalletWitnessSet(cborHex);
+          break;
+        }
+      }
+
+      printInfo(`  Extracted ${vkeys.length} signature(s) from ${witnessFile}`);
+      allSignatures.push(...vkeys);
+    } catch (e) {
+      throw new Error(
+        `Failed to parse witness file ${witnessFile}: ${e instanceof Error ? e.message : e}`,
       );
     }
   }
 
-  // Extract all signatures from wallet witness sets
-  const allSignatures: [Ed25519PublicKeyHex, Ed25519SignatureHex][] = [];
-  for (const [signerName, cborHex] of Object.entries(signaturesJson)) {
-    printProgress(`Extracting signatures from: ${signerName}`);
-    const vkeys = extractVkeysFromWitnessSet(cborHex, signerName);
-    printInfo(`  Found ${vkeys.length} vkey witness(es)`);
-    allSignatures.push(...vkeys);
-  }
-
   if (allSignatures.length === 0) {
-    throw new Error("No signatures found in signatures file");
+    throw new Error("No valid signatures found across all witness files");
   }
 
   printInfo(`Total signatures to merge: ${allSignatures.length}`);
 
   // Load transaction file
-  printProgress(`Reading transaction file: ${txFile}`);
   const txContent = readFileSync(txFile, "utf-8");
   const txJson = JSON.parse(txContent);
 
@@ -326,7 +508,6 @@ export async function combineSignatures(
         const cbor = Array.isArray(txData.cbor) ? txData.cbor[0] : txData.cbor;
         const tx = Transaction.fromCbor(TxCBOR(HexBlob(cbor)));
 
-        printProgress(`Merging signatures into: ${txData.name}`);
         let signedTx = mergeSignaturesIntoTransaction(tx, allSignatures);
 
         // Add deployer signature if requested
@@ -372,7 +553,6 @@ export async function combineSignatures(
     try {
       const tx = Transaction.fromCbor(TxCBOR(HexBlob(txJson.cbor)));
 
-      printProgress("Merging signatures into transaction");
       let signedTx = mergeSignaturesIntoTransaction(tx, allSignatures);
 
       // Add deployer signature if requested

@@ -339,35 +339,76 @@ Options:
 
 function printCombineSignaturesHelp(): void {
   console.log(`
-Usage: bun cli combine-signatures [options] --tx <tx_file> --signatures <signatures_file>
+Usage: bun cli combine-signatures [options] --tx <tx_file> --signatures <file1> [file2] [file3] ...
 
-Combine pre-collected wallet signatures and submit transactions.
+Combine signatures from multiple witness files and submit transactions.
 Unlike sign-and-submit (which signs with env var keys), this command takes
-CBOR-encoded witness sets from CIP-30 wallets and merges them into transactions.
+witness files from offline signers (cardano-cli) or browser wallets (CIP-30)
+and merges them into transactions.
 
 Options:
   --tx                Path to transaction file (required)
-  --signatures        Path to JSON file containing wallet signatures (required)
+  --signatures        Path(s) to witness files (required, variadic)
+                      Supports multiple formats:
+                      - cardano-cli TextEnvelope format (*.witness.json)
+                      - CIP-30 wallet TransactionWitnessSet (raw CBOR hex)
   --signing-key       Environment variable name containing the deployer key
                       (default: SIGNING_PRIVATE_KEY)
   --sign-deployer     Also sign with deployer key after merging (default: true)
-  --no-sign-deployer  Only merge wallet signatures, don't add deployer signature
+  --no-sign-deployer  Only merge witness signatures, don't add deployer signature
 
-Signatures File Format:
-  {
-    "alice": "CBOR_HEX_WITNESS_SET_FROM_WALLET",
-    "bob": "CBOR_HEX_WITNESS_SET_FROM_WALLET"
-  }
+Witness File Formats:
 
-  Names (alice, bob) are for logging only. The actual witness data is
-  extracted from the CBOR-encoded TransactionWitnessSet returned by
-  CIP-30 wallet's signTx() method.
+  1. cardano-cli TextEnvelope (recommended for offline signing):
+     {
+       "type": "TxWitness ConwayEra",
+       "description": "Key Witness ShelleyEra",
+       "cborHex": "82008258207672757a...58409ac7228f..."
+     }
+
+  2. CIP-30 wallet (TransactionWitnessSet CBOR hex):
+     a10081825820<vkey>5840<sig>
+
+     Or legacy JSON format (deprecated):
+     {
+       "alice": "a10081825820...",
+       "bob": "a10081825820..."
+     }
+
+Key Features:
+  - Accepts multiple independent witness files
+  - Automatically detects witness format
+  - Preserves any existing signatures in the transaction
+  - Validates no conflicting signatures for the same key
 `);
   printGlobalOptions();
   console.log(`Examples:
-  bun cli combine-signatures -n preview --tx ./tx.json --signatures ./sigs.json
-  bun cli combine-signatures -n preprod --tx ./deploy.json --signatures ./multisig.json
-  bun cli combine-signatures -n preview --no-sign-deployer --tx ./tx.json --signatures ./sigs.json
+
+  # Single cardano-cli witness file
+  bun cli combine-signatures -n preview \\
+    --tx ./tx.json \\
+    --signatures ./witness1.json
+
+  # Multiple witness files (variadic syntax)
+  bun cli combine-signatures -n preview \\
+    --tx ./tx.json \\
+    --signatures ./alice-witness.json ./bob-witness.json ./carol-witness.json
+
+  # Mixed formats (cardano-cli + wallet)
+  bun cli combine-signatures -n preview \\
+    --tx ./tx.json \\
+    --signatures ./cardano-cli-witness.json ./wallet-witness.cbor
+
+  # Without deployer signature
+  bun cli combine-signatures -n preview \\
+    --tx ./tx.json \\
+    --signatures ./witness1.json ./witness2.json \\
+    --no-sign-deployer
+
+  # Add signatures to a partially signed transaction
+  bun cli combine-signatures -n preview \\
+    --tx ./partially-signed-tx.json \\
+    --signatures ./additional-witness.json
 `);
 }
 
@@ -396,11 +437,11 @@ Options:
 
 function parseArgs(args: string[]): {
   command: string;
-  options: Record<string, string | boolean>;
+  options: Record<string, string | boolean | string[]>;
   positional: string[];
 } {
   const command = args[0] || "";
-  const options: Record<string, string | boolean> = {};
+  const options: Record<string, string | boolean | string[]> = {};
   const positional: string[] = [];
 
   let i = 1;
@@ -414,6 +455,18 @@ function parseArgs(args: string[]): {
       if (key.startsWith("no-")) {
         options[key.slice(3)] = false;
         i++;
+        continue;
+      }
+
+      // Special handling for --signatures to collect multiple values
+      if (key === "signatures") {
+        const values: string[] = [];
+        i++;
+        while (i < args.length && !args[i].startsWith("-")) {
+          values.push(args[i]);
+          i++;
+        }
+        options[key] = values.length > 0 ? (values.length === 1 ? values[0] : values) : true;
         continue;
       }
 
@@ -852,8 +905,14 @@ async function main(): Promise<void> {
           process.exit(1);
         }
 
-        const signaturesFile = options.signatures as string | undefined;
-        if (!signaturesFile) {
+        const signaturesArg = options.signatures;
+        let witnessFiles: string[] = [];
+
+        if (typeof signaturesArg === "string") {
+          witnessFiles = [signaturesArg];
+        } else if (Array.isArray(signaturesArg)) {
+          witnessFiles = signaturesArg;
+        } else {
           printError("Missing required option: --signatures");
           printCombineSignaturesHelp();
           process.exit(1);
@@ -863,7 +922,7 @@ async function main(): Promise<void> {
           network,
           provider,
           txFile,
-          signaturesFile,
+          witnessFiles,
           signDeployer: options["sign-deployer"] !== false,
           signingKeyEnvVar:
             (options["signing-key"] as string) || "SIGNING_PRIVATE_KEY",

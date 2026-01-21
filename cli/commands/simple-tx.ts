@@ -7,7 +7,6 @@ import { createBlaze } from "../lib/provider";
 import {
   printSuccess,
   printError,
-  printProgress,
   writeTransactionFile,
   ensureDirectory,
 } from "../utils/output";
@@ -26,8 +25,6 @@ export async function simpleTx(options: SimpleTxOptions): Promise<void> {
   const { blaze } = await createBlaze(network, options.provider);
   const address = Address.fromBech32(recipientAddress);
 
-  printProgress("Building transaction...");
-
   try {
     const txBuilder = blaze.newTransaction();
 
@@ -35,7 +32,6 @@ export async function simpleTx(options: SimpleTxOptions): Promise<void> {
       txBuilder.payLovelace(address, amount);
     }
 
-    printProgress("Completing transaction (with evaluation)...");
     const tx = await txBuilder.complete();
 
     ensureDirectory(deploymentDir);

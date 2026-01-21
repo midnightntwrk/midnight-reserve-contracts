@@ -79,9 +79,6 @@ export async function changeFederatedOps(
   );
 
   const { blaze, provider } = await createBlaze(network, options.provider);
-
-  printProgress("Fetching contract UTxOs...");
-
   const federatedOpsForeverUtxos = await provider.getUnspentOutputs(
     federatedOpsForeverAddress,
   );
@@ -213,8 +210,35 @@ export async function changeFederatedOps(
     "\nNew federated ops candidates loaded from PERMISSIONED_CANDIDATES",
   );
 
-  const requiredSigners = 3;
-  const councilRequiredSigners = 2;
+  // Read threshold datum from federated ops threshold UTxO
+  console.log("\nReading federated ops update threshold...");
+  const thresholdDatum = federatedOpsThresholdUtxo.output().datum();
+  if (!thresholdDatum?.asInlineData()) {
+    throw new Error("Federated ops update threshold UTxO missing inline datum");
+  }
+  const thresholdState = parse(
+    Contracts.MultisigThreshold,
+    thresholdDatum.asInlineData()!,
+  );
+
+  // Calculate required signers based on threshold
+  // MultisigThreshold is a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+  const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
+  const techAuthRequiredSigners = Number(
+    (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
+      techAuthDenom,
+  );
+  const councilRequiredSigners = Number(
+    (BigInt(councilSigners.length) * councilNum + (councilDenom - 1n)) /
+      councilDenom,
+  );
+
+  console.log(
+    `\nRequired tech auth signers: ${techAuthRequiredSigners}/${techAuthSigners.length}`,
+  );
+  console.log(
+    `Required council signers: ${councilRequiredSigners}/${councilSigners.length}`,
+  );
 
   const nativeScriptCouncil = createNativeMultisigScript(
     councilRequiredSigners,
@@ -223,7 +247,7 @@ export async function changeFederatedOps(
   );
 
   const nativeScriptTechAuth = createNativeMultisigScript(
-    requiredSigners,
+    techAuthRequiredSigners,
     techAuthSigners,
     networkId,
   );
@@ -256,7 +280,6 @@ export async function changeFederatedOps(
     );
   }
 
-  printProgress("Fetching user UTXO...");
   const changeAddress = Address.fromBech32(deployerAddress);
   const deployerUtxos = await provider.getUnspentOutputs(changeAddress);
   const userUtxo = findUtxoByTxRef(deployerUtxos, txHash, txIndex);
@@ -264,9 +287,6 @@ export async function changeFederatedOps(
   if (!userUtxo) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
-
-  printProgress("Building transaction...");
-
   const federatedOpsRedeemer = PlutusData.newInteger(0n);
 
   try {
@@ -312,7 +332,6 @@ export async function changeFederatedOps(
         .provideScript(mitigationLogicScript);
     }
 
-    printProgress("Completing transaction (with evaluation)...");
     const tx = await txBuilder.complete();
 
     printSuccess(`Transaction built: ${tx.getId()}`);

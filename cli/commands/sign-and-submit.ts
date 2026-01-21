@@ -66,7 +66,6 @@ export async function signAndSubmit(
     printProgress(`Submitting without deployer signature (--no-sign-deployer)`);
   }
 
-  printProgress(`Reading transaction file: ${jsonFile}`);
   const fileContent = readFileSync(jsonFile, "utf-8");
   const jsonData = JSON.parse(fileContent);
 
@@ -206,8 +205,6 @@ async function signAndSubmitTransaction(
   provider: Provider,
   name: string,
 ): Promise<TransactionId> {
-  printProgress(`Processing: ${name}`);
-
   const tx = Transaction.fromCbor(TxCBOR(HexBlob(cbor)));
   const txId = tx.getId();
 
@@ -225,8 +222,6 @@ async function signAndSubmitTransaction(
     try {
       if (attempt > 1) {
         printProgress(`Submitting (attempt ${attempt}/${MAX_SUBMIT_RETRIES}): ${name}`);
-      } else {
-        printProgress(`Submitting: ${name}`);
       }
       await provider.postTransactionToChain(signedTx);
       return txId;
@@ -261,8 +256,6 @@ async function awaitTxConfirmation(
   provider: Provider,
   name: string,
 ): Promise<void> {
-  printProgress(`Awaiting confirmation: ${name}`);
-
   for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
     try {
       const confirmed = await provider.awaitTransactionConfirmation(

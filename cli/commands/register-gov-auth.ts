@@ -29,9 +29,6 @@ export async function registerGovAuth(
   console.log(`Staging Gov Auth script hash: ${stagingGovAuthHash}`);
 
   const { blaze } = await createBlaze(network, options.provider);
-
-  printProgress("Building transaction...");
-
   try {
     const tx = await blaze
       .newTransaction()

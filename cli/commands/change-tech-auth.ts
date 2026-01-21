@@ -80,9 +80,6 @@ export async function changeTechAuth(
   );
 
   const { blaze, provider } = await createBlaze(network, options.provider);
-
-  printProgress("Fetching contract UTxOs...");
-
   const techAuthForeverUtxos = await provider.getUnspentOutputs(
     techAuthForeverAddress,
   );
@@ -209,8 +206,35 @@ export async function changeTechAuth(
     new Set(newTechAuthSigners.map((s) => s.paymentHash)).size,
   );
 
-  const requiredSigners = 2;
-  const councilRequiredSigners = 2;
+  // Read threshold datum from tech auth threshold UTxO
+  console.log("\nReading tech auth update threshold...");
+  const thresholdDatum = techAuthThresholdUtxo.output().datum();
+  if (!thresholdDatum?.asInlineData()) {
+    throw new Error("Tech auth update threshold UTxO missing inline datum");
+  }
+  const thresholdState = parse(
+    Contracts.MultisigThreshold,
+    thresholdDatum.asInlineData()!,
+  );
+
+  // Calculate required signers based on threshold
+  // MultisigThreshold is a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+  const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
+  const requiredSigners = Number(
+    (BigInt(currentTechAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
+      techAuthDenom,
+  );
+  const councilRequiredSigners = Number(
+    (BigInt(currentCouncilSigners.length) * councilNum + (councilDenom - 1n)) /
+      councilDenom,
+  );
+
+  console.log(
+    `\nRequired tech auth signers: ${requiredSigners}/${currentTechAuthSigners.length}`,
+  );
+  console.log(
+    `Required council signers: ${councilRequiredSigners}/${currentCouncilSigners.length}`,
+  );
 
   const nativeScriptCouncil = createNativeMultisigScript(
     councilRequiredSigners,
@@ -244,7 +268,6 @@ export async function changeTechAuth(
     );
   }
 
-  printProgress("Fetching user UTXO...");
   const changeAddress = Address.fromBech32(deployerAddress);
   const deployerUtxos = await provider.getUnspentOutputs(changeAddress);
   const userUtxo = findUtxoByTxRef(deployerUtxos, txHash, txIndex);
@@ -252,9 +275,6 @@ export async function changeTechAuth(
   if (!userUtxo) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
-
-  printProgress("Building transaction...");
-
   try {
     const txBuilder = blaze
       .newTransaction()
@@ -294,7 +314,6 @@ export async function changeTechAuth(
         .provideScript(mitigationLogicScript);
     }
 
-    printProgress("Completing transaction (with evaluation)...");
     const tx = await txBuilder.complete();
 
     printSuccess(`Transaction built: ${tx.getId()}`);
