@@ -20,10 +20,7 @@ import {
   getCredentialAddress,
   findScriptByHash,
 } from "../lib/contracts";
-import {
-  parsePrivateKeys,
-  extractSignersFromCbor,
-} from "../lib/signers";
+import { parsePrivateKeys, extractSignersFromCbor } from "../lib/signers";
 import { createFederatedOpsDatum } from "../lib/candidates";
 import {
   printSuccess,
@@ -212,9 +209,11 @@ export async function changeFederatedOps(
     1n, // Use logic_round 1
   );
 
-  console.log("\nNew federated ops candidates loaded from PERMISSIONED_CANDIDATES");
+  console.log(
+    "\nNew federated ops candidates loaded from PERMISSIONED_CANDIDATES",
+  );
 
-  const requiredSigners = 2;
+  const requiredSigners = 3;
   const councilRequiredSigners = 2;
 
   const nativeScriptCouncil = createNativeMultisigScript(
