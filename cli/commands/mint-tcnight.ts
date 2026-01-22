@@ -159,7 +159,7 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
       tx.toCbor(),
       tx.getId(),
       false,
-      "Mint TCNight Transaction",
+      `${action} TCNight Transaction`,
     );
 
     printSuccess(`Transaction built successfully!`);
