@@ -22,8 +22,15 @@ export function writeTransactionFile(
   cbor: string,
   txHash: string,
   signed: boolean,
+  description: string,
 ): void {
-  const output: TransactionFileOutput = { cbor, txHash, signed };
+  const output: TransactionFileOutput = {
+    type: "Tx ConwayEra",
+    description,
+    cborHex: cbor,
+    txHash,
+    signed,
+  };
   writeJsonFile(filePath, output);
 }
 

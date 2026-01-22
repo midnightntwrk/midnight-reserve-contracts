@@ -18,7 +18,6 @@ import { getContractInstances } from "../lib/contracts";
 import {
   printSuccess,
   printError,
-  printProgress,
   writeTransactionFile,
   ensureDirectory,
 } from "../utils/output";
@@ -155,7 +154,13 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
     const tx = await txBuilder.complete();
 
     ensureDirectory(deploymentDir);
-    writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
+    writeTransactionFile(
+      outputPath,
+      tx.toCbor(),
+      tx.getId(),
+      false,
+      "Mint TCNight Transaction",
+    );
 
     printSuccess(`Transaction built successfully!`);
     console.log("Transaction ID:", tx.getId());

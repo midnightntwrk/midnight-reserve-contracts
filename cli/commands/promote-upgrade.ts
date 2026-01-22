@@ -24,7 +24,6 @@ import { extractSignersFromMultisigState } from "../lib/signers";
 import {
   printSuccess,
   printError,
-  printProgress,
   writeTransactionFile,
 } from "../utils/output";
 import {
@@ -324,10 +323,22 @@ export async function promoteUpgrade(
       }
 
       const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
-      writeTransactionFile(outputPath, signedTx.toCbor(), tx.getId(), true);
+      writeTransactionFile(
+        outputPath,
+        signedTx.toCbor(),
+        tx.getId(),
+        true,
+        "Promote Upgrade Transaction",
+      );
       printSuccess(`Signed transaction written to ${outputPath}`);
     } else {
-      writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
+      writeTransactionFile(
+        outputPath,
+        tx.toCbor(),
+        tx.getId(),
+        false,
+        "Promote Upgrade Transaction",
+      );
       printSuccess(`Unsigned transaction written to ${outputPath}`);
     }
 

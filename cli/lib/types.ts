@@ -157,7 +157,9 @@ export interface TransactionOutput {
 }
 
 export interface TransactionFileOutput {
-  cbor: string;
+  type: string;
+  description: string;
+  cborHex: string;
   txHash: string;
   signed: boolean;
 }

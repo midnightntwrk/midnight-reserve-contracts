@@ -30,7 +30,6 @@ import {
 import {
   printSuccess,
   printError,
-  printProgress,
   writeTransactionFile,
 } from "../utils/output";
 import {
@@ -329,10 +328,22 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
       }
 
       const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
-      writeTransactionFile(outputPath, signedTx.toCbor(), tx.getId(), true);
+      writeTransactionFile(
+        outputPath,
+        signedTx.toCbor(),
+        tx.getId(),
+        true,
+        "Change Council Transaction",
+      );
       printSuccess(`Signed transaction written to ${outputPath}`);
     } else {
-      writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
+      writeTransactionFile(
+        outputPath,
+        tx.toCbor(),
+        tx.getId(),
+        false,
+        "Change Council Transaction",
+      );
       printSuccess(`Unsigned transaction written to ${outputPath}`);
     }
 
