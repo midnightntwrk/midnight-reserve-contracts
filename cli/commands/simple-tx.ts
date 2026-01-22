@@ -35,7 +35,13 @@ export async function simpleTx(options: SimpleTxOptions): Promise<void> {
     const tx = await txBuilder.complete();
 
     ensureDirectory(deploymentDir);
-    writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
+    writeTransactionFile(
+      outputPath,
+      tx.toCbor(),
+      tx.getId(),
+      false,
+      "Simple Transaction",
+    );
 
     printSuccess("Transaction built successfully!");
     console.log("Transaction ID:", tx.getId());

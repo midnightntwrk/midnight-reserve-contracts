@@ -24,7 +24,6 @@ import { extractSignersFromMultisigState } from "../lib/signers";
 import {
   printSuccess,
   printError,
-  printProgress,
   writeTransactionFile,
 } from "../utils/output";
 import {
@@ -326,10 +325,22 @@ export async function stageUpgrade(
       console.log(`  Created ${signatures.length} signatures`);
 
       const signedTx = attachWitnesses(tx.toCbor(), signatures);
-      writeTransactionFile(outputPath, signedTx.toCbor(), tx.getId(), true);
+      writeTransactionFile(
+        outputPath,
+        signedTx.toCbor(),
+        tx.getId(),
+        true,
+        "Stage Upgrade Transaction",
+      );
       printSuccess(`Signed transaction written to ${outputPath}`);
     } else {
-      writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
+      writeTransactionFile(
+        outputPath,
+        tx.toCbor(),
+        tx.getId(),
+        false,
+        "Stage Upgrade Transaction",
+      );
       printSuccess(`Unsigned transaction written to ${outputPath}`);
     }
 

@@ -7,7 +7,6 @@ import { getContractInstances } from "../lib/contracts";
 import {
   printSuccess,
   printError,
-  printProgress,
   writeTransactionFile,
 } from "../utils/output";
 
@@ -50,7 +49,13 @@ export async function registerGovAuth(
 
     printSuccess(`Transaction built: ${tx.getId()}`);
 
-    writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
+    writeTransactionFile(
+      outputPath,
+      tx.toCbor(),
+      tx.getId(),
+      false,
+      "Register Government Authority Transaction",
+    );
     printSuccess(`Transaction written to ${outputPath}`);
 
     console.log("\nTransaction ID:", tx.getId());
