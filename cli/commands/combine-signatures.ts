@@ -16,31 +16,12 @@ import { createProvider } from "../lib/provider";
 import { printError, printSuccess, printProgress, printInfo } from "../utils/output";
 import { signTransaction } from "../utils/transaction";
 import { getEnvVar } from "../lib/config";
+import { isSingleTransaction, isDeploymentTransactions } from "../utils/transaction-json";
 
 // Configuration for transaction confirmation
 const CONFIRMATION_TIMEOUT_MS = 300_000; // 5 minutes
 const MAX_SUBMIT_RETRIES = 3;
 const INITIAL_RETRY_DELAY_MS = 2_000;
-
-interface TransactionJson {
-  cbor: string;
-  txHash: string;
-  signed: boolean;
-}
-
-interface DeploymentTransactionsJson {
-  transactions: Array<{
-    name: string;
-    cbor: string[];
-    hash: string;
-  }>;
-}
-
-/**
- * Signature file format: maps names to CBOR-encoded TransactionWitnessSet hex strings.
- * Names are for logging only; the actual witness data is extracted from the CBOR.
- */
-type SignaturesJson = Record<string, string>;
 
 /**
  * cardano-cli TextEnvelope format for witness files
@@ -49,26 +30,6 @@ interface TextEnvelope {
   type: string;
   description: string;
   cborHex: string;
-}
-
-function isDeploymentTransactions(
-  data: unknown,
-): data is DeploymentTransactionsJson {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "transactions" in data &&
-    Array.isArray((data as DeploymentTransactionsJson).transactions)
-  );
-}
-
-function isSingleTransaction(data: unknown): data is TransactionJson {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "cbor" in data &&
-    typeof (data as TransactionJson).cbor === "string"
-  );
 }
 
 /**
@@ -505,8 +466,7 @@ export async function combineSignatures(
 
     for (const txData of txJson.transactions) {
       try {
-        const cbor = Array.isArray(txData.cbor) ? txData.cbor[0] : txData.cbor;
-        const tx = Transaction.fromCbor(TxCBOR(HexBlob(cbor)));
+        const tx = Transaction.fromCbor(TxCBOR(HexBlob(txData.cborHex)));
 
         let signedTx = mergeSignaturesIntoTransaction(tx, allSignatures);
 
@@ -518,13 +478,13 @@ export async function combineSignatures(
           printInfo(`  Added deployer signature`);
         }
 
-        const txId = await submitTransaction(signedTx, provider, txData.name);
-        submissions.push({ name: txData.name, txId });
-        printSuccess(`Submitted: ${txData.name} - ${txId}`);
+        const txId = await submitTransaction(signedTx, provider, txData.description);
+        submissions.push({ name: txData.description, txId });
+        printSuccess(`Submitted: ${txData.description} - ${txId}`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        submitErrors.push({ name: txData.name, error: errorMsg });
-        printError(`Failed to submit ${txData.name}: ${errorMsg}`);
+        submitErrors.push({ name: txData.description, error: errorMsg });
+        printError(`Failed to submit ${txData.description}: ${errorMsg}`);
       }
     }
 
@@ -551,7 +511,7 @@ export async function combineSignatures(
   } else if (isSingleTransaction(txJson)) {
     // Handle single transaction format
     try {
-      const tx = Transaction.fromCbor(TxCBOR(HexBlob(txJson.cbor)));
+      const tx = Transaction.fromCbor(TxCBOR(HexBlob(txJson.cborHex)));
 
       let signedTx = mergeSignaturesIntoTransaction(tx, allSignatures);
 
@@ -563,13 +523,13 @@ export async function combineSignatures(
         printInfo(`Added deployer signature`);
       }
 
-      const txId = await submitTransaction(signedTx, provider, "transaction");
-      await awaitTxConfirmation(txId, provider, "transaction");
+      const txId = await submitTransaction(signedTx, provider, txJson.description);
+      await awaitTxConfirmation(txId, provider, txJson.description);
       confirmedHashes.push(txId);
       printSuccess(`Confirmed: ${txId}`);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      errors.push({ name: "transaction", error: errorMsg });
+      errors.push({ name: txJson.description, error: errorMsg });
       printError(`Failed: ${errorMsg}`);
     }
   } else {

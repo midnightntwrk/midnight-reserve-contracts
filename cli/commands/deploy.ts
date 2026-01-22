@@ -41,6 +41,7 @@ import {
   printInfo,
   printTransactionSummary,
   ensureDirectory,
+  TX_TYPE_CONWAY,
 } from "../utils/output";
 import { readFileSync, existsSync } from "fs";
 import { createOneShotUtxo, createUpgradeState } from "../utils/transaction";
@@ -876,9 +877,11 @@ export async function deploy(options: DeployOptions): Promise<void> {
     try {
       const tx = await generator();
       allTransactions.push({
-        name,
-        cbor: tx.toCbor(),
-        hash: tx.getId(),
+        type: TX_TYPE_CONWAY,
+        description: name,
+        cborHex: tx.toCbor(),
+        txHash: tx.getId(),
+        signed: false,
       });
 
       const scriptOutputs: ScriptOutputInfo[] = [];
@@ -956,7 +959,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
       };
       if (existingData.transactions && Array.isArray(existingData.transactions)) {
         // Preserve ordering: replace in-place if exists, otherwise append
-        const existingIdx = existingData.transactions.findIndex((t) => t.name === name);
+        const existingIdx = existingData.transactions.findIndex((t) => t.description === name);
         if (existingIdx >= 0) {
           existingData.transactions[existingIdx] = allTransactions[0];
           finalTransactions = existingData.transactions;
