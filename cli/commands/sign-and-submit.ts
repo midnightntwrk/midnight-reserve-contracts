@@ -7,11 +7,15 @@ import { signTransaction, attachWitnesses } from "../utils/transaction";
 import { printError, printSuccess, printProgress, printInfo } from "../utils/output";
 import { getEnvVar } from "../lib/config";
 import { isSingleTransaction, isDeploymentTransactions } from "../utils/transaction-json";
-
-// Configuration for transaction confirmation
-const CONFIRMATION_TIMEOUT_MS = 300_000; // 5 minutes
-const MAX_SUBMIT_RETRIES = 3;
-const INITIAL_RETRY_DELAY_MS = 2_000;
+import {
+  CONFIRMATION_TIMEOUT_MS,
+  MAX_SUBMIT_RETRIES,
+  INITIAL_RETRY_DELAY_MS,
+  sleep,
+  isNetworkError,
+  isAlreadySubmittedError,
+  awaitTxConfirmation,
+} from "../utils/submit";
 
 export async function signAndSubmit(
   options: SignAndSubmitOptions,
@@ -131,34 +135,6 @@ export async function signAndSubmit(
   }
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isNetworkError(error: Error): boolean {
-  const message = error.message.toLowerCase();
-  return (
-    message.includes("network") ||
-    message.includes("timeout") ||
-    message.includes("econnrefused") ||
-    message.includes("econnreset") ||
-    message.includes("socket") ||
-    message.includes("fetch failed") ||
-    message.includes("502") ||
-    message.includes("503") ||
-    message.includes("504")
-  );
-}
-
-function isAlreadySubmittedError(error: Error): boolean {
-  const message = error.message.toLowerCase();
-  return (
-    message.includes("already") ||
-    message.includes("exists") ||
-    message.includes("duplicate") ||
-    message.includes("known")
-  );
-}
 
 /**
  * Optionally signs and submits a transaction, returning the txId.
@@ -212,44 +188,6 @@ async function signAndSubmitTransaction(
   }
 
   throw new Error(`Failed to submit transaction ${name}`);
-}
-
-/**
- * Awaits confirmation for a previously submitted transaction.
- */
-async function awaitTxConfirmation(
-  txId: TransactionId,
-  provider: Provider,
-  name: string,
-): Promise<void> {
-  for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
-    try {
-      const confirmed = await provider.awaitTransactionConfirmation(
-        txId,
-        CONFIRMATION_TIMEOUT_MS,
-      );
-
-      if (confirmed === false) {
-        throw new Error(
-          `Transaction ${txId} was not confirmed within ${CONFIRMATION_TIMEOUT_MS / 1000 / 60} minutes`,
-        );
-      }
-
-      return;
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-
-      // Only retry on network errors during confirmation polling
-      if (!isNetworkError(err) || attempt === MAX_SUBMIT_RETRIES) {
-        throw err;
-      }
-
-      const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
-      printInfo(`Network error during confirmation, retrying in ${delay / 1000}s...`);
-      await sleep(delay);
-      printProgress(`Awaiting confirmation (attempt ${attempt + 1}/${MAX_SUBMIT_RETRIES}): ${name}`);
-    }
-  }
 }
 
 /**
