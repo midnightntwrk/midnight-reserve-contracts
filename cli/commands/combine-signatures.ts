@@ -106,17 +106,9 @@ function parseCardanoCliWitness(
   const cborHex = envelope.cborHex;
 
   // Parse the CBOR array [witnessType, witnessData]
-  let witnessArray: unknown;
   try {
-    // Use a simple CBOR decoder approach
-    const blob = HexBlob(cborHex);
-    // The CBOR structure is an array, so we need to decode it properly
-    // For now, we'll decode the witness data portion directly
-
     // cardano-cli format: 82 00 82 5820<vkey> 5840<sig>
     // This is [0, [vkey, sig]]
-    // We need to extract the [vkey, sig] part
-
     // Parse as raw bytes to extract the vkeywitness
     const bytes = Buffer.from(cborHex, "hex");
 
