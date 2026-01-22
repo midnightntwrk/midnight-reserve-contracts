@@ -151,17 +151,15 @@ export interface NetworkConfig {
 }
 
 export interface TransactionOutput {
-  name: string;
-  cbor: string;
-  hash: string;
-}
-
-export interface TransactionFileOutput {
   type: string;
   description: string;
   cborHex: string;
   txHash: string;
   signed: boolean;
+}
+
+export interface DeploymentTransactionsJson {
+  transactions: TransactionOutput[];
 }
 
 export interface DeploymentOutput {

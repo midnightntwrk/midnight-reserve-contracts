@@ -6,45 +6,12 @@ import { createProvider } from "../lib/provider";
 import { signTransaction, attachWitnesses } from "../utils/transaction";
 import { printError, printSuccess, printProgress, printInfo } from "../utils/output";
 import { getEnvVar } from "../lib/config";
+import { isSingleTransaction, isDeploymentTransactions } from "../utils/transaction-json";
 
 // Configuration for transaction confirmation
 const CONFIRMATION_TIMEOUT_MS = 300_000; // 5 minutes
 const MAX_SUBMIT_RETRIES = 3;
 const INITIAL_RETRY_DELAY_MS = 2_000;
-
-interface TransactionJson {
-  cbor: string;
-  txHash: string;
-  signed: boolean;
-}
-
-interface DeploymentTransactionsJson {
-  transactions: Array<{
-    name: string;
-    cbor: string[];
-    hash: string;
-  }>;
-}
-
-function isDeploymentTransactions(
-  data: unknown,
-): data is DeploymentTransactionsJson {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "transactions" in data &&
-    Array.isArray((data as DeploymentTransactionsJson).transactions)
-  );
-}
-
-function isSingleTransaction(data: unknown): data is TransactionJson {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "cbor" in data &&
-    typeof (data as TransactionJson).cbor === "string"
-  );
-}
 
 export async function signAndSubmit(
   options: SignAndSubmitOptions,
@@ -86,19 +53,18 @@ export async function signAndSubmit(
 
     for (const tx of jsonData.transactions) {
       try {
-        const cbor = Array.isArray(tx.cbor) ? tx.cbor[0] : tx.cbor;
         const txId = await signAndSubmitTransaction(
-          cbor,
+          tx.cborHex,
           privateKeyHex,
           provider,
-          tx.name,
+          tx.description,
         );
-        submissions.push({ name: tx.name, txId });
-        printSuccess(`Submitted: ${tx.name} - ${txId}`);
+        submissions.push({ name: tx.description, txId });
+        printSuccess(`Submitted: ${tx.description} - ${txId}`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        submitErrors.push({ name: tx.name, error: errorMsg });
-        printError(`Failed to submit ${tx.name}: ${errorMsg}`);
+        submitErrors.push({ name: tx.description, error: errorMsg });
+        printError(`Failed to submit ${tx.description}: ${errorMsg}`);
       }
     }
 
@@ -128,16 +94,16 @@ export async function signAndSubmit(
     // Handle single transaction format (e.g., simple-tx.json)
     try {
       const hash = await processAndSubmitTransaction(
-        jsonData.cbor,
+        jsonData.cborHex,
         privateKeyHex,
         provider,
-        "transaction",
+        jsonData.description,
       );
       confirmedHashes.push(hash);
       printSuccess(`Confirmed: ${hash}`);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      errors.push({ name: "transaction", error: errorMsg });
+      errors.push({ name: jsonData.description, error: errorMsg });
       printError(`Failed to submit transaction: ${errorMsg}`);
     }
   } else {

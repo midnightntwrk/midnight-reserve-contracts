@@ -3,7 +3,6 @@ import { dirname } from "path";
 import type {
   DeploymentOutput,
   TransactionOutput,
-  TransactionFileOutput,
 } from "../lib/types";
 
 export function ensureDirectory(dirPath: string): void {
@@ -17,6 +16,8 @@ export function writeJsonFile(filePath: string, data: unknown): void {
   writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
+export const TX_TYPE_CONWAY = "Tx ConwayEra";
+
 export function writeTransactionFile(
   filePath: string,
   cbor: string,
@@ -24,8 +25,8 @@ export function writeTransactionFile(
   signed: boolean,
   description: string,
 ): void {
-  const output: TransactionFileOutput = {
-    type: "Tx ConwayEra",
+  const output: TransactionOutput = {
+    type: TX_TYPE_CONWAY,
     description,
     cborHex: cbor,
     txHash,
@@ -100,8 +101,8 @@ export function printTransactionSummary(
 ): void {
   console.log(`\nTransaction Summary:`);
   transactions.forEach((tx, index) => {
-    console.log(`${index + 1}. ${tx.name}`);
-    console.log(`   Hash: ${tx.hash}`);
+    console.log(`${index + 1}. ${tx.description}`);
+    console.log(`   Hash: ${tx.txHash}`);
     console.log(``);
   });
 }
