@@ -1,9 +1,6 @@
 import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { dirname } from "path";
-import type {
-  DeploymentOutput,
-  TransactionOutput,
-} from "../lib/types";
+import type { DeploymentOutput, TransactionOutput } from "../lib/types";
 
 export function ensureDirectory(dirPath: string): void {
   if (!existsSync(dirPath)) {
