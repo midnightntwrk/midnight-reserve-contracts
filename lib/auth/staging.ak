@@ -66,8 +66,7 @@ pub fn staging_auth_multisig_validation(
     Publishing {
       certificate: UnregisterCredential { credential: Script(own_hash), .. },
       ..
-    } ->
-      validation(own_hash)
+    } -> validation(own_hash)
 
     Publishing {
       certificate: RegisterCredential { credential: Script(own_hash), .. },
