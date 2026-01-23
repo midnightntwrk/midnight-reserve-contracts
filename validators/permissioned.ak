@@ -3,7 +3,7 @@ use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
 use forever/script.{forever_contract}
-use forever/types.{FederatedOps, Versioned}
+use forever/types.{FederatedOps, PermissionedCandidateDatumV1, Versioned}
 use logic/script.{logic_multisig_validation_nft_input} as logic_script
 use multisig/script.{create_signer} as multisig_script
 use multisig/types.{Multisig} as multisig_types
@@ -193,6 +193,36 @@ validator federated_ops_logic {
       info,
       config.federated_operators_forever_hash,
       validate_federated_ops,
+      config.main_federated_ops_update_threshold_hash,
+    )
+  }
+}
+
+@list
+pub type FederatedOpsV2 {
+  data: Data,
+  message: ByteArray,
+  appendix: List<PermissionedCandidateDatumV1>,
+  logic_round: Int,
+}
+
+fn validate_federated_ops_v2(datum: Data, _redeemer) {
+  expect FederatedOpsV2 { logic_round, .. }: FederatedOpsV2 = datum
+
+  logic_round == 2
+}
+
+/// Enforces multisig quorum for federated ops updates via withdrawal.
+validator federated_ops_logic_v2 {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, redeemer, info } = ctx
+
+    logic_multisig_validation_nft_input(
+      transaction,
+      redeemer,
+      info,
+      config.federated_operators_forever_hash,
+      validate_federated_ops_v2,
       config.main_federated_ops_update_threshold_hash,
     )
   }
