@@ -220,7 +220,8 @@ export async function changeTechAuth(
   // MultisigThreshold is a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
   const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
   const requiredSigners = Number(
-    (BigInt(currentTechAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
+    (BigInt(currentTechAuthSigners.length) * techAuthNum +
+      (techAuthDenom - 1n)) /
       techAuthDenom,
   );
   const councilRequiredSigners = Number(

@@ -151,7 +151,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
   }
 
   async function generateMultisigDeployment(params: MultisigDeployParams) {
-
     const oneShotUtxo = createOneShotUtxo(
       params.oneShotHash,
       params.oneShotIndex,
@@ -267,7 +266,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
   }
 
   async function generateSimpleDeployment(params: SimpleDeployParams) {
-
     const oneShotUtxo = createOneShotUtxo(
       params.oneShotHash,
       params.oneShotIndex,
@@ -380,7 +378,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
   }
 
   async function generateThresholdDeployment(params: ThresholdDeployParams) {
-
     const oneShotUtxo = createOneShotUtxo(
       params.oneShotHash,
       params.oneShotIndex,
@@ -428,7 +425,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
   async function generateFederatedOpsDeployment(
     params: FederatedOpsDeployParams,
   ) {
-
     const oneShotUtxo = createOneShotUtxo(
       params.oneShotHash,
       params.oneShotIndex,
@@ -861,13 +857,17 @@ export async function deploy(options: DeployOptions): Promise<void> {
     // Filter by specific transaction name
     const matched = allTransactionDefs.find((t) => t.name === name);
     if (!matched) {
-      throw new Error(`Transaction '${name}' not found in deployment definitions`);
+      throw new Error(
+        `Transaction '${name}' not found in deployment definitions`,
+      );
     }
     transactions = [matched];
     printInfo(`Targeting single transaction: ${name}`);
   } else if (components.length > 0 && !components.includes("all")) {
     // Filter by component(s)
-    transactions = allTransactionDefs.filter((t) => components.includes(t.component));
+    transactions = allTransactionDefs.filter((t) =>
+      components.includes(t.component),
+    );
   }
 
   const allTransactions: TxOutput[] = [];
@@ -894,10 +894,11 @@ export async function deploy(options: DeployOptions): Promise<void> {
         const addressBech32 = address.toBech32();
 
         // Check if this is a script address (starts with addr_test1w or addr1w for scripts)
-        const isScriptAddress = addressBech32.includes("addr_test1w") ||
-                                addressBech32.includes("addr1w") ||
-                                addressBech32.startsWith("addr_test1z") ||
-                                addressBech32.startsWith("addr1z");
+        const isScriptAddress =
+          addressBech32.includes("addr_test1w") ||
+          addressBech32.includes("addr1w") ||
+          addressBech32.startsWith("addr_test1z") ||
+          addressBech32.startsWith("addr1z");
 
         if (isScriptAddress || output.amount().multiasset()) {
           const outputInfo: ScriptOutputInfo = {
@@ -915,7 +916,11 @@ export async function deploy(options: DeployOptions): Promise<void> {
               if (assetNameHex) {
                 try {
                   // Try to decode as UTF-8
-                  const bytes = new Uint8Array(assetNameHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+                  const bytes = new Uint8Array(
+                    assetNameHex
+                      .match(/.{1,2}/g)!
+                      .map((byte) => parseInt(byte, 16)),
+                  );
                   const decoded = new TextDecoder().decode(bytes);
                   if (/^[\x20-\x7E]*$/.test(decoded)) {
                     outputInfo.assetName = decoded || "(empty)";
@@ -957,21 +962,35 @@ export async function deploy(options: DeployOptions): Promise<void> {
       const existingData = JSON.parse(readFileSync(outputFile, "utf-8")) as {
         transactions?: TxOutput[];
       };
-      if (existingData.transactions && Array.isArray(existingData.transactions)) {
+      if (
+        existingData.transactions &&
+        Array.isArray(existingData.transactions)
+      ) {
         // Preserve ordering: replace in-place if exists, otherwise append
-        const existingIdx = existingData.transactions.findIndex((t) => t.description === name);
+        const existingIdx = existingData.transactions.findIndex(
+          (t) => t.description === name,
+        );
         if (existingIdx >= 0) {
           existingData.transactions[existingIdx] = allTransactions[0];
           finalTransactions = existingData.transactions;
-          printInfo(`Replaced transaction ${name} in existing deployment file (${existingData.transactions.length} total)`);
+          printInfo(
+            `Replaced transaction ${name} in existing deployment file (${existingData.transactions.length} total)`,
+          );
         } else {
-          finalTransactions = [...existingData.transactions, ...allTransactions];
-          printInfo(`Appended transaction ${name} to existing deployment file (${existingData.transactions.length + 1} total)`);
+          finalTransactions = [
+            ...existingData.transactions,
+            ...allTransactions,
+          ];
+          printInfo(
+            `Appended transaction ${name} to existing deployment file (${existingData.transactions.length + 1} total)`,
+          );
         }
       }
     } catch (err) {
       // If we can't parse existing file, just use new transactions
-      printInfo(`Could not parse existing deployment file: ${err instanceof Error ? err.message : err}. Creating new one.`);
+      printInfo(
+        `Could not parse existing deployment file: ${err instanceof Error ? err.message : err}. Creating new one.`,
+      );
     }
   }
 

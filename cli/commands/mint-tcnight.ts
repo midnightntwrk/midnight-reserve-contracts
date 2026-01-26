@@ -81,15 +81,17 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
 
     if (burn) {
       let totalTokensFound = 0n;
-      const utxosWithTokens = userUtxos.filter((utxo: TransactionUnspentOutput) => {
-        const value = utxo.output().amount();
-        const tokenAmount = value.multiasset()?.get(assetId) ?? 0n;
-        if (tokenAmount > 0n) {
-          totalTokensFound += tokenAmount;
-          return true;
-        }
-        return false;
-      });
+      const utxosWithTokens = userUtxos.filter(
+        (utxo: TransactionUnspentOutput) => {
+          const value = utxo.output().amount();
+          const tokenAmount = value.multiasset()?.get(assetId) ?? 0n;
+          if (tokenAmount > 0n) {
+            totalTokensFound += tokenAmount;
+            return true;
+          }
+          return false;
+        },
+      );
 
       if (utxosWithTokens.length === 0) {
         throw new Error(

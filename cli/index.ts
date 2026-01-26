@@ -466,7 +466,8 @@ function parseArgs(args: string[]): {
           values.push(args[i]);
           i++;
         }
-        options[key] = values.length > 0 ? (values.length === 1 ? values[0] : values) : true;
+        options[key] =
+          values.length > 0 ? (values.length === 1 ? values[0] : values) : true;
         continue;
       }
 
@@ -679,7 +680,8 @@ async function main(): Promise<void> {
             : undefined,
           sign: options.sign !== false,
           outputFile:
-            (options["output-file"] as string) || "change-federated-ops-tx.json",
+            (options["output-file"] as string) ||
+            "change-federated-ops-tx.json",
         };
 
         await changeFederatedOps(changeOptions);

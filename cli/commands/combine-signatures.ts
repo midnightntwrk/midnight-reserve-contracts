@@ -13,10 +13,18 @@ import {
 import type { Provider } from "@blaze-cardano/sdk";
 import type { CombineSignaturesOptions } from "../lib/types";
 import { createProvider } from "../lib/provider";
-import { printError, printSuccess, printProgress, printInfo } from "../utils/output";
+import {
+  printError,
+  printSuccess,
+  printProgress,
+  printInfo,
+} from "../utils/output";
 import { signTransaction } from "../utils/transaction";
 import { getEnvVar } from "../lib/config";
-import { isSingleTransaction, isDeploymentTransactions } from "../utils/transaction-json";
+import {
+  isSingleTransaction,
+  isDeploymentTransactions,
+} from "../utils/transaction-json";
 import {
   CONFIRMATION_TIMEOUT_MS,
   MAX_SUBMIT_RETRIES,
@@ -72,9 +80,7 @@ function extractVkeysFromWitnessSet(
  * Detects the format of a witness file by examining its structure.
  * Returns 'cardano-cli' for TextEnvelope format or 'wallet' for raw CBOR hex.
  */
-function detectWitnessFormat(
-  content: string,
-): "cardano-cli" | "wallet" {
+function detectWitnessFormat(content: string): "cardano-cli" | "wallet" {
   try {
     const parsed = JSON.parse(content);
 
@@ -259,7 +265,9 @@ async function submitTransaction(
   for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
     try {
       if (attempt > 1) {
-        printProgress(`Submitting (attempt ${attempt}/${MAX_SUBMIT_RETRIES}): ${name}`);
+        printProgress(
+          `Submitting (attempt ${attempt}/${MAX_SUBMIT_RETRIES}): ${name}`,
+        );
       }
       await provider.postTransactionToChain(tx);
       return txId;
@@ -403,12 +411,18 @@ export async function combineSignatures(
         // Add deployer signature if requested
         if (deployerPrivateKey) {
           const txId = signedTx.getId();
-          const deployerSigs = signTransaction(txId as string, [deployerPrivateKey]);
+          const deployerSigs = signTransaction(txId as string, [
+            deployerPrivateKey,
+          ]);
           signedTx = mergeSignaturesIntoTransaction(signedTx, deployerSigs);
           printInfo(`  Added deployer signature`);
         }
 
-        const txId = await submitTransaction(signedTx, provider, txData.description);
+        const txId = await submitTransaction(
+          signedTx,
+          provider,
+          txData.description,
+        );
         submissions.push({ name: txData.description, txId });
         printSuccess(`Submitted: ${txData.description} - ${txId}`);
       } catch (error) {
@@ -448,12 +462,18 @@ export async function combineSignatures(
       // Add deployer signature if requested
       if (deployerPrivateKey) {
         const txId = signedTx.getId();
-        const deployerSigs = signTransaction(txId as string, [deployerPrivateKey]);
+        const deployerSigs = signTransaction(txId as string, [
+          deployerPrivateKey,
+        ]);
         signedTx = mergeSignaturesIntoTransaction(signedTx, deployerSigs);
         printInfo(`Added deployer signature`);
       }
 
-      const txId = await submitTransaction(signedTx, provider, txJson.description);
+      const txId = await submitTransaction(
+        signedTx,
+        provider,
+        txJson.description,
+      );
       await awaitTxConfirmation(txId, provider, txJson.description);
       confirmedHashes.push(txId);
       printSuccess(`Confirmed: ${txId}`);

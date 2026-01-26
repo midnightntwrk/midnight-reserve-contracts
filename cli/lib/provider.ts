@@ -25,7 +25,7 @@ export async function createProvider(
       if (cardanoNetwork === null) {
         throw new Error(
           `Blockfrost provider requires a real Cardano network (preview/preprod/mainnet). ` +
-            `Environment '${environment}' maps to local/emulator. Use --provider emulator instead.`
+            `Environment '${environment}' maps to local/emulator. Use --provider emulator instead.`,
         );
       }
 
@@ -51,7 +51,9 @@ export async function createProvider(
       const cardanoNetwork = getCardanoNetwork(environment);
 
       if (cardanoNetwork === null) {
-        throw new Error("Maestro provider does not support local/emulator environments");
+        throw new Error(
+          "Maestro provider does not support local/emulator environments",
+        );
       }
 
       const apiKeyVar = `MAESTRO_${cardanoNetwork.toUpperCase()}_API_KEY`;
@@ -67,7 +69,9 @@ export async function createProvider(
       const kupoUrl = getEnvVar("KUPO_URL");
       const ogmiosUrl = getEnvVar("OGMIOS_URL");
       if (!kupoUrl || !ogmiosUrl) {
-        throw new Error("Both KUPO_URL and OGMIOS_URL environment variables must be set for kupmios provider");
+        throw new Error(
+          "Both KUPO_URL and OGMIOS_URL environment variables must be set for kupmios provider",
+        );
       }
       const ogmios = await Unwrapped.Ogmios.new(ogmiosUrl);
       return new Kupmios(kupoUrl, ogmios);

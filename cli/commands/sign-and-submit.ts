@@ -1,12 +1,25 @@
 import { readFileSync } from "fs";
-import { HexBlob, Transaction, TransactionId, TxCBOR } from "@blaze-cardano/core";
+import {
+  HexBlob,
+  Transaction,
+  TransactionId,
+  TxCBOR,
+} from "@blaze-cardano/core";
 import type { Provider } from "@blaze-cardano/sdk";
 import type { SignAndSubmitOptions } from "../lib/types";
 import { createProvider } from "../lib/provider";
 import { signTransaction, attachWitnesses } from "../utils/transaction";
-import { printError, printSuccess, printProgress, printInfo } from "../utils/output";
+import {
+  printError,
+  printSuccess,
+  printProgress,
+  printInfo,
+} from "../utils/output";
 import { getEnvVar } from "../lib/config";
-import { isSingleTransaction, isDeploymentTransactions } from "../utils/transaction-json";
+import {
+  isSingleTransaction,
+  isDeploymentTransactions,
+} from "../utils/transaction-json";
 import {
   CONFIRMATION_TIMEOUT_MS,
   MAX_SUBMIT_RETRIES,
@@ -135,7 +148,6 @@ export async function signAndSubmit(
   }
 }
 
-
 /**
  * Optionally signs and submits a transaction, returning the txId.
  * Does NOT wait for confirmation - use awaitTxConfirmation for that.
@@ -163,7 +175,9 @@ async function signAndSubmitTransaction(
   for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
     try {
       if (attempt > 1) {
-        printProgress(`Submitting (attempt ${attempt}/${MAX_SUBMIT_RETRIES}): ${name}`);
+        printProgress(
+          `Submitting (attempt ${attempt}/${MAX_SUBMIT_RETRIES}): ${name}`,
+        );
       }
       await provider.postTransactionToChain(signedTx);
       return txId;
@@ -201,7 +215,12 @@ async function processAndSubmitTransaction(
   provider: Provider,
   name: string,
 ): Promise<TransactionId> {
-  const txId = await signAndSubmitTransaction(cbor, privateKeyHex, provider, name);
+  const txId = await signAndSubmitTransaction(
+    cbor,
+    privateKeyHex,
+    provider,
+    name,
+  );
   await awaitTxConfirmation(txId, provider, name);
   return txId;
 }
