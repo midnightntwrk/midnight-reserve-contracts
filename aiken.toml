@@ -34,6 +34,7 @@ committee_bridge_one_shot_index = 1
 committee_threshold_one_shot_index = 1
 terms_and_conditions_one_shot_index = 1
 terms_and_conditions_threshold_one_shot_index = 1
+cnight_minting_one_shot_index = 1
 collateral_utxo_index = 14
 
 [config.default.reserve_one_shot_hash]
@@ -90,6 +91,10 @@ encoding = "hex"
 
 [config.default.terms_and_conditions_threshold_one_shot_hash]
 bytes = "000000000000000000000000000000000000000000000000000000000000000e"
+encoding = "hex"
+
+[config.default.cnight_minting_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000010"
 encoding = "hex"
 
 [config.default.collateral_utxo_hash]
@@ -188,6 +193,14 @@ encoding = "hex"
 bytes = "3baa2055ead2235f1e356c0f41ca80f5f1026fec40e95acdfc23385f"
 encoding = "hex"
 
+[config.default.cnight_minting_two_stage_hash]
+bytes = "31a7531d4be9f28e55109267a14ad1dddd863f4659d660c788f083c5"
+encoding = "hex"
+
+[config.default.cnight_minting_forever_hash]
+bytes = "838d4108da4e847ee20275254af2c2134d27e4b30647803de3bdb737"
+encoding = "hex"
+
 [config.preview]
 candidate_nonce="preview"
 cnight_name = "NIGHT"
@@ -206,7 +219,8 @@ committee_bridge_one_shot_index = 10
 committee_threshold_one_shot_index = 11
 terms_and_conditions_one_shot_index = 12
 terms_and_conditions_threshold_one_shot_index = 13
-collateral_utxo_index = 14
+cnight_minting_one_shot_index = 14
+collateral_utxo_index = 15
 
 [config.preview.reserve_one_shot_hash]
 bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
@@ -265,6 +279,10 @@ bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
 encoding = "hex"
 
 [config.preview.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview.cnight_minting_one_shot_hash]
 bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
 encoding = "hex"
 
@@ -360,6 +378,14 @@ encoding = "hex"
 bytes = "f115c735779880fcf295868ace8ee59c11cb64994a19ca2f77f89bba"
 encoding = "hex"
 
+[config.preview.cnight_minting_two_stage_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.preview.cnight_minting_forever_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.qanet]
 candidate_nonce="qanet"
 cnight_name = "NIGHT"
@@ -378,7 +404,8 @@ committee_bridge_one_shot_index = 10
 committee_threshold_one_shot_index = 11
 terms_and_conditions_one_shot_index = 12
 terms_and_conditions_threshold_one_shot_index = 13
-collateral_utxo_index = 14
+cnight_minting_one_shot_index = 14
+collateral_utxo_index = 15
 
 [config.qanet.reserve_one_shot_hash]
 bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
@@ -437,6 +464,10 @@ bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
 encoding = "hex"
 
 [config.qanet.collateral_utxo_hash]
+bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+encoding = "hex"
+
+[config.qanet.cnight_minting_one_shot_hash]
 bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
 encoding = "hex"
 
@@ -532,6 +563,14 @@ encoding = "hex"
 bytes = "087509e21bdfcd96ffa795012765ce6a2ed479d2b3c2e33a98244d68"
 encoding = "hex"
 
+[config.qanet.cnight_minting_two_stage_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.qanet.cnight_minting_forever_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.node-dev-01]
 candidate_nonce="node-dev-01"
 cnight_name = "NIGHT"
@@ -550,7 +589,8 @@ committee_bridge_one_shot_index = 10
 committee_threshold_one_shot_index = 11
 terms_and_conditions_one_shot_index = 12
 terms_and_conditions_threshold_one_shot_index = 13
-collateral_utxo_index = 14
+cnight_minting_one_shot_index = 14
+collateral_utxo_index = 15
 
 [config.node-dev-01.reserve_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
@@ -609,6 +649,10 @@ bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
 [config.node-dev-01.collateral_utxo_hash]
+bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
+encoding = "hex"
+
+[config.node-dev-01.cnight_minting_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
@@ -704,6 +748,14 @@ encoding = "hex"
 bytes = "db252702e27a2998771aebdd500759172883a6b6d8599fcf7be2003f"
 encoding = "hex"
 
+[config.node-dev-01.cnight_minting_two_stage_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.node-dev-01.cnight_minting_forever_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.preprod]
 candidate_nonce="preprod"
 cnight_name = "NIGHT"
@@ -723,7 +775,8 @@ committee_bridge_one_shot_index = 10
 committee_threshold_one_shot_index = 11
 terms_and_conditions_one_shot_index = 12
 terms_and_conditions_threshold_one_shot_index = 13
-collateral_utxo_index = 14
+cnight_minting_one_shot_index = 14
+collateral_utxo_index = 15
 
 [config.preprod.reserve_one_shot_hash]
 bytes = "3825fef10f3e5aaa2b65a657c7c6056cf61199a5ea7ead80654e63ab1ec4252b"
@@ -782,6 +835,10 @@ bytes = "3825fef10f3e5aaa2b65a657c7c6056cf61199a5ea7ead80654e63ab1ec4252b"
 encoding = "hex"
 
 [config.preprod.collateral_utxo_hash]
+bytes = "3825fef10f3e5aaa2b65a657c7c6056cf61199a5ea7ead80654e63ab1ec4252b"
+encoding = "hex"
+
+[config.preprod.cnight_minting_one_shot_hash]
 bytes = "3825fef10f3e5aaa2b65a657c7c6056cf61199a5ea7ead80654e63ab1ec4252b"
 encoding = "hex"
 
@@ -877,6 +934,14 @@ encoding = "hex"
 bytes = "0baf157f5c29833931ebd0fd82d40bc441d592f578218dedc7a44168"
 encoding = "hex"
 
+[config.preprod.cnight_minting_two_stage_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.preprod.cnight_minting_forever_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.mainnet]
 candidate_nonce="mainnet"
 cnight_name = "NIGHT"
@@ -896,6 +961,7 @@ committee_bridge_one_shot_index = 1
 committee_threshold_one_shot_index = 1
 terms_and_conditions_one_shot_index = 1
 terms_and_conditions_threshold_one_shot_index = 1
+cnight_minting_one_shot_index = 1
 collateral_utxo_index = 14
 
 [config.mainnet.reserve_one_shot_hash]
@@ -956,6 +1022,10 @@ encoding = "hex"
 
 [config.mainnet.collateral_utxo_hash]
 bytes = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+encoding = "hex"
+
+[config.mainnet.cnight_minting_one_shot_hash]
+bytes = "1010101010101010101010101010101010101010101010101010101010101010"
 encoding = "hex"
 
 [config.mainnet.cnight_policy]
@@ -1043,5 +1113,13 @@ bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.mainnet.terms_and_conditions_threshold_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.mainnet.cnight_minting_two_stage_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.mainnet.cnight_minting_forever_hash]
 bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"

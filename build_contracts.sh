@@ -219,6 +219,13 @@ COMMITTEE_BRIDGE_TWO_STAGE_TITLE="committee_bridge.committee_bridge_two_stage_up
 COMMITTEE_BRIDGE_TWO_STAGE_TOML_KEY="committee_bridge_two_stage_hash"
 COMMITTEE_BRIDGE_FOREVER_TOML_KEY="committee_bridge_forever_hash"
 
+# CNIGHT Minting validators
+CNIGHT_MINT_TWO_STAGE_TITLE="cnight_minting.cnight_mint_two_stage_upgrade.else"
+CNIGHT_MINT_TWO_STAGE_TOML_KEY="cnight_minting_two_stage_hash"
+
+CNIGHT_MINT_FOREVER_TITLE="cnight_minting.cnight_mint_forever.else"
+CNIGHT_MINT_FOREVER_TOML_KEY="cnight_minting_forever_hash"
+
 # Threshold validators (compiled last, depend on forever contracts)
 MAIN_GOV_THRESHOLD_TITLE="thresholds.main_gov_threshold.else"
 MAIN_GOV_THRESHOLD_TOML_KEY="main_gov_threshold_hash"
@@ -419,6 +426,7 @@ update_two_stage_hashes() {
     update_hash "$FEDERATED_OPS_TWO_STAGE_TITLE" "$FEDERATED_OPS_TWO_STAGE_TOML_KEY"
     update_hash "$TERMS_AND_CONDITIONS_TWO_STAGE_TITLE" "$TERMS_AND_CONDITIONS_TWO_STAGE_TOML_KEY"
     update_hash "$COMMITTEE_BRIDGE_TWO_STAGE_TITLE" "$COMMITTEE_BRIDGE_TWO_STAGE_TOML_KEY"
+    update_hash "$CNIGHT_MINT_TWO_STAGE_TITLE" "$CNIGHT_MINT_TWO_STAGE_TOML_KEY"
 }
 
 update_forever_hashes() {
@@ -429,6 +437,7 @@ update_forever_hashes() {
     update_hash "$FEDERATED_OPS_FOREVER_TITLE" "$FEDERATED_OPS_FOREVER_TOML_KEY"
     update_hash "$TERMS_AND_CONDITIONS_FOREVER_TITLE" "$TERMS_AND_CONDITIONS_FOREVER_TOML_KEY"
     update_hash "$COMMITTEE_BRIDGE_FOREVER_TITLE" "$COMMITTEE_BRIDGE_FOREVER_TOML_KEY"
+    update_hash "$CNIGHT_MINT_FOREVER_TITLE" "$CNIGHT_MINT_FOREVER_TOML_KEY"
 }
 
 update_threshold_hashes() {
