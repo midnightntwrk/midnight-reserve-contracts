@@ -45,14 +45,14 @@ pub fn forever_contract_withdraw(ctx: ScriptContext, two_stage_hash: ScriptHash)
   }
 }
 
-/// One-shot minting for immutable cnight minting NFT state.
+/// Withdraw contract that proxies to the 2 stage upgrade logic and mitigation_logic contract
 validator cnight_mint_forever {
   else(ctx: ScriptContext) {
     forever_contract_withdraw(ctx, config.cnight_minting_two_stage_hash)
   }
 }
 
-/// Staged upgrades for cnight minting contract.
+/// Enforces two stage upgrade process for night minting
 validator cnight_mint_two_stage_upgrade {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, redeemer, info } = ctx
@@ -67,7 +67,7 @@ validator cnight_mint_two_stage_upgrade {
   }
 }
 
-/// Enforces multisig quorum for federated ops updates via withdrawal.
+/// Enforces no Night tokens can be minted
 validator cnight_mint_logic {
   else(_ctx: ScriptContext) {
     fail
