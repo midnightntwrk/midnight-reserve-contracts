@@ -67,9 +67,13 @@ export async function awaitTxConfirmation(
       }
 
       const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
-      printInfo(`Network error during confirmation, retrying in ${delay / 1000}s...`);
+      printInfo(
+        `Network error during confirmation, retrying in ${delay / 1000}s...`,
+      );
       await sleep(delay);
-      printProgress(`Awaiting confirmation (attempt ${attempt + 1}/${MAX_SUBMIT_RETRIES}): ${name}`);
+      printProgress(
+        `Awaiting confirmation (attempt ${attempt + 1}/${MAX_SUBMIT_RETRIES}): ${name}`,
+      );
     }
   }
 }

@@ -67,7 +67,8 @@ export function getCardanoNetwork(environment: string): CardanoNetwork | null {
   // Midnight environments that use Cardano Preview
   if (env === "qanet") return "preview";
   if (env.startsWith("devnet-") || env.startsWith("devnet_")) return "preview";
-  if (env.startsWith("node-dev-") || env.startsWith("node_dev_")) return "preview";
+  if (env.startsWith("node-dev-") || env.startsWith("node_dev_"))
+    return "preview";
 
   // Local/emulator environments
   if (env === "local" || env === "emulator") return null;
@@ -75,7 +76,7 @@ export function getCardanoNetwork(environment: string): CardanoNetwork | null {
   // Unknown environments default to local/emulator with a warning
   console.warn(
     `Warning: Unknown environment '${environment}'. Using local emulator. ` +
-      `Known environments: local, preview, qanet, devnet-*, node-dev-*, preprod, mainnet`
+      `Known environments: local, preview, qanet, devnet-*, node-dev-*, preprod, mainnet`,
   );
   return null;
 }

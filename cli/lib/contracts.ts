@@ -86,14 +86,14 @@ function getBlueprintPath(env: string): string {
   if (existsSync(defaultPath)) {
     console.warn(
       `Blueprint file for environment '${env}' not found at ${envPath}. ` +
-        `Falling back to default contract_blueprint.ts`
+        `Falling back to default contract_blueprint.ts`,
     );
     return defaultPath;
   }
 
   throw new Error(
     `No blueprint file found. Expected: ${envPath} or ${defaultPath}. ` +
-      `Run 'just build ${env}' to generate the blueprint.`
+      `Run 'just build ${env}' to generate the blueprint.`,
   );
 }
 
@@ -111,7 +111,9 @@ function loadContractModule(env: string): Record<string, unknown> {
 /**
  * Creates contract instances from a loaded module.
  */
-function createInstances(Contracts: Record<string, unknown>): ContractInstances {
+function createInstances(
+  Contracts: Record<string, unknown>,
+): ContractInstances {
   // Helper to instantiate a contract class
   const create = (className: string): ContractClass => {
     const ContractClass = Contracts[className] as new () => ContractClass;
@@ -154,18 +156,32 @@ function createInstances(Contracts: Record<string, unknown>): ContractInstances 
     // Thresholds
     mainGovThreshold: create("ThresholdsMainGovThresholdElse"),
     stagingGovThreshold: create("ThresholdsStagingGovThresholdElse"),
-    mainCouncilUpdateThreshold: create("ThresholdsMainCouncilUpdateThresholdElse"),
-    mainTechAuthUpdateThreshold: create("ThresholdsMainTechAuthUpdateThresholdElse"),
-    mainFederatedOpsUpdateThreshold: create("ThresholdsMainFederatedOpsUpdateThresholdElse"),
+    mainCouncilUpdateThreshold: create(
+      "ThresholdsMainCouncilUpdateThresholdElse",
+    ),
+    mainTechAuthUpdateThreshold: create(
+      "ThresholdsMainTechAuthUpdateThresholdElse",
+    ),
+    mainFederatedOpsUpdateThreshold: create(
+      "ThresholdsMainFederatedOpsUpdateThresholdElse",
+    ),
 
     // TCnight Mint Infinite (testnet only)
     tcnightMintInfinite: create("TestCnightNoAuditTcnightMintInfiniteElse"),
 
     // Terms and Conditions
-    termsAndConditionsForever: create("TermsAndConditionsTermsAndConditionsForeverElse"),
-    termsAndConditionsTwoStage: create("TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse"),
-    termsAndConditionsLogic: create("TermsAndConditionsTermsAndConditionsLogicElse"),
-    termsAndConditionsThreshold: create("ThresholdsTermsAndConditionsThresholdElse"),
+    termsAndConditionsForever: create(
+      "TermsAndConditionsTermsAndConditionsForeverElse",
+    ),
+    termsAndConditionsTwoStage: create(
+      "TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse",
+    ),
+    termsAndConditionsLogic: create(
+      "TermsAndConditionsTermsAndConditionsLogicElse",
+    ),
+    termsAndConditionsThreshold: create(
+      "ThresholdsTermsAndConditionsThresholdElse",
+    ),
   };
 }
 
@@ -182,7 +198,9 @@ function createInstances(Contracts: Record<string, unknown>): ContractInstances 
  */
 export function getContractInstances(env?: string): ContractInstances {
   // If no env provided, use active environment or fall back to loading default blueprint
-  const targetEnv = env ? getConfigSection(env) : (activeEnvironment ?? "default");
+  const targetEnv = env
+    ? getConfigSection(env)
+    : (activeEnvironment ?? "default");
 
   // Check cache
   const cached = instanceCache.get(targetEnv);
@@ -250,7 +268,10 @@ export interface TwoStageContracts {
  * @param validatorName - The validator name (e.g., "tech-auth", "council")
  * @param env - Optional environment. If not provided, uses the active environment.
  */
-export function getTwoStageContracts(validatorName: string, env?: string): TwoStageContracts {
+export function getTwoStageContracts(
+  validatorName: string,
+  env?: string,
+): TwoStageContracts {
   const contracts = getContractInstances(env);
 
   switch (validatorName) {
