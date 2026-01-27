@@ -571,6 +571,191 @@ encoding = "hex"
 bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
+[config.govnet]
+candidate_nonce="govnet"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 0
+council_one_shot_index = 1
+ics_one_shot_index = 2
+technical_authority_one_shot_index = 3
+federated_operators_one_shot_index = 4
+main_gov_one_shot_index = 5
+staging_gov_one_shot_index = 6
+main_council_update_one_shot_index = 7
+main_tech_auth_update_one_shot_index = 8
+main_federated_ops_update_one_shot_index = 9
+
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 12
+terms_and_conditions_threshold_one_shot_index = 13
+cnight_minting_one_shot_index = 14
+collateral_utxo_index = 15
+
+[config.govnet.reserve_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.council_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.ics_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.technical_authority_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.federated_operators_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.main_gov_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.staging_gov_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.main_council_update_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.main_tech_auth_update_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.main_federated_ops_update_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.committee_bridge_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.committee_threshold_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.terms_and_conditions_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.terms_and_conditions_threshold_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.collateral_utxo_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.cnight_minting_one_shot_hash]
+bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+encoding = "hex"
+
+[config.govnet.cnight_policy]
+bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
+encoding = "hex"
+
+[config.govnet.reserve_two_stage_hash]
+bytes = "8947216d8a6b075720acb647bb60785c5c199dbc40a960f2008176a4"
+encoding = "hex"
+
+[config.govnet.reserve_forever_hash]
+bytes = "3e598248b1d9b7b79e65f5a19e23ea6a95ed64a1b2a27ed068bba956"
+encoding = "hex"
+
+[config.govnet.council_two_stage_hash]
+bytes = "669b61a77472851a4cf6ce1aeee862005cacedc48cb31af4077d4ec9"
+encoding = "hex"
+
+[config.govnet.council_forever_hash]
+bytes = "4cb104dceb1ab05fcf588a2226aa19fa7af7c48c77b077b98b3450b6"
+encoding = "hex"
+
+[config.govnet.ics_two_stage_hash]
+bytes = "1fc4fa9a318e564d7be3a8760ad7d198dfa5272c19cbb462367f3a94"
+encoding = "hex"
+
+[config.govnet.ics_forever_hash]
+bytes = "9571b2884a44d2683b4c4a99570c944bd17f979643785a62fea4917a"
+encoding = "hex"
+
+[config.govnet.technical_authority_two_stage_hash]
+bytes = "15afa80dc116084ac2295af91ac84b81f60bbc1af812966fa63d631d"
+encoding = "hex"
+
+[config.govnet.technical_authority_forever_hash]
+bytes = "844a3f2b01b11fdd1f8fe4e04dba195720ced5597c715607ebb34f8d"
+encoding = "hex"
+
+[config.govnet.federated_operators_two_stage_hash]
+bytes = "dbd8777462c23603e2f681cc937e4ae1e936fc4282eb1f66a95ab1a6"
+encoding = "hex"
+
+[config.govnet.federated_operators_forever_hash]
+bytes = "4eac359a1c068db6464ef6afa4f6b28cf0b4214d2aab6d053f99072e"
+encoding = "hex"
+
+[config.govnet.main_gov_threshold_hash]
+bytes = "dd075460a4503701e6592ae5186c34a3cce82d6b2745d980a124a2bf"
+encoding = "hex"
+
+[config.govnet.staging_gov_threshold_hash]
+bytes = "195a9c1b596cc431bfaddf0e7fa1771c19cc1ce8213d078b4d839008"
+encoding = "hex"
+
+[config.govnet.main_council_update_threshold_hash]
+bytes = "14a0e6f6753f51b2357b8dae6f85f5d56ed1f9c58f5284fcd26469b7"
+encoding = "hex"
+
+[config.govnet.main_tech_auth_update_threshold_hash]
+bytes = "a1911dee4215d276044716cc5150b94fccfc47dfd36e88e336066a0a"
+encoding = "hex"
+
+[config.govnet.main_federated_ops_update_threshold_hash]
+bytes = "7c5b33813b6ac791abee8c54475777e25f4ea4123f42709aae96746d"
+encoding = "hex"
+
+[config.govnet.beefy_signer_threshold_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.govnet.committee_bridge_two_stage_hash]
+bytes = "31d9b23861194830fbbb17b6d01b6da4cc8eb61ede0a2e6d05ec0c33"
+encoding = "hex"
+
+[config.govnet.committee_bridge_forever_hash]
+bytes = "f3f8c0306eef2fa98829a216309272b8ed61bf1b7726be3d2b3ac324"
+encoding = "hex"
+
+[config.govnet.bridge_signer_threshold_hash]
+bytes = "059ff838ee81ecf10bbc27a5f83a0b397716f1672e4867abb22451a1"
+encoding = "hex"
+
+[config.govnet.terms_and_conditions_two_stage_hash]
+bytes = "33a55630b37c1a11e94dd9b1b8b2953f731882a4984d683e9a45b901"
+encoding = "hex"
+
+[config.govnet.terms_and_conditions_forever_hash]
+bytes = "a10c9297bee9b298d973c77ffd5ccbbb20fb43fd2e7b58fe45ba7827"
+encoding = "hex"
+
+[config.govnet.terms_and_conditions_threshold_hash]
+bytes = "5fabf5e48bd1f0e6caf4d3fd3498985e01c92a296f68dadd0d04c18e"
+encoding = "hex"
+
+[config.govnet.cnight_minting_two_stage_hash]
+bytes = "d2bc3fee589e7026e77606393ad524aaff4834acade7bc4cd5d0cd6c"
+encoding = "hex"
+
+[config.govnet.cnight_minting_forever_hash]
+bytes = "21ae79e5f6201ade4a37604e1ebee0f5931ca450e0d33854bc1ae6f9"
+encoding = "hex"
+
 [config.node-dev-01]
 candidate_nonce="node-dev-01"
 cnight_name = "NIGHT"

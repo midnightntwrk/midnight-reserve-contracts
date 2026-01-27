@@ -15,6 +15,7 @@
  * | local                | (emulator)      | Local emulator, no real network      |
  * | preview              | Cardano Preview | Direct mapping                       |
  * | qanet                | Cardano Preview | Midnight QA environment              |
+ * | govnet               | Cardano Preview | Midnight Governance environment      |
  * | devnet-*             | Cardano Preview | Any devnet (devnet-01, devnet-02...) |
  * | node-dev-*           | Cardano Preview | Node dev envs (node-dev-01, etc.)    |
  * | preprod              | Cardano Preprod | Direct mapping                       |
@@ -29,6 +30,7 @@
  *
  *   bun cli deploy --network preview     # Uses Cardano Preview
  *   bun cli deploy --network qanet       # Uses Cardano Preview
+ *   bun cli deploy --network govnet      # Uses Cardano Preview
  *   bun cli deploy --network node-dev-01 # Uses Cardano Preview
  *   bun cli deploy --network preprod     # Uses Cardano Preprod
  *   bun cli deploy --network mainnet     # Uses Cardano Mainnet
@@ -66,6 +68,7 @@ export function getCardanoNetwork(environment: string): CardanoNetwork | null {
 
   // Midnight environments that use Cardano Preview
   if (env === "qanet") return "preview";
+  if (env === "govnet") return "preview";
   if (env.startsWith("devnet-") || env.startsWith("devnet_")) return "preview";
   if (env.startsWith("node-dev-") || env.startsWith("node_dev_"))
     return "preview";
@@ -76,7 +79,7 @@ export function getCardanoNetwork(environment: string): CardanoNetwork | null {
   // Unknown environments default to local/emulator with a warning
   console.warn(
     `Warning: Unknown environment '${environment}'. Using local emulator. ` +
-      `Known environments: local, preview, qanet, devnet-*, node-dev-*, preprod, mainnet`,
+      `Known environments: local, preview, qanet, govnet, devnet-*, node-dev-*, preprod, mainnet`,
   );
   return null;
 }
@@ -112,6 +115,7 @@ export function getAikenConfigSection(environment: string): string {
 
   // Environments with dedicated config sections
   if (env === "qanet") return "qanet";
+  if (env === "govnet") return "govnet";
   if (env === "node-dev-01") return "node-dev-01";
   if (env === "preview") return "preview";
   if (env === "preprod") return "preprod";
@@ -136,6 +140,7 @@ export function isKnownEnvironment(environment: string): boolean {
     "emulator",
     "preview",
     "qanet",
+    "govnet",
     "preprod",
     "mainnet",
   ];

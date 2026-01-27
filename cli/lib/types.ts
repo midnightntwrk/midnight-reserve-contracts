@@ -16,7 +16,7 @@ export type Network = "local" | "preview" | "preprod" | "mainnet";
 export type ProviderType = "blockfrost" | "maestro" | "emulator" | "kupmios";
 
 export interface GlobalOptions {
-  /** Environment name (e.g., "preview", "qanet", "node-dev-01", "preprod", "mainnet") */
+  /** Environment name (e.g., "preview", "qanet", "govnet", "node-dev-01", "preprod", "mainnet") */
   network: string;
   output: string;
   provider: ProviderType;

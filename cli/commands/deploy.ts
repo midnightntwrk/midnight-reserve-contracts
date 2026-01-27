@@ -1,4 +1,5 @@
 import {
+  Address,
   addressFromValidator,
   AssetId,
   AssetName,
@@ -9,6 +10,8 @@ import {
   PolicyId,
   Script,
   toHex,
+  TransactionId,
+  TransactionInput,
   TransactionOutput,
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
@@ -37,7 +40,6 @@ import {
   createDeploymentOutput,
   printSuccess,
   printError,
-  printProgress,
   printInfo,
   printTransactionSummary,
   ensureDirectory,
@@ -135,19 +137,27 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
   const { blaze } = await createBlaze(network, options.provider);
 
-  // Create collateral UTxO - this UTxO is NOT spent by any deployment transaction,
+  // Query collateral UTxO - this UTxO is NOT spent by any deployment transaction,
   // so it can be safely reused as collateral across all transactions
   let collateralUtxo: TransactionUnspentOutput | undefined;
   if (config.collateral_utxo_hash) {
-    collateralUtxo = createOneShotUtxo(
-      config.collateral_utxo_hash,
-      config.collateral_utxo_index,
-      deployerAddr,
-      utxoAmount,
-    );
-    console.log(
-      `\nUsing collateral UTxO: ${config.collateral_utxo_hash}#${config.collateral_utxo_index}`,
-    );
+    const collateralInput = TransactionInput.fromCore({
+      txId: TransactionId(config.collateral_utxo_hash),
+      index: config.collateral_utxo_index,
+    });
+    const resolved = await blaze.provider.resolveUnspentOutputs([
+      collateralInput,
+    ]);
+    if (resolved.length > 0) {
+      collateralUtxo = resolved[0];
+      console.log(
+        `\nUsing collateral UTxO: ${config.collateral_utxo_hash}#${config.collateral_utxo_index} with ${collateralUtxo.output().amount().coin()} lovelace`,
+      );
+    } else {
+      console.error(
+        `\nERROR: Collateral UTxO not found: ${config.collateral_utxo_hash}#${config.collateral_utxo_index}`,
+      );
+    }
   }
 
   async function generateMultisigDeployment(params: MultisigDeployParams) {
