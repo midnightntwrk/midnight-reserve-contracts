@@ -90,7 +90,7 @@ export function validateNetwork(environment: string): string {
   // Unknown environment - warn but accept (will default to local/emulator)
   console.warn(
     `Warning: Unknown environment '${environment}'. ` +
-      `Known values: ${VALID_NETWORKS.join(", ")}, qanet, devnet-*, node-dev-*. ` +
+      `Known values: ${VALID_NETWORKS.join(", ")}, qanet, govnet, devnet-*, node-dev-*. ` +
       `Defaulting to local/emulator.`,
   );
   return "local";

@@ -14,6 +14,7 @@ set -euo pipefail
 #   default     - Use for local testing builds
 #   preview     - Use for preview testnet
 #   qanet       - Use for Midnight QA environment (Cardano Preview)
+#   govnet      - Use for Midnight Governance environment (Cardano Preview)
 #   node-dev-01 - Use for node dev environment (Cardano Preview)
 #   preprod     - Use for preprod testnet
 #   mainnet     - Use for mainnet
@@ -258,6 +259,7 @@ show_help() {
     echo "  default      Use for local testing builds"
     echo "  preview      Use for preview testnet"
     echo "  qanet        Use for Midnight QA environment (Cardano Preview)"
+    echo "  govnet       Use for Midnight Governance environment (Cardano Preview)"
     echo "  node-dev-01  Use for node dev environment (Cardano Preview)"
     echo "  preprod      Use for preprod testnet"
     echo "  mainnet      Use for mainnet"

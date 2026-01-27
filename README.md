@@ -55,6 +55,7 @@ The CLI maps Midnight deployment environments to their underlying Cardano networ
 | `local`, `emulator` | (emulator) | Local emulator, no real network |
 | `preview` | Cardano Preview | Direct mapping |
 | `qanet` | Cardano Preview | Midnight QA environment |
+| `govnet` | Cardano Preview | Midnight Governance environment |
 | `devnet-*` | Cardano Preview | Any devnet (devnet-01, devnet-02...) |
 | `node-dev-*` | Cardano Preview | Node dev envs (node-dev-01, etc.) |
 | `preprod` | Cardano Preprod | Direct mapping |
@@ -68,6 +69,7 @@ All CLI commands accept the `--network` flag with any environment name:
 ```bash
 bun cli deploy --network preview      # Uses Cardano Preview
 bun cli deploy --network qanet        # Uses Cardano Preview
+bun cli deploy --network govnet       # Uses Cardano Preview
 bun cli deploy --network node-dev-01  # Uses Cardano Preview
 bun cli deploy --network preprod      # Uses Cardano Preprod
 bun cli info --network mainnet        # Uses Cardano Mainnet

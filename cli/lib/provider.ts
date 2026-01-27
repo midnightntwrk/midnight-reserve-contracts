@@ -1,7 +1,6 @@
 import { Address } from "@blaze-cardano/core";
 import { Blaze, ColdWallet, type Provider } from "@blaze-cardano/sdk";
 import { Blockfrost, Kupmios, type NetworkName } from "@blaze-cardano/query";
-import { Maestro } from "@blaze-cardano/query";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { ProviderType } from "./types";
 import { Unwrapped } from "@blaze-cardano/ogmios";
@@ -47,22 +46,12 @@ export async function createProvider(
     }
 
     case "maestro": {
-      // Use getCardanoNetwork to properly map environment to Cardano network
-      const cardanoNetwork = getCardanoNetwork(environment);
-
-      if (cardanoNetwork === null) {
-        throw new Error(
-          "Maestro provider does not support local/emulator environments",
-        );
-      }
-
-      const apiKeyVar = `MAESTRO_${cardanoNetwork.toUpperCase()}_API_KEY`;
-      const apiKey = getEnvVar(apiKeyVar);
-
-      return new Maestro({
-        network: cardanoNetwork,
-        apiKey: apiKey,
-      });
+      // Maestro provider is currently not exported from @blaze-cardano/query
+      // See: https://github.com/butaneprotocol/blaze-cardano - maestro.ts exists but export is commented out
+      throw new Error(
+        "Maestro provider is not currently available in @blaze-cardano/query. " +
+          "Please use --provider blockfrost or --provider kupmios instead.",
+      );
     }
 
     case "kupmios": {
