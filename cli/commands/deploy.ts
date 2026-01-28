@@ -259,9 +259,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
       address: PaymentAddress(foreverAddress.toBech32()),
       value: {
         coins: 0n,
-        assets: new Map([
-          [AssetId(params.foreverContract.Script.hash()), 1n],
-        ]),
+        assets: new Map([[AssetId(params.foreverContract.Script.hash()), 1n]]),
       },
       datum: serialize(Contracts.VersionedMultisig, foreverState).toCore(),
     });
@@ -374,9 +372,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
       address: PaymentAddress(foreverAddress.toBech32()),
       value: {
         coins: 0n,
-        assets: new Map([
-          [AssetId(params.foreverContract.Script.hash()), 1n],
-        ]),
+        assets: new Map([[AssetId(params.foreverContract.Script.hash()), 1n]]),
       },
       datum: PlutusData.fromCore({
         constructor: 0n,
@@ -544,9 +540,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
       address: PaymentAddress(foreverAddress.toBech32()),
       value: {
         coins: 0n,
-        assets: new Map([
-          [AssetId(params.foreverContract.Script.hash()), 1n],
-        ]),
+        assets: new Map([[AssetId(params.foreverContract.Script.hash()), 1n]]),
       },
       datum: serialize(
         Contracts.FederatedOps,
@@ -839,10 +833,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
           value: {
             coins: 0n,
             assets: new Map([
-              [
-                AssetId(contracts.termsAndConditionsForever.Script.hash()),
-                1n,
-              ],
+              [AssetId(contracts.termsAndConditionsForever.Script.hash()), 1n],
             ]),
           },
           datum: serialize(

@@ -134,7 +134,9 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
             assets: new Map([[assetId, remainder]]),
           },
         });
-        remainderOutput.amount().setCoin(calculateMinUtxo(protocolParams, remainderOutput));
+        remainderOutput
+          .amount()
+          .setCoin(calculateMinUtxo(protocolParams, remainderOutput));
         txBuilder = txBuilder.addOutput(remainderOutput);
       }
     } else {
@@ -151,7 +153,9 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
           assets: new Map([[assetId, amount]]),
         },
       });
-      destinationOutput.amount().setCoin(calculateMinUtxo(protocolParams, destinationOutput));
+      destinationOutput
+        .amount()
+        .setCoin(calculateMinUtxo(protocolParams, destinationOutput));
       txBuilder = txBuilder.addOutput(destinationOutput);
     }
 
