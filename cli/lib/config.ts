@@ -86,16 +86,6 @@ export function getDeployUtxoAmount(): bigint {
   return value ? BigInt(value) : 20_000_000n;
 }
 
-export function getDeployOutputAmount(): bigint {
-  const value = process.env.DEPLOY_OUTPUT_AMOUNT;
-  return value ? BigInt(value) : 1_000_000n;
-}
-
-export function getDeployThresholdOutputAmount(): bigint {
-  const value = process.env.DEPLOY_THRESHOLD_OUTPUT_AMOUNT;
-  return value ? BigInt(value) : 1_000_000n;
-}
-
 export interface Threshold {
   numerator: bigint;
   denominator: bigint;

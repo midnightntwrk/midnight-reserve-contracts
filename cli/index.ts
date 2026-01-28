@@ -17,8 +17,6 @@ import type {
 import { getDefaultProvider } from "./lib/types";
 import {
   getDeployUtxoAmount,
-  getDeployOutputAmount,
-  getDeployThresholdOutputAmount,
   getTechAuthThreshold,
   getCouncilThreshold,
   getCouncilStagingThreshold,
@@ -548,10 +546,10 @@ async function main(): Promise<void> {
             : getDeployUtxoAmount(),
           outputAmount: options["output-amount"]
             ? parseAmount(options["output-amount"] as string)
-            : getDeployOutputAmount(),
+            : 1_000_000n,
           thresholdOutputAmount: options["threshold-output-amount"]
             ? parseAmount(options["threshold-output-amount"] as string)
-            : getDeployThresholdOutputAmount(),
+            : 1_000_000n,
           techAuthThreshold: options["tech-auth-threshold"]
             ? parseThreshold(options["tech-auth-threshold"] as string)
             : getTechAuthThreshold(),
