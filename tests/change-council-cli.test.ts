@@ -330,7 +330,7 @@ describe("Change Council CLI Test", () => {
             }).toCore(),
             NetworkId.Testnet,
           );
-          emulator.accounts.set(councilLogicRewardAccount, 0n);
+          emulator.accounts.set(councilLogicRewardAccount, { balance: 0n });
 
           const txBuilder = blaze
             .newTransaction()

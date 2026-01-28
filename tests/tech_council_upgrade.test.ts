@@ -45,7 +45,7 @@ describe("Tech + Council upgrade path", () => {
       }).toCore(),
       NetworkId.Testnet,
     );
-    emulator.accounts.set(govAuthRewardAccount, 0n);
+    emulator.accounts.set(govAuthRewardAccount, { balance: 0n });
 
     const techActors: UpgradeActors = {
       twoStage: new Contracts.PermissionedTechAuthTwoStageUpgradeElse(),
