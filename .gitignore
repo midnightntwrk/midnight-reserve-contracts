@@ -3,7 +3,7 @@ artifacts/
 # Aiken's project working directory
 build/
 # Aiken's default documentation export
-docs/
+./docs/
 
 node_modules/
 
@@ -16,5 +16,6 @@ blueprint-rs
 
 
 code-search*
-.claude/
+.claude/settings.local.json
 prompt.md
+planner-prompt.md
