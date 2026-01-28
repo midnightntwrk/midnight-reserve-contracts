@@ -39,11 +39,35 @@
  *    - Verify each affects only intended operations
  *    - Test 0-of-N edge case
  *
+ * 7. Auth Upgrade Lifecycle
+ *    - Stage/promote/downgrade auth field (mirrors Journey 3 for auth)
+ *    - Verify round vs logic_round semantics
+ *    - Test main auth as recovery for staging
+ *
+ * 8. Threshold Validation Edge Cases
+ *    - Boundary conditions: numerator == denominator, > denominator, zero denominator, negative
+ *    - All cases should be rejected by contract validation
+ *
+ * 9. FederatedOps & Terms and Conditions
+ *    - Deploy FederatedOps (forever + two-stage + logic)
+ *    - Update FederatedOps state via multisig
+ *    - Deploy T&C (forever + two-stage + threshold)
+ *    - Update T&C hash via multisig
+ *
+ * 10. cNIGHT Minting Control
+ *     - Deploy cNIGHT minting control (two-stage with always-fails logic)
+ *     - Verify minting lockdown (forever withdrawal blocked)
+ *     - Verify two-stage upgrade still operable
+ *
+ * 11. Reserve <-> ICS Value Transfer (STUB)
+ *     - Blocked on staging-capable Reserve/ICS contracts
+ *
  * EXECUTION ORDER:
  * - Journey 1 must run first (deploys governance)
  * - Journey 2 depends on Journey 1 (needs governance)
  * - Journeys 3-6 depend on Journeys 1-2 (need full deployment)
- * - Journeys can optionally reuse contracts from previous journeys
+ * - Journeys 7-10 are independent (deploy own governance)
+ * - Journey 11 is stubbed (blocked on staging contracts)
  *
  * DEPENDENCIES:
  * - Each journey can set reuseContracts: true to reuse deployments
@@ -57,6 +81,11 @@ export { twoStageUpgradeJourney } from "./3-two-stage-upgrade";
 export { mitigationScriptsJourney } from "./4-mitigation-scripts";
 export { stagingMainIsolationJourney } from "./5-staging-main-isolation";
 export { thresholdEffectsJourney } from "./6-threshold-effects";
+export { authUpgradeLifecycleJourney } from "./7-auth-upgrade-lifecycle";
+export { thresholdEdgeCasesJourney } from "./8-threshold-edge-cases";
+export { fedopsAndTermsJourney } from "./9-fedops-and-terms";
+export { cnightMintingControlJourney } from "./10-cnight-minting-control";
+export { reserveIcsTransferJourney } from "./11-reserve-ics-transfer";
 
 // Export all journeys as an array for easy iteration
 import { governanceDeploymentAuthJourney } from "./1-governance-deployment-auth";
@@ -65,6 +94,11 @@ import { twoStageUpgradeJourney } from "./3-two-stage-upgrade";
 import { mitigationScriptsJourney } from "./4-mitigation-scripts";
 import { stagingMainIsolationJourney } from "./5-staging-main-isolation";
 import { thresholdEffectsJourney } from "./6-threshold-effects";
+import { authUpgradeLifecycleJourney } from "./7-auth-upgrade-lifecycle";
+import { thresholdEdgeCasesJourney } from "./8-threshold-edge-cases";
+import { fedopsAndTermsJourney } from "./9-fedops-and-terms";
+import { cnightMintingControlJourney } from "./10-cnight-minting-control";
+import { reserveIcsTransferJourney } from "./11-reserve-ics-transfer";
 
 export const allJourneys = [
   governanceDeploymentAuthJourney,
@@ -73,4 +107,9 @@ export const allJourneys = [
   mitigationScriptsJourney,
   stagingMainIsolationJourney,
   thresholdEffectsJourney,
+  authUpgradeLifecycleJourney,
+  thresholdEdgeCasesJourney,
+  fedopsAndTermsJourney,
+  cnightMintingControlJourney,
+  reserveIcsTransferJourney,
 ];

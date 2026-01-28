@@ -95,40 +95,40 @@ export async function buildUpdateCouncilMembersTx(
   // Get script addresses
   const councilForeverAddress = addressFromValidator(networkId, councilForeverScript);
 
-  // Read TechAuth state to get its signers
-  const { readVersionedMultisigState } = await import("../helpers/state-readers");
-  const techAuthState = await readVersionedMultisigState(techAuthForeverUtxo);
+  // IMPORTANT: Use extractSignersFromCbor to preserve duplicate keys (weighted voting)
+  const { extractSignersFromCbor } = await import("../../../cli/lib/signers");
 
-  // Read current Council state for native script building
-  const currentCouncilState: typeof Contracts.VersionedMultisig = [
-    [BigInt(Object.keys(currentSigners).length), currentSigners],
-    currentRound,
-  ];
+  // Get raw datum to extract signers with duplicates preserved
+  const councilDatum = councilForeverUtxo.output().datum()?.asInlineData();
+  const techAuthDatum = techAuthForeverUtxo.output().datum()?.asInlineData();
+  if (!councilDatum || !techAuthDatum) {
+    throw new Error("Missing inline datum on council or tech-auth UTxO");
+  }
+
+  const councilSigners = extractSignersFromCbor(councilDatum);
+  const techAuthSigners = extractSignersFromCbor(techAuthDatum);
 
   // Build native scripts from the multisig state and thresholds
   // This matches the build_native_script function in multisig/script.ak
-  // Helper function to build native script from multisig state
+  // Helper function to build native script from signers array (preserves duplicates)
   const buildNativeScript = (
-    state: typeof Contracts.VersionedMultisig,
+    signers: Array<{ paymentHash: string; sr25519Key: string }>,
     numerator: bigint,
     denominator: bigint
   ) => {
-    const [[totalSigners, signers], _round] = state;
+    const totalSigners = BigInt(signers.length);
 
     // Calculate min_signers (ceil division)
     const minSigners = (totalSigners * numerator + (denominator - 1n)) / denominator;
 
-    // Build signer scripts
-    const signerScripts = Object.keys(signers).map((key) => {
-      // Remove the "8200581c" prefix to get payment hash
-      const paymentHash = key.replace(/^8200581c/i, "");
-
+    // Build signer scripts - one for each entry (including duplicates)
+    const signerScripts = signers.map((signer) => {
       // Convert to bech32 address
       const bech32 = addressFromCredential(
         networkId,
         Credential.fromCore({
           type: CredentialType.KeyHash,
-          hash: Hash28ByteBase16(paymentHash),
+          hash: Hash28ByteBase16(signer.paymentHash),
         })
       ).toBech32();
 
@@ -150,14 +150,14 @@ export async function buildUpdateCouncilMembersTx(
 
   const { script: councilNativeScript, policyId: councilPolicyId } =
     buildNativeScript(
-      currentCouncilState,
+      councilSigners,
       councilThreshold.numerator,
       councilThreshold.denominator
     );
 
   const { script: techAuthNativeScript, policyId: techAuthPolicyId } =
     buildNativeScript(
-      techAuthState,
+      techAuthSigners,
       techAuthThreshold.numerator,
       techAuthThreshold.denominator
     );

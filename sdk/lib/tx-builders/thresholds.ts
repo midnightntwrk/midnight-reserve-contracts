@@ -175,3 +175,205 @@ export async function buildDeployAllThresholdsTx(
 
   return txBuilder;
 }
+
+// ============================================================================
+// Threshold Update Operations
+// ============================================================================
+
+export interface UpdateThresholdParams {
+  blaze: Blaze;
+  // Scripts
+  thresholdScript: Script;
+  councilLogicScript: Script;
+  techAuthLogicScript: Script;
+  govAuthScript: Script;
+  // UTxOs
+  thresholdUtxo: TransactionUnspentOutput;
+  mainGovThresholdUtxo: TransactionUnspentOutput; // Required for authorization thresholds
+  councilForeverUtxo: TransactionUnspentOutput;
+  techAuthForeverUtxo: TransactionUnspentOutput;
+  councilTwoStageMainUtxo: TransactionUnspentOutput;
+  techAuthTwoStageMainUtxo: TransactionUnspentOutput;
+  // New threshold
+  newThreshold: [bigint, bigint, bigint, bigint];
+  // Current authorization thresholds (for native script building)
+  currentCouncilThreshold: { numerator: bigint; denominator: bigint };
+  currentTechAuthThreshold: { numerator: bigint; denominator: bigint };
+  networkId: number;
+}
+
+/**
+ * Build a transaction to update a threshold contract's datum
+ *
+ * This performs a threshold update which:
+ * 1. Spends the threshold UTxO
+ * 2. Creates a new threshold UTxO with updated MultisigThreshold datum
+ * 3. Requires authorization via native scripts and withdrawals (council + tech-auth)
+ */
+export async function buildUpdateThresholdTx(
+  params: UpdateThresholdParams
+): Promise<TransactionBuilder> {
+  const {
+    blaze,
+    thresholdScript,
+    councilLogicScript,
+    techAuthLogicScript,
+    govAuthScript,
+    thresholdUtxo,
+    mainGovThresholdUtxo,
+    councilForeverUtxo,
+    techAuthForeverUtxo,
+    councilTwoStageMainUtxo,
+    techAuthTwoStageMainUtxo,
+    newThreshold,
+    currentCouncilThreshold,
+    currentTechAuthThreshold,
+    networkId,
+  } = params;
+
+  const Contracts = await import("../../../contract_blueprint");
+  const {
+    RewardAccount,
+    NetworkId,
+    CredentialType,
+    NativeScripts,
+    addressFromCredential,
+    Credential,
+    Hash28ByteBase16,
+    Script,
+  } = await import("@blaze-cardano/core");
+
+  // Validate new threshold
+  const [techAuthNum, techAuthDenom, councilNum, councilDenom] = newThreshold;
+
+  if (techAuthNum < 0n || councilNum < 0n) {
+    throw new Error("Threshold numerators must be non-negative");
+  }
+  if (techAuthNum > techAuthDenom || councilNum > councilDenom) {
+    throw new Error("Numerators cannot exceed denominators");
+  }
+  if (techAuthDenom <= 0n || councilDenom <= 0n) {
+    throw new Error("Denominators must be positive");
+  }
+
+  // Get threshold validator address
+  const thresholdAddress = addressFromValidator(networkId, thresholdScript);
+
+  // Read current multisig states for native script building
+  // IMPORTANT: Use extractSignersFromCbor to preserve duplicate keys (weighted voting)
+  const { extractSignersFromCbor } = await import("../../../cli/lib/signers");
+  const { readVersionedMultisigState } = await import("../helpers/state-readers");
+
+  // Get raw datum to extract signers with duplicates preserved
+  const councilDatum = councilForeverUtxo.output().datum()?.asInlineData();
+  const techAuthDatum = techAuthForeverUtxo.output().datum()?.asInlineData();
+  if (!councilDatum || !techAuthDatum) {
+    throw new Error("Missing inline datum on council or tech-auth UTxO");
+  }
+
+  const councilSigners = extractSignersFromCbor(councilDatum);
+  const techAuthSigners = extractSignersFromCbor(techAuthDatum);
+
+  // Helper function to build native script from signers array (preserves duplicates)
+  const buildNativeScript = (
+    signers: Array<{ paymentHash: string; sr25519Key: string }>,
+    numerator: bigint,
+    denominator: bigint
+  ) => {
+    const totalSigners = BigInt(signers.length);
+
+    // Calculate min_signers (ceil division)
+    const minSigners = (totalSigners * numerator + (denominator - 1n)) / denominator;
+
+    // Build signer scripts - one for each entry (including duplicates)
+    const signerScripts = signers.map((signer) => {
+      // Convert to bech32 address
+      const bech32 = addressFromCredential(
+        networkId,
+        Credential.fromCore({
+          type: CredentialType.KeyHash,
+          hash: Hash28ByteBase16(signer.paymentHash),
+        })
+      ).toBech32();
+
+      return NativeScripts.justAddress(bech32, networkId);
+    });
+
+    // Build N-of-M native script
+    const nativeScript = NativeScripts.atLeastNOfK(
+      Number(minSigners),
+      ...signerScripts
+    );
+
+    // Wrap and get policy ID
+    const script = Script.newNativeScript(nativeScript);
+    const policyId = script.hash();
+
+    return { script, policyId };
+  };
+
+  const { script: councilNativeScript, policyId: councilPolicyId } =
+    buildNativeScript(
+      councilSigners,
+      currentCouncilThreshold.numerator,
+      currentCouncilThreshold.denominator
+    );
+
+  const { script: techAuthNativeScript, policyId: techAuthPolicyId } =
+    buildNativeScript(
+      techAuthSigners,
+      currentTechAuthThreshold.numerator,
+      currentTechAuthThreshold.denominator
+    );
+
+  // Create withdrawal from gov_auth to trigger validation
+  const govAuthRewardAccount = RewardAccount.fromCredential(
+    {
+      type: CredentialType.ScriptHash,
+      hash: Hash28ByteBase16(govAuthScript.hash()),
+    },
+    networkId === 0 ? NetworkId.Testnet : NetworkId.Mainnet
+  );
+
+  // Build redeemer for threshold script
+  // Threshold contracts typically use simple integer redeemers
+  const thresholdRedeemer = PlutusData.newInteger(1n); // 1 for update operation
+
+  // Build the new threshold datum
+  const newThresholdDatum: typeof Contracts.MultisigThreshold = newThreshold;
+
+  // Build transaction
+  return blaze
+    .newTransaction()
+    .addInput(thresholdUtxo, thresholdRedeemer)
+    .addReferenceInput(mainGovThresholdUtxo) // Required for authorization thresholds
+    .addReferenceInput(councilForeverUtxo)
+    .addReferenceInput(techAuthForeverUtxo)
+    .addReferenceInput(councilTwoStageMainUtxo)
+    .addReferenceInput(techAuthTwoStageMainUtxo)
+    .addWithdrawal(govAuthRewardAccount, 0n, thresholdRedeemer)
+    .provideScript(thresholdScript)
+    .provideScript(govAuthScript)
+    .provideScript(councilNativeScript)
+    .provideScript(techAuthNativeScript)
+    .addMint(
+      PolicyId(councilPolicyId),
+      new Map([[AssetName(""), 1n]])
+      // No redeemer for native scripts
+    )
+    .addMint(
+      PolicyId(techAuthPolicyId),
+      new Map([[AssetName(""), 1n]])
+      // No redeemer for native scripts
+    )
+    .addOutput(
+      TransactionOutput.fromCore({
+        address: PaymentAddress(thresholdAddress.toBech32()),
+        value: {
+          coins: 2_000_000n,
+          assets: new Map([[AssetId(thresholdScript.hash()), 1n]]),
+        },
+        datum: serialize(Contracts.MultisigThreshold, newThresholdDatum).toCore(),
+      })
+    );
+}

@@ -62,6 +62,21 @@ const ONE_SHOT_CONFIGS: OneShotConfig[] = [
     tomlKey: "main_federated_ops_update_one_shot",
     description: "One-shot UTxO for Main Federated Ops Update threshold",
   },
+  {
+    name: "Terms and Conditions",
+    tomlKey: "terms_and_conditions_one_shot",
+    description: "One-shot UTxO for Terms and Conditions contract deployment",
+  },
+  {
+    name: "Terms and Conditions Threshold",
+    tomlKey: "terms_and_conditions_threshold_one_shot",
+    description: "One-shot UTxO for Terms and Conditions Threshold deployment",
+  },
+  {
+    name: "cNIGHT Minting",
+    tomlKey: "cnight_minting_one_shot",
+    description: "One-shot UTxO for cNIGHT Minting contract deployment",
+  },
 ];
 
 interface SelectedUtxo {
@@ -173,16 +188,23 @@ async function updateAikenConfig(
     // Build the new config section by copying the base and updating one-shots
     let newConfigContent = `\n[config.${configSection}]\n`;
 
-    // Add all indices from base config, updating the one-shot ones
+    // Add all scalar (non-object) fields from base config
     for (const key in baseConfig) {
+      const value = baseConfig[key];
+      if (typeof value === 'object') continue; // hash objects handled below
+
       if (key.endsWith('_index')) {
         const baseKey = key.replace('_index', '');
         const selection = selections.get(baseKey);
         if (selection) {
           newConfigContent += `${key} = ${selection.index}\n`;
         } else {
-          newConfigContent += `${key} = ${baseConfig[key]}\n`;
+          newConfigContent += `${key} = ${value}\n`;
         }
+      } else if (typeof value === 'string') {
+        newConfigContent += `${key} = "${value}"\n`;
+      } else {
+        newConfigContent += `${key} = ${value}\n`;
       }
     }
 
@@ -273,7 +295,9 @@ export async function rebuildContracts(network: string, testRunId?: string): Pro
     const justPath = justPaths.find(p => existsSync(p)) || 'just';
 
     // Run just build which does: build_contracts.sh + bunx @blaze-cardano/blueprint
-    await $`${justPath} build ${configName}`.cwd(projectRoot);
+    // Use 'silent' verbosity to strip trace output — keeps compiled scripts smaller
+    // and avoids hitting the 16KB tx size limit on real networks.
+    await $`${justPath} build ${configName} silent`.cwd(projectRoot);
     console.log("\n✓ Contracts rebuilt and blueprint regenerated successfully");
   } catch (error) {
     console.error("\n❌ Failed to rebuild contracts");

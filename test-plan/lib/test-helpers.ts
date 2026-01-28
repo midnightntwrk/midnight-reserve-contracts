@@ -490,7 +490,7 @@ export async function deployGovernanceContracts(ctx: JourneyContext): Promise<{
   registerTxHash: string;
 }> {
   const { buildCouncilDeploymentTx, buildTechAuthDeploymentTx } = await import("../../sdk/lib/tx-builders/deployment");
-  const { buildDeployAllThresholdsTx } = await import("../../sdk/lib/tx-builders/thresholds");
+  // buildThresholdDeploymentTx is imported below when deploying thresholds
   const { ContractsManager } = await import("./contracts");
   const { Credential, CredentialType, Hash28ByteBase16 } = await import("@blaze-cardano/core");
 
@@ -539,6 +539,9 @@ export async function deployGovernanceContracts(ctx: JourneyContext): Promise<{
 
   const councilTxHash = await ctx.provider.submitTransaction("deployer", councilTxBuilder);
 
+  // Register council signer: maps to deployer's payment credential
+  ctx.provider.registerSigner("council-auth-0", "deployer", "payment");
+
   ctx.journeyState.deployments["council"] = {
     componentName: "council",
     txHash: councilTxHash,
@@ -575,6 +578,9 @@ export async function deployGovernanceContracts(ctx: JourneyContext): Promise<{
 
   const techAuthTxHash = await ctx.provider.submitTransaction("deployer", techAuthTxBuilder);
 
+  // Register tech-auth signer: maps to deployer's stake credential
+  ctx.provider.registerSigner("tech-auth-0", "deployer", "stake");
+
   ctx.journeyState.deployments["techAuth"] = {
     componentName: "techAuth",
     txHash: techAuthTxHash,
@@ -582,45 +588,43 @@ export async function deployGovernanceContracts(ctx: JourneyContext): Promise<{
     metadata: { mainOutputIndex: 0, stagingOutputIndex: 1, foreverOutputIndex: 2 },
   };
 
-  // 3. Deploy all 5 Thresholds
+  // 3. Deploy all 5 Thresholds (individually to avoid tx size limits on testnet)
+  const { buildThresholdDeploymentTx } = await import("../../sdk/lib/tx-builders/thresholds");
   const thresholdsContracts = await contracts.getThresholds();
   const initialThreshold: [bigint, bigint, bigint, bigint] = [1n, 2n, 1n, 2n];
 
-  const thresholdsTxBuilder = await buildDeployAllThresholdsTx({
-    blaze,
-    thresholds: {
-      mainGov: {
-        script: thresholdsContracts.mainGov.Script,
-        oneShotUtxo: findOneShot(deployerUtxos, config.main_gov_one_shot_hash, config.main_gov_one_shot_index)!,
-      },
-      stagingGov: {
-        script: thresholdsContracts.stagingGov.Script,
-        oneShotUtxo: findOneShot(deployerUtxos, config.staging_gov_one_shot_hash, config.staging_gov_one_shot_index)!,
-      },
-      mainCouncilUpdate: {
-        script: thresholdsContracts.mainCouncilUpdate.Script,
-        oneShotUtxo: findOneShot(deployerUtxos, config.main_council_update_one_shot_hash, config.main_council_update_one_shot_index)!,
-      },
-      mainTechAuthUpdate: {
-        script: thresholdsContracts.mainTechAuthUpdate.Script,
-        oneShotUtxo: findOneShot(deployerUtxos, config.main_tech_auth_update_one_shot_hash, config.main_tech_auth_update_one_shot_index)!,
-      },
-      mainFederatedOpsUpdate: {
-        script: thresholdsContracts.mainFederatedOpsUpdate.Script,
-        oneShotUtxo: findOneShot(deployerUtxos, config.main_federated_ops_update_one_shot_hash, config.main_federated_ops_update_one_shot_index)!,
-      },
-    },
-    initialThreshold,
-    networkId: 0,
-  });
+  const thresholdsToDeploy = [
+    { name: "mainGov", script: thresholdsContracts.mainGov.Script, hash: config.main_gov_one_shot_hash, index: config.main_gov_one_shot_index },
+    { name: "stagingGov", script: thresholdsContracts.stagingGov.Script, hash: config.staging_gov_one_shot_hash, index: config.staging_gov_one_shot_index },
+    { name: "mainCouncilUpdate", script: thresholdsContracts.mainCouncilUpdate.Script, hash: config.main_council_update_one_shot_hash, index: config.main_council_update_one_shot_index },
+    { name: "mainTechAuthUpdate", script: thresholdsContracts.mainTechAuthUpdate.Script, hash: config.main_tech_auth_update_one_shot_hash, index: config.main_tech_auth_update_one_shot_index },
+    { name: "mainFederatedOpsUpdate", script: thresholdsContracts.mainFederatedOpsUpdate.Script, hash: config.main_federated_ops_update_one_shot_hash, index: config.main_federated_ops_update_one_shot_index },
+  ];
 
-  const thresholdsTxHash = await ctx.provider.submitTransaction("deployer", thresholdsTxBuilder);
+  const thresholdTxHashes: string[] = [];
+  for (const t of thresholdsToDeploy) {
+    const oneShot = findOneShot(deployerUtxos, t.hash, t.index);
+    if (!oneShot) throw new Error(`One-shot UTxO not found for threshold ${t.name}`);
+
+    const txBuilder = await buildThresholdDeploymentTx({
+      blaze,
+      thresholdScript: t.script,
+      oneShotUtxo: oneShot,
+      threshold: initialThreshold,
+      networkId: 0,
+    });
+
+    const txHash = await ctx.provider.submitTransaction("deployer", txBuilder);
+    thresholdTxHashes.push(txHash);
+  }
+
+  const thresholdsTxHash = thresholdTxHashes[thresholdTxHashes.length - 1];
 
   ctx.journeyState.deployments["thresholds"] = {
     componentName: "thresholds",
     txHash: thresholdsTxHash,
     outputIndex: 0,
-    metadata: { initialThreshold },
+    metadata: { initialThreshold, txHashes: thresholdTxHashes },
   };
 
   // 4. Register stake credentials
