@@ -5,7 +5,7 @@ Midnight governance smart contracts on Cardano (Aiken validators + TypeScript CL
 ## Pre-Commit (Required)
 
 ```bash
-just build && just check && bun test
+just fmt && just build && just check && bun test
 ```
 
 ## Commit Style
