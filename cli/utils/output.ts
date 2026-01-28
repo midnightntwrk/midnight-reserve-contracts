@@ -36,8 +36,6 @@ export function createDeploymentOutput(
   network: string,
   config: {
     utxoAmount: bigint;
-    outputAmount: bigint;
-    thresholdOutputAmount: bigint;
   },
   transactions: TransactionOutput[],
 ): DeploymentOutput {
@@ -46,8 +44,6 @@ export function createDeploymentOutput(
     timestamp: new Date().toISOString(),
     config: {
       utxoAmount: config.utxoAmount.toString(),
-      outputAmount: config.outputAmount.toString(),
-      thresholdOutputAmount: config.thresholdOutputAmount.toString(),
     },
     transactions,
   };
