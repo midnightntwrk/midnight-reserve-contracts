@@ -174,8 +174,8 @@ export async function deploy(options: DeployOptions): Promise<void> {
         `Collateral validation passed: ${availableCollateral} lovelace >= ${requiredCollateral} lovelace required`,
       );
     } else {
-      console.error(
-        `\nERROR: Collateral UTxO not found: ${config.collateral_utxo_hash}#${config.collateral_utxo_index}`,
+      throw new Error(
+        `Collateral UTxO not found: ${config.collateral_utxo_hash}#${config.collateral_utxo_index}. Ensure the UTxO exists and has not been spent.`,
       );
     }
   }
