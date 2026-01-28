@@ -1058,7 +1058,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
   const deploymentOutput = createDeploymentOutput(
     network,
-    { utxoAmount, outputAmount: 0n, thresholdOutputAmount: 0n },
+    { utxoAmount },
     finalTransactions,
   );
 

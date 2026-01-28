@@ -25,8 +25,6 @@ export interface GlobalOptions {
 
 export interface DeployOptions extends GlobalOptions {
   utxoAmount: bigint;
-  outputAmount: bigint;
-  thresholdOutputAmount: bigint;
   techAuthThreshold: { numerator: bigint; denominator: bigint };
   councilThreshold: { numerator: bigint; denominator: bigint };
   councilStagingThreshold: { numerator: bigint; denominator: bigint };
@@ -167,8 +165,6 @@ export interface DeploymentOutput {
   timestamp: string;
   config: {
     utxoAmount: string;
-    outputAmount: string;
-    thresholdOutputAmount: string;
   };
   transactions: TransactionOutput[];
 }

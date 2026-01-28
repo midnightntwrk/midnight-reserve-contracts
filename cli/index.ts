@@ -101,8 +101,6 @@ Generate deployment transactions for reserve contracts.
 
 Options:
   --utxo-amount                Lovelace for input UTxO (default: 20000000)
-  --output-amount              Lovelace for contract outputs (default: 1000000)
-  --threshold-output-amount    Lovelace for threshold outputs (default: 1000000)
   --tech-auth-threshold        Tech auth threshold e.g. "2/3" (default: 2/3)
   --council-threshold          Council threshold e.g. "2/3" (default: 2/3)
   --council-staging-threshold  Council staging threshold e.g. "0/1" (default: 0/1)
@@ -544,12 +542,6 @@ async function main(): Promise<void> {
           utxoAmount: options["utxo-amount"]
             ? parseAmount(options["utxo-amount"] as string)
             : getDeployUtxoAmount(),
-          outputAmount: options["output-amount"]
-            ? parseAmount(options["output-amount"] as string)
-            : 1_000_000n,
-          thresholdOutputAmount: options["threshold-output-amount"]
-            ? parseAmount(options["threshold-output-amount"] as string)
-            : 1_000_000n,
           techAuthThreshold: options["tech-auth-threshold"]
             ? parseThreshold(options["tech-auth-threshold"] as string)
             : getTechAuthThreshold(),
