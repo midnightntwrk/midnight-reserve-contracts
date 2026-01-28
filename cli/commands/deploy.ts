@@ -15,6 +15,7 @@ import {
   TransactionOutput,
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
+import { calculateRequiredCollateral } from "@blaze-cardano/tx";
 import { resolve } from "path";
 
 import type {
@@ -29,6 +30,7 @@ import {
   getTermsAndConditionsInitialLink,
 } from "../lib/config";
 import { createBlaze } from "../lib/provider";
+import { getProtocolParameters } from "../lib/protocol";
 import { getContractInstances } from "../lib/contracts";
 import {
   parseSignersWithCount,
@@ -152,6 +154,25 @@ export async function deploy(options: DeployOptions): Promise<void> {
       collateralUtxo = resolved[0];
       console.log(
         `\nUsing collateral UTxO: ${config.collateral_utxo_hash}#${config.collateral_utxo_index} with ${collateralUtxo.output().amount().coin()} lovelace`,
+      );
+
+      // Validate collateral is sufficient for deployment transactions
+      const params = await getProtocolParameters(blaze.provider);
+      // Use conservative estimate for complex deploy transactions with scripts
+      const estimatedMaxFee = 5_000_000n;
+      const requiredCollateral = calculateRequiredCollateral(
+        estimatedMaxFee,
+        params.collateralPercentage,
+      );
+      const availableCollateral = collateralUtxo.output().amount().coin();
+
+      if (availableCollateral < requiredCollateral) {
+        throw new Error(
+          `Collateral UTxO has ${availableCollateral} lovelace but requires at least ${requiredCollateral} lovelace (collateralPercentage: ${params.collateralPercentage}%, estimated max fee: ${estimatedMaxFee} lovelace)`,
+        );
+      }
+      console.log(
+        `Collateral validation passed: ${availableCollateral} lovelace >= ${requiredCollateral} lovelace required`,
       );
     } else {
       console.error(
