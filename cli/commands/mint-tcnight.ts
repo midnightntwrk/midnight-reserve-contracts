@@ -15,6 +15,7 @@ import { resolve } from "path";
 import type { MintTcnightOptions } from "../lib/types";
 import { createProvider } from "../lib/provider";
 import { getContractInstances } from "../lib/contracts";
+import { getProtocolParameters, calculateMinUtxo } from "../lib/protocol";
 import {
   printSuccess,
   printError,
@@ -67,6 +68,7 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
   const userAddr = Address.fromBech32(userAddress);
   const wallet = new ColdWallet(userAddr, networkId, provider);
   const blaze = await Blaze.from(provider, wallet);
+  const protocolParams = await getProtocolParameters(provider);
 
   const userUtxos = await provider.getUnspentOutputs(userAddr);
 
@@ -125,15 +127,15 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
 
       const remainder = tokensCollected - amount;
       if (remainder > 0n) {
-        txBuilder = txBuilder.addOutput(
-          TransactionOutput.fromCore({
-            address: PaymentAddress(userAddress),
-            value: {
-              coins: 2_000_000n,
-              assets: new Map([[assetId, remainder]]),
-            },
-          }),
-        );
+        const remainderOutput = TransactionOutput.fromCore({
+          address: PaymentAddress(userAddress),
+          value: {
+            coins: 0n,
+            assets: new Map([[assetId, remainder]]),
+          },
+        });
+        remainderOutput.amount().setCoin(calculateMinUtxo(protocolParams, remainderOutput));
+        txBuilder = txBuilder.addOutput(remainderOutput);
       }
     } else {
       const redeemer = PlutusData.fromCbor(HexBlob("00"));
@@ -142,15 +144,15 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
         .provideScript(tcnightPolicy.Script);
 
       const destinationAddr = Address.fromBech32(destination);
-      txBuilder = txBuilder.addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(destinationAddr.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([[assetId, amount]]),
-          },
-        }),
-      );
+      const destinationOutput = TransactionOutput.fromCore({
+        address: PaymentAddress(destinationAddr.toBech32()),
+        value: {
+          coins: 0n,
+          assets: new Map([[assetId, amount]]),
+        },
+      });
+      destinationOutput.amount().setCoin(calculateMinUtxo(protocolParams, destinationOutput));
+      txBuilder = txBuilder.addOutput(destinationOutput);
     }
 
     const tx = await txBuilder.complete();
