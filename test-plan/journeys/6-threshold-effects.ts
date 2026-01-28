@@ -283,7 +283,7 @@ export const thresholdEffectsJourney: JourneyDefinition = {
         // - terms_and_conditions_threshold
         //
         // TODO: Remove this block once contract bug is fixed
-        const EXPECT_CONTRACT_BUG = true;
+        const EXPECT_CONTRACT_BUG = false;
 
         try {
           const { contracts, blaze, address } = await getTestSetup(ctx);
@@ -515,7 +515,7 @@ export const thresholdEffectsJourney: JourneyDefinition = {
 
         // Same contract bug as Phase 2.1 - see Phase 2.1 for details
         // TODO: Set to false once contract bug is fixed
-        const EXPECT_CONTRACT_BUG = true;
+        const EXPECT_CONTRACT_BUG = false;
 
         try {
           const { contracts, blaze } = await getTestSetup(ctx);
@@ -577,9 +577,10 @@ export const thresholdEffectsJourney: JourneyDefinition = {
 
           const { councilNativeScript, techAuthNativeScript } = await buildAuthNativeScripts(ctx);
 
-          // New threshold: [1n, 1n, 3n, 4n] (1/1 TechAuth, ¾ Council)
-          const newThreshold: [bigint, bigint, bigint, bigint] = [1n, 1n, 3n, 4n];
-          console.log(`  New: [${newThreshold[0]}/${newThreshold[1]}, ${newThreshold[2]}/${newThreshold[3]}] (1/1 TechAuth, ¾ Council)`);
+          // New threshold: [3n, 4n, 3n, 4n] (¾ TechAuth, ¾ Council)
+          // Note: contract requires numerator < denominator (strict), so 1/1 is invalid
+          const newThreshold: [bigint, bigint, bigint, bigint] = [3n, 4n, 3n, 4n];
+          console.log(`  New: [${newThreshold[0]}/${newThreshold[1]}, ${newThreshold[2]}/${newThreshold[3]}] (¾ TechAuth, ¾ Council)`);
 
           const txBuilder = blaze
             .newTransaction()
@@ -611,7 +612,7 @@ export const thresholdEffectsJourney: JourneyDefinition = {
             newCouncilUpdateThreshold: newThreshold,
           };
 
-          return completeTestResult(result, "passed", `Updated council_update_threshold to [1/1, 3/4]`);
+          return completeTestResult(result, "passed", `Updated council_update_threshold to [3/4, 3/4]`);
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);
 
@@ -698,7 +699,7 @@ export const thresholdEffectsJourney: JourneyDefinition = {
           }
 
           console.log(`\n  Threshold scope summary:`);
-          console.log(`  → Council member updates: 1/1 TechAuth + ¾ Council`);
+          console.log(`  → Council member updates: ¾ TechAuth + ¾ Council`);
           console.log(`  → TechAuth member updates: uses tech_auth_update_threshold`);
           console.log(`  → Staging operations: uses staging_gov_threshold`);
           console.log(`  → Promote operations: uses main_gov_threshold`);
@@ -726,7 +727,7 @@ export const thresholdEffectsJourney: JourneyDefinition = {
 
         // Same contract bug as Phase 2.1 - see Phase 2.1 for details
         // TODO: Set to false once contract bug is fixed
-        const EXPECT_CONTRACT_BUG = true;
+        const EXPECT_CONTRACT_BUG = false;
 
         try {
           const { contracts, blaze } = await getTestSetup(ctx);
@@ -787,9 +788,10 @@ export const thresholdEffectsJourney: JourneyDefinition = {
 
           const { councilNativeScript, techAuthNativeScript } = await buildAuthNativeScripts(ctx);
 
-          // New threshold: [2n, 3n, 1n, 1n] (⅔ TechAuth, 1/1 Council)
-          const newThreshold: [bigint, bigint, bigint, bigint] = [2n, 3n, 1n, 1n];
-          console.log(`  New: [${newThreshold[0]}/${newThreshold[1]}, ${newThreshold[2]}/${newThreshold[3]}] (⅔ TechAuth, 1/1 Council)`);
+          // New threshold: [2n, 3n, 3n, 4n] (⅔ TechAuth, ¾ Council)
+          // Note: contract requires numerator < denominator (strict), so 1/1 is invalid
+          const newThreshold: [bigint, bigint, bigint, bigint] = [2n, 3n, 3n, 4n];
+          console.log(`  New: [${newThreshold[0]}/${newThreshold[1]}, ${newThreshold[2]}/${newThreshold[3]}] (⅔ TechAuth, ¾ Council)`);
 
           const txBuilder = blaze
             .newTransaction()
@@ -821,7 +823,7 @@ export const thresholdEffectsJourney: JourneyDefinition = {
             newTechAuthUpdateThreshold: newThreshold,
           };
 
-          return completeTestResult(result, "passed", `Updated tech_auth_update_threshold to [2/3, 1/1]`);
+          return completeTestResult(result, "passed", `Updated tech_auth_update_threshold to [2/3, 3/4]`);
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);
 
@@ -935,7 +937,7 @@ export const thresholdEffectsJourney: JourneyDefinition = {
         // Same contract bug as Phase 2.1 - see Phase 2.1 for details
         // This test uses staging_gov_threshold which uses threshold_validation
         // TODO: Set to false once contract bug is fixed
-        const EXPECT_CONTRACT_BUG = true;
+        const EXPECT_CONTRACT_BUG = false;
 
         try {
           const { contracts, blaze } = await getTestSetup(ctx);

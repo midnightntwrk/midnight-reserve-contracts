@@ -55,6 +55,24 @@ export class ContractsManager {
     };
   }
 
+  async getCnightMinting() {
+    const C = await this.loadContracts();
+    return {
+      forever: new C.CnightMintingCnightMintForeverElse(),
+      twoStage: new C.CnightMintingCnightMintTwoStageUpgradeElse(),
+      logic: new C.CnightMintingCnightMintLogicElse(),
+    };
+  }
+
+  async getTermsAndConditions() {
+    const C = await this.loadContracts();
+    return {
+      forever: new C.TermsAndConditionsTermsAndConditionsForeverElse(),
+      twoStage: new C.TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse(),
+      logic: new C.TermsAndConditionsTermsAndConditionsLogicElse(),
+    };
+  }
+
   async getThresholds() {
     const C = await this.loadContracts();
     return {
@@ -63,6 +81,7 @@ export class ContractsManager {
       mainCouncilUpdate: new C.ThresholdsMainCouncilUpdateThresholdElse(),
       mainTechAuthUpdate: new C.ThresholdsMainTechAuthUpdateThresholdElse(),
       mainFederatedOpsUpdate: new C.ThresholdsMainFederatedOpsUpdateThresholdElse(),
+      termsAndConditions: new C.ThresholdsTermsAndConditionsThresholdElse(),
     };
   }
 

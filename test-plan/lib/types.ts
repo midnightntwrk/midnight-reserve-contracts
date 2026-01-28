@@ -71,10 +71,33 @@ export const WalletConfigSchema = Type.Union([
 
 export type WalletConfig = Static<typeof WalletConfigSchema>;
 
+/**
+ * Additional wallets beyond the primary deployer wallet.
+ * Each maps a logical wallet ID to either a seed phrase (HotWallet)
+ * or just a payment key hash (external — user signs manually).
+ */
+export const AdditionalWalletSchema = Type.Union([
+  Type.Object({
+    type: Type.Literal("seed"),
+    seedPhrase: Type.String({ title: "Seed phrase (24 words)" }),
+  }),
+  Type.Object({
+    type: Type.Literal("external"),
+    paymentKeyHash: Type.String({ title: "Payment key hash (hex, 56 chars)" }),
+  }),
+], { title: "Additional wallet" });
+
+export type AdditionalWallet = Static<typeof AdditionalWalletSchema>;
+
 export const SettingsSchema = Type.Object({
   mode: TestModeSchema,
   wallet: Type.Optional(WalletConfigSchema),
   blockfrostApiKey: Type.Optional(Type.String({ title: "Blockfrost API key" })),
+  additionalWallets: Type.Optional(Type.Record(
+    Type.String(),
+    AdditionalWalletSchema,
+    { title: "Additional wallets (wallet-id → config)" },
+  )),
   autoProgress: Type.Boolean({
     title: "Auto-progress through tests",
     default: false,
@@ -115,14 +138,6 @@ export interface JourneyContext {
   settings: Settings;
 }
 
-export interface TestDefinition {
-  id: string;
-  name: string;
-  description: string;
-  prerequisites?: string[];
-  execute: (ctx: TestContext) => Promise<TestResult>;
-}
-
 export interface JourneyStep {
   id: string;
   name: string;
@@ -143,6 +158,5 @@ export interface TestCategory {
   id: string;
   name: string;
   description: string;
-  tests: TestDefinition[];
-  journeys?: JourneyDefinition[];
+  journeys: JourneyDefinition[];
 }

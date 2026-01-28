@@ -9,11 +9,16 @@ import type {
 import type { TestProvider } from "./provider";
 
 export class JourneyRunner {
+  private onSave?: () => Promise<void>;
+
   constructor(
     private provider: TestProvider,
     private state: TestRunState,
-    private settings: Settings
-  ) {}
+    private settings: Settings,
+    onSave?: () => Promise<void>,
+  ) {
+    this.onSave = onSave;
+  }
 
   /**
    * Execute a journey, optionally resuming from a saved checkpoint
@@ -91,6 +96,7 @@ export class JourneyRunner {
         if (error instanceof Error && error.stack) {
           console.error(`Stack trace:`, error.stack);
         }
+        await this.saveState();
         throw error;
       }
 
@@ -106,8 +112,9 @@ export class JourneyRunner {
    * Save current state to disk
    */
   private async saveState(): Promise<void> {
-    // State is already updated in-place, just need to trigger persistence
-    // This will be handled by the StateManager in the main runner
+    if (this.onSave) {
+      await this.onSave();
+    }
   }
 
   /**
