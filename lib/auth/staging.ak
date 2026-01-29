@@ -5,7 +5,7 @@ use cardano/transaction.{Transaction}
 use config
 use multisig/script.{check_for_multisig}
 use multisig/types.{MultisigThreshold}
-use upgradable/two_stage_upgrade.{logic_is_on_main}
+use upgradable/two_stage_upgrade.{auth_is_on_main}
 use utils.{get_input_state_by_policy}
 
 /// Staging governance auth validation. Uses main or staging thresholds depending
@@ -20,7 +20,7 @@ pub fn staging_auth_multisig_validation(
     fn(own_hash) {
       // Use main or staging thresholds based on current logic state
       let threshold_datum =
-        if logic_is_on_main(
+        if auth_is_on_main(
           reference_inputs,
           config.council_two_stage_hash,
           own_hash,

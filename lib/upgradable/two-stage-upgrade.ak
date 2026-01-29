@@ -515,3 +515,35 @@ pub fn logic_is_on_main(
 
   builtin.un_b_data(current_logic) == logic
 }
+
+pub fn auth_is_on_main(
+  inputs: List<Input>,
+  two_stage_hash: PolicyId,
+  auth: ScriptHash,
+) {
+  let pay_cred = Script(two_stage_hash)
+  let main_nft_id = expected_main_nft_id(two_stage_hash)
+
+  let main_datum =
+    must_find(
+      inputs,
+      fn(input) {
+        let Output { address, value, .. } = input.output
+
+        // Lazy evaluation: stops early if payment credential doesn't match
+        and {
+          address.payment_credential == pay_cred,
+          {
+            expect [_, ..nft_id] = value |> to_dict |> to_pairs
+            main_nft_id == as_data(nft_id)
+          },
+        }
+      },
+    ).output.datum
+
+  expect InlineDatum(datum) = main_datum
+
+  expect [_, _, current_auth, ..] = datum |> builtin.un_list_data
+
+  builtin.un_b_data(current_auth) == auth
+}
