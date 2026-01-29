@@ -30,7 +30,7 @@ pub fn unused_logic_merge_next_version(
   let Transaction { inputs, reference_inputs, outputs, mint, .. } = transaction
 
   let merge_values =
-    fn(forever_script_hash) {
+    fn(forever_script_hash, cnight_policy_param) {
       let guarded_cred = Script(forever_script_hash)
       let guarded_value =
         list.foldr(
@@ -69,7 +69,7 @@ pub fn unused_logic_merge_next_version(
           _ -> True
         },
         // Output must return at least the accumulated ADA and CNIGHT balances
-        config.cnight_policy == cnight_policy,
+        cnight_policy_param == cnight_policy,
         cnight_name == config.cnight_name,
         assets.quantity_of(guarded_value, ada_policy_id, ada_asset_name) <= ada_amount,
         assets.quantity_of(guarded_value, cnight_policy, cnight_name) <= cnight_amount,
@@ -83,13 +83,14 @@ pub fn unused_logic_merge_next_version(
         config.council_two_stage_hash,
         own_hash,
       ) {
-        merge_values(main_forever_script_hash)
+        merge_values(main_forever_script_hash, config.cnight_policy)
       } else {
         let datum = get_input_state_by_policy(inputs, own_hash)
 
-        expect StagingState { forever_script_hash, .. }: StagingState = datum
+        expect StagingState { forever_script_hash, cnight_test_policy }: StagingState =
+          datum
 
-        merge_values(forever_script_hash)
+        merge_values(forever_script_hash, cnight_test_policy)
       }
     }
 
