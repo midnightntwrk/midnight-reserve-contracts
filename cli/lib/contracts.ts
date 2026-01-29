@@ -72,10 +72,27 @@ let activeEnvironment: string | null = null;
 
 /**
  * Resolves the blueprint file path for a given environment.
- * Falls back to default if the environment-specific file doesn't exist.
+ * By default, checks deployed-scripts/ first for version-controlled artifacts.
+ * Falls back to build outputs if deployed-scripts doesn't exist.
+ *
+ * @param env - The environment name
+ * @param preferDeployed - If true (default), check deployed-scripts/ first
  */
-function getBlueprintPath(env: string): string {
+function getBlueprintPath(env: string, preferDeployed: boolean = true): string {
   const projectRoot = resolve(import.meta.dir, "../..");
+
+  // Check deployed-scripts first (version-controlled deployment artifacts)
+  if (preferDeployed) {
+    const deployedPath = resolve(
+      projectRoot,
+      `deployed-scripts/${env}/contract_blueprint.ts`,
+    );
+    if (existsSync(deployedPath)) {
+      return deployedPath;
+    }
+  }
+
+  // Fall back to root blueprint files (build outputs)
   const envPath = resolve(projectRoot, `contract_blueprint_${env}.ts`);
   const defaultPath = resolve(projectRoot, "contract_blueprint.ts");
 
@@ -92,7 +109,8 @@ function getBlueprintPath(env: string): string {
   }
 
   throw new Error(
-    `No blueprint file found. Expected: ${envPath} or ${defaultPath}. ` +
+    `No blueprint file found. Expected: deployed-scripts/${env}/contract_blueprint.ts, ` +
+      `${envPath}, or ${defaultPath}. ` +
       `Run 'just build ${env}' to generate the blueprint.`,
   );
 }
@@ -100,9 +118,15 @@ function getBlueprintPath(env: string): string {
 /**
  * Loads the contract module for a given environment.
  * Uses Bun's require for synchronous loading.
+ *
+ * @param env - The environment name
+ * @param preferDeployed - If true (default), prefer deployed-scripts/ over build outputs
  */
-function loadContractModule(env: string): Record<string, unknown> {
-  const blueprintPath = getBlueprintPath(env);
+function loadContractModule(
+  env: string,
+  preferDeployed: boolean = true,
+): Record<string, unknown> {
+  const blueprintPath = getBlueprintPath(env, preferDeployed);
   // Use require for synchronous loading (Bun supports this)
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   return require(blueprintPath);
@@ -190,28 +214,36 @@ function createInstances(
  *
  * @param env - The deployment environment (e.g., "preview", "preprod", "mainnet", or custom like "qanet")
  *              Maps to aiken.toml config section via getConfigSection()
+ * @param useBuild - If true, load from build outputs instead of deployed-scripts/
+ *                   Default is false (prefer deployed-scripts/)
  * @returns ContractInstances with environment-specific compiled scripts
  *
  * @example
- * const contracts = getContractInstances("preview");
- * const contracts = getContractInstances("preprod");
+ * const contracts = getContractInstances("preview");           // Uses deployed-scripts/
+ * const contracts = getContractInstances("preview", true);     // Uses build outputs
  */
-export function getContractInstances(env?: string): ContractInstances {
+export function getContractInstances(
+  env?: string,
+  useBuild: boolean = false,
+): ContractInstances {
   // If no env provided, use active environment or fall back to loading default blueprint
   const targetEnv = env
     ? getConfigSection(env)
     : (activeEnvironment ?? "default");
 
+  // Cache key includes useBuild to allow both versions to be cached
+  const cacheKey = useBuild ? `${targetEnv}:build` : targetEnv;
+
   // Check cache
-  const cached = instanceCache.get(targetEnv);
+  const cached = instanceCache.get(cacheKey);
   if (cached) {
     return cached;
   }
 
-  // Load and cache
-  const Contracts = loadContractModule(targetEnv);
+  // Load and cache (preferDeployed is opposite of useBuild)
+  const Contracts = loadContractModule(targetEnv, !useBuild);
   const instances = createInstances(Contracts);
-  instanceCache.set(targetEnv, instances);
+  instanceCache.set(cacheKey, instances);
 
   // Update active environment if this is the first load or if explicitly set
   if (env) {
@@ -226,12 +258,16 @@ export function getContractInstances(env?: string): ContractInstances {
  * Call this early in CLI commands to ensure the correct contracts are loaded.
  *
  * @param env - The deployment environment
+ * @param useBuild - If true, load from build outputs instead of deployed-scripts/
  */
-export function initContractsForEnvironment(env: string): void {
+export function initContractsForEnvironment(
+  env: string,
+  useBuild: boolean = false,
+): void {
   const configSection = getConfigSection(env);
   activeEnvironment = configSection;
   // Pre-load the contracts
-  getContractInstances(env);
+  getContractInstances(env, useBuild);
 }
 
 export function getContractAddress(
