@@ -39,6 +39,7 @@ export interface ChangeAuthOptions extends GlobalOptions {
   utxoAmount?: bigint;
   sign: boolean;
   outputFile: string;
+  useBuild?: boolean;
 }
 
 export interface SimpleTxOptions extends GlobalOptions {
@@ -52,6 +53,7 @@ export interface InfoOptions extends GlobalOptions {
   format: "json" | "table";
   component: string;
   fetch: boolean;
+  useBuild?: boolean;
 }
 
 export interface StageUpgradeOptions extends GlobalOptions {
@@ -62,6 +64,7 @@ export interface StageUpgradeOptions extends GlobalOptions {
   utxoAmount?: bigint;
   sign: boolean;
   outputFile: string;
+  useBuild?: boolean;
 }
 
 export interface PromoteUpgradeOptions extends GlobalOptions {
@@ -71,10 +74,12 @@ export interface PromoteUpgradeOptions extends GlobalOptions {
   utxoAmount?: bigint;
   sign: boolean;
   outputFile: string;
+  useBuild?: boolean;
 }
 
 export interface RegisterGovAuthOptions extends GlobalOptions {
   outputFile: string;
+  useBuild?: boolean;
 }
 
 export interface GenerateKeyOptions {
@@ -110,6 +115,7 @@ export interface MintTcnightOptions extends GlobalOptions {
   amount: bigint;
   burn: boolean;
   outputFile: string;
+  useBuild?: boolean;
 }
 
 export interface Signer {

@@ -303,12 +303,14 @@ export interface TwoStageContracts {
  *
  * @param validatorName - The validator name (e.g., "tech-auth", "council")
  * @param env - Optional environment. If not provided, uses the active environment.
+ * @param useBuild - If true, load from build outputs instead of deployed-scripts/
  */
 export function getTwoStageContracts(
   validatorName: string,
   env?: string,
+  useBuild?: boolean,
 ): TwoStageContracts {
-  const contracts = getContractInstances(env);
+  const contracts = getContractInstances(env, useBuild);
 
   switch (validatorName) {
     case "tech-auth":
@@ -357,9 +359,14 @@ export function getTwoStageContracts(
  *
  * @param hash - The script hash to find
  * @param env - Optional environment. If not provided, uses the active environment.
+ * @param useBuild - If true, load from build outputs instead of deployed-scripts/
  */
-export function findScriptByHash(hash: string, env?: string): Script | null {
-  const contracts = getContractInstances(env);
+export function findScriptByHash(
+  hash: string,
+  env?: string,
+  useBuild?: boolean,
+): Script | null {
+  const contracts = getContractInstances(env, useBuild);
   const scriptMap: Record<string, Script> = {
     [contracts.councilLogic.Script.hash()]: contracts.councilLogic.Script,
     [contracts.techAuthLogic.Script.hash()]: contracts.techAuthLogic.Script,

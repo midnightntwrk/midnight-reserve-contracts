@@ -137,6 +137,7 @@ Options:
   --sign              Sign transaction (default: true)
   --no-sign           Do not sign transaction
   --output-file       Output file name (default: change-council-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -160,6 +161,7 @@ Options:
   --sign              Sign transaction (default: true)
   --no-sign           Do not sign transaction
   --output-file       Output file name (default: change-tech-auth-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -183,6 +185,7 @@ Options:
   --sign              Sign transaction (default: true)
   --no-sign           Do not sign transaction
   --output-file       Output file name (default: change-federated-ops-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 
 Environment variables:
   PERMISSIONED_CANDIDATES   New federated ops member candidates (required)
@@ -212,6 +215,7 @@ Options:
   --sign              Sign transaction (default: true)
   --no-sign           Do not sign transaction
   --output-file       Output file name (default: stage-upgrade-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -236,6 +240,7 @@ Options:
   --sign              Sign transaction (default: true)
   --no-sign           Do not sign transaction
   --output-file       Output file name (default: promote-upgrade-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -251,6 +256,7 @@ Register main and staging gov auth scripts as stake credentials.
 
 Options:
   --output-file       Output file name (default: register-gov-auth-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -286,6 +292,7 @@ Options:
   --format            Output format: json, table (default: table)
   --component         Filter by component (default: all)
   --fetch             Fetch current on-chain state
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -422,6 +429,7 @@ Options:
   -d, --destination   Destination address for minted tokens (default: user address)
   -b, --burn          Burn tokens instead of minting
   --output-file       Output file name (default: mint-tcnight-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -597,6 +605,7 @@ async function main(): Promise<void> {
           sign: options.sign !== false,
           outputFile:
             (options["output-file"] as string) || "change-council-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await changeCouncil(changeOptions);
@@ -634,6 +643,7 @@ async function main(): Promise<void> {
           sign: options.sign !== false,
           outputFile:
             (options["output-file"] as string) || "change-tech-auth-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await changeTechAuth(changeOptions);
@@ -672,6 +682,7 @@ async function main(): Promise<void> {
           outputFile:
             (options["output-file"] as string) ||
             "change-federated-ops-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await changeFederatedOps(changeOptions);
@@ -717,6 +728,7 @@ async function main(): Promise<void> {
           format: ((options.format as string) || "table") as "json" | "table",
           component: (options.component as string) || "all",
           fetch: options.fetch === true,
+          useBuild: options["use-build"] === true,
         };
 
         await info(infoOptions);
@@ -772,6 +784,7 @@ async function main(): Promise<void> {
           sign: options.sign !== false,
           outputFile:
             (options["output-file"] as string) || "stage-upgrade-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await stageUpgrade(stageOptions);
@@ -818,6 +831,7 @@ async function main(): Promise<void> {
           sign: options.sign !== false,
           outputFile:
             (options["output-file"] as string) || "promote-upgrade-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await promoteUpgrade(promoteOptions);
@@ -837,6 +851,7 @@ async function main(): Promise<void> {
           dryRun,
           outputFile:
             (options["output-file"] as string) || "register-gov-auth-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await registerGovAuth(registerOptions);
@@ -954,6 +969,7 @@ async function main(): Promise<void> {
           burn: options.burn === true,
           outputFile:
             (options["output-file"] as string) || "mint-tcnight-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await mintTcnight(mintTcnightOptions);

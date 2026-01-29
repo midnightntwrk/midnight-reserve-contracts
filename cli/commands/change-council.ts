@@ -52,7 +52,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
 
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
-  const contracts = getContractInstances(network);
+  const contracts = getContractInstances(network, options.useBuild);
 
   const councilForeverAddress = getCredentialAddress(
     network,
@@ -125,7 +125,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   console.log("  Logic hash:", logicHash);
   console.log("  Mitigation logic hash:", mitigationLogicHash || "(empty)");
 
-  const logicScript = findScriptByHash(logicHash, network);
+  const logicScript = findScriptByHash(logicHash, network, options.useBuild);
   if (!logicScript) {
     throw new Error(
       `Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.councilLogic.Script.hash()}`,
@@ -134,7 +134,11 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
 
   let mitigationLogicScript: Script | null = null;
   if (mitigationLogicHash && mitigationLogicHash !== "") {
-    mitigationLogicScript = findScriptByHash(mitigationLogicHash, network);
+    mitigationLogicScript = findScriptByHash(
+      mitigationLogicHash,
+      network,
+      options.useBuild,
+    );
     if (!mitigationLogicScript) {
       throw new Error(
         `Unknown mitigation logic script hash in UpgradeState: ${mitigationLogicHash}`,
