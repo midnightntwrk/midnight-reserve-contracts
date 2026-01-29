@@ -1,10 +1,20 @@
-* @midnightntwrk/mn-security
-/.github/ISSUE_TEMPLATE/ @midnightntwrk/mn-security @midnightntwrk/mn-it
-/.github/PULL_REQUEST_TEMPLATE/ @midnightntwrk/mn-security @midnightntwrk/mn-it
-/.github/workflows/checkmarx.yaml @midnightntwrk/mn-security @midnightntwrk/mn-it
-/.github/workflows/dependabot.yml @midnightntwrk/mn-security @midnightntwrk/mn-it
-CODE_OF_CONDUCT.md @midnightntwrk/mn-security @midnightntwrk/mn-it
-CODEOWNERS @midnightntwrk/mn-security @midnightntwrk/mn-it
-CONTRIBUTING.md @midnightntwrk/mn-security @midnightntwrk/mn-it
-LICENSE @midnightntwrk/mn-security @midnightntwrk/mn-it
-SECURITY.md @midnightntwrk/mn-security @midnightntwrk/mn-it
+* @midnightntwrk/mn-security @midnightntwrk/mn-codeowners-smart-contracts
+/.github/ @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+/.github/ISSUE_TEMPLATE/ @midnightntwrk/mn-security @midnightntwrk/mn-sre
+/.github/PULL_REQUEST_TEMPLATE/ @midnightntwrk/mn-security @midnightntwrk/mn-sre
+/.github/workflows/scan.yaml @midnightntwrk/mn-security @midnightntwrk/mn-sre
+/.github/workflows/dependabot.yml @midnightntwrk/mn-security @midnightntwrk/mn-sre
+/workflows/ @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+CODE_OF_CONDUCT.md @midnightntwrk/mn-security @midnightntwrk/mn-sre
+CODEOWNERS @midnightntwrk/mn-security @midnightntwrk/mn-sre
+CONTRIBUTING.md @midnightntwrk/mn-security @midnightntwrk/mn-sre
+LICENSE @midnightntwrk/mn-security @midnightntwrk/mn-sre
+SECURITY.md @midnightntwrk/mn-security @midnightntwrk/mn-sre
+
+.gitignore @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+build_contracts.sh @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+bun.lock @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+package.json @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+Justfile @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+tsconfig.json @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+eslint.config.js @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
