@@ -33,6 +33,12 @@ import { createBlaze } from "../lib/provider";
 import { getProtocolParameters, calculateMinUtxo } from "../lib/protocol";
 import { getContractInstances } from "../lib/contracts";
 import {
+  saveVersionSnapshot,
+  updateCurrentSymlinks,
+  getVersionFolderName,
+  type ChangeRecord,
+} from "../lib/versions";
+import {
   parseSignersWithCount,
   createMultisigStateFromMap,
 } from "../lib/signers";
@@ -1054,6 +1060,55 @@ export async function deploy(options: DeployOptions): Promise<void> {
   );
 
   writeJsonFile(outputFile, deploymentOutput);
+
+  // Auto-save deployment scripts for full deployments
+  if (!name) {
+    try {
+      const projectRoot = resolve(import.meta.dir, "../..");
+      const plutusJsonPath = resolve(projectRoot, `plutus-${network}.json`);
+      const blueprintPath = resolve(
+        projectRoot,
+        `contract_blueprint_${network}.ts`,
+      );
+
+      // Only save if both source files exist
+      if (existsSync(plutusJsonPath) && existsSync(blueprintPath)) {
+        const versionInfo = {
+          round: 0n,
+          logicRound: 0n,
+          timestamp: new Date().toISOString(),
+          gitCommit: "",
+        };
+
+        const changes: ChangeRecord[] = [
+          {
+            type: "initial",
+            validator: "all",
+            description: "Initial deployment",
+          },
+        ];
+
+        saveVersionSnapshot(
+          network,
+          versionInfo,
+          changes,
+          plutusJsonPath,
+          blueprintPath,
+        );
+
+        const versionName = getVersionFolderName(0n, 0n);
+        updateCurrentSymlinks(network, versionName);
+
+        printSuccess(
+          `Deployment scripts saved to deployed-scripts/${network}/versions/${versionName}/`,
+        );
+      }
+    } catch (error) {
+      printInfo(
+        `Note: Could not save deployment scripts: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
 
   console.log(`===========================================`);
   printSuccess(`Generated ${transactions.length} deployment transactions`);
