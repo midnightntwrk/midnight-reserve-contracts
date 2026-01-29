@@ -113,12 +113,20 @@ encoding = "hex"
 bytes = "d6396a15c46ee88d358f7b222a86c1bd2feacb56adaa376dd024b382"
 encoding = "hex"
 
+[config.default.reserve_staging_forever_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.default.council_two_stage_hash]
 bytes = "cb8b0c09b744ddf551ccec565d7a7eaa782d87163b9122947ded40cf"
 encoding = "hex"
 
 [config.default.council_forever_hash]
 bytes = "0b901ae52c24fd14f8cfd9474ba04a41e4f4c97021bfc5540c198c89"
+encoding = "hex"
+
+[config.default.council_staging_forever_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.default.ics_two_stage_hash]
@@ -129,6 +137,10 @@ encoding = "hex"
 bytes = "f9a0eac308d34a35433338a56198dc5e13bc8092531e097d38b283f8"
 encoding = "hex"
 
+[config.default.ics_staging_forever_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.default.technical_authority_two_stage_hash]
 bytes = "28530994de520fb7815b743d2baf7547268606137bd8bce1d34508f3"
 encoding = "hex"
@@ -137,12 +149,20 @@ encoding = "hex"
 bytes = "947a53b0027bb5be691fd59c7e2cbb2894b830778b98db1754ead625"
 encoding = "hex"
 
+[config.default.technical_authority_staging_forever_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.default.federated_operators_two_stage_hash]
 bytes = "cdec00bdd3642ea9bb00c95dab92c53923b49f3dc1afef5c4376d146"
 encoding = "hex"
 
 [config.default.federated_operators_forever_hash]
 bytes = "0fabf7ed4d63f1c346239b14bb08b69e66acd043cac38d9e5dc64f7f"
+encoding = "hex"
+
+[config.default.federated_operators_staging_forever_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.default.main_gov_threshold_hash]
@@ -187,6 +207,10 @@ encoding = "hex"
 
 [config.default.terms_and_conditions_forever_hash]
 bytes = "195ccc65f23a6b3cb63e9c18f226ad4c68d29a9e0acd7fa1b0c44762"
+encoding = "hex"
+
+[config.default.terms_and_conditions_staging_forever_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.default.terms_and_conditions_threshold_hash]
