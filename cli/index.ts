@@ -974,6 +974,9 @@ async function main(): Promise<void> {
     }
     process.exit(1);
   }
+
+  // Exit successfully after command completion
+  process.exit(0);
 }
 
 main();

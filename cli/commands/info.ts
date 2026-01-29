@@ -12,7 +12,9 @@ interface ContractInfo {
 export async function info(options: InfoOptions): Promise<void> {
   const { network, format, component } = options;
 
-  console.log(`\nContract Information for ${network} network\n`);
+  if (format !== "json") {
+    console.log(`\nContract Information for ${network} network\n`);
+  }
 
   const contracts = getContractInstances(network);
 
