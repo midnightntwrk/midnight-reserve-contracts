@@ -1,3 +1,4 @@
+use aiken/builtin
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
@@ -49,5 +50,17 @@ validator reserve_logic {
     let ScriptContext { transaction, info, .. } = ctx
 
     logic_merge(transaction, info, config.reserve_forever_hash)
+  }
+}
+
+/// Handles reserve withdrawal operations.
+validator reserve_logicV2 {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+
+    and {
+      logic_merge(transaction, info, config.reserve_forever_hash),
+      builtin.serialise_data(info) != "",
+    }
   }
 }
