@@ -7,7 +7,6 @@ import { getContractInstances } from "../lib/contracts";
 import {
   printSuccess,
   printError,
-  printProgress,
   writeTransactionFile,
 } from "../utils/output";
 
@@ -20,7 +19,7 @@ export async function registerGovAuth(
 
   console.log(`\nRegistering Gov Auth scripts on ${network} network`);
 
-  const contracts = getContractInstances();
+  const contracts = getContractInstances(network);
 
   const mainGovAuthHash = contracts.govAuth.Script.hash();
   const stagingGovAuthHash = contracts.stagingGovAuth.Script.hash();
@@ -28,12 +27,7 @@ export async function registerGovAuth(
   console.log(`\nMain Gov Auth script hash: ${mainGovAuthHash}`);
   console.log(`Staging Gov Auth script hash: ${stagingGovAuthHash}`);
 
-  // Create provider
   const { blaze } = await createBlaze(network, options.provider);
-
-  // Build transaction
-  printProgress("Building transaction...");
-
   try {
     const tx = await blaze
       .newTransaction()
@@ -55,7 +49,13 @@ export async function registerGovAuth(
 
     printSuccess(`Transaction built: ${tx.getId()}`);
 
-    writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
+    writeTransactionFile(
+      outputPath,
+      tx.toCbor(),
+      tx.getId(),
+      false,
+      "Register Government Authority Transaction",
+    );
     printSuccess(`Transaction written to ${outputPath}`);
 
     console.log("\nTransaction ID:", tx.getId());

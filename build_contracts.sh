@@ -8,12 +8,16 @@ set -euo pipefail
 # 2. Forever validators (batch update then single compile)
 # 3. Threshold validators (batch update then single compile - depend on forever contracts)
 #
-# Usage: ./build_contracts.sh <default|preview|preprod> [silent|verbose|compact]
+# Usage: ./build_contracts.sh <env> [silent|verbose|compact]
 #
-# Network options:
-#   default  - Use for local testing builds
-#   preview  - Use for preview testnet (uses hex encoding)
-#   preprod  - Use for preprod testnet
+# Environment options:
+#   default     - Use for local testing builds
+#   preview     - Use for preview testnet
+#   qanet       - Use for Midnight QA environment (Cardano Preview)
+#   govnet      - Use for Midnight Governance environment (Cardano Preview)
+#   node-dev-01 - Use for node dev environment (Cardano Preview)
+#   preprod     - Use for preprod testnet
+#   mainnet     - Use for mainnet
 #
 # Trace options:
 #   silent   - Minimal output
@@ -21,7 +25,7 @@ set -euo pipefail
 #   compact  - Compact compilation output
 
 # Define files
-JSON_FILE="plutus.json"
+# JSON_FILE is set after NETWORK is parsed (see below)
 TOML_FILE="aiken.toml"
 LOCK_FILE="build/aiken-compile.lock"
 
@@ -162,7 +166,7 @@ final_compile_run() {
     local compile_started_at
     compile_started_at=$(current_epoch_seconds)
 
-    if ! aiken build -S --env "$NETWORK" "${TRACE_ARGS[@]}"; then
+    if ! aiken build -S --env "$NETWORK" -o "$JSON_FILE" "${TRACE_ARGS[@]}"; then
         echo "Error: Failed to perform final build" >&2
         exit 1
     fi
@@ -216,6 +220,13 @@ COMMITTEE_BRIDGE_TWO_STAGE_TITLE="committee_bridge.committee_bridge_two_stage_up
 COMMITTEE_BRIDGE_TWO_STAGE_TOML_KEY="committee_bridge_two_stage_hash"
 COMMITTEE_BRIDGE_FOREVER_TOML_KEY="committee_bridge_forever_hash"
 
+# CNIGHT Minting validators
+CNIGHT_MINT_TWO_STAGE_TITLE="cnight_minting.cnight_mint_two_stage_upgrade.else"
+CNIGHT_MINT_TWO_STAGE_TOML_KEY="cnight_minting_two_stage_hash"
+
+CNIGHT_MINT_FOREVER_TITLE="cnight_minting.cnight_mint_forever.else"
+CNIGHT_MINT_FOREVER_TOML_KEY="cnight_minting_forever_hash"
+
 # Threshold validators (compiled last, depend on forever contracts)
 MAIN_GOV_THRESHOLD_TITLE="thresholds.main_gov_threshold.else"
 MAIN_GOV_THRESHOLD_TOML_KEY="main_gov_threshold_hash"
@@ -242,12 +253,16 @@ TERMS_AND_CONDITIONS_THRESHOLD_TOML_KEY="terms_and_conditions_threshold_hash"
 show_help() {
     echo "Midnight Reserve Contracts Build Script"
     echo ""
-    echo "Usage: $0 <network> [trace_level]"
+    echo "Usage: $0 <env> [trace_level]"
     echo ""
-    echo "Networks:"
-    echo "  default   Use for local testing builds"
-    echo "  preview   Use for preview testnet (uses hex encoding)"
-    echo "  preprod   Use for preprod testnet"
+    echo "Environments:"
+    echo "  default      Use for local testing builds"
+    echo "  preview      Use for preview testnet"
+    echo "  qanet        Use for Midnight QA environment (Cardano Preview)"
+    echo "  govnet       Use for Midnight Governance environment (Cardano Preview)"
+    echo "  node-dev-01  Use for node dev environment (Cardano Preview)"
+    echo "  preprod      Use for preprod testnet"
+    echo "  mainnet      Use for mainnet"
     echo ""
     echo "Trace levels (optional):"
     echo "  silent    Minimal output"
@@ -256,8 +271,8 @@ show_help() {
     echo ""
     echo "Examples:"
     echo "  $0 preview"
-    echo "  $0 default verbose"
-    echo "  $0 preview compact"
+    echo "  $0 qanet verbose"
+    echo "  $0 node-dev-01 compact"
 }
 
 # Check if help is requested
@@ -266,9 +281,9 @@ if [ "$1" == "-h" ] || [ "$1" == "--help" ] || [ "$1" == "help" ]; then
     exit 0
 fi
 
-# Check if network parameter is provided
+# Check if environment parameter is provided
 if [ $# -lt 1 ]; then
-    echo "Error: Network parameter required."
+    echo "Error: Environment parameter required."
     echo ""
     show_help
     exit 1
@@ -283,6 +298,9 @@ fi
 
 # Convert parameter to lowercase for consistent comparison
 NETWORK=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+
+# Set output file based on network for multi-env support
+JSON_FILE="plutus-${NETWORK}.json"
 
 TRACE_ARGS=()
 if [ $# -ge 2 ]; then
@@ -410,6 +428,7 @@ update_two_stage_hashes() {
     update_hash "$FEDERATED_OPS_TWO_STAGE_TITLE" "$FEDERATED_OPS_TWO_STAGE_TOML_KEY"
     update_hash "$TERMS_AND_CONDITIONS_TWO_STAGE_TITLE" "$TERMS_AND_CONDITIONS_TWO_STAGE_TOML_KEY"
     update_hash "$COMMITTEE_BRIDGE_TWO_STAGE_TITLE" "$COMMITTEE_BRIDGE_TWO_STAGE_TOML_KEY"
+    update_hash "$CNIGHT_MINT_TWO_STAGE_TITLE" "$CNIGHT_MINT_TWO_STAGE_TOML_KEY"
 }
 
 update_forever_hashes() {
@@ -420,6 +439,7 @@ update_forever_hashes() {
     update_hash "$FEDERATED_OPS_FOREVER_TITLE" "$FEDERATED_OPS_FOREVER_TOML_KEY"
     update_hash "$TERMS_AND_CONDITIONS_FOREVER_TITLE" "$TERMS_AND_CONDITIONS_FOREVER_TOML_KEY"
     update_hash "$COMMITTEE_BRIDGE_FOREVER_TITLE" "$COMMITTEE_BRIDGE_FOREVER_TOML_KEY"
+    update_hash "$CNIGHT_MINT_FOREVER_TITLE" "$CNIGHT_MINT_FOREVER_TOML_KEY"
 }
 
 update_threshold_hashes() {
@@ -448,7 +468,7 @@ compile_phase() {
     local compile_started_at
     compile_started_at=$(current_epoch_seconds)
 
-    if ! aiken build -S --env "$NETWORK" "${TRACE_ARGS[@]}"; then
+    if ! aiken build -S --env "$NETWORK" -o "$JSON_FILE" "${TRACE_ARGS[@]}"; then
         echo "Error: Failed to build aiken for $description" >&2
         exit 1
     fi
@@ -516,6 +536,7 @@ done
 
 echo "=========================================="
 echo "Successfully compiled midnight-reserve-contracts for $NETWORK network."
+echo "Blueprint written to: $JSON_FILE"
 echo "All validators have been compiled and hashes updated in aiken.toml"
 
 exit 0

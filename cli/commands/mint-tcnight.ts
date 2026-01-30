@@ -4,6 +4,7 @@ import {
   AssetName,
   PolicyId,
   TransactionOutput,
+  TransactionUnspentOutput,
   PaymentAddress,
   toHex,
   PlutusData,
@@ -14,10 +15,10 @@ import { resolve } from "path";
 import type { MintTcnightOptions } from "../lib/types";
 import { createProvider } from "../lib/provider";
 import { getContractInstances } from "../lib/contracts";
+import { getProtocolParameters, calculateMinUtxo } from "../lib/protocol";
 import {
   printSuccess,
   printError,
-  printProgress,
   writeTransactionFile,
   ensureDirectory,
 } from "../utils/output";
@@ -37,7 +38,7 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
 
   if (network === "mainnet") {
     throw new Error(
-      "mint-tcnight is only available on preview and preprod networks",
+      "mint-tcnight is only available on test networks (preview, preprod, qanet, devnet-*, node-dev-*)",
     );
   }
 
@@ -54,7 +55,7 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
   }
 
   const networkId = getNetworkId(network);
-  const contracts = getContractInstances();
+  const contracts = getContractInstances(network);
 
   const tcnightPolicy = contracts.tcnightMintInfinite;
   const policyId = PolicyId(tcnightPolicy.Script.hash());
@@ -63,12 +64,11 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
 
   console.log(`\nTCnight Policy ID: ${policyId}`);
 
-  const provider = createProvider(network, options.provider);
+  const provider = await createProvider(network, options.provider);
   const userAddr = Address.fromBech32(userAddress);
   const wallet = new ColdWallet(userAddr, networkId, provider);
   const blaze = await Blaze.from(provider, wallet);
-
-  printProgress("Fetching UTxOs...");
+  const protocolParams = await getProtocolParameters(provider);
 
   const userUtxos = await provider.getUnspentOutputs(userAddr);
 
@@ -82,18 +82,18 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
     let txBuilder = blaze.newTransaction();
 
     if (burn) {
-      printProgress("Finding UTxOs with TCnight tokens to burn...");
-
       let totalTokensFound = 0n;
-      const utxosWithTokens = userUtxos.filter((utxo) => {
-        const value = utxo.output().amount();
-        const tokenAmount = value.multiasset()?.get(assetId) ?? 0n;
-        if (tokenAmount > 0n) {
-          totalTokensFound += tokenAmount;
-          return true;
-        }
-        return false;
-      });
+      const utxosWithTokens = userUtxos.filter(
+        (utxo: TransactionUnspentOutput) => {
+          const value = utxo.output().amount();
+          const tokenAmount = value.multiasset()?.get(assetId) ?? 0n;
+          if (tokenAmount > 0n) {
+            totalTokensFound += tokenAmount;
+            return true;
+          }
+          return false;
+        },
+      );
 
       if (utxosWithTokens.length === 0) {
         throw new Error(
@@ -127,41 +127,48 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
 
       const remainder = tokensCollected - amount;
       if (remainder > 0n) {
-        txBuilder = txBuilder.addOutput(
-          TransactionOutput.fromCore({
-            address: PaymentAddress(userAddress),
-            value: {
-              coins: 2_000_000n,
-              assets: new Map([[assetId, remainder]]),
-            },
-          }),
-        );
+        const remainderOutput = TransactionOutput.fromCore({
+          address: PaymentAddress(userAddress),
+          value: {
+            coins: 0n,
+            assets: new Map([[assetId, remainder]]),
+          },
+        });
+        remainderOutput
+          .amount()
+          .setCoin(calculateMinUtxo(protocolParams, remainderOutput));
+        txBuilder = txBuilder.addOutput(remainderOutput);
       }
     } else {
-      printProgress("Building mint transaction...");
-
       const redeemer = PlutusData.fromCbor(HexBlob("00"));
       txBuilder = txBuilder
         .addMint(policyId, new Map([[assetName, amount]]), redeemer)
         .provideScript(tcnightPolicy.Script);
 
       const destinationAddr = Address.fromBech32(destination);
-      txBuilder = txBuilder.addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(destinationAddr.toBech32()),
-          value: {
-            coins: 2_000_000n,
-            assets: new Map([[assetId, amount]]),
-          },
-        }),
-      );
+      const destinationOutput = TransactionOutput.fromCore({
+        address: PaymentAddress(destinationAddr.toBech32()),
+        value: {
+          coins: 0n,
+          assets: new Map([[assetId, amount]]),
+        },
+      });
+      destinationOutput
+        .amount()
+        .setCoin(calculateMinUtxo(protocolParams, destinationOutput));
+      txBuilder = txBuilder.addOutput(destinationOutput);
     }
 
-    printProgress("Completing transaction...");
     const tx = await txBuilder.complete();
 
     ensureDirectory(deploymentDir);
-    writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
+    writeTransactionFile(
+      outputPath,
+      tx.toCbor(),
+      tx.getId(),
+      false,
+      `${action} TCNight Transaction`,
+    );
 
     printSuccess(`Transaction built successfully!`);
     console.log("Transaction ID:", tx.getId());

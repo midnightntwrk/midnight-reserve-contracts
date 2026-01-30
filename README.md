@@ -1,87 +1,117 @@
-# Midnight Cardano Contracts Repository
+# Midnight Reserve Contracts
 
-This repository contains the various upgradable and non-upgradable contracts related to midnight governance and cnight token holdings.
+Governance smart contracts for the Midnight network, deployed on Cardano. Manages council membership, technical authority, federated operators, and reserve holdings through upgradable contract patterns.
 
-## Building and Tests
+## Quick Start
 
-This repository use a Justfile to simplify the commands used in this repository
+```bash
+# Build contracts (generates plutus.json and contract_blueprint.ts)
+just build
 
-To build run
+# Run on-chain Aiken tests
+just check
 
-```sh
-just build [network_env] [trace_level]
+# Run emulator integration tests (requires build first)
+bun test
 ```
 
-To run the onchain tests
+## Project Structure
 
-```sh
-just check [trace_level]
+```
+├── validators/       # On-chain validator entry points (Aiken)
+├── lib/              # Shared Aiken helpers
+├── cli/              # TypeScript CLI for deployment and transactions
+├── tests/            # Blaze emulator integration tests
+├── deployments/      # Network-specific deployment artifacts
+└── spec/             # Detailed constraint specifications
 ```
 
-### LICENSE
+## Documentation
 
-Apache 2.0.
+- `SPEC.md` - Architecture overview and design patterns
+- `AGENTS.md` - Development guidelines and conventions
+- `spec/validators.md` - Detailed validator constraint tags
 
-### README.md
+## CLI Commands
 
-Provides a brief description for users and developers who want to understand the purpose, setup, and usage of the repository.
+The CLI provides tooling for contract deployment and governance operations:
 
-### SECURITY.md
+```bash
+bun run cli/index.ts deploy           # Deploy contracts
+bun run cli/index.ts info             # Query contract state
+bun run cli/index.ts change-council   # Propose council change
+bun run cli/index.ts stage-upgrade    # Stage contract upgrade
+bun run cli/index.ts promote-upgrade  # Promote staged upgrade
+```
 
-Provides a brief description of the Midnight Foundation's security policy and how to properly disclose security issues.
+See `bun run cli/index.ts --help` for all commands.
 
-### CONTRIBUTING.md
+## Environment Configuration
 
-Provides guidelines for how people can contribute to the Midnight project.
+The CLI maps Midnight deployment environments to their underlying Cardano networks:
 
-### CODEOWNERS
+| Environment | Cardano Network | Notes |
+|-------------|-----------------|-------|
+| `local`, `emulator` | (emulator) | Local emulator, no real network |
+| `preview` | Cardano Preview | Direct mapping |
+| `qanet` | Cardano Preview | Midnight QA environment |
+| `govnet` | Cardano Preview | Midnight Governance environment |
+| `devnet-*` | Cardano Preview | Any devnet (devnet-01, devnet-02...) |
+| `node-dev-*` | Cardano Preview | Node dev envs (node-dev-01, etc.) |
+| `preprod` | Cardano Preprod | Direct mapping |
+| `mainnet` | Cardano Mainnet | Direct mapping |
+| (unknown) | (emulator) | Fallback with warning |
 
-Defines repository ownership rules.
+### Using the `--network` Flag
 
-### ISSUE_TEMPLATE
+All CLI commands accept the `--network` flag with any environment name:
 
-Provides templates for reporting various types of issues, such as: bug report, documentation improvement and feature request.
+```bash
+bun cli deploy --network preview      # Uses Cardano Preview
+bun cli deploy --network qanet        # Uses Cardano Preview
+bun cli deploy --network govnet       # Uses Cardano Preview
+bun cli deploy --network node-dev-01  # Uses Cardano Preview
+bun cli deploy --network preprod      # Uses Cardano Preprod
+bun cli info --network mainnet        # Uses Cardano Mainnet
+```
 
-### PULL_REQUEST_TEMPLATE
+### API Key Environment Variables
 
-Provides a template for a pull request.
+Set the appropriate API key for your target Cardano network:
 
-### CLA Assistant
+**Blockfrost (default provider):**
+- `BLOCKFROST_PREVIEW_API_KEY` - For preview, qanet, devnet-*, node-dev-*
+- `BLOCKFROST_PREPROD_API_KEY` - For preprod
+- `BLOCKFROST_MAINNET_API_KEY` - For mainnet
 
-The Midnight Foundation appreciates contributions, and like many other open source projects asks contributors to sign a contributor
-License Agreement before accepting contributions. We use CLA assistant (https://github.com/cla-assistant/cla-assistant) to streamline the CLA
-signing process, enabling contributors to sign our CLAs directly within a GitHub pull request.
+**Maestro (alternative provider, use `--provider maestro`):**
+- `MAESTRO_PREVIEW_API_KEY`
+- `MAESTRO_PREPROD_API_KEY`
+- `MAESTRO_MAINNET_API_KEY`
 
-### Dependabot
+**Kupmios (self-hosted, use `--provider kupmios`):**
+- `KUPO_URL` - Kupo endpoint URL
+- `OGMIOS_URL` - Ogmios endpoint URL
 
-The Midnight Foundation uses GitHub Dependabot feature to keep our projects dependencies up-to-date and address potential security vulnerabilities.
+### Deployment Directory Structure
 
-### Checkmarx
+Deployment artifacts are organized by environment name under `deployments/`:
 
-The Midnight Foundation uses Checkmarx for application security (AppSec) to identify and fix security vulnerabilities.
-All repositories are scanned with Checkmarx's suite of tools including: Static Application Security Testing (SAST), Infrastructure as Code (IaC), Software Composition Analysis (SCA), API Security, Container Security and Supply Chain Scans (SCS).
+```
+deployments/
+├── preview/           # Preview environment artifacts
+├── preprod/           # Preprod environment artifacts
+└── <environment>/     # Any other environment
+```
 
-### Unito
+Each directory contains transaction files and deployment metadata specific to that environment.
 
-Facilitates two-way data synchronization, automated workflows and streamline processes between: Jira, GitHub issues and Github project Kanban board.
+See `cli/lib/network-mapping.ts` for the implementation details.
 
-# TODO - New Repo Owner
+## Contributing
 
-### Software Package Data Exchange (SPDX)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines. Contributors must sign the Midnight Foundation CLA.
 
-Include the following Software Package Data Exchange (SPDX) short-form identifier in a comment at the top headers of each source code file.
+## License
 
-<I>// This file is part of <B>REPLACE WITH REPO-NAME</B>.<BR>
-// Copyright (C) 2025 Midnight Foundation<BR>
-// SPDX-License-Identifier: Apache-2.0<BR>
-// Licensed under the Apache License, Version 2.0 (the "License");<BR>
-// You may not use this file except in compliance with the License.<BR>
-// You may obtain a copy of the License at<BR>
-//<BR>
-// http://www.apache.org/licenses/LICENSE-2.0<BR>
-//<BR>
-// Unless required by applicable law or agreed to in writing, software<BR>
-// distributed under the License is distributed on an "AS IS" BASIS,<BR>
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<BR>
-// See the License for the specific language governing permissions and<BR>
-// limitations under the License.</I>
+Apache 2.0 - see [LICENSE](LICENSE)

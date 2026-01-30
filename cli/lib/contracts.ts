@@ -6,126 +6,236 @@ import {
   Hash28ByteBase16,
   Script,
 } from "@blaze-cardano/core";
-import type { Network } from "./types";
-import { getNetworkId } from "./types";
-import * as Contracts from "../../contract_blueprint";
+import { getNetworkId, getConfigSection } from "./types";
+import { resolve } from "path";
+import { existsSync } from "fs";
+
+/**
+ * Contract instance type - all contract classes have a Script property
+ */
+interface ContractClass {
+  Script: Script;
+}
 
 export interface ContractInstances {
   // Tech Auth
-  techAuthTwoStage: Contracts.PermissionedTechAuthTwoStageUpgradeElse;
-  techAuthForever: Contracts.PermissionedTechAuthForeverElse;
-  techAuthLogic: Contracts.PermissionedTechAuthLogicElse;
+  techAuthTwoStage: ContractClass;
+  techAuthForever: ContractClass;
+  techAuthLogic: ContractClass;
 
   // Council
-  councilTwoStage: Contracts.PermissionedCouncilTwoStageUpgradeElse;
-  councilForever: Contracts.PermissionedCouncilForeverElse;
-  councilLogic: Contracts.PermissionedCouncilLogicElse;
+  councilTwoStage: ContractClass;
+  councilForever: ContractClass;
+  councilLogic: ContractClass;
 
   // Reserve
-  reserveForever: Contracts.ReserveReserveForeverElse;
-  reserveTwoStage: Contracts.ReserveReserveTwoStageUpgradeElse;
-  reserveLogic: Contracts.ReserveReserveLogicElse;
+  reserveForever: ContractClass;
+  reserveTwoStage: ContractClass;
+  reserveLogic: ContractClass;
 
   // Gov Auth
-  govAuth: Contracts.GovAuthMainGovAuthElse;
-  stagingGovAuth: Contracts.GovAuthStagingGovAuthElse;
+  govAuth: ContractClass;
+  stagingGovAuth: ContractClass;
 
   // ICS
-  icsForever: Contracts.IlliquidCirculationSupplyIcsForeverElse;
-  icsTwoStage: Contracts.IlliquidCirculationSupplyIcsTwoStageUpgradeElse;
-  icsLogic: Contracts.IlliquidCirculationSupplyIcsLogicElse;
+  icsForever: ContractClass;
+  icsTwoStage: ContractClass;
+  icsLogic: ContractClass;
 
   // Federated Ops
-  federatedOpsForever: Contracts.PermissionedFederatedOpsForeverElse;
-  federatedOpsTwoStage: Contracts.PermissionedFederatedOpsTwoStageUpgradeElse;
-  federatedOpsLogic: Contracts.PermissionedFederatedOpsLogicElse;
+  federatedOpsForever: ContractClass;
+  federatedOpsTwoStage: ContractClass;
+  federatedOpsLogic: ContractClass;
 
   // Thresholds
-  mainGovThreshold: Contracts.ThresholdsMainGovThresholdElse;
-  stagingGovThreshold: Contracts.ThresholdsStagingGovThresholdElse;
-  mainCouncilUpdateThreshold: Contracts.ThresholdsMainCouncilUpdateThresholdElse;
-  mainTechAuthUpdateThreshold: Contracts.ThresholdsMainTechAuthUpdateThresholdElse;
-  mainFederatedOpsUpdateThreshold: Contracts.ThresholdsMainFederatedOpsUpdateThresholdElse;
+  mainGovThreshold: ContractClass;
+  stagingGovThreshold: ContractClass;
+  mainCouncilUpdateThreshold: ContractClass;
+  mainTechAuthUpdateThreshold: ContractClass;
+  mainFederatedOpsUpdateThreshold: ContractClass;
 
   // TCnight Mint Infinite (testnet only)
-  tcnightMintInfinite: Contracts.TestCnightNoAuditTcnightMintInfiniteElse;
+  tcnightMintInfinite: ContractClass;
 
   // Terms and Conditions
-  termsAndConditionsForever: Contracts.TermsAndConditionsTermsAndConditionsForeverElse;
-  termsAndConditionsTwoStage: Contracts.TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse;
-  termsAndConditionsLogic: Contracts.TermsAndConditionsTermsAndConditionsLogicElse;
-  termsAndConditionsThreshold: Contracts.ThresholdsTermsAndConditionsThresholdElse;
+  termsAndConditionsForever: ContractClass;
+  termsAndConditionsTwoStage: ContractClass;
+  termsAndConditionsLogic: ContractClass;
+  termsAndConditionsThreshold: ContractClass;
 }
 
-let cachedInstances: ContractInstances | null = null;
+// Per-environment cache for contract instances
+const instanceCache = new Map<string, ContractInstances>();
 
-export function getContractInstances(): ContractInstances {
-  if (cachedInstances) {
-    return cachedInstances;
+// Track the currently active environment for backward compatibility
+let activeEnvironment: string | null = null;
+
+/**
+ * Resolves the blueprint file path for a given environment.
+ * Falls back to default if the environment-specific file doesn't exist.
+ */
+function getBlueprintPath(env: string): string {
+  const projectRoot = resolve(import.meta.dir, "../..");
+  const envPath = resolve(projectRoot, `contract_blueprint_${env}.ts`);
+  const defaultPath = resolve(projectRoot, "contract_blueprint.ts");
+
+  if (existsSync(envPath)) {
+    return envPath;
   }
 
-  cachedInstances = {
-    // Tech Auth
-    techAuthTwoStage: new Contracts.PermissionedTechAuthTwoStageUpgradeElse(),
-    techAuthForever: new Contracts.PermissionedTechAuthForeverElse(),
-    techAuthLogic: new Contracts.PermissionedTechAuthLogicElse(),
+  if (existsSync(defaultPath)) {
+    console.warn(
+      `Blueprint file for environment '${env}' not found at ${envPath}. ` +
+        `Falling back to default contract_blueprint.ts`,
+    );
+    return defaultPath;
+  }
 
-    // Council
-    councilTwoStage: new Contracts.PermissionedCouncilTwoStageUpgradeElse(),
-    councilForever: new Contracts.PermissionedCouncilForeverElse(),
-    councilLogic: new Contracts.PermissionedCouncilLogicElse(),
+  throw new Error(
+    `No blueprint file found. Expected: ${envPath} or ${defaultPath}. ` +
+      `Run 'just build ${env}' to generate the blueprint.`,
+  );
+}
 
-    // Reserve
-    reserveForever: new Contracts.ReserveReserveForeverElse(),
-    reserveTwoStage: new Contracts.ReserveReserveTwoStageUpgradeElse(),
-    reserveLogic: new Contracts.ReserveReserveLogicElse(),
+/**
+ * Loads the contract module for a given environment.
+ * Uses Bun's require for synchronous loading.
+ */
+function loadContractModule(env: string): Record<string, unknown> {
+  const blueprintPath = getBlueprintPath(env);
+  // Use require for synchronous loading (Bun supports this)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return require(blueprintPath);
+}
 
-    // Gov Auth
-    govAuth: new Contracts.GovAuthMainGovAuthElse(),
-    stagingGovAuth: new Contracts.GovAuthStagingGovAuthElse(),
-
-    // ICS
-    icsForever: new Contracts.IlliquidCirculationSupplyIcsForeverElse(),
-    icsTwoStage:
-      new Contracts.IlliquidCirculationSupplyIcsTwoStageUpgradeElse(),
-    icsLogic: new Contracts.IlliquidCirculationSupplyIcsLogicElse(),
-
-    // Federated Ops
-    federatedOpsForever: new Contracts.PermissionedFederatedOpsForeverElse(),
-    federatedOpsTwoStage:
-      new Contracts.PermissionedFederatedOpsTwoStageUpgradeElse(),
-    federatedOpsLogic: new Contracts.PermissionedFederatedOpsLogicElse(),
-
-    // Thresholds
-    mainGovThreshold: new Contracts.ThresholdsMainGovThresholdElse(),
-    stagingGovThreshold: new Contracts.ThresholdsStagingGovThresholdElse(),
-    mainCouncilUpdateThreshold:
-      new Contracts.ThresholdsMainCouncilUpdateThresholdElse(),
-    mainTechAuthUpdateThreshold:
-      new Contracts.ThresholdsMainTechAuthUpdateThresholdElse(),
-    mainFederatedOpsUpdateThreshold:
-      new Contracts.ThresholdsMainFederatedOpsUpdateThresholdElse(),
-
-    // TCnight Mint Infinite (testnet only)
-    tcnightMintInfinite:
-      new Contracts.TestCnightNoAuditTcnightMintInfiniteElse(),
-
-    // Terms and Conditions
-    termsAndConditionsForever:
-      new Contracts.TermsAndConditionsTermsAndConditionsForeverElse(),
-    termsAndConditionsTwoStage:
-      new Contracts.TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse(),
-    termsAndConditionsLogic:
-      new Contracts.TermsAndConditionsTermsAndConditionsLogicElse(),
-    termsAndConditionsThreshold:
-      new Contracts.ThresholdsTermsAndConditionsThresholdElse(),
+/**
+ * Creates contract instances from a loaded module.
+ */
+function createInstances(
+  Contracts: Record<string, unknown>,
+): ContractInstances {
+  // Helper to instantiate a contract class
+  const create = (className: string): ContractClass => {
+    const ContractClass = Contracts[className] as new () => ContractClass;
+    if (!ContractClass) {
+      throw new Error(`Contract class '${className}' not found in blueprint`);
+    }
+    return new ContractClass();
   };
 
-  return cachedInstances;
+  return {
+    // Tech Auth
+    techAuthTwoStage: create("PermissionedTechAuthTwoStageUpgradeElse"),
+    techAuthForever: create("PermissionedTechAuthForeverElse"),
+    techAuthLogic: create("PermissionedTechAuthLogicElse"),
+
+    // Council
+    councilTwoStage: create("PermissionedCouncilTwoStageUpgradeElse"),
+    councilForever: create("PermissionedCouncilForeverElse"),
+    councilLogic: create("PermissionedCouncilLogicElse"),
+
+    // Reserve
+    reserveForever: create("ReserveReserveForeverElse"),
+    reserveTwoStage: create("ReserveReserveTwoStageUpgradeElse"),
+    reserveLogic: create("ReserveReserveLogicElse"),
+
+    // Gov Auth
+    govAuth: create("GovAuthMainGovAuthElse"),
+    stagingGovAuth: create("GovAuthStagingGovAuthElse"),
+
+    // ICS
+    icsForever: create("IlliquidCirculationSupplyIcsForeverElse"),
+    icsTwoStage: create("IlliquidCirculationSupplyIcsTwoStageUpgradeElse"),
+    icsLogic: create("IlliquidCirculationSupplyIcsLogicElse"),
+
+    // Federated Ops
+    federatedOpsForever: create("PermissionedFederatedOpsForeverElse"),
+    federatedOpsTwoStage: create("PermissionedFederatedOpsTwoStageUpgradeElse"),
+    federatedOpsLogic: create("PermissionedFederatedOpsLogicElse"),
+
+    // Thresholds
+    mainGovThreshold: create("ThresholdsMainGovThresholdElse"),
+    stagingGovThreshold: create("ThresholdsStagingGovThresholdElse"),
+    mainCouncilUpdateThreshold: create(
+      "ThresholdsMainCouncilUpdateThresholdElse",
+    ),
+    mainTechAuthUpdateThreshold: create(
+      "ThresholdsMainTechAuthUpdateThresholdElse",
+    ),
+    mainFederatedOpsUpdateThreshold: create(
+      "ThresholdsMainFederatedOpsUpdateThresholdElse",
+    ),
+
+    // TCnight Mint Infinite (testnet only)
+    tcnightMintInfinite: create("TestCnightNoAuditTcnightMintInfiniteElse"),
+
+    // Terms and Conditions
+    termsAndConditionsForever: create(
+      "TermsAndConditionsTermsAndConditionsForeverElse",
+    ),
+    termsAndConditionsTwoStage: create(
+      "TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse",
+    ),
+    termsAndConditionsLogic: create(
+      "TermsAndConditionsTermsAndConditionsLogicElse",
+    ),
+    termsAndConditionsThreshold: create(
+      "ThresholdsTermsAndConditionsThresholdElse",
+    ),
+  };
+}
+
+/**
+ * Gets contract instances for a given environment.
+ *
+ * @param env - The deployment environment (e.g., "preview", "preprod", "mainnet", or custom like "qanet")
+ *              Maps to aiken.toml config section via getConfigSection()
+ * @returns ContractInstances with environment-specific compiled scripts
+ *
+ * @example
+ * const contracts = getContractInstances("preview");
+ * const contracts = getContractInstances("preprod");
+ */
+export function getContractInstances(env?: string): ContractInstances {
+  // If no env provided, use active environment or fall back to loading default blueprint
+  const targetEnv = env
+    ? getConfigSection(env)
+    : (activeEnvironment ?? "default");
+
+  // Check cache
+  const cached = instanceCache.get(targetEnv);
+  if (cached) {
+    return cached;
+  }
+
+  // Load and cache
+  const Contracts = loadContractModule(targetEnv);
+  const instances = createInstances(Contracts);
+  instanceCache.set(targetEnv, instances);
+
+  // Update active environment if this is the first load or if explicitly set
+  if (env) {
+    activeEnvironment = targetEnv;
+  }
+
+  return instances;
+}
+
+/**
+ * Initializes contracts for a specific environment.
+ * Call this early in CLI commands to ensure the correct contracts are loaded.
+ *
+ * @param env - The deployment environment
+ */
+export function initContractsForEnvironment(env: string): void {
+  const configSection = getConfigSection(env);
+  activeEnvironment = configSection;
+  // Pre-load the contracts
+  getContractInstances(env);
 }
 
 export function getContractAddress(
-  network: Network,
+  network: string,
   script: Script,
 ): ReturnType<typeof addressFromValidator> {
   const networkId = getNetworkId(network);
@@ -133,7 +243,7 @@ export function getContractAddress(
 }
 
 export function getCredentialAddress(
-  network: Network,
+  network: string,
   scriptHash: string,
 ): ReturnType<typeof addressFromCredential> {
   const networkId = getNetworkId(network);
@@ -152,8 +262,17 @@ export interface TwoStageContracts {
   logic: { Script: Script };
 }
 
-export function getTwoStageContracts(validatorName: string): TwoStageContracts {
-  const contracts = getContractInstances();
+/**
+ * Gets the two-stage contracts for a validator.
+ *
+ * @param validatorName - The validator name (e.g., "tech-auth", "council")
+ * @param env - Optional environment. If not provided, uses the active environment.
+ */
+export function getTwoStageContracts(
+  validatorName: string,
+  env?: string,
+): TwoStageContracts {
+  const contracts = getContractInstances(env);
 
   switch (validatorName) {
     case "tech-auth":
@@ -197,8 +316,14 @@ export function getTwoStageContracts(validatorName: string): TwoStageContracts {
   }
 }
 
-export function findScriptByHash(hash: string): Script | null {
-  const contracts = getContractInstances();
+/**
+ * Finds a script by its hash.
+ *
+ * @param hash - The script hash to find
+ * @param env - Optional environment. If not provided, uses the active environment.
+ */
+export function findScriptByHash(hash: string, env?: string): Script | null {
+  const contracts = getContractInstances(env);
   const scriptMap: Record<string, Script> = {
     [contracts.councilLogic.Script.hash()]: contracts.councilLogic.Script,
     [contracts.techAuthLogic.Script.hash()]: contracts.techAuthLogic.Script,

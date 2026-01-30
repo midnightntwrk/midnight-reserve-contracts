@@ -11,6 +11,9 @@ use multisig/script.{check_for_multisig}
 use multisig/types.{MultisigThreshold} as t
 use utils.{get_input_state_by_policy, get_output_state_by_policy, must_find}
 
+/// Reserve logic for merging multiple UTxOs at the forever address.
+/// Accumulates all inputs locked by the forever script (except the state NFT),
+/// then validates that the output returns at least the total ADA and CNIGHT balance.
 pub fn logic_merge(
   transaction: Transaction,
   info: ScriptInfo,
@@ -28,12 +31,10 @@ pub fn logic_merge(
           fn(input, acc) {
             let Output { address, value, .. } = input.output
             if address.payment_credential == guarded_cred {
-              // (LM-3) Forbid consuming the forever NFT (policy `main_forever_script_hash`, name "")
-              // while computing the merged value for this transaction.
+              // Don't allow the forever NFT to be consumed during merge
               expect
                 assets.quantity_of(value, main_forever_script_hash, "") == 0
 
-              // (LM-1) Accumulate every input locked by the forever script.
               assets.merge(value, acc)
             } else {
               acc
@@ -43,7 +44,6 @@ pub fn logic_merge(
 
       let guarded_address = Address(Script(forever_script_hash), None)
 
-      // (LM-0) Require the transaction to create an output locked by the forever script credential.
       let Output { value, datum, .. } =
         must_find(outputs, fn(output) { output.address == guarded_address })
 
@@ -55,12 +55,12 @@ pub fn logic_merge(
       expect [Pair(cnight_name, cnight_amount)] = cnight_tokens |> to_pairs
 
       and {
-        // (LM-2) Reject datum hashes so the replacement state remains inline and readable.
+        // Datum must be inline (not hash) so state remains readable
         when datum is {
           DatumHash(_) -> False
           _ -> True
         },
-        // (LM-4) Enforce that the replacement output returns at least the accumulated ADA and NIGHT balances.
+        // Output must return at least the accumulated ADA and CNIGHT balances
         config.cnight_policy == cnight_policy,
         cnight_name == config.cnight_name,
         assets.quantity_of(guarded_value, ada_policy_id, ada_asset_name) <= ada_amount,
@@ -77,6 +77,9 @@ pub fn logic_merge(
   }
 }
 
+/// Multisig validation logic for governance operations.
+/// Requires both tech auth and council multisig approval (via native script minting),
+/// then validates the state update via the provided validation function.
 pub fn logic_multisig_validation_nft_input(
   transaction: Transaction,
   redeemer: Redeemer,
@@ -89,11 +92,9 @@ pub fn logic_multisig_validation_nft_input(
 
   let validation =
     fn() {
-      // (ML-0) Fetch the threshold state referenced by `main_threshold`.
       let threshold_datum =
         get_input_state_by_policy(reference_inputs, main_threshold)
 
-      // (ML-1) Decode the threshold datum to recover the configured fractions.
       expect MultisigThreshold {
         technical_auth_numerator,
         technical_auth_denominator,
@@ -101,13 +102,13 @@ pub fn logic_multisig_validation_nft_input(
         council_denominator,
       } = threshold_datum
 
-      // (ML-2) Require the transaction to preserve the forever state at the script address.
+      // Forever state must be preserved at the script address
       let datum = get_output_state_by_policy(outputs, main_forever_script_hash)
 
       and {
-        // (ML-3) Ensure the technical-authority native script built from the datum and threshold appears in the mint field.
+        // Tech auth multisig must approve via native script minting
         check_for_multisig(
-          // Used in the case we are spending multisig state rather than referencing it
+          // Use inputs if spending this multisig, otherwise use reference inputs
           if main_forever_script_hash == config.technical_authority_forever_hash {
             inputs
           } else {
@@ -118,9 +119,9 @@ pub fn logic_multisig_validation_nft_input(
           technical_auth_numerator,
           technical_auth_denominator,
         ),
-        // (ML-4) Ensure the council native script built from the datum and threshold appears in the mint field.
+        // Council multisig must approve via native script minting
         check_for_multisig(
-          // Used in the case we are spending multisig state rather than referencing it
+          // Use inputs if spending this multisig, otherwise use reference inputs
           if main_forever_script_hash == config.council_forever_hash {
             inputs
           } else {
@@ -131,7 +132,6 @@ pub fn logic_multisig_validation_nft_input(
           council_numerator,
           council_denominator,
         ),
-        // (ML-5) Enforce the multisig signer constraints defined by MS-1, MS-2, MS-3, and MS-4.
         logic_state_validation(datum, redeemer),
       }
     }

@@ -147,7 +147,6 @@ describe("Change Auth Member", () => {
             ),
         );
 
-        // Add the created threshold UTxO to emulator
         emulator.addUtxo(
           TransactionUnspentOutput.fromCore([
             {
@@ -308,7 +307,6 @@ describe("Change Auth Member", () => {
             ),
         );
 
-        // Add the created tech auth UTxOs to emulator
         emulator.addUtxo(
           TransactionUnspentOutput.fromCore([
             {
@@ -495,7 +493,6 @@ describe("Change Auth Member", () => {
             ),
         );
 
-        // Add the created council UTxOs to emulator
         emulator.addUtxo(
           TransactionUnspentOutput.fromCore([
             {
@@ -546,7 +543,7 @@ describe("Change Auth Member", () => {
             }).toCore(),
             NetworkId.Testnet,
           );
-          emulator.accounts.set(techAuthLogicRewardAccount, 0n);
+          emulator.accounts.set(techAuthLogicRewardAccount, { balance: 0n });
 
           // Create new multisig state with changed member
           // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
@@ -1138,7 +1135,6 @@ describe("Change Auth Member", () => {
             ),
         );
 
-        // Add the created tech auth and council UTxOs to emulator
         emulator.addUtxo(
           TransactionUnspentOutput.fromCore([
             {
@@ -1267,7 +1263,7 @@ describe("Change Auth Member", () => {
             }).toCore(),
             NetworkId.Testnet,
           );
-          emulator.accounts.set(councilLogicRewardAccount, 0n);
+          emulator.accounts.set(councilLogicRewardAccount, { balance: 0n });
 
           // Create new multisig state with changed member
           // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]

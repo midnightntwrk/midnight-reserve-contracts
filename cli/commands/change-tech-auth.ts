@@ -30,7 +30,6 @@ import {
 import {
   printSuccess,
   printError,
-  printProgress,
   writeTransactionFile,
 } from "../utils/output";
 import {
@@ -55,9 +54,8 @@ export async function changeTechAuth(
 
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
-  const contracts = getContractInstances();
+  const contracts = getContractInstances(network);
 
-  // Create addresses
   const techAuthForeverAddress = getCredentialAddress(
     network,
     contracts.techAuthForever.Script.hash(),
@@ -80,11 +78,7 @@ export async function changeTechAuth(
     techAuthForeverAddress.toBech32(),
   );
 
-  // Create provider and fetch UTxOs
   const { blaze, provider } = await createBlaze(network, options.provider);
-
-  printProgress("Fetching contract UTxOs...");
-
   const techAuthForeverUtxos = await provider.getUnspentOutputs(
     techAuthForeverAddress,
   );
@@ -124,7 +118,6 @@ export async function changeTechAuth(
     );
   }
 
-  // Parse the tech auth two-stage UpgradeState datum
   console.log("\nReading tech auth two-stage upgrade state...");
   const techAuthTwoStageDatum = techAuthTwoStageUtxo.output().datum();
   if (!techAuthTwoStageDatum?.asInlineData()) {
@@ -139,7 +132,7 @@ export async function changeTechAuth(
   console.log("  Logic hash:", logicHash);
   console.log("  Mitigation logic hash:", mitigationLogicHash || "(empty)");
 
-  const logicScript = findScriptByHash(logicHash);
+  const logicScript = findScriptByHash(logicHash, network);
   if (!logicScript) {
     throw new Error(
       `Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.techAuthLogic.Script.hash()}`,
@@ -148,7 +141,7 @@ export async function changeTechAuth(
 
   let mitigationLogicScript: Script | null = null;
   if (mitigationLogicHash && mitigationLogicHash !== "") {
-    mitigationLogicScript = findScriptByHash(mitigationLogicHash);
+    mitigationLogicScript = findScriptByHash(mitigationLogicHash, network);
     if (!mitigationLogicScript) {
       throw new Error(
         `Unknown mitigation logic script hash in UpgradeState: ${mitigationLogicHash}`,
@@ -156,7 +149,6 @@ export async function changeTechAuth(
     }
   }
 
-  // Parse current tech auth state
   console.log("\nCurrent tech auth forever datum:");
   const currentDatum = techAuthForeverUtxo.output().datum();
   if (!currentDatum?.asInlineData()) {
@@ -198,7 +190,6 @@ export async function changeTechAuth(
     throw new Error("No council signers found in council forever datum");
   }
 
-  // Parse new tech auth signers
   const newTechAuthSigners = parseSigners("TECH_AUTH_SIGNERS");
   // Use CBOR functions that preserve duplicate keys
   // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
@@ -214,9 +205,36 @@ export async function changeTechAuth(
     new Set(newTechAuthSigners.map((s) => s.paymentHash)).size,
   );
 
-  // Create native scripts for multisig validation
-  const requiredSigners = 2;
-  const councilRequiredSigners = 2;
+  // Read threshold datum from tech auth threshold UTxO
+  console.log("\nReading tech auth update threshold...");
+  const thresholdDatum = techAuthThresholdUtxo.output().datum();
+  if (!thresholdDatum?.asInlineData()) {
+    throw new Error("Tech auth update threshold UTxO missing inline datum");
+  }
+  const thresholdState = parse(
+    Contracts.MultisigThreshold,
+    thresholdDatum.asInlineData()!,
+  );
+
+  // Calculate required signers based on threshold
+  // MultisigThreshold is a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
+  const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
+  const requiredSigners = Number(
+    (BigInt(currentTechAuthSigners.length) * techAuthNum +
+      (techAuthDenom - 1n)) /
+      techAuthDenom,
+  );
+  const councilRequiredSigners = Number(
+    (BigInt(currentCouncilSigners.length) * councilNum + (councilDenom - 1n)) /
+      councilDenom,
+  );
+
+  console.log(
+    `\nRequired tech auth signers: ${requiredSigners}/${currentTechAuthSigners.length}`,
+  );
+  console.log(
+    `Required council signers: ${councilRequiredSigners}/${currentCouncilSigners.length}`,
+  );
 
   const nativeScriptCouncil = createNativeMultisigScript(
     councilRequiredSigners,
@@ -233,7 +251,6 @@ export async function changeTechAuth(
   const councilPolicyId = PolicyId(nativeScriptCouncil.hash());
   const techAuthPolicyId = PolicyId(nativeScriptTechAuth.hash());
 
-  // Create reward accounts for logic scripts from the UpgradeState
   const logicRewardAccount = createRewardAccount(logicHash, networkId);
   console.log("\nLogic reward account:", logicRewardAccount);
 
@@ -251,8 +268,6 @@ export async function changeTechAuth(
     );
   }
 
-  // Fetch user UTxO
-  printProgress("Fetching user UTXO...");
   const changeAddress = Address.fromBech32(deployerAddress);
   const deployerUtxos = await provider.getUnspentOutputs(changeAddress);
   const userUtxo = findUtxoByTxRef(deployerUtxos, txHash, txIndex);
@@ -260,10 +275,6 @@ export async function changeTechAuth(
   if (!userUtxo) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
-
-  // Build transaction
-  printProgress("Building transaction...");
-
   try {
     const txBuilder = blaze
       .newTransaction()
@@ -303,7 +314,6 @@ export async function changeTechAuth(
         .provideScript(mitigationLogicScript);
     }
 
-    printProgress("Completing transaction (with evaluation)...");
     const tx = await txBuilder.complete();
 
     printSuccess(`Transaction built: ${tx.getId()}`);
@@ -328,10 +338,22 @@ export async function changeTechAuth(
       }
 
       const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
-      writeTransactionFile(outputPath, signedTx.toCbor(), tx.getId(), true);
+      writeTransactionFile(
+        outputPath,
+        signedTx.toCbor(),
+        tx.getId(),
+        true,
+        "Change Technical Authority Transaction",
+      );
       printSuccess(`Signed transaction written to ${outputPath}`);
     } else {
-      writeTransactionFile(outputPath, tx.toCbor(), tx.getId(), false);
+      writeTransactionFile(
+        outputPath,
+        tx.toCbor(),
+        tx.getId(),
+        false,
+        "Change Technical Authority Transaction",
+      );
       printSuccess(`Unsigned transaction written to ${outputPath}`);
     }
 

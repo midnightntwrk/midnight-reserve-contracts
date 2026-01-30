@@ -330,11 +330,11 @@ describe("Basic Deploy", () => {
           0n,
         ];
 
-        // FederatedOps datum: [Unit, List<PermissionedCandidateDatumV1>, version]
+        // FederatedOps datum: [Unit, List<PermissionedCandidateDatumV1>, logic_round]
         const federatedOpsForeverState: Contracts.FederatedOps = [
           PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }), // Unit
           [], // Empty appendix (no permissioned candidates for this test)
-          0n, // version
+          1n, // logic_round
         ];
 
         await emulator.expectValidTransaction(

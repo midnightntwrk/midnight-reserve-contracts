@@ -63,7 +63,6 @@ describe("CNIGHT Generate Dust", () => {
         dust_address: mockDustAddress,
       };
 
-      // Mint 1 nft and create output UTxO
       await emulator.expectValidTransaction(
         blaze,
         blaze
@@ -197,7 +196,7 @@ describe("CNIGHT Generate Dust", () => {
         }).toCore(),
         NetworkId.Testnet,
       );
-      emulator.accounts.set(dustGeneratorRewardAccount, 0n);
+      emulator.accounts.set(dustGeneratorRewardAccount, { balance: 0n });
 
       // Update both UTxOs using withdraw mechanism
       const updatedDustAddress1 =

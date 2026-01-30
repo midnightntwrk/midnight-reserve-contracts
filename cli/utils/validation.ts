@@ -1,5 +1,11 @@
 import type { Network, ProviderType } from "../lib/types";
+import { isKnownEnvironment } from "../lib/network-mapping";
 
+/**
+ * Core Cardano networks that map 1:1 with the Network type.
+ * Additional environments (qanet, devnet-*, etc.) are also accepted
+ * and map to these networks via getCardanoNetwork().
+ */
 export const VALID_NETWORKS: Network[] = [
   "local",
   "preview",
@@ -10,6 +16,7 @@ export const VALID_PROVIDERS: ProviderType[] = [
   "blockfrost",
   "maestro",
   "emulator",
+  "kupmios",
 ];
 export const VALID_COMPONENTS = [
   "tech-auth",
@@ -38,13 +45,55 @@ export const VALID_TWO_STAGE_VALIDATORS = [
 
 export type TwoStageValidator = (typeof VALID_TWO_STAGE_VALIDATORS)[number];
 
-export function validateNetwork(network: string): Network {
-  if (!VALID_NETWORKS.includes(network as Network)) {
-    throw new Error(
-      `Invalid network '${network}'. Must be one of: ${VALID_NETWORKS.join(", ")}`,
-    );
+export const VALID_TRANSACTION_NAMES = [
+  "technical-authority-deployment",
+  "tech-auth-update-threshold-deployment",
+  "council-deployment",
+  "council-update-threshold-deployment",
+  "reserve-deployment",
+  "ics-deployment",
+  "main-gov-threshold-deployment",
+  "staging-gov-threshold-deployment",
+  "federated-ops-deployment",
+  "federated-ops-update-threshold-deployment",
+  "terms-and-conditions-deployment",
+  "terms-and-conditions-threshold-deployment",
+] as const;
+
+export type TransactionName = (typeof VALID_TRANSACTION_NAMES)[number];
+
+/**
+ * Validates the network/environment parameter.
+ *
+ * Accepts both core network names (local, preview, preprod, mainnet) and
+ * extended environment names (qanet, devnet-*, node-dev-*). Unknown
+ * environments trigger a warning but are still accepted.
+ *
+ * The original environment name is preserved so that config loading can
+ * use environment-specific sections (e.g., [config.qanet]).
+ *
+ * @param environment - The network or environment name to validate
+ * @returns The validated environment name (preserves original for config lookup)
+ */
+export function validateNetwork(environment: string): string {
+  // First, check if it's a known core network
+  if (VALID_NETWORKS.includes(environment as Network)) {
+    return environment;
   }
-  return network as Network;
+
+  // Check if it's a known extended environment
+  if (isKnownEnvironment(environment)) {
+    // Preserve the original environment name for config loading
+    return environment;
+  }
+
+  // Unknown environment - warn but accept (will default to local/emulator)
+  console.warn(
+    `Warning: Unknown environment '${environment}'. ` +
+      `Known values: ${VALID_NETWORKS.join(", ")}, qanet, govnet, devnet-*, node-dev-*. ` +
+      `Defaulting to local/emulator.`,
+  );
+  return "local";
 }
 
 export function validateProvider(provider: string): ProviderType {
@@ -86,6 +135,15 @@ export function validateComponents(components: string[]): string[] {
     }
   }
   return components;
+}
+
+export function validateTransactionName(name: string): TransactionName {
+  if (!VALID_TRANSACTION_NAMES.includes(name as TransactionName)) {
+    throw new Error(
+      `Invalid transaction name '${name}'. Must be one of:\n  ${VALID_TRANSACTION_NAMES.join("\n  ")}`,
+    );
+  }
+  return name as TransactionName;
 }
 
 export function parseThreshold(thresholdStr: string): {

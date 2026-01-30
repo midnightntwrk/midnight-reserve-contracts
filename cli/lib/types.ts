@@ -1,10 +1,23 @@
 import { NetworkId } from "@blaze-cardano/core";
+import {
+  getCardanoNetwork as _getCardanoNetwork,
+  getNetworkIdFromEnvironment,
+  getAikenConfigSection as _getAikenConfigSection,
+} from "./network-mapping";
 
+// Re-export for convenience
+export { getCardanoNetwork, getAikenConfigSection } from "./network-mapping";
+
+/**
+ * Legacy network type for backward compatibility.
+ * Use string environment names for new code - they map to Cardano networks via getCardanoNetwork().
+ */
 export type Network = "local" | "preview" | "preprod" | "mainnet";
-export type ProviderType = "blockfrost" | "maestro" | "emulator";
+export type ProviderType = "blockfrost" | "maestro" | "emulator" | "kupmios";
 
 export interface GlobalOptions {
-  network: Network;
+  /** Environment name (e.g., "preview", "qanet", "govnet", "node-dev-01", "preprod", "mainnet") */
+  network: string;
   output: string;
   provider: ProviderType;
   dryRun: boolean;
@@ -12,13 +25,12 @@ export interface GlobalOptions {
 
 export interface DeployOptions extends GlobalOptions {
   utxoAmount: bigint;
-  outputAmount: bigint;
-  thresholdOutputAmount: bigint;
   techAuthThreshold: { numerator: bigint; denominator: bigint };
   councilThreshold: { numerator: bigint; denominator: bigint };
   councilStagingThreshold: { numerator: bigint; denominator: bigint };
   techAuthStagingThreshold: { numerator: bigint; denominator: bigint };
   components: string[];
+  name?: string;
 }
 
 export interface ChangeAuthOptions extends GlobalOptions {
@@ -66,13 +78,29 @@ export interface RegisterGovAuthOptions extends GlobalOptions {
 }
 
 export interface GenerateKeyOptions {
-  network: Network;
+  /** Environment name */
+  network: string;
 }
 
 export interface SignAndSubmitOptions {
-  network: Network;
+  /** Environment name */
+  network: string;
   provider: ProviderType;
   jsonFile: string;
+  signingKeyEnvVar: string;
+  /** Whether to sign with the deployer key (default: true) */
+  signDeployer: boolean;
+}
+
+export interface CombineSignaturesOptions {
+  /** Environment name */
+  network: string;
+  provider: ProviderType;
+  txFile: string;
+  witnessFiles: string[];
+  /** Whether to also sign with the deployer key (default: true) */
+  signDeployer: boolean;
+  /** Environment variable name for the deployer signing key */
   signingKeyEnvVar: string;
 }
 
@@ -121,15 +149,15 @@ export interface NetworkConfig {
 }
 
 export interface TransactionOutput {
-  name: string;
-  cbor: string;
-  hash: string;
-}
-
-export interface TransactionFileOutput {
-  cbor: string;
+  type: string;
+  description: string;
+  cborHex: string;
   txHash: string;
   signed: boolean;
+}
+
+export interface DeploymentTransactionsJson {
+  transactions: TransactionOutput[];
 }
 
 export interface DeploymentOutput {
@@ -137,20 +165,31 @@ export interface DeploymentOutput {
   timestamp: string;
   config: {
     utxoAmount: string;
-    outputAmount: string;
-    thresholdOutputAmount: string;
   };
   transactions: TransactionOutput[];
 }
 
-export function getNetworkId(network: Network): NetworkId {
-  return network === "mainnet" ? NetworkId.Mainnet : NetworkId.Testnet;
+/**
+ * Gets the Blaze NetworkId for the given network/environment.
+ * Delegates to getNetworkIdFromEnvironment for consistent mapping.
+ */
+export function getNetworkId(network: Network | string): NetworkId {
+  return getNetworkIdFromEnvironment(network);
 }
 
-export function getDefaultProvider(network: Network): ProviderType {
-  return network === "local" ? "emulator" : "blockfrost";
+/**
+ * Gets the default provider for the given network/environment.
+ * Returns "emulator" for local environments, "blockfrost" for real networks.
+ */
+export function getDefaultProvider(network: Network | string): ProviderType {
+  const cardanoNetwork = _getCardanoNetwork(network);
+  return cardanoNetwork === null ? "emulator" : "blockfrost";
 }
 
-export function getConfigSection(network: Network): string {
-  return network === "local" ? "default" : network;
+/**
+ * Gets the aiken.toml config section for the given network/environment.
+ * Delegates to getAikenConfigSection for consistent mapping.
+ */
+export function getConfigSection(network: Network | string): string {
+  return _getAikenConfigSection(network);
 }

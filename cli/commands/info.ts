@@ -12,9 +12,11 @@ interface ContractInfo {
 export async function info(options: InfoOptions): Promise<void> {
   const { network, format, component } = options;
 
-  console.log(`\nContract Information for ${network} network\n`);
+  if (format !== "json") {
+    console.log(`\nContract Information for ${network} network\n`);
+  }
 
-  const contracts = getContractInstances();
+  const contracts = getContractInstances(network);
 
   const allContracts: ContractInfo[] = [
     // Tech Auth
@@ -219,7 +221,6 @@ export async function info(options: InfoOptions): Promise<void> {
     },
   ];
 
-  // Filter by component if specified
   const filteredContracts =
     component === "all"
       ? allContracts
@@ -228,7 +229,6 @@ export async function info(options: InfoOptions): Promise<void> {
   if (format === "json") {
     console.log(JSON.stringify(filteredContracts, null, 2));
   } else {
-    // Group by component
     const grouped = new Map<string, ContractInfo[]>();
     for (const contract of filteredContracts) {
       const existing = grouped.get(contract.component) || [];

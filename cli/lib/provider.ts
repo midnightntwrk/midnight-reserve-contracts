@@ -1,51 +1,69 @@
 import { Address } from "@blaze-cardano/core";
 import { Blaze, ColdWallet, type Provider } from "@blaze-cardano/sdk";
-import { Blockfrost, type NetworkName } from "@blaze-cardano/query";
-import { Maestro } from "@blaze-cardano/query";
+import { Blockfrost, Kupmios, type NetworkName } from "@blaze-cardano/query";
 import { Emulator } from "@blaze-cardano/emulator";
-import type { Network, ProviderType } from "./types";
-import { getNetworkId, getDefaultProvider } from "./types";
+import type { ProviderType } from "./types";
+import { Unwrapped } from "@blaze-cardano/ogmios";
+import { getNetworkId, getDefaultProvider, getCardanoNetwork } from "./types";
 import { getEnvVar, getDeployerAddress } from "./config";
 
-export function createProvider(
-  network: Network,
+export async function createProvider(
+  environment: string,
   providerType?: ProviderType,
-): Provider {
-  const type = providerType || getDefaultProvider(network);
+): Promise<Provider> {
+  const type = providerType || getDefaultProvider(environment);
 
   switch (type) {
     case "emulator":
       return new Emulator([]) as unknown as Provider;
 
     case "blockfrost": {
-      const apiKeyVar = `BLOCKFROST_${network.toUpperCase()}_API_KEY`;
+      // Use getCardanoNetwork to properly map environment to Cardano network
+      const cardanoNetwork = getCardanoNetwork(environment);
+
+      if (cardanoNetwork === null) {
+        throw new Error(
+          `Blockfrost provider requires a real Cardano network (preview/preprod/mainnet). ` +
+            `Environment '${environment}' maps to local/emulator. Use --provider emulator instead.`,
+        );
+      }
+
+      // Determine API key based on Cardano network (not environment name)
+      // This allows qanet, devnet-*, etc. to use the preview API key
+      const apiKeyVar = `BLOCKFROST_${cardanoNetwork.toUpperCase()}_API_KEY`;
       const apiKey = getEnvVar(apiKeyVar);
 
-      const networkNameMap: Record<Network, NetworkName> = {
-        local: "cardano-preview", // fallback for local
+      const networkNameMap: Record<string, NetworkName> = {
         preview: "cardano-preview",
         preprod: "cardano-preprod",
         mainnet: "cardano-mainnet",
       };
 
       return new Blockfrost({
-        network: networkNameMap[network],
+        network: networkNameMap[cardanoNetwork],
         projectId: apiKey,
       });
     }
 
     case "maestro": {
-      const apiKeyVar = `MAESTRO_${network.toUpperCase()}_API_KEY`;
-      const apiKey = getEnvVar(apiKeyVar);
+      // Maestro provider is currently not exported from @blaze-cardano/query
+      // See: https://github.com/butaneprotocol/blaze-cardano - maestro.ts exists but export is commented out
+      throw new Error(
+        "Maestro provider is not currently available in @blaze-cardano/query. " +
+          "Please use --provider blockfrost or --provider kupmios instead.",
+      );
+    }
 
-      if (network === "local") {
-        throw new Error("Maestro provider does not support local network");
+    case "kupmios": {
+      const kupoUrl = getEnvVar("KUPO_URL");
+      const ogmiosUrl = getEnvVar("OGMIOS_URL");
+      if (!kupoUrl || !ogmiosUrl) {
+        throw new Error(
+          "Both KUPO_URL and OGMIOS_URL environment variables must be set for kupmios provider",
+        );
       }
-
-      return new Maestro({
-        network: network,
-        apiKey: apiKey,
-      });
+      const ogmios = await Unwrapped.Ogmios.new(ogmiosUrl);
+      return new Kupmios(kupoUrl, ogmios);
     }
 
     default:
@@ -54,11 +72,11 @@ export function createProvider(
 }
 
 export async function createBlaze(
-  network: Network,
+  environment: string,
   providerType?: ProviderType,
 ): Promise<{ blaze: Blaze<Provider, ColdWallet>; provider: Provider }> {
-  const provider = createProvider(network, providerType);
-  const networkId = getNetworkId(network);
+  const provider = await createProvider(environment, providerType);
+  const networkId = getNetworkId(environment);
   const deployerAddress = getDeployerAddress();
   const address = Address.fromBech32(deployerAddress);
   const wallet = new ColdWallet(address, networkId, provider);

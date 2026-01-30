@@ -1,10 +1,6 @@
 import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { dirname } from "path";
-import type {
-  DeploymentOutput,
-  TransactionOutput,
-  TransactionFileOutput,
-} from "../lib/types";
+import type { DeploymentOutput, TransactionOutput } from "../lib/types";
 
 export function ensureDirectory(dirPath: string): void {
   if (!existsSync(dirPath)) {
@@ -17,13 +13,22 @@ export function writeJsonFile(filePath: string, data: unknown): void {
   writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
+export const TX_TYPE_CONWAY = "Tx ConwayEra";
+
 export function writeTransactionFile(
   filePath: string,
   cbor: string,
   txHash: string,
   signed: boolean,
+  description: string,
 ): void {
-  const output: TransactionFileOutput = { cbor, txHash, signed };
+  const output: TransactionOutput = {
+    type: TX_TYPE_CONWAY,
+    description,
+    cborHex: cbor,
+    txHash,
+    signed,
+  };
   writeJsonFile(filePath, output);
 }
 
@@ -31,8 +36,6 @@ export function createDeploymentOutput(
   network: string,
   config: {
     utxoAmount: bigint;
-    outputAmount: bigint;
-    thresholdOutputAmount: bigint;
   },
   transactions: TransactionOutput[],
 ): DeploymentOutput {
@@ -41,8 +44,6 @@ export function createDeploymentOutput(
     timestamp: new Date().toISOString(),
     config: {
       utxoAmount: config.utxoAmount.toString(),
-      outputAmount: config.outputAmount.toString(),
-      thresholdOutputAmount: config.thresholdOutputAmount.toString(),
     },
     transactions,
   };
@@ -93,8 +94,8 @@ export function printTransactionSummary(
 ): void {
   console.log(`\nTransaction Summary:`);
   transactions.forEach((tx, index) => {
-    console.log(`${index + 1}. ${tx.name}`);
-    console.log(`   Hash: ${tx.hash}`);
+    console.log(`${index + 1}. ${tx.description}`);
+    console.log(`   Hash: ${tx.txHash}`);
     console.log(``);
   });
 }

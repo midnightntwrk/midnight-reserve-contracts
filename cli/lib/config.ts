@@ -1,15 +1,15 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import * as toml from "toml";
-import type { Network, NetworkConfig } from "./types";
+import type { NetworkConfig } from "./types";
 import { getConfigSection } from "./types";
 
-export function loadAikenConfig(network: Network): NetworkConfig {
+export function loadAikenConfig(environment: string): NetworkConfig {
   const aikenTomlPath = resolve(process.cwd(), "aiken.toml");
   const aikenToml = readFileSync(aikenTomlPath, "utf-8");
   const parsedToml = toml.parse(aikenToml);
 
-  const configSection = getConfigSection(network);
+  const configSection = getConfigSection(environment);
   const networkConfig = parsedToml.config[configSection];
 
   if (!networkConfig) {
@@ -58,7 +58,7 @@ export function loadAikenConfig(network: Network): NetworkConfig {
     terms_and_conditions_threshold_one_shot_index:
       networkConfig.terms_and_conditions_threshold_one_shot_index,
     collateral_utxo_hash: networkConfig.collateral_utxo_hash?.bytes ?? "",
-    collateral_utxo_index: networkConfig.collateral_utxo_index ?? 14,
+    collateral_utxo_index: networkConfig.collateral_utxo_index ?? 15,
     cnight_policy: networkConfig.cnight_policy.bytes,
     cnight_name: networkConfig.cnight_name,
   };
@@ -84,16 +84,6 @@ export function getDeployerAddress(): string {
 export function getDeployUtxoAmount(): bigint {
   const value = process.env.DEPLOY_UTXO_AMOUNT;
   return value ? BigInt(value) : 20_000_000n;
-}
-
-export function getDeployOutputAmount(): bigint {
-  const value = process.env.DEPLOY_OUTPUT_AMOUNT;
-  return value ? BigInt(value) : 1_000_000n;
-}
-
-export function getDeployThresholdOutputAmount(): bigint {
-  const value = process.env.DEPLOY_THRESHOLD_OUTPUT_AMOUNT;
-  return value ? BigInt(value) : 1_000_000n;
 }
 
 export interface Threshold {

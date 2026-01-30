@@ -11,13 +11,12 @@ import type {
   RegisterGovAuthOptions,
   GenerateKeyOptions,
   SignAndSubmitOptions,
+  CombineSignaturesOptions,
   MintTcnightOptions,
 } from "./lib/types";
 import { getDefaultProvider } from "./lib/types";
 import {
   getDeployUtxoAmount,
-  getDeployOutputAmount,
-  getDeployThresholdOutputAmount,
   getTechAuthThreshold,
   getCouncilThreshold,
   getCouncilStagingThreshold,
@@ -33,18 +32,21 @@ import {
   validateComponents,
   validateTwoStageValidator,
   validateScriptHash,
+  validateTransactionName,
   parseThreshold,
   parseAmount,
   VALID_NETWORKS,
   VALID_PROVIDERS,
   VALID_COMPONENTS,
   VALID_TWO_STAGE_VALIDATORS,
+  VALID_TRANSACTION_NAMES,
 } from "./utils/validation";
 import { printError } from "./utils/output";
 import {
   deploy,
   changeCouncil,
   changeTechAuth,
+  changeFederatedOps,
   simpleTx,
   info,
   stageUpgrade,
@@ -52,6 +54,7 @@ import {
   registerGovAuth,
   generateKey,
   signAndSubmit,
+  combineSignatures,
   mintTcnight,
 } from "./commands";
 
@@ -65,6 +68,7 @@ Commands:
   deploy              Generate deployment transactions
   change-council      Update council multisig members
   change-tech-auth    Update tech auth multisig members
+  change-federated-ops  Update federated ops members
   stage-upgrade       Stage a new logic hash for a two-stage upgrade validator
   promote-upgrade     Promote staged logic to main for a two-stage upgrade validator
   register-gov-auth   Register main and staging gov auth scripts as stake credentials
@@ -73,6 +77,7 @@ Commands:
   info                Display contract information
   generate-key        Generate a new signing key and Cardano address
   sign-and-submit     Sign and submit transactions from a JSON file
+  combine-signatures  Combine wallet signatures and submit transactions
 
 Run 'bun cli <command> --help' for more information on a command.
 `);
@@ -96,20 +101,24 @@ Generate deployment transactions for reserve contracts.
 
 Options:
   --utxo-amount                Lovelace for input UTxO (default: 20000000)
-  --output-amount              Lovelace for contract outputs (default: 1000000)
-  --threshold-output-amount    Lovelace for threshold outputs (default: 1000000)
   --tech-auth-threshold        Tech auth threshold e.g. "2/3" (default: 2/3)
   --council-threshold          Council threshold e.g. "2/3" (default: 2/3)
   --council-staging-threshold  Council staging threshold e.g. "0/1" (default: 0/1)
   --tech-auth-staging-threshold  Tech auth staging threshold e.g. "1/2" (default: 1/2)
   --components                 Components to deploy (comma-separated, default: all)
                                Options: ${VALID_COMPONENTS.join(", ")}
+  --name                       Deploy a single transaction by name. If deployment file
+                               exists, updates only that transaction; otherwise creates
+                               new file with just that transaction.
+                               Names: ${VALID_TRANSACTION_NAMES.slice(0, 4).join(", ")}...
+                               (run with invalid name to see full list)
 `);
   printGlobalOptions();
   console.log(`Examples:
   bun cli deploy -n local
   bun cli deploy -n preview --utxo-amount 50000000
   bun cli deploy -n preview --components tech-auth,council
+  bun cli deploy -n preview --name council-deployment
 `);
 }
 
@@ -156,6 +165,32 @@ Options:
   console.log(`Examples:
   bun cli change-tech-auth -n preview abc123...def 5
   bun cli change-tech-auth -n preview abc123...def 5 --no-sign
+`);
+}
+
+function printChangeFederatedOpsHelp(): void {
+  console.log(`
+Usage: bun cli change-federated-ops [options] <tx_hash> <tx_index>
+
+Update federated ops members. Requires both council and tech auth authorization.
+
+Arguments:
+  <tx_hash>           Transaction hash of input UTxO
+  <tx_index>          Output index of input UTxO
+
+Options:
+  --utxo-amount       Override input UTxO amount
+  --sign              Sign transaction (default: true)
+  --no-sign           Do not sign transaction
+  --output-file       Output file name (default: change-federated-ops-tx.json)
+
+Environment variables:
+  PERMISSIONED_CANDIDATES   New federated ops member candidates (required)
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli change-federated-ops -n preview abc123...def 5
+  bun cli change-federated-ops -n preview abc123...def 5 --no-sign
 `);
 }
 
@@ -287,11 +322,89 @@ Arguments:
 Options:
   --signing-key       Environment variable name containing the signing key
                       (default: SIGNING_PRIVATE_KEY)
+  --sign-deployer     Sign with deployer key (default: true)
+  --no-sign-deployer  Submit without deployer signature
 `);
   printGlobalOptions();
   console.log(`Examples:
   bun cli sign-and-submit -n preview ./deployments/preview/simple-tx.json
   bun cli sign-and-submit -n preview --signing-key MY_KEY ./tx.json
+  bun cli sign-and-submit -n preview --no-sign-deployer ./already-signed.json
+`);
+}
+
+function printCombineSignaturesHelp(): void {
+  console.log(`
+Usage: bun cli combine-signatures [options] --tx <tx_file> --signatures <file1> [file2] [file3] ...
+
+Combine signatures from multiple witness files and submit transactions.
+Unlike sign-and-submit (which signs with env var keys), this command takes
+witness files from offline signers (cardano-cli) or browser wallets (CIP-30)
+and merges them into transactions.
+
+Options:
+  --tx                Path to transaction file (required)
+  --signatures        Path(s) to witness files (required, variadic)
+                      Supports multiple formats:
+                      - cardano-cli TextEnvelope format (*.witness.json)
+                      - CIP-30 wallet TransactionWitnessSet (raw CBOR hex)
+  --signing-key       Environment variable name containing the deployer key
+                      (default: SIGNING_PRIVATE_KEY)
+  --sign-deployer     Also sign with deployer key after merging (default: true)
+  --no-sign-deployer  Only merge witness signatures, don't add deployer signature
+
+Witness File Formats:
+
+  1. cardano-cli TextEnvelope (recommended for offline signing):
+     {
+       "type": "TxWitness ConwayEra",
+       "description": "Key Witness ShelleyEra",
+       "cborHex": "82008258207672757a...58409ac7228f..."
+     }
+
+  2. CIP-30 wallet (TransactionWitnessSet CBOR hex):
+     a10081825820<vkey>5840<sig>
+
+     Or legacy JSON format (deprecated):
+     {
+       "alice": "a10081825820...",
+       "bob": "a10081825820..."
+     }
+
+Key Features:
+  - Accepts multiple independent witness files
+  - Automatically detects witness format
+  - Preserves any existing signatures in the transaction
+  - Validates no conflicting signatures for the same key
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+
+  # Single cardano-cli witness file
+  bun cli combine-signatures -n preview \\
+    --tx ./tx.json \\
+    --signatures ./witness1.json
+
+  # Multiple witness files (variadic syntax)
+  bun cli combine-signatures -n preview \\
+    --tx ./tx.json \\
+    --signatures ./alice-witness.json ./bob-witness.json ./carol-witness.json
+
+  # Mixed formats (cardano-cli + wallet)
+  bun cli combine-signatures -n preview \\
+    --tx ./tx.json \\
+    --signatures ./cardano-cli-witness.json ./wallet-witness.cbor
+
+  # Without deployer signature
+  bun cli combine-signatures -n preview \\
+    --tx ./tx.json \\
+    --signatures ./witness1.json ./witness2.json \\
+    --no-sign-deployer
+
+  # Add signatures to a partially signed transaction
+  bun cli combine-signatures -n preview \\
+    --tx ./partially-signed-tx.json \\
+    --signatures ./additional-witness.json
 `);
 }
 
@@ -320,11 +433,11 @@ Options:
 
 function parseArgs(args: string[]): {
   command: string;
-  options: Record<string, string | boolean>;
+  options: Record<string, string | boolean | string[]>;
   positional: string[];
 } {
   const command = args[0] || "";
-  const options: Record<string, string | boolean> = {};
+  const options: Record<string, string | boolean | string[]> = {};
   const positional: string[] = [];
 
   let i = 1;
@@ -338,6 +451,19 @@ function parseArgs(args: string[]): {
       if (key.startsWith("no-")) {
         options[key.slice(3)] = false;
         i++;
+        continue;
+      }
+
+      // Special handling for --signatures to collect multiple values
+      if (key === "signatures") {
+        const values: string[] = [];
+        i++;
+        while (i < args.length && !args[i].startsWith("-")) {
+          values.push(args[i]);
+          i++;
+        }
+        options[key] =
+          values.length > 0 ? (values.length === 1 ? values[0] : values) : true;
         continue;
       }
 
@@ -416,12 +542,6 @@ async function main(): Promise<void> {
           utxoAmount: options["utxo-amount"]
             ? parseAmount(options["utxo-amount"] as string)
             : getDeployUtxoAmount(),
-          outputAmount: options["output-amount"]
-            ? parseAmount(options["output-amount"] as string)
-            : getDeployOutputAmount(),
-          thresholdOutputAmount: options["threshold-output-amount"]
-            ? parseAmount(options["threshold-output-amount"] as string)
-            : getDeployThresholdOutputAmount(),
           techAuthThreshold: options["tech-auth-threshold"]
             ? parseThreshold(options["tech-auth-threshold"] as string)
             : getTechAuthThreshold(),
@@ -437,6 +557,9 @@ async function main(): Promise<void> {
           components: options.components
             ? validateComponents((options.components as string).split(","))
             : [],
+          name: options.name
+            ? validateTransactionName(options.name as string)
+            : undefined,
         };
 
         await deploy(deployOptions);
@@ -514,6 +637,44 @@ async function main(): Promise<void> {
         };
 
         await changeTechAuth(changeOptions);
+        break;
+      }
+
+      case "change-federated-ops": {
+        if (options.help) {
+          printChangeFederatedOpsHelp();
+          process.exit(0);
+        }
+
+        if (positional.length < 2) {
+          printError("Missing required arguments: <tx_hash> <tx_index>");
+          printChangeFederatedOpsHelp();
+          process.exit(1);
+        }
+
+        const txHash = positional[0];
+        const txIndex = parseInt(positional[1], 10);
+
+        validateTxHash(txHash);
+        validateTxIndex(txIndex);
+
+        const changeOptions: ChangeAuthOptions = {
+          network,
+          output,
+          provider,
+          dryRun,
+          txHash,
+          txIndex,
+          utxoAmount: options["utxo-amount"]
+            ? parseAmount(options["utxo-amount"] as string)
+            : undefined,
+          sign: options.sign !== false,
+          outputFile:
+            (options["output-file"] as string) ||
+            "change-federated-ops-tx.json",
+        };
+
+        await changeFederatedOps(changeOptions);
         break;
       }
 
@@ -689,7 +850,7 @@ async function main(): Promise<void> {
         }
 
         const generateKeyOptions: GenerateKeyOptions = {
-          network: network || "preview",
+          network,
         };
 
         await generateKey(generateKeyOptions);
@@ -716,9 +877,50 @@ async function main(): Promise<void> {
           jsonFile,
           signingKeyEnvVar:
             (options["signing-key"] as string) || "SIGNING_PRIVATE_KEY",
+          signDeployer: options["sign-deployer"] !== false,
         };
 
         await signAndSubmit(signAndSubmitOptions);
+        break;
+      }
+
+      case "combine-signatures": {
+        if (options.help) {
+          printCombineSignaturesHelp();
+          process.exit(0);
+        }
+
+        const txFile = options.tx as string | undefined;
+        if (!txFile) {
+          printError("Missing required option: --tx");
+          printCombineSignaturesHelp();
+          process.exit(1);
+        }
+
+        const signaturesArg = options.signatures;
+        let witnessFiles: string[] = [];
+
+        if (typeof signaturesArg === "string") {
+          witnessFiles = [signaturesArg];
+        } else if (Array.isArray(signaturesArg)) {
+          witnessFiles = signaturesArg;
+        } else {
+          printError("Missing required option: --signatures");
+          printCombineSignaturesHelp();
+          process.exit(1);
+        }
+
+        const combineSignaturesOptions: CombineSignaturesOptions = {
+          network,
+          provider,
+          txFile,
+          witnessFiles,
+          signDeployer: options["sign-deployer"] !== false,
+          signingKeyEnvVar:
+            (options["signing-key"] as string) || "SIGNING_PRIVATE_KEY",
+        };
+
+        await combineSignatures(combineSignaturesOptions);
         break;
       }
 
@@ -772,6 +974,9 @@ async function main(): Promise<void> {
     }
     process.exit(1);
   }
+
+  // Exit successfully after command completion
+  process.exit(0);
 }
 
 main();

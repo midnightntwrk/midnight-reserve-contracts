@@ -68,7 +68,7 @@ describe("Stage upgrade for tech-auth (CLI reproduction)", () => {
       }).toCore(),
       NetworkId.Testnet,
     );
-    emulator.accounts.set(govAuthRewardAccount, 0n);
+    emulator.accounts.set(govAuthRewardAccount, { balance: 0n });
 
     const twoStageAddress = addressFromValidator(
       NetworkId.Testnet,
@@ -353,7 +353,6 @@ describe("Stage upgrade for tech-auth (CLI reproduction)", () => {
         },
       ]);
 
-      // New staging state with updated logic and incremented round
       const newStagingState: Contracts.UpgradeState = [
         newLogicHash,
         currentStagingState[1], // keep mitigation_logic
