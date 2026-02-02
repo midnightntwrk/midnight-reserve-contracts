@@ -408,67 +408,67 @@ cnight_minting_one_shot_index = 14
 collateral_utxo_index = 15
 
 [config.qanet.reserve_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.council_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.ics_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.technical_authority_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.federated_operators_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.main_gov_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.staging_gov_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.main_council_update_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.main_tech_auth_update_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.main_federated_ops_update_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.committee_bridge_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.committee_threshold_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.terms_and_conditions_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.terms_and_conditions_threshold_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.collateral_utxo_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.cnight_minting_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+bytes = "c08cfdf426f2888207fd9737c69d7b15df0122b9e3bc93e5bd3245bb44c04c38"
 encoding = "hex"
 
 [config.qanet.cnight_policy]
@@ -476,63 +476,63 @@ bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
 encoding = "hex"
 
 [config.qanet.reserve_two_stage_hash]
-bytes = "e19ced430c2b1c53c0af2ac5cd605b920cd2c0480efec7d8548fadaa"
+bytes = "363ae145cbb37d080c8c8fa3e43a4ae1547b6a68041b83db7d8ca04b"
 encoding = "hex"
 
 [config.qanet.reserve_forever_hash]
-bytes = "f1c4cc9084684035c914b24cef87e1b04d173e99bf076a8635707ac7"
+bytes = "1f689e065c20653e82fcc2384c0ad8aec027fd91f6396c2c600d8cc9"
 encoding = "hex"
 
 [config.qanet.council_two_stage_hash]
-bytes = "b290d5967338c2366bbf460133fff5a69794fe5f096d57e71d38e8af"
+bytes = "bd5899cfd9ef45fd6e504928483c8a066038e8a770a92e4b21a7f639"
 encoding = "hex"
 
 [config.qanet.council_forever_hash]
-bytes = "60406ff76b321c59d56ea859b9e87025b2b401da19f23f67713d42a4"
+bytes = "00eb778279028fa299af3c77db013dc4bf539e5111a1796dd2913b3c"
 encoding = "hex"
 
 [config.qanet.ics_two_stage_hash]
-bytes = "c17c7d12ad789dc438a0a26e175046b77f7b792bd1404d94a70e071c"
+bytes = "b7394d482c9323a5419c772bc1e63192e4922eed5d9a44a50b17ccc5"
 encoding = "hex"
 
 [config.qanet.ics_forever_hash]
-bytes = "b20ee8c39acd6ae15e343b8aca1d9275a07b1030be19d2f6a68ea6bd"
+bytes = "3d1a8f270d1f217ed10b88af256057d09acbf66f13ba9fe1341e9aec"
 encoding = "hex"
 
 [config.qanet.technical_authority_two_stage_hash]
-bytes = "91e89e8b40f02e4a689768fbc22033a05833411397469d0a8d9447b3"
+bytes = "f795297103f59286703c85ec494a5b136dae6bc19f65aace833be790"
 encoding = "hex"
 
 [config.qanet.technical_authority_forever_hash]
-bytes = "89a36cfcc953d3e3652a3a03476c287e2cc7090591d64450059fa73d"
+bytes = "0d12277009d53dac92956c7d423f7d7fafb1dd05d4cb2888c233eb36"
 encoding = "hex"
 
 [config.qanet.federated_operators_two_stage_hash]
-bytes = "519fc85b14270354e2baf9f1002f3755730661a75cdf30fee73bd1ff"
+bytes = "d877034125a5c4b1b4ea19a3448afce2825d0cb52cd012cca56b1f89"
 encoding = "hex"
 
 [config.qanet.federated_operators_forever_hash]
-bytes = "726d95cdbca96843b5710f560ae452623b63f8d3fac434442f8d8715"
+bytes = "f8625f11a58fa5ab5b85502a8fe5c843ece460c9c5f9273be17d3424"
 encoding = "hex"
 
 [config.qanet.main_gov_threshold_hash]
-bytes = "f1bae618e5c31534e76bd424052281aeef1af90266c0b19b08dfb4c5"
+bytes = "a1be77cb7f5f9be665ba910618e3e96f6fc8727448f5fd564ac1ab65"
 encoding = "hex"
 
 [config.qanet.staging_gov_threshold_hash]
-bytes = "34d39773b70ba12f1fa113f36c26a75989c15c74f3d3759c111f8546"
+bytes = "085c79cba7f987b4618920c0a479039f2d7bd90ca866df605cfaa788"
 encoding = "hex"
 
 [config.qanet.main_council_update_threshold_hash]
-bytes = "bf9355e67954f1de7405d3fef0dcb531342531b71da3818cb213df4a"
+bytes = "6190b4127a6348f8ca89c6869534648dc6e5d315942236c8ff9cb5f8"
 encoding = "hex"
 
 [config.qanet.main_tech_auth_update_threshold_hash]
-bytes = "87791c59dd983db9e7d62182a1918e4d33e6c3988a14ec102329a048"
+bytes = "8aeadb4193e33e5d53fc61fad85ee261382b6cd2bc5c38ca47ea2484"
 encoding = "hex"
 
 [config.qanet.main_federated_ops_update_threshold_hash]
-bytes = "a0b2c1520bd54d583713fb4a52937dcd83eef4cb0a72b88f2989729b"
+bytes = "d44aefa02c34b55ce549d364406e411dfc1a528aeb6515a8e5302c86"
 encoding = "hex"
 
 [config.qanet.beefy_signer_threshold_hash]
@@ -540,35 +540,35 @@ bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
 encoding = "hex"
 
 [config.qanet.committee_bridge_two_stage_hash]
-bytes = "823dd80c709b045ddf6fc8c97bd868ba58502e15817f688eb495bc0d"
+bytes = "2347574ddef8bf6cfc4d85153733b355a9c5bc5dad1126922d9e0d5e"
 encoding = "hex"
 
 [config.qanet.committee_bridge_forever_hash]
-bytes = "21b773ee5505e67fd44a6323ae09bcbc4b6d7e4aeb78b39478e3e7dd"
+bytes = "35009972569b3cb42eb98c79ab6a5108262d4347f100c55161f12ff1"
 encoding = "hex"
 
 [config.qanet.bridge_signer_threshold_hash]
-bytes = "f7406024c62b2ee0026ce74e002c7edad4608827f5c26656273db0b6"
+bytes = "88dcd803ec76b0b12a7e81f23982da77bc2d91909af34fb0f599a985"
 encoding = "hex"
 
 [config.qanet.terms_and_conditions_two_stage_hash]
-bytes = "c36738b51e8ac859c018445ee7e67eca7a11116714331aac157c269d"
+bytes = "4b9b178310b641e897abd827371fe8e361eb22b283f295b60007ffee"
 encoding = "hex"
 
 [config.qanet.terms_and_conditions_forever_hash]
-bytes = "1598a9e1614fdab5662898e52d77b5e3847c3fd14b59afd51ec4cc61"
+bytes = "72cf3492bd8687b9f5223cb9cc4824948f32d444609320e388c27a61"
 encoding = "hex"
 
 [config.qanet.terms_and_conditions_threshold_hash]
-bytes = "087509e21bdfcd96ffa795012765ce6a2ed479d2b3c2e33a98244d68"
+bytes = "a12bf86f558660d54e41524b0cd2b38375a0f505d2ea2e9e24d7142c"
 encoding = "hex"
 
 [config.qanet.cnight_minting_two_stage_hash]
-bytes = "00000000000000000000000000000000000000000000000000000000"
+bytes = "34a80fe0b442c257c82d04439371c61d2cdae4b329bf8f003a42ac70"
 encoding = "hex"
 
 [config.qanet.cnight_minting_forever_hash]
-bytes = "00000000000000000000000000000000000000000000000000000000"
+bytes = "6b066809662e2b13323d64ef9377768803e9eed8d33e434e1aa3e019"
 encoding = "hex"
 
 [config.govnet]
