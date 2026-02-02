@@ -67,7 +67,7 @@ export interface TestProvider {
   setup(): Promise<void>;
   cleanup(): Promise<void>;
   reset(): Promise<void>; // Reset emulator state between journeys
-  submitTransaction(walletId: string, txBuilder: TxBuilder, options?: { suggestedSigners?: string[] }): Promise<string>;
+  submitTransaction(walletId: string, txBuilder: TxBuilder, options?: { suggestedSigners?: string[]; forceControlledSigning?: boolean }): Promise<string>;
   getConfig(): NetworkConfig;
 
   /** Register a named signer that maps to a wallet credential. */
@@ -78,6 +78,13 @@ export interface TestProvider {
    * Useful for building signer lists that include real wallet keys.
    */
   getSignerKeyHash(signerId: string): Promise<string | undefined>;
+
+  /**
+   * Get additional wallets available for this provider.
+   * For emulator, returns built-in test wallets.
+   * For testnet, returns wallets from settings.
+   */
+  getAdditionalWalletIds(): string[];
 }
 
 // Helper to synchronously load cnight_policy from aiken.toml
@@ -98,6 +105,7 @@ export class EmulatorProvider implements TestProvider {
   private blazeCache: Map<string, Blaze>;
   private config: NetworkConfig;
   private signerRegistry: Map<string, SignerRegistration> = new Map();
+  private contractsRebuilt: boolean = false;
 
   constructor() {
     // Use custom protocol parameters to allow larger transactions (for traces)
@@ -150,6 +158,9 @@ export class EmulatorProvider implements TestProvider {
   }
 
   async setup(): Promise<void> {
+    // Ensure contracts are compiled with "default" config for emulator
+    await this.ensureDefaultContracts();
+
     // Setup deployer wallet with funds
     await this.emulator.as("deployer", async (_, addr) => {
       const addressBech32 = addr.toBech32();
@@ -226,10 +237,76 @@ export class EmulatorProvider implements TestProvider {
         );
       }
     });
+
+    // Setup additional council member wallets for 3-of-5 multisig testing
+    // These wallets will be used as council members alongside deployer
+    const additionalWalletConfigs = [
+      { id: "council-member-1", txIdSuffix: "c1" },
+      { id: "council-member-2", txIdSuffix: "c2" },
+      { id: "council-member-3", txIdSuffix: "c3" },
+    ];
+    for (const { id: walletId, txIdSuffix } of additionalWalletConfigs) {
+      await this.emulator.as(walletId, async (_, addr) => {
+        const addressBech32 = addr.toBech32();
+        // Add funds for each council member (use valid hex txId)
+        this.emulator.addUtxo(
+          TransactionUnspentOutput.fromCore([
+            {
+              index: 0,
+              txId: TransactionId("0".repeat(62) + txIdSuffix),
+            },
+            {
+              address: PaymentAddress(addressBech32),
+              value: {
+                coins: 100_000_000n, // 100 ADA
+              },
+            },
+          ])
+        );
+      });
+    }
   }
 
   async cleanup(): Promise<void> {
     this.blazeCache.clear();
+  }
+
+  getAdditionalWalletIds(): string[] {
+    // Return the IDs of additional wallets set up in the emulator
+    return ["council-member-1", "council-member-2", "council-member-3"];
+  }
+
+  /**
+   * Ensure contracts are compiled with "default" config for emulator mode.
+   * This is needed because testnet runs may have compiled with a different config.
+   */
+  private async ensureDefaultContracts(): Promise<void> {
+    if (this.contractsRebuilt) {
+      return; // Already rebuilt for this session
+    }
+
+    const { existsSync, copyFileSync } = await import("fs");
+    const { resolve } = await import("path");
+    const projectRoot = resolve(process.cwd(), "..");
+
+    // Check if contract_blueprint.ts matches the default config
+    // by comparing with contract_blueprint_default.ts
+    const defaultBlueprint = resolve(projectRoot, "contract_blueprint_default.ts");
+    const activeBlueprint = resolve(projectRoot, "contract_blueprint.ts");
+
+    if (existsSync(defaultBlueprint)) {
+      // Copy the default blueprint to be the active one
+      copyFileSync(defaultBlueprint, activeBlueprint);
+      console.log("\n✓ Activated default contract blueprint for emulator mode\n");
+    } else {
+      // Need to rebuild with default config
+      console.log("\n=== Rebuilding contracts with default config for emulator ===\n");
+      const { rebuildContracts } = await import("./config-builder");
+      await rebuildContracts("default");
+      console.log("\n✓ Contracts rebuilt with default config\n");
+    }
+
+    this.contractsRebuilt = true;
   }
 
   async reset(): Promise<void> {
@@ -289,59 +366,231 @@ export class EmulatorProvider implements TestProvider {
   async submitTransaction(
     walletId: string,
     txBuilder: TxBuilder,
-    options?: { suggestedSigners?: string[] }
+    options?: { suggestedSigners?: string[]; forceControlledSigning?: boolean }
   ): Promise<string> {
     const blaze = await this.getBlaze(walletId);
 
-    // If suggested signers are provided, resolve each identifier to a
-    // credential hash and add as required signer so the emulator includes
-    // the correct VKey witnesses.
-    if (options?.suggestedSigners) {
-      for (const signerId of options.suggestedSigners) {
-        const reg = this.signerRegistry.get(signerId);
-        if (!reg) {
-          // Fall back to treating it as a wallet ID (legacy behaviour)
-          let signerAddress: any;
-          await this.emulator.as(signerId, async (_, addr) => {
-            signerAddress = addr;
-          });
-          if (signerAddress) {
-            const paymentCredential = signerAddress.asBase()?.getPaymentCredential();
-            if (paymentCredential) {
-              txBuilder.addRequiredSigner(paymentCredential.hash);
-            }
-          }
-          continue;
-        }
-
-        // Resolve registered signer to the appropriate credential hash
-        let signerAddress: any;
-        await this.emulator.as(reg.walletId, async (_, addr) => {
-          signerAddress = addr;
-        });
-        if (!signerAddress) {
-          throw new Error(`Signer '${signerId}' references unknown wallet '${reg.walletId}'`);
-        }
-
-        const base = signerAddress.asBase();
-        if (!base) {
-          throw new Error(`Signer '${signerId}': wallet '${reg.walletId}' has no base address`);
-        }
-
-        const hash = reg.credential === "payment"
-          ? base.getPaymentCredential().hash
-          : base.getStakeCredential()?.hash;
-        if (!hash) {
-          throw new Error(`Signer '${signerId}': wallet '${reg.walletId}' has no ${reg.credential} credential`);
-        }
-
-        txBuilder.addRequiredSigner(hash);
-      }
+    // Only use controlled signing when explicitly requested via forceControlledSigning.
+    // This is used for negative tests where we intentionally omit certain signatures.
+    // For positive tests, use expectValidTransaction which auto-signs correctly.
+    if (options?.forceControlledSigning && options.suggestedSigners && options.suggestedSigners.length > 0) {
+      return this.submitWithControlledSigning(walletId, txBuilder, options.suggestedSigners);
     }
 
+    // Default: use the emulator's built-in signing and validation
     await this.emulator.expectValidTransaction(blaze, txBuilder);
     const tx = await txBuilder.complete();
     return tx.getId();
+  }
+
+  /**
+   * Submit a transaction with controlled signing - only signs with specified credentials.
+   * This enables negative tests where we intentionally omit certain signatures.
+   */
+  private async submitWithControlledSigning(
+    walletId: string,
+    txBuilder: TxBuilder,
+    suggestedSigners: string[]
+  ): Promise<string> {
+    const { CborSet, VkeyWitness } = await import("@blaze-cardano/core");
+
+    // Map signer IDs to their wallet/credential info
+    interface SignerInfo {
+      walletId: string;
+      credential: "payment" | "stake";
+    }
+    const signersToApply: SignerInfo[] = [];
+    for (const signerId of suggestedSigners) {
+      const reg = this.signerRegistry.get(signerId);
+      if (reg) {
+        signersToApply.push({ walletId: reg.walletId, credential: reg.credential });
+      } else {
+        console.warn(`  ⚠ Unknown signer '${signerId}' in suggestedSigners`);
+      }
+    }
+
+    // Group by wallet and determine if stake key signing is needed
+    // Only include stake key if a "stake" credential is explicitly in the list
+    const walletSigningMode = new Map<string, boolean>(); // walletId -> needsStakeKey
+    for (const signer of signersToApply) {
+      if (signer.credential === "stake") {
+        walletSigningMode.set(signer.walletId, true);
+      } else if (!walletSigningMode.has(signer.walletId)) {
+        walletSigningMode.set(signer.walletId, false); // payment only
+      }
+    }
+
+    console.log(`  [DEBUG] Controlled signing:`);
+    for (const [wId, needsStake] of walletSigningMode) {
+      console.log(`    Wallet '${wId}': needsStakeKey=${needsStake}`);
+    }
+
+    // Complete the transaction with the emulator's evaluator
+    const params = this.emulator.params;
+    const slotConfig = SLOT_CONFIG_NETWORK.Preprod;
+
+    const tx = await txBuilder
+      .useEvaluator(makeUplcEvaluator(params, 1.2, 1.2, slotConfig))
+      .complete();
+
+    // Sign with each wallet using the specified credential mode
+    for (const [wId, needsStakeKey] of walletSigningMode) {
+      await this.emulator.as(wId, async (walletBlaze, _) => {
+        const wallet = walletBlaze.wallet as any;
+        if (typeof wallet.signTransaction === "function") {
+          // Sign with controlled stake key usage
+          // signWithStakeKey=false means ONLY payment key signs
+          const witnessSet = await wallet.signTransaction(tx, true, needsStakeKey);
+
+          // Merge the new witnesses into the transaction
+          const existingVkeys = tx.witnessSet().vkeys()?.toCore() ?? [];
+          const newVkeys = witnessSet.vkeys();
+          if (newVkeys) {
+            const merged = CborSet.fromCore(
+              [...newVkeys.toCore(), ...existingVkeys],
+              VkeyWitness.fromCore
+            );
+            const ws = tx.witnessSet();
+            ws.setVkeys(merged);
+            tx.setWitnessSet(ws);
+          }
+        }
+      });
+    }
+
+    // Debug: Print what VKey witnesses are in the transaction
+    const vkeys = tx.witnessSet().vkeys();
+    if (vkeys) {
+      console.log(`  [DEBUG] Transaction has ${vkeys.size()} VKey witnesses`);
+    } else {
+      console.log(`  [DEBUG] Transaction has NO VKey witnesses`);
+    }
+
+    // IMPORTANT: The emulator doesn't validate native script signature requirements.
+    // We need to manually validate them before submission for negative tests to work.
+    await this.validateNativeScripts(tx);
+
+    // Submit the signed transaction
+    const txId = await this.emulator.submitTransaction(tx);
+    return txId;
+  }
+
+  /**
+   * Validate that native scripts in the transaction have their signature requirements satisfied.
+   * The emulator doesn't validate native script signature requirements, so we do it here.
+   * This is critical for negative tests that intentionally omit required signatures.
+   */
+  private async validateNativeScripts(tx: any): Promise<void> {
+    const { Hash28ByteBase16 } = await import("@blaze-cardano/core");
+
+    const witnessSet = tx.witnessSet();
+    const nativeScripts = witnessSet.nativeScripts();
+
+    if (!nativeScripts || nativeScripts.size() === 0) {
+      return; // No native scripts to validate
+    }
+
+    // Collect VKey hashes that signed the transaction
+    const vkeyHashes = new Set<string>();
+    const vkeys = witnessSet.vkeys();
+    if (vkeys) {
+      for (const vkey of vkeys.values()) {
+        // Get the public key and hash it
+        const pubKeyHex = vkey.vkey();
+        const { Ed25519PublicKey } = await import("@blaze-cardano/core");
+        const pubKey = Ed25519PublicKey.fromHex(pubKeyHex);
+        const keyHash = await pubKey.hash();
+        vkeyHashes.add(keyHash.hex());
+      }
+    }
+
+    console.log(`  [DEBUG] VKey hashes that signed: ${Array.from(vkeyHashes).join(", ") || "(none)"}`);
+
+    // Validate each native script
+    for (const script of nativeScripts.values()) {
+      const scriptHash = script.hash();
+      const isValid = this.validateNativeScript(script, vkeyHashes);
+
+      if (!isValid) {
+        console.log(`  [DEBUG] Native script ${scriptHash} validation FAILED`);
+        throw new Error(
+          `Native script validation failed: script ${scriptHash} requirements not satisfied. ` +
+          `This transaction requires signatures that are not present in the witness set.`
+        );
+      }
+      console.log(`  [DEBUG] Native script ${scriptHash} validation PASSED`);
+    }
+  }
+
+  /**
+   * Recursively validate a native script against available VKey signatures.
+   * Returns true if the script's requirements are satisfied.
+   */
+  private validateNativeScript(script: any, vkeyHashes: Set<string>): boolean {
+    // Native script types:
+    // 0 = RequireSignature (sig)
+    // 1 = RequireAllOf (all)
+    // 2 = RequireAnyOf (any)
+    // 3 = RequireNOf (n_of_k)
+    // 4 = InvalidBefore (after)
+    // 5 = InvalidAfter (before)
+
+    const kind = script.kind();
+
+    switch (kind) {
+      case 0: { // RequireSignature
+        const keyHash = script.asSignature()?.hex();
+        if (!keyHash) return false;
+        const hasSignature = vkeyHashes.has(keyHash);
+        console.log(`    [DEBUG] RequireSignature(${keyHash}): ${hasSignature ? "SATISFIED" : "MISSING"}`);
+        return hasSignature;
+      }
+
+      case 1: { // RequireAllOf
+        const scripts = script.asAllOf()?.values() ?? [];
+        for (const subScript of scripts) {
+          if (!this.validateNativeScript(subScript, vkeyHashes)) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      case 2: { // RequireAnyOf
+        const scripts = script.asAnyOf()?.values() ?? [];
+        for (const subScript of scripts) {
+          if (this.validateNativeScript(subScript, vkeyHashes)) {
+            return true;
+          }
+        }
+        return scripts.length === 0; // Empty AnyOf is trivially satisfied
+      }
+
+      case 3: { // RequireNOf (N-of-M multisig)
+        const nOf = script.asNOf();
+        if (!nOf) return false;
+        const required = nOf.required();
+        const scripts = nOf.scripts()?.values() ?? [];
+
+        let satisfied = 0;
+        for (const subScript of scripts) {
+          if (this.validateNativeScript(subScript, vkeyHashes)) {
+            satisfied++;
+          }
+        }
+
+        console.log(`    [DEBUG] RequireNOf(${required} of ${scripts.length}): ${satisfied} satisfied`);
+        return satisfied >= required;
+      }
+
+      case 4: // InvalidBefore (time-based, assume satisfied for now)
+      case 5: // InvalidAfter (time-based, assume satisfied for now)
+        return true;
+
+      default:
+        console.warn(`    [DEBUG] Unknown native script kind: ${kind}`);
+        return false;
+    }
   }
 }
 
@@ -645,6 +894,11 @@ export class NetworkProvider implements TestProvider {
       console.error(`  [getSignerKeyHash] '${signerId}' → error resolving: ${e}`);
       return undefined;
     }
+  }
+
+  getAdditionalWalletIds(): string[] {
+    // Return IDs from settings' additionalWallets
+    return Array.from(this.additionalWallets.keys());
   }
 
   /**
