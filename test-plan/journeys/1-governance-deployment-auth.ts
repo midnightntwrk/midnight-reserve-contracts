@@ -711,21 +711,17 @@ export const governanceDeploymentAuthJourney: JourneyDefinition = {
             realSignerKeys.push(stakeHash);
           }
 
-          // Resolve additional wallet key hashes from settings
-          const additionalWallets = ctx.settings.additionalWallets ?? {};
-          console.log(`  [DEBUG] additionalWallets from settings: ${JSON.stringify(Object.keys(additionalWallets))}`);
-          for (const [walletId, walletDef] of Object.entries(additionalWallets)) {
+          // Resolve additional wallet key hashes from provider (supports both testnet and emulator)
+          const additionalWalletIds = ctx.provider.getAdditionalWalletIds();
+          console.log(`  [DEBUG] additionalWalletIds from provider: ${JSON.stringify(additionalWalletIds)}`);
+          for (const walletId of additionalWalletIds) {
             const signerId = `council-member-${walletId}`;
-            let pkh: string | undefined;
-            if (walletDef.type === "external") {
-              pkh = walletDef.paymentKeyHash;
-            } else {
-              pkh = await ctx.provider.getSignerKeyHash(signerId);
-            }
-            console.log(`    Wallet ${walletId} (${walletDef.type}): signer=${signerId}, pkh=${pkh ?? "UNRESOLVED"}`);
+            // Register the signer first so getSignerKeyHash can resolve it
+            ctx.provider.registerSigner(signerId, walletId, "payment");
+            const pkh = await ctx.provider.getSignerKeyHash(signerId);
+            console.log(`    Wallet ${walletId}: signer=${signerId}, pkh=${pkh ?? "UNRESOLVED"}`);
             if (pkh && !realSignerKeys.includes(pkh)) {
               realSignerKeys.push(pkh);
-              ctx.provider.registerSigner(signerId, walletId, "payment");
             }
           }
 
@@ -908,8 +904,8 @@ export const governanceDeploymentAuthJourney: JourneyDefinition = {
           // The council native script is N-of-M — we need signatures from
           // enough council members.  List all registered signable members.
           const councilSignerIds23 = ["council-auth-0"];
-          const additionalWallets23 = ctx.settings.additionalWallets ?? {};
-          for (const wId of Object.keys(additionalWallets23)) {
+          const additionalWalletIds23 = ctx.provider.getAdditionalWalletIds();
+          for (const wId of additionalWalletIds23) {
             councilSignerIds23.push(`council-member-${wId}`);
           }
 
@@ -1015,10 +1011,12 @@ export const governanceDeploymentAuthJourney: JourneyDefinition = {
           // Submit with only the council authorization (payment key) but NOT
           // tech-auth (stake key).  The TechAuth native script will fail
           // validation because no stake key VKey witness is present.
+          // Use forceControlledSigning to prevent emulator from auto-signing all keys.
           const rejection = await expectTransactionRejection(
             async () => {
               await ctx.provider.submitTransaction("deployer", txBuilder, {
                 suggestedSigners: ["council-auth-0"],
+                forceControlledSigning: true,
               });
             },
             { errorShouldInclude: ["script", "witness", "valid"] }
@@ -1126,15 +1124,12 @@ export const governanceDeploymentAuthJourney: JourneyDefinition = {
             signersList.push({ paymentHash: stakeHash, sr25519Key: "C".repeat(64) });
           }
 
-          // Add additional wallets
-          const additionalWallets = ctx.settings.additionalWallets ?? {};
-          for (const [walletId, walletDef] of Object.entries(additionalWallets)) {
-            let pkh: string | undefined;
-            if (walletDef.type === "external") {
-              pkh = walletDef.paymentKeyHash;
-            } else {
-              pkh = await ctx.provider.getSignerKeyHash(`council-member-${walletId}`);
-            }
+          // Add additional wallets from provider
+          const additionalWalletIds = ctx.provider.getAdditionalWalletIds();
+          for (const walletId of additionalWalletIds) {
+            const signerId = `council-member-${walletId}`;
+            ctx.provider.registerSigner(signerId, walletId, "payment");
+            const pkh = await ctx.provider.getSignerKeyHash(signerId);
             if (pkh) {
               signersList.push({ paymentHash: pkh, sr25519Key: String.fromCharCode(68 + signersList.length).repeat(64) });
             }
@@ -1238,7 +1233,7 @@ export const governanceDeploymentAuthJourney: JourneyDefinition = {
 
           // Gather all council signers
           const councilSignerIds = ["council-auth-0"];
-          for (const wId of Object.keys(additionalWallets)) {
+          for (const wId of additionalWalletIds) {
             councilSignerIds.push(`council-member-${wId}`);
           }
 
@@ -1366,9 +1361,9 @@ export const governanceDeploymentAuthJourney: JourneyDefinition = {
           });
 
           // Gather signers - need current council + tech-auth to authorize the change
-          const additionalWallets = ctx.settings.additionalWallets ?? {};
+          const additionalWalletIds26 = ctx.provider.getAdditionalWalletIds();
           const councilSignerIds = ["council-auth-0"];
-          for (const wId of Object.keys(additionalWallets)) {
+          for (const wId of additionalWalletIds26) {
             councilSignerIds.push(`council-member-${wId}`);
           }
 
@@ -1493,9 +1488,9 @@ export const governanceDeploymentAuthJourney: JourneyDefinition = {
             networkId: 0,
           });
 
-          const additionalWallets = ctx.settings.additionalWallets ?? {};
+          const additionalWalletIds27 = ctx.provider.getAdditionalWalletIds();
           const councilSignerIds = ["council-auth-0"];
-          for (const wId of Object.keys(additionalWallets)) {
+          for (const wId of additionalWalletIds27) {
             councilSignerIds.push(`council-member-${wId}`);
           }
 
@@ -1528,13 +1523,8 @@ export const governanceDeploymentAuthJourney: JourneyDefinition = {
           const signableKeys: string[] = [paymentHash];
           if (stakeHash) signableKeys.push(stakeHash);
 
-          for (const [walletId, walletDef] of Object.entries(additionalWallets)) {
-            let pkh: string | undefined;
-            if (walletDef.type === "external") {
-              pkh = walletDef.paymentKeyHash;
-            } else {
-              pkh = await ctx.provider.getSignerKeyHash(`council-member-${walletId}`);
-            }
+          for (const walletId of additionalWalletIds27) {
+            const pkh = await ctx.provider.getSignerKeyHash(`council-member-${walletId}`);
             if (pkh && !signableKeys.includes(pkh)) {
               signableKeys.push(pkh);
             }
