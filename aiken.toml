@@ -593,67 +593,67 @@ cnight_minting_one_shot_index = 14
 collateral_utxo_index = 15
 
 [config.govnet.reserve_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.council_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.ics_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.technical_authority_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.federated_operators_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.main_gov_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.staging_gov_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.main_council_update_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.main_tech_auth_update_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.main_federated_ops_update_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.committee_bridge_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.committee_threshold_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.terms_and_conditions_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.terms_and_conditions_threshold_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.collateral_utxo_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.cnight_minting_one_shot_hash]
-bytes = "01526a80229d0dd0736001e7fc036c12069739b651c723797660fe9bffbdba91"
+bytes = "f0d694e0b9babc0c3ab7e52e2f281b03efbd0b04d32e169d4b3b90c175d66e8d"
 encoding = "hex"
 
 [config.govnet.cnight_policy]
@@ -661,63 +661,63 @@ bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
 encoding = "hex"
 
 [config.govnet.reserve_two_stage_hash]
-bytes = "8947216d8a6b075720acb647bb60785c5c199dbc40a960f2008176a4"
+bytes = "4d2054bd9f452cf7e012158a6c1fe3b4c5962a9c2ef4e82ec279d8e9"
 encoding = "hex"
 
 [config.govnet.reserve_forever_hash]
-bytes = "3e598248b1d9b7b79e65f5a19e23ea6a95ed64a1b2a27ed068bba956"
+bytes = "40b447d425daeedd91108975bce8e7a7fae42654cb1dd7b539d9783e"
 encoding = "hex"
 
 [config.govnet.council_two_stage_hash]
-bytes = "669b61a77472851a4cf6ce1aeee862005cacedc48cb31af4077d4ec9"
+bytes = "bed6d0bb210fc23819caf7ba93e1d10c288330852463e036423f0275"
 encoding = "hex"
 
 [config.govnet.council_forever_hash]
-bytes = "4cb104dceb1ab05fcf588a2226aa19fa7af7c48c77b077b98b3450b6"
+bytes = "03e67576830d909bd52336afe52492b4104d9b6653a603f291998043"
 encoding = "hex"
 
 [config.govnet.ics_two_stage_hash]
-bytes = "1fc4fa9a318e564d7be3a8760ad7d198dfa5272c19cbb462367f3a94"
+bytes = "44f0254a682887e58467572ca530223b7c838b87279cb48ebd6a063b"
 encoding = "hex"
 
 [config.govnet.ics_forever_hash]
-bytes = "9571b2884a44d2683b4c4a99570c944bd17f979643785a62fea4917a"
+bytes = "3abe02647e210a098cb93b7939e3bf3bf587b50dd96cfe991c6f55d8"
 encoding = "hex"
 
 [config.govnet.technical_authority_two_stage_hash]
-bytes = "15afa80dc116084ac2295af91ac84b81f60bbc1af812966fa63d631d"
+bytes = "e633a1eaeddf89f59988b3e03c51955abdf878989987ce2dfa072554"
 encoding = "hex"
 
 [config.govnet.technical_authority_forever_hash]
-bytes = "844a3f2b01b11fdd1f8fe4e04dba195720ced5597c715607ebb34f8d"
+bytes = "c64d8da4c84091dae774dc753c97b21fdeedd41845b7272fd0eba265"
 encoding = "hex"
 
 [config.govnet.federated_operators_two_stage_hash]
-bytes = "dbd8777462c23603e2f681cc937e4ae1e936fc4282eb1f66a95ab1a6"
+bytes = "7ef7a43994372b38d0f1db0c013965ba27f56d81010517acf5f6ea4c"
 encoding = "hex"
 
 [config.govnet.federated_operators_forever_hash]
-bytes = "4eac359a1c068db6464ef6afa4f6b28cf0b4214d2aab6d053f99072e"
+bytes = "37b479e63c4384059cd951522d1050b360c92ea949cfe187b1ca8026"
 encoding = "hex"
 
 [config.govnet.main_gov_threshold_hash]
-bytes = "dd075460a4503701e6592ae5186c34a3cce82d6b2745d980a124a2bf"
+bytes = "d9ef19a770663b90639cd45984442264e465657a64e787ef2eb2b22c"
 encoding = "hex"
 
 [config.govnet.staging_gov_threshold_hash]
-bytes = "195a9c1b596cc431bfaddf0e7fa1771c19cc1ce8213d078b4d839008"
+bytes = "2692593b2db93e920e565bb98a616bf9f8dfdd09f19f2d087b82d55c"
 encoding = "hex"
 
 [config.govnet.main_council_update_threshold_hash]
-bytes = "14a0e6f6753f51b2357b8dae6f85f5d56ed1f9c58f5284fcd26469b7"
+bytes = "011b1177e3bf8efd270262832e0696a8daa082256390e8a7c262df4a"
 encoding = "hex"
 
 [config.govnet.main_tech_auth_update_threshold_hash]
-bytes = "a1911dee4215d276044716cc5150b94fccfc47dfd36e88e336066a0a"
+bytes = "3b194a806b4afdbaf8a750f1105da6cef7c404ac8cbeb9dc0dbe6d0c"
 encoding = "hex"
 
 [config.govnet.main_federated_ops_update_threshold_hash]
-bytes = "7c5b33813b6ac791abee8c54475777e25f4ea4123f42709aae96746d"
+bytes = "40cad3a86e78bb82611277e9476578aeafe3fce200786f8b03e9510d"
 encoding = "hex"
 
 [config.govnet.beefy_signer_threshold_hash]
@@ -725,35 +725,35 @@ bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.govnet.committee_bridge_two_stage_hash]
-bytes = "31d9b23861194830fbbb17b6d01b6da4cc8eb61ede0a2e6d05ec0c33"
+bytes = "1928432d617d537f0980129e75f640058237c7a5cee99e8927f97a42"
 encoding = "hex"
 
 [config.govnet.committee_bridge_forever_hash]
-bytes = "f3f8c0306eef2fa98829a216309272b8ed61bf1b7726be3d2b3ac324"
+bytes = "d617f3768eeac5af8ecb07d44bb1292b68ca53ba34930eba9e2a4d93"
 encoding = "hex"
 
 [config.govnet.bridge_signer_threshold_hash]
-bytes = "059ff838ee81ecf10bbc27a5f83a0b397716f1672e4867abb22451a1"
+bytes = "26e9d0958ef8a23893fb65db3daf5af7c39fd2c6c1133b34b23e488a"
 encoding = "hex"
 
 [config.govnet.terms_and_conditions_two_stage_hash]
-bytes = "33a55630b37c1a11e94dd9b1b8b2953f731882a4984d683e9a45b901"
+bytes = "2f7f2e533ae2e4fa731a85eaf817ed3a6489de86e41171feff48da02"
 encoding = "hex"
 
 [config.govnet.terms_and_conditions_forever_hash]
-bytes = "a10c9297bee9b298d973c77ffd5ccbbb20fb43fd2e7b58fe45ba7827"
+bytes = "843fa633febb52ac29ee367414166636ab143b086922a9823de92ebd"
 encoding = "hex"
 
 [config.govnet.terms_and_conditions_threshold_hash]
-bytes = "5fabf5e48bd1f0e6caf4d3fd3498985e01c92a296f68dadd0d04c18e"
+bytes = "04c3e24e3f8e816c5864097a2778d5cdfc0cc397bc540bccf77ded08"
 encoding = "hex"
 
 [config.govnet.cnight_minting_two_stage_hash]
-bytes = "d2bc3fee589e7026e77606393ad524aaff4834acade7bc4cd5d0cd6c"
+bytes = "ca67d018bbd10c022a4021590d206c454a6dd2686b1097a29f98d9e0"
 encoding = "hex"
 
 [config.govnet.cnight_minting_forever_hash]
-bytes = "21ae79e5f6201ade4a37604e1ebee0f5931ca450e0d33854bc1ae6f9"
+bytes = "688cd2cf706ef9303009513283133773fd870aea65a7686c91fdddb4"
 encoding = "hex"
 
 [config.node-dev-01]
