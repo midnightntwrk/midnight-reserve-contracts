@@ -37,6 +37,14 @@ export interface ContractInstances {
   govAuth: ContractClass;
   stagingGovAuth: ContractClass;
 
+  // Staging Forever (for staging track deployment)
+  councilStagingForever: ContractClass;
+  techAuthStagingForever: ContractClass;
+  federatedOpsStagingForever: ContractClass;
+  reserveStagingForever: ContractClass;
+  icsStagingForever: ContractClass;
+  termsAndConditionsStagingForever: ContractClass;
+
   // ICS
   icsForever: ContractClass;
   icsTwoStage: ContractClass;
@@ -166,6 +174,14 @@ function createInstances(
     // Gov Auth
     govAuth: create("GovAuthMainGovAuthElse"),
     stagingGovAuth: create("GovAuthStagingGovAuthElse"),
+
+    // Staging Forever
+    councilStagingForever: create("StagingPermissionedCouncilStagingForeverElse"),
+    techAuthStagingForever: create("StagingPermissionedTechAuthStagingForeverElse"),
+    federatedOpsStagingForever: create("StagingPermissionedFederatedOpsStagingForeverElse"),
+    reserveStagingForever: create("StagingReserveIcsReserveStagingForeverElse"),
+    icsStagingForever: create("StagingReserveIcsIcsStagingForeverElse"),
+    termsAndConditionsStagingForever: create("StagingTandcTermsAndConditionsStagingForeverElse"),
 
     // ICS
     icsForever: create("IlliquidCirculationSupplyIcsForeverElse"),
