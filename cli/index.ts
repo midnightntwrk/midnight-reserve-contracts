@@ -14,6 +14,7 @@ import type {
   CombineSignaturesOptions,
   MintTcnightOptions,
 } from "./lib/types";
+import type { DeployStagingTrackOptions } from "./commands/deploy-staging-track";
 import { getDefaultProvider } from "./lib/types";
 import {
   getDeployUtxoAmount,
@@ -44,6 +45,7 @@ import {
 import { printError } from "./utils/output";
 import {
   deploy,
+  deployStagingTrack,
   changeCouncil,
   changeTechAuth,
   changeFederatedOps,
@@ -66,6 +68,7 @@ Usage: bun cli <command> [options]
 
 Commands:
   deploy              Generate deployment transactions
+  deploy-staging-track  Deploy staging track forever validators
   change-council      Update council multisig members
   change-tech-auth    Update tech auth multisig members
   change-federated-ops  Update federated ops members
@@ -119,6 +122,38 @@ Options:
   bun cli deploy -n preview --utxo-amount 50000000
   bun cli deploy -n preview --components tech-auth,council
   bun cli deploy -n preview --name council-deployment
+`);
+}
+
+function printDeployStagingTrackHelp(): void {
+  console.log(`
+Usage: bun cli deploy-staging-track [options]
+
+Deploy staging track forever validators. These validators delegate to MAIN
+forever contracts by reading from the "staging" NFT on the main two-stage.
+
+Staging track validators enable testing upgrades before promoting to main.
+
+Options:
+  --one-shot-hash              Transaction hash for one-shot UTxOs (required)
+  --one-shot-start-index       Starting index for one-shot UTxOs (default: 0)
+  --utxo-amount                Lovelace for input UTxO (default: 20000000)
+  --components                 Components to deploy (comma-separated, default: all)
+                               Options: council, tech-auth, federated-ops, reserve, ics, terms-and-conditions
+  --name                       Deploy a single transaction by name
+                               Names: council-staging-forever-deployment,
+                                      tech-auth-staging-forever-deployment,
+                                      federated-ops-staging-forever-deployment,
+                                      reserve-staging-forever-deployment,
+                                      ics-staging-forever-deployment,
+                                      terms-and-conditions-staging-forever-deployment
+  --use-build                  Use freshly built blueprint instead of deployed scripts
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli deploy-staging-track -n preview --one-shot-hash abc123...def
+  bun cli deploy-staging-track -n preview --one-shot-hash abc123...def --one-shot-start-index 5
+  bun cli deploy-staging-track -n preview --one-shot-hash abc123...def --components council,tech-auth
 `);
 }
 
@@ -571,6 +606,44 @@ async function main(): Promise<void> {
         };
 
         await deploy(deployOptions);
+        break;
+      }
+
+      case "deploy-staging-track": {
+        if (options.help) {
+          printDeployStagingTrackHelp();
+          process.exit(0);
+        }
+
+        const oneShotHash = options["one-shot-hash"] as string | undefined;
+        if (!oneShotHash) {
+          printError("Missing required option: --one-shot-hash");
+          printDeployStagingTrackHelp();
+          process.exit(1);
+        }
+
+        validateTxHash(oneShotHash);
+
+        const deployStagingTrackOptions: DeployStagingTrackOptions = {
+          network,
+          output,
+          provider,
+          dryRun,
+          utxoAmount: options["utxo-amount"]
+            ? parseAmount(options["utxo-amount"] as string)
+            : getDeployUtxoAmount(),
+          oneShotHash,
+          oneShotStartIndex: options["one-shot-start-index"]
+            ? parseInt(options["one-shot-start-index"] as string, 10)
+            : 0,
+          components: options.components
+            ? (options.components as string).split(",")
+            : [],
+          name: options.name as string | undefined,
+          useBuild: options["use-build"] === true,
+        };
+
+        await deployStagingTrack(deployStagingTrackOptions);
         break;
       }
 

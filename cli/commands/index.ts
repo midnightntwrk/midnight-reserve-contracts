@@ -1,5 +1,6 @@
 // Re-export all commands
 export { deploy } from "./deploy";
+export { deployStagingTrack } from "./deploy-staging-track";
 export { changeCouncil } from "./change-council";
 export { changeTechAuth } from "./change-tech-auth";
 export { changeFederatedOps } from "./change-federated-ops";
