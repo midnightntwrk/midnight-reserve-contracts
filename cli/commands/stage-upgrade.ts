@@ -25,14 +25,16 @@ import {
   printSuccess,
   printError,
   writeTransactionFile,
-} from "../utils/output";
+  getContractUtxos,
+  getTwoStageUtxos,
+  parseInlineDatum,
+} from "../utils";
 import {
   createNativeMultisigScript,
   createRewardAccount,
   signTransaction,
   attachWitnesses,
   findUtxoWithMainAsset,
-  findUtxoWithStagingAsset,
   findUtxoByTxRef,
 } from "../utils/transaction";
 import * as Contracts from "../../contract_blueprint";
@@ -70,107 +72,75 @@ export async function stageUpgrade(
     network,
     targetContracts.twoStage.Script.hash(),
   );
-  const techAuthForeverAddress = getCredentialAddress(
-    network,
-    contracts.techAuthForever.Script.hash(),
-  );
-  const councilForeverAddress = getCredentialAddress(
-    network,
-    contracts.councilForever.Script.hash(),
-  );
-  // stagingGovThreshold is used because the two-stage datum stores stagingGovAuth
-  // and stagingGovAuth selects threshold based on whether logic is on main
-  const stagingGovThresholdAddress = getCredentialAddress(
-    network,
-    contracts.stagingGovThreshold.Script.hash(),
-  );
-  // Council two-stage is needed for staging_gov_auth's logic_is_on_main check
-  const councilTwoStageAddress = getCredentialAddress(
-    network,
-    contracts.councilTwoStage.Script.hash(),
-  );
 
   console.log("\nTwo Stage Address:", twoStageAddress.toBech32());
 
   const { blaze, provider } = await createBlaze(network, options.provider);
-  const twoStageUtxos = await provider.getUnspentOutputs(twoStageAddress);
-  const techAuthForeverUtxos = await provider.getUnspentOutputs(
-    techAuthForeverAddress,
-  );
-  const councilForeverUtxos = await provider.getUnspentOutputs(
-    councilForeverAddress,
-  );
-  const stagingGovThresholdUtxos = await provider.getUnspentOutputs(
-    stagingGovThresholdAddress,
-  );
-  const councilTwoStageUtxos = await provider.getUnspentOutputs(
-    councilTwoStageAddress,
-  );
+
+  // Query all contract UTxOs in parallel
+  const [{ main: mainUtxo, staging: stagingUtxo }, allUtxos] =
+    await Promise.all([
+      getTwoStageUtxos(provider, targetContracts.twoStage.Script, networkId),
+      getContractUtxos(
+        provider,
+        {
+          techAuthForever: contracts.techAuthForever.Script,
+          councilForever: contracts.councilForever.Script,
+          stagingGovThreshold: contracts.stagingGovThreshold.Script,
+          councilTwoStage: contracts.councilTwoStage.Script,
+        },
+        networkId,
+      ),
+    ]);
 
   console.log("\nFound contract UTxOs:");
-  console.log("  Two stage:", twoStageUtxos.length);
-  console.log("  Tech auth forever:", techAuthForeverUtxos.length);
-  console.log("  Council forever:", councilForeverUtxos.length);
-  console.log("  Staging gov threshold:", stagingGovThresholdUtxos.length);
-  console.log("  Council two stage:", councilTwoStageUtxos.length);
+  console.log("  Two stage: main and staging found");
+  console.log("  Tech auth forever:", allUtxos.techAuthForever.length);
+  console.log("  Council forever:", allUtxos.councilForever.length);
+  console.log("  Staging gov threshold:", allUtxos.stagingGovThreshold.length);
+  console.log("  Council two stage:", allUtxos.councilTwoStage.length);
 
   if (
-    !twoStageUtxos.length ||
-    !techAuthForeverUtxos.length ||
-    !councilForeverUtxos.length ||
-    !stagingGovThresholdUtxos.length ||
-    !councilTwoStageUtxos.length
+    !allUtxos.techAuthForever.length ||
+    !allUtxos.councilForever.length ||
+    !allUtxos.stagingGovThreshold.length ||
+    !allUtxos.councilTwoStage.length
   ) {
     throw new Error("Missing required contract UTxOs");
   }
 
-  const mainUtxo = findUtxoWithMainAsset(twoStageUtxos);
-  const stagingUtxo = findUtxoWithStagingAsset(twoStageUtxos);
-  const techAuthForeverUtxo = techAuthForeverUtxos[0];
-  const councilForeverUtxo = councilForeverUtxos[0];
-  const stagingGovThresholdUtxo = stagingGovThresholdUtxos[0];
-  const councilTwoStageMainUtxo = findUtxoWithMainAsset(councilTwoStageUtxos);
+  const techAuthForeverUtxo = allUtxos.techAuthForever[0];
+  const councilForeverUtxo = allUtxos.councilForever[0];
+  const stagingGovThresholdUtxo = allUtxos.stagingGovThreshold[0];
+  const councilTwoStageMainUtxo = findUtxoWithMainAsset(
+    allUtxos.councilTwoStage,
+  );
 
-  if (!mainUtxo) {
-    throw new Error('Could not find two-stage UTxO with "main" asset');
-  }
-  if (!stagingUtxo) {
-    throw new Error('Could not find two-stage UTxO with "staging" asset');
-  }
   if (!councilTwoStageMainUtxo) {
     throw new Error('Could not find council two-stage UTxO with "main" asset');
   }
 
   console.log("\nReading current tech auth state...");
-  const techAuthDatum = techAuthForeverUtxo.output().datum();
-  if (!techAuthDatum?.asInlineData()) {
-    throw new Error("Tech auth forever UTxO missing inline datum");
-  }
-  const techAuthState = parse(
+  const techAuthState = parseInlineDatum(
+    techAuthForeverUtxo,
     Contracts.VersionedMultisig,
-    techAuthDatum.asInlineData()!,
+    parse,
   );
   const techAuthSigners = extractSignersFromMultisigState(techAuthState);
 
   console.log("Reading current council state...");
-  const councilDatum = councilForeverUtxo.output().datum();
-  if (!councilDatum?.asInlineData()) {
-    throw new Error("Council forever UTxO missing inline datum");
-  }
-  const councilState = parse(
+  const councilState = parseInlineDatum(
+    councilForeverUtxo,
     Contracts.VersionedMultisig,
-    councilDatum.asInlineData()!,
+    parse,
   );
   const councilSigners = extractSignersFromMultisigState(councilState);
 
   console.log("Reading staging gov threshold...");
-  const thresholdDatum = stagingGovThresholdUtxo.output().datum();
-  if (!thresholdDatum?.asInlineData()) {
-    throw new Error("Staging gov threshold UTxO missing inline datum");
-  }
-  const thresholdState = parse(
+  const thresholdState = parseInlineDatum(
+    stagingGovThresholdUtxo,
     Contracts.MultisigThreshold,
-    thresholdDatum.asInlineData()!,
+    parse,
   );
 
   // Calculate required signers based on threshold
@@ -232,13 +202,10 @@ export async function stageUpgrade(
   ]);
 
   // Parse current staging datum to get round
-  const stagingDatum = stagingUtxo.output().datum();
-  if (!stagingDatum?.asInlineData()) {
-    throw new Error("Staging UTxO missing inline datum");
-  }
-  const currentStagingState = parse(
+  const currentStagingState = parseInlineDatum(
+    stagingUtxo,
     Contracts.UpgradeState,
-    stagingDatum.asInlineData()!,
+    parse,
   );
 
   const newStagingState: Contracts.UpgradeState = [

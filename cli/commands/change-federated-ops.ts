@@ -26,7 +26,9 @@ import {
   printSuccess,
   printError,
   writeTransactionFile,
-} from "../utils/output";
+  getContractUtxos,
+  parseInlineDatum,
+} from "../utils";
 import {
   createNativeMultisigScript,
   createRewardAccount,
@@ -55,22 +57,6 @@ export async function changeFederatedOps(
     network,
     contracts.federatedOpsForever.Script.hash(),
   );
-  const federatedOpsUpdateThresholdAddress = getCredentialAddress(
-    network,
-    contracts.mainFederatedOpsUpdateThreshold.Script.hash(),
-  );
-  const councilForeverAddress = getCredentialAddress(
-    network,
-    contracts.councilForever.Script.hash(),
-  );
-  const techAuthForeverAddress = getCredentialAddress(
-    network,
-    contracts.techAuthForever.Script.hash(),
-  );
-  const federatedOpsTwoStageAddress = getCredentialAddress(
-    network,
-    contracts.federatedOpsTwoStage.Script.hash(),
-  );
 
   console.log(
     "\nFederated Ops Forever Address:",
@@ -78,45 +64,49 @@ export async function changeFederatedOps(
   );
 
   const { blaze, provider } = await createBlaze(network, options.provider);
-  const federatedOpsForeverUtxos = await provider.getUnspentOutputs(
-    federatedOpsForeverAddress,
-  );
-  const federatedOpsThresholdUtxos = await provider.getUnspentOutputs(
-    federatedOpsUpdateThresholdAddress,
-  );
-  const councilForeverUtxos = await provider.getUnspentOutputs(
-    councilForeverAddress,
-  );
-  const techAuthForeverUtxos = await provider.getUnspentOutputs(
-    techAuthForeverAddress,
-  );
-  const federatedOpsTwoStageUtxos = await provider.getUnspentOutputs(
-    federatedOpsTwoStageAddress,
+
+  // Query all contract UTxOs in parallel
+  const allUtxos = await getContractUtxos(
+    provider,
+    {
+      federatedOpsForever: contracts.federatedOpsForever.Script,
+      federatedOpsThreshold: contracts.mainFederatedOpsUpdateThreshold.Script,
+      councilForever: contracts.councilForever.Script,
+      techAuthForever: contracts.techAuthForever.Script,
+      federatedOpsTwoStage: contracts.federatedOpsTwoStage.Script,
+    },
+    networkId,
   );
 
   console.log("\nFound contract UTxOs:");
-  console.log("  Federated ops forever:", federatedOpsForeverUtxos.length);
-  console.log("  Federated ops threshold:", federatedOpsThresholdUtxos.length);
-  console.log("  Council forever:", councilForeverUtxos.length);
-  console.log("  Tech auth forever:", techAuthForeverUtxos.length);
-  console.log("  Federated ops two stage:", federatedOpsTwoStageUtxos.length);
+  console.log("  Federated ops forever:", allUtxos.federatedOpsForever.length);
+  console.log(
+    "  Federated ops threshold:",
+    allUtxos.federatedOpsThreshold.length,
+  );
+  console.log("  Council forever:", allUtxos.councilForever.length);
+  console.log("  Tech auth forever:", allUtxos.techAuthForever.length);
+  console.log(
+    "  Federated ops two stage:",
+    allUtxos.federatedOpsTwoStage.length,
+  );
 
   if (
-    !federatedOpsForeverUtxos.length ||
-    !federatedOpsThresholdUtxos.length ||
-    !councilForeverUtxos.length ||
-    !techAuthForeverUtxos.length ||
-    !federatedOpsTwoStageUtxos.length
+    !allUtxos.federatedOpsForever.length ||
+    !allUtxos.federatedOpsThreshold.length ||
+    !allUtxos.councilForever.length ||
+    !allUtxos.techAuthForever.length ||
+    !allUtxos.federatedOpsTwoStage.length
   ) {
     throw new Error("Missing required contract UTxOs");
   }
 
-  const federatedOpsForeverUtxo = federatedOpsForeverUtxos[0];
-  const federatedOpsThresholdUtxo = federatedOpsThresholdUtxos[0];
-  const councilForeverUtxo = councilForeverUtxos[0];
-  const techAuthForeverUtxo = techAuthForeverUtxos[0];
+  const federatedOpsForeverUtxo = allUtxos.federatedOpsForever[0];
+  const federatedOpsThresholdUtxo = allUtxos.federatedOpsThreshold[0];
+  const councilForeverUtxo = allUtxos.councilForever[0];
+  const techAuthForeverUtxo = allUtxos.techAuthForever[0];
   const federatedOpsTwoStageUtxo = findUtxoWithMainAsset(
-    federatedOpsTwoStageUtxos,
+    allUtxos.federatedOpsTwoStage,
   );
 
   if (!federatedOpsTwoStageUtxo) {
@@ -126,14 +116,10 @@ export async function changeFederatedOps(
   }
 
   console.log("\nReading federated ops two-stage upgrade state...");
-  const federatedOpsTwoStageDatum = federatedOpsTwoStageUtxo.output().datum();
-  if (!federatedOpsTwoStageDatum?.asInlineData()) {
-    throw new Error("Missing inline datum on federated ops two-stage UTxO");
-  }
-
-  const upgradeState = parse(
+  const upgradeState = parseInlineDatum(
+    federatedOpsTwoStageUtxo,
     Contracts.UpgradeState,
-    federatedOpsTwoStageDatum.asInlineData()!,
+    parse,
   );
   const [logicHash, mitigationLogicHash] = upgradeState;
   console.log("  Logic hash:", logicHash);
@@ -161,16 +147,12 @@ export async function changeFederatedOps(
   }
 
   console.log("\nCurrent federated ops forever datum:");
-  const currentDatum = federatedOpsForeverUtxo.output().datum();
-  if (!currentDatum?.asInlineData()) {
-    throw new Error("Missing inline datum on federated ops forever UTxO");
-  }
-
-  console.log("  Has inline datum");
-  const currentFederatedOpsState = parse(
+  const currentFederatedOpsState = parseInlineDatum(
+    federatedOpsForeverUtxo,
     Contracts.FederatedOps,
-    currentDatum.asInlineData()!,
+    parse,
   );
+  console.log("  Has inline datum");
   // FederatedOps = [Unit, List<PermissionedCandidateDatumV1>, logic_round]
   const currentLogicRound = currentFederatedOpsState[2];
   console.log("  Current logic round:", currentLogicRound);
@@ -215,13 +197,10 @@ export async function changeFederatedOps(
 
   // Read threshold datum from federated ops threshold UTxO
   console.log("\nReading federated ops update threshold...");
-  const thresholdDatum = federatedOpsThresholdUtxo.output().datum();
-  if (!thresholdDatum?.asInlineData()) {
-    throw new Error("Federated ops update threshold UTxO missing inline datum");
-  }
-  const thresholdState = parse(
+  const thresholdState = parseInlineDatum(
+    federatedOpsThresholdUtxo,
     Contracts.MultisigThreshold,
-    thresholdDatum.asInlineData()!,
+    parse,
   );
 
   // Calculate required signers based on threshold
