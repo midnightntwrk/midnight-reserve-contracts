@@ -56,8 +56,7 @@ describe("Update Terms and Conditions Test", () => {
             new Contracts.TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse();
           const termsThreshold =
             new Contracts.ThresholdsTermsAndConditionsThresholdElse();
-          const councilForever =
-            new Contracts.PermissionedCouncilForeverElse();
+          const councilForever = new Contracts.PermissionedCouncilForeverElse();
           const techAuthForever =
             new Contracts.PermissionedTechAuthForeverElse();
 
@@ -107,7 +106,9 @@ describe("Update Terms and Conditions Test", () => {
           // Both hash and url are ByteArrays, so url needs to be hex-encoded
           const currentHash =
             "0000000000000000000000000000000000000000000000000000000000000000";
-          const currentUrl = Buffer.from("https://example.com/old-terms").toString("hex");
+          const currentUrl = Buffer.from(
+            "https://example.com/old-terms",
+          ).toString("hex");
           const currentTermsState: Contracts.VersionedTermsAndConditions = [
             [currentHash, currentUrl],
             0n,
@@ -126,9 +127,7 @@ describe("Update Terms and Conditions Test", () => {
                 address: PaymentAddress(termsForeverAddress.toBech32()),
                 value: {
                   coins: 2_000_000n,
-                  assets: new Map([
-                    [AssetId(termsForever.Script.hash()), 1n],
-                  ]),
+                  assets: new Map([[AssetId(termsForever.Script.hash()), 1n]]),
                 },
                 datum: serialize(
                   Contracts.VersionedTermsAndConditions,
@@ -336,7 +335,9 @@ describe("Update Terms and Conditions Test", () => {
           // Both hash and url are ByteArrays, so url needs to be hex-encoded
           const newHash =
             "1111111111111111111111111111111111111111111111111111111111111111";
-          const newUrl = Buffer.from("https://example.com/new-terms").toString("hex");
+          const newUrl = Buffer.from("https://example.com/new-terms").toString(
+            "hex",
+          );
           const newTermsState: Contracts.VersionedTermsAndConditions = [
             [newHash, newUrl],
             0n, // Keep same logic round
@@ -521,9 +522,7 @@ describe("Update Terms and Conditions Test", () => {
                 address: PaymentAddress(termsForeverAddress.toBech32()),
                 value: {
                   coins: 2_000_000n,
-                  assets: new Map([
-                    [AssetId(termsForever.Script.hash()), 1n],
-                  ]),
+                  assets: new Map([[AssetId(termsForever.Script.hash()), 1n]]),
                 },
                 datum: serialize(
                   Contracts.VersionedTermsAndConditions,
