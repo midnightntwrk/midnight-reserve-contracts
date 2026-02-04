@@ -112,6 +112,15 @@ export interface MintTcnightOptions extends GlobalOptions {
   outputFile: string;
 }
 
+export interface UpdateTermsOptions extends GlobalOptions {
+  txHash: string;
+  txIndex: number;
+  hash: string;
+  url: string;
+  sign: boolean;
+  outputFile: string;
+}
+
 export interface Signer {
   paymentHash: string;
   sr25519Key: string;

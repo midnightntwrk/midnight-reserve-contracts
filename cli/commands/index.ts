@@ -12,3 +12,4 @@ export { generateKey } from "./generate-key";
 export { signAndSubmit } from "./sign-and-submit";
 export { combineSignatures } from "./combine-signatures";
 export { mintTcnight } from "./mint-tcnight";
+export { updateTerms } from "./update-terms";

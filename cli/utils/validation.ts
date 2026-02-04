@@ -200,3 +200,16 @@ export function validateScriptHash(hash: string): void {
     );
   }
 }
+
+export function validateHash32(hash: string): void {
+  if (!hash || hash.length !== 64) {
+    throw new Error(
+      `Invalid hash '${hash}'. Must be 64 hex characters (32 bytes).`,
+    );
+  }
+  if (!/^[a-fA-F0-9]+$/.test(hash)) {
+    throw new Error(
+      `Invalid hash '${hash}'. Must contain only hex characters.`,
+    );
+  }
+}

@@ -13,6 +13,7 @@ import type {
   SignAndSubmitOptions,
   CombineSignaturesOptions,
   MintTcnightOptions,
+  UpdateTermsOptions,
 } from "./lib/types";
 import { getDefaultProvider } from "./lib/types";
 import {
@@ -33,6 +34,7 @@ import {
   validateTwoStageValidator,
   validateScriptHash,
   validateTransactionName,
+  validateHash32,
   parseThreshold,
   parseAmount,
   VALID_NETWORKS,
@@ -56,6 +58,7 @@ import {
   signAndSubmit,
   combineSignatures,
   mintTcnight,
+  updateTerms,
 } from "./commands";
 
 function printUsage(): void {
@@ -69,6 +72,7 @@ Commands:
   change-council      Update council multisig members
   change-tech-auth    Update tech auth multisig members
   change-federated-ops  Update federated ops members
+  update-terms        Update terms and conditions hash and URL
   stage-upgrade       Stage a new logic hash for a two-stage upgrade validator
   promote-upgrade     Promote staged logic to main for a two-stage upgrade validator
   register-gov-auth   Register main and staging gov auth scripts as stake credentials
@@ -191,6 +195,30 @@ Environment variables:
   console.log(`Examples:
   bun cli change-federated-ops -n preview abc123...def 5
   bun cli change-federated-ops -n preview abc123...def 5 --no-sign
+`);
+}
+
+function printUpdateTermsHelp(): void {
+  console.log(`
+Usage: bun cli update-terms [options] --hash <hash> --url <url> <tx_hash> <tx_index>
+
+Update terms and conditions hash and URL. Requires both council and tech auth authorization.
+
+Arguments:
+  <tx_hash>           Transaction hash of input UTxO
+  <tx_index>          Output index of input UTxO
+
+Options:
+  --hash              New terms and conditions hash (required, 64 hex chars / 32 bytes)
+  --url               New terms and conditions URL (required)
+  --sign              Sign transaction (default: true)
+  --no-sign           Do not sign transaction
+  --output-file       Output file name (default: update-terms-tx.json)
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli update-terms -n preview --hash abc123...def --url "https://example.com/terms" abc123...def 0
+  bun cli update-terms -n preview --hash abc123...def --url "https://example.com/terms" abc123...def 0 --no-sign
 `);
 }
 
@@ -675,6 +703,57 @@ async function main(): Promise<void> {
         };
 
         await changeFederatedOps(changeOptions);
+        break;
+      }
+
+      case "update-terms": {
+        if (options.help) {
+          printUpdateTermsHelp();
+          process.exit(0);
+        }
+
+        const hash = options.hash as string | undefined;
+        if (!hash) {
+          printError("Missing required option: --hash");
+          printUpdateTermsHelp();
+          process.exit(1);
+        }
+
+        const url = options.url as string | undefined;
+        if (!url) {
+          printError("Missing required option: --url");
+          printUpdateTermsHelp();
+          process.exit(1);
+        }
+
+        if (positional.length < 2) {
+          printError("Missing required arguments: <tx_hash> <tx_index>");
+          printUpdateTermsHelp();
+          process.exit(1);
+        }
+
+        const txHash = positional[0];
+        const txIndex = parseInt(positional[1], 10);
+
+        validateHash32(hash);
+        validateTxHash(txHash);
+        validateTxIndex(txIndex);
+
+        const updateTermsOptions: UpdateTermsOptions = {
+          network,
+          output,
+          provider,
+          dryRun,
+          txHash,
+          txIndex,
+          hash,
+          url,
+          sign: options.sign !== false,
+          outputFile:
+            (options["output-file"] as string) || "update-terms-tx.json",
+        };
+
+        await updateTerms(updateTermsOptions);
         break;
       }
 
