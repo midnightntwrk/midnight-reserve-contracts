@@ -7,6 +7,7 @@ import {
   Script,
   TransactionOutput,
   PaymentAddress,
+  toHex,
 } from "@blaze-cardano/core";
 import { parse, serialize } from "@blaze-cardano/data";
 import { resolve } from "path";
@@ -78,9 +79,8 @@ export async function updateTerms(options: UpdateTermsOptions): Promise<void> {
   );
 
   const { blaze, provider } = await createBlaze(network, options.provider);
-  const termsForeverUtxos = await provider.getUnspentOutputs(
-    termsForeverAddress,
-  );
+  const termsForeverUtxos =
+    await provider.getUnspentOutputs(termsForeverAddress);
   const termsThresholdUtxos = await provider.getUnspentOutputs(
     termsThresholdAddress,
   );
@@ -90,9 +90,8 @@ export async function updateTerms(options: UpdateTermsOptions): Promise<void> {
   const techAuthForeverUtxos = await provider.getUnspentOutputs(
     techAuthForeverAddress,
   );
-  const termsTwoStageUtxos = await provider.getUnspentOutputs(
-    termsTwoStageAddress,
-  );
+  const termsTwoStageUtxos =
+    await provider.getUnspentOutputs(termsTwoStageAddress);
 
   console.log("\nFound contract UTxOs:");
   console.log("  Terms and conditions forever:", termsForeverUtxos.length);
@@ -207,22 +206,20 @@ export async function updateTerms(options: UpdateTermsOptions): Promise<void> {
   // VersionedTermsAndConditions = [TermsAndConditions, logic_round]
   // TermsAndConditions = [hash, link]
   const newTermsDatum: Contracts.VersionedTermsAndConditions = [
-    [hash, url],
+    [hash, toHex(new TextEncoder().encode(url))],
     currentLogicRound, // Keep the same logic round
   ];
 
   console.log("\nNew terms and conditions:");
   console.log("  Hash:", hash);
-  console.log("  URL:", url);
+  console.log("  URL:", toHex(new TextEncoder().encode(url)));
   console.log("  Logic round:", currentLogicRound);
 
   // Read threshold datum from terms threshold UTxO
   console.log("\nReading terms and conditions threshold...");
   const thresholdDatum = termsThresholdUtxo.output().datum();
   if (!thresholdDatum?.asInlineData()) {
-    throw new Error(
-      "Terms and conditions threshold UTxO missing inline datum",
-    );
+    throw new Error("Terms and conditions threshold UTxO missing inline datum");
   }
   const thresholdState = parse(
     Contracts.MultisigThreshold,
