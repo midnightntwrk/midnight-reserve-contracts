@@ -55,8 +55,7 @@ export type StagingTrackComponent =
 /** Validate staging track components */
 function validateStagingTrackComponents(components: string[]): string[] {
   const invalid = components.filter(
-    (c) =>
-      !VALID_STAGING_TRACK_COMPONENTS.includes(c as StagingTrackComponent),
+    (c) => !VALID_STAGING_TRACK_COMPONENTS.includes(c as StagingTrackComponent),
   );
   if (invalid.length > 0) {
     throw new Error(

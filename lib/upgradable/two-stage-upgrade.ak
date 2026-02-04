@@ -370,25 +370,28 @@ pub fn validate_running(
   let auth_cred = Script(auth)
 
   trace @"VALIDATE_RUNNING: Checking for auth withdrawal"
-  let auth_found = list.any(
+  let auth_found =
+    list.any(
       withdrawals,
       fn(withdrawal: Pair<Credential, Int>) { withdrawal.1st == auth_cred },
     )
 
-  trace if auth_found { @"VALIDATE_RUNNING: Auth withdrawal found" } else { @"VALIDATE_RUNNING: Auth withdrawal NOT found" }
+  trace if auth_found {
+    @"VALIDATE_RUNNING: Auth withdrawal found"
+  } else {
+    @"VALIDATE_RUNNING: Auth withdrawal NOT found"
+  }
 
   let mitigation_check = or {
       mitigation_auth == "",
-      {
-        trace @"VALIDATE_RUNNING: Checking for mitigation auth withdrawal"
-        let mitigation_auth_cred = Script(mitigation_auth)
-        list.any(
-          withdrawals,
-          fn(withdrawal: Pair<Credential, Int>) {
-            withdrawal.1st == mitigation_auth_cred
-          },
-        )
-      },
+      trace @"VALIDATE_RUNNING: Checking for mitigation auth withdrawal"
+      let mitigation_auth_cred = Script(mitigation_auth)
+      list.any(
+        withdrawals,
+        fn(withdrawal: Pair<Credential, Int>) {
+          withdrawal.1st == mitigation_auth_cred
+        },
+      ),
     }
 
   and {
