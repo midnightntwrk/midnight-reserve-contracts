@@ -1,0 +1,13 @@
+just cli sign-and-submit -n preprod ./fed-node-final-3-2-26/change-federated-ops-tx.json 
+
+
+bun cli/index.ts sign-and-submit -n preprod ./fed-node-final-3-2-26/change-federated-ops-tx.json
+⏳ Signing with deployer key from SIGNING_PRIVATE_KEY
+⏳ Submitting: Change Federated Ops Transaction
+✅ Confirmed: b7bee0c591944d268912268c7a5934949fe4419a429ae13e89a2522907ba8d7c
+
+
+--- Summary ---
+
+Successfully confirmed 1 transaction(s):
+  b7bee0c591944d268912268c7a5934949fe4419a429ae13e89a2522907ba8d7c

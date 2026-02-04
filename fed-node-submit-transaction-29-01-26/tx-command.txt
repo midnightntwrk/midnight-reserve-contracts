@@ -1,0 +1,1 @@
+just cli sign-and-submit -n preprod ./fed-node-submit-transaction-29-01-26/change-federated-ops-tx.json

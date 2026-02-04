@@ -49,6 +49,10 @@ use-env env:
     cp contract_blueprint_{{env}}.ts contract_blueprint.ts
     echo "Activated environment: {{env}}"
 
+blueprint env="preprod":
+    bunx @blaze-cardano/blueprint@latest plutus-{{env}}.json -o contract_blueprint_{{env}}.ts
+    # Copy to contract_blueprint.ts for CLI and test imports (always uses last-built env)
+    cp contract_blueprint_{{env}}.ts contract_blueprint.ts
 
 cli *args:
     bun cli/index.ts {{args}}

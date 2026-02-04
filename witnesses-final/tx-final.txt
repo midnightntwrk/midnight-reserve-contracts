@@ -1,0 +1,18 @@
+just cli combine-signatures -n govnet --tx ./witnesses-final/promote-upgrade-tx.json --signatures ./witnesses-final/witness-1.json ./witnesses-final/witness-2.json ./witnesses-final/witness-3.json ./witnesses-final/witness-4.json ./witnesses-final/witness-5.json ./witnesses-final/witness-6.json 
+bun cli/index.ts combine-signatures -n govnet --tx ./witnesses-final/promote-upgrade-tx.json --signatures ./witnesses-final/witness-1.json ./witnesses-final/witness-2.json ./witnesses-final/witness-3.json ./witnesses-final/witness-4.json ./witnesses-final/witness-5.json ./witnesses-final/witness-6.json
+⏳ Will also sign with deployer key from SIGNING_PRIVATE_KEY
+ℹ️    Extracted 1 signature(s) from ./witnesses-final/witness-1.json
+ℹ️    Extracted 1 signature(s) from ./witnesses-final/witness-2.json
+ℹ️    Extracted 1 signature(s) from ./witnesses-final/witness-3.json
+ℹ️    Extracted 1 signature(s) from ./witnesses-final/witness-4.json
+ℹ️    Extracted 1 signature(s) from ./witnesses-final/witness-5.json
+ℹ️    Extracted 1 signature(s) from ./witnesses-final/witness-6.json
+ℹ️  Total signatures to merge: 6
+ℹ️  Added deployer signature
+✅ Confirmed: 4e7d214033427e4b38bc1e367c2393056f1caa772b5d298ff9bdf5291c99f2a5
+
+
+--- Summary ---
+
+Successfully confirmed 1 transaction(s):
+  4e7d214033427e4b38bc1e367c2393056f1caa772b5d298ff9bdf5291c99f2a5

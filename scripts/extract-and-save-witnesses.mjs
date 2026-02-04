@@ -33,6 +33,7 @@ function readBytes(n) {
 
 function readLength(initialByte) {
   const additionalInfo = initialByte & 0x1f;
+  console.log('Additional info:', additionalInfo);
   if (additionalInfo < 24) return additionalInfo;
   if (additionalInfo === 24) return readByte();
   if (additionalInfo === 25) return (readByte() << 8) | readByte();

@@ -1,0 +1,10 @@
+just cli sign-and-submit -n govnet ./deployments/govnet/stage-upgrade-tx.json
+ Signing with deployer key from SIGNING_PRIVATE_KEY
+⏳ Submitting: Stage Upgrade Transaction
+✅ Confirmed: 1ee3a3179de2ddf65730033018c473881c9cb9367b17ec02168f71a43e0544b7
+
+
+--- Summary ---
+
+Successfully confirmed 1 transaction(s):
+  1ee3a3179de2ddf65730033018c473881c9cb9367b17ec02168f71a43e0544b7

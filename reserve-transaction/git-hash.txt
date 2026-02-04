@@ -1,0 +1,11 @@
+commit 53be8070fc101bf265ff336a91f724f795782b8d (HEAD -> update-fed-ops-command, origin/update-fed-ops-command)
+Author: microproofs <kwhitemsg@gmail.com>
+Date:   Fri Jan 30 10:14:41 2026 -0500
+
+    new version of reserve logic for promotion
+
+ contract_blueprint.ts        | 77 +++++++++++++++++++++++++++++++++++++++++++----------------------------------
+ contract_blueprint_govnet.ts |  9 +++++++++
+ plutus-govnet.json           |  8 ++++++++
+ validators/reserve.ak        | 13 +++++++++++++
+ 4 files changed, 73 insertions(+), 34 deletions(-)

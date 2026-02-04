@@ -1,0 +1,8 @@
+{
+  "partner_chains_key": "0x0231942fa3f85cccecde92bbb904d74cdcb9cbd39ca288e07fe5d7468049215bd5",
+  "keys": {
+    "aura": "0x4ad139fe0eda31ae2ad078693fa265cc11a13220dcd12e1c95989e3c14a6c36c",
+    "crch": "0x0231942fa3f85cccecde92bbb904d74cdcb9cbd39ca288e07fe5d7468049215bd5",
+    "gran": "0x5e0bb84193a97f4745a991c7313e5dd8a850af16efa93f6b8b4a8b6aa6ec59d9"
+  }
+}

@@ -1,0 +1,1 @@
+just cli combine-signatures -n preview --tx ./deployments/preview/change-federated-ops-tx.json --signatures ./node-update-submit-v2/witness-1.json ./node-update-submit-v2/witness-2.json ./node-update-submit-v2/witness-3.json ./node-update-submit-v2/witness-4.json ./node-update-submit-v2/witness-4.json ./node-update-submit-v2/witness-5.json ./node-update-submit-v2/witness-6.json

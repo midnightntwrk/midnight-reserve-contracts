@@ -1,0 +1,14 @@
+just cli sign-and-submit -n preview ./deployments/preview/change-council-tx.json
+bun cli/index.ts sign-and-submit -n preview ./deployments/preview/change-council-tx.json
+⏳ Signing with deployer key from SIGNING_PRIVATE_KEY
+⏳ Reading transaction file: ./deployments/preview/change-council-tx.json
+⏳ Processing: transaction
+⏳ Submitting: transaction
+⏳ Awaiting confirmation: transaction
+✅ Confirmed: 99170a096150bba9d0d8910c61cd0437eff91953b9bae344a46d9a5b9c6dae33
+
+
+--- Summary ---
+
+Successfully confirmed 1 transaction(s):
+  99170a096150bba9d0d8910c61cd0437eff91953b9bae344a46d9a5b9c6dae33

@@ -1,0 +1,1 @@
+just cli stage-upgrade -n govnet --validator reserve --new-logic-hash f0f373d1c697797b2f187d5ee7b3f24120253da28004ceaa017139aa --no-sign 94ef7b1129273c9188e0cc94e0ec5906ace4b4915d9c9a1e462b8ebb5e5b6082 1

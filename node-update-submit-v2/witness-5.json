@@ -1,0 +1,5 @@
+{
+  "type": "TxWitness ConwayEra",
+  "description": "Signature 5",
+  "cborHex": "820082582041b3eb9bc3c6d2b2fde4ff62624adf4e7edefca876c9ac2588fd37cb80767bc15840658dcd11a3cb0451d131cdd5f98804b44ce487accfbaf8884127de12f814249d8d8f329b3ba1bc03094918b28913e1e9db605dd3c101c040284c9cbb1b646b09"
+}
