@@ -68,7 +68,7 @@ describe("Stage upgrade for tech-auth (CLI reproduction)", () => {
       }).toCore(),
       NetworkId.Testnet,
     );
-    emulator.accounts.set(govAuthRewardAccount, { balance: 0n });
+    emulator.accounts.set(govAuthRewardAccount, 0n);
 
     const twoStageAddress = addressFromValidator(
       NetworkId.Testnet,

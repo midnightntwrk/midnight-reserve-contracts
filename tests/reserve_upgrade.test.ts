@@ -47,7 +47,7 @@ describe("Reserve upgrade path", () => {
       }).toCore(),
       NetworkId.Testnet,
     );
-    emulator.accounts.set(govAuthRewardAccount, { balance: 0n });
+    emulator.accounts.set(govAuthRewardAccount, 0n);
 
     const reserveTwoStageAddress = addressFromValidator(
       NetworkId.Testnet,
