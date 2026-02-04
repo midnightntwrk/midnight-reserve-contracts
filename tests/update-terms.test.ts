@@ -385,7 +385,7 @@ describe("Update Terms and Conditions Test", () => {
             }).toCore(),
             NetworkId.Testnet,
           );
-          emulator.accounts.set(termsLogicRewardAccount, 0n);
+          emulator.accounts.set(termsLogicRewardAccount, { balance: 0n });
 
           // Build transaction
           const txBuilder = blaze
