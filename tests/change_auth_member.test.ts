@@ -543,7 +543,7 @@ describe("Change Auth Member", () => {
             }).toCore(),
             NetworkId.Testnet,
           );
-          emulator.accounts.set(techAuthLogicRewardAccount, { balance: 0n });
+          emulator.accounts.set(techAuthLogicRewardAccount, 0n);
 
           // Create new multisig state with changed member
           // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
@@ -1263,7 +1263,7 @@ describe("Change Auth Member", () => {
             }).toCore(),
             NetworkId.Testnet,
           );
-          emulator.accounts.set(councilLogicRewardAccount, { balance: 0n });
+          emulator.accounts.set(councilLogicRewardAccount, 0n);
 
           // Create new multisig state with changed member
           // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]

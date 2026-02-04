@@ -266,7 +266,7 @@ describe("Reserve Deploy and Merge", () => {
         NetworkId.Testnet,
       );
 
-      emulator.accounts.set(reserveLogicCredential, { balance: 0n });
+      emulator.accounts.set(reserveLogicCredential, 0n);
 
       await emulator.expectValidTransaction(
         blaze,
