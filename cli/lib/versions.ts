@@ -29,7 +29,7 @@ export interface ChangeRecord {
 }
 
 export interface Changelog {
-  version: string; // "round_0_logic_1"
+  version: string; // "v1", "v2", etc.
   previousVersion: string | null;
   timestamp: string;
   gitCommit: string;
@@ -37,13 +37,33 @@ export interface Changelog {
 }
 
 /**
- * Gets the version folder name from round and logic round numbers.
+ * Gets the next version number by reading existing version directories.
  */
-export function getVersionFolderName(
-  round: bigint,
-  logicRound: bigint,
-): string {
-  return `round_${round}_logic_${logicRound}`;
+export function getNextVersionNumber(env: string): number {
+  const basePath = getDeployedScriptsPath(env);
+  const versionsPath = resolve(basePath, "versions");
+
+  if (!existsSync(versionsPath)) {
+    return 1;
+  }
+
+  const dirs = readdirSync(versionsPath);
+  let max = 0;
+  for (const dir of dirs) {
+    const match = dir.match(/^v(\d+)$/);
+    if (match) {
+      const n = parseInt(match[1]);
+      if (n > max) max = n;
+    }
+  }
+  return max + 1;
+}
+
+/**
+ * Gets the version folder name derived from existing version directories.
+ */
+export function getVersionFolderName(env: string): string {
+  return `v${getNextVersionNumber(env)}`;
 }
 
 /**
@@ -87,22 +107,59 @@ export function saveVersionSnapshot(
   changes: ChangeRecord[],
   plutusJsonPath: string,
   blueprintPath: string,
-): void {
+): string {
   const basePath = getDeployedScriptsPath(env);
-  const versionName = getVersionFolderName(
-    versionInfo.round,
-    versionInfo.logicRound,
-  );
+  const versionName = getVersionFolderName(env);
   const versionPath = resolve(basePath, "versions", versionName);
 
   // Create version directory
   mkdirSync(versionPath, { recursive: true });
 
-  // Copy plutus.json
-  copyFileSync(plutusJsonPath, resolve(versionPath, "plutus.json"));
+  // Merge: take previous version's plutus.json as base, add only new validators from build
+  const previousVersionName = getCurrentVersion(env);
+  const previousPlutusPath = previousVersionName
+    ? resolve(basePath, "versions", previousVersionName, "plutus.json")
+    : null;
 
-  // Copy contract_blueprint.ts
-  copyFileSync(blueprintPath, resolve(versionPath, "contract_blueprint.ts"));
+  if (previousPlutusPath && existsSync(previousPlutusPath)) {
+    const previousPlutus = JSON.parse(
+      readFileSync(previousPlutusPath, "utf-8"),
+    );
+    const buildPlutus = JSON.parse(readFileSync(plutusJsonPath, "utf-8"));
+
+    const previousTitles = new Set(
+      previousPlutus.validators.map((v: { title: string }) => v.title),
+    );
+    const newValidators = buildPlutus.validators.filter(
+      (v: { title: string }) => !previousTitles.has(v.title),
+    );
+
+    // NOTE: The spread of previousPlutus copies the previous version's `definitions` field.
+    // If a future version introduces new Aiken types referenced by new validators, the
+    // definitions from the previous version may not include those types. Currently safe
+    // because v2 validators use `"schema": {}` redeemers. Consider merging `definitions`
+    // fields if future validators need typed redeemers.
+    const mergedPlutus = {
+      ...previousPlutus,
+      validators: [...previousPlutus.validators, ...newValidators],
+    };
+
+    const mergedPlutusPath = resolve(versionPath, "plutus.json");
+    writeFileSync(
+      mergedPlutusPath,
+      JSON.stringify(mergedPlutus, null, 2) + "\n",
+    );
+
+    // Regenerate contract_blueprint.ts from merged plutus.json
+    const blueprintOutputPath = resolve(versionPath, "contract_blueprint.ts");
+    execSync(
+      `bunx @blaze-cardano/blueprint@latest ${mergedPlutusPath} -o ${blueprintOutputPath}`,
+    );
+  } else {
+    // No previous version — full copy (initial deployment)
+    copyFileSync(plutusJsonPath, resolve(versionPath, "plutus.json"));
+    copyFileSync(blueprintPath, resolve(versionPath, "contract_blueprint.ts"));
+  }
 
   // Get previous version for changelog
   const previousVersion = getCurrentVersion(env);
@@ -120,13 +177,15 @@ export function saveVersionSnapshot(
     resolve(versionPath, "changelog.json"),
     JSON.stringify(changelog, null, 2) + "\n",
   );
+
+  return versionName;
 }
 
 /**
  * Updates the current symlinks to point to a specific version.
  *
  * @param env - The environment name
- * @param version - The version folder name (e.g., "round_0_logic_1")
+ * @param version - The version folder name (e.g., "v1")
  */
 export function updateCurrentSymlinks(env: string, version: string): void {
   const basePath = getDeployedScriptsPath(env);
@@ -183,13 +242,15 @@ export function getVersionHistory(env: string): Changelog[] {
 
   // Sort by version (parse round and logic numbers)
   changelogs.sort((a, b) => {
-    const parseVersion = (v: string) => {
+    const parseVer = (v: string) => {
+      const vMatch = v.match(/^v(\d+)$/);
+      if (vMatch) return { round: 0, logic: parseInt(vMatch[1]) - 1 };
       const match = v.match(/round_(\d+)_logic_(\d+)/);
       if (!match) return { round: 0, logic: 0 };
       return { round: parseInt(match[1]), logic: parseInt(match[2]) };
     };
-    const va = parseVersion(a.version);
-    const vb = parseVersion(b.version);
+    const va = parseVer(a.version);
+    const vb = parseVer(b.version);
     if (va.round !== vb.round) return vb.round - va.round;
     return vb.logic - va.logic;
   });
@@ -201,7 +262,7 @@ export function getVersionHistory(env: string): Changelog[] {
  * Gets the current version for an environment by reading the symlink target.
  *
  * @param env - The environment name
- * @returns The current version name (e.g., "round_0_logic_1") or null if not set
+ * @returns The current version name (e.g., "v1") or null if not set
  */
 export function getCurrentVersion(env: string): string | null {
   const basePath = getDeployedScriptsPath(env);
@@ -217,9 +278,9 @@ export function getCurrentVersion(env: string): string | null {
       return null;
     }
 
-    // Read symlink target (e.g., "versions/round_0_logic_0/plutus.json")
+    // Read symlink target (e.g., "versions/v1/plutus.json")
     const target = readlinkSync(symlinkPath);
-    const match = target.match(/versions\/(round_\d+_logic_\d+)\//);
+    const match = target.match(/versions\/([^/]+)\//);
     return match ? match[1] : null;
   } catch {
     return null;
@@ -229,12 +290,21 @@ export function getCurrentVersion(env: string): string | null {
 /**
  * Parses a version string into round and logic round numbers.
  *
- * @param version - The version string (e.g., "round_0_logic_1")
+ * @param version - The version string (e.g., "v1")
  * @returns Object with round and logicRound as bigints, or null if invalid
  */
 export function parseVersion(
   version: string,
 ): { round: bigint; logicRound: bigint } | null {
+  // New format: v1, v2, etc.
+  const vMatch = version.match(/^v(\d+)$/);
+  if (vMatch) {
+    return {
+      round: 0n,
+      logicRound: BigInt(parseInt(vMatch[1]) - 1),
+    };
+  }
+  // Legacy format: round_0_logic_0
   const match = version.match(/round_(\d+)_logic_(\d+)/);
   if (!match) return null;
   return {

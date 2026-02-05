@@ -37,6 +37,7 @@ import {
   findUtxoWithMainAsset,
   findUtxoByTxRef,
 } from "../utils/transaction";
+import { createTxMetadata } from "../utils/metadata";
 import * as Contracts from "../../contract_blueprint";
 
 export async function changeFederatedOps(
@@ -304,6 +305,7 @@ export async function changeFederatedOps(
       .addWithdrawal(logicRewardAccount, 0n, federatedOpsRedeemer)
       .provideScript(logicScript)
       .setChangeAddress(changeAddress)
+      .setMetadata(createTxMetadata("change-federated-ops"))
       .setFeePadding(50000n);
 
     // Add mitigation logic withdrawal if present in UpgradeState

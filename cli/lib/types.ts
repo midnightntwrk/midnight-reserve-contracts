@@ -109,6 +109,17 @@ export interface CombineSignaturesOptions {
   signingKeyEnvVar: string;
 }
 
+export interface ChangeTermsOptions extends GlobalOptions {
+  txHash: string;
+  txIndex: number;
+  hash: string;
+  url: string;
+  utxoAmount?: bigint;
+  sign: boolean;
+  outputFile: string;
+  useBuild?: boolean;
+}
+
 export interface MintTcnightOptions extends GlobalOptions {
   userAddress: string;
   destinationAddress?: string;
@@ -152,6 +163,19 @@ export interface NetworkConfig {
   collateral_utxo_index: number;
   cnight_policy: string;
   cnight_name: string;
+  // Staging forever one-shot refs
+  reserve_staging_one_shot_hash: string;
+  reserve_staging_one_shot_index: number;
+  council_staging_one_shot_hash: string;
+  council_staging_one_shot_index: number;
+  ics_staging_one_shot_hash: string;
+  ics_staging_one_shot_index: number;
+  technical_authority_staging_one_shot_hash: string;
+  technical_authority_staging_one_shot_index: number;
+  federated_operators_staging_one_shot_hash: string;
+  federated_operators_staging_one_shot_index: number;
+  terms_and_conditions_staging_one_shot_hash: string;
+  terms_and_conditions_staging_one_shot_index: number;
 }
 
 export interface TransactionOutput {

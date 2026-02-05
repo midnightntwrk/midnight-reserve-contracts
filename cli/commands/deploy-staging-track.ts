@@ -35,7 +35,7 @@ import {
   ensureDirectory,
   TX_TYPE_CONWAY,
 } from "../utils/output";
-import { createOneShotUtxo } from "../utils/transaction";
+
 import * as Contracts from "../../contract_blueprint";
 import type { TransactionUnspentOutput } from "@blaze-cardano/core";
 
@@ -72,10 +72,6 @@ export interface DeployStagingTrackOptions {
   provider: "blockfrost" | "maestro" | "emulator" | "kupmios";
   dryRun: boolean;
   utxoAmount: bigint;
-  /** One-shot transaction hash for staging track deployments */
-  oneShotHash: string;
-  /** Starting index for one-shot UTxOs */
-  oneShotStartIndex: number;
   /** Components to deploy (default: all staging forever validators) */
   components: string[];
   /** Deploy a single transaction by name */
@@ -114,16 +110,7 @@ interface ScriptOutputInfo {
 export async function deployStagingTrack(
   options: DeployStagingTrackOptions,
 ): Promise<void> {
-  const {
-    network,
-    output,
-    utxoAmount,
-    oneShotHash,
-    oneShotStartIndex,
-    components,
-    name,
-    useBuild,
-  } = options;
+  const { network, output, utxoAmount, components, name, useBuild } = options;
 
   // Validate components if provided
   if (components && components.length > 0) {
@@ -136,8 +123,6 @@ export async function deployStagingTrack(
   );
   console.log(`===========================================`);
   console.log(`UTxO Amount: ${utxoAmount} lovelace`);
-  console.log(`One-shot Hash: ${oneShotHash}`);
-  console.log(`One-shot Start Index: ${oneShotStartIndex}`);
 
   const config = loadAikenConfig(network);
   const contracts = getContractInstances(network, useBuild);
@@ -210,12 +195,20 @@ export async function deployStagingTrack(
   async function generateStagingForeverDeployment(
     params: StagingForeverDeployParams,
   ) {
-    const oneShotUtxo = createOneShotUtxo(
-      params.oneShotHash,
-      params.oneShotIndex,
-      deployerAddr,
-      utxoAmount,
-    );
+    const oneShotInput = TransactionInput.fromCore({
+      txId: TransactionId(params.oneShotHash),
+      index: params.oneShotIndex,
+    });
+    const resolvedUtxos = await blaze.provider.resolveUnspentOutputs([
+      oneShotInput,
+    ]);
+    if (resolvedUtxos.length === 0) {
+      throw new Error(
+        `One-shot UTxO not found on chain: ${params.oneShotHash}#${params.oneShotIndex}. ` +
+          `Ensure the UTxO exists and has not been spent.`,
+      );
+    }
+    const oneShotUtxo = resolvedUtxos[0];
 
     const foreverAddress = addressFromValidator(
       networkId,
@@ -292,7 +285,6 @@ export async function deployStagingTrack(
   ];
 
   // Define all staging forever deployments
-  let currentIndex = oneShotStartIndex;
   const allTransactionDefs = [
     {
       name: "council-staging-forever-deployment",
@@ -301,9 +293,9 @@ export async function deployStagingTrack(
         const params: StagingForeverDeployParams = {
           name: "council-staging-forever",
           displayName: "Council Staging Forever",
-          oneShotHash,
-          oneShotIndex: currentIndex++,
-          stagingForeverContract: contracts.councilStagingForever,
+          oneShotHash: config.council_staging_one_shot_hash,
+          oneShotIndex: config.council_staging_one_shot_index,
+          stagingForeverContract: contracts.councilStagingForever!,
           datumBuilder: () =>
             serialize(Contracts.VersionedMultisig, councilState),
           redeemerBuilder: () =>
@@ -319,9 +311,9 @@ export async function deployStagingTrack(
         const params: StagingForeverDeployParams = {
           name: "tech-auth-staging-forever",
           displayName: "Tech Auth Staging Forever",
-          oneShotHash,
-          oneShotIndex: currentIndex++,
-          stagingForeverContract: contracts.techAuthStagingForever,
+          oneShotHash: config.technical_authority_staging_one_shot_hash,
+          oneShotIndex: config.technical_authority_staging_one_shot_index,
+          stagingForeverContract: contracts.techAuthStagingForever!,
           datumBuilder: () =>
             serialize(Contracts.VersionedMultisig, techAuthState),
           redeemerBuilder: () =>
@@ -337,9 +329,9 @@ export async function deployStagingTrack(
         const params: StagingForeverDeployParams = {
           name: "federated-ops-staging-forever",
           displayName: "Federated Ops Staging Forever",
-          oneShotHash,
-          oneShotIndex: currentIndex++,
-          stagingForeverContract: contracts.federatedOpsStagingForever,
+          oneShotHash: config.federated_operators_staging_one_shot_hash,
+          oneShotIndex: config.federated_operators_staging_one_shot_index,
+          stagingForeverContract: contracts.federatedOpsStagingForever!,
           datumBuilder: () =>
             serialize(Contracts.FederatedOps, federatedOpsDatum),
           redeemerBuilder: () => PlutusData.newInteger(0n),
@@ -354,9 +346,9 @@ export async function deployStagingTrack(
         const params: StagingForeverDeployParams = {
           name: "reserve-staging-forever",
           displayName: "Reserve Staging Forever",
-          oneShotHash,
-          oneShotIndex: currentIndex++,
-          stagingForeverContract: contracts.reserveStagingForever,
+          oneShotHash: config.reserve_staging_one_shot_hash,
+          oneShotIndex: config.reserve_staging_one_shot_index,
+          stagingForeverContract: contracts.reserveStagingForever!,
           datumBuilder: () => simpleVersionedDatum,
           redeemerBuilder: () => PlutusData.newInteger(0n),
         };
@@ -370,9 +362,9 @@ export async function deployStagingTrack(
         const params: StagingForeverDeployParams = {
           name: "ics-staging-forever",
           displayName: "ICS Staging Forever",
-          oneShotHash,
-          oneShotIndex: currentIndex++,
-          stagingForeverContract: contracts.icsStagingForever,
+          oneShotHash: config.ics_staging_one_shot_hash,
+          oneShotIndex: config.ics_staging_one_shot_index,
+          stagingForeverContract: contracts.icsStagingForever!,
           datumBuilder: () => simpleVersionedDatum,
           redeemerBuilder: () => PlutusData.newInteger(0n),
         };
@@ -386,9 +378,9 @@ export async function deployStagingTrack(
         const params: StagingForeverDeployParams = {
           name: "terms-and-conditions-staging-forever",
           displayName: "Terms and Conditions Staging Forever",
-          oneShotHash,
-          oneShotIndex: currentIndex++,
-          stagingForeverContract: contracts.termsAndConditionsStagingForever,
+          oneShotHash: config.terms_and_conditions_staging_one_shot_hash,
+          oneShotIndex: config.terms_and_conditions_staging_one_shot_index,
+          stagingForeverContract: contracts.termsAndConditionsStagingForever!,
           datumBuilder: () =>
             serialize(
               Contracts.VersionedTermsAndConditions,

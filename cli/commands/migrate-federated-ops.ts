@@ -20,13 +20,8 @@ import {
   getCredentialAddress,
   findScriptByHash,
 } from "../lib/contracts";
-import {
-  parseSigners,
-  parsePrivateKeys,
-  extractSignersFromCbor,
-  createMultisigStateCbor,
-  createRedeemerMapCbor,
-} from "../lib/signers";
+import { parsePrivateKeys, extractSignersFromCbor } from "../lib/signers";
+import { createFederatedOpsDatumV2 } from "../lib/candidates";
 import {
   printSuccess,
   printError,
@@ -45,24 +40,31 @@ import {
 import { createTxMetadata } from "../utils/metadata";
 import * as Contracts from "../../contract_blueprint";
 
-export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
+export async function migrateFederatedOps(
+  options: ChangeAuthOptions,
+): Promise<void> {
   const { network, output, txHash, txIndex, sign, outputFile } = options;
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);
 
-  console.log(`\nChanging Council members on ${network} network`);
+  console.log(
+    `\nMigrating Federated Ops datum from v1 to v2 on ${network} network`,
+  );
   console.log(`Using UTxO: ${txHash}#${txIndex}`);
 
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
   const contracts = getContractInstances(network, options.useBuild);
 
-  const councilForeverAddress = getCredentialAddress(
+  const federatedOpsForeverAddress = getCredentialAddress(
     network,
-    contracts.councilForever.Script.hash(),
+    contracts.federatedOpsForever.Script.hash(),
   );
 
-  console.log("\nCouncil Forever Address:", councilForeverAddress.toBech32());
+  console.log(
+    "\nFederated Ops Forever Address:",
+    federatedOpsForeverAddress.toBech32(),
+  );
 
   const { blaze, provider } = await createBlaze(network, options.provider);
 
@@ -70,41 +72,55 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   const allUtxos = await getContractUtxos(
     provider,
     {
+      federatedOpsForever: contracts.federatedOpsForever.Script,
+      federatedOpsThreshold: contracts.mainFederatedOpsUpdateThreshold.Script,
       councilForever: contracts.councilForever.Script,
-      councilThreshold: contracts.mainCouncilUpdateThreshold.Script,
       techAuthForever: contracts.techAuthForever.Script,
-      councilTwoStage: contracts.councilTwoStage.Script,
+      federatedOpsTwoStage: contracts.federatedOpsTwoStage.Script,
     },
     networkId,
   );
 
   console.log("\nFound contract UTxOs:");
+  console.log("  Federated ops forever:", allUtxos.federatedOpsForever.length);
+  console.log(
+    "  Federated ops threshold:",
+    allUtxos.federatedOpsThreshold.length,
+  );
   console.log("  Council forever:", allUtxos.councilForever.length);
-  console.log("  Council threshold:", allUtxos.councilThreshold.length);
   console.log("  Tech auth forever:", allUtxos.techAuthForever.length);
-  console.log("  Council two stage:", allUtxos.councilTwoStage.length);
+  console.log(
+    "  Federated ops two stage:",
+    allUtxos.federatedOpsTwoStage.length,
+  );
 
   if (
+    !allUtxos.federatedOpsForever.length ||
+    !allUtxos.federatedOpsThreshold.length ||
     !allUtxos.councilForever.length ||
-    !allUtxos.councilThreshold.length ||
     !allUtxos.techAuthForever.length ||
-    !allUtxos.councilTwoStage.length
+    !allUtxos.federatedOpsTwoStage.length
   ) {
     throw new Error("Missing required contract UTxOs");
   }
 
+  const federatedOpsForeverUtxo = allUtxos.federatedOpsForever[0];
+  const federatedOpsThresholdUtxo = allUtxos.federatedOpsThreshold[0];
   const councilForeverUtxo = allUtxos.councilForever[0];
-  const councilThresholdUtxo = allUtxos.councilThreshold[0];
   const techAuthForeverUtxo = allUtxos.techAuthForever[0];
-  const councilTwoStageUtxo = findUtxoWithMainAsset(allUtxos.councilTwoStage);
+  const federatedOpsTwoStageUtxo = findUtxoWithMainAsset(
+    allUtxos.federatedOpsTwoStage,
+  );
 
-  if (!councilTwoStageUtxo) {
-    throw new Error('Could not find council two-stage UTxO with "main" asset');
+  if (!federatedOpsTwoStageUtxo) {
+    throw new Error(
+      'Could not find federated ops two-stage UTxO with "main" asset',
+    );
   }
 
-  console.log("\nReading council two-stage upgrade state...");
+  console.log("\nReading federated ops two-stage upgrade state...");
   const upgradeState = parseInlineDatum(
-    councilTwoStageUtxo,
+    federatedOpsTwoStageUtxo,
     Contracts.UpgradeState,
     parse,
   );
@@ -112,10 +128,18 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   console.log("  Logic hash:", logicHash);
   console.log("  Mitigation logic hash:", mitigationLogicHash || "(empty)");
 
+  // Check that the active logic is NOT the v1 logic (migration requires v2 logic to be promoted)
+  const v1LogicHash = contracts.federatedOpsLogic.Script.hash();
+  if (logicHash === v1LogicHash) {
+    throw new Error(
+      `Active logic is still v1 (${logicHash}). Migration requires v2 logic to be promoted. Run promote-upgrade first.`,
+    );
+  }
+
   const logicScript = findScriptByHash(logicHash, network, options.useBuild);
   if (!logicScript) {
     throw new Error(
-      `Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.councilLogic.Script.hash()}`,
+      `Unknown logic script hash in UpgradeState: ${logicHash}. Expected a known federated ops logic script.`,
     );
   }
 
@@ -133,18 +157,48 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     }
   }
 
-  console.log("\nCurrent council forever datum:");
-  const currentCouncilState = parseInlineDatum(
-    councilForeverUtxo,
-    Contracts.VersionedMultisig,
-    parse,
-  );
-  console.log("  Has inline datum");
-  // Use CBOR-aware extraction to preserve duplicate keys
-  const councilDatumRaw = councilForeverUtxo.output().datum()!.asInlineData()!;
-  const currentCouncilSigners = extractSignersFromCbor(councilDatumRaw);
+  // Read current v1 datum as raw PlutusData
+  console.log("\nCurrent federated ops forever datum:");
+  const foreverDatum = federatedOpsForeverUtxo.output().datum();
+  if (!foreverDatum?.asInlineData()) {
+    throw new Error("Federated ops forever UTxO missing inline datum");
+  }
+  const currentDatumRaw = foreverDatum.asInlineData()!;
 
-  if (!currentCouncilSigners.length) {
+  // Guard: check if datum is already v2 (4 elements instead of 3)
+  const datumList = currentDatumRaw.asList();
+  if (datumList && datumList.getLength() >= 4) {
+    throw new Error(
+      "Federated ops datum already has 4+ elements (already FederatedOpsV2). Migration is not needed.",
+    );
+  }
+
+  // Also parse with typed schema to log info
+  const currentFederatedOpsState = parse(
+    Contracts.FederatedOps,
+    currentDatumRaw,
+  );
+  const currentLogicRound = currentFederatedOpsState[2];
+  console.log("  Current logic round:", currentLogicRound);
+  console.log("  Appendix entries:", currentFederatedOpsState[1].length);
+
+  // Build FederatedOpsV2 datum from existing v1 datum
+  const newDatum = createFederatedOpsDatumV2(currentDatumRaw);
+  console.log("\nNew FederatedOpsV2 datum created:");
+  console.log("  message: (empty)");
+  console.log("  logic_round: 2");
+
+  // Parse current council state for ML-3 validation
+  console.log("\nReading current council state for ML-3 validation...");
+  const councilDatum = councilForeverUtxo.output().datum();
+  if (!councilDatum?.asInlineData()) {
+    throw new Error("Council forever UTxO missing inline datum");
+  }
+
+  // Use CBOR-aware extraction to preserve duplicate keys
+  const councilSigners = extractSignersFromCbor(councilDatum.asInlineData()!);
+
+  if (!councilSigners.length) {
     throw new Error("No council signers found in council forever datum");
   }
 
@@ -158,25 +212,14 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   // Use CBOR-aware extraction to preserve duplicate keys
   const techAuthSigners = extractSignersFromCbor(techAuthDatum.asInlineData()!);
 
-  const newCouncilSigners = parseSigners("COUNCIL_SIGNERS");
-  // Use CBOR functions that preserve duplicate keys
-  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
-  const newCouncilForeverStateCbor = createMultisigStateCbor(
-    newCouncilSigners,
-    currentCouncilState[1], // round is second element of tuple
-  );
-  const memberRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
+  if (!techAuthSigners.length) {
+    throw new Error("No tech auth signers found in tech auth forever datum");
+  }
 
-  console.log("New council signers count:", newCouncilSigners.length);
-  console.log(
-    "  Unique payment hashes:",
-    new Set(newCouncilSigners.map((s) => s.paymentHash)).size,
-  );
-
-  // Read threshold datum from council threshold UTxO
-  console.log("\nReading council update threshold...");
+  // Read threshold datum from federated ops threshold UTxO
+  console.log("\nReading federated ops update threshold...");
   const thresholdState = parseInlineDatum(
-    councilThresholdUtxo,
+    federatedOpsThresholdUtxo,
     Contracts.MultisigThreshold,
     parse,
   );
@@ -184,30 +227,30 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   // Calculate required signers based on threshold
   // MultisigThreshold is a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
   const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
-  const requiredSigners = Number(
+  const techAuthRequiredSigners = Number(
     (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
       techAuthDenom,
   );
   const councilRequiredSigners = Number(
-    (BigInt(currentCouncilSigners.length) * councilNum + (councilDenom - 1n)) /
+    (BigInt(councilSigners.length) * councilNum + (councilDenom - 1n)) /
       councilDenom,
   );
 
   console.log(
-    `\nRequired tech auth signers: ${requiredSigners}/${techAuthSigners.length}`,
+    `\nRequired tech auth signers: ${techAuthRequiredSigners}/${techAuthSigners.length}`,
   );
   console.log(
-    `Required council signers: ${councilRequiredSigners}/${currentCouncilSigners.length}`,
+    `Required council signers: ${councilRequiredSigners}/${councilSigners.length}`,
   );
 
   const nativeScriptCouncil = createNativeMultisigScript(
     councilRequiredSigners,
-    currentCouncilSigners,
+    councilSigners,
     networkId,
   );
 
   const nativeScriptTechAuth = createNativeMultisigScript(
-    requiredSigners,
+    techAuthRequiredSigners,
     techAuthSigners,
     networkId,
   );
@@ -218,10 +261,8 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   console.log("\n=== Debug Info ===");
   console.log("Council native script hash:", councilPolicyId);
   console.log("Tech auth native script hash:", techAuthPolicyId);
-  console.log("Current council signers:");
-  currentCouncilSigners.forEach((s, i) =>
-    console.log(`  ${i}: ${s.paymentHash}`),
-  );
+  console.log("Council signers:");
+  councilSigners.forEach((s, i) => console.log(`  ${i}: ${s.paymentHash}`));
   console.log("Tech auth signers:");
   techAuthSigners.forEach((s, i) => console.log(`  ${i}: ${s.paymentHash}`));
 
@@ -249,42 +290,46 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   if (!userUtxo) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
+  const federatedOpsRedeemer = PlutusData.newInteger(0n);
+
   try {
     const txBuilder = blaze
       .newTransaction()
-      .addInput(councilForeverUtxo, PlutusData.newInteger(0n))
-      .addReferenceInput(councilThresholdUtxo)
+      .addInput(userUtxo)
+      .addInput(federatedOpsForeverUtxo, PlutusData.newInteger(0n))
+      .addReferenceInput(federatedOpsThresholdUtxo)
+      .addReferenceInput(councilForeverUtxo)
       .addReferenceInput(techAuthForeverUtxo)
-      .addReferenceInput(councilTwoStageUtxo)
-      .provideScript(contracts.councilForever.Script)
+      .addReferenceInput(federatedOpsTwoStageUtxo)
+      .provideScript(contracts.federatedOpsForever.Script)
       .addMint(councilPolicyId, new Map([[AssetName(""), 1n]]))
       .provideScript(Script.newNativeScript(nativeScriptCouncil))
       .addMint(techAuthPolicyId, new Map([[AssetName(""), 1n]]))
       .provideScript(Script.newNativeScript(nativeScriptTechAuth))
       .addOutput(
         TransactionOutput.fromCore({
-          address: PaymentAddress(councilForeverAddress.toBech32()),
+          address: PaymentAddress(federatedOpsForeverAddress.toBech32()),
           value: {
-            coins: councilForeverUtxo.output().amount().coin(),
+            coins: federatedOpsForeverUtxo.output().amount().coin(),
             assets: new Map([
-              [AssetId(contracts.councilForever.Script.hash()), 1n],
+              [AssetId(contracts.federatedOpsForever.Script.hash()), 1n],
             ]),
           },
-          datum: newCouncilForeverStateCbor.toCore(),
+          datum: newDatum.toCore(),
         }),
       )
       // Add logic withdrawal (from UpgradeState)
-      .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
+      .addWithdrawal(logicRewardAccount, 0n, federatedOpsRedeemer)
       .provideScript(logicScript)
       .setChangeAddress(changeAddress)
-      .setMetadata(createTxMetadata("change-council"))
+      .setMetadata(createTxMetadata("migrate-federated-ops"))
       .setFeePadding(50000n);
 
     // Add mitigation logic withdrawal if present in UpgradeState
     if (mitigationLogicScript && mitigationLogicRewardAccount) {
       console.log("  Adding mitigation logic withdrawal...");
       txBuilder
-        .addWithdrawal(mitigationLogicRewardAccount, 0n, memberRedeemerCbor)
+        .addWithdrawal(mitigationLogicRewardAccount, 0n, federatedOpsRedeemer)
         .provideScript(mitigationLogicScript);
     }
 
@@ -317,7 +362,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
         signedTx.toCbor(),
         tx.getId(),
         true,
-        "Change Council Transaction",
+        "Migrate Federated Ops Transaction",
       );
       printSuccess(`Signed transaction written to ${outputPath}`);
     } else {
@@ -326,7 +371,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
         tx.toCbor(),
         tx.getId(),
         false,
-        "Change Council Transaction",
+        "Migrate Federated Ops Transaction",
       );
       printSuccess(`Unsigned transaction written to ${outputPath}`);
     }

@@ -7,6 +7,7 @@ import {
   Script,
 } from "@blaze-cardano/core";
 import { getNetworkId, getConfigSection } from "./types";
+import { findContractByHash } from "./blueprint-diff";
 import { resolve } from "path";
 import { existsSync } from "fs";
 
@@ -38,12 +39,12 @@ export interface ContractInstances {
   stagingGovAuth: ContractClass;
 
   // Staging Forever (for staging track deployment)
-  councilStagingForever: ContractClass;
-  techAuthStagingForever: ContractClass;
-  federatedOpsStagingForever: ContractClass;
-  reserveStagingForever: ContractClass;
-  icsStagingForever: ContractClass;
-  termsAndConditionsStagingForever: ContractClass;
+  councilStagingForever?: ContractClass;
+  techAuthStagingForever?: ContractClass;
+  federatedOpsStagingForever?: ContractClass;
+  reserveStagingForever?: ContractClass;
+  icsStagingForever?: ContractClass;
+  termsAndConditionsStagingForever?: ContractClass;
 
   // ICS
   icsForever: ContractClass;
@@ -130,7 +131,7 @@ function getBlueprintPath(env: string, preferDeployed: boolean = true): string {
  * @param env - The environment name
  * @param preferDeployed - If true (default), prefer deployed-scripts/ over build outputs
  */
-function loadContractModule(
+export function loadContractModule(
   env: string,
   preferDeployed: boolean = true,
 ): Record<string, unknown> {
@@ -155,6 +156,17 @@ function createInstances(
     return new ContractClass();
   };
 
+  // Helper to optionally instantiate a contract class (returns undefined if not found)
+  const tryCreate = (className: string): ContractClass | undefined => {
+    const ContractClass = Contracts[className] as new () => ContractClass;
+    if (!ContractClass) return undefined;
+    try {
+      return new ContractClass();
+    } catch {
+      return undefined;
+    }
+  };
+
   return {
     // Tech Auth
     techAuthTwoStage: create("PermissionedTechAuthTwoStageUpgradeElse"),
@@ -176,20 +188,22 @@ function createInstances(
     stagingGovAuth: create("GovAuthStagingGovAuthElse"),
 
     // Staging Forever
-    // councilStagingForever: create(
-    //   "StagingPermissionedCouncilStagingForeverElse",
-    // ),
-    // techAuthStagingForever: create(
-    //   "StagingPermissionedTechAuthStagingForeverElse",
-    // ),
-    // federatedOpsStagingForever: create(
-    //   "StagingPermissionedFederatedOpsStagingForeverElse",
-    // ),
-    // reserveStagingForever: create("StagingReserveIcsReserveStagingForeverElse"),
-    // icsStagingForever: create("StagingReserveIcsIcsStagingForeverElse"),
-    // termsAndConditionsStagingForever: create(
-    //   "StagingTandcTermsAndConditionsStagingForeverElse",
-    // ),
+    councilStagingForever: tryCreate(
+      "StagingPermissionedCouncilStagingForeverElse",
+    ),
+    techAuthStagingForever: tryCreate(
+      "StagingPermissionedTechAuthStagingForeverElse",
+    ),
+    federatedOpsStagingForever: tryCreate(
+      "StagingPermissionedFederatedOpsStagingForeverElse",
+    ),
+    reserveStagingForever: tryCreate(
+      "StagingReserveIcsReserveStagingForeverElse",
+    ),
+    icsStagingForever: tryCreate("StagingReserveIcsIcsStagingForeverElse"),
+    termsAndConditionsStagingForever: tryCreate(
+      "StagingTandcTermsAndConditionsStagingForeverElse",
+    ),
 
     // ICS
     icsForever: create("IlliquidCirculationSupplyIcsForeverElse"),
@@ -390,18 +404,10 @@ export function findScriptByHash(
   env?: string,
   useBuild?: boolean,
 ): Script | null {
-  const contracts = getContractInstances(env, useBuild);
-  const scriptMap: Record<string, Script> = {
-    [contracts.councilLogic.Script.hash()]: contracts.councilLogic.Script,
-    [contracts.techAuthLogic.Script.hash()]: contracts.techAuthLogic.Script,
-    [contracts.reserveLogic.Script.hash()]: contracts.reserveLogic.Script,
-    [contracts.icsLogic.Script.hash()]: contracts.icsLogic.Script,
-    [contracts.federatedOpsLogic.Script.hash()]:
-      contracts.federatedOpsLogic.Script,
-    [contracts.termsAndConditionsLogic.Script.hash()]:
-      contracts.termsAndConditionsLogic.Script,
-    [contracts.govAuth.Script.hash()]: contracts.govAuth.Script,
-    [contracts.stagingGovAuth.Script.hash()]: contracts.stagingGovAuth.Script,
-  };
-  return scriptMap[hash] ?? null;
+  const targetEnv = env
+    ? getConfigSection(env)
+    : (activeEnvironment ?? "default");
+  const Contracts = loadContractModule(targetEnv, !useBuild);
+  const result = findContractByHash(Contracts, hash);
+  return result?.script ?? null;
 }

@@ -1,1 +1,1 @@
-versions/round_0_logic_0/contract_blueprint.ts
+versions/v2/contract_blueprint.ts

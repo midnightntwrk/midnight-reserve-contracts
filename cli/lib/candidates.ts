@@ -1,4 +1,4 @@
-import { PlutusData, toHex } from "@blaze-cardano/core";
+import { PlutusData, PlutusList, toHex } from "@blaze-cardano/core";
 import type * as Contracts from "../../contract_blueprint";
 
 export interface PermissionedCandidate {
@@ -220,4 +220,35 @@ export function createFederatedOpsDatumFromString(
     appendix,
     logic_round,
   ];
+}
+
+/**
+ * Creates a FederatedOpsV2 datum from an existing v1 on-chain datum.
+ *
+ * FederatedOps v1 (Plutus list): [data, appendix, logic_round]
+ * FederatedOpsV2 (Plutus list):  [data, message, appendix, logic_round]
+ *
+ * Preserves the existing `data` and `appendix` fields, adds an empty `message`,
+ * and sets `logic_round` to 2.
+ */
+export function createFederatedOpsDatumV2(
+  existingV1Datum: PlutusData,
+): PlutusData {
+  const v1List = existingV1Datum.asList();
+  if (!v1List || v1List.getLength() < 3) {
+    throw new Error(
+      "Invalid FederatedOps v1 datum: expected a list with at least 3 elements",
+    );
+  }
+
+  const data = v1List.get(0);
+  const appendix = v1List.get(1);
+
+  const v2List = new PlutusList();
+  v2List.add(data);
+  v2List.add(PlutusData.newBytes(new Uint8Array()));
+  v2List.add(appendix);
+  v2List.add(PlutusData.newInteger(2n));
+
+  return PlutusData.newList(v2List);
 }

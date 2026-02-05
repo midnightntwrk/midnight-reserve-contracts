@@ -34,7 +34,6 @@ import { getContractInstances } from "../lib/contracts";
 import {
   saveVersionSnapshot,
   updateCurrentSymlinks,
-  getVersionFolderName,
   type ChangeRecord,
 } from "../lib/versions";
 import {
@@ -1087,15 +1086,13 @@ export async function deploy(options: DeployOptions): Promise<void> {
           },
         ];
 
-        saveVersionSnapshot(
+        const versionName = saveVersionSnapshot(
           network,
           versionInfo,
           changes,
           plutusJsonPath,
           blueprintPath,
         );
-
-        const versionName = getVersionFolderName(0n, 0n);
         updateCurrentSymlinks(network, versionName);
 
         printSuccess(

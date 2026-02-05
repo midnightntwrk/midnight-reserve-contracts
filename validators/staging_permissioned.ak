@@ -4,7 +4,6 @@ use cardano/transaction.{OutputReference, Redeemer}
 use config
 use forever/script.{staging_forever_contract}
 use forever/types.{FederatedOps, Versioned}
-use logic/script.{logic_multisig_validation_nft_input} as logic_script
 use multisig/script.{create_signer} as multisig_script
 use multisig/types.{Multisig} as multisig_types
 use utils.{foldr2}
@@ -59,8 +58,8 @@ validator council_staging_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =
       OutputReference(
-        config.council_one_shot_hash,
-        config.council_one_shot_index,
+        config.council_staging_one_shot_hash,
+        config.council_staging_one_shot_index,
       )
 
     staging_forever_contract(
@@ -68,22 +67,6 @@ validator council_staging_forever {
       one_shot_ref,
       config.council_two_stage_hash,
       validate_multisig_structure,
-    )
-  }
-}
-
-/// Staging logic for council - references staging forever hash.
-validator council_staging_logic {
-  else(ctx: ScriptContext) {
-    let ScriptContext { transaction, redeemer, info } = ctx
-
-    logic_multisig_validation_nft_input(
-      transaction,
-      redeemer,
-      info,
-      config.council_staging_forever_hash,
-      validate_multisig_structure,
-      config.main_council_update_threshold_hash,
     )
   }
 }
@@ -97,8 +80,8 @@ validator tech_auth_staging_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =
       OutputReference(
-        config.technical_authority_one_shot_hash,
-        config.technical_authority_one_shot_index,
+        config.technical_authority_staging_one_shot_hash,
+        config.technical_authority_staging_one_shot_index,
       )
 
     staging_forever_contract(
@@ -106,22 +89,6 @@ validator tech_auth_staging_forever {
       one_shot_ref,
       config.technical_authority_two_stage_hash,
       validate_multisig_structure,
-    )
-  }
-}
-
-/// Staging logic for tech auth - references staging forever hash.
-validator tech_auth_staging_logic {
-  else(ctx: ScriptContext) {
-    let ScriptContext { transaction, redeemer, info } = ctx
-
-    logic_multisig_validation_nft_input(
-      transaction,
-      redeemer,
-      info,
-      config.technical_authority_staging_forever_hash,
-      validate_multisig_structure,
-      config.main_tech_auth_update_threshold_hash,
     )
   }
 }
@@ -135,8 +102,8 @@ validator federated_ops_staging_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =
       OutputReference(
-        config.federated_operators_one_shot_hash,
-        config.federated_operators_one_shot_index,
+        config.federated_operators_staging_one_shot_hash,
+        config.federated_operators_staging_one_shot_index,
       )
 
     staging_forever_contract(
@@ -144,22 +111,6 @@ validator federated_ops_staging_forever {
       one_shot_ref,
       config.federated_operators_two_stage_hash,
       validate_federated_ops,
-    )
-  }
-}
-
-/// Staging logic for federated ops - references staging forever hash.
-validator federated_ops_staging_logic {
-  else(ctx: ScriptContext) {
-    let ScriptContext { transaction, redeemer, info } = ctx
-
-    logic_multisig_validation_nft_input(
-      transaction,
-      redeemer,
-      info,
-      config.federated_operators_staging_forever_hash,
-      validate_federated_ops,
-      config.main_federated_ops_update_threshold_hash,
     )
   }
 }

@@ -13,3 +13,5 @@ export { generateKey } from "./generate-key";
 export { signAndSubmit } from "./sign-and-submit";
 export { combineSignatures } from "./combine-signatures";
 export { mintTcnight } from "./mint-tcnight";
+export { changeTerms } from "./change-terms";
+export { migrateFederatedOps } from "./migrate-federated-ops";

@@ -1,8 +1,8 @@
-use aiken/builtin
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
 use forever/script.{forever_contract}
+use logic/next_version.{logic_merge_v2}
 use logic/script.{logic_merge} as logic_script
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
 
@@ -53,14 +53,21 @@ validator reserve_logic {
   }
 }
 
-/// Handles reserve withdrawal operations.
-validator reserve_logicV2 {
+/// Handles reserve withdrawal operations (v2).
+validator reserve_logic_v2 {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
-
-    and {
-      logic_merge(transaction, info, config.reserve_forever_hash),
-      builtin.serialise_data(info) != "",
-    }
+    let one_shot_ref =
+      OutputReference(
+        config.reserve_logic_v2_one_shot_hash,
+        config.reserve_logic_v2_one_shot_index,
+      )
+    logic_merge_v2(
+      transaction,
+      info,
+      config.reserve_forever_hash,
+      config.reserve_two_stage_hash,
+      one_shot_ref,
+    )
   }
 }

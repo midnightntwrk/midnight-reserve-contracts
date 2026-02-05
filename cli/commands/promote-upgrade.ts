@@ -36,6 +36,8 @@ import {
   attachWitnesses,
   findUtxoByTxRef,
 } from "../utils/transaction";
+import { createTxMetadata } from "../utils/metadata";
+import { updateCurrentSymlinks, getNextVersionNumber } from "../lib/versions";
 import * as Contracts from "../../contract_blueprint";
 
 export async function promoteUpgrade(
@@ -205,8 +207,8 @@ export async function promoteUpgrade(
     currentMainState[1], // keep mitigation_logic
     currentMainState[2], // keep gov_auth
     currentMainState[3], // keep mitigation_auth
-    currentMainState[4], // keep delay
-    currentMainState[5] + 1n, // increment round
+    currentMainState[4], // keep round
+    stagingState[5], // logic_round from staging (set during stage-upgrade)
   ];
 
   // Build gov auth redeemer (using first tech auth signer)
@@ -269,11 +271,24 @@ export async function promoteUpgrade(
         }),
       )
       .setChangeAddress(changeAddress)
+      .setMetadata(createTxMetadata("promote-upgrade"))
       .setFeePadding(50000n);
 
     const tx = await txBuilder.complete();
 
     printSuccess(`Transaction built: ${tx.getId()}`);
+
+    // Update deployed-scripts symlinks to point to the promoted version
+    const latestVersion = getNextVersionNumber(network) - 1;
+    const versionName = `v${latestVersion}`;
+    try {
+      updateCurrentSymlinks(network, versionName);
+      printSuccess(
+        `Updated deployed-scripts/${network}/ symlinks to ${versionName}`,
+      );
+    } catch (error) {
+      console.warn(`Warning: Could not update symlinks: ${error}`);
+    }
 
     if (sign) {
       // Sign with both tech auth and council keys

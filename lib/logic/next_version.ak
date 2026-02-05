@@ -19,12 +19,12 @@ use utils.{
   must_find,
 }
 
-/// Next version of reserve logic merge (currently unused).
-/// Supports staging state lookup and different forever addresses based on main/staging context.
-pub fn unused_logic_merge_next_version(
+/// V2 reserve logic merge: parameterized two-stage hash, one-shot minting.
+pub fn logic_merge_v2(
   transaction: Transaction,
   info: ScriptInfo,
   main_forever_script_hash: ScriptHash,
+  two_stage_hash: ScriptHash,
   one_shot_ref: OutputReference,
 ) {
   let Transaction { inputs, reference_inputs, outputs, mint, .. } = transaction
@@ -78,11 +78,7 @@ pub fn unused_logic_merge_next_version(
 
   let validation =
     fn(own_hash) {
-      if logic_is_on_main(
-        reference_inputs,
-        config.council_two_stage_hash,
-        own_hash,
-      ) {
+      if logic_is_on_main(reference_inputs, two_stage_hash, own_hash) {
         merge_values(main_forever_script_hash, config.cnight_policy)
       } else {
         let datum = get_input_state_by_policy(inputs, own_hash)
@@ -120,17 +116,16 @@ pub fn unused_logic_merge_next_version(
   }
 }
 
-/// Next version of multisig validation logic (currently unused).
-/// Supports staging state lookup with different threshold and forever addresses based on main/staging context.
-pub fn unused_logic_multisig_validation_nft_input_next_version(
+/// V2 multisig validation logic: parameterized two-stage hash, one-shot minting.
+pub fn logic_multisig_validation_nft_input_v2(
   transaction: Transaction,
   redeemer: Redeemer,
   info: ScriptInfo,
-  one_shot_ref: OutputReference,
   main_forever_script_hash: ScriptHash,
+  two_stage_hash: ScriptHash,
   logic_state_validation,
-  main_threshold: ScriptHash,
-  staging_threshold: ScriptHash,
+  threshold: ScriptHash,
+  one_shot_ref: OutputReference,
 ) {
   let Transaction { inputs, reference_inputs, outputs, mint, .. } = transaction
 
@@ -138,13 +133,9 @@ pub fn unused_logic_multisig_validation_nft_input_next_version(
     fn(own_hash) {
       let threshold_datum, forever_hash <-
         fn(callback) {
-          if logic_is_on_main(
-            reference_inputs,
-            config.council_two_stage_hash,
-            own_hash,
-          ) {
+          if logic_is_on_main(reference_inputs, two_stage_hash, own_hash) {
             callback(
-              get_input_state_by_policy(reference_inputs, main_threshold),
+              get_input_state_by_policy(reference_inputs, threshold),
               main_forever_script_hash,
             )
           } else {
@@ -154,7 +145,7 @@ pub fn unused_logic_multisig_validation_nft_input_next_version(
               datum
 
             callback(
-              get_input_state_by_policy(reference_inputs, staging_threshold),
+              get_input_state_by_policy(reference_inputs, threshold),
               forever_script_hash,
             )
           }

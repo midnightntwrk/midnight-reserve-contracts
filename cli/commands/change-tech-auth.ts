@@ -42,6 +42,7 @@ import {
   findUtxoWithMainAsset,
   findUtxoByTxRef,
 } from "../utils/transaction";
+import { createTxMetadata } from "../utils/metadata";
 import * as Contracts from "../../contract_blueprint";
 
 export async function changeTechAuth(
@@ -289,6 +290,7 @@ export async function changeTechAuth(
       .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
       .provideScript(logicScript)
       .setChangeAddress(changeAddress)
+      .setMetadata(createTxMetadata("change-tech-auth"))
       .setFeePadding(50000n);
 
     // Add mitigation logic withdrawal if present in UpgradeState

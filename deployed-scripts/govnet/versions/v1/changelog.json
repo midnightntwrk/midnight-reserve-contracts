@@ -1,5 +1,5 @@
 {
-  "version": "round_0_logic_0",
+  "version": "v1",
   "previousVersion": null,
   "timestamp": "2026-01-27T18:31:12Z",
   "gitCommit": "71c29547ef4ad786a1ef7e2150e00d76d1d1ed1c",
@@ -8,6 +8,10 @@
       "type": "initial",
       "validator": "all",
       "description": "Initial govnet deployment migration from plutus-govnet.json"
+    },
+    {
+      "date": "2026-02-09",
+      "description": "Add 6 staging forever validators (council, tech-auth, federated-ops, reserve, ics, terms-and-conditions)"
     }
   ]
 }

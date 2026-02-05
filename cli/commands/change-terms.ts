@@ -8,10 +8,10 @@ import {
   TransactionOutput,
   PaymentAddress,
 } from "@blaze-cardano/core";
-import { parse } from "@blaze-cardano/data";
+import { parse, serialize } from "@blaze-cardano/data";
 import { resolve } from "path";
 
-import type { ChangeAuthOptions } from "../lib/types";
+import type { ChangeTermsOptions } from "../lib/types";
 import { getNetworkId } from "../lib/types";
 import { getDeployerAddress } from "../lib/config";
 import { createBlaze } from "../lib/provider";
@@ -20,13 +20,7 @@ import {
   getCredentialAddress,
   findScriptByHash,
 } from "../lib/contracts";
-import {
-  parseSigners,
-  parsePrivateKeys,
-  extractSignersFromCbor,
-  createMultisigStateCbor,
-  createRedeemerMapCbor,
-} from "../lib/signers";
+import { parsePrivateKeys, extractSignersFromCbor } from "../lib/signers";
 import {
   printSuccess,
   printError,
@@ -45,24 +39,30 @@ import {
 import { createTxMetadata } from "../utils/metadata";
 import * as Contracts from "../../contract_blueprint";
 
-export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
-  const { network, output, txHash, txIndex, sign, outputFile } = options;
+export async function changeTerms(options: ChangeTermsOptions): Promise<void> {
+  const { network, output, txHash, txIndex, hash, url, sign, outputFile } =
+    options;
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);
 
-  console.log(`\nChanging Council members on ${network} network`);
+  console.log(`\nChanging Terms and Conditions on ${network} network`);
   console.log(`Using UTxO: ${txHash}#${txIndex}`);
+  console.log(`New hash: ${hash}`);
+  console.log(`New URL: ${url}`);
 
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
   const contracts = getContractInstances(network, options.useBuild);
 
-  const councilForeverAddress = getCredentialAddress(
+  const termsForeverAddress = getCredentialAddress(
     network,
-    contracts.councilForever.Script.hash(),
+    contracts.termsAndConditionsForever.Script.hash(),
   );
 
-  console.log("\nCouncil Forever Address:", councilForeverAddress.toBech32());
+  console.log(
+    "\nTerms and Conditions Forever Address:",
+    termsForeverAddress.toBech32(),
+  );
 
   const { blaze, provider } = await createBlaze(network, options.provider);
 
@@ -70,41 +70,53 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   const allUtxos = await getContractUtxos(
     provider,
     {
+      termsForever: contracts.termsAndConditionsForever.Script,
+      termsThreshold: contracts.termsAndConditionsThreshold.Script,
       councilForever: contracts.councilForever.Script,
-      councilThreshold: contracts.mainCouncilUpdateThreshold.Script,
       techAuthForever: contracts.techAuthForever.Script,
-      councilTwoStage: contracts.councilTwoStage.Script,
+      termsTwoStage: contracts.termsAndConditionsTwoStage.Script,
     },
     networkId,
   );
 
   console.log("\nFound contract UTxOs:");
+  console.log("  Terms and conditions forever:", allUtxos.termsForever.length);
+  console.log(
+    "  Terms and conditions threshold:",
+    allUtxos.termsThreshold.length,
+  );
   console.log("  Council forever:", allUtxos.councilForever.length);
-  console.log("  Council threshold:", allUtxos.councilThreshold.length);
   console.log("  Tech auth forever:", allUtxos.techAuthForever.length);
-  console.log("  Council two stage:", allUtxos.councilTwoStage.length);
+  console.log(
+    "  Terms and conditions two stage:",
+    allUtxos.termsTwoStage.length,
+  );
 
   if (
+    !allUtxos.termsForever.length ||
+    !allUtxos.termsThreshold.length ||
     !allUtxos.councilForever.length ||
-    !allUtxos.councilThreshold.length ||
     !allUtxos.techAuthForever.length ||
-    !allUtxos.councilTwoStage.length
+    !allUtxos.termsTwoStage.length
   ) {
     throw new Error("Missing required contract UTxOs");
   }
 
+  const termsForeverUtxo = allUtxos.termsForever[0];
+  const termsThresholdUtxo = allUtxos.termsThreshold[0];
   const councilForeverUtxo = allUtxos.councilForever[0];
-  const councilThresholdUtxo = allUtxos.councilThreshold[0];
   const techAuthForeverUtxo = allUtxos.techAuthForever[0];
-  const councilTwoStageUtxo = findUtxoWithMainAsset(allUtxos.councilTwoStage);
+  const termsTwoStageUtxo = findUtxoWithMainAsset(allUtxos.termsTwoStage);
 
-  if (!councilTwoStageUtxo) {
-    throw new Error('Could not find council two-stage UTxO with "main" asset');
+  if (!termsTwoStageUtxo) {
+    throw new Error(
+      'Could not find terms and conditions two-stage UTxO with "main" asset',
+    );
   }
 
-  console.log("\nReading council two-stage upgrade state...");
+  console.log("\nReading terms and conditions two-stage upgrade state...");
   const upgradeState = parseInlineDatum(
-    councilTwoStageUtxo,
+    termsTwoStageUtxo,
     Contracts.UpgradeState,
     parse,
   );
@@ -115,7 +127,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   const logicScript = findScriptByHash(logicHash, network, options.useBuild);
   if (!logicScript) {
     throw new Error(
-      `Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.councilLogic.Script.hash()}`,
+      `Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.termsAndConditionsLogic.Script.hash()}`,
     );
   }
 
@@ -133,18 +145,30 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
     }
   }
 
-  console.log("\nCurrent council forever datum:");
-  const currentCouncilState = parseInlineDatum(
-    councilForeverUtxo,
-    Contracts.VersionedMultisig,
+  console.log("\nCurrent terms and conditions forever datum:");
+  const currentTermsState = parseInlineDatum(
+    termsForeverUtxo,
+    Contracts.VersionedTermsAndConditions,
     parse,
   );
   console.log("  Has inline datum");
-  // Use CBOR-aware extraction to preserve duplicate keys
-  const councilDatumRaw = councilForeverUtxo.output().datum()!.asInlineData()!;
-  const currentCouncilSigners = extractSignersFromCbor(councilDatumRaw);
+  // VersionedTermsAndConditions = [[hash, link], logic_round]
+  const currentLogicRound = currentTermsState[1];
+  console.log("  Current logic round:", currentLogicRound);
+  console.log("  Current hash:", currentTermsState[0][0]);
+  console.log("  Current URL:", currentTermsState[0][1]);
 
-  if (!currentCouncilSigners.length) {
+  // Parse current council state for ML-3 validation
+  console.log("\nReading current council state for ML-3 validation...");
+  const councilDatum = councilForeverUtxo.output().datum();
+  if (!councilDatum?.asInlineData()) {
+    throw new Error("Council forever UTxO missing inline datum");
+  }
+
+  // Use CBOR-aware extraction to preserve duplicate keys
+  const councilSigners = extractSignersFromCbor(councilDatum.asInlineData()!);
+
+  if (!councilSigners.length) {
     throw new Error("No council signers found in council forever datum");
   }
 
@@ -158,25 +182,27 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   // Use CBOR-aware extraction to preserve duplicate keys
   const techAuthSigners = extractSignersFromCbor(techAuthDatum.asInlineData()!);
 
-  const newCouncilSigners = parseSigners("COUNCIL_SIGNERS");
-  // Use CBOR functions that preserve duplicate keys
-  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
-  const newCouncilForeverStateCbor = createMultisigStateCbor(
-    newCouncilSigners,
-    currentCouncilState[1], // round is second element of tuple
-  );
-  const memberRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
+  if (!techAuthSigners.length) {
+    throw new Error("No tech auth signers found in tech auth forever datum");
+  }
 
-  console.log("New council signers count:", newCouncilSigners.length);
-  console.log(
-    "  Unique payment hashes:",
-    new Set(newCouncilSigners.map((s) => s.paymentHash)).size,
-  );
+  // Create new terms and conditions datum
+  // VersionedTermsAndConditions = [TermsAndConditions, logic_round]
+  // TermsAndConditions = [hash, link]
+  const newTermsDatum: Contracts.VersionedTermsAndConditions = [
+    [hash, url],
+    currentLogicRound, // Keep the same logic round
+  ];
 
-  // Read threshold datum from council threshold UTxO
-  console.log("\nReading council update threshold...");
+  console.log("\nNew terms and conditions:");
+  console.log("  Hash:", hash);
+  console.log("  URL:", url);
+  console.log("  Logic round:", currentLogicRound);
+
+  // Read threshold datum from terms threshold UTxO
+  console.log("\nReading terms and conditions threshold...");
   const thresholdState = parseInlineDatum(
-    councilThresholdUtxo,
+    termsThresholdUtxo,
     Contracts.MultisigThreshold,
     parse,
   );
@@ -184,30 +210,30 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   // Calculate required signers based on threshold
   // MultisigThreshold is a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
   const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
-  const requiredSigners = Number(
+  const techAuthRequiredSigners = Number(
     (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
       techAuthDenom,
   );
   const councilRequiredSigners = Number(
-    (BigInt(currentCouncilSigners.length) * councilNum + (councilDenom - 1n)) /
+    (BigInt(councilSigners.length) * councilNum + (councilDenom - 1n)) /
       councilDenom,
   );
 
   console.log(
-    `\nRequired tech auth signers: ${requiredSigners}/${techAuthSigners.length}`,
+    `\nRequired tech auth signers: ${techAuthRequiredSigners}/${techAuthSigners.length}`,
   );
   console.log(
-    `Required council signers: ${councilRequiredSigners}/${currentCouncilSigners.length}`,
+    `Required council signers: ${councilRequiredSigners}/${councilSigners.length}`,
   );
 
   const nativeScriptCouncil = createNativeMultisigScript(
     councilRequiredSigners,
-    currentCouncilSigners,
+    councilSigners,
     networkId,
   );
 
   const nativeScriptTechAuth = createNativeMultisigScript(
-    requiredSigners,
+    techAuthRequiredSigners,
     techAuthSigners,
     networkId,
   );
@@ -218,10 +244,8 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   console.log("\n=== Debug Info ===");
   console.log("Council native script hash:", councilPolicyId);
   console.log("Tech auth native script hash:", techAuthPolicyId);
-  console.log("Current council signers:");
-  currentCouncilSigners.forEach((s, i) =>
-    console.log(`  ${i}: ${s.paymentHash}`),
-  );
+  console.log("Council signers:");
+  councilSigners.forEach((s, i) => console.log(`  ${i}: ${s.paymentHash}`));
   console.log("Tech auth signers:");
   techAuthSigners.forEach((s, i) => console.log(`  ${i}: ${s.paymentHash}`));
 
@@ -249,42 +273,49 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   if (!userUtxo) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
+  const termsRedeemer = PlutusData.newInteger(0n);
+
   try {
     const txBuilder = blaze
       .newTransaction()
-      .addInput(councilForeverUtxo, PlutusData.newInteger(0n))
-      .addReferenceInput(councilThresholdUtxo)
+      .addInput(userUtxo)
+      .addInput(termsForeverUtxo, PlutusData.newInteger(0n))
+      .addReferenceInput(termsThresholdUtxo)
+      .addReferenceInput(councilForeverUtxo)
       .addReferenceInput(techAuthForeverUtxo)
-      .addReferenceInput(councilTwoStageUtxo)
-      .provideScript(contracts.councilForever.Script)
+      .addReferenceInput(termsTwoStageUtxo)
+      .provideScript(contracts.termsAndConditionsForever.Script)
       .addMint(councilPolicyId, new Map([[AssetName(""), 1n]]))
       .provideScript(Script.newNativeScript(nativeScriptCouncil))
       .addMint(techAuthPolicyId, new Map([[AssetName(""), 1n]]))
       .provideScript(Script.newNativeScript(nativeScriptTechAuth))
       .addOutput(
         TransactionOutput.fromCore({
-          address: PaymentAddress(councilForeverAddress.toBech32()),
+          address: PaymentAddress(termsForeverAddress.toBech32()),
           value: {
-            coins: councilForeverUtxo.output().amount().coin(),
+            coins: termsForeverUtxo.output().amount().coin(),
             assets: new Map([
-              [AssetId(contracts.councilForever.Script.hash()), 1n],
+              [AssetId(contracts.termsAndConditionsForever.Script.hash()), 1n],
             ]),
           },
-          datum: newCouncilForeverStateCbor.toCore(),
+          datum: serialize(
+            Contracts.VersionedTermsAndConditions,
+            newTermsDatum,
+          ).toCore(),
         }),
       )
       // Add logic withdrawal (from UpgradeState)
-      .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
+      .addWithdrawal(logicRewardAccount, 0n, termsRedeemer)
       .provideScript(logicScript)
       .setChangeAddress(changeAddress)
-      .setMetadata(createTxMetadata("change-council"))
+      .setMetadata(createTxMetadata("change-terms"))
       .setFeePadding(50000n);
 
     // Add mitigation logic withdrawal if present in UpgradeState
     if (mitigationLogicScript && mitigationLogicRewardAccount) {
       console.log("  Adding mitigation logic withdrawal...");
       txBuilder
-        .addWithdrawal(mitigationLogicRewardAccount, 0n, memberRedeemerCbor)
+        .addWithdrawal(mitigationLogicRewardAccount, 0n, termsRedeemer)
         .provideScript(mitigationLogicScript);
     }
 
@@ -317,7 +348,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
         signedTx.toCbor(),
         tx.getId(),
         true,
-        "Change Council Transaction",
+        "Change Terms and Conditions Transaction",
       );
       printSuccess(`Signed transaction written to ${outputPath}`);
     } else {
@@ -326,7 +357,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
         tx.toCbor(),
         tx.getId(),
         false,
-        "Change Council Transaction",
+        "Change Terms and Conditions Transaction",
       );
       printSuccess(`Unsigned transaction written to ${outputPath}`);
     }

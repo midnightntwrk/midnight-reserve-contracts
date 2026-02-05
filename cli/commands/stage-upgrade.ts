@@ -3,6 +3,8 @@ import {
   AssetId,
   AssetName,
   PaymentAddress,
+  PlutusData,
+  PlutusList,
   PolicyId,
   Script,
   toHex,
@@ -10,15 +12,19 @@ import {
 } from "@blaze-cardano/core";
 import { serialize, parse } from "@blaze-cardano/data";
 import { resolve } from "path";
+import { existsSync } from "fs";
 
 import type { StageUpgradeOptions } from "../lib/types";
-import { getNetworkId } from "../lib/types";
-import { getDeployerAddress } from "../lib/config";
+import { getNetworkId, getConfigSection } from "../lib/types";
+import { loadAikenConfig, getDeployerAddress } from "../lib/config";
 import { createBlaze } from "../lib/provider";
+import { getProtocolParameters, calculateMinUtxo } from "../lib/protocol";
 import {
+  type ContractInstances,
   getContractInstances,
   getCredentialAddress,
   getTwoStageContracts,
+  loadContractModule,
 } from "../lib/contracts";
 import { extractSignersFromMultisigState } from "../lib/signers";
 import {
@@ -37,7 +43,49 @@ import {
   findUtxoWithMainAsset,
   findUtxoByTxRef,
 } from "../utils/transaction";
+import { createTxMetadata } from "../utils/metadata";
+import {
+  saveVersionSnapshot,
+  type VersionInfo,
+  type ChangeRecord,
+} from "../lib/versions";
+import { diffBlueprints } from "../lib/blueprint-diff";
 import * as Contracts from "../../contract_blueprint";
+
+function getStagingForeverHash(
+  validatorName: string,
+  contracts: ContractInstances,
+): string {
+  let contract: { Script: Script } | undefined;
+  switch (validatorName) {
+    case "tech-auth":
+      contract = contracts.techAuthStagingForever;
+      break;
+    case "council":
+      contract = contracts.councilStagingForever;
+      break;
+    case "reserve":
+      contract = contracts.reserveStagingForever;
+      break;
+    case "ics":
+      contract = contracts.icsStagingForever;
+      break;
+    case "federated-ops":
+      contract = contracts.federatedOpsStagingForever;
+      break;
+    case "terms-and-conditions":
+      contract = contracts.termsAndConditionsStagingForever;
+      break;
+    default:
+      throw new Error(`Unknown validator: ${validatorName}`);
+  }
+  if (!contract) {
+    throw new Error(
+      `Staging forever contract not found for ${validatorName}. Ensure the blueprint includes staging forever validators.`,
+    );
+  }
+  return contract.Script.hash();
+}
 
 export async function stageUpgrade(
   options: StageUpgradeOptions,
@@ -61,12 +109,13 @@ export async function stageUpgrade(
 
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
-  const contracts = getContractInstances(network, options.useBuild);
-  const targetContracts = getTwoStageContracts(
-    validator,
-    network,
-    options.useBuild,
-  );
+  // Always use deployed contracts for on-chain infrastructure (two-stage, forever, gov auth, thresholds)
+  const contracts = getContractInstances(network, false);
+  const targetContracts = getTwoStageContracts(validator, network, false);
+  // Load build contracts separately for new contract detection when --use-build is specified
+  const buildContracts = options.useBuild
+    ? getContractInstances(network, true)
+    : undefined;
 
   const twoStageAddress = getCredentialAddress(
     network,
@@ -237,8 +286,17 @@ export async function stageUpgrade(
     new TextEncoder().encode("council-auth-witness"),
   );
 
+  // Detect if newLogicHash is a new contract (in build but not deployed) via blueprint diff
+  const configSection = getConfigSection(network);
+  const deployedModule = loadContractModule(configSection, true);
+  const buildModule = loadContractModule(configSection, false);
+  const diff = diffBlueprints(deployedModule, buildModule);
+  const newLogicContract =
+    diff.added.find((c) => c.hash === newLogicHash) ?? null;
+  const isNewContract = newLogicContract !== null;
+
   try {
-    const txBuilder = blaze
+    let txBuilder = blaze
       .newTransaction()
       .addInput(stagingUtxo, redeemer)
       .addInput(userUtxo)
@@ -278,11 +336,118 @@ export async function stageUpgrade(
         }),
       )
       .setChangeAddress(changeAddress)
+      .setMetadata(createTxMetadata("stage-upgrade"))
       .setFeePadding(50000n);
+
+    // Auto-mint StagingState NFT for new logic contracts (not in deployed blueprint)
+    if (isNewContract && newLogicContract) {
+      const aikenConfig = loadAikenConfig(network);
+      const stagingForeverHash = getStagingForeverHash(
+        validator,
+        buildContracts ?? contracts,
+      );
+      const cnightTestPolicy = aikenConfig.cnight_policy;
+
+      // StagingState has @list annotation: [cnight_test_policy, forever_script_hash]
+      const stagingStateList = new PlutusList();
+      stagingStateList.add(
+        PlutusData.newBytes(Buffer.from(cnightTestPolicy, "hex")),
+      );
+      stagingStateList.add(
+        PlutusData.newBytes(Buffer.from(stagingForeverHash, "hex")),
+      );
+      const stagingStateDatum = PlutusData.newList(stagingStateList);
+
+      const newLogicPolicyId = PolicyId(newLogicContract.hash);
+      const newLogicScriptAddress = getCredentialAddress(
+        network,
+        newLogicContract.hash,
+      );
+
+      const protocolParams = await getProtocolParameters(provider);
+
+      const stagingStateOutput = TransactionOutput.fromCore({
+        address: PaymentAddress(newLogicScriptAddress.toBech32()),
+        value: {
+          coins: 0n,
+          assets: new Map([[AssetId(newLogicPolicyId + AssetName("")), 1n]]),
+        },
+        datum: stagingStateDatum.toCore(),
+      });
+      stagingStateOutput
+        .amount()
+        .setCoin(calculateMinUtxo(protocolParams, stagingStateOutput));
+
+      txBuilder = txBuilder
+        .addMint(
+          newLogicPolicyId,
+          new Map([[AssetName(""), 1n]]),
+          PlutusData.newInteger(0n),
+        )
+        .provideScript(newLogicContract.script)
+        .addOutput(stagingStateOutput);
+
+      console.log(
+        `  Auto-minting StagingState NFT for new logic ${newLogicHash}`,
+      );
+      console.log(`  Staging forever hash: ${stagingForeverHash}`);
+      console.log(`  CNIGHT test policy: ${cnightTestPolicy}`);
+    }
 
     const tx = await txBuilder.complete();
 
     printSuccess(`Transaction built: ${tx.getId()}`);
+
+    // Save version snapshot when using build contracts (v2+ upgrade)
+    if (options.useBuild) {
+      const projectRoot = resolve(import.meta.dir, "../..");
+      const plutusJsonPath = resolve(projectRoot, `plutus-${network}.json`);
+      const blueprintPath = resolve(
+        projectRoot,
+        `contract_blueprint_${network}.ts`,
+      );
+
+      if (existsSync(plutusJsonPath) && existsSync(blueprintPath)) {
+        const versionInfo: VersionInfo = {
+          round: newStagingState[4],
+          logicRound: newStagingState[5],
+          timestamp: new Date().toISOString(),
+          gitCommit: "",
+        };
+
+        const changes: ChangeRecord[] = [
+          {
+            type: "stage",
+            validator,
+            oldHash: currentStagingState[0],
+            newHash: newLogicHash,
+            description: `Staged ${validator} logic upgrade`,
+          },
+        ];
+
+        const versionName = saveVersionSnapshot(
+          network,
+          versionInfo,
+          changes,
+          plutusJsonPath,
+          blueprintPath,
+        );
+        printSuccess(
+          `Saved version snapshot to deployed-scripts/${network}/versions/${versionName}/`,
+        );
+      } else {
+        console.warn(
+          `\nWarning: Skipping version snapshot — build artifacts not found:` +
+            `\n  plutus: ${plutusJsonPath} (${existsSync(plutusJsonPath) ? "exists" : "MISSING"})` +
+            `\n  blueprint: ${blueprintPath} (${existsSync(blueprintPath) ? "exists" : "MISSING"})` +
+            `\n  Run 'just build' first to generate these files.`,
+        );
+      }
+    } else {
+      console.warn(
+        `\nWarning: No version snapshot saved — pass --use-build to save a version snapshot to deployed-scripts.`,
+      );
+    }
 
     if (sign) {
       // Sign with tech auth keys only (staging doesn't require council signatures)
