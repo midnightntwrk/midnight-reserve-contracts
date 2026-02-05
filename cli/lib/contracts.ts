@@ -176,20 +176,20 @@ function createInstances(
     stagingGovAuth: create("GovAuthStagingGovAuthElse"),
 
     // Staging Forever
-    councilStagingForever: create(
-      "StagingPermissionedCouncilStagingForeverElse",
-    ),
-    techAuthStagingForever: create(
-      "StagingPermissionedTechAuthStagingForeverElse",
-    ),
-    federatedOpsStagingForever: create(
-      "StagingPermissionedFederatedOpsStagingForeverElse",
-    ),
-    reserveStagingForever: create("StagingReserveIcsReserveStagingForeverElse"),
-    icsStagingForever: create("StagingReserveIcsIcsStagingForeverElse"),
-    termsAndConditionsStagingForever: create(
-      "StagingTandcTermsAndConditionsStagingForeverElse",
-    ),
+    // councilStagingForever: create(
+    //   "StagingPermissionedCouncilStagingForeverElse",
+    // ),
+    // techAuthStagingForever: create(
+    //   "StagingPermissionedTechAuthStagingForeverElse",
+    // ),
+    // federatedOpsStagingForever: create(
+    //   "StagingPermissionedFederatedOpsStagingForeverElse",
+    // ),
+    // reserveStagingForever: create("StagingReserveIcsReserveStagingForeverElse"),
+    // icsStagingForever: create("StagingReserveIcsIcsStagingForeverElse"),
+    // termsAndConditionsStagingForever: create(
+    //   "StagingTandcTermsAndConditionsStagingForeverElse",
+    // ),
 
     // ICS
     icsForever: create("IlliquidCirculationSupplyIcsForeverElse"),

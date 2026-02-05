@@ -19,3 +19,7 @@ code-search*
 .claude/settings.local.json
 prompt.md
 planner-prompt.md
+.env-main
+.env-preprod
+.env-preview
+.env-preprod
