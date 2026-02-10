@@ -45,8 +45,7 @@ describe("Migrate Federated Ops from v1 to v2 datum", () => {
       new Contracts.PermissionedFederatedOpsForeverElse();
     const federatedOpsTwoStage =
       new Contracts.PermissionedFederatedOpsTwoStageUpgradeElse();
-    const federatedOpsLogic =
-      new Contracts.PermissionedFederatedOpsLogicElse();
+    const federatedOpsLogic = new Contracts.PermissionedFederatedOpsLogicElse();
     const federatedOpsLogicV2 =
       new Contracts.PermissionedFederatedOpsLogicV2Else();
     const mainFederatedOpsUpdateThreshold =
@@ -288,9 +287,7 @@ describe("Migrate Federated Ops from v1 to v2 datum", () => {
             coins: 2_000_000n,
             assets: new Map([
               [
-                AssetId(
-                  federatedOpsTwoStage.Script.hash() + MAIN_TOKEN_HEX,
-                ),
+                AssetId(federatedOpsTwoStage.Script.hash() + MAIN_TOKEN_HEX),
                 1n,
               ],
             ]),
@@ -313,9 +310,7 @@ describe("Migrate Federated Ops from v1 to v2 datum", () => {
             coins: 2_000_000n,
             assets: new Map([
               [
-                AssetId(
-                  federatedOpsTwoStage.Script.hash() + STAGING_TOKEN_HEX,
-                ),
+                AssetId(federatedOpsTwoStage.Script.hash() + STAGING_TOKEN_HEX),
                 1n,
               ],
             ]),
@@ -340,9 +335,7 @@ describe("Migrate Federated Ops from v1 to v2 datum", () => {
           address: PaymentAddress(federatedOpsForeverAddress.toBech32()),
           value: {
             coins: 2_000_000n,
-            assets: new Map([
-              [AssetId(federatedOpsForever.Script.hash()), 1n],
-            ]),
+            assets: new Map([[AssetId(federatedOpsForever.Script.hash()), 1n]]),
           },
           datum: serialize(
             Contracts.FederatedOps,
@@ -424,25 +417,19 @@ describe("Migrate Federated Ops from v1 to v2 datum", () => {
             .provideScript(govAuth.Script)
             .addOutput(
               TransactionOutput.fromCore({
-                address: PaymentAddress(
-                  federatedOpsTwoStageAddress.toBech32(),
-                ),
+                address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
                 value: {
                   coins: 2_000_000n,
                   assets: new Map([
                     [
                       AssetId(
-                        federatedOpsTwoStage.Script.hash() +
-                          STAGING_TOKEN_HEX,
+                        federatedOpsTwoStage.Script.hash() + STAGING_TOKEN_HEX,
                       ),
                       1n,
                     ],
                   ]),
                 },
-                datum: serialize(
-                  Contracts.UpgradeState,
-                  stagedState,
-                ).toCore(),
+                datum: serialize(Contracts.UpgradeState, stagedState).toCore(),
               }),
             ),
         );
@@ -504,9 +491,7 @@ describe("Migrate Federated Ops from v1 to v2 datum", () => {
             .provideScript(govAuth.Script)
             .addOutput(
               TransactionOutput.fromCore({
-                address: PaymentAddress(
-                  federatedOpsTwoStageAddress.toBech32(),
-                ),
+                address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
                 value: {
                   coins: 2_000_000n,
                   assets: new Map([
@@ -581,9 +566,7 @@ describe("Migrate Federated Ops from v1 to v2 datum", () => {
             .provideScript(federatedOpsForever.Script)
             .addOutput(
               TransactionOutput.fromCore({
-                address: PaymentAddress(
-                  federatedOpsForeverAddress.toBech32(),
-                ),
+                address: PaymentAddress(federatedOpsForeverAddress.toBech32()),
                 value: {
                   coins: 2_000_000n,
                   assets: new Map([
@@ -613,8 +596,8 @@ describe("Migrate Federated Ops from v1 to v2 datum", () => {
           const [, output] = utxo.toCore();
           const assets = output.value.assets;
           return assets
-            ? (assets.get(AssetId(federatedOpsForever.Script.hash())) ??
-                0n) === 1n
+            ? (assets.get(AssetId(federatedOpsForever.Script.hash())) ?? 0n) ===
+                1n
             : false;
         });
         expect(finalForeverUtxo).toBeDefined();

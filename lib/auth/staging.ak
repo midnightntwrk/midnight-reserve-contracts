@@ -18,8 +18,7 @@ fn auth_is_on_main(
   auth: ScriptHash,
 ) {
   let pay_cred = Script(two_stage_hash)
-  let main_nft_id =
-    [Pair(two_stage_hash, [Pair("main", 1)])] |> as_data
+  let main_nft_id = [Pair(two_stage_hash, [Pair("main", 1)])] |> as_data
 
   let main_datum =
     must_find(
