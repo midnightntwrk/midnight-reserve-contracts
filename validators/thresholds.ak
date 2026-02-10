@@ -10,9 +10,8 @@ use multisig/script.{check_for_multisig, threshold_validation}
 use multisig/types.{MultisigThreshold}
 use utils.{input_linked_mint, must_find}
 
-/// Validates that the datum is a well-formed MultisigThreshold with valid fractions:
-/// numerators must be non-negative and less than their corresponding denominators.
 fn validation(datum: Data) {
+  // (THD-1) Decode the candidate datum into a multisig threshold record.
   expect MultisigThreshold {
     technical_auth_numerator,
     technical_auth_denominator,
@@ -21,17 +20,17 @@ fn validation(datum: Data) {
   }: MultisigThreshold = datum
 
   and {
+    // (THD-2) Require the technical-authority numerator to be below its denominator.
     technical_auth_numerator < technical_auth_denominator,
+    // (THD-3) Require the council numerator to be below its denominator.
     council_numerator < council_denominator,
+    // (THD-4) Require the technical-authority numerator to be strictly positive.
     technical_auth_numerator > -1,
+    // (THD-5) Require the council numerator to be strictly positive.
     council_numerator > -1,
   }
 }
 
-/// Main governance threshold validator: handles minting and spending of the main gov threshold NFT.
-/// On minting: validates one-shot spend and datum structure.
-/// On spending: requires tech auth and council multisig authorization, preserves NFT identity,
-/// and validates replacement datum.
 validator main_gov_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -47,6 +46,7 @@ validator main_gov_threshold {
 
     when info is {
       Minting(own_policy) -> {
+        // (THM-1) Capture the minted inline datum while validating the one-shot spend.
         let datum =
           input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
@@ -54,6 +54,7 @@ validator main_gov_threshold {
       }
 
       Spending { output, .. } -> {
+        // (THS-1) Locate the script input selected by the ledger.
         let own_input =
           must_find(
             inputs,
@@ -65,16 +66,22 @@ validator main_gov_threshold {
           ..
         } = own_input
 
+        // (THS-2) Ensure the consumed input is guarded by this validator.
         expect Script(own_hash) as pay_cred = address.payment_credential
 
+        // (THS-3) Rebuild the canonical NFT identity for later comparisons.
         let expected_nft_id = [Pair(own_hash, [Pair("", 1)])]
 
+        // (THS-4) Record the NFT pair present on the spending input.
         expect [_, ..nft_id] = value |> to_dict |> to_pairs
 
+        // (THS-5) Require the NFT pair to match the script identity exactly.
         expect as_data(expected_nft_id) == as_data(nft_id)
 
+        // (THS-6) Demand the spending datum be provided inline.
         expect InlineDatum(spending_datum) = spending_datum
 
+        // (THS-7) Decode the inline datum into `MultisigThreshold`.
         expect MultisigThreshold {
           technical_auth_numerator,
           technical_auth_denominator,
@@ -82,6 +89,7 @@ validator main_gov_threshold {
           council_denominator,
         }: MultisigThreshold = spending_datum
 
+        // (THS-8) Require the technical-authority native script derived from the datum and threshold to appear in the mint field.
         expect and {
             check_for_multisig(
               reference_inputs,
@@ -90,6 +98,7 @@ validator main_gov_threshold {
               technical_auth_numerator,
               technical_auth_denominator,
             ),
+            // (THS-9) Require the council native script derived from the datum and threshold to appear in the mint field.
             check_for_multisig(
               reference_inputs,
               mint,
@@ -99,18 +108,24 @@ validator main_gov_threshold {
             ),
           }
 
+        // (THS-10) Fetch the first replacement output for validation.
         expect [
           Output { address: out_addr, value: out_value, datum: out_datum, .. },
           ..
         ] = outputs
 
+        // (THS-11) Record the NFT pair emitted by the replacement output.
         expect [_, ..out_nft_id] = out_value |> to_dict |> to_pairs
 
+        // (THS-12) Ensure the replacement datum remains inline.
         expect InlineDatum(out_datum) = out_datum
 
         and {
+          // (THS-13) Preserve the script credential across the spend.
           out_addr.payment_credential == pay_cred,
+          // (THS-14) Preserve the NFT pair across the spend.
           nft_id == out_nft_id,
+          // (THS-15) Validate the replacement datum content.
           validation(out_datum),
         }
       }
@@ -120,7 +135,6 @@ validator main_gov_threshold {
   }
 }
 
-/// Threshold NFT for staging governance operations.
 validator staging_gov_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -131,11 +145,11 @@ validator staging_gov_threshold {
         config.staging_gov_one_shot_index,
       )
 
+    // (SGT-1) Delegate validation to the shared threshold helper (`threshold_validation`).
     threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
 
-/// Threshold NFT for council membership changes.
 validator main_council_update_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -146,11 +160,11 @@ validator main_council_update_threshold {
         config.main_council_update_one_shot_index,
       )
 
+    // (CGT-1) Delegate validation to the shared threshold helper (`threshold_validation`).
     threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
 
-/// Threshold NFT for tech auth membership changes.
 validator main_tech_auth_update_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -161,11 +175,11 @@ validator main_tech_auth_update_threshold {
         config.main_tech_auth_update_one_shot_index,
       )
 
+    // (TAT-1) Delegate validation to the shared threshold helper (`threshold_validation`).
     threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
 
-/// Threshold NFT for federated ops membership changes.
 validator main_federated_ops_update_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -176,11 +190,11 @@ validator main_federated_ops_update_threshold {
         config.main_federated_ops_update_one_shot_index,
       )
 
+    // (FOT-1) Delegate validation to the shared threshold helper (`threshold_validation`).
     threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
 
-/// Threshold NFT for BEEFY protocol signer requirements.
 validator beefy_signer_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -191,11 +205,11 @@ validator beefy_signer_threshold {
         config.committee_threshold_one_shot_index,
       )
 
+    // (BST-1) Delegate validation to the shared threshold helper (`threshold_validation`).
     threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }
 
-/// Threshold NFT for T&C updates.
 validator terms_and_conditions_threshold {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
@@ -206,6 +220,7 @@ validator terms_and_conditions_threshold {
         config.terms_and_conditions_threshold_one_shot_index,
       )
 
+    // (TCT-1) Delegate validation to the shared threshold helper (`threshold_validation`).
     threshold_validation(transaction, info, one_shot_ref, validation)
   }
 }

@@ -2,7 +2,7 @@ use aiken/builtin
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
-use forever/script.{staging_forever_contract}
+use forever/staging.{staging_forever_contract}
 use forever/types.{FederatedOps, Versioned}
 use multisig/script.{create_signer} as multisig_script
 use multisig/types.{Multisig} as multisig_types

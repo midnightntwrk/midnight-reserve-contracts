@@ -1,7 +1,7 @@
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
-use forever/script.{staging_forever_contract}
+use forever/staging.{staging_forever_contract}
 
 /// No-op validation for reserve initialization; all checks are handled by the forever helper.
 fn reserve_init_validation(_datum: Data, _redeemer: Redeemer) {

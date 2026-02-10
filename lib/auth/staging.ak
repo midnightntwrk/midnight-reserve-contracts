@@ -1,15 +1,51 @@
+use aiken/builtin
+use aiken/collection/dict.{to_pairs}
+use aiken/crypto.{ScriptHash}
 use cardano/address.{Script}
+use cardano/assets.{PolicyId, to_dict}
 use cardano/certificate.{RegisterCredential, UnregisterCredential}
 use cardano/script_context.{Publishing, ScriptInfo, Withdrawing}
-use cardano/transaction.{Transaction}
+use cardano/transaction.{InlineDatum, Input, Output, Transaction}
 use config
 use multisig/script.{check_for_multisig}
 use multisig/types.{MultisigThreshold}
-use upgradable/two_stage_upgrade.{auth_is_on_main}
-use utils.{get_input_state_by_policy}
+use utils.{get_input_state_by_policy, must_find}
+
+/// Checks if the given auth hash matches the one recorded on the main upgrade state.
+fn auth_is_on_main(
+  inputs: List<Input>,
+  two_stage_hash: PolicyId,
+  auth: ScriptHash,
+) {
+  let pay_cred = Script(two_stage_hash)
+  let main_nft_id =
+    [Pair(two_stage_hash, [Pair("main", 1)])] |> as_data
+
+  let main_datum =
+    must_find(
+      inputs,
+      fn(input) {
+        let Output { address, value, .. } = input.output
+
+        and {
+          address.payment_credential == pay_cred,
+          {
+            expect [_, ..nft_id] = value |> to_dict |> to_pairs
+            main_nft_id == as_data(nft_id)
+          },
+        }
+      },
+    ).output.datum
+
+  expect InlineDatum(datum) = main_datum
+
+  expect [_, _, current_auth, ..] = datum |> builtin.un_list_data
+
+  builtin.un_b_data(current_auth) == auth
+}
 
 /// Staging governance auth validation. Uses main or staging thresholds depending
-/// on whether the logic is currently on main. Requires tech auth and council approval.
+/// on whether the auth is currently on main. Requires tech auth and council approval.
 pub fn staging_auth_multisig_validation(
   transaction: Transaction,
   info: ScriptInfo,
@@ -18,7 +54,6 @@ pub fn staging_auth_multisig_validation(
 
   let validation =
     fn(own_hash) {
-      // Use main or staging thresholds based on current logic state
       let threshold_datum =
         if auth_is_on_main(
           reference_inputs,

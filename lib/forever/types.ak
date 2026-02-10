@@ -38,14 +38,6 @@ pub type FederatedOps {
   appendix: List<PermissionedCandidateDatumV1>,
   logic_round: Int,
 }
-
-@list
-pub type FederatedOpsV2 {
-  data: Data,
-  message: ByteArray,
-  appendix: List<PermissionedCandidateDatumV1>,
-  logic_round: Int,
-}
 // 4 bytes
 // key:  [#"bytes", #"bytes"]
 

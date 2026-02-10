@@ -2,7 +2,7 @@ use aiken/builtin
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference}
 use config
-use forever/script.{staging_forever_contract}
+use forever/staging.{staging_forever_contract}
 use forever/types.{TermsAndConditions, Versioned}
 
 /// Validates that the datum is a well-formed versioned TermsAndConditions at logic round 0,

@@ -26,8 +26,6 @@ const list_length_next_2_byte = #"99"
 
 const n_of_m_script_bytes = #"008303"
 
-/// Builds a native N-of-M multisig script from a Multisig datum and threshold.
-/// The minimum signers is computed as ceiling(total * numerator / denominator).
 pub fn build_native_script(
   multisig: Multisig,
   threshold_numerator,
@@ -79,16 +77,12 @@ fn native_script_signer_list(
   }
 }
 
-/// Creates a native script signer entry from a verification key hash.
-/// Prepends the native script header bytes to form a valid signer.
 pub fn create_signer(pkh: VerificationKeyHash) -> ByteArray {
   expect builtin.length_of_bytearray(pkh) == 28
 
   bytearray.concat(#"8200581c", pkh)
 }
 
-/// Verifies multisig approval by checking that a native script derived from
-/// the multisig datum and threshold was used to mint an asset in this transaction.
 pub fn check_for_multisig(
   inputs: List<Input>,
   mint: Value,
@@ -96,33 +90,32 @@ pub fn check_for_multisig(
   threshold_numerator,
   threshold_denominator,
 ) -> Bool {
-  // Find input holding the forever NFT under nft_id
   let input =
     must_find(
       inputs,
       fn(input) {
         when input.output.value |> to_dict |> to_pairs is {
+          // (CM-1) Identify an input holding the forever NFT under `nft_id`.
           [_, Pair(nft_policy, _), ..] -> nft_policy == nft_id
           _ -> False
         }
       },
     )
 
+  // (CM-2) Require the NFT input to expose an inline datum.
   expect InlineDatum(datum) = input.output.datum
 
+  // (CM-3) Decode the datum into a versioned multisig configuration.
   expect Versioned { data: multisig, .. }: Versioned<Multisig> = datum
 
   let minting_policy =
     build_native_script(multisig, threshold_numerator, threshold_denominator)
       |> builtin.blake2b_224
 
-  // Transaction must mint under the rebuilt native script policy
+  // (CM-4) Demand the transaction mint an asset under the rebuilt native script.
   list.any(mint |> to_dict |> to_pairs, fn(pair) { pair.1st == minting_policy })
 }
 
-/// Shared threshold validator logic for both minting and spending.
-/// On minting: validates one-shot spend and datum structure.
-/// On spending: requires tech auth and council multisig approval, validates datum update.
 pub fn threshold_validation(
   transaction: Transaction,
   info: ScriptInfo,
@@ -133,32 +126,39 @@ pub fn threshold_validation(
 
   when info is {
     Minting(own_policy) -> {
+      // (THM-1) Capture the minted inline datum while validating the one-shot spend.
       let datum =
         input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
 
       and {
-        // Touch cnight_policy so it contributes to the script hash
+        // (THM-3) Touch `cnight_policy` so this helper remains in the script hash.
         own_policy != config.cnight_policy,
+        // (THM-2) Require the inline datum to satisfy validator-specific checks.
         datum_validation(datum),
       }
     }
 
     Spending { output, .. } -> {
+      // (THS-1) Locate the script input chosen by the ledger.
       let own_input =
         must_find(inputs, fn(input: Input) { input.output_reference == output })
 
       let Input { output: Output { address, value, .. }, .. } = own_input
 
+      // (THS-2) Ensure the consumed input is locked by this script.
       expect Script(own_hash) as pay_cred = address.payment_credential
 
+      // (THS-5) Require the input to hold exactly one NFT under the policy.
       expect is_singleton(value, own_hash, "")
 
+      // (THS-16) Require the main governance threshold reference input to provide an inline datum.
       let ref_datum =
         get_input_state_by_policy(
           reference_inputs,
           config.main_gov_threshold_hash,
         )
 
+      // (THS-7) Decode the reference datum into a multisig threshold record.
       expect MultisigThreshold {
         technical_auth_numerator,
         technical_auth_denominator,
@@ -166,8 +166,8 @@ pub fn threshold_validation(
         council_denominator,
       }: MultisigThreshold = ref_datum
 
-      // Both tech auth and council must approve via native script minting
       expect and {
+          // (THS-8) Require the technical-authority native script rebuilt from the datum to appear in mint.
           check_for_multisig(
             reference_inputs,
             mint,
@@ -175,6 +175,7 @@ pub fn threshold_validation(
             technical_auth_numerator,
             technical_auth_denominator,
           ),
+          // (THS-9) Require the council native script rebuilt from the datum to appear in mint.
           check_for_multisig(
             reference_inputs,
             mint,
@@ -184,16 +185,21 @@ pub fn threshold_validation(
           ),
         }
 
+      // (THS-10) Inspect the first output for the replacement state.
       expect [
         Output { address: out_addr, value: out_value, datum: out_datum, .. },
         ..
       ] = outputs
 
+      // (THS-12) Ensure the replacement datum is inline.
       expect InlineDatum(out_datum) = out_datum
 
       and {
+        // (THS-13) Preserve the payment credential.
         out_addr.payment_credential == pay_cred,
+        // (THS-14) Preserve the singleton NFT identity.
         is_singleton(out_value, own_hash, ""),
+        // (THS-15) Validate the candidate datum using the supplied hook.
         datum_validation(out_datum),
       }
     }
