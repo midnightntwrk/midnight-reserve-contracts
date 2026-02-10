@@ -77,7 +77,9 @@ pub fn verify_mmr_update_proof(
   expect signed_stake >= validating_threshold
 
   expect
-    nc_payload.data == ( scale_encode_beefy_mmr_leaf(latest_mmr_leaf) |> builtin.keccak_256 )
+    nc_payload.data == (
+      scale_encode_beefy_mmr_leaf(latest_mmr_leaf) |> builtin.keccak_256
+    )
 
   let
     current_authority_set,

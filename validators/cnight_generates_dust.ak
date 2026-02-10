@@ -12,10 +12,9 @@ use cardano/transaction.{InlineDatum, Input, Output, Transaction}
 use config
 use utils.{input_linked_mint, must_find}
 
+/// Links a Cardano wallet credential to a Midnight dust address.
 pub type DustMappingDatum {
-  // Address of wallet's staking key to register for Dust production
   c_wallet: Credential,
-  // DUST address on Midnight to accumulate produced DUST
   dust_address: ByteArray,
 }
 
@@ -24,21 +23,21 @@ pub type DustAction {
   Burn
 }
 
+/// Validates wallet authorization: verification keys must sign, scripts must appear in withdrawals.
 fn check_auth(
   c_wallet: Credential,
   extra_signatories: List<VerificationKeyHash>,
   withdrawals: Pairs<Credential, Int>,
 ) {
   when c_wallet is {
-    // (DG-4) VKey wallets must be represented by an extra signer.
     VerificationKey(key) -> list.has(extra_signatories, key)
 
-    // (DG-5) Script wallets must appear in withdrawals.
     Script(_) as script ->
       list.any(withdrawals, fn(withdraw) { withdraw.1st == script })
   }
 }
 
+/// Manages dust mapping NFTs linking Cardano wallets to Midnight addresses.
 validator cnight_generates_dust {
   else(ctx: ScriptContext) {
     let ScriptContext { redeemer, info, transaction } = ctx
@@ -54,9 +53,7 @@ validator cnight_generates_dust {
 
     when info is {
       Minting(own_policy) ->
-        // Mint/Create
         if redeemer == as_data(Create) {
-          // (DG-1) Require the mint transaction to consume the ledger-selected input.
           expect [input, ..] = inputs
 
           let output_datum =
@@ -68,15 +65,12 @@ validator cnight_generates_dust {
               input.output_reference,
             )
 
-          // (DG-2) Decode the emitted datum into a `DustMappingDatum`.
           expect DustMappingDatum { c_wallet, dust_address } = output_datum
 
-          // (DG-3) Ensure the dust address fits within 33 bytes.
           expect builtin.length_of_bytearray(dust_address) <= 33
 
           check_auth(c_wallet, extra_signatories, withdrawals)
         } else {
-          // Burn
           let pay_cred = Script(own_policy)
 
           let spent_inputs =
@@ -98,17 +92,12 @@ validator cnight_generates_dust {
               |> to_pairs
               |> must_find(fn(value) { value.1st == own_policy })
           and {
-            // (DG-11) Burning requires the mint map to record the precise NFT delta from spent inputs.
             [Pair("", spent_inputs)] == to_pairs(tokens),
-            // (DG-12) Keep the helper touching `cnight_policy` so hashes stay stable.
             own_policy != config.cnight_policy,
           }
         }
 
-      // Transaction level Script to validate all inputs in one go
-      //
       Withdrawing(own_cred) -> {
-        // (DG-6) Reward withdrawals must originate from the script credential.
         expect Script(own_hash) = own_cred
         let expected_nft = as_data([Pair(own_hash, [Pair("", 1)])])
         expect _ =
@@ -121,20 +110,15 @@ validator cnight_generates_dust {
 
                 expect address.payment_credential == own_cred
 
-                // (DG-7) Each paired output must carry exactly one script NFT.
                 expect [_, ..nft_id] = value |> to_dict |> to_pairs
 
-                // (DG-8) The paired output must retain the same NFT identity.
                 expect as_data(nft_id) == expected_nft
 
-                // (DG-9) Replacement states must use inline datums.
                 expect InlineDatum(output_datum) = datum
 
-                // (DG-10) Re-validate the dust mapping payload.
                 expect DustMappingDatum { c_wallet, dust_address } =
                   output_datum
 
-                // (DG-3) Enforce the 33-byte dust address limit during withdrawals as well.
                 expect builtin.length_of_bytearray(dust_address) <= 33
 
                 expect check_auth(c_wallet, extra_signatories, withdrawals)
@@ -149,20 +133,16 @@ validator cnight_generates_dust {
         True
       }
 
-      // Input specific
       Spending { datum, output } -> {
-        // (DG-13) Spending transactions must supply inline dust state.
         expect Some(datum) = datum
         expect DustMappingDatum { c_wallet, .. } = datum
 
-        // (DG-14) Recover the dust script credential from the ledger-selected input for later checks.
         expect Script(own_hash) as script =
           must_find(inputs, fn(input) { input.output_reference == output }).output.address.payment_credential
 
         let minted_quantity = quantity_of(mint, own_hash, "")
         and {
           check_auth(c_wallet, extra_signatories, withdrawals),
-          // (DG-15) Require the transaction to either burn dust NFTs or prove script withdrawal authority for a no-mint update.
           or {
             minted_quantity < 0,
             and {
@@ -179,18 +159,3 @@ validator cnight_generates_dust {
     }
   }
 }
-// inputs
-
-// independent validation
-// utxo1  -> output(tag_datum1)
-
-// independent validation
-// utxo2  ->  output(tag_datum2)
-
-// independent validation
-// utxo1 -> check for withdraw -> transaction level script aka Withdrawing  -> output1
-
-// independent validation
-// utxo2 -> check for withdraw -> transaction level script aka Withdrawing  -> output2
-
-// Delegate -> Withdrawing getting rewards and creating a utxo from that
