@@ -1732,3 +1732,6 @@ encoding = "hex"
 [config.mainnet.bridge_signer_threshold_hash]
 bytes = "48951a0302f00894e97280b4db44808a4df7ed0e7aa3ad524a23dc08"
 encoding = "hex"
+
+[config.node-dev-2]
+# one_shot = "TX_HASH_HERE#OUTPUT_INDEX"
