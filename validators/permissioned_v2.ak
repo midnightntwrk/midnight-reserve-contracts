@@ -67,6 +67,7 @@ validator council_logic_v2 {
       config.council_forever_hash,
       config.council_two_stage_hash,
       validate_multisig_structure_v2,
+      fn(_datum, _input) { fail },
       config.main_council_update_threshold_hash,
       one_shot_ref,
     )
@@ -90,6 +91,7 @@ validator tech_auth_logic_v2 {
       config.technical_authority_forever_hash,
       config.technical_authority_two_stage_hash,
       validate_multisig_structure_v2,
+      fn(_datum, _input) { fail },
       config.main_tech_auth_update_threshold_hash,
       one_shot_ref,
     )
@@ -113,6 +115,7 @@ validator federated_ops_logic_v2 {
       config.federated_operators_forever_hash,
       config.federated_operators_two_stage_hash,
       validate_federated_ops_v2,
+      fn(_datum, _input) { fail },
       config.main_federated_ops_update_threshold_hash,
       one_shot_ref,
     )

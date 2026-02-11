@@ -32,6 +32,7 @@ validator terms_and_conditions_logic_v2 {
       config.terms_and_conditions_forever_hash,
       config.terms_and_conditions_two_stage_hash,
       validate_terms_structure_v2,
+      fn(_datum, _input) { fail },
       config.terms_and_conditions_threshold_hash,
       one_shot_ref,
     )

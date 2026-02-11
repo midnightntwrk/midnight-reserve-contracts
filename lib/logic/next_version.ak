@@ -7,7 +7,7 @@ use cardano/assets.{ada_asset_name, ada_policy_id, to_dict}
 use cardano/certificate.{RegisterCredential, UnregisterCredential}
 use cardano/script_context.{Minting, Publishing, ScriptInfo, Withdrawing}
 use cardano/transaction.{
-  DatumHash, Output, OutputReference, Redeemer, Transaction,
+  DatumHash, Output, OutputReference, Redeemer, Transaction, Withdraw,
 }
 use config
 use logic/types.{StagingState}
@@ -125,13 +125,14 @@ pub fn logic_multisig_validation_nft_input_v2(
   main_forever_script_hash: ScriptHash,
   two_stage_hash: ScriptHash,
   logic_state_validation,
+  migrate_validation,
   threshold: ScriptHash,
   one_shot_ref: OutputReference,
 ) {
   let Transaction { inputs, reference_inputs, outputs, mint, .. } = transaction
 
   let validation =
-    fn(own_hash) {
+    fn(own_hash, callback_redeemer) {
       let threshold_datum, forever_hash <-
         fn(callback) {
           if logic_is_on_main(reference_inputs, two_stage_hash, own_hash) {
@@ -152,54 +153,56 @@ pub fn logic_multisig_validation_nft_input_v2(
           }
         }
 
-      expect logic_redeemer: LogicRedeemer = redeemer
+      expect MultisigThreshold {
+        technical_auth_numerator,
+        technical_auth_denominator,
+        council_numerator,
+        council_denominator,
+      }: MultisigThreshold = threshold_datum
 
-      when logic_redeemer is {
-        Normal(inner_redeemer) -> {
-          expect MultisigThreshold {
-            technical_auth_numerator,
-            technical_auth_denominator,
-            council_numerator,
-            council_denominator,
-          }: MultisigThreshold = threshold_datum
+      let datum = get_output_state_by_policy(outputs, forever_hash)
 
-          let datum = get_output_state_by_policy(outputs, forever_hash)
-
-          and {
-            check_for_multisig(
-              // Used in the case we are spending multisig state rather than referencing it
-              if forever_hash == config.technical_authority_forever_hash {
-                inputs
-              } else {
-                reference_inputs
-              },
-              mint,
-              config.technical_authority_forever_hash,
-              technical_auth_numerator,
-              technical_auth_denominator,
-            ),
-            check_for_multisig(
-              // Used in the case we are spending multisig state rather than referencing it
-              if forever_hash == config.council_forever_hash {
-                inputs
-              } else {
-                reference_inputs
-              },
-              mint,
-              config.council_forever_hash,
-              council_numerator,
-              council_denominator,
-            ),
-            logic_state_validation(datum, inner_redeemer),
-          }
-        }
-        Migrate -> {
-          let input_datum = get_input_state_by_policy(inputs, forever_hash)
-          let output_datum = get_output_state_by_policy(outputs, forever_hash)
-
-          logic_state_validation(output_datum, input_datum)
-        }
+      and {
+        check_for_multisig(
+          if forever_hash == config.technical_authority_forever_hash {
+            inputs
+          } else {
+            reference_inputs
+          },
+          mint,
+          config.technical_authority_forever_hash,
+          technical_auth_numerator,
+          technical_auth_denominator,
+        ),
+        check_for_multisig(
+          if forever_hash == config.council_forever_hash {
+            inputs
+          } else {
+            reference_inputs
+          },
+          mint,
+          config.council_forever_hash,
+          council_numerator,
+          council_denominator,
+        ),
+        logic_state_validation(datum, callback_redeemer),
       }
+    }
+
+  let migrate =
+    fn(own_hash) {
+      let forever_hash =
+        if logic_is_on_main(reference_inputs, two_stage_hash, own_hash) {
+          main_forever_script_hash
+        } else {
+          let datum = get_input_state_by_policy(inputs, own_hash)
+          expect StagingState { forever_script_hash, .. }: StagingState = datum
+          forever_script_hash
+        }
+
+      let input_datum = get_input_state_by_policy(inputs, forever_hash)
+      let output_datum = get_output_state_by_policy(outputs, forever_hash)
+      migrate_validation(output_datum, input_datum)
     }
 
   when info is {
@@ -216,11 +219,25 @@ pub fn logic_multisig_validation_nft_input_v2(
       }
     }
 
-    Withdrawing(Script(own_hash)) |
+    Withdrawing(Script(own_hash)) -> {
+      expect logic_redeemer: LogicRedeemer = redeemer
+      when logic_redeemer is {
+        Normal(inner_redeemer) -> validation(own_hash, inner_redeemer)
+        Migrate -> migrate(own_hash)
+      }
+    }
+
     Publishing {
-      certificate: UnregisterCredential { credential: Script(own_hash), .. },
+      certificate: UnregisterCredential { credential: cred, .. },
       ..
-    } -> validation(own_hash)
+    } -> {
+      expect Some(Pair(_, withdraw_redeemer)) =
+        list.find(
+          transaction.redeemers,
+          fn(pair) { pair.1st == Withdraw(cred) },
+        )
+      as_data(Migrate) == withdraw_redeemer
+    }
 
     Publishing { certificate: RegisterCredential { .. }, .. } -> True
 
