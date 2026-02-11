@@ -236,7 +236,7 @@ pub fn logic_multisig_validation_nft_input_v2(
           transaction.redeemers,
           fn(pair) { pair.1st == Withdraw(cred) },
         )
-      as_data(Migrate) == withdraw_redeemer
+      as_data(Migrate) != withdraw_redeemer
     }
 
     Publishing { certificate: RegisterCredential { .. }, .. } -> True

@@ -1,9 +1,7 @@
 import {
   Address,
   AssetId,
-  AssetName,
   PlutusData,
-  PolicyId,
   Script,
   TransactionOutput,
   PaymentAddress,
@@ -20,7 +18,6 @@ import {
   getCredentialAddress,
   findScriptByHash,
 } from "../lib/contracts";
-import { parsePrivateKeys, extractSignersFromCbor } from "../lib/signers";
 import { createFederatedOpsDatumV2 } from "../lib/candidates";
 import {
   printSuccess,
@@ -30,10 +27,7 @@ import {
   parseInlineDatum,
 } from "../utils";
 import {
-  createNativeMultisigScript,
   createRewardAccount,
-  signTransaction,
-  attachWitnesses,
   findUtxoWithMainAsset,
   findUtxoByTxRef,
 } from "../utils/transaction";
@@ -43,7 +37,7 @@ import * as Contracts from "../../contract_blueprint";
 export async function migrateFederatedOps(
   options: ChangeAuthOptions,
 ): Promise<void> {
-  const { network, output, txHash, txIndex, sign, outputFile } = options;
+  const { network, output, txHash, txIndex, outputFile } = options;
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);
 
@@ -73,9 +67,6 @@ export async function migrateFederatedOps(
     provider,
     {
       federatedOpsForever: contracts.federatedOpsForever.Script,
-      federatedOpsThreshold: contracts.mainFederatedOpsUpdateThreshold.Script,
-      councilForever: contracts.councilForever.Script,
-      techAuthForever: contracts.techAuthForever.Script,
       federatedOpsTwoStage: contracts.federatedOpsTwoStage.Script,
     },
     networkId,
@@ -84,30 +75,18 @@ export async function migrateFederatedOps(
   console.log("\nFound contract UTxOs:");
   console.log("  Federated ops forever:", allUtxos.federatedOpsForever.length);
   console.log(
-    "  Federated ops threshold:",
-    allUtxos.federatedOpsThreshold.length,
-  );
-  console.log("  Council forever:", allUtxos.councilForever.length);
-  console.log("  Tech auth forever:", allUtxos.techAuthForever.length);
-  console.log(
     "  Federated ops two stage:",
     allUtxos.federatedOpsTwoStage.length,
   );
 
   if (
     !allUtxos.federatedOpsForever.length ||
-    !allUtxos.federatedOpsThreshold.length ||
-    !allUtxos.councilForever.length ||
-    !allUtxos.techAuthForever.length ||
     !allUtxos.federatedOpsTwoStage.length
   ) {
     throw new Error("Missing required contract UTxOs");
   }
 
   const federatedOpsForeverUtxo = allUtxos.federatedOpsForever[0];
-  const federatedOpsThresholdUtxo = allUtxos.federatedOpsThreshold[0];
-  const councilForeverUtxo = allUtxos.councilForever[0];
-  const techAuthForeverUtxo = allUtxos.techAuthForever[0];
   const federatedOpsTwoStageUtxo = findUtxoWithMainAsset(
     allUtxos.federatedOpsTwoStage,
   );
@@ -188,76 +167,6 @@ export async function migrateFederatedOps(
   console.log("  message: (empty)");
   console.log("  logic_round: 2");
 
-  // Parse current council state for ML-3 validation
-  console.log("\nReading current council state for ML-3 validation...");
-  const councilDatum = councilForeverUtxo.output().datum();
-  if (!councilDatum?.asInlineData()) {
-    throw new Error("Council forever UTxO missing inline datum");
-  }
-
-  // Use CBOR-aware extraction to preserve duplicate keys
-  const councilSigners = extractSignersFromCbor(councilDatum.asInlineData()!);
-
-  if (!councilSigners.length) {
-    throw new Error("No council signers found in council forever datum");
-  }
-
-  // Parse current tech auth state for ML-3 validation
-  console.log("\nReading current tech auth state for ML-3 validation...");
-  const techAuthDatum = techAuthForeverUtxo.output().datum();
-  if (!techAuthDatum?.asInlineData()) {
-    throw new Error("Tech auth forever UTxO missing inline datum");
-  }
-
-  // Use CBOR-aware extraction to preserve duplicate keys
-  const techAuthSigners = extractSignersFromCbor(techAuthDatum.asInlineData()!);
-
-  if (!techAuthSigners.length) {
-    throw new Error("No tech auth signers found in tech auth forever datum");
-  }
-
-  // Read threshold datum from federated ops threshold UTxO
-  console.log("\nReading federated ops update threshold...");
-  const thresholdState = parseInlineDatum(
-    federatedOpsThresholdUtxo,
-    Contracts.MultisigThreshold,
-    parse,
-  );
-
-  // Calculate required signers based on threshold
-  // MultisigThreshold is a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
-  const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
-  const techAuthRequiredSigners = Number(
-    (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
-      techAuthDenom,
-  );
-  const councilRequiredSigners = Number(
-    (BigInt(councilSigners.length) * councilNum + (councilDenom - 1n)) /
-      councilDenom,
-  );
-
-  console.log(
-    `\nRequired tech auth signers: ${techAuthRequiredSigners}/${techAuthSigners.length}`,
-  );
-  console.log(
-    `Required council signers: ${councilRequiredSigners}/${councilSigners.length}`,
-  );
-
-  const nativeScriptCouncil = createNativeMultisigScript(
-    councilRequiredSigners,
-    councilSigners,
-    networkId,
-  );
-
-  const nativeScriptTechAuth = createNativeMultisigScript(
-    techAuthRequiredSigners,
-    techAuthSigners,
-    networkId,
-  );
-
-  const councilPolicyId = PolicyId(nativeScriptCouncil.hash());
-  const techAuthPolicyId = PolicyId(nativeScriptTechAuth.hash());
-
   const logicRewardAccount = createRewardAccount(logicHash, networkId);
   console.log("\nLogic reward account:", logicRewardAccount);
 
@@ -282,22 +191,20 @@ export async function migrateFederatedOps(
   if (!userUtxo) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
-  const federatedOpsRedeemer = PlutusData.newInteger(0n);
+
+  // Migrate redeemer: constructor variant index 1 (Migrate), empty fields
+  const migrateRedeemer = PlutusData.fromCore({
+    constructor: 1n,
+    fields: { items: [] },
+  });
 
   try {
     const txBuilder = blaze
       .newTransaction()
       .addInput(userUtxo)
       .addInput(federatedOpsForeverUtxo, PlutusData.newInteger(0n))
-      .addReferenceInput(federatedOpsThresholdUtxo)
-      .addReferenceInput(councilForeverUtxo)
-      .addReferenceInput(techAuthForeverUtxo)
       .addReferenceInput(federatedOpsTwoStageUtxo)
       .provideScript(contracts.federatedOpsForever.Script)
-      .addMint(councilPolicyId, new Map([[AssetName(""), 1n]]))
-      .provideScript(Script.newNativeScript(nativeScriptCouncil))
-      .addMint(techAuthPolicyId, new Map([[AssetName(""), 1n]]))
-      .provideScript(Script.newNativeScript(nativeScriptTechAuth))
       .addOutput(
         TransactionOutput.fromCore({
           address: PaymentAddress(federatedOpsForeverAddress.toBech32()),
@@ -310,8 +217,8 @@ export async function migrateFederatedOps(
           datum: newDatum.toCore(),
         }),
       )
-      // Add logic withdrawal (from UpgradeState)
-      .addWithdrawal(logicRewardAccount, 0n, federatedOpsRedeemer)
+      // Add logic withdrawal with Migrate redeemer
+      .addWithdrawal(logicRewardAccount, 0n, migrateRedeemer)
       .provideScript(logicScript)
       .setChangeAddress(changeAddress)
       .setMetadata(createTxMetadata("migrate-federated-ops"))
@@ -321,7 +228,7 @@ export async function migrateFederatedOps(
     if (mitigationLogicScript && mitigationLogicRewardAccount) {
       console.log("  Adding mitigation logic withdrawal...");
       txBuilder
-        .addWithdrawal(mitigationLogicRewardAccount, 0n, federatedOpsRedeemer)
+        .addWithdrawal(mitigationLogicRewardAccount, 0n, migrateRedeemer)
         .provideScript(mitigationLogicScript);
     }
 
@@ -329,46 +236,19 @@ export async function migrateFederatedOps(
 
     printSuccess(`Transaction built: ${tx.getId()}`);
 
-    if (sign) {
-      // Sign with both tech auth and council keys
-      const signerKeyGroups = [
-        {
-          label: "tech auth",
-          keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS"),
-        },
-        { label: "council", keys: parsePrivateKeys("COUNCIL_PRIVATE_KEYS") },
-      ];
-
-      const allSignatures: ReturnType<typeof signTransaction> = [];
-
-      for (const { label, keys } of signerKeyGroups) {
-        console.log(`\nSigning with ${keys.length} ${label} private keys...`);
-        const signatures = signTransaction(tx.getId(), keys);
-        allSignatures.push(...signatures);
-        console.log(`  Created ${signatures.length} signatures`);
-      }
-
-      const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
-      writeTransactionFile(
-        outputPath,
-        signedTx.toCbor(),
-        tx.getId(),
-        true,
-        "Migrate Federated Ops Transaction",
-      );
-      printSuccess(`Signed transaction written to ${outputPath}`);
-    } else {
-      writeTransactionFile(
-        outputPath,
-        tx.toCbor(),
-        tx.getId(),
-        false,
-        "Migrate Federated Ops Transaction",
-      );
-      printSuccess(`Unsigned transaction written to ${outputPath}`);
-    }
+    writeTransactionFile(
+      outputPath,
+      tx.toCbor(),
+      tx.getId(),
+      false,
+      "Migrate Federated Ops Transaction",
+    );
+    printSuccess(`Transaction written to ${outputPath}`);
 
     console.log("\nTransaction ID:", tx.getId());
+    console.log(
+      "\nNote: Migrate redeemer bypasses multisig validation - no signing required.",
+    );
   } catch (error) {
     printError("Transaction build failed");
     // Log detailed error info
