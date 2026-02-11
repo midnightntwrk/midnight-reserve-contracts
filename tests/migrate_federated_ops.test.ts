@@ -47,7 +47,7 @@ describe("Migrate Federated Ops from v1 to v2 datum", () => {
       new Contracts.PermissionedFederatedOpsTwoStageUpgradeElse();
     const federatedOpsLogic = new Contracts.PermissionedFederatedOpsLogicElse();
     const federatedOpsLogicV2 =
-      new Contracts.PermissionedFederatedOpsLogicV2Else();
+      new Contracts.PermissionedV2FederatedOpsLogicV2Else();
     const mainFederatedOpsUpdateThreshold =
       new Contracts.ThresholdsMainFederatedOpsUpdateThresholdElse();
 
