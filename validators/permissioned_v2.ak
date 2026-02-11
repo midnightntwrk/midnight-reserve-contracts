@@ -2,7 +2,7 @@ use aiken/builtin
 use cardano/script_context.{ScriptContext}
 use cardano/transaction.{OutputReference, Redeemer}
 use config
-use forever/types.{Versioned}
+use forever/types.{FederatedOps, Versioned}
 use forever/types_v2.{FederatedOpsV2}
 use logic/next_version.{logic_multisig_validation_nft_input_v2}
 use multisig/script.{create_signer} as multisig_script
@@ -50,6 +50,38 @@ fn validate_federated_ops_v2(datum: Data, _redeemer) {
   True
 }
 
+/// Validates migration from Versioned<Multisig> logic_round 0 to logic_round 1.
+/// Multisig data must be preserved exactly.
+fn migrate_multisig_validation(output_datum: Data, input_datum: Data) {
+  expect Versioned { data: input_multisig, logic_round: 0 }: Versioned<Multisig> =
+    input_datum
+  expect Versioned { data: output_multisig, logic_round: 1 }: Versioned<
+    Multisig,
+  > = output_datum
+  output_multisig == input_multisig
+}
+
+/// Validates migration from FederatedOps (logic_round 1) to FederatedOpsV2 (logic_round 2).
+/// Data and appendix must be preserved exactly, message must be empty string.
+fn migrate_federated_ops_validation(output_datum: Data, input_datum: Data) {
+  expect FederatedOps {
+    data: input_data,
+    appendix: input_appendix,
+    logic_round: 1,
+  }: FederatedOps = input_datum
+  expect FederatedOpsV2 {
+    data: output_data,
+    message,
+    appendix: output_appendix,
+    logic_round: 2,
+  }: FederatedOpsV2 = output_datum
+  and {
+    output_data == input_data,
+    message == "",
+    output_appendix == input_appendix,
+  }
+}
+
 /// Enforces multisig quorum for council operations via withdrawal (v2).
 validator council_logic_v2 {
   else(ctx: ScriptContext) {
@@ -67,7 +99,7 @@ validator council_logic_v2 {
       config.council_forever_hash,
       config.council_two_stage_hash,
       validate_multisig_structure_v2,
-      fn(_datum, _input) { fail },
+      migrate_multisig_validation,
       config.main_council_update_threshold_hash,
       one_shot_ref,
     )
@@ -91,7 +123,7 @@ validator tech_auth_logic_v2 {
       config.technical_authority_forever_hash,
       config.technical_authority_two_stage_hash,
       validate_multisig_structure_v2,
-      fn(_datum, _input) { fail },
+      migrate_multisig_validation,
       config.main_tech_auth_update_threshold_hash,
       one_shot_ref,
     )
@@ -115,7 +147,7 @@ validator federated_ops_logic_v2 {
       config.federated_operators_forever_hash,
       config.federated_operators_two_stage_hash,
       validate_federated_ops_v2,
-      fn(_datum, _input) { fail },
+      migrate_federated_ops_validation,
       config.main_federated_ops_update_threshold_hash,
       one_shot_ref,
     )
