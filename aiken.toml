@@ -1759,11 +1759,11 @@ technical_authority_logic_v2_one_shot_index = 3
 federated_operators_logic_v2_one_shot_index = 4
 terms_and_conditions_logic_v2_one_shot_index = 5
 reserve_staging_one_shot_index = 0
-council_staging_one_shot_index = 0
-ics_staging_one_shot_index = 0
-technical_authority_staging_one_shot_index = 0
-federated_operators_staging_one_shot_index = 0
-terms_and_conditions_staging_one_shot_index = 0
+council_staging_one_shot_index = 1
+ics_staging_one_shot_index = 2
+technical_authority_staging_one_shot_index = 3
+federated_operators_staging_one_shot_index = 4
+terms_and_conditions_staging_one_shot_index = 5
 collateral_utxo_index = 15
 
 [config.node-dev-2.reserve_logic_v2_one_shot_hash]
@@ -1791,27 +1791,27 @@ bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.node-dev-2.reserve_staging_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "bbd21d4f99a6b76f0f38e364464f8c44fbe7a0d57f2ff60bbf91c724f195dac8"
 encoding = "hex"
 
 [config.node-dev-2.council_staging_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "bbd21d4f99a6b76f0f38e364464f8c44fbe7a0d57f2ff60bbf91c724f195dac8"
 encoding = "hex"
 
 [config.node-dev-2.ics_staging_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "bbd21d4f99a6b76f0f38e364464f8c44fbe7a0d57f2ff60bbf91c724f195dac8"
 encoding = "hex"
 
 [config.node-dev-2.technical_authority_staging_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "bbd21d4f99a6b76f0f38e364464f8c44fbe7a0d57f2ff60bbf91c724f195dac8"
 encoding = "hex"
 
 [config.node-dev-2.federated_operators_staging_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "bbd21d4f99a6b76f0f38e364464f8c44fbe7a0d57f2ff60bbf91c724f195dac8"
 encoding = "hex"
 
 [config.node-dev-2.terms_and_conditions_staging_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "bbd21d4f99a6b76f0f38e364464f8c44fbe7a0d57f2ff60bbf91c724f195dac8"
 encoding = "hex"
 
 [config.node-dev-2.reserve_one_shot_hash]
