@@ -10,7 +10,8 @@ use cardano/transaction.{
   DatumHash, Output, OutputReference, Redeemer, Transaction,
 }
 use config
-use logic/types.{LogicRedeemer, Migrate, Normal, StagingState}
+use logic/types.{StagingState}
+use logic/types_v2.{LogicRedeemer, Migrate, Normal}
 use multisig/script.{check_for_multisig}
 use multisig/types.{MultisigThreshold} as t
 use upgradable/two_stage_upgrade.{logic_is_on_main}
@@ -154,7 +155,7 @@ pub fn logic_multisig_validation_nft_input_v2(
       expect logic_redeemer: LogicRedeemer = redeemer
 
       when logic_redeemer is {
-        Normal -> {
+        Normal(inner_redeemer) -> {
           expect MultisigThreshold {
             technical_auth_numerator,
             technical_auth_denominator,
@@ -189,7 +190,7 @@ pub fn logic_multisig_validation_nft_input_v2(
               council_numerator,
               council_denominator,
             ),
-            logic_state_validation(datum, redeemer),
+            logic_state_validation(datum, inner_redeemer),
           }
         }
         Migrate -> {
