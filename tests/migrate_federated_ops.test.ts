@@ -579,7 +579,10 @@ describe("Migrate Federated Ops from v1 to v2 datum", () => {
             .addWithdrawal(
               federatedOpsLogicV2RewardAccount,
               0n,
-              PlutusData.newInteger(0n),
+              PlutusData.fromCore({
+                constructor: 1n,
+                fields: { items: [] },
+              }),
             )
             .provideScript(federatedOpsLogicV2.Script),
         );

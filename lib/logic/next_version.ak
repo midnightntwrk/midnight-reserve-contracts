@@ -10,7 +10,7 @@ use cardano/transaction.{
   DatumHash, Output, OutputReference, Redeemer, Transaction,
 }
 use config
-use logic/types.{StagingState}
+use logic/types.{LogicRedeemer, Migrate, Normal, StagingState}
 use multisig/script.{check_for_multisig}
 use multisig/types.{MultisigThreshold} as t
 use upgradable/two_stage_upgrade.{logic_is_on_main}
@@ -151,41 +151,53 @@ pub fn logic_multisig_validation_nft_input_v2(
           }
         }
 
-      expect MultisigThreshold {
-        technical_auth_numerator,
-        technical_auth_denominator,
-        council_numerator,
-        council_denominator,
-      }: MultisigThreshold = threshold_datum
+      expect logic_redeemer: LogicRedeemer = redeemer
 
-      let datum = get_output_state_by_policy(outputs, forever_hash)
+      when logic_redeemer is {
+        Normal -> {
+          expect MultisigThreshold {
+            technical_auth_numerator,
+            technical_auth_denominator,
+            council_numerator,
+            council_denominator,
+          }: MultisigThreshold = threshold_datum
 
-      and {
-        check_for_multisig(
-          // Used in the case we are spending multisig state rather than referencing it
-          if forever_hash == config.technical_authority_forever_hash {
-            inputs
-          } else {
-            reference_inputs
-          },
-          mint,
-          config.technical_authority_forever_hash,
-          technical_auth_numerator,
-          technical_auth_denominator,
-        ),
-        check_for_multisig(
-          // Used in the case we are spending multisig state rather than referencing it
-          if forever_hash == config.council_forever_hash {
-            inputs
-          } else {
-            reference_inputs
-          },
-          mint,
-          config.council_forever_hash,
-          council_numerator,
-          council_denominator,
-        ),
-        logic_state_validation(datum, redeemer),
+          let datum = get_output_state_by_policy(outputs, forever_hash)
+
+          and {
+            check_for_multisig(
+              // Used in the case we are spending multisig state rather than referencing it
+              if forever_hash == config.technical_authority_forever_hash {
+                inputs
+              } else {
+                reference_inputs
+              },
+              mint,
+              config.technical_authority_forever_hash,
+              technical_auth_numerator,
+              technical_auth_denominator,
+            ),
+            check_for_multisig(
+              // Used in the case we are spending multisig state rather than referencing it
+              if forever_hash == config.council_forever_hash {
+                inputs
+              } else {
+                reference_inputs
+              },
+              mint,
+              config.council_forever_hash,
+              council_numerator,
+              council_denominator,
+            ),
+            logic_state_validation(datum, redeemer),
+          }
+        }
+        Migrate -> {
+          let input_datum = get_input_state_by_policy(inputs, forever_hash)
+          let output_datum = get_output_state_by_policy(outputs, forever_hash)
+
+          logic_state_validation(output_datum, input_datum)
+        }
       }
     }
 
