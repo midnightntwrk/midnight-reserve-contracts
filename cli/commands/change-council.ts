@@ -215,16 +215,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   const councilPolicyId = PolicyId(nativeScriptCouncil.hash());
   const techAuthPolicyId = PolicyId(nativeScriptTechAuth.hash());
 
-  console.log("\n=== Debug Info ===");
-  console.log("Council native script hash:", councilPolicyId);
-  console.log("Tech auth native script hash:", techAuthPolicyId);
-  console.log("Current council signers:");
-  currentCouncilSigners.forEach((s, i) =>
-    console.log(`  ${i}: ${s.paymentHash}`),
-  );
-  console.log("Tech auth signers:");
-  techAuthSigners.forEach((s, i) => console.log(`  ${i}: ${s.paymentHash}`));
-
   const logicRewardAccount = createRewardAccount(logicHash, networkId);
   console.log("\nLogic reward account:", logicRewardAccount);
 
