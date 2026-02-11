@@ -15,6 +15,22 @@ fn validate_terms_structure_v2(datum: Data, _redeemer) {
   builtin.length_of_bytearray(hash) == 32
 }
 
+/// Validates migration from v1 (logic_round: 0) to v2 (logic_round: 1).
+/// Ensures T&C data is unchanged and hash is 32 bytes.
+fn migrate_validation(output_datum: Data, input_datum: Data) {
+  expect Versioned { data: input_tc, logic_round: 0 }: Versioned<
+    TermsAndConditions,
+  > = input_datum
+  expect Versioned { data: output_tc, logic_round: 1 }: Versioned<
+    TermsAndConditions,
+  > = output_datum
+
+  and {
+    output_tc == input_tc,
+    builtin.length_of_bytearray(output_tc.hash) == 32,
+  }
+}
+
 /// Enforces multisig quorum for T&C updates via withdrawal (v2).
 validator terms_and_conditions_logic_v2 {
   else(ctx: ScriptContext) {
@@ -32,7 +48,7 @@ validator terms_and_conditions_logic_v2 {
       config.terms_and_conditions_forever_hash,
       config.terms_and_conditions_two_stage_hash,
       validate_terms_structure_v2,
-      fn(_datum, _input) { fail },
+      migrate_validation,
       config.terms_and_conditions_threshold_hash,
       one_shot_ref,
     )
