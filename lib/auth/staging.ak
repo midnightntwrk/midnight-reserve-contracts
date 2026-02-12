@@ -47,7 +47,6 @@ fn auth_is_on_main(
 /// on whether the auth is currently on main. Requires tech auth and council approval.
 pub fn staging_auth_multisig_validation(
   transaction: Transaction,
-  two_stage_hash: PolicyId,
   info: ScriptInfo,
 ) {
   let Transaction { reference_inputs, mint, .. } = transaction
@@ -55,7 +54,11 @@ pub fn staging_auth_multisig_validation(
   let validation =
     fn(own_hash) {
       let threshold_datum =
-        if auth_is_on_main(reference_inputs, two_stage_hash, own_hash) {
+        if auth_is_on_main(
+          reference_inputs,
+          config.council_two_stage_hash,
+          own_hash,
+        ) {
           get_input_state_by_policy(
             reference_inputs,
             config.main_gov_threshold_hash,
