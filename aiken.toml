@@ -1522,27 +1522,27 @@ terms_and_conditions_staging_one_shot_index = 0
 collateral_utxo_index = 15
 
 [config.mainnet.reserve_logic_v2_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.ics_logic_v2_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.council_logic_v2_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.technical_authority_logic_v2_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.federated_operators_logic_v2_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.terms_and_conditions_logic_v2_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.reserve_staging_one_shot_hash]
@@ -1570,67 +1570,67 @@ bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.mainnet.reserve_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.council_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.ics_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.technical_authority_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.federated_operators_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.main_gov_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.staging_gov_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.main_council_update_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.main_tech_auth_update_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.main_federated_ops_update_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.committee_bridge_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.committee_threshold_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.terms_and_conditions_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.terms_and_conditions_threshold_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.collateral_utxo_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.cnight_minting_one_shot_hash]
-bytes = "0fd8d1bab9033cead5c60114a172fb6b5194d335a61f277abd4bc760d25deed5"
+bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
 encoding = "hex"
 
 [config.mainnet.cnight_policy]
@@ -1638,63 +1638,63 @@ bytes = "0691b2fecca1ac4f53cb6dfb00b7013e561d1f34403b957cbb5af1fa"
 encoding = "hex"
 
 [config.mainnet.reserve_two_stage_hash]
-bytes = "de112739c7be2f591cd4e84214c87a20493a24db83ae64b38b95bbae"
+bytes = "d24b012f7b2a99a671b7e1196847f183982d70db02ed37068e4e49e9"
 encoding = "hex"
 
 [config.mainnet.reserve_forever_hash]
-bytes = "368cd8c8442a25af95fd84780d647a2c9890269a5fcd470810fbfe6b"
+bytes = "68fc50469d13777fbc60491842ca3f80f07dc2d6542c551d9694ce9a"
 encoding = "hex"
 
 [config.mainnet.council_two_stage_hash]
-bytes = "91e2d796c78cdf21838831d55c8ee8f86812461f4083d0a5637b4a43"
+bytes = "e91becb9536df62eed161713311cc534ae909636ba9529b38e2a18f3"
 encoding = "hex"
 
 [config.mainnet.council_forever_hash]
-bytes = "93c334f68a50110d32a3ef3d583fb9f35a875d3a75148c5246f63ad3"
+bytes = "911dee358e934f0ea32af5803586cbeee9721d20ab969f9fdff335ac"
 encoding = "hex"
 
 [config.mainnet.ics_two_stage_hash]
-bytes = "976d593773f4d74ce3172cc596efbf6603bfc537a762afd7861aa680"
+bytes = "8f2c043f857c6acb716d27d67e9cb609c9c9814b7d7b938d6c410733"
 encoding = "hex"
 
 [config.mainnet.ics_forever_hash]
-bytes = "2e6fc2a66d1120025f6d89d8cc5207875393a315204a351f5b9d5329"
+bytes = "302484c99a6976063ad8e7aa5099ad95877f8cfe45a0dcc791abab6a"
 encoding = "hex"
 
 [config.mainnet.technical_authority_two_stage_hash]
-bytes = "4afbffd8b6fabca0c216de4603128770d4eebebb52d826d6d9fe0f03"
+bytes = "11d1de535579d929060a22828992802c77f329470adadaec10d2490c"
 encoding = "hex"
 
 [config.mainnet.technical_authority_forever_hash]
-bytes = "dc9f7b373f4e2b46eafab098d03335c7aafaa5c52ab74456f8a80e98"
+bytes = "f9bfa20ed6136305b654b3613bbe1c9a6f2f058fb61edee49bdf58be"
 encoding = "hex"
 
 [config.mainnet.federated_operators_two_stage_hash]
-bytes = "6bfe86d07300247e3eac0e52c7998718e8e20d20709612127a6b94e4"
+bytes = "cb797228400c64a31a7a7053305f244a55af7602238e7428813f82ca"
 encoding = "hex"
 
 [config.mainnet.federated_operators_forever_hash]
-bytes = "6f12f9f99f306fbac5a4b28ecea98df87cc36e58205cb12d62917925"
+bytes = "2c322542e32817f26a75bc49eaaf3ce831b62dafe4040e2f296e339a"
 encoding = "hex"
 
 [config.mainnet.main_gov_threshold_hash]
-bytes = "b8e0831074a513b2d5295658947b7faffea5d9dce8dc68a44ffd4344"
+bytes = "bd0d3863779d2e27dfc7bf8953ff49197900d8aef9e7ec4dca80e5e3"
 encoding = "hex"
 
 [config.mainnet.staging_gov_threshold_hash]
-bytes = "ff55169a840bdb2b67a8e260a510027bb3a40fbe77b6dfced68b1310"
+bytes = "08b27d7a74e2854c3024dfd9e2f9ad6318382ea80d85f904bb30df56"
 encoding = "hex"
 
 [config.mainnet.main_council_update_threshold_hash]
-bytes = "e41bfe40b130cde125e2db806a61869d1208dafcf05033db15ba0952"
+bytes = "6ea88f2ab8bf86b4f9bff1e6663e2f9e72f913305e781d86f995f7b8"
 encoding = "hex"
 
 [config.mainnet.main_tech_auth_update_threshold_hash]
-bytes = "fec75ba4c2c2a89369a2659537c3c9686a21d76e5ae1d79450c6bcd8"
+bytes = "7c0017a835997df30a5907e361af383422e600ff07258ecfe6ba2d8d"
 encoding = "hex"
 
 [config.mainnet.main_federated_ops_update_threshold_hash]
-bytes = "8848b00a5fbaba48b6d8efd3f4f5f555c6a07fa2da33c9cc4c098923"
+bytes = "817173c0a1fdd73cb7db6a15c76004b8edd17da0cfe3146a60f5139f"
 encoding = "hex"
 
 [config.mainnet.beefy_signer_threshold_hash]
@@ -1702,35 +1702,35 @@ bytes = "8a57267390925d4304a954b8c6b92bb50de82a8f89673cc1b7bd0837fc2df2d8"
 encoding = "hex"
 
 [config.mainnet.committee_bridge_two_stage_hash]
-bytes = "8ed106a09ea007eb0b4a5e97c85e98393a420ae9cac8f8773c220314"
+bytes = "1f7a43e0b728a98eb2d5077f75f3c064b9dbb89793d4d8c05012ce1e"
 encoding = "hex"
 
 [config.mainnet.committee_bridge_forever_hash]
-bytes = "36013871faaa090aa7f4e2d200fee8d18e9ebba6439f7203af503b4e"
+bytes = "bf093441b2954c82ecb835a9260c01997c1b514ee84b29d257e1f167"
 encoding = "hex"
 
 [config.mainnet.terms_and_conditions_two_stage_hash]
-bytes = "129c9478f1d18ce5e4414a6a99e49379314500d32c79ee687d65effe"
+bytes = "7240c79709cc225e621f8db67a86be9799015922f52b208a06aae48b"
 encoding = "hex"
 
 [config.mainnet.terms_and_conditions_forever_hash]
-bytes = "05b95b53e9b276144f575f63883a71ce7d85ed84e75c15e75df64429"
+bytes = "a01f11b7a1c4c5b5c097d03bb503325e6b9911ed73a76549ef128f90"
 encoding = "hex"
 
 [config.mainnet.terms_and_conditions_threshold_hash]
-bytes = "3082290493eeceb997a300824384e8acc72a57495881fc7b9ab2481a"
+bytes = "cedd09c3df53dc8f23de31e02134409eb8d215cd523e3dbaf9053190"
 encoding = "hex"
 
 [config.mainnet.cnight_minting_two_stage_hash]
-bytes = "4d53b3e9e6f24ac45965cacec6a283e0e6f6500787fec149379d7545"
+bytes = "ccb651f8801cea360b16065d2cd64f9cf3e2dd41ffc4a21bea7e2b61"
 encoding = "hex"
 
 [config.mainnet.cnight_minting_forever_hash]
-bytes = "28d710619d90603b7e381509b05568caee23f82361be4c2dc2d72893"
+bytes = "f3b2da0f757f10b1879dd72860b936a6d0a1896bc939b088021958b2"
 encoding = "hex"
 
 [config.mainnet.bridge_signer_threshold_hash]
-bytes = "48951a0302f00894e97280b4db44808a4df7ed0e7aa3ad524a23dc08"
+bytes = "cfc7d1730dc062475ab8ec0c132e6dddadcbda5845166a003b31dfea"
 encoding = "hex"
 
 [config.node-dev-2]

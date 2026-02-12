@@ -1,6 +1,7 @@
 use auth/script.{auth_multisig_validation}
 use auth/staging.{staging_auth_multisig_validation}
 use cardano/script_context.{ScriptContext}
+use config
 
 /// Authorizes promote-upgrade and main state changes via withdrawal.
 validator main_gov_auth {
@@ -14,6 +15,10 @@ validator main_gov_auth {
 validator staging_gov_auth {
   else(ctx: ScriptContext) {
     let ScriptContext { transaction, info, .. } = ctx
-    staging_auth_multisig_validation(transaction, info)
+    staging_auth_multisig_validation(
+      transaction,
+      config.council_two_stage_hash,
+      info,
+    )
   }
 }
