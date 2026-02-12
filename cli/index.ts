@@ -16,6 +16,7 @@ import type {
   ChangeTermsOptions,
 } from "./lib/types";
 import type { DeployStagingTrackOptions } from "./commands/deploy-staging-track";
+import type { MintStagingStateOptions } from "./commands/mint-staging-state";
 import { getDefaultProvider } from "./lib/types";
 import {
   getDeployUtxoAmount,
@@ -62,6 +63,7 @@ import {
   mintTcnight,
   changeTerms,
   migrateFederatedOps,
+  mintStagingState,
 } from "./commands";
 
 function printUsage(): void {
@@ -81,6 +83,7 @@ Commands:
   promote-upgrade     Promote staged logic to main for a two-stage upgrade validator
   register-gov-auth   Register main and staging gov auth scripts as stake credentials
   simple-tx           Create simple transactions for testing
+  mint-staging-state  Mint StagingState NFT for a v2 logic contract
   mint-tcnight        Mint or burn TCnight tokens (preview/preprod only)
   change-terms        Change terms and conditions hash and URL
   info                Display contract information
@@ -258,6 +261,27 @@ Options:
   console.log(`Examples:
   bun cli migrate-federated-ops -n preview abc123...def 5
   bun cli migrate-federated-ops -n preview abc123...def 5 --no-sign
+`);
+}
+
+function printMintStagingStateHelp(): void {
+  console.log(`
+Usage: bun cli mint-staging-state [options]
+
+Mint the StagingState NFT for a v2 logic contract.
+Required before promote-upgrade can work with v2 logic.
+
+Options:
+  --validator         Two-stage validator name (required)
+                      Options: ${VALID_TWO_STAGE_VALIDATORS.join(", ")}
+  --sign              Sign transaction (default: true)
+  --no-sign           Do not sign transaction
+  --output-file       Output file name (default: mint-staging-state-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts (required)
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli mint-staging-state -n node-dev-2 --validator federated-ops --use-build
 `);
 }
 
@@ -582,6 +606,7 @@ function parseArgs(args: string[]): {
         u: "user-address",
         d: "destination",
         b: "burn",
+        v: "validator",
       };
       const fullKey = keyMap[key] || key;
 
@@ -840,6 +865,37 @@ async function main(): Promise<void> {
         };
 
         await migrateFederatedOps(migrateOptions);
+        break;
+      }
+
+      case "mint-staging-state": {
+        if (options.help) {
+          printMintStagingStateHelp();
+          process.exit(0);
+        }
+
+        const validator = options.validator as string | undefined;
+        if (!validator) {
+          printError("Missing required option: --validator");
+          printMintStagingStateHelp();
+          process.exit(1);
+        }
+
+        validateTwoStageValidator(validator);
+
+        const mintStagingStateOptions: MintStagingStateOptions = {
+          network,
+          output,
+          provider,
+          dryRun,
+          validator,
+          sign: options.sign !== false,
+          outputFile:
+            (options["output-file"] as string) || "mint-staging-state-tx.json",
+          useBuild: options["use-build"] === true,
+        };
+
+        await mintStagingState(mintStagingStateOptions);
         break;
       }
 
