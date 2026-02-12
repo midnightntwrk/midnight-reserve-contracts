@@ -16,7 +16,7 @@ import { resolve } from "path";
 
 import type { TransactionOutput as TxOutput } from "../lib/types";
 import { getNetworkId } from "../lib/types";
-import { loadAikenConfig, getDeployerAddress } from "../lib/config";
+import { loadAikenConfig } from "../lib/config";
 import { createBlaze } from "../lib/provider";
 import { getProtocolParameters, calculateMinUtxo } from "../lib/protocol";
 import { getContractInstances } from "../lib/contracts";
@@ -127,8 +127,6 @@ export async function deployStagingTrack(
   const config = loadAikenConfig(network);
   const contracts = getContractInstances(network, useBuild);
   const networkId = getNetworkId(network);
-  const deployerAddr = getDeployerAddress();
-
   // Parse signers for multisig contracts (council, tech-auth)
   const { totalSigners: techAuthTotalSigners, signers: techAuthSigners } =
     parseSignersWithCount("TECH_AUTH_SIGNERS");

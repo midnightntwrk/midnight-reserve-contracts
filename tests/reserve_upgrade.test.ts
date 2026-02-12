@@ -36,7 +36,6 @@ describe("Reserve upgrade path", () => {
     const techAuthForever = new Contracts.PermissionedTechAuthForeverElse();
     const councilForever = new Contracts.PermissionedCouncilForeverElse();
 
-    const reserveForever = new Contracts.ReserveReserveForeverElse();
     const reserveTwoStage = new Contracts.ReserveReserveTwoStageUpgradeElse();
     const reserveLogic = new Contracts.ReserveReserveLogicElse();
 

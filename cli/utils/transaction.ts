@@ -288,10 +288,10 @@ export function findUtxoWithNft(
  *   parse
  * );
  */
-export function parseInlineDatum<T>(
+export function parseInlineDatum<T, CT>(
   utxo: TransactionUnspentOutput,
-  contractType: any,
-  parseFn: (type: any, data: any) => T,
+  contractType: CT,
+  parseFn: (type: CT, data: PlutusData) => T,
 ): T {
   const datum = utxo.output().datum();
   if (!datum || datum.asInlineData() === undefined) {

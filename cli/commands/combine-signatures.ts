@@ -26,7 +26,6 @@ import {
   isDeploymentTransactions,
 } from "../utils/transaction-json";
 import {
-  CONFIRMATION_TIMEOUT_MS,
   MAX_SUBMIT_RETRIES,
   INITIAL_RETRY_DELAY_MS,
   sleep,
@@ -48,34 +47,6 @@ interface TextEnvelope {
  * Extracts vkey witnesses from a CBOR-encoded TransactionWitnessSet.
  * This is the format returned by CIP-30 wallet's signTx() method.
  */
-function extractVkeysFromWitnessSet(
-  cborHex: string,
-  signerName: string,
-): [Ed25519PublicKeyHex, Ed25519SignatureHex][] {
-  let witnessSet: TransactionWitnessSet;
-  try {
-    witnessSet = TransactionWitnessSet.fromCbor(HexBlob(cborHex));
-  } catch (e) {
-    throw new Error(
-      `Invalid CBOR witness set for signer "${signerName}": ${e instanceof Error ? e.message : e}`,
-    );
-  }
-
-  const vkeys = witnessSet.vkeys();
-
-  if (!vkeys) {
-    printInfo(`No vkey witnesses found for signer: ${signerName}`);
-    return [];
-  }
-
-  const signatures: [Ed25519PublicKeyHex, Ed25519SignatureHex][] = [];
-  for (const vkey of vkeys.values()) {
-    signatures.push([vkey.vkey(), vkey.signature()]);
-  }
-
-  return signatures;
-}
-
 /**
  * Detects the format of a witness file by examining its structure.
  * Returns 'cardano-cli' for TextEnvelope format or 'wallet' for raw CBOR hex.
@@ -171,7 +142,7 @@ function parseCardanoCliWitness(
 
 /**
  * Parses a wallet TransactionWitnessSet (CIP-30 format) and extracts vkey witnesses.
- * This is the same as extractVkeysFromWitnessSet but with a different name for clarity.
+ * Parses vkey witnesses from a CBOR-encoded TransactionWitnessSet (CIP-30 format).
  */
 function parseWalletWitnessSet(
   cborHex: string,

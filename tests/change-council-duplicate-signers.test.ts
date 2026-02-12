@@ -23,7 +23,7 @@ import {
   createMultisigStateCbor,
   createRedeemerMapCbor,
 } from "../cli/lib/signers";
-import { describe, test, expect } from "bun:test";
+import { describe, test } from "bun:test";
 
 describe("Change Council with Duplicate Signers", () => {
   test("Should build transaction with same signer appearing multiple times", async () => {
