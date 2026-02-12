@@ -64,6 +64,7 @@ import {
   changeTerms,
   migrateFederatedOps,
   mintStagingState,
+  verify,
 } from "./commands";
 
 function printUsage(): void {
@@ -87,6 +88,7 @@ Commands:
   mint-tcnight        Mint or burn TCnight tokens (preview/preprod only)
   change-terms        Change terms and conditions hash and URL
   info                Display contract information
+  verify              Verify on-chain deployment against local artifacts
   generate-key        Generate a new signing key and Cardano address
   sign-and-submit     Sign and submit transactions from a JSON file
   combine-signatures  Combine wallet signatures and submit transactions
@@ -385,6 +387,22 @@ Options:
   printGlobalOptions();
   console.log(`Examples:
   bun cli info -n preview --format json
+`);
+}
+
+function printVerifyHelp(): void {
+  console.log(`
+Usage: bun cli verify [options]
+
+Verify on-chain deployment against local artifacts.
+Checks script hash embedding, on-chain reference scripts, and UpgradeState datums.
+
+Options:
+  -n, --network       Network to verify (required, e.g. mainnet, preview)
+`);
+  console.log(`Examples:
+  bun cli verify -n mainnet
+  bun cli verify -n preview
 `);
 }
 
@@ -942,6 +960,16 @@ async function main(): Promise<void> {
         };
 
         await info(infoOptions);
+        break;
+      }
+
+      case "verify": {
+        if (options.help) {
+          printVerifyHelp();
+          process.exit(0);
+        }
+
+        await verify({ network });
         break;
       }
 

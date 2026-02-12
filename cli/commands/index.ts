@@ -16,3 +16,4 @@ export { mintTcnight } from "./mint-tcnight";
 export { changeTerms } from "./change-terms";
 export { migrateFederatedOps } from "./migrate-federated-ops";
 export { mintStagingState } from "./mint-staging-state";
+export { verify } from "./verify";
