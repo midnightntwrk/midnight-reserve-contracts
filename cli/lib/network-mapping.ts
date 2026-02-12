@@ -117,6 +117,7 @@ export function getAikenConfigSection(environment: string): string {
   if (env === "qanet") return "qanet";
   if (env === "govnet") return "govnet";
   if (env === "node-dev-01") return "node-dev-01";
+  if (env === "node-dev-2") return "node-dev-2";
   if (env === "preview") return "preview";
   if (env === "preprod") return "preprod";
   if (env === "mainnet") return "mainnet";

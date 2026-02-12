@@ -19,3 +19,9 @@ code-search*
 .claude/settings.local.json
 prompt.md
 planner-prompt.md
+team-prompt.md
+.env-main
+.env-preprod
+.env-preview
+.env-preprod
+get_reserve_v2_hash.sh

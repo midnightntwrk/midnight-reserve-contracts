@@ -61,6 +61,50 @@ export function loadAikenConfig(environment: string): NetworkConfig {
     collateral_utxo_index: networkConfig.collateral_utxo_index ?? 15,
     cnight_policy: networkConfig.cnight_policy.bytes,
     cnight_name: networkConfig.cnight_name,
+    reserve_staging_one_shot_hash:
+      networkConfig.reserve_staging_one_shot_hash.bytes,
+    reserve_staging_one_shot_index:
+      networkConfig.reserve_staging_one_shot_index,
+    council_staging_one_shot_hash:
+      networkConfig.council_staging_one_shot_hash.bytes,
+    council_staging_one_shot_index:
+      networkConfig.council_staging_one_shot_index,
+    ics_staging_one_shot_hash: networkConfig.ics_staging_one_shot_hash.bytes,
+    ics_staging_one_shot_index: networkConfig.ics_staging_one_shot_index,
+    technical_authority_staging_one_shot_hash:
+      networkConfig.technical_authority_staging_one_shot_hash.bytes,
+    technical_authority_staging_one_shot_index:
+      networkConfig.technical_authority_staging_one_shot_index,
+    federated_operators_staging_one_shot_hash:
+      networkConfig.federated_operators_staging_one_shot_hash.bytes,
+    federated_operators_staging_one_shot_index:
+      networkConfig.federated_operators_staging_one_shot_index,
+    terms_and_conditions_staging_one_shot_hash:
+      networkConfig.terms_and_conditions_staging_one_shot_hash.bytes,
+    terms_and_conditions_staging_one_shot_index:
+      networkConfig.terms_and_conditions_staging_one_shot_index,
+    reserve_logic_v2_one_shot_hash:
+      networkConfig.reserve_logic_v2_one_shot_hash.bytes,
+    reserve_logic_v2_one_shot_index:
+      networkConfig.reserve_logic_v2_one_shot_index,
+    ics_logic_v2_one_shot_hash: networkConfig.ics_logic_v2_one_shot_hash.bytes,
+    ics_logic_v2_one_shot_index: networkConfig.ics_logic_v2_one_shot_index,
+    council_logic_v2_one_shot_hash:
+      networkConfig.council_logic_v2_one_shot_hash.bytes,
+    council_logic_v2_one_shot_index:
+      networkConfig.council_logic_v2_one_shot_index,
+    technical_authority_logic_v2_one_shot_hash:
+      networkConfig.technical_authority_logic_v2_one_shot_hash.bytes,
+    technical_authority_logic_v2_one_shot_index:
+      networkConfig.technical_authority_logic_v2_one_shot_index,
+    federated_operators_logic_v2_one_shot_hash:
+      networkConfig.federated_operators_logic_v2_one_shot_hash.bytes,
+    federated_operators_logic_v2_one_shot_index:
+      networkConfig.federated_operators_logic_v2_one_shot_index,
+    terms_and_conditions_logic_v2_one_shot_hash:
+      networkConfig.terms_and_conditions_logic_v2_one_shot_hash.bytes,
+    terms_and_conditions_logic_v2_one_shot_index:
+      networkConfig.terms_and_conditions_logic_v2_one_shot_index,
   };
 }
 

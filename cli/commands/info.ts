@@ -16,7 +16,7 @@ export async function info(options: InfoOptions): Promise<void> {
     console.log(`\nContract Information for ${network} network\n`);
   }
 
-  const contracts = getContractInstances(network);
+  const contracts = getContractInstances(network, options.useBuild);
 
   const allContracts: ContractInfo[] = [
     // Tech Auth

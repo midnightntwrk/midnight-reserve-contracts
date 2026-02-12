@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "previousVersion": null,
+  "timestamp": "2026-01-12T19:47:17Z",
+  "gitCommit": "5f3bb0f3d0822162f42c5b493885622fdf244b51",
+  "changes": [
+    {
+      "type": "initial",
+      "validator": "all",
+      "description": "Initial preprod deployment migration from plutus-preprod.deployed.json (registered_candidate from plutus-preprod.json)"
+    }
+  ]
+}

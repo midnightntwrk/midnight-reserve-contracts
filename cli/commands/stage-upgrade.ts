@@ -10,32 +10,119 @@ import {
 } from "@blaze-cardano/core";
 import { serialize, parse } from "@blaze-cardano/data";
 import { resolve } from "path";
+import { existsSync } from "fs";
 
-import type { StageUpgradeOptions } from "../lib/types";
-import { getNetworkId } from "../lib/types";
-import { getDeployerAddress } from "../lib/config";
+import type { StageUpgradeOptions, NetworkConfig } from "../lib/types";
+import { getNetworkId, getConfigSection } from "../lib/types";
+import { loadAikenConfig, getDeployerAddress } from "../lib/config";
 import { createBlaze } from "../lib/provider";
 import {
+  type ContractInstances,
   getContractInstances,
   getCredentialAddress,
   getTwoStageContracts,
+  loadContractModule,
 } from "../lib/contracts";
 import { extractSignersFromMultisigState } from "../lib/signers";
 import {
   printSuccess,
   printError,
   writeTransactionFile,
-} from "../utils/output";
+  getContractUtxos,
+  getTwoStageUtxos,
+  parseInlineDatum,
+} from "../utils";
 import {
   createNativeMultisigScript,
   createRewardAccount,
   signTransaction,
   attachWitnesses,
   findUtxoWithMainAsset,
-  findUtxoWithStagingAsset,
   findUtxoByTxRef,
 } from "../utils/transaction";
+import { createTxMetadata } from "../utils/metadata";
+import {
+  saveVersionSnapshot,
+  type VersionInfo,
+  type ChangeRecord,
+} from "../lib/versions";
+import { diffBlueprints } from "../lib/blueprint-diff";
 import * as Contracts from "../../contract_blueprint";
+
+function getStagingForeverHash(
+  validatorName: string,
+  contracts: ContractInstances,
+): string {
+  let contract: { Script: Script } | undefined;
+  switch (validatorName) {
+    case "tech-auth":
+      contract = contracts.techAuthStagingForever;
+      break;
+    case "council":
+      contract = contracts.councilStagingForever;
+      break;
+    case "reserve":
+      contract = contracts.reserveStagingForever;
+      break;
+    case "ics":
+      contract = contracts.icsStagingForever;
+      break;
+    case "federated-ops":
+      contract = contracts.federatedOpsStagingForever;
+      break;
+    case "terms-and-conditions":
+      contract = contracts.termsAndConditionsStagingForever;
+      break;
+    default:
+      throw new Error(`Unknown validator: ${validatorName}`);
+  }
+  if (!contract) {
+    throw new Error(
+      `Staging forever contract not found for ${validatorName}. Ensure the blueprint includes staging forever validators.`,
+    );
+  }
+  return contract.Script.hash();
+}
+
+function getLogicV2OneShotRef(
+  validatorName: string,
+  config: NetworkConfig,
+): { hash: string; index: number } {
+  switch (validatorName) {
+    case "tech-auth":
+      return {
+        hash: config.technical_authority_logic_v2_one_shot_hash,
+        index: config.technical_authority_logic_v2_one_shot_index,
+      };
+    case "council":
+      return {
+        hash: config.council_logic_v2_one_shot_hash,
+        index: config.council_logic_v2_one_shot_index,
+      };
+    case "reserve":
+      return {
+        hash: config.reserve_logic_v2_one_shot_hash,
+        index: config.reserve_logic_v2_one_shot_index,
+      };
+    case "ics":
+      return {
+        hash: config.ics_logic_v2_one_shot_hash,
+        index: config.ics_logic_v2_one_shot_index,
+      };
+    case "federated-ops":
+      return {
+        hash: config.federated_operators_logic_v2_one_shot_hash,
+        index: config.federated_operators_logic_v2_one_shot_index,
+      };
+    case "terms-and-conditions":
+      return {
+        hash: config.terms_and_conditions_logic_v2_one_shot_hash,
+        index: config.terms_and_conditions_logic_v2_one_shot_index,
+      };
+    default:
+      throw new Error(`Unknown validator: ${validatorName}`);
+  }
+}
 
 export async function stageUpgrade(
   options: StageUpgradeOptions,
@@ -59,114 +146,87 @@ export async function stageUpgrade(
 
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
-  const contracts = getContractInstances(network);
-  const targetContracts = getTwoStageContracts(validator, network);
+  // Always use deployed contracts for on-chain infrastructure (two-stage, forever, gov auth, thresholds)
+  const contracts = getContractInstances(network, false);
+  const targetContracts = getTwoStageContracts(validator, network, false);
+  // Load build contracts separately for new contract detection when --use-build is specified
+  const buildContracts = options.useBuild
+    ? getContractInstances(network, true)
+    : undefined;
 
   const twoStageAddress = getCredentialAddress(
     network,
     targetContracts.twoStage.Script.hash(),
   );
-  const techAuthForeverAddress = getCredentialAddress(
-    network,
-    contracts.techAuthForever.Script.hash(),
-  );
-  const councilForeverAddress = getCredentialAddress(
-    network,
-    contracts.councilForever.Script.hash(),
-  );
-  // stagingGovThreshold is used because the two-stage datum stores stagingGovAuth
-  // and stagingGovAuth selects threshold based on whether logic is on main
-  const stagingGovThresholdAddress = getCredentialAddress(
-    network,
-    contracts.stagingGovThreshold.Script.hash(),
-  );
-  // Council two-stage is needed for staging_gov_auth's logic_is_on_main check
-  const councilTwoStageAddress = getCredentialAddress(
-    network,
-    contracts.councilTwoStage.Script.hash(),
-  );
 
   console.log("\nTwo Stage Address:", twoStageAddress.toBech32());
 
   const { blaze, provider } = await createBlaze(network, options.provider);
-  const twoStageUtxos = await provider.getUnspentOutputs(twoStageAddress);
-  const techAuthForeverUtxos = await provider.getUnspentOutputs(
-    techAuthForeverAddress,
-  );
-  const councilForeverUtxos = await provider.getUnspentOutputs(
-    councilForeverAddress,
-  );
-  const stagingGovThresholdUtxos = await provider.getUnspentOutputs(
-    stagingGovThresholdAddress,
-  );
-  const councilTwoStageUtxos = await provider.getUnspentOutputs(
-    councilTwoStageAddress,
-  );
+
+  // Query all contract UTxOs in parallel
+  const [{ main: mainUtxo, staging: stagingUtxo }, allUtxos] =
+    await Promise.all([
+      getTwoStageUtxos(provider, targetContracts.twoStage.Script, networkId),
+      getContractUtxos(
+        provider,
+        {
+          techAuthForever: contracts.techAuthForever.Script,
+          councilForever: contracts.councilForever.Script,
+          stagingGovThreshold: contracts.stagingGovThreshold.Script,
+          councilTwoStage: contracts.councilTwoStage.Script,
+        },
+        networkId,
+      ),
+    ]);
 
   console.log("\nFound contract UTxOs:");
-  console.log("  Two stage:", twoStageUtxos.length);
-  console.log("  Tech auth forever:", techAuthForeverUtxos.length);
-  console.log("  Council forever:", councilForeverUtxos.length);
-  console.log("  Staging gov threshold:", stagingGovThresholdUtxos.length);
-  console.log("  Council two stage:", councilTwoStageUtxos.length);
+  console.log("  Two stage: main and staging found");
+  console.log("  Tech auth forever:", allUtxos.techAuthForever.length);
+  console.log("  Council forever:", allUtxos.councilForever.length);
+  console.log("  Staging gov threshold:", allUtxos.stagingGovThreshold.length);
+  console.log("  Council two stage:", allUtxos.councilTwoStage.length);
 
   if (
-    !twoStageUtxos.length ||
-    !techAuthForeverUtxos.length ||
-    !councilForeverUtxos.length ||
-    !stagingGovThresholdUtxos.length ||
-    !councilTwoStageUtxos.length
+    !allUtxos.techAuthForever.length ||
+    !allUtxos.councilForever.length ||
+    !allUtxos.stagingGovThreshold.length ||
+    !allUtxos.councilTwoStage.length
   ) {
     throw new Error("Missing required contract UTxOs");
   }
 
-  const mainUtxo = findUtxoWithMainAsset(twoStageUtxos);
-  const stagingUtxo = findUtxoWithStagingAsset(twoStageUtxos);
-  const techAuthForeverUtxo = techAuthForeverUtxos[0];
-  const councilForeverUtxo = councilForeverUtxos[0];
-  const stagingGovThresholdUtxo = stagingGovThresholdUtxos[0];
-  const councilTwoStageMainUtxo = findUtxoWithMainAsset(councilTwoStageUtxos);
+  const techAuthForeverUtxo = allUtxos.techAuthForever[0];
+  const councilForeverUtxo = allUtxos.councilForever[0];
+  const stagingGovThresholdUtxo = allUtxos.stagingGovThreshold[0];
+  const councilTwoStageMainUtxo = findUtxoWithMainAsset(
+    allUtxos.councilTwoStage,
+  );
 
-  if (!mainUtxo) {
-    throw new Error('Could not find two-stage UTxO with "main" asset');
-  }
-  if (!stagingUtxo) {
-    throw new Error('Could not find two-stage UTxO with "staging" asset');
-  }
   if (!councilTwoStageMainUtxo) {
     throw new Error('Could not find council two-stage UTxO with "main" asset');
   }
 
   console.log("\nReading current tech auth state...");
-  const techAuthDatum = techAuthForeverUtxo.output().datum();
-  if (!techAuthDatum?.asInlineData()) {
-    throw new Error("Tech auth forever UTxO missing inline datum");
-  }
-  const techAuthState = parse(
+  const techAuthState = parseInlineDatum(
+    techAuthForeverUtxo,
     Contracts.VersionedMultisig,
-    techAuthDatum.asInlineData()!,
+    parse,
   );
   const techAuthSigners = extractSignersFromMultisigState(techAuthState);
 
   console.log("Reading current council state...");
-  const councilDatum = councilForeverUtxo.output().datum();
-  if (!councilDatum?.asInlineData()) {
-    throw new Error("Council forever UTxO missing inline datum");
-  }
-  const councilState = parse(
+  const councilState = parseInlineDatum(
+    councilForeverUtxo,
     Contracts.VersionedMultisig,
-    councilDatum.asInlineData()!,
+    parse,
   );
   const councilSigners = extractSignersFromMultisigState(councilState);
 
   console.log("Reading staging gov threshold...");
-  const thresholdDatum = stagingGovThresholdUtxo.output().datum();
-  if (!thresholdDatum?.asInlineData()) {
-    throw new Error("Staging gov threshold UTxO missing inline datum");
-  }
-  const thresholdState = parse(
+  const thresholdState = parseInlineDatum(
+    stagingGovThresholdUtxo,
     Contracts.MultisigThreshold,
-    thresholdDatum.asInlineData()!,
+    parse,
   );
 
   // Calculate required signers based on threshold
@@ -228,13 +288,10 @@ export async function stageUpgrade(
   ]);
 
   // Parse current staging datum to get round
-  const stagingDatum = stagingUtxo.output().datum();
-  if (!stagingDatum?.asInlineData()) {
-    throw new Error("Staging UTxO missing inline datum");
-  }
-  const currentStagingState = parse(
+  const currentStagingState = parseInlineDatum(
+    stagingUtxo,
     Contracts.UpgradeState,
-    stagingDatum.asInlineData()!,
+    parse,
   );
 
   const newStagingState: Contracts.UpgradeState = [
@@ -266,8 +323,17 @@ export async function stageUpgrade(
     new TextEncoder().encode("council-auth-witness"),
   );
 
+  // Detect if newLogicHash is a new contract (in build but not deployed) via blueprint diff
+  const configSection = getConfigSection(network);
+  const deployedModule = loadContractModule(configSection, true);
+  const buildModule = loadContractModule(configSection, false);
+  const diff = diffBlueprints(deployedModule, buildModule);
+  const newLogicContract =
+    diff.added.find((c) => c.hash === newLogicHash) ?? null;
+  const isNewContract = newLogicContract !== null;
+
   try {
-    const txBuilder = blaze
+    let txBuilder = blaze
       .newTransaction()
       .addInput(stagingUtxo, redeemer)
       .addInput(userUtxo)
@@ -307,11 +373,82 @@ export async function stageUpgrade(
         }),
       )
       .setChangeAddress(changeAddress)
+      .setMetadata(createTxMetadata("stage-upgrade"))
       .setFeePadding(50000n);
+
+    // Log if new contract detected — StagingState NFT must be minted separately
+    // (including both the v2 logic script and stage-upgrade scripts exceeds max tx size)
+    if (isNewContract && newLogicContract) {
+      const aikenConfig = loadAikenConfig(network);
+      const stagingForeverHash = getStagingForeverHash(
+        validator,
+        buildContracts ?? contracts,
+      );
+      const oneShotRef = getLogicV2OneShotRef(validator, aikenConfig);
+
+      console.log(`\n  New logic contract detected: ${newLogicHash}`);
+      console.log(
+        `  StagingState NFT must be minted in a separate transaction.`,
+      );
+      console.log(`  One-shot UTxO: ${oneShotRef.hash}#${oneShotRef.index}`);
+      console.log(`  Staging forever hash: ${stagingForeverHash}`);
+      console.log(`  CNIGHT test policy: ${aikenConfig.cnight_policy}`);
+    }
 
     const tx = await txBuilder.complete();
 
     printSuccess(`Transaction built: ${tx.getId()}`);
+
+    // Save version snapshot when using build contracts (v2+ upgrade)
+    if (options.useBuild) {
+      const projectRoot = resolve(import.meta.dir, "../..");
+      const plutusJsonPath = resolve(projectRoot, `plutus-${network}.json`);
+      const blueprintPath = resolve(
+        projectRoot,
+        `contract_blueprint_${network}.ts`,
+      );
+
+      if (existsSync(plutusJsonPath) && existsSync(blueprintPath)) {
+        const versionInfo: VersionInfo = {
+          round: newStagingState[4],
+          logicRound: newStagingState[5],
+          timestamp: new Date().toISOString(),
+          gitCommit: "",
+        };
+
+        const changes: ChangeRecord[] = [
+          {
+            type: "stage",
+            validator,
+            oldHash: currentStagingState[0],
+            newHash: newLogicHash,
+            description: `Staged ${validator} logic upgrade`,
+          },
+        ];
+
+        const versionName = saveVersionSnapshot(
+          network,
+          versionInfo,
+          changes,
+          plutusJsonPath,
+          blueprintPath,
+        );
+        printSuccess(
+          `Saved version snapshot to deployed-scripts/${network}/versions/${versionName}/`,
+        );
+      } else {
+        console.warn(
+          `\nWarning: Skipping version snapshot — build artifacts not found:` +
+            `\n  plutus: ${plutusJsonPath} (${existsSync(plutusJsonPath) ? "exists" : "MISSING"})` +
+            `\n  blueprint: ${blueprintPath} (${existsSync(blueprintPath) ? "exists" : "MISSING"})` +
+            `\n  Run 'just build' first to generate these files.`,
+        );
+      }
+    } else {
+      console.warn(
+        `\nWarning: No version snapshot saved — pass --use-build to save a version snapshot to deployed-scripts.`,
+      );
+    }
 
     if (sign) {
       // Sign with tech auth keys only (staging doesn't require council signatures)

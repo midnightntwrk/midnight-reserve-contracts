@@ -55,7 +55,7 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
   }
 
   const networkId = getNetworkId(network);
-  const contracts = getContractInstances(network);
+  const contracts = getContractInstances(network, options.useBuild);
 
   const tcnightPolicy = contracts.tcnightMintInfinite;
   const policyId = PolicyId(tcnightPolicy.Script.hash());

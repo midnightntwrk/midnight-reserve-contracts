@@ -13,7 +13,10 @@ import type {
   SignAndSubmitOptions,
   CombineSignaturesOptions,
   MintTcnightOptions,
+  ChangeTermsOptions,
 } from "./lib/types";
+import type { DeployStagingTrackOptions } from "./commands/deploy-staging-track";
+import type { MintStagingStateOptions } from "./commands/mint-staging-state";
 import { getDefaultProvider } from "./lib/types";
 import {
   getDeployUtxoAmount,
@@ -32,6 +35,7 @@ import {
   validateComponents,
   validateTwoStageValidator,
   validateScriptHash,
+  validateHash32,
   validateTransactionName,
   parseThreshold,
   parseAmount,
@@ -44,6 +48,7 @@ import {
 import { printError } from "./utils/output";
 import {
   deploy,
+  deployStagingTrack,
   changeCouncil,
   changeTechAuth,
   changeFederatedOps,
@@ -56,6 +61,9 @@ import {
   signAndSubmit,
   combineSignatures,
   mintTcnight,
+  changeTerms,
+  migrateFederatedOps,
+  mintStagingState,
 } from "./commands";
 
 function printUsage(): void {
@@ -66,14 +74,18 @@ Usage: bun cli <command> [options]
 
 Commands:
   deploy              Generate deployment transactions
+  deploy-staging-track  Deploy staging track forever validators
   change-council      Update council multisig members
   change-tech-auth    Update tech auth multisig members
   change-federated-ops  Update federated ops members
+  migrate-federated-ops  Migrate federated ops datum from v1 to v2
   stage-upgrade       Stage a new logic hash for a two-stage upgrade validator
   promote-upgrade     Promote staged logic to main for a two-stage upgrade validator
   register-gov-auth   Register main and staging gov auth scripts as stake credentials
   simple-tx           Create simple transactions for testing
+  mint-staging-state  Mint StagingState NFT for a v2 logic contract
   mint-tcnight        Mint or burn TCnight tokens (preview/preprod only)
+  change-terms        Change terms and conditions hash and URL
   info                Display contract information
   generate-key        Generate a new signing key and Cardano address
   sign-and-submit     Sign and submit transactions from a JSON file
@@ -122,6 +134,35 @@ Options:
 `);
 }
 
+function printDeployStagingTrackHelp(): void {
+  console.log(`
+Usage: bun cli deploy-staging-track [options]
+
+Deploy staging track forever validators. These validators delegate to MAIN
+forever contracts by reading from the "staging" NFT on the main two-stage.
+
+Staging track validators enable testing upgrades before promoting to main.
+
+Options:
+  --utxo-amount                Lovelace for input UTxO (default: 20000000)
+  --components                 Components to deploy (comma-separated, default: all)
+                               Options: council, tech-auth, federated-ops, reserve, ics, terms-and-conditions
+  --name                       Deploy a single transaction by name
+                               Names: council-staging-forever-deployment,
+                                      tech-auth-staging-forever-deployment,
+                                      federated-ops-staging-forever-deployment,
+                                      reserve-staging-forever-deployment,
+                                      ics-staging-forever-deployment,
+                                      terms-and-conditions-staging-forever-deployment
+  --use-build                  Use freshly built blueprint instead of deployed scripts
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli deploy-staging-track -n preview
+  bun cli deploy-staging-track -n preview --components council,tech-auth
+`);
+}
+
 function printChangeCouncilHelp(): void {
   console.log(`
 Usage: bun cli change-council [options] <tx_hash> <tx_index>
@@ -137,6 +178,7 @@ Options:
   --sign              Sign transaction (default: true)
   --no-sign           Do not sign transaction
   --output-file       Output file name (default: change-council-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -160,6 +202,7 @@ Options:
   --sign              Sign transaction (default: true)
   --no-sign           Do not sign transaction
   --output-file       Output file name (default: change-tech-auth-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -183,6 +226,7 @@ Options:
   --sign              Sign transaction (default: true)
   --no-sign           Do not sign transaction
   --output-file       Output file name (default: change-federated-ops-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 
 Environment variables:
   PERMISSIONED_CANDIDATES   New federated ops member candidates (required)
@@ -191,6 +235,53 @@ Environment variables:
   console.log(`Examples:
   bun cli change-federated-ops -n preview abc123...def 5
   bun cli change-federated-ops -n preview abc123...def 5 --no-sign
+`);
+}
+
+function printMigrateFederatedOpsHelp(): void {
+  console.log(`
+Usage: bun cli migrate-federated-ops [options] <tx_hash> <tx_index>
+
+Migrate federated ops datum from FederatedOps (v1) to FederatedOpsV2.
+Preserves existing data and appendix, adds empty message field, sets logic_round to 2.
+Requires both council and tech auth authorization.
+
+Arguments:
+  <tx_hash>           Transaction hash of input UTxO
+  <tx_index>          Output index of input UTxO
+
+Options:
+  --utxo-amount       Override input UTxO amount
+  --sign              Sign transaction (default: true)
+  --no-sign           Do not sign transaction
+  --output-file       Output file name (default: migrate-federated-ops-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli migrate-federated-ops -n preview abc123...def 5
+  bun cli migrate-federated-ops -n preview abc123...def 5 --no-sign
+`);
+}
+
+function printMintStagingStateHelp(): void {
+  console.log(`
+Usage: bun cli mint-staging-state [options]
+
+Mint the StagingState NFT for a v2 logic contract.
+Required before promote-upgrade can work with v2 logic.
+
+Options:
+  --validator         Two-stage validator name (required)
+                      Options: ${VALID_TWO_STAGE_VALIDATORS.join(", ")}
+  --sign              Sign transaction (default: true)
+  --no-sign           Do not sign transaction
+  --output-file       Output file name (default: mint-staging-state-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts (required)
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli mint-staging-state -n node-dev-2 --validator federated-ops --use-build
 `);
 }
 
@@ -212,6 +303,7 @@ Options:
   --sign              Sign transaction (default: true)
   --no-sign           Do not sign transaction
   --output-file       Output file name (default: stage-upgrade-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -236,6 +328,7 @@ Options:
   --sign              Sign transaction (default: true)
   --no-sign           Do not sign transaction
   --output-file       Output file name (default: promote-upgrade-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -251,6 +344,7 @@ Register main and staging gov auth scripts as stake credentials.
 
 Options:
   --output-file       Output file name (default: register-gov-auth-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -286,6 +380,7 @@ Options:
   --format            Output format: json, table (default: table)
   --component         Filter by component (default: all)
   --fetch             Fetch current on-chain state
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
@@ -422,12 +517,39 @@ Options:
   -d, --destination   Destination address for minted tokens (default: user address)
   -b, --burn          Burn tokens instead of minting
   --output-file       Output file name (default: mint-tcnight-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
   bun cli mint-tcnight -n preview -u addr_test1... 1000
   bun cli mint-tcnight -n preview -u addr_test1... -d addr_test1... 500
   bun cli mint-tcnight -n preprod -u addr_test1... -b 100
+`);
+}
+
+function printChangeTermsHelp(): void {
+  console.log(`
+Usage: bun cli change-terms [options] <tx_hash> <tx_index>
+
+Change terms and conditions hash and URL. Requires both council and tech auth authorization.
+
+Arguments:
+  <tx_hash>           Transaction hash of input UTxO
+  <tx_index>          Output index of input UTxO
+
+Options:
+  --hash              New terms and conditions hash (required, 64 hex chars / 32 bytes)
+  --url               New terms and conditions URL (required)
+  --utxo-amount       Override input UTxO amount
+  --sign              Sign transaction (default: true)
+  --no-sign           Do not sign transaction
+  --output-file       Output file name (default: change-terms-tx.json)
+  --use-build         Use freshly built blueprint instead of deployed scripts
+`);
+  printGlobalOptions();
+  console.log(`Examples:
+  bun cli change-terms -n preview --hash abc123...def --url https://example.com/terms abc123...def 5
+  bun cli change-terms -n preview --hash abc123...def --url https://example.com/terms abc123...def 5 --no-sign
 `);
 }
 
@@ -484,6 +606,7 @@ function parseArgs(args: string[]): {
         u: "user-address",
         d: "destination",
         b: "burn",
+        v: "validator",
       };
       const fullKey = keyMap[key] || key;
 
@@ -566,6 +689,31 @@ async function main(): Promise<void> {
         break;
       }
 
+      case "deploy-staging-track": {
+        if (options.help) {
+          printDeployStagingTrackHelp();
+          process.exit(0);
+        }
+
+        const deployStagingTrackOptions: DeployStagingTrackOptions = {
+          network,
+          output,
+          provider,
+          dryRun,
+          utxoAmount: options["utxo-amount"]
+            ? parseAmount(options["utxo-amount"] as string)
+            : getDeployUtxoAmount(),
+          components: options.components
+            ? (options.components as string).split(",")
+            : [],
+          name: options.name as string | undefined,
+          useBuild: options["use-build"] === true,
+        };
+
+        await deployStagingTrack(deployStagingTrackOptions);
+        break;
+      }
+
       case "change-council": {
         if (options.help) {
           printChangeCouncilHelp();
@@ -597,6 +745,7 @@ async function main(): Promise<void> {
           sign: options.sign !== false,
           outputFile:
             (options["output-file"] as string) || "change-council-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await changeCouncil(changeOptions);
@@ -634,6 +783,7 @@ async function main(): Promise<void> {
           sign: options.sign !== false,
           outputFile:
             (options["output-file"] as string) || "change-tech-auth-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await changeTechAuth(changeOptions);
@@ -672,9 +822,80 @@ async function main(): Promise<void> {
           outputFile:
             (options["output-file"] as string) ||
             "change-federated-ops-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await changeFederatedOps(changeOptions);
+        break;
+      }
+
+      case "migrate-federated-ops": {
+        if (options.help) {
+          printMigrateFederatedOpsHelp();
+          process.exit(0);
+        }
+
+        if (positional.length < 2) {
+          printError("Missing required arguments: <tx_hash> <tx_index>");
+          printMigrateFederatedOpsHelp();
+          process.exit(1);
+        }
+
+        const txHash = positional[0];
+        const txIndex = parseInt(positional[1], 10);
+
+        validateTxHash(txHash);
+        validateTxIndex(txIndex);
+
+        const migrateOptions: ChangeAuthOptions = {
+          network,
+          output,
+          provider,
+          dryRun,
+          txHash,
+          txIndex,
+          utxoAmount: options["utxo-amount"]
+            ? parseAmount(options["utxo-amount"] as string)
+            : undefined,
+          sign: options.sign !== false,
+          outputFile:
+            (options["output-file"] as string) ||
+            "migrate-federated-ops-tx.json",
+          useBuild: options["use-build"] === true,
+        };
+
+        await migrateFederatedOps(migrateOptions);
+        break;
+      }
+
+      case "mint-staging-state": {
+        if (options.help) {
+          printMintStagingStateHelp();
+          process.exit(0);
+        }
+
+        const validator = options.validator as string | undefined;
+        if (!validator) {
+          printError("Missing required option: --validator");
+          printMintStagingStateHelp();
+          process.exit(1);
+        }
+
+        validateTwoStageValidator(validator);
+
+        const mintStagingStateOptions: MintStagingStateOptions = {
+          network,
+          output,
+          provider,
+          dryRun,
+          validator,
+          sign: options.sign !== false,
+          outputFile:
+            (options["output-file"] as string) || "mint-staging-state-tx.json",
+          useBuild: options["use-build"] === true,
+        };
+
+        await mintStagingState(mintStagingStateOptions);
         break;
       }
 
@@ -717,6 +938,7 @@ async function main(): Promise<void> {
           format: ((options.format as string) || "table") as "json" | "table",
           component: (options.component as string) || "all",
           fetch: options.fetch === true,
+          useBuild: options["use-build"] === true,
         };
 
         await info(infoOptions);
@@ -772,6 +994,7 @@ async function main(): Promise<void> {
           sign: options.sign !== false,
           outputFile:
             (options["output-file"] as string) || "stage-upgrade-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await stageUpgrade(stageOptions);
@@ -818,6 +1041,7 @@ async function main(): Promise<void> {
           sign: options.sign !== false,
           outputFile:
             (options["output-file"] as string) || "promote-upgrade-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await promoteUpgrade(promoteOptions);
@@ -837,6 +1061,7 @@ async function main(): Promise<void> {
           dryRun,
           outputFile:
             (options["output-file"] as string) || "register-gov-auth-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await registerGovAuth(registerOptions);
@@ -954,9 +1179,65 @@ async function main(): Promise<void> {
           burn: options.burn === true,
           outputFile:
             (options["output-file"] as string) || "mint-tcnight-tx.json",
+          useBuild: options["use-build"] === true,
         };
 
         await mintTcnight(mintTcnightOptions);
+        break;
+      }
+
+      case "change-terms": {
+        if (options.help) {
+          printChangeTermsHelp();
+          process.exit(0);
+        }
+
+        const termsHash = options.hash as string | undefined;
+        if (!termsHash) {
+          printError("Missing required option: --hash");
+          printChangeTermsHelp();
+          process.exit(1);
+        }
+
+        const termsUrl = options.url as string | undefined;
+        if (!termsUrl) {
+          printError("Missing required option: --url");
+          printChangeTermsHelp();
+          process.exit(1);
+        }
+
+        if (positional.length < 2) {
+          printError("Missing required arguments: <tx_hash> <tx_index>");
+          printChangeTermsHelp();
+          process.exit(1);
+        }
+
+        const txHash = positional[0];
+        const txIndex = parseInt(positional[1], 10);
+
+        validateHash32(termsHash);
+        validateTxHash(txHash);
+        validateTxIndex(txIndex);
+
+        const changeTermsOptions: ChangeTermsOptions = {
+          network,
+          output,
+          provider,
+          dryRun,
+          txHash,
+          txIndex,
+          hash: termsHash,
+          url: termsUrl,
+          utxoAmount: options["utxo-amount"]
+            ? parseAmount(options["utxo-amount"] as string)
+            : undefined,
+          sign: options.sign !== false,
+          outputFile:
+            (options["output-file"] as string) || "change-terms-tx.json",
+          useBuild: options["use-build"] === true,
+        };
+
+        await changeTerms(changeTermsOptions);
         break;
       }
 

@@ -242,3 +242,60 @@ export function findUtxoWithStagingAsset(
     return false;
   });
 }
+
+/**
+ * Find a UTxO containing a specific NFT by policy hash and asset name
+ *
+ * @param utxos Array of UTxOs to search
+ * @param policyHash Policy ID of the NFT (hex string)
+ * @param assetNameText Asset name as plain text (will be encoded to hex)
+ * @returns The UTxO containing the NFT, or undefined if not found
+ *
+ * @example
+ * const mainUtxo = findUtxoWithNft(twoStageUtxos, twoStageScript.hash(), "main");
+ * const stagingUtxo = findUtxoWithNft(twoStageUtxos, twoStageScript.hash(), "staging");
+ */
+export function findUtxoWithNft(
+  utxos: TransactionUnspentOutput[],
+  policyHash: string,
+  assetNameText: string,
+): TransactionUnspentOutput | undefined {
+  const assetNameHex = toHex(new TextEncoder().encode(assetNameText));
+  const targetAssetId = AssetId(policyHash + assetNameHex);
+
+  return utxos.find((utxo) => {
+    const assets = utxo.output().amount().multiasset();
+    return assets && (assets.get(targetAssetId) ?? 0n) === 1n;
+  });
+}
+
+/**
+ * Extract and parse an inline datum from a UTxO with type safety
+ *
+ * @param utxo UTxO to extract datum from
+ * @param contractType Schema type from contract_blueprint (e.g., Contracts.VersionedMultisig)
+ * @param parseFn The parse function from @blaze-cardano/data
+ * @returns Parsed datum with the correct type
+ * @throws Error if UTxO is missing inline datum
+ *
+ * @example
+ * import { parse } from "@blaze-cardano/data";
+ * import * as Contracts from "../../contract_blueprint";
+ *
+ * const techAuthState = parseInlineDatum(
+ *   techAuthForeverUtxo,
+ *   Contracts.VersionedMultisig,
+ *   parse
+ * );
+ */
+export function parseInlineDatum<T, CT>(
+  utxo: TransactionUnspentOutput,
+  contractType: CT,
+  parseFn: (type: CT, data: PlutusData) => T,
+): T {
+  const datum = utxo.output().datum();
+  if (!datum || datum.asInlineData() === undefined) {
+    throw new Error("UTxO missing inline datum");
+  }
+  return parseFn(contractType, datum.asInlineData()!);
+}
