@@ -1767,27 +1767,27 @@ terms_and_conditions_staging_one_shot_index = 5
 collateral_utxo_index = 15
 
 [config.node-dev-2.reserve_logic_v2_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "cbc400e8be8dc5114a4d26576536ba3099bf7b59fdc31c2f0283e0633adb5f3e"
 encoding = "hex"
 
 [config.node-dev-2.ics_logic_v2_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "cbc400e8be8dc5114a4d26576536ba3099bf7b59fdc31c2f0283e0633adb5f3e"
 encoding = "hex"
 
 [config.node-dev-2.council_logic_v2_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "cbc400e8be8dc5114a4d26576536ba3099bf7b59fdc31c2f0283e0633adb5f3e"
 encoding = "hex"
 
 [config.node-dev-2.technical_authority_logic_v2_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "cbc400e8be8dc5114a4d26576536ba3099bf7b59fdc31c2f0283e0633adb5f3e"
 encoding = "hex"
 
 [config.node-dev-2.federated_operators_logic_v2_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "cbc400e8be8dc5114a4d26576536ba3099bf7b59fdc31c2f0283e0633adb5f3e"
 encoding = "hex"
 
 [config.node-dev-2.terms_and_conditions_logic_v2_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+bytes = "cbc400e8be8dc5114a4d26576536ba3099bf7b59fdc31c2f0283e0633adb5f3e"
 encoding = "hex"
 
 [config.node-dev-2.reserve_staging_one_shot_hash]

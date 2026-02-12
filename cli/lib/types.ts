@@ -176,6 +176,19 @@ export interface NetworkConfig {
   federated_operators_staging_one_shot_index: number;
   terms_and_conditions_staging_one_shot_hash: string;
   terms_and_conditions_staging_one_shot_index: number;
+  // V2 logic one-shot refs (for StagingState NFT minting)
+  reserve_logic_v2_one_shot_hash: string;
+  reserve_logic_v2_one_shot_index: number;
+  ics_logic_v2_one_shot_hash: string;
+  ics_logic_v2_one_shot_index: number;
+  council_logic_v2_one_shot_hash: string;
+  council_logic_v2_one_shot_index: number;
+  technical_authority_logic_v2_one_shot_hash: string;
+  technical_authority_logic_v2_one_shot_index: number;
+  federated_operators_logic_v2_one_shot_hash: string;
+  federated_operators_logic_v2_one_shot_index: number;
+  terms_and_conditions_logic_v2_one_shot_hash: string;
+  terms_and_conditions_logic_v2_one_shot_index: number;
 }
 
 export interface TransactionOutput {

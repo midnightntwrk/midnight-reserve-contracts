@@ -3,8 +3,6 @@ import {
   AssetId,
   AssetName,
   PaymentAddress,
-  PlutusData,
-  PlutusList,
   PolicyId,
   Script,
   toHex,
@@ -14,11 +12,10 @@ import { serialize, parse } from "@blaze-cardano/data";
 import { resolve } from "path";
 import { existsSync } from "fs";
 
-import type { StageUpgradeOptions } from "../lib/types";
+import type { StageUpgradeOptions, NetworkConfig } from "../lib/types";
 import { getNetworkId, getConfigSection } from "../lib/types";
 import { loadAikenConfig, getDeployerAddress } from "../lib/config";
 import { createBlaze } from "../lib/provider";
-import { getProtocolParameters, calculateMinUtxo } from "../lib/protocol";
 import {
   type ContractInstances,
   getContractInstances,
@@ -85,6 +82,46 @@ function getStagingForeverHash(
     );
   }
   return contract.Script.hash();
+}
+
+function getLogicV2OneShotRef(
+  validatorName: string,
+  config: NetworkConfig,
+): { hash: string; index: number } {
+  switch (validatorName) {
+    case "tech-auth":
+      return {
+        hash: config.technical_authority_logic_v2_one_shot_hash,
+        index: config.technical_authority_logic_v2_one_shot_index,
+      };
+    case "council":
+      return {
+        hash: config.council_logic_v2_one_shot_hash,
+        index: config.council_logic_v2_one_shot_index,
+      };
+    case "reserve":
+      return {
+        hash: config.reserve_logic_v2_one_shot_hash,
+        index: config.reserve_logic_v2_one_shot_index,
+      };
+    case "ics":
+      return {
+        hash: config.ics_logic_v2_one_shot_hash,
+        index: config.ics_logic_v2_one_shot_index,
+      };
+    case "federated-ops":
+      return {
+        hash: config.federated_operators_logic_v2_one_shot_hash,
+        index: config.federated_operators_logic_v2_one_shot_index,
+      };
+    case "terms-and-conditions":
+      return {
+        hash: config.terms_and_conditions_logic_v2_one_shot_hash,
+        index: config.terms_and_conditions_logic_v2_one_shot_index,
+      };
+    default:
+      throw new Error(`Unknown validator: ${validatorName}`);
+  }
 }
 
 export async function stageUpgrade(
@@ -339,59 +376,23 @@ export async function stageUpgrade(
       .setMetadata(createTxMetadata("stage-upgrade"))
       .setFeePadding(50000n);
 
-    // Auto-mint StagingState NFT for new logic contracts (not in deployed blueprint)
+    // Log if new contract detected — StagingState NFT must be minted separately
+    // (including both the v2 logic script and stage-upgrade scripts exceeds max tx size)
     if (isNewContract && newLogicContract) {
       const aikenConfig = loadAikenConfig(network);
       const stagingForeverHash = getStagingForeverHash(
         validator,
         buildContracts ?? contracts,
       );
-      const cnightTestPolicy = aikenConfig.cnight_policy;
+      const oneShotRef = getLogicV2OneShotRef(validator, aikenConfig);
 
-      // StagingState has @list annotation: [cnight_test_policy, forever_script_hash]
-      const stagingStateList = new PlutusList();
-      stagingStateList.add(
-        PlutusData.newBytes(Buffer.from(cnightTestPolicy, "hex")),
-      );
-      stagingStateList.add(
-        PlutusData.newBytes(Buffer.from(stagingForeverHash, "hex")),
-      );
-      const stagingStateDatum = PlutusData.newList(stagingStateList);
-
-      const newLogicPolicyId = PolicyId(newLogicContract.hash);
-      const newLogicScriptAddress = getCredentialAddress(
-        network,
-        newLogicContract.hash,
-      );
-
-      const protocolParams = await getProtocolParameters(provider);
-
-      const stagingStateOutput = TransactionOutput.fromCore({
-        address: PaymentAddress(newLogicScriptAddress.toBech32()),
-        value: {
-          coins: 0n,
-          assets: new Map([[AssetId(newLogicPolicyId + AssetName("")), 1n]]),
-        },
-        datum: stagingStateDatum.toCore(),
-      });
-      stagingStateOutput
-        .amount()
-        .setCoin(calculateMinUtxo(protocolParams, stagingStateOutput));
-
-      txBuilder = txBuilder
-        .addMint(
-          newLogicPolicyId,
-          new Map([[AssetName(""), 1n]]),
-          PlutusData.newInteger(0n),
-        )
-        .provideScript(newLogicContract.script)
-        .addOutput(stagingStateOutput);
-
+      console.log(`\n  New logic contract detected: ${newLogicHash}`);
       console.log(
-        `  Auto-minting StagingState NFT for new logic ${newLogicHash}`,
+        `  StagingState NFT must be minted in a separate transaction.`,
       );
+      console.log(`  One-shot UTxO: ${oneShotRef.hash}#${oneShotRef.index}`);
       console.log(`  Staging forever hash: ${stagingForeverHash}`);
-      console.log(`  CNIGHT test policy: ${cnightTestPolicy}`);
+      console.log(`  CNIGHT test policy: ${aikenConfig.cnight_policy}`);
     }
 
     const tx = await txBuilder.complete();
