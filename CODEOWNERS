@@ -11,6 +11,8 @@ CONTRIBUTING.md @midnightntwrk/mn-security @midnightntwrk/mn-sre
 LICENSE @midnightntwrk/mn-security @midnightntwrk/mn-sre
 SECURITY.md @midnightntwrk/mn-security @midnightntwrk/mn-sre
 
+*.ak @midnightntwrk/mn-codeowners-smart-contracts
+
 .gitignore @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
 build_contracts.sh @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
 bun.lock @midnightntwrk/mn-security @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
