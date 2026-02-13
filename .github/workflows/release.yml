@@ -1,0 +1,131 @@
+name: Release Deployment Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Network to publish artifacts for'
+        required: true
+        default: 'mainnet'
+        type: string
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed for creating releases/tags
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  #v6.0.2
+
+      - name: Validate network input
+        run: |
+          set -euo pipefail
+          NETWORK="${{ inputs.network }}"
+
+          if [[ "$NETWORK" =~ [[:space:]/] ]] || [[ "$NETWORK" == *..* ]]; then
+            echo "::error::Invalid network name '${NETWORK}': must not contain '/', '..', whitespace, or newlines"
+            exit 1
+          fi
+
+          if [[ ! "$NETWORK" =~ ^(mainnet|preprod|preview|qanet|govnet|devnet-[a-z0-9][a-z0-9-]*|node-dev-[a-z0-9][a-z0-9-]*)$ ]]; then
+            echo "::error::Unknown network '${NETWORK}'. Allowed: mainnet, preprod, preview, qanet, govnet, devnet-*, node-dev-*"
+            exit 1
+          fi
+
+          echo "Network '${NETWORK}' is valid"
+
+      - name: Validate artifacts exist
+        run: |
+          set -euo pipefail
+          NETWORK="${{ inputs.network }}"
+          MISSING=()
+
+          FILES=(
+            "deployed-scripts/${NETWORK}/versions/v1/plutus.json"
+            "release/${NETWORK}/verification-report.md"
+            "release/${NETWORK}/address-report.md"
+            "release/${NETWORK}/info.json"
+          )
+
+          for f in "${FILES[@]}"; do
+            if [ ! -f "$f" ]; then
+              MISSING+=("$f")
+            fi
+          done
+
+          if [ ${#MISSING[@]} -ne 0 ]; then
+            echo "::error::Missing required artifact files for network '${NETWORK}':"
+            for m in "${MISSING[@]}"; do
+              echo "::error::  - ${m}"
+            done
+            exit 1
+          fi
+
+          echo "All 4 artifact files found for network '${NETWORK}'"
+
+      - name: Generate release tag
+        id: tag
+        run: |
+          set -euo pipefail
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "tag=${NETWORK}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+        env:
+          NETWORK: ${{ inputs.network }}
+
+      - name: Check for existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.tag.outputs.tag }}"
+          if gh release view "$TAG" &>/dev/null; then
+            echo "::error::Release '${TAG}' already exists. Delete the existing release first or use a different commit."
+            exit 1
+          fi
+          echo "No existing release for tag '${TAG}'"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          NETWORK="${{ inputs.network }}"
+          TAG="${{ steps.tag.outputs.tag }}"
+          SHORT_SHA="${{ steps.tag.outputs.short_sha }}"
+
+          TITLE="${NETWORK} Deployment Artifacts - ${SHORT_SHA}"
+
+          # Build release notes combining both reports
+          {
+            echo "# ${NETWORK} Deployment Artifacts"
+            echo ""
+            echo "**Commit:** ${GITHUB_SHA}"
+            echo "**Network:** ${NETWORK}"
+            echo ""
+            echo "## Attached Artifacts"
+            echo ""
+            echo "- \`plutus.json\` — Compiled Plutus validators"
+            echo "- \`verification-report.md\` — Deployment verification checks"
+            echo "- \`address-report.md\` — Contract addresses and UTxO details"
+            echo "- \`info.json\` — Structured contract information"
+            echo ""
+            echo "---"
+            echo ""
+            cat "release/${NETWORK}/verification-report.md"
+            echo ""
+            echo "---"
+            echo ""
+            cat "release/${NETWORK}/address-report.md"
+          } > /tmp/release-notes.md
+
+          gh release create "${TAG}" \
+            --title "${TITLE}" \
+            --notes-file /tmp/release-notes.md \
+            "deployed-scripts/${NETWORK}/versions/v1/plutus.json" \
+            "release/${NETWORK}/verification-report.md" \
+            "release/${NETWORK}/address-report.md" \
+            "release/${NETWORK}/info.json"
