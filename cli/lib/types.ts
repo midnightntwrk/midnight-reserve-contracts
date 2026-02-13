@@ -54,6 +54,8 @@ export interface InfoOptions extends GlobalOptions {
   component: string;
   fetch: boolean;
   useBuild?: boolean;
+  save?: boolean;
+  releaseDir?: string;
 }
 
 export interface StageUpgradeOptions extends GlobalOptions {

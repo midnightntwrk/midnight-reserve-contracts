@@ -382,11 +382,15 @@ Options:
   --format            Output format: json, table (default: table)
   --component         Filter by component (default: all)
   --fetch             Fetch current on-chain state
+  --save              Save JSON and markdown report to release/<network>/
+  --release-dir       Output directory for --save (default: ./release)
   --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
   bun cli info -n preview --format json
+  bun cli info -n mainnet --save
+  bun cli info -n mainnet --save --release-dir ./my-release
 `);
 }
 
@@ -957,6 +961,8 @@ async function main(): Promise<void> {
           component: (options.component as string) || "all",
           fetch: options.fetch === true,
           useBuild: options["use-build"] === true,
+          save: options.save === true,
+          releaseDir: (options["release-dir"] as string) || undefined,
         };
 
         await info(infoOptions);

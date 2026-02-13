@@ -63,8 +63,8 @@ export interface ContractInstances {
   mainTechAuthUpdateThreshold: ContractClass;
   mainFederatedOpsUpdateThreshold: ContractClass;
 
-  // TCnight Mint Infinite (testnet only)
-  tcnightMintInfinite: ContractClass;
+  // TCnight Mint Infinite (testnet only, not in mainnet blueprint)
+  tcnightMintInfinite?: ContractClass;
 
   // Terms and Conditions
   termsAndConditionsForever: ContractClass;
@@ -228,8 +228,8 @@ function createInstances(
       "ThresholdsMainFederatedOpsUpdateThresholdElse",
     ),
 
-    // TCnight Mint Infinite (testnet only)
-    tcnightMintInfinite: create("TestCnightNoAuditTcnightMintInfiniteElse"),
+    // TCnight Mint Infinite (testnet only, not in mainnet blueprint)
+    tcnightMintInfinite: tryCreate("TestCnightNoAuditTcnightMintInfiniteElse"),
 
     // Terms and Conditions
     termsAndConditionsForever: create(
