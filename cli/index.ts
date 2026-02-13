@@ -410,22 +410,6 @@ Options:
 `);
 }
 
-function printVerifyHelp(): void {
-  console.log(`
-Usage: bun cli verify [options]
-
-Verify on-chain deployment against local artifacts.
-Checks script hash embedding, on-chain reference scripts, and UpgradeState datums.
-
-Options:
-  -n, --network       Network to verify (required, e.g. mainnet, preview)
-`);
-  console.log(`Examples:
-  bun cli verify -n mainnet
-  bun cli verify -n preview
-`);
-}
-
 function printGenerateKeyHelp(): void {
   console.log(`
 Usage: bun cli generate-key [options]
