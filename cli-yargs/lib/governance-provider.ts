@@ -18,7 +18,9 @@ import { findScriptByHash, getTwoStageContracts } from "./contracts";
 
 export interface UpgradeState {
   logicHash: string;
+  mitigationLogicHash: string;
   authHash: string;
+  logicRound: number;
 }
 
 /**
@@ -96,10 +98,13 @@ export async function getTwoStageUtxos(
 }
 
 /**
- * Extracts the UpgradeState (logicHash, authHash) from a two-stage datum.
+ * Extracts the UpgradeState from a two-stage datum.
  *
- * UpgradeState is: [logicHash (bytes), mitigationLogicHash (bytes), authHash (bytes)]
- * The datum is typically a Constr or List with the UpgradeState as elements.
+ * UpgradeState is a 6-element tuple:
+ *   [logicHash, mitigationLogicHash, authHash, mitigationAuthHash, logicRound, authRound]
+ *
+ * Indices: 0=logicHash(bytes), 1=mitigationLogicHash(bytes), 2=authHash(bytes),
+ *          3=mitigationAuthHash(bytes), 4=logicRound(int), 5=authRound(int)
  */
 export function parseUpgradeState(
   inlineDatumCbor: string,
@@ -108,10 +113,12 @@ export function parseUpgradeState(
     const plutusData = PlutusData.fromCbor(HexBlob(inlineDatumCbor));
     const items =
       plutusData.asList() ?? plutusData.asConstrPlutusData()?.getData();
-    if (!items || items.getLength() < 3) return null;
+    if (!items || items.getLength() < 5) return null;
 
     const logicField = items.get(0);
+    const mitigationLogicField = items.get(1);
     const authField = items.get(2);
+    const logicRoundField = items.get(4);
 
     if (
       logicField.getKind() !== PlutusDataKind.Bytes ||
@@ -120,12 +127,15 @@ export function parseUpgradeState(
       return null;
     }
 
-    const logicHash = Buffer.from(logicField.asBoundedBytes()!).toString(
-      "hex",
-    );
+    const logicHash = Buffer.from(logicField.asBoundedBytes()!).toString("hex");
+    const mitigationLogicHash =
+      mitigationLogicField.getKind() === PlutusDataKind.Bytes
+        ? Buffer.from(mitigationLogicField.asBoundedBytes()!).toString("hex")
+        : "";
     const authHash = Buffer.from(authField.asBoundedBytes()!).toString("hex");
+    const logicRound = Number(logicRoundField.asInteger() ?? 0n);
 
-    return { logicHash, authHash };
+    return { logicHash, mitigationLogicHash, authHash, logicRound };
   } catch {
     return null;
   }
