@@ -219,6 +219,7 @@ export function extractSignersFromCbor(datum: PlutusData): Signer[] {
 export function createMultisigStateCbor(
   signers: Signer[],
   round: bigint = 0n,
+  totalSigners?: bigint,
 ): PlutusData {
   // Build map entries with duplicate keys preserved
   // CBOR map format: A<n> (where n is count) followed by key-value pairs
@@ -265,12 +266,14 @@ export function createMultisigStateCbor(
   //   <int>     - round
   // ff          - end outer array
 
-  // Encode total_signers (small int if <= 23, otherwise more complex)
+  // Encode total_signers — use explicit value if provided, otherwise derive from array length
+  const totalSignersValue =
+    totalSigners !== undefined ? Number(totalSigners) : signers.length;
   let totalSignersEncoded: Buffer;
-  if (signers.length <= 23) {
-    totalSignersEncoded = Buffer.from([signers.length]);
-  } else if (signers.length <= 255) {
-    totalSignersEncoded = Buffer.from([0x18, signers.length]);
+  if (totalSignersValue <= 23) {
+    totalSignersEncoded = Buffer.from([totalSignersValue]);
+  } else if (totalSignersValue <= 255) {
+    totalSignersEncoded = Buffer.from([0x18, totalSignersValue]);
   } else {
     throw new Error("Too many signers for simple CBOR encoding");
   }
