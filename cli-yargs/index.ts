@@ -45,4 +45,4 @@ addGlobalOptions(yargs(hideBin(process.argv)))
   .demandCommand()
   .help()
   .strict()
-  .parseSync();
+  .parseAsync();
