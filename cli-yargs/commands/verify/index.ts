@@ -4,6 +4,7 @@ import { resolve } from "path";
 import { HexBlob, PlutusData, PlutusDataKind } from "@blaze-cardano/core";
 import type { GlobalOptions } from "../../lib/global-options";
 import { getCardanoNetwork } from "../../lib/network-mapping";
+import { getCurrentVersion } from "../../lib/versions";
 
 // --- Types ---
 
@@ -631,8 +632,15 @@ export async function handler(argv: VerifyOptions) {
   const baseUrl = `https://${networkNameMap[cardanoNetwork]}.blockfrost.io/api/v0`;
 
   // Load plutus.json
+  const currentVersion = getCurrentVersion(network);
+  if (!currentVersion) {
+    throw new Error(
+      `No current version set for environment '${network}'. ` +
+        `Expected versions.json in deployed-scripts/${network}/ with a 'current' field.`,
+    );
+  }
   const plutusPath = resolve(
-    `deployed-scripts/${network}/versions/v1/plutus.json`,
+    `deployed-scripts/${network}/versions/${currentVersion}/plutus.json`,
   );
   let plutusJson: PlutusJson;
   try {
