@@ -1,7 +1,7 @@
 # Aiken compilation artifacts
 artifacts/
 # Aiken's project working directory
-build/
+/build/
 # Aiken's default documentation export
 ./docs/
 
