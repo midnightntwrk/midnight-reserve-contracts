@@ -81,6 +81,10 @@ export function printError(message: string): void {
   console.error(`\u274C ${message}\n`);
 }
 
+export function printWarning(message: string): void {
+  console.warn(`\u26A0\uFE0F  ${message}\n`);
+}
+
 export function printInfo(message: string): void {
   console.log(`\u2139\uFE0F  ${message}`);
 }

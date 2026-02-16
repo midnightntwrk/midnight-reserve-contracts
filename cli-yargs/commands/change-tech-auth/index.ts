@@ -38,11 +38,8 @@ import {
   findUtxoByTxRef,
   parseInlineDatum,
 } from "../../lib/transaction";
-import {
-  writeTransactionFile,
-  printSuccess,
-  printError,
-} from "../../lib/output";
+import { writeTransactionFile } from "../../lib/output";
+import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
 import { getDatumHandler } from "../../lib/datum-versions";
 import * as Contracts from "../../../contract_blueprint";
@@ -345,99 +342,94 @@ export async function handler(argv: ChangeTechAuthOptions) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
 
-  try {
-    const txBuilder = blaze
-      .newTransaction()
-      .addInput(userUtxo)
-      .addInput(techAuthForeverUtxo, PlutusData.newInteger(0n))
-      .addReferenceInput(techAuthThresholdUtxo)
-      .addReferenceInput(councilForeverUtxo)
-      .addReferenceInput(techAuthTwoStageUtxo)
-      .provideScript(contracts.techAuthForever.Script)
-      .addMint(techAuthPolicyId, new Map([[AssetName(""), 1n]]))
-      .provideScript(Script.newNativeScript(nativeScriptTechAuth))
-      .addMint(councilPolicyId, new Map([[AssetName(""), 1n]]))
-      .provideScript(Script.newNativeScript(nativeScriptCouncil))
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(techAuthForeverAddress.toBech32()),
-          value: {
-            coins: techAuthForeverUtxo.output().amount().coin(),
-            assets: new Map([
-              [AssetId(contracts.techAuthForever.Script.hash()), 1n],
-            ]),
-          },
-          datum: newTechAuthForeverStateCbor.toCore(),
-        }),
-      )
-      .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
-      .provideScript(logicScript)
-      .setChangeAddress(changeAddress)
-      .setMetadata(createTxMetadata("change-tech-auth"))
-      .setFeePadding(50000n);
-
-    // Add mitigation logic withdrawal if present in UpgradeState
-    if (mitigationLogicScript && mitigationLogicRewardAccount) {
-      console.log("  Adding mitigation logic withdrawal...");
-      txBuilder
-        .addWithdrawal(mitigationLogicRewardAccount, 0n, memberRedeemerCbor)
-        .provideScript(mitigationLogicScript);
-    }
-
-    const tx = await txBuilder.complete();
-
-    printSuccess(`Transaction built: ${tx.getId()}`);
-
-    if (sign) {
-      const signerKeyGroups = [
-        {
-          label: "tech auth",
-          keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS"),
+  const txBuilder = blaze
+    .newTransaction()
+    .addInput(userUtxo)
+    .addInput(techAuthForeverUtxo, PlutusData.newInteger(0n))
+    .addReferenceInput(techAuthThresholdUtxo)
+    .addReferenceInput(councilForeverUtxo)
+    .addReferenceInput(techAuthTwoStageUtxo)
+    .provideScript(contracts.techAuthForever.Script)
+    .addMint(techAuthPolicyId, new Map([[AssetName(""), 1n]]))
+    .provideScript(Script.newNativeScript(nativeScriptTechAuth))
+    .addMint(councilPolicyId, new Map([[AssetName(""), 1n]]))
+    .provideScript(Script.newNativeScript(nativeScriptCouncil))
+    .addOutput(
+      TransactionOutput.fromCore({
+        address: PaymentAddress(techAuthForeverAddress.toBech32()),
+        value: {
+          coins: techAuthForeverUtxo.output().amount().coin(),
+          assets: new Map([
+            [AssetId(contracts.techAuthForever.Script.hash()), 1n],
+          ]),
         },
-        { label: "council", keys: parsePrivateKeys("COUNCIL_PRIVATE_KEYS") },
-      ];
+        datum: newTechAuthForeverStateCbor.toCore(),
+      }),
+    )
+    .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
+    .provideScript(logicScript)
+    .setChangeAddress(changeAddress)
+    .setMetadata(createTxMetadata("change-tech-auth"))
+    .setFeePadding(50000n);
 
-      const allSignatures: ReturnType<typeof signTransaction> = [];
-
-      for (const { label, keys } of signerKeyGroups) {
-        console.log(`\nSigning with ${keys.length} ${label} private keys...`);
-        const signatures = signTransaction(tx.getId(), keys);
-        allSignatures.push(...signatures);
-        console.log(`  Created ${signatures.length} signatures`);
-      }
-
-      const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
-      writeTransactionFile(
-        outputPath,
-        signedTx.toCbor(),
-        tx.getId(),
-        true,
-        "Change Technical Authority Transaction",
-      );
-      printSuccess(`Signed transaction written to ${outputPath}`);
-    } else {
-      writeTransactionFile(
-        outputPath,
-        tx.toCbor(),
-        tx.getId(),
-        false,
-        "Change Technical Authority Transaction",
-      );
-      printSuccess(`Unsigned transaction written to ${outputPath}`);
-    }
-
-    console.log("\nTransaction ID:", tx.getId());
-  } catch (error) {
-    printError("Transaction build failed");
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      if ("cause" in error && error.cause) {
-        console.error("Error cause:", JSON.stringify(error.cause, null, 2));
-      }
-    }
-    console.error(error);
-    throw error;
+  // Add mitigation logic withdrawal if present in UpgradeState
+  if (mitigationLogicScript && mitigationLogicRewardAccount) {
+    console.log("  Adding mitigation logic withdrawal...");
+    txBuilder
+      .addWithdrawal(mitigationLogicRewardAccount, 0n, memberRedeemerCbor)
+      .provideScript(mitigationLogicScript);
   }
+
+  const tx = await completeTx(txBuilder, {
+    commandName: "change-tech-auth",
+    provider,
+    networkId,
+    knownUtxos: [
+      techAuthForeverUtxo,
+      techAuthThresholdUtxo,
+      councilForeverUtxo,
+      techAuthTwoStageUtxo,
+      userUtxo,
+    ],
+  });
+
+  if (sign) {
+    const signerKeyGroups = [
+      {
+        label: "tech auth",
+        keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS"),
+      },
+      { label: "council", keys: parsePrivateKeys("COUNCIL_PRIVATE_KEYS") },
+    ];
+
+    const allSignatures: ReturnType<typeof signTransaction> = [];
+
+    for (const { label, keys } of signerKeyGroups) {
+      console.log(`\nSigning with ${keys.length} ${label} private keys...`);
+      const signatures = signTransaction(tx.getId(), keys);
+      allSignatures.push(...signatures);
+      console.log(`  Created ${signatures.length} signatures`);
+    }
+
+    const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
+    writeTransactionFile(
+      outputPath,
+      signedTx.toCbor(),
+      tx.getId(),
+      true,
+      "Change Technical Authority Transaction",
+    );
+  } else {
+    writeTransactionFile(
+      outputPath,
+      tx.toCbor(),
+      tx.getId(),
+      false,
+      "Change Technical Authority Transaction",
+    );
+  }
+
+  console.log("\nTransaction ID:", tx.getId());
 }
 
 const commandModule: CommandModule<GlobalOptions, ChangeTechAuthOptions> = {

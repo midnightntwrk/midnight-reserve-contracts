@@ -2,10 +2,11 @@ import type { Argv, CommandModule } from "yargs";
 import { Address } from "@blaze-cardano/core";
 import { resolve } from "path";
 import type { GlobalOptions } from "../../lib/global-options";
-import type { ProviderType } from "../../lib/types";
+import { getNetworkId, type ProviderType } from "../../lib/types";
 import { createBlaze } from "../../lib/provider";
 import { getDeployerAddress, getSimpleTxCount, getSimpleTxAmount } from "../../lib/config";
 import { ensureDirectory, writeTransactionFile } from "../../lib/output";
+import { completeTx } from "../../lib/complete-tx";
 
 interface SimpleTxOptions extends GlobalOptions {
   count?: number;
@@ -53,7 +54,9 @@ export async function handler(argv: SimpleTxOptions) {
   console.log(`Creating ${count} outputs of ${amount} lovelace each`);
   console.log(`Recipient: ${recipientAddress}`);
 
-  const { blaze } = await createBlaze(network, argv.provider as ProviderType | undefined);
+  const providerType = argv.provider as ProviderType | undefined;
+  const { blaze, provider } = await createBlaze(network, providerType);
+  const networkId = getNetworkId(network);
   const address = Address.fromBech32(recipientAddress);
 
   const txBuilder = blaze.newTransaction();
@@ -62,7 +65,11 @@ export async function handler(argv: SimpleTxOptions) {
     txBuilder.payLovelace(address, amount);
   }
 
-  const tx = await txBuilder.complete();
+  const tx = await completeTx(txBuilder, {
+    commandName: "simple-tx",
+    provider,
+    networkId,
+  });
 
   ensureDirectory(deploymentDir);
   writeTransactionFile(
@@ -72,9 +79,6 @@ export async function handler(argv: SimpleTxOptions) {
     false,
     "Simple Transaction",
   );
-
-  console.log("Transaction built successfully!");
-  console.log("Transaction ID:", tx.getId());
   console.log("\nTransaction details:");
   console.log(`  - Outputs: ${count}`);
   console.log(`  - Amount per output: ${Number(amount) / 1_000_000} ADA`);

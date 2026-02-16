@@ -39,11 +39,8 @@ import {
   findUtxoByTxRef,
   parseInlineDatum,
 } from "../../lib/transaction";
-import {
-  writeTransactionFile,
-  printSuccess,
-  printError,
-} from "../../lib/output";
+import { writeTransactionFile } from "../../lib/output";
+import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
 import { getDatumHandler } from "../../lib/datum-versions";
 import * as Contracts from "../../../contract_blueprint";
@@ -307,98 +304,93 @@ export async function handler(argv: ChangeCouncilOptions) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
 
-  try {
-    const txBuilder = blaze
-      .newTransaction()
-      .addInput(councilForeverUtxo, PlutusData.newInteger(0n))
-      .addReferenceInput(councilThresholdUtxo)
-      .addReferenceInput(techAuthForeverUtxo)
-      .addReferenceInput(councilTwoStageUtxo)
-      .provideScript(contracts.councilForever.Script)
-      .addMint(councilPolicyId, new Map([[AssetName(""), 1n]]))
-      .provideScript(Script.newNativeScript(nativeScriptCouncil))
-      .addMint(techAuthPolicyId, new Map([[AssetName(""), 1n]]))
-      .provideScript(Script.newNativeScript(nativeScriptTechAuth))
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(councilForeverAddress.toBech32()),
-          value: {
-            coins: councilForeverUtxo.output().amount().coin(),
-            assets: new Map([
-              [AssetId(contracts.councilForever.Script.hash()), 1n],
-            ]),
-          },
-          datum: newCouncilForeverStateCbor.toCore(),
-        }),
-      )
-      .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
-      .provideScript(logicScript)
-      .setChangeAddress(changeAddress)
-      .setMetadata(createTxMetadata("change-council"))
-      .setFeePadding(50000n);
-
-    // Add mitigation logic withdrawal if present in UpgradeState
-    if (mitigationLogicScript && mitigationLogicRewardAccount) {
-      console.log("  Adding mitigation logic withdrawal...");
-      txBuilder
-        .addWithdrawal(mitigationLogicRewardAccount, 0n, memberRedeemerCbor)
-        .provideScript(mitigationLogicScript);
-    }
-
-    const tx = await txBuilder.complete();
-
-    printSuccess(`Transaction built: ${tx.getId()}`);
-
-    if (sign) {
-      const signerKeyGroups = [
-        {
-          label: "tech auth",
-          keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS"),
+  const txBuilder = blaze
+    .newTransaction()
+    .addInput(councilForeverUtxo, PlutusData.newInteger(0n))
+    .addReferenceInput(councilThresholdUtxo)
+    .addReferenceInput(techAuthForeverUtxo)
+    .addReferenceInput(councilTwoStageUtxo)
+    .provideScript(contracts.councilForever.Script)
+    .addMint(councilPolicyId, new Map([[AssetName(""), 1n]]))
+    .provideScript(Script.newNativeScript(nativeScriptCouncil))
+    .addMint(techAuthPolicyId, new Map([[AssetName(""), 1n]]))
+    .provideScript(Script.newNativeScript(nativeScriptTechAuth))
+    .addOutput(
+      TransactionOutput.fromCore({
+        address: PaymentAddress(councilForeverAddress.toBech32()),
+        value: {
+          coins: councilForeverUtxo.output().amount().coin(),
+          assets: new Map([
+            [AssetId(contracts.councilForever.Script.hash()), 1n],
+          ]),
         },
-        { label: "council", keys: parsePrivateKeys("COUNCIL_PRIVATE_KEYS") },
-      ];
+        datum: newCouncilForeverStateCbor.toCore(),
+      }),
+    )
+    .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
+    .provideScript(logicScript)
+    .setChangeAddress(changeAddress)
+    .setMetadata(createTxMetadata("change-council"))
+    .setFeePadding(50000n);
 
-      const allSignatures: ReturnType<typeof signTransaction> = [];
-
-      for (const { label, keys } of signerKeyGroups) {
-        console.log(`\nSigning with ${keys.length} ${label} private keys...`);
-        const signatures = signTransaction(tx.getId(), keys);
-        allSignatures.push(...signatures);
-        console.log(`  Created ${signatures.length} signatures`);
-      }
-
-      const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
-      writeTransactionFile(
-        outputPath,
-        signedTx.toCbor(),
-        tx.getId(),
-        true,
-        "Change Council Transaction",
-      );
-      printSuccess(`Signed transaction written to ${outputPath}`);
-    } else {
-      writeTransactionFile(
-        outputPath,
-        tx.toCbor(),
-        tx.getId(),
-        false,
-        "Change Council Transaction",
-      );
-      printSuccess(`Unsigned transaction written to ${outputPath}`);
-    }
-
-    console.log("\nTransaction ID:", tx.getId());
-  } catch (error) {
-    printError("Transaction build failed");
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      if ("cause" in error && error.cause) {
-        console.error("Error cause:", JSON.stringify(error.cause, null, 2));
-      }
-    }
-    console.error(error);
-    throw error;
+  // Add mitigation logic withdrawal if present in UpgradeState
+  if (mitigationLogicScript && mitigationLogicRewardAccount) {
+    console.log("  Adding mitigation logic withdrawal...");
+    txBuilder
+      .addWithdrawal(mitigationLogicRewardAccount, 0n, memberRedeemerCbor)
+      .provideScript(mitigationLogicScript);
   }
+
+  const tx = await completeTx(txBuilder, {
+    commandName: "change-council",
+    provider,
+    networkId,
+    knownUtxos: [
+      councilForeverUtxo,
+      councilThresholdUtxo,
+      techAuthForeverUtxo,
+      councilTwoStageUtxo,
+      userUtxo,
+    ],
+  });
+
+  if (sign) {
+    const signerKeyGroups = [
+      {
+        label: "tech auth",
+        keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS"),
+      },
+      { label: "council", keys: parsePrivateKeys("COUNCIL_PRIVATE_KEYS") },
+    ];
+
+    const allSignatures: ReturnType<typeof signTransaction> = [];
+
+    for (const { label, keys } of signerKeyGroups) {
+      console.log(`\nSigning with ${keys.length} ${label} private keys...`);
+      const signatures = signTransaction(tx.getId(), keys);
+      allSignatures.push(...signatures);
+      console.log(`  Created ${signatures.length} signatures`);
+    }
+
+    const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
+    writeTransactionFile(
+      outputPath,
+      signedTx.toCbor(),
+      tx.getId(),
+      true,
+      "Change Council Transaction",
+    );
+  } else {
+    writeTransactionFile(
+      outputPath,
+      tx.toCbor(),
+      tx.getId(),
+      false,
+      "Change Council Transaction",
+    );
+  }
+
+  console.log("\nTransaction ID:", tx.getId());
 }
 
 const commandModule: CommandModule<GlobalOptions, ChangeCouncilOptions> = {

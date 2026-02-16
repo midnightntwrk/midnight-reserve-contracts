@@ -20,3 +20,4 @@ export * from "./transaction-json";
 export * from "./validation";
 export * from "./datum-versions";
 export * from "./build-engine";
+export * from "./complete-tx";
