@@ -17,6 +17,7 @@ blueprint-rs
 
 code-search*
 .claude/settings.local.json
+.claude-session
 prompt.md
 planner-prompt.md
 team-prompt.md
