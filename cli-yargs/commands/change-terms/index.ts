@@ -413,7 +413,15 @@ export async function handler(argv: ChangeTermsOptions) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
 
-  const termsRedeemer = PlutusData.newInteger(0n);
+  // Wrap in LogicRedeemer::Normal(inner) for v2 logic scripts, plain for v1
+  const innerRedeemer = PlutusData.newInteger(0n);
+  const termsRedeemer =
+    logicRound >= 1 && logicScript
+      ? PlutusData.fromCore({
+          constructor: 0n,
+          fields: { items: [innerRedeemer.toCore()] },
+        })
+      : innerRedeemer;
 
   const txBuilder = blaze
     .newTransaction()
