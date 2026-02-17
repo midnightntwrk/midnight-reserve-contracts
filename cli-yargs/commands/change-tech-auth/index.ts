@@ -269,7 +269,7 @@ export async function handler(argv: ChangeTechAuthOptions) {
   const innerRedeemerCbor = createRedeemerMapCbor(newTechAuthSigners);
   // Wrap in LogicRedeemer::Normal(inner) for v2 logic scripts, plain for v1
   const memberRedeemerCbor =
-    logicRound >= 1
+    logicRound >= 1 && logicScript
       ? PlutusData.fromCore({
           constructor: 0n,
           fields: { items: [innerRedeemerCbor.toCore()] },
