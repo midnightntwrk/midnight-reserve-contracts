@@ -11,24 +11,12 @@ import type { GlobalOptions } from "../../lib/global-options";
 import { createProvider } from "../../lib/provider";
 import { signTransaction, attachWitnesses } from "../../lib/transaction";
 import { getEnvVar } from "../../lib/config";
-import {
-  printError,
-  printSuccess,
-  printProgress,
-  printInfo,
-} from "../../lib/output";
+import { printError, printSuccess, printProgress } from "../../lib/output";
 import {
   isSingleTransaction,
   isDeploymentTransactions,
 } from "../../lib/transaction-json";
-import {
-  MAX_SUBMIT_RETRIES,
-  INITIAL_RETRY_DELAY_MS,
-  sleep,
-  isNetworkError,
-  isAlreadySubmittedError,
-  awaitTxConfirmation,
-} from "../../lib/submit";
+import { submitWithRetry, awaitTxConfirmation } from "../../lib/submit";
 
 interface SignAndSubmitOptions extends GlobalOptions {
   "json-file": string;
@@ -176,46 +164,17 @@ async function signAndSubmitTransaction(
   name: string,
 ): Promise<TransactionId> {
   const tx = Transaction.fromCbor(TxCBOR(HexBlob(cbor)));
-  const txId = tx.getId();
 
   let signedTx: Transaction;
   if (privateKeyHex) {
+    const txId = tx.getId();
     const signatures = signTransaction(txId, [privateKeyHex]);
     signedTx = attachWitnesses(tx.toCbor() as string, signatures);
   } else {
     signedTx = tx;
   }
 
-  for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
-    try {
-      if (attempt > 1) {
-        printProgress(
-          `Submitting (attempt ${attempt}/${MAX_SUBMIT_RETRIES}): ${name}`,
-        );
-      } else {
-        printProgress(`Submitting: ${name}`);
-      }
-      await provider.postTransactionToChain(signedTx);
-      return txId;
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-
-      if (isAlreadySubmittedError(err)) {
-        printInfo(`Transaction may already be submitted: ${name}`);
-        return txId;
-      }
-
-      if (!isNetworkError(err) || attempt === MAX_SUBMIT_RETRIES) {
-        throw err;
-      }
-
-      const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
-      printInfo(`Network error, retrying in ${delay / 1000}s...`);
-      await sleep(delay);
-    }
-  }
-
-  throw new Error(`Failed to submit transaction ${name}`);
+  return submitWithRetry(signedTx, provider, name);
 }
 
 const commandModule: CommandModule<GlobalOptions, SignAndSubmitOptions> = {

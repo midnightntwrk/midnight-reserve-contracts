@@ -27,14 +27,7 @@ import {
   isSingleTransaction,
   isDeploymentTransactions,
 } from "../../lib/transaction-json";
-import {
-  MAX_SUBMIT_RETRIES,
-  INITIAL_RETRY_DELAY_MS,
-  sleep,
-  isNetworkError,
-  isAlreadySubmittedError,
-  awaitTxConfirmation,
-} from "../../lib/submit";
+import { submitWithRetry, awaitTxConfirmation } from "../../lib/submit";
 
 interface CombineSignaturesOptions extends GlobalOptions {
   tx: string;
@@ -208,43 +201,6 @@ function mergeSignaturesIntoTransaction(
   return tx;
 }
 
-async function submitTransaction(
-  tx: Transaction,
-  provider: Provider,
-  name: string,
-): Promise<TransactionId> {
-  const txId = tx.getId();
-
-  for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
-    try {
-      if (attempt > 1) {
-        printProgress(
-          `Submitting (attempt ${attempt}/${MAX_SUBMIT_RETRIES}): ${name}`,
-        );
-      }
-      await provider.postTransactionToChain(tx);
-      return txId;
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-
-      if (isAlreadySubmittedError(err)) {
-        printInfo(`Transaction may already be submitted: ${name}`);
-        return txId;
-      }
-
-      if (!isNetworkError(err) || attempt === MAX_SUBMIT_RETRIES) {
-        throw err;
-      }
-
-      const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
-      printInfo(`Network error, retrying in ${delay / 1000}s...`);
-      await sleep(delay);
-    }
-  }
-
-  throw new Error(`Failed to submit transaction ${name}`);
-}
-
 // --- Main handler ---
 
 export async function handler(argv: CombineSignaturesOptions) {
@@ -360,7 +316,7 @@ export async function handler(argv: CombineSignaturesOptions) {
           printInfo(`  Added deployer signature`);
         }
 
-        const txId = await submitTransaction(
+        const txId = await submitWithRetry(
           signedTx,
           provider,
           txData.description,
@@ -407,7 +363,7 @@ export async function handler(argv: CombineSignaturesOptions) {
         printInfo(`Added deployer signature`);
       }
 
-      const txId = await submitTransaction(
+      const txId = await submitWithRetry(
         signedTx,
         provider,
         txJson.description,

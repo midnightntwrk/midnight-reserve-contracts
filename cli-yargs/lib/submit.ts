@@ -1,5 +1,5 @@
 import type { Provider } from "@blaze-cardano/sdk";
-import type { TransactionId } from "@blaze-cardano/core";
+import type { Transaction, TransactionId } from "@blaze-cardano/core";
 import { printInfo, printProgress } from "./output";
 
 // Configuration for transaction confirmation
@@ -34,6 +34,49 @@ export function isAlreadySubmittedError(error: Error): boolean {
     message.includes("duplicate") ||
     message.includes("known")
   );
+}
+
+/**
+ * Submits a signed transaction with retry on network errors.
+ * Returns the transaction ID on success.
+ */
+export async function submitWithRetry(
+  tx: Transaction,
+  provider: Provider,
+  name: string,
+): Promise<TransactionId> {
+  const txId = tx.getId();
+
+  for (let attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
+    try {
+      if (attempt > 1) {
+        printProgress(
+          `Submitting (attempt ${attempt}/${MAX_SUBMIT_RETRIES}): ${name}`,
+        );
+      } else {
+        printProgress(`Submitting: ${name}`);
+      }
+      await provider.postTransactionToChain(tx);
+      return txId;
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+
+      if (isAlreadySubmittedError(err)) {
+        printInfo(`Transaction may already be submitted: ${name}`);
+        return txId;
+      }
+
+      if (!isNetworkError(err) || attempt === MAX_SUBMIT_RETRIES) {
+        throw err;
+      }
+
+      const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+      printInfo(`Network error, retrying in ${delay / 1000}s...`);
+      await sleep(delay);
+    }
+  }
+
+  throw new Error(`Failed to submit transaction ${name}`);
 }
 
 /**

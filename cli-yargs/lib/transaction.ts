@@ -26,6 +26,8 @@ import {
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
 import type { Signer } from "./types";
+import { parsePrivateKeys } from "./signers";
+import { writeTransactionFile } from "./output";
 import * as Contracts from "../../contract_blueprint";
 
 export function createOneShotUtxo(
@@ -267,4 +269,53 @@ export function parseInlineDatum<T, CT>(
     throw new Error("UTxO missing inline datum");
   }
   return parseFn(contractType, datum.asInlineData()!);
+}
+
+/**
+ * Signs a governance transaction with tech-auth and council keys, then writes
+ * the result to a JSON file. Used by all 4 change-* commands.
+ */
+export function signAndWriteTx(
+  tx: Transaction,
+  outputPath: string,
+  sign: boolean,
+  description: string,
+): void {
+  if (sign) {
+    const signerKeyGroups = [
+      {
+        label: "tech auth",
+        keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS"),
+      },
+      { label: "council", keys: parsePrivateKeys("COUNCIL_PRIVATE_KEYS") },
+    ];
+
+    const allSignatures: ReturnType<typeof signTransaction> = [];
+
+    for (const { label, keys } of signerKeyGroups) {
+      console.log(`\nSigning with ${keys.length} ${label} private keys...`);
+      const signatures = signTransaction(tx.getId(), keys);
+      allSignatures.push(...signatures);
+      console.log(`  Created ${signatures.length} signatures`);
+    }
+
+    const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
+    writeTransactionFile(
+      outputPath,
+      signedTx.toCbor(),
+      tx.getId(),
+      true,
+      description,
+    );
+  } else {
+    writeTransactionFile(
+      outputPath,
+      tx.toCbor(),
+      tx.getId(),
+      false,
+      description,
+    );
+  }
+
+  console.log("\nTransaction ID:", tx.getId());
 }

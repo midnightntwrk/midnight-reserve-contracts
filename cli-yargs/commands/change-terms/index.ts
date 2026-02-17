@@ -24,17 +24,14 @@ import {
   getContractUtxos,
   parseUpgradeState,
 } from "../../lib/governance-provider";
-import { parsePrivateKeys } from "../../lib/signers";
 import {
   createNativeMultisigScript,
   createRewardAccount,
-  signTransaction,
-  attachWitnesses,
+  signAndWriteTx,
   findUtxoWithMainAsset,
   findUtxoByTxRef,
   parseInlineDatum,
 } from "../../lib/transaction";
-import { writeTransactionFile } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
 import { getDatumHandler } from "../../lib/datum-versions";
@@ -472,43 +469,12 @@ export async function handler(argv: ChangeTermsOptions) {
     ],
   });
 
-  if (sign) {
-    const signerKeyGroups = [
-      {
-        label: "tech auth",
-        keys: parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS"),
-      },
-      { label: "council", keys: parsePrivateKeys("COUNCIL_PRIVATE_KEYS") },
-    ];
-
-    const allSignatures: ReturnType<typeof signTransaction> = [];
-
-    for (const { label, keys } of signerKeyGroups) {
-      console.log(`\nSigning with ${keys.length} ${label} private keys...`);
-      const signatures = signTransaction(tx.getId(), keys);
-      allSignatures.push(...signatures);
-      console.log(`  Created ${signatures.length} signatures`);
-    }
-
-    const signedTx = attachWitnesses(tx.toCbor(), allSignatures);
-    writeTransactionFile(
-      outputPath,
-      signedTx.toCbor(),
-      tx.getId(),
-      true,
-      "Change Terms and Conditions Transaction",
-    );
-  } else {
-    writeTransactionFile(
-      outputPath,
-      tx.toCbor(),
-      tx.getId(),
-      false,
-      "Change Terms and Conditions Transaction",
-    );
-  }
-
-  console.log("\nTransaction ID:", tx.getId());
+  signAndWriteTx(
+    tx,
+    outputPath,
+    sign,
+    "Change Terms and Conditions Transaction",
+  );
 }
 
 const commandModule: CommandModule<GlobalOptions, ChangeTermsOptions> = {
