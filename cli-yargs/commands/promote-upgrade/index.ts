@@ -358,6 +358,7 @@ export async function handler(argv: PromoteUpgradeOptions) {
     commandName: "promote-upgrade",
     provider,
     networkId,
+    environment: network,
     knownUtxos: [
       mainUtxo,
       stagingUtxo,

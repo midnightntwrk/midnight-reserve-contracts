@@ -73,6 +73,7 @@ export async function handler(argv: RegisterGovAuthOptions) {
     commandName: "register-gov-auth",
     provider,
     networkId,
+    environment: network,
   });
 
   ensureDirectory(deploymentDir);

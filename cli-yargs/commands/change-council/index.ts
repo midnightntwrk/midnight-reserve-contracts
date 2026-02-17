@@ -355,6 +355,7 @@ export async function handler(argv: ChangeCouncilOptions) {
     commandName: "change-council",
     provider,
     networkId,
+    environment: network,
     knownUtxos: [
       councilForeverUtxo,
       councilThresholdUtxo,

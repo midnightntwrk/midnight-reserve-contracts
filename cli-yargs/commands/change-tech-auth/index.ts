@@ -391,6 +391,7 @@ export async function handler(argv: ChangeTechAuthOptions) {
     commandName: "change-tech-auth",
     provider,
     networkId,
+    environment: network,
     knownUtxos: [
       techAuthForeverUtxo,
       techAuthThresholdUtxo,

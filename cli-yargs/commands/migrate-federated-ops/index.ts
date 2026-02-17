@@ -310,6 +310,7 @@ export async function handler(argv: MigrateFederatedOpsOptions) {
     commandName: "migrate-federated-ops",
     provider,
     networkId,
+    environment: network,
     knownUtxos: [federatedOpsForeverUtxo, federatedOpsTwoStageUtxo, userUtxo],
   });
 

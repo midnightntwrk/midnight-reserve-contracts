@@ -73,6 +73,7 @@ export async function handler(argv: SimpleTxOptions) {
     commandName: "simple-tx",
     provider,
     networkId,
+    environment: network,
   });
 
   ensureDirectory(deploymentDir);

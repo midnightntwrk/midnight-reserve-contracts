@@ -476,6 +476,7 @@ export async function handler(argv: StageUpgradeOptions) {
     commandName: "stage-upgrade",
     provider,
     networkId,
+    environment: network,
     knownUtxos: [
       stagingUtxo,
       mainUtxo,

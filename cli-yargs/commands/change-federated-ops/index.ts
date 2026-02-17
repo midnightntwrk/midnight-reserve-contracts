@@ -454,6 +454,7 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
     commandName: "change-federated-ops",
     provider,
     networkId,
+    environment: network,
     knownUtxos: [
       federatedOpsForeverUtxo,
       federatedOpsThresholdUtxo,

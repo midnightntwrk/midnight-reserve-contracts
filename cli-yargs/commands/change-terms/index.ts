@@ -458,6 +458,7 @@ export async function handler(argv: ChangeTermsOptions) {
     commandName: "change-terms",
     provider,
     networkId,
+    environment: network,
     knownUtxos: [
       termsForeverUtxo,
       termsThresholdUtxo,

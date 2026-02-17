@@ -7,11 +7,13 @@ import {
 import type { Provider, TxBuilder } from "@blaze-cardano/sdk";
 import { makeUplcEvaluator } from "@blaze-cardano/vm";
 import { printError, printSuccess, printWarning } from "./output";
+import { getCardanoNetwork } from "./network-mapping";
 
 export interface CompleteTxOptions {
   commandName: string;
   provider: Provider;
   networkId: NetworkId;
+  environment?: string;
   knownUtxos?: TransactionUnspentOutput[];
 }
 
@@ -54,7 +56,7 @@ export async function completeTx(
   txBuilder: TxBuilder,
   options: CompleteTxOptions,
 ): Promise<CompleteTxResult> {
-  const { commandName, provider, networkId, knownUtxos } = options;
+  const { commandName, provider, networkId, environment, knownUtxos } = options;
   let traces: string[] = [];
 
   // Phase 1: Local UPLC test against draft (non-mutating, advisory)
@@ -62,10 +64,15 @@ export async function completeTx(
     try {
       console.log("  Testing transaction locally (UPLC)...");
       const params = await provider.getParameters();
+      const cardanoNetwork = environment
+        ? getCardanoNetwork(environment)
+        : null;
       const slotConfig =
-        networkId === NetworkId.Mainnet
+        cardanoNetwork === "mainnet"
           ? SLOT_CONFIG_NETWORK.Mainnet
-          : SLOT_CONFIG_NETWORK.Preprod;
+          : cardanoNetwork === "preprod"
+            ? SLOT_CONFIG_NETWORK.Preprod
+            : SLOT_CONFIG_NETWORK.Preview;
 
       const draftCbor = txBuilder.toCbor();
       const draftTx = Transaction.fromCbor(draftCbor);

@@ -213,6 +213,7 @@ export async function handler(argv: MintTcnightOptions) {
     commandName: "mint-tcnight",
     provider,
     networkId,
+    environment: network,
     knownUtxos: userUtxos,
   });
 

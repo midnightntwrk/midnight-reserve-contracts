@@ -283,6 +283,7 @@ export async function handler(argv: DeployStagingTrackOptions) {
       commandName: `deploy-staging-track/${params.name}`,
       provider: blaze.provider,
       networkId,
+      environment: network,
       knownUtxos,
     });
     return tx;

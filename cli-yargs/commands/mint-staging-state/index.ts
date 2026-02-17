@@ -348,6 +348,7 @@ export async function handler(argv: MintStagingStateOptions) {
     commandName: "mint-staging-state",
     provider,
     networkId,
+    environment: network,
     knownUtxos,
   });
 
