@@ -1116,7 +1116,7 @@ export async function handler(argv: DeployOptions) {
   // Auto-save deployment scripts for full deployments
   if (!txName) {
     try {
-      const projectRoot = resolve(import.meta.dir, "../..");
+      const projectRoot = resolve(import.meta.dir, "../../..");
       const plutusJsonPath = resolve(projectRoot, `plutus-${network}.json`);
       const blueprintPath = resolve(
         projectRoot,

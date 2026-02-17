@@ -442,7 +442,7 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
       .provideScript(mitigationLogicScript);
   }
 
-  const tx = await completeTx(txBuilder, {
+  const { tx } = await completeTx(txBuilder, {
     commandName: "change-federated-ops",
     provider,
     networkId,

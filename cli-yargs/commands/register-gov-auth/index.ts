@@ -71,7 +71,7 @@ export async function handler(argv: RegisterGovAuthOptions) {
       }),
     );
 
-  const tx = await completeTx(txBuilder, {
+  const { tx } = await completeTx(txBuilder, {
     commandName: "register-gov-auth",
     provider,
     networkId,

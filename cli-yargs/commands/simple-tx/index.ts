@@ -65,7 +65,7 @@ export async function handler(argv: SimpleTxOptions) {
     txBuilder.payLovelace(address, amount);
   }
 
-  const tx = await completeTx(txBuilder, {
+  const { tx } = await completeTx(txBuilder, {
     commandName: "simple-tx",
     provider,
     networkId,

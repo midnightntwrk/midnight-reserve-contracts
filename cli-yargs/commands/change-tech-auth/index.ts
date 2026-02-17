@@ -380,7 +380,7 @@ export async function handler(argv: ChangeTechAuthOptions) {
       .provideScript(mitigationLogicScript);
   }
 
-  const tx = await completeTx(txBuilder, {
+  const { tx } = await completeTx(txBuilder, {
     commandName: "change-tech-auth",
     provider,
     networkId,

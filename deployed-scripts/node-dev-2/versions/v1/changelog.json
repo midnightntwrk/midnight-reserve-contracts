@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "previousVersion": null,
+  "timestamp": "2026-02-17T03:22:19.542Z",
+  "gitCommit": "22d272001c63d6c8e04753bb19531a981f8317cc",
+  "changes": [
+    {
+      "type": "initial",
+      "validator": "all",
+      "description": "Initial deployment"
+    }
+  ]
+}

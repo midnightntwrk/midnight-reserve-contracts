@@ -23,6 +23,7 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("trace", {
       type: "string",
       choices: ["silent", "verbose", "compact"] as const,
+      default: "verbose",
       description: "Aiken trace level",
     });
 }

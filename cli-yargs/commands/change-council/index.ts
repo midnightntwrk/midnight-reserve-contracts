@@ -230,6 +230,7 @@ export async function handler(argv: ChangeCouncilOptions) {
     signers: newCouncilSigners,
   };
   const newCouncilForeverStateCbor = datumHandler.encode(newData);
+
   const memberRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
 
   console.log("New council signers count:", newCouncilSigners.length);
@@ -306,6 +307,7 @@ export async function handler(argv: ChangeCouncilOptions) {
 
   const txBuilder = blaze
     .newTransaction()
+    .addInput(userUtxo)
     .addInput(councilForeverUtxo, PlutusData.newInteger(0n))
     .addReferenceInput(councilThresholdUtxo)
     .addReferenceInput(techAuthForeverUtxo)
@@ -341,7 +343,7 @@ export async function handler(argv: ChangeCouncilOptions) {
       .provideScript(mitigationLogicScript);
   }
 
-  const tx = await completeTx(txBuilder, {
+  const { tx } = await completeTx(txBuilder, {
     commandName: "change-council",
     provider,
     networkId,

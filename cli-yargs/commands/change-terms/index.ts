@@ -465,7 +465,7 @@ export async function handler(argv: ChangeTermsOptions) {
       .provideScript(mitigationLogicScript);
   }
 
-  const tx = await completeTx(txBuilder, {
+  const { tx } = await completeTx(txBuilder, {
     commandName: "change-terms",
     provider,
     networkId,
