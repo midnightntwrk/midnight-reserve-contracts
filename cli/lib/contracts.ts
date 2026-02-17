@@ -71,6 +71,10 @@ export interface ContractInstances {
   termsAndConditionsTwoStage: ContractClass;
   termsAndConditionsLogic: ContractClass;
   termsAndConditionsThreshold: ContractClass;
+
+  // Utility validators
+  registeredCandidate: ContractClass;
+  cnightGeneratesDust: ContractClass;
 }
 
 // Per-environment cache for contract instances
@@ -244,6 +248,10 @@ function createInstances(
     termsAndConditionsThreshold: create(
       "ThresholdsTermsAndConditionsThresholdElse",
     ),
+
+    // Utility validators
+    registeredCandidate: create("RegisteredCandidateRegisteredCandidateElse"),
+    cnightGeneratesDust: create("CnightGeneratesDustCnightGeneratesDustElse"),
   };
 }
 

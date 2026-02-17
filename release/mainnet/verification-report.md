@@ -1,9 +1,9 @@
 # Deployment Verification Report
 
 **Network:** mainnet
-**Date:** 2026-02-12T22:39:48.502Z
+**Date:** 2026-02-17T16:46:02.458Z
 **Result:** ALL CHECKS PASSED
-**Summary:** 31 passed, 0 failed, 31 total
+**Summary:** 33 passed, 0 failed, 33 total
 
 ---
 
@@ -271,4 +271,24 @@ Auth hash (staging_gov_auth) - expected: cf44e0802c37dc8db33f80526edd3e0bdb1aa14
 Tx: f9f521876b1843f0696b244ffafa40e662dfb38210ab858494eef05471a9f23f
 Logic hash - expected: 9023e8962b3a917b9cb7de0e9786f7a8d2b2f0ee785b62404aa95314, actual: 9023e8962b3a917b9cb7de0e9786f7a8d2b2f0ee785b62404aa95314 PASS
 Auth hash (staging_gov_auth) - expected: cf44e0802c37dc8db33f80526edd3e0bdb1aa142b214e5c19f2f518d, actual: cf44e0802c37dc8db33f80526edd3e0bdb1aa142b214e5c19f2f518d PASS
+```
+
+## Check 5: Utility Script Presence
+
+### [PASS] Utility script: registered_candidate
+
+```
+Hash: 716252804ed6539189790dd78c4c24f7eea2983e149899d0ecba7253
+Compiled code: present (1010 chars)
+Hash valid: yes (28 bytes)
+PASS
+```
+
+### [PASS] Utility script: cnight_generates_dust
+
+```
+Hash: 333800a05610cfec4c8075fe3daa72ee5f19d83cc7574414cd91625f
+Compiled code: present (6358 chars)
+Hash valid: yes (28 bytes)
+PASS
 ```

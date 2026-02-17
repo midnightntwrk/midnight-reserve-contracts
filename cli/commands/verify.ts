@@ -560,6 +560,49 @@ async function checkUpgradeStateDatums(
   return results;
 }
 
+// --- Check: Utility Script Presence ---
+
+const UTILITY_VALIDATORS = [
+  "registered_candidate",
+  "cnight_generates_dust",
+] as const;
+
+function checkUtilityScriptPresence(
+  validators: PlutusValidator[],
+): CheckResult[] {
+  const results: CheckResult[] = [];
+
+  for (const name of UTILITY_VALIDATORS) {
+    const validator = findValidatorByName(validators, name);
+    if (!validator) {
+      results.push({
+        name: `Utility script: ${name}`,
+        passed: false,
+        details: `Validator '${name}' not found in plutus.json`,
+      });
+      continue;
+    }
+
+    const hasCompiledCode =
+      validator.compiledCode && validator.compiledCode.length > 0;
+    const hasHash = validator.hash && validator.hash.length === 56;
+
+    const passed = !!hasCompiledCode && !!hasHash;
+    results.push({
+      name: `Utility script: ${name}`,
+      passed,
+      details: [
+        `Hash: ${validator.hash}`,
+        `Compiled code: ${hasCompiledCode ? `present (${validator.compiledCode.length} chars)` : "MISSING"}`,
+        `Hash valid: ${hasHash ? "yes (28 bytes)" : "INVALID"}`,
+        passed ? "PASS" : "FAIL",
+      ].join("\n"),
+    });
+  }
+
+  return results;
+}
+
 // --- Report Generation ---
 
 function generateReport(network: string, allResults: CheckResult[]): string {
@@ -594,6 +637,9 @@ function generateReport(network: string, allResults: CheckResult[]): string {
   const stagingDatumResults = allResults.filter((r) =>
     r.name.startsWith("UpgradeState (staging):"),
   );
+  const utilityResults = allResults.filter((r) =>
+    r.name.startsWith("Utility script:"),
+  );
 
   function renderSection(title: string, results: CheckResult[]): void {
     if (results.length === 0) return;
@@ -623,6 +669,7 @@ function generateReport(network: string, allResults: CheckResult[]): string {
     "Check 4: UpgradeState Datum Verification (Staging Outputs)",
     stagingDatumResults,
   );
+  renderSection("Check 5: Utility Script Presence", utilityResults);
 
   return lines.join("\n");
 }
@@ -737,12 +784,21 @@ export async function verify(options: VerifyOptions): Promise<void> {
   }
   console.log();
 
+  // Check 5: Utility script presence
+  console.log("Check 5: Utility script presence...");
+  const utilityResults = checkUtilityScriptPresence(validators);
+  for (const r of utilityResults) {
+    console.log(`  ${r.passed ? "PASS" : "FAIL"}: ${r.name}`);
+  }
+  console.log();
+
   // Generate report
   const allResults = [
     ...embeddingResults,
     ...onChainResults,
     ...mainDatumResults,
     ...stagingDatumResults,
+    ...utilityResults,
   ];
 
   const report = generateReport(network, allResults);

@@ -1,8 +1,8 @@
 # Contract Address Report
 
 **Network:** mainnet
-**Generated:** 2026-02-13T01:34:28.153Z
-**Contracts:** 19
+**Generated:** 2026-02-17T16:45:55.582Z
+**Contracts:** 21
 
 ---
 
@@ -200,4 +200,24 @@
 |-------|-------|
 | **Address** | `addr1wxgz86yk9vafz7uukl0qa9ux775d9vhsaeu9kcjqf254x9q56ydmc` |
 | **Script Hash** | `9023e8962b3a917b9cb7de0e9786f7a8d2b2f0ee785b62404aa95314` |
+| **ADA** | 0.000000 |
+
+## REGISTERED-CANDIDATE
+
+### Registered Candidate
+
+| Field | Value |
+|-------|-------|
+| **Address** | `addr1w9cky55qfmt98yvf0yxa0rzvynm7ag5c8c2f3xwsaja8y5cwpj7fy` |
+| **Script Hash** | `716252804ed6539189790dd78c4c24f7eea2983e149899d0ecba7253` |
+| **ADA** | 0.000000 |
+
+## CNIGHT-GENERATES-DUST
+
+### Cnight Generates Dust
+
+| Field | Value |
+|-------|-------|
+| **Address** | `addr1wyensq9q2cgvlmzvsp6lu0d2wth97xwc8nr4w3q5ekgkyhcpfkgkr` |
+| **Script Hash** | `333800a05610cfec4c8075fe3daa72ee5f19d83cc7574414cd91625f` |
 | **ADA** | 0.000000 |

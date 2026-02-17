@@ -65,6 +65,8 @@ const MAIN_TRACK_COMPONENTS = [
   "federated-ops",
   "terms-and-conditions",
   "gov",
+  "registered-candidate",
+  "cnight-generates-dust",
 ];
 
 // Two-stage contracts that have UpgradeState datums
@@ -546,6 +548,28 @@ export async function info(options: InfoOptions): Promise<void> {
       address: getCredentialAddress(
         network,
         contracts.termsAndConditionsThreshold.Script.hash(),
+      ).toBech32(),
+    },
+
+    // Registered Candidate
+    {
+      name: "Registered Candidate",
+      component: "registered-candidate",
+      scriptHash: contracts.registeredCandidate.Script.hash(),
+      address: getCredentialAddress(
+        network,
+        contracts.registeredCandidate.Script.hash(),
+      ).toBech32(),
+    },
+
+    // Cnight Generates Dust
+    {
+      name: "Cnight Generates Dust",
+      component: "cnight-generates-dust",
+      scriptHash: contracts.cnightGeneratesDust.Script.hash(),
+      address: getCredentialAddress(
+        network,
+        contracts.cnightGeneratesDust.Script.hash(),
       ).toBech32(),
     },
   ];
