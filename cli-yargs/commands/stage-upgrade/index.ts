@@ -24,7 +24,7 @@ import {
   getTwoStageContracts,
   loadContractModule,
 } from "../../lib/contracts";
-import { extractSignersFromMultisigState } from "../../lib/signers";
+import { extractSignersFromCbor } from "../../lib/signers";
 import {
   getContractUtxos,
   getTwoStageUtxos,
@@ -280,20 +280,18 @@ export async function handler(argv: StageUpgradeOptions) {
   }
 
   console.log("\nReading current tech auth state...");
-  const techAuthState = parseInlineDatum(
-    techAuthForeverUtxo,
-    Contracts.VersionedMultisig,
-    parse,
-  );
-  const techAuthSigners = extractSignersFromMultisigState(techAuthState);
+  const techAuthDatum = techAuthForeverUtxo.output().datum()?.asInlineData();
+  if (!techAuthDatum) {
+    throw new Error("Tech auth forever UTxO missing inline datum");
+  }
+  const techAuthSigners = extractSignersFromCbor(techAuthDatum);
 
   console.log("Reading current council state...");
-  const councilState = parseInlineDatum(
-    councilForeverUtxo,
-    Contracts.VersionedMultisig,
-    parse,
-  );
-  const councilSigners = extractSignersFromMultisigState(councilState);
+  const councilDatum = councilForeverUtxo.output().datum()?.asInlineData();
+  if (!councilDatum) {
+    throw new Error("Council forever UTxO missing inline datum");
+  }
+  const councilSigners = extractSignersFromCbor(councilDatum);
 
   console.log("Reading staging gov threshold...");
   const thresholdState = parseInlineDatum(
