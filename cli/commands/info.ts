@@ -10,7 +10,7 @@ interface ContractInfo {
   name: string;
   component: string;
   scriptHash: string;
-  address: string;
+  address?: string;
 }
 
 interface BlockfrostAmount {
@@ -183,6 +183,18 @@ async function enrichContractWithOnChainData(
   baseUrl: string,
   apiKey: string,
 ): Promise<ContractOnChainInfo> {
+  // Skip on-chain fetch for contracts without addresses (stake credentials)
+  if (!contract.address) {
+    return {
+      ...contract,
+      utxos: [],
+      totalAda: "0.000000",
+      totalLovelace: "0",
+      nftTokenNames: [],
+      upgradeState: null,
+    };
+  }
+
   const utxos = await fetchAddressUtxos(baseUrl, apiKey, contract.address);
   const utxoInfos = utxos.map(convertUtxo);
 
@@ -258,9 +270,13 @@ function generateMarkdownReport(
       lines.push(``);
       lines.push(`| Field | Value |`);
       lines.push(`|-------|-------|`);
-      lines.push(`| **Address** | \`${c.address}\` |`);
+      if (c.address) {
+        lines.push(`| **Address** | \`${c.address}\` |`);
+      }
       lines.push(`| **Script Hash** | \`${c.scriptHash}\` |`);
-      lines.push(`| **ADA** | ${c.totalAda} |`);
+      if (c.address) {
+        lines.push(`| **ADA** | ${c.totalAda} |`);
+      }
 
       if (c.nftTokenNames.length > 0) {
         lines.push(
@@ -335,10 +351,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Tech Auth Logic",
       component: "tech-auth",
       scriptHash: contracts.techAuthLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.techAuthLogic.Script.hash(),
-      ).toBech32(),
     },
     {
       name: "Tech Auth Update Threshold",
@@ -373,10 +385,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Council Logic",
       component: "council",
       scriptHash: contracts.councilLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.councilLogic.Script.hash(),
-      ).toBech32(),
     },
     {
       name: "Council Update Threshold",
@@ -411,10 +419,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Reserve Logic",
       component: "reserve",
       scriptHash: contracts.reserveLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.reserveLogic.Script.hash(),
-      ).toBech32(),
     },
 
     // ICS
@@ -440,10 +444,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "ICS Logic",
       component: "ics",
       scriptHash: contracts.icsLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.icsLogic.Script.hash(),
-      ).toBech32(),
     },
 
     // Gov
@@ -451,10 +451,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Gov Auth",
       component: "gov",
       scriptHash: contracts.govAuth.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.govAuth.Script.hash(),
-      ).toBech32(),
     },
     {
       name: "Main Gov Threshold",
@@ -498,10 +494,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Federated Ops Logic",
       component: "federated-ops",
       scriptHash: contracts.federatedOpsLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.federatedOpsLogic.Script.hash(),
-      ).toBech32(),
     },
     {
       name: "Federated Ops Update Threshold",
@@ -536,10 +528,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Terms And Conditions Logic",
       component: "terms-and-conditions",
       scriptHash: contracts.termsAndConditionsLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.termsAndConditionsLogic.Script.hash(),
-      ).toBech32(),
     },
     {
       name: "Terms And Conditions Threshold",
@@ -659,7 +647,7 @@ export async function info(options: InfoOptions): Promise<void> {
         contractGroup.map((c) => [
           c.name,
           c.scriptHash.slice(0, 16) + "...",
-          c.address.slice(0, 40) + "...",
+          c.address ? c.address.slice(0, 40) + "..." : "(stake credential)",
         ]),
       );
     }
