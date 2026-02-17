@@ -115,12 +115,7 @@ export async function handler(argv: ChangeCouncilOptions) {
 
   console.log("\nCouncil Forever Address:", councilForeverAddress.toBech32());
 
-  const providerType = argv.provider as
-    | "blockfrost"
-    | "maestro"
-    | "emulator"
-    | "kupmios"
-    | undefined;
+  const providerType = argv.provider;
   const { blaze, provider } = await createBlaze(network, providerType);
 
   // Query all contract UTxOs in parallel

@@ -16,7 +16,7 @@ import { resolve } from "path";
 import type { TransactionUnspentOutput } from "@blaze-cardano/core";
 
 import type { GlobalOptions } from "../../lib/global-options";
-import type { NetworkConfig, ProviderType } from "../../lib/types";
+import type { NetworkConfig } from "../../lib/types";
 import { getNetworkId, getConfigSection } from "../../lib/types";
 import { loadAikenConfig, getDeployerAddress } from "../../lib/config";
 import { createBlaze } from "../../lib/provider";
@@ -253,10 +253,7 @@ export async function handler(argv: MintStagingStateOptions) {
   const cnightTestPolicy = config.cnight_policy;
   console.log(`CNIGHT test policy: ${cnightTestPolicy}`);
 
-  const { blaze, provider } = await createBlaze(
-    network,
-    argv.provider as ProviderType | undefined,
-  );
+  const { blaze, provider } = await createBlaze(network, argv.provider);
 
   // Fetch protocol parameters for min UTxO calculation
   const protocolParams = await getProtocolParameters(provider);

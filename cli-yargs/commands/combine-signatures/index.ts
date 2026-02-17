@@ -14,7 +14,6 @@ import {
 import type { Provider } from "@blaze-cardano/sdk";
 
 import type { GlobalOptions } from "../../lib/global-options";
-import type { ProviderType } from "../../lib/types";
 import { createProvider } from "../../lib/provider";
 import { signTransaction } from "../../lib/transaction";
 import { getEnvVar } from "../../lib/config";
@@ -257,10 +256,7 @@ export async function handler(argv: CombineSignaturesOptions) {
     "sign-deployer": signDeployer,
   } = argv;
 
-  const provider = await createProvider(
-    network,
-    argv.provider as ProviderType | undefined,
-  );
+  const provider = await createProvider(network, argv.provider);
   const deployerPrivateKey = signDeployer ? getEnvVar(signingKeyEnvVar) : null;
 
   if (signDeployer) {

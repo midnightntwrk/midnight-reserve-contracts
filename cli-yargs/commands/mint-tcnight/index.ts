@@ -14,7 +14,7 @@ import {
 import { Blaze, ColdWallet } from "@blaze-cardano/sdk";
 import { resolve } from "path";
 import type { GlobalOptions } from "../../lib/global-options";
-import { getNetworkId, type ProviderType } from "../../lib/types";
+import { getNetworkId } from "../../lib/types";
 import { createProvider } from "../../lib/provider";
 import { getContractInstances } from "../../lib/contracts";
 import { getProtocolParameters, calculateMinUtxo } from "../../lib/protocol";
@@ -114,7 +114,7 @@ export async function handler(argv: MintTcnightOptions) {
 
   console.log(`\nTCnight Policy ID: ${policyId}`);
 
-  const providerType = argv.provider as ProviderType | undefined;
+  const providerType = argv.provider;
   const provider = await createProvider(network, providerType);
   const userAddr = Address.fromBech32(userAddress);
   const wallet = new ColdWallet(userAddr, networkId, provider);

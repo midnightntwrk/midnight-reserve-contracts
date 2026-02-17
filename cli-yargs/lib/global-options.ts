@@ -1,9 +1,10 @@
 import type { Argv } from "yargs";
+import type { ProviderType } from "./types";
 
 export type GlobalOptions = {
   network: string;
   output: string;
-  provider?: string;
+  provider?: ProviderType;
   "dry-run": boolean;
 };
 
@@ -25,6 +26,7 @@ export function addGlobalOptions<T>(yargs: Argv<T>): Argv<T & GlobalOptions> {
     .option("provider", {
       alias: "p",
       type: "string",
+      choices: ["blockfrost", "maestro", "emulator", "kupmios"] as const,
       description:
         "Provider: emulator, blockfrost, kupmios, maestro (default: emulator for local, blockfrost otherwise)",
     })

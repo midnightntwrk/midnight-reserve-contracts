@@ -138,12 +138,7 @@ export async function handler(argv: PromoteUpgradeOptions) {
 
   console.log("\nTwo Stage Address:", twoStageAddress.toBech32());
 
-  const providerType = argv.provider as
-    | "blockfrost"
-    | "maestro"
-    | "emulator"
-    | "kupmios"
-    | undefined;
+  const providerType = argv.provider;
   const { blaze, provider } = await createBlaze(network, providerType);
 
   // Query all contract UTxOs in parallel

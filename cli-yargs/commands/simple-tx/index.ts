@@ -2,7 +2,7 @@ import type { Argv, CommandModule } from "yargs";
 import { Address } from "@blaze-cardano/core";
 import { resolve } from "path";
 import type { GlobalOptions } from "../../lib/global-options";
-import { getNetworkId, type ProviderType } from "../../lib/types";
+import { getNetworkId } from "../../lib/types";
 import { createBlaze } from "../../lib/provider";
 import {
   getDeployerAddress,
@@ -58,7 +58,7 @@ export async function handler(argv: SimpleTxOptions) {
   console.log(`Creating ${count} outputs of ${amount} lovelace each`);
   console.log(`Recipient: ${recipientAddress}`);
 
-  const providerType = argv.provider as ProviderType | undefined;
+  const providerType = argv.provider;
   const { blaze, provider } = await createBlaze(network, providerType);
   const networkId = getNetworkId(network);
   const address = Address.fromBech32(recipientAddress);

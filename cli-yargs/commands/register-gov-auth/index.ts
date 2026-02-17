@@ -3,7 +3,7 @@ import { Credential, CredentialType } from "@blaze-cardano/core";
 import { resolve } from "path";
 
 import type { GlobalOptions } from "../../lib/global-options";
-import { getNetworkId, type ProviderType } from "../../lib/types";
+import { getNetworkId } from "../../lib/types";
 import { createBlaze } from "../../lib/provider";
 import { getContractInstances } from "../../lib/contracts";
 import { ensureDirectory, writeTransactionFile } from "../../lib/output";
@@ -48,7 +48,7 @@ export async function handler(argv: RegisterGovAuthOptions) {
   console.log(`\nMain Gov Auth script hash: ${mainGovAuthHash}`);
   console.log(`Staging Gov Auth script hash: ${stagingGovAuthHash}`);
 
-  const providerType = argv.provider as ProviderType | undefined;
+  const providerType = argv.provider;
   const { blaze, provider } = await createBlaze(network, providerType);
   const networkId = getNetworkId(network);
 

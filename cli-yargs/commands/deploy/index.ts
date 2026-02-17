@@ -21,10 +21,7 @@ import { readFileSync, existsSync } from "fs";
 import type { TransactionUnspentOutput } from "@blaze-cardano/core";
 
 import type { GlobalOptions } from "../../lib/global-options";
-import type {
-  ProviderType,
-  TransactionOutput as TxOutput,
-} from "../../lib/types";
+import type { TransactionOutput as TxOutput } from "../../lib/types";
 import { getNetworkId } from "../../lib/types";
 import {
   loadAikenConfig,
@@ -217,10 +214,7 @@ export async function handler(argv: DeployOptions) {
     `Number of council signer pairs: ${Object.keys(councilSigners).length}`,
   );
 
-  const { blaze } = await createBlaze(
-    network,
-    argv.provider as ProviderType | undefined,
-  );
+  const { blaze } = await createBlaze(network, argv.provider);
 
   const protocolParams = await getProtocolParameters(blaze.provider);
 

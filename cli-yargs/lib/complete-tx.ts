@@ -9,6 +9,16 @@ import { makeUplcEvaluator } from "@blaze-cardano/vm";
 import { printError, printSuccess, printWarning } from "./output";
 import { getCardanoNetwork } from "./network-mapping";
 
+export class TransactionBuildError extends Error {
+  readonly traces: string[];
+  constructor(commandName: string, traces: string[], cause?: unknown) {
+    super(`Transaction failed: ${commandName}`);
+    this.name = "TransactionBuildError";
+    this.traces = traces;
+    this.cause = cause;
+  }
+}
+
 export interface CompleteTxOptions {
   commandName: string;
   provider: Provider;
@@ -134,9 +144,6 @@ export async function completeTx(
       }
     }
 
-    const txError = new Error(`Transaction failed: ${commandName}`);
-    (txError as any).traces = traces;
-    (txError as any).cause = error;
-    throw txError;
+    throw new TransactionBuildError(commandName, traces, error);
   }
 }

@@ -8,7 +8,6 @@ import {
 } from "@blaze-cardano/core";
 import type { Provider } from "@blaze-cardano/sdk";
 import type { GlobalOptions } from "../../lib/global-options";
-import type { ProviderType } from "../../lib/types";
 import { createProvider } from "../../lib/provider";
 import { signTransaction, attachWitnesses } from "../../lib/transaction";
 import { getEnvVar } from "../../lib/config";
@@ -69,10 +68,7 @@ export async function handler(argv: SignAndSubmitOptions) {
   } = argv;
 
   const privateKeyHex = signDeployer ? getEnvVar(signingKeyEnvVar) : null;
-  const provider = await createProvider(
-    network,
-    argv.provider as ProviderType | undefined,
-  );
+  const provider = await createProvider(network, argv.provider);
 
   if (signDeployer) {
     printProgress(`Signing with deployer key from ${signingKeyEnvVar}`);

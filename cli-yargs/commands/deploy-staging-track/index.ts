@@ -17,10 +17,7 @@ import { resolve } from "path";
 import type { TransactionUnspentOutput } from "@blaze-cardano/core";
 
 import type { GlobalOptions } from "../../lib/global-options";
-import type {
-  ProviderType,
-  TransactionOutput as TxOutput,
-} from "../../lib/types";
+import type { TransactionOutput as TxOutput } from "../../lib/types";
 import { getNetworkId } from "../../lib/types";
 import { loadAikenConfig, getDeployUtxoAmount } from "../../lib/config";
 import { createBlaze } from "../../lib/provider";
@@ -169,10 +166,7 @@ export async function handler(argv: DeployStagingTrackOptions) {
     `Number of council signer pairs: ${Object.keys(councilSigners).length}`,
   );
 
-  const { blaze } = await createBlaze(
-    network,
-    argv.provider as ProviderType | undefined,
-  );
+  const { blaze } = await createBlaze(network, argv.provider);
 
   // Fetch protocol parameters for min UTxO calculation and collateral validation
   const protocolParams = await getProtocolParameters(blaze.provider);
