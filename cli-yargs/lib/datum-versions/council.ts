@@ -28,17 +28,18 @@ function getMemberList(data: MultisigData): string[] {
 }
 
 function setMemberList(data: MultisigData, newMembers: string[]): MultisigData {
+  const remaining = [...data.signers];
   return {
     totalSigners: BigInt(newMembers.length),
     signers: newMembers.map((paymentHash) => {
-      const existing = data.signers.find((s) => s.paymentHash === paymentHash);
-      if (!existing) {
+      const idx = remaining.findIndex((s) => s.paymentHash === paymentHash);
+      if (idx === -1) {
         throw new Error(
           `Cannot set member list: no existing sr25519Key for paymentHash ${paymentHash}. ` +
             `Use encode() with full Signer[] to set entirely new members.`,
         );
       }
-      return existing;
+      return remaining.splice(idx, 1)[0];
     }),
   };
 }

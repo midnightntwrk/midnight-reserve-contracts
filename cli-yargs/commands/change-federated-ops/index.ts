@@ -242,7 +242,9 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
 
   const datumList = foreverDatum.asList();
   if (!datumList || datumList.getLength() < 3) {
-    throw new Error("Invalid federated ops datum: expected at least 3 elements");
+    throw new Error(
+      "Invalid federated ops datum: expected at least 3 elements",
+    );
   }
   const datumLogicRound = Number(
     datumList.get(datumList.getLength() - 1).asInteger()!,
