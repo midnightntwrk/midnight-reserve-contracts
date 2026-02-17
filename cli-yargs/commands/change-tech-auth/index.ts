@@ -266,7 +266,15 @@ export async function handler(argv: ChangeTechAuthOptions) {
     signers: newTechAuthSigners,
   };
   const newTechAuthForeverStateCbor = datumHandler.encode(newData);
-  const memberRedeemerCbor = createRedeemerMapCbor(newTechAuthSigners);
+  const innerRedeemerCbor = createRedeemerMapCbor(newTechAuthSigners);
+  // Wrap in LogicRedeemer::Normal(inner) for v2 logic scripts, plain for v1
+  const memberRedeemerCbor =
+    logicRound >= 1
+      ? PlutusData.fromCore({
+          constructor: 0n,
+          fields: { items: [innerRedeemerCbor.toCore()] },
+        })
+      : innerRedeemerCbor;
 
   console.log("New tech auth signers count:", newTechAuthSigners.length);
   console.log(

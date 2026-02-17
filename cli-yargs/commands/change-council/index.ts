@@ -231,7 +231,15 @@ export async function handler(argv: ChangeCouncilOptions) {
   };
   const newCouncilForeverStateCbor = datumHandler.encode(newData);
 
-  const memberRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
+  const innerRedeemerCbor = createRedeemerMapCbor(newCouncilSigners);
+  // Wrap in LogicRedeemer::Normal(inner) for v2 logic scripts, plain for v1
+  const memberRedeemerCbor =
+    logicRound >= 1
+      ? PlutusData.fromCore({
+          constructor: 0n,
+          fields: { items: [innerRedeemerCbor.toCore()] },
+        })
+      : innerRedeemerCbor;
 
   console.log("New council signers count:", newCouncilSigners.length);
   console.log(
