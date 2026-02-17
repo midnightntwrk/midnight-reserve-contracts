@@ -13,7 +13,7 @@ permissions: {}
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write  # needed for creating releases/tags
     steps:
@@ -21,9 +21,9 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  #v6.0.2
 
       - name: Validate network input
+        id: validate
         run: |
           set -euo pipefail
-          NETWORK="${{ inputs.network }}"
 
           if [[ "$NETWORK" =~ [[:space:]/] ]] || [[ "$NETWORK" == *..* ]]; then
             echo "::error::Invalid network name '${NETWORK}': must not contain '/', '..', whitespace, or newlines"
@@ -36,11 +36,13 @@ jobs:
           fi
 
           echo "Network '${NETWORK}' is valid"
+          echo "network=${NETWORK}" >> "$GITHUB_OUTPUT"
+        env:
+          NETWORK: ${{ inputs.network }}
 
       - name: Validate artifacts exist
         run: |
           set -euo pipefail
-          NETWORK="${{ inputs.network }}"
           MISSING=()
 
           FILES=(
@@ -65,6 +67,8 @@ jobs:
           fi
 
           echo "All 4 artifact files found for network '${NETWORK}'"
+        env:
+          NETWORK: ${{ steps.validate.outputs.network }}
 
       - name: Generate release tag
         id: tag
@@ -74,11 +78,9 @@ jobs:
           echo "tag=${NETWORK}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
         env:
-          NETWORK: ${{ inputs.network }}
+          NETWORK: ${{ steps.validate.outputs.network }}
 
       - name: Check for existing release
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           TAG="${{ steps.tag.outputs.tag }}"
@@ -87,13 +89,12 @@ jobs:
             exit 1
           fi
           echo "No existing release for tag '${TAG}'"
-
-      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+
+      - name: Create GitHub Release
         run: |
           set -euo pipefail
-          NETWORK="${{ inputs.network }}"
           TAG="${{ steps.tag.outputs.tag }}"
           SHORT_SHA="${{ steps.tag.outputs.short_sha }}"
 
@@ -129,3 +130,6 @@ jobs:
             "release/${NETWORK}/verification-report.md" \
             "release/${NETWORK}/address-report.md" \
             "release/${NETWORK}/info.json"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NETWORK: ${{ steps.validate.outputs.network }}
