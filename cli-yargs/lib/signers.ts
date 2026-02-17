@@ -109,8 +109,8 @@ export function extractSignersFromCbor(datum: PlutusData): Signer[] {
   const firstByte = cborBytes[offset++];
   let mapLength: number;
 
-  if ((firstByte & 0xe0) === 0xa0) {
-    // Map with inline length (0xa0-0xb7)
+  if (firstByte >= 0xa0 && firstByte <= 0xb7) {
+    // Map with inline length (0xa0-0xb7, additional info 0-23)
     mapLength = firstByte & 0x1f;
   } else if (firstByte === 0xb8) {
     // Map with 1-byte length

@@ -233,10 +233,17 @@ function setTomlHexValue(
 
   if (sectionIndex !== -1) {
     // Section exists — replace both bytes and encoding values
+    // Scope to current section only (stop at next section header) to avoid
+    // cross-section matching if the current section is missing a key.
     const afterSection = content.substring(sectionIndex + sectionHeader.length);
+    const nextSectionIdx = afterSection.search(/\n\[/);
+    const sectionBody =
+      nextSectionIdx !== -1
+        ? afterSection.substring(0, nextSectionIdx)
+        : afterSection;
 
     // Update bytes
-    const bytesMatch = afterSection.match(/(\n\s*bytes\s*=\s*)"[^"]*"/);
+    const bytesMatch = sectionBody.match(/(\n\s*bytes\s*=\s*)"[^"]*"/);
     if (!bytesMatch) {
       throw new Error(
         `Failed to update bytes for config.${network}.${key} in ${TOML_FILE}: bytes key not found in existing section`,
@@ -255,7 +262,12 @@ function setTomlHexValue(
     const afterSection2 = content.substring(
       sectionIndex + sectionHeader.length,
     );
-    const encodingMatch = afterSection2.match(/(\n\s*encoding\s*=\s*)"[^"]*"/);
+    const nextSectionIdx2 = afterSection2.search(/\n\[/);
+    const sectionBody2 =
+      nextSectionIdx2 !== -1
+        ? afterSection2.substring(0, nextSectionIdx2)
+        : afterSection2;
+    const encodingMatch = sectionBody2.match(/(\n\s*encoding\s*=\s*)"[^"]*"/);
     if (!encodingMatch) {
       throw new Error(
         `Failed to update encoding for config.${network}.${key} in ${TOML_FILE}: encoding key not found in existing section`,
