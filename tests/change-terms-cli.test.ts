@@ -82,9 +82,7 @@ describe("Change Terms and Conditions", () => {
   /** Deploy all prerequisite contracts and return UTxO references */
   async function deployAll(
     emulator: Emulator,
-    blaze: Awaited<ReturnType<typeof emulator.as>>[0] extends never
-      ? never
-      : any,
+    blaze: any,
     addr: any,
   ) {
     const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
@@ -121,9 +119,7 @@ describe("Change Terms and Conditions", () => {
         .provideScript(mainTechAuthUpdateThreshold.Script)
         .addOutput(
           TransactionOutput.fromCore({
-            address: PaymentAddress(
-              techAuthUpdateThresholdAddress.toBech32(),
-            ),
+            address: PaymentAddress(techAuthUpdateThresholdAddress.toBech32()),
             value: {
               coins: 2_000_000n,
               assets: new Map([
@@ -172,9 +168,7 @@ describe("Change Terms and Conditions", () => {
             address: PaymentAddress(termsThresholdAddress.toBech32()),
             value: {
               coins: 2_000_000n,
-              assets: new Map([
-                [AssetId(termsThreshold.Script.hash()), 1n],
-              ]),
+              assets: new Map([[AssetId(termsThreshold.Script.hash()), 1n]]),
             },
             datum: serialize(
               Contracts.MultisigThreshold,
@@ -300,9 +294,7 @@ describe("Change Terms and Conditions", () => {
             address: PaymentAddress(techAuthForeverAddress.toBech32()),
             value: {
               coins: 2_000_000n,
-              assets: new Map([
-                [AssetId(techAuthForever.Script.hash()), 1n],
-              ]),
+              assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
             },
             datum: serialize(
               Contracts.VersionedMultisig,
@@ -428,9 +420,7 @@ describe("Change Terms and Conditions", () => {
             address: PaymentAddress(councilForeverAddress.toBech32()),
             value: {
               coins: 2_000_000n,
-              assets: new Map([
-                [AssetId(councilForever.Script.hash()), 1n],
-              ]),
+              assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
             },
             datum: serialize(
               Contracts.VersionedMultisig,
@@ -546,9 +536,7 @@ describe("Change Terms and Conditions", () => {
             address: PaymentAddress(termsForeverAddress.toBech32()),
             value: {
               coins: 2_000_000n,
-              assets: new Map([
-                [AssetId(termsForever.Script.hash()), 1n],
-              ]),
+              assets: new Map([[AssetId(termsForever.Script.hash()), 1n]]),
             },
             datum: serialize(
               Contracts.VersionedTermsAndConditions,
@@ -581,9 +569,7 @@ describe("Change Terms and Conditions", () => {
           address: PaymentAddress(termsForeverAddress.toBech32()),
           value: {
             coins: 2_000_000n,
-            assets: new Map([
-              [AssetId(termsForever.Script.hash()), 1n],
-            ]),
+            assets: new Map([[AssetId(termsForever.Script.hash()), 1n]]),
           },
           datum: serialize(
             Contracts.VersionedTermsAndConditions,
@@ -600,9 +586,7 @@ describe("Change Terms and Conditions", () => {
           address: PaymentAddress(termsThresholdAddress.toBech32()),
           value: {
             coins: 2_000_000n,
-            assets: new Map([
-              [AssetId(termsThreshold.Script.hash()), 1n],
-            ]),
+            assets: new Map([[AssetId(termsThreshold.Script.hash()), 1n]]),
           },
           datum: serialize(
             Contracts.MultisigThreshold,
@@ -619,9 +603,7 @@ describe("Change Terms and Conditions", () => {
           address: PaymentAddress(councilForeverAddress.toBech32()),
           value: {
             coins: 2_000_000n,
-            assets: new Map([
-              [AssetId(councilForever.Script.hash()), 1n],
-            ]),
+            assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
           },
           datum: serialize(
             Contracts.VersionedMultisig,
@@ -638,9 +620,7 @@ describe("Change Terms and Conditions", () => {
           address: PaymentAddress(techAuthForeverAddress.toBech32()),
           value: {
             coins: 2_000_000n,
-            assets: new Map([
-              [AssetId(techAuthForever.Script.hash()), 1n],
-            ]),
+            assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
           },
           datum: serialize(
             Contracts.VersionedMultisig,
@@ -667,10 +647,7 @@ describe("Change Terms and Conditions", () => {
               ],
             ]),
           },
-          datum: serialize(
-            Contracts.UpgradeState,
-            termsUpgradeState,
-          ).toCore(),
+          datum: serialize(Contracts.UpgradeState, termsUpgradeState).toCore(),
         },
       ]),
     );
@@ -795,9 +772,7 @@ describe("Change Terms and Conditions", () => {
             address: PaymentAddress(deps.termsForeverAddress.toBech32()),
             value: {
               coins: 2_000_000n,
-              assets: new Map([
-                [AssetId(termsForever.Script.hash()), 1n],
-              ]),
+              assets: new Map([[AssetId(termsForever.Script.hash()), 1n]]),
             },
             datum: serialize(
               Contracts.VersionedTermsAndConditions,
@@ -814,9 +789,7 @@ describe("Change Terms and Conditions", () => {
             address: PaymentAddress(deps.termsThresholdAddress.toBech32()),
             value: {
               coins: 2_000_000n,
-              assets: new Map([
-                [AssetId(termsThreshold.Script.hash()), 1n],
-              ]),
+              assets: new Map([[AssetId(termsThreshold.Script.hash()), 1n]]),
             },
             datum: serialize(
               Contracts.MultisigThreshold,
@@ -832,9 +805,7 @@ describe("Change Terms and Conditions", () => {
             address: PaymentAddress(deps.councilForeverAddress.toBech32()),
             value: {
               coins: 2_000_000n,
-              assets: new Map([
-                [AssetId(councilForever.Script.hash()), 1n],
-              ]),
+              assets: new Map([[AssetId(councilForever.Script.hash()), 1n]]),
             },
             datum: serialize(
               Contracts.VersionedMultisig,
@@ -850,9 +821,7 @@ describe("Change Terms and Conditions", () => {
             address: PaymentAddress(deps.techAuthForeverAddress.toBech32()),
             value: {
               coins: 2_000_000n,
-              assets: new Map([
-                [AssetId(techAuthForever.Script.hash()), 1n],
-              ]),
+              assets: new Map([[AssetId(techAuthForever.Script.hash()), 1n]]),
             },
             datum: serialize(
               Contracts.VersionedMultisig,
@@ -901,9 +870,7 @@ describe("Change Terms and Conditions", () => {
           address: PaymentAddress(deps.termsForeverAddress.toBech32()),
           value: {
             coins: 2_000_000n,
-            assets: new Map([
-              [AssetId(termsForever.Script.hash()), 1n],
-            ]),
+            assets: new Map([[AssetId(termsForever.Script.hash()), 1n]]),
           },
           datum: serialize(
             Contracts.VersionedTermsAndConditions,
@@ -911,11 +878,7 @@ describe("Change Terms and Conditions", () => {
           ).toCore(),
         }),
       )
-      .addWithdrawal(
-        termsLogicRewardAccount,
-        0n,
-        PlutusData.newInteger(0n),
-      )
+      .addWithdrawal(termsLogicRewardAccount, 0n, PlutusData.newInteger(0n))
       .provideScript(termsLogic.Script);
   }
 

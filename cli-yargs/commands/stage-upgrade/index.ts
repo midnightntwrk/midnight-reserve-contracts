@@ -28,6 +28,7 @@ import { extractSignersFromMultisigState } from "../../lib/signers";
 import {
   getContractUtxos,
   getTwoStageUtxos,
+  ensureRewardAccountsRegistered,
 } from "../../lib/governance-provider";
 import { parsePrivateKeys } from "../../lib/signers";
 import {
@@ -202,6 +203,15 @@ export async function handler(argv: StageUpgradeOptions) {
   console.log(`New logic hash: ${newLogicHash}`);
   console.log(`Using UTxO: ${txHash}#${txIndex}`);
 
+  // Validate signing env vars early to avoid wasting a Blockfrost round-trip
+  if (sign) {
+    if (!process.env.TECH_AUTH_PRIVATE_KEYS) {
+      throw new Error(
+        "TECH_AUTH_PRIVATE_KEYS environment variable is required when --sign is enabled",
+      );
+    }
+  }
+
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
   // Always use deployed contracts for on-chain infrastructure
@@ -330,6 +340,18 @@ export async function handler(argv: StageUpgradeOptions) {
   const govAuthRewardAccount = createRewardAccount(
     contracts.stagingGovAuth.Script.hash(),
     networkId,
+  );
+
+  // Pre-flight: check that the staging gov auth reward account is registered
+  await ensureRewardAccountsRegistered(
+    [
+      {
+        label: "Staging Gov Auth",
+        rewardAccount: govAuthRewardAccount,
+        scriptHash: contracts.stagingGovAuth.Script.hash(),
+      },
+    ],
+    network,
   );
 
   // Get main UTxO reference for redeemer

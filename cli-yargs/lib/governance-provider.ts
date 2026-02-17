@@ -6,8 +6,10 @@ import {
   CredentialType,
   Hash28ByteBase16,
   HexBlob,
+  NetworkId,
   PlutusData,
   PlutusDataKind,
+  RewardAccount,
   Script,
   toHex,
   TransactionUnspentOutput,
@@ -15,6 +17,8 @@ import {
 import type { Provider } from "@blaze-cardano/sdk";
 import type { ContractInstances } from "./contracts";
 import { findScriptByHash, getTwoStageContracts } from "./contracts";
+import { getCardanoNetwork } from "./types";
+import { getEnvVar } from "./config";
 
 export interface UpgradeState {
   logicHash: string;
@@ -101,10 +105,10 @@ export async function getTwoStageUtxos(
  * Extracts the UpgradeState from a two-stage datum.
  *
  * UpgradeState is a 6-element tuple:
- *   [logicHash, mitigationLogicHash, authHash, mitigationAuthHash, logicRound, authRound]
+ *   [logic, mitigationLogic, auth, mitigationAuth, round, logicRound]
  *
- * Indices: 0=logicHash(bytes), 1=mitigationLogicHash(bytes), 2=authHash(bytes),
- *          3=mitigationAuthHash(bytes), 4=logicRound(int), 5=authRound(int)
+ * Indices: 0=logic(bytes), 1=mitigationLogic(bytes), 2=auth(bytes),
+ *          3=mitigationAuth(bytes), 4=round(int), 5=logicRound(int)
  */
 export function parseUpgradeState(
   inlineDatumCbor: string,
@@ -113,12 +117,14 @@ export function parseUpgradeState(
     const plutusData = PlutusData.fromCbor(HexBlob(inlineDatumCbor));
     const items =
       plutusData.asList() ?? plutusData.asConstrPlutusData()?.getData();
-    if (!items || items.getLength() < 5) return null;
+    if (!items || items.getLength() < 6) return null;
 
     const logicField = items.get(0);
     const mitigationLogicField = items.get(1);
     const authField = items.get(2);
-    const logicRoundField = items.get(4);
+    // UpgradeState: [logic, mitigation_logic, auth, mitigation_auth, round, logic_round]
+    // Index 5 is logic_round (not index 4, which is round)
+    const logicRoundField = items.get(5);
 
     if (
       logicField.getKind() !== PlutusDataKind.Bytes ||
@@ -191,6 +197,68 @@ export async function resolveUpgradeLogic(
   const logicScript = resolveLogicScript(upgradeState.logicHash, env, useBuild);
 
   return { utxo, upgradeState, logicScript };
+}
+
+/**
+ * Checks if a reward account (stake credential) is registered on-chain via Blockfrost.
+ * Returns true if registered, false if not.
+ * Throws if the provider is not Blockfrost (only Blockfrost REST API is supported).
+ */
+export async function isRewardAccountRegistered(
+  rewardAccount: RewardAccount,
+  environment: string,
+): Promise<boolean> {
+  const cardanoNetwork = getCardanoNetwork(environment);
+  if (!cardanoNetwork) return true; // emulator — skip check, assume registered
+
+  const apiKeyVar = `BLOCKFROST_${cardanoNetwork.toUpperCase()}_API_KEY`;
+  const apiKey = getEnvVar(apiKeyVar);
+  const baseUrl = `https://cardano-${cardanoNetwork}.blockfrost.io/api/v0`;
+
+  const response = await fetch(`${baseUrl}/accounts/${rewardAccount}`, {
+    headers: { project_id: apiKey },
+  });
+
+  if (response.status === 404) return false;
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(
+      `Blockfrost auth error (${response.status}) checking reward account ${rewardAccount}. ` +
+        `Verify ${apiKeyVar} is set correctly.`,
+    );
+  }
+  if (!response.ok) return true; // treat other errors as unknown — skip check, let tx submission surface the real error
+
+  const data = (await response.json()) as { active: boolean };
+  return data.active === true;
+}
+
+/**
+ * Checks that all reward accounts in the list are registered on-chain.
+ * Throws with a clear error message listing unregistered accounts and how to fix them.
+ */
+export async function ensureRewardAccountsRegistered(
+  accounts: { label: string; rewardAccount: RewardAccount; scriptHash: string }[],
+  environment: string,
+): Promise<void> {
+  const results = await Promise.all(
+    accounts.map(async (a) => ({
+      ...a,
+      registered: await isRewardAccountRegistered(a.rewardAccount, environment),
+    })),
+  );
+
+  const unregistered = results.filter((r) => !r.registered);
+  if (unregistered.length > 0) {
+    const details = unregistered
+      .map((r) => `  - ${r.label}: ${r.scriptHash} (${r.rewardAccount})`)
+      .join("\n");
+    throw new Error(
+      `The following reward accounts are not registered on-chain:\n${details}\n\n` +
+        `Register them first with:\n` +
+        `  bun cli-yargs/index.ts register-gov-auth -n ${environment}\n` +
+        `Or for v2 logic scripts, register the stake credential manually.`,
+    );
+  }
 }
 
 /**

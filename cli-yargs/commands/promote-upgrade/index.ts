@@ -24,6 +24,7 @@ import { extractSignersFromMultisigState, parsePrivateKeys } from "../../lib/sig
 import {
   getContractUtxos,
   getTwoStageUtxos,
+  ensureRewardAccountsRegistered,
 } from "../../lib/governance-provider";
 import {
   createNativeMultisigScript,
@@ -113,10 +114,25 @@ export async function handler(argv: PromoteUpgradeOptions) {
   );
   console.log(`Using UTxO: ${txHash}#${txIndex}`);
 
+  // Validate signing env vars early to avoid wasting a Blockfrost round-trip
+  if (sign) {
+    if (!process.env.TECH_AUTH_PRIVATE_KEYS) {
+      throw new Error(
+        "TECH_AUTH_PRIVATE_KEYS environment variable is required when --sign is enabled",
+      );
+    }
+    if (!process.env.COUNCIL_PRIVATE_KEYS) {
+      throw new Error(
+        "COUNCIL_PRIVATE_KEYS environment variable is required when --sign is enabled",
+      );
+    }
+  }
+
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
-  const contracts = getContractInstances(network, useBuild);
-  const targetContracts = getTwoStageContracts(validator, network, useBuild);
+  // Always use deployed contracts for on-chain infrastructure
+  const contracts = getContractInstances(network, false);
+  const targetContracts = getTwoStageContracts(validator, network, false);
 
   const twoStageAddress = getContractAddress(
     network,
@@ -239,6 +255,18 @@ export async function handler(argv: PromoteUpgradeOptions) {
     networkId,
   );
 
+  // Pre-flight: check that the main gov auth reward account is registered
+  await ensureRewardAccountsRegistered(
+    [
+      {
+        label: "Main Gov Auth",
+        rewardAccount: govAuthRewardAccount,
+        scriptHash: contracts.govAuth.Script.hash(),
+      },
+    ],
+    network,
+  );
+
   // Get staging UTxO reference for redeemer
   const stagingInput = stagingUtxo.input();
 
@@ -348,18 +376,6 @@ export async function handler(argv: PromoteUpgradeOptions) {
     ],
   });
 
-  // Update versions.json to point to the promoted version
-  const latestVersion = getNextVersionNumber(network) - 1;
-  const versionName = `v${latestVersion}`;
-  try {
-    setCurrentVersion(network, versionName);
-    printSuccess(
-      `Updated deployed-scripts/${network}/versions.json current to ${versionName}`,
-    );
-  } catch (error) {
-    console.warn(`Warning: Could not update versions.json: ${error}`);
-  }
-
   if (sign) {
     const signerKeyGroups = [
       {
@@ -399,6 +415,25 @@ export async function handler(argv: PromoteUpgradeOptions) {
   }
 
   console.log("\nTransaction ID:", tx.getId());
+
+  // Update versions.json after tx is written — operator should confirm tx on-chain
+  // before relying on this. If the tx fails at submission, re-run promote-upgrade.
+  const latestVersion = getNextVersionNumber(network) - 1;
+  if (latestVersion >= 1) {
+    const versionName = `v${latestVersion}`;
+    try {
+      setCurrentVersion(network, versionName);
+      printSuccess(
+        `Updated deployed-scripts/${network}/versions.json current to ${versionName}`,
+      );
+    } catch (error) {
+      console.warn(`Warning: Could not update versions.json: ${error}`);
+    }
+  } else {
+    console.warn(
+      `Warning: No version directories found in deployed-scripts/${network}/versions/. Skipping versions.json update.`,
+    );
+  }
 }
 
 const commandModule: CommandModule<GlobalOptions, PromoteUpgradeOptions> = {

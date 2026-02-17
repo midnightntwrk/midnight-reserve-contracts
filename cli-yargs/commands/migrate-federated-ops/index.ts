@@ -21,6 +21,7 @@ import {
 import {
   getContractUtxos,
   parseUpgradeState,
+  ensureRewardAccountsRegistered,
 } from "../../lib/governance-provider";
 import { createFederatedOpsDatumV2 } from "../../lib/candidates";
 import {
@@ -240,6 +241,23 @@ export async function handler(argv: MigrateFederatedOpsOptions) {
       mitigationLogicRewardAccount,
     );
   }
+
+  // Pre-flight: check that all withdrawal reward accounts are registered
+  const accountsToCheck = [
+    {
+      label: "Logic (v2)",
+      rewardAccount: logicRewardAccount,
+      scriptHash: logicHash,
+    },
+  ];
+  if (mitigationLogicRewardAccount) {
+    accountsToCheck.push({
+      label: "Mitigation Logic",
+      rewardAccount: mitigationLogicRewardAccount,
+      scriptHash: mitigationLogicHash,
+    });
+  }
+  await ensureRewardAccountsRegistered(accountsToCheck, network);
 
   const changeAddress = Address.fromBech32(deployerAddress);
   const deployerUtxos = await provider.getUnspentOutputs(changeAddress);
