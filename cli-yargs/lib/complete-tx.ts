@@ -104,8 +104,17 @@ export async function completeTx(
       console.error("  Error:", error.message);
       if ("cause" in error && error.cause) {
         try {
-          console.error("  Cause:", JSON.stringify(error.cause, (_k, v) => typeof v === "bigint" ? v.toString() : v, 2));
-        } catch { console.error("  Cause:", String(error.cause)); }
+          console.error(
+            "  Cause:",
+            JSON.stringify(
+              error.cause,
+              (_k, v) => (typeof v === "bigint" ? v.toString() : v),
+              2,
+            ),
+          );
+        } catch {
+          console.error("  Cause:", String(error.cause));
+        }
       }
     } else {
       console.error(error);

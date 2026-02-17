@@ -1,7 +1,4 @@
-import type {
-  TransactionOutput,
-  DeploymentTransactionsJson,
-} from "./types";
+import type { TransactionOutput, DeploymentTransactionsJson } from "./types";
 
 export function isSingleTransaction(data: unknown): data is TransactionOutput {
   if (typeof data !== "object" || data === null) return false;

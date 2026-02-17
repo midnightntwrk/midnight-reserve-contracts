@@ -80,11 +80,7 @@ describe("Change Terms and Conditions", () => {
   });
 
   /** Deploy all prerequisite contracts and return UTxO references */
-  async function deployAll(
-    emulator: Emulator,
-    blaze: any,
-    addr: any,
-  ) {
+  async function deployAll(emulator: Emulator, blaze: any, addr: any) {
     const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
 
     // --- Deploy Tech Auth Update Threshold ---

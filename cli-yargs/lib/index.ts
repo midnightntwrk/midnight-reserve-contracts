@@ -11,7 +11,6 @@ export * from "./blueprint-diff";
 export * from "./protocol";
 export * from "./governance-provider";
 export * from "./global-options";
-export { notYetImplementedHandler } from "./not-yet-implemented";
 export * from "./transaction";
 export * from "./output";
 export * from "./metadata";

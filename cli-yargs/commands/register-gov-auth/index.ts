@@ -6,10 +6,7 @@ import type { GlobalOptions } from "../../lib/global-options";
 import { getNetworkId, type ProviderType } from "../../lib/types";
 import { createBlaze } from "../../lib/provider";
 import { getContractInstances } from "../../lib/contracts";
-import {
-  ensureDirectory,
-  writeTransactionFile,
-} from "../../lib/output";
+import { ensureDirectory, writeTransactionFile } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 
 interface RegisterGovAuthOptions extends GlobalOptions {
@@ -31,7 +28,8 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("use-build", {
       type: "boolean",
       default: false,
-      description: "Use build-time compiled scripts instead of deployed scripts",
+      description:
+        "Use build-time compiled scripts instead of deployed scripts",
     });
 }
 

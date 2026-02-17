@@ -228,8 +228,9 @@ export async function isRewardAccountRegistered(
   }
   if (!response.ok) return true; // treat other errors as unknown — skip check, let tx submission surface the real error
 
-  const data = (await response.json()) as { active: boolean };
-  return data.active === true;
+  // Account exists (200 OK) means registered. Blockfrost's `active` field
+  // means "actively delegated", not "registered" — ignore it here.
+  return true;
 }
 
 /**
@@ -237,7 +238,11 @@ export async function isRewardAccountRegistered(
  * Throws with a clear error message listing unregistered accounts and how to fix them.
  */
 export async function ensureRewardAccountsRegistered(
-  accounts: { label: string; rewardAccount: RewardAccount; scriptHash: string }[],
+  accounts: {
+    label: string;
+    rewardAccount: RewardAccount;
+    scriptHash: string;
+  }[],
   environment: string,
 ): Promise<void> {
   const results = await Promise.all(

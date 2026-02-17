@@ -35,9 +35,7 @@ import {
   findUtxoByTxRef,
   parseInlineDatum,
 } from "../../lib/transaction";
-import {
-  writeTransactionFile,
-} from "../../lib/output";
+import { writeTransactionFile } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
 import { getDatumHandler } from "../../lib/datum-versions";
@@ -172,9 +170,7 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
     allUtxos.federatedOpsTwoStage,
   );
   const councilTwoStageUtxo = findUtxoWithMainAsset(allUtxos.councilTwoStage);
-  const techAuthTwoStageUtxo = findUtxoWithMainAsset(
-    allUtxos.techAuthTwoStage,
-  );
+  const techAuthTwoStageUtxo = findUtxoWithMainAsset(allUtxos.techAuthTwoStage);
 
   if (!federatedOpsTwoStageUtxo) {
     throw new Error(
@@ -183,9 +179,7 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
   }
 
   if (!councilTwoStageUtxo) {
-    throw new Error(
-      'Could not find council two-stage UTxO with "main" asset',
-    );
+    throw new Error('Could not find council two-stage UTxO with "main" asset');
   }
 
   if (!techAuthTwoStageUtxo) {
@@ -237,23 +231,31 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
     }
   }
 
-  // Version-aware datum handling — logicRound from two-stage state drives version selection
+  // Version-aware datum handling — read logic_round from the datum itself (always the
+  // last element) since migrate-federated-ops can change the datum shape without
+  // updating logicRound in the two-stage UpgradeState
   console.log("\nDecoding federated ops forever datum (version-aware)...");
-  const foreverDatum = federatedOpsForeverUtxo
-    .output()
-    .datum()
-    ?.asInlineData();
+  const foreverDatum = federatedOpsForeverUtxo.output().datum()?.asInlineData();
   if (!foreverDatum) {
     throw new Error("Federated ops forever UTxO missing inline datum");
   }
 
-  const datumHandler = getDatumHandler("federated-ops", logicRound);
+  const datumList = foreverDatum.asList();
+  if (!datumList || datumList.getLength() < 3) {
+    throw new Error("Invalid federated ops datum: expected at least 3 elements");
+  }
+  const datumLogicRound = Number(
+    datumList.get(datumList.getLength() - 1).asInteger()!,
+  );
+  if (datumLogicRound !== logicRound) {
+    console.log(
+      `  Datum logic_round=${datumLogicRound} differs from two-stage logicRound=${logicRound}, using datum value`,
+    );
+  }
+  const datumHandler = getDatumHandler("federated-ops", datumLogicRound);
   const currentData = datumHandler.decode(foreverDatum);
 
-  console.log(
-    "  Current candidates count:",
-    currentData.candidates.length,
-  );
+  console.log("  Current candidates count:", currentData.candidates.length);
 
   // Parse current council state for ML-3 validation (version-aware)
   console.log("\nReading current council state for ML-3 validation...");
@@ -396,8 +398,16 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
 
-  // FederatedOps uses a simple integer redeemer, not the map-based redeemer
-  const federatedOpsRedeemer = PlutusData.newInteger(0n);
+  // FederatedOps redeemer: wrap inner redeemer in LogicRedeemer::Normal(inner)
+  // for v2 logic scripts (next_version.ak), plain integer for v1
+  const innerRedeemer = PlutusData.newInteger(0n);
+  const federatedOpsRedeemer =
+    logicRound >= 1 && logicScript
+      ? PlutusData.fromCore({
+          constructor: 0n,
+          fields: { items: [innerRedeemer.toCore()] },
+        })
+      : innerRedeemer;
 
   const txBuilder = blaze
     .newTransaction()
@@ -434,11 +444,7 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
   if (mitigationLogicScript && mitigationLogicRewardAccount) {
     console.log("  Adding mitigation logic withdrawal...");
     txBuilder
-      .addWithdrawal(
-        mitigationLogicRewardAccount,
-        0n,
-        federatedOpsRedeemer,
-      )
+      .addWithdrawal(mitigationLogicRewardAccount, 0n, federatedOpsRedeemer)
       .provideScript(mitigationLogicScript);
   }
 

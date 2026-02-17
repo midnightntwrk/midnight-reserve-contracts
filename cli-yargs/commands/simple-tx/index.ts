@@ -4,7 +4,11 @@ import { resolve } from "path";
 import type { GlobalOptions } from "../../lib/global-options";
 import { getNetworkId, type ProviderType } from "../../lib/types";
 import { createBlaze } from "../../lib/provider";
-import { getDeployerAddress, getSimpleTxCount, getSimpleTxAmount } from "../../lib/config";
+import {
+  getDeployerAddress,
+  getSimpleTxCount,
+  getSimpleTxAmount,
+} from "../../lib/config";
 import { ensureDirectory, writeTransactionFile } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 

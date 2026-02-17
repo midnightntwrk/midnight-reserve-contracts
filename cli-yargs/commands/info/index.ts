@@ -314,10 +314,7 @@ function generateMarkdownReport(
   return lines.join("\n");
 }
 
-function buildContractList(
-  network: string,
-  useBuild: boolean,
-): ContractInfo[] {
+function buildContractList(network: string, useBuild: boolean): ContractInfo[] {
   const contracts = getContractInstances(network, useBuild);
 
   return [

@@ -20,7 +20,10 @@ import {
   getContractAddress,
   getTwoStageContracts,
 } from "../../lib/contracts";
-import { extractSignersFromMultisigState, parsePrivateKeys } from "../../lib/signers";
+import {
+  extractSignersFromMultisigState,
+  parsePrivateKeys,
+} from "../../lib/signers";
 import {
   getContractUtxos,
   getTwoStageUtxos,
@@ -37,10 +40,7 @@ import {
 import { writeTransactionFile, printSuccess } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
-import {
-  getNextVersionNumber,
-  setCurrentVersion,
-} from "../../lib/versions";
+import { getNextVersionNumber, setCurrentVersion } from "../../lib/versions";
 import * as Contracts from "../../../contract_blueprint";
 
 interface PromoteUpgradeOptions extends GlobalOptions {
@@ -217,8 +217,7 @@ export async function handler(argv: PromoteUpgradeOptions) {
   console.log(`\nStaged logic hash to promote: ${stagedLogicHash}`);
 
   // Calculate required signers based on threshold
-  const [techAuthNum, techAuthDenom, councilNum, councilDenom] =
-    thresholdState;
+  const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
   const techAuthRequiredSigners = Number(
     (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
       techAuthDenom,
@@ -348,9 +347,7 @@ export async function handler(argv: PromoteUpgradeOptions) {
           coins: mainUtxo.output().amount().coin(),
           assets: new Map([
             [
-              AssetId(
-                targetContracts.twoStage.Script.hash() + MAIN_TOKEN_HEX,
-              ),
+              AssetId(targetContracts.twoStage.Script.hash() + MAIN_TOKEN_HEX),
               1n,
             ],
           ]),

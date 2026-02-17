@@ -327,14 +327,12 @@ export async function handler(argv: MigrateFederatedOpsOptions) {
   );
 }
 
-const commandModule: CommandModule<
-  GlobalOptions,
-  MigrateFederatedOpsOptions
-> = {
-  command,
-  describe,
-  builder,
-  handler,
-};
+const commandModule: CommandModule<GlobalOptions, MigrateFederatedOpsOptions> =
+  {
+    command,
+    describe,
+    builder,
+    handler,
+  };
 
 export default commandModule;

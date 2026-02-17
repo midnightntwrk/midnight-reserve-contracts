@@ -112,7 +112,10 @@ export async function handler(argv: ChangeTechAuthOptions) {
     contracts.techAuthForever.Script,
   );
 
-  console.log("\nTech Auth Forever Address:", techAuthForeverAddress.toBech32());
+  console.log(
+    "\nTech Auth Forever Address:",
+    techAuthForeverAddress.toBech32(),
+  );
 
   const providerType = argv.provider as
     | "blockfrost"
@@ -156,14 +159,10 @@ export async function handler(argv: ChangeTechAuthOptions) {
   const techAuthThresholdUtxo = allUtxos.techAuthThreshold[0];
   const councilForeverUtxo = allUtxos.councilForever[0];
   const councilTwoStageUtxo = findUtxoWithMainAsset(allUtxos.councilTwoStage);
-  const techAuthTwoStageUtxo = findUtxoWithMainAsset(
-    allUtxos.techAuthTwoStage,
-  );
+  const techAuthTwoStageUtxo = findUtxoWithMainAsset(allUtxos.techAuthTwoStage);
 
   if (!councilTwoStageUtxo) {
-    throw new Error(
-      'Could not find council two-stage UTxO with "main" asset',
-    );
+    throw new Error('Could not find council two-stage UTxO with "main" asset');
   }
 
   if (!techAuthTwoStageUtxo) {

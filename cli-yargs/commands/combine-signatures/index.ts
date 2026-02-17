@@ -70,8 +70,7 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("sign-deployer", {
       type: "boolean",
       default: true,
-      description:
-        "Also sign with deployer key after merging (default: true)",
+      description: "Also sign with deployer key after merging (default: true)",
     });
 }
 
@@ -194,7 +193,10 @@ function mergeSignaturesIntoTransaction(
 
   const mergedSignatures: [Ed25519PublicKeyHex, Ed25519SignatureHex][] = [];
   for (const [pubKey, sig] of signatureMap) {
-    mergedSignatures.push([Ed25519PublicKeyHex(pubKey), Ed25519SignatureHex(sig)]);
+    mergedSignatures.push([
+      Ed25519PublicKeyHex(pubKey),
+      Ed25519SignatureHex(sig),
+    ]);
   }
 
   const cborSet = CborSet.fromCore(
@@ -370,8 +372,7 @@ export async function handler(argv: CombineSignaturesOptions) {
         submissions.push({ name: txData.description, txId });
         printSuccess(`Submitted: ${txData.description} - ${txId}`);
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : String(error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
         submitErrors.push({ name: txData.description, error: errorMsg });
         printError(`Failed to submit ${txData.description}: ${errorMsg}`);
       }
@@ -389,8 +390,7 @@ export async function handler(argv: CombineSignaturesOptions) {
         confirmedHashes.push(txId);
         printSuccess(`Confirmed: ${name} - ${txId}`);
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : String(error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
         errors.push({ name, error: errorMsg });
         printError(`Confirmation failed for ${name}: ${errorMsg}`);
       }

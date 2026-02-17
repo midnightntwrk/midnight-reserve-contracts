@@ -84,12 +84,6 @@ export interface RegisterGovAuthOptions extends GlobalOptions {
   useBuild?: boolean;
 }
 
-export interface RegisterLogicOptions extends GlobalOptions {
-  scriptHash: string;
-  outputFile: string;
-  useBuild?: boolean;
-}
-
 export interface GenerateKeyOptions {
   /** Environment name */
   network: string;

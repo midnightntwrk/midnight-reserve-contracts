@@ -51,4 +51,4 @@ use-env env:
 
 
 cli *args:
-    bun cli/index.ts {{args}}
+    bun cli-yargs/index.ts {{args}}

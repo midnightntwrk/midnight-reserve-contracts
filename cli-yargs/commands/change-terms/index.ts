@@ -34,9 +34,7 @@ import {
   findUtxoByTxRef,
   parseInlineDatum,
 } from "../../lib/transaction";
-import {
-  writeTransactionFile,
-} from "../../lib/output";
+import { writeTransactionFile } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
 import { getDatumHandler } from "../../lib/datum-versions";
@@ -96,11 +94,7 @@ export function builder(yargs: Argv<GlobalOptions>) {
     });
 }
 
-function validateHex(
-  value: string,
-  name: string,
-  exactBytes?: number,
-): void {
+function validateHex(value: string, name: string, exactBytes?: number): void {
   if (!/^[0-9a-fA-F]*$/.test(value) || value.length % 2 !== 0) {
     throw new Error(`${name} must be a valid hex string with even length`);
   }
@@ -204,9 +198,7 @@ export async function handler(argv: ChangeTermsOptions) {
   const techAuthForeverUtxo = allUtxos.techAuthForever[0];
   const termsTwoStageUtxo = findUtxoWithMainAsset(allUtxos.termsTwoStage);
   const councilTwoStageUtxo = findUtxoWithMainAsset(allUtxos.councilTwoStage);
-  const techAuthTwoStageUtxo = findUtxoWithMainAsset(
-    allUtxos.techAuthTwoStage,
-  );
+  const techAuthTwoStageUtxo = findUtxoWithMainAsset(allUtxos.techAuthTwoStage);
 
   if (!termsTwoStageUtxo) {
     throw new Error(
@@ -215,9 +207,7 @@ export async function handler(argv: ChangeTermsOptions) {
   }
 
   if (!councilTwoStageUtxo) {
-    throw new Error(
-      'Could not find council two-stage UTxO with "main" asset',
-    );
+    throw new Error('Could not find council two-stage UTxO with "main" asset');
   }
 
   if (!techAuthTwoStageUtxo) {
@@ -267,7 +257,9 @@ export async function handler(argv: ChangeTermsOptions) {
   }
 
   // Version-aware datum handling — logicRound from two-stage state drives version selection
-  console.log("\nDecoding terms and conditions forever datum (version-aware)...");
+  console.log(
+    "\nDecoding terms and conditions forever datum (version-aware)...",
+  );
   const foreverDatum = termsForeverUtxo.output().datum()?.asInlineData();
   if (!foreverDatum) {
     throw new Error("Terms and conditions forever UTxO missing inline datum");
@@ -442,10 +434,7 @@ export async function handler(argv: ChangeTermsOptions) {
         value: {
           coins: termsForeverUtxo.output().amount().coin(),
           assets: new Map([
-            [
-              AssetId(contracts.termsAndConditionsForever.Script.hash()),
-              1n,
-            ],
+            [AssetId(contracts.termsAndConditionsForever.Script.hash()), 1n],
           ]),
         },
         datum: newTermsForeverStateCbor.toCore(),

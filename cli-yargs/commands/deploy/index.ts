@@ -21,7 +21,10 @@ import { readFileSync, existsSync } from "fs";
 import type { TransactionUnspentOutput } from "@blaze-cardano/core";
 
 import type { GlobalOptions } from "../../lib/global-options";
-import type { ProviderType, TransactionOutput as TxOutput } from "../../lib/types";
+import type {
+  ProviderType,
+  TransactionOutput as TxOutput,
+} from "../../lib/types";
 import { getNetworkId } from "../../lib/types";
 import {
   loadAikenConfig,
@@ -123,7 +126,8 @@ export function builder(yargs: Argv<GlobalOptions>) {
   return yargs
     .option("utxo-amount", {
       type: "string",
-      description: "Lovelace amount per UTxO (default: from DEPLOY_UTXO_AMOUNT env or 20000000)",
+      description:
+        "Lovelace amount per UTxO (default: from DEPLOY_UTXO_AMOUNT env or 20000000)",
     })
     .option("tech-auth-threshold", {
       type: "string",
@@ -186,9 +190,7 @@ export async function handler(argv: DeployOptions) {
   const techAuthStagingThreshold = argv["tech-auth-staging-threshold"]
     ? parseThreshold(argv["tech-auth-staging-threshold"])
     : getTechAuthStagingThreshold();
-  const components = argv.components
-    ? argv.components.split(",")
-    : [];
+  const components = argv.components ? argv.components.split(",") : [];
 
   console.log(`===========================================`);
   console.log(`Generating deployment transactions for ${network}`);
@@ -215,7 +217,10 @@ export async function handler(argv: DeployOptions) {
     `Number of council signer pairs: ${Object.keys(councilSigners).length}`,
   );
 
-  const { blaze } = await createBlaze(network, argv.provider as ProviderType | undefined);
+  const { blaze } = await createBlaze(
+    network,
+    argv.provider as ProviderType | undefined,
+  );
 
   const protocolParams = await getProtocolParameters(blaze.provider);
 
@@ -971,7 +976,9 @@ export async function handler(argv: DeployOptions) {
 
   if (txName) {
     if (components.length > 0 && !components.includes("all")) {
-      printInfo(`Warning: --name overrides --components. Using --name=${txName}`);
+      printInfo(
+        `Warning: --name overrides --components. Using --name=${txName}`,
+      );
     }
     const matched = allTransactionDefs.find((t) => t.name === txName);
     if (!matched) {

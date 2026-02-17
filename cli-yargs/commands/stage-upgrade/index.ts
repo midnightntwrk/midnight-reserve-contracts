@@ -167,8 +167,7 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("sign", {
       type: "boolean",
       default: true,
-      description:
-        "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS)",
+      description: "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS)",
     })
     .option("output-file", {
       type: "string",
@@ -304,8 +303,7 @@ export async function handler(argv: StageUpgradeOptions) {
   );
 
   // Calculate required signers based on threshold
-  const [techAuthNum, techAuthDenom, councilNum, councilDenom] =
-    thresholdState;
+  const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
   const techAuthRequiredSigners = Number(
     (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
       techAuthDenom,
@@ -470,9 +468,7 @@ export async function handler(argv: StageUpgradeOptions) {
     const oneShotRef = getLogicV2OneShotRef(validator, aikenConfig);
 
     console.log(`\n  New logic contract detected: ${newLogicHash}`);
-    console.log(
-      `  StagingState NFT must be minted in a separate transaction.`,
-    );
+    console.log(`  StagingState NFT must be minted in a separate transaction.`);
     console.log(`  One-shot UTxO: ${oneShotRef.hash}#${oneShotRef.index}`);
     console.log(`  Staging forever hash: ${stagingForeverHash}`);
     console.log(`  CNIGHT test policy: ${aikenConfig.cnight_policy}`);

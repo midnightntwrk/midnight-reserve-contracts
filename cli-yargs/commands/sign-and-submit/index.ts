@@ -61,10 +61,18 @@ export function builder(yargs: Argv<GlobalOptions>) {
 }
 
 export async function handler(argv: SignAndSubmitOptions) {
-  const { network, "json-file": jsonFile, "signing-key": signingKeyEnvVar, "sign-deployer": signDeployer } = argv;
+  const {
+    network,
+    "json-file": jsonFile,
+    "signing-key": signingKeyEnvVar,
+    "sign-deployer": signDeployer,
+  } = argv;
 
   const privateKeyHex = signDeployer ? getEnvVar(signingKeyEnvVar) : null;
-  const provider = await createProvider(network, argv.provider as ProviderType | undefined);
+  const provider = await createProvider(
+    network,
+    argv.provider as ProviderType | undefined,
+  );
 
   if (signDeployer) {
     printProgress(`Signing with deployer key from ${signingKeyEnvVar}`);
@@ -98,8 +106,7 @@ export async function handler(argv: SignAndSubmitOptions) {
         submissions.push({ name: tx.description, txId });
         printSuccess(`Submitted: ${tx.description} - ${txId}`);
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : String(error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
         submitErrors.push({ name: tx.description, error: errorMsg });
         printError(`Failed to submit ${tx.description}: ${errorMsg}`);
       }
@@ -118,8 +125,7 @@ export async function handler(argv: SignAndSubmitOptions) {
         confirmedHashes.push(txId);
         printSuccess(`Confirmed: ${name} - ${txId}`);
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : String(error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
         errors.push({ name, error: errorMsg });
         printError(`Confirmation failed for ${name}: ${errorMsg}`);
       }
