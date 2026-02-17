@@ -254,6 +254,12 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
       `  Datum logic_round=${datumLogicRound} differs from two-stage logicRound=${logicRound}, using datum value`,
     );
   }
+  if (logicRound >= 2 && datumLogicRound < logicRound) {
+    throw new Error(
+      `Federated ops datum has logic_round=${datumLogicRound} but v2 logic is active (logicRound=${logicRound}). ` +
+        `Run 'migrate-federated-ops' first to update the datum to the v2 format.`,
+    );
+  }
   const datumHandler = getDatumHandler("federated-ops", datumLogicRound);
   const currentData = datumHandler.decode(foreverDatum);
 
