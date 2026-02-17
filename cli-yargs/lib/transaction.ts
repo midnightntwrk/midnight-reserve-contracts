@@ -1,6 +1,5 @@
 import {
   addressFromCredential,
-  AssetId,
   CborSet,
   Credential,
   CredentialType,
@@ -16,15 +15,12 @@ import {
   PlutusData,
   RewardAccount,
   signMessage,
-  toHex,
   Transaction,
   TransactionId,
-  TransactionOutput,
   TransactionUnspentOutput,
   TxCBOR,
   VkeyWitness,
 } from "@blaze-cardano/core";
-import { serialize } from "@blaze-cardano/data";
 import type { Signer } from "./types";
 import { parsePrivateKeys } from "./signers";
 import { writeTransactionFile } from "./output";
@@ -55,52 +51,6 @@ export function createUpgradeState(
   govAuthScriptHash: string,
 ): Contracts.UpgradeState {
   return [logicScriptHash, "", govAuthScriptHash, "", 0n, 0n];
-}
-
-export function createContractOutput(
-  address: string,
-  coins: bigint,
-  assetId: string,
-  datum: PlutusData,
-): TransactionOutput {
-  return TransactionOutput.fromCore({
-    address: PaymentAddress(address),
-    value: {
-      coins,
-      assets: new Map([[AssetId(assetId), 1n]]),
-    },
-    datum: datum.toCore(),
-  });
-}
-
-export function createTwoStageOutputs(
-  twoStageAddress: string,
-  twoStageScriptHash: string,
-  coins: bigint,
-  upgradeState: Contracts.UpgradeState,
-): TransactionOutput[] {
-  const mainAssetName = toHex(new TextEncoder().encode("main"));
-  const stagingAssetName = toHex(new TextEncoder().encode("staging"));
-  const serializedState = serialize(Contracts.UpgradeState, upgradeState);
-
-  return [
-    TransactionOutput.fromCore({
-      address: PaymentAddress(twoStageAddress),
-      value: {
-        coins,
-        assets: new Map([[AssetId(twoStageScriptHash + mainAssetName), 1n]]),
-      },
-      datum: serializedState.toCore(),
-    }),
-    TransactionOutput.fromCore({
-      address: PaymentAddress(twoStageAddress),
-      value: {
-        coins,
-        assets: new Map([[AssetId(twoStageScriptHash + stagingAssetName), 1n]]),
-      },
-      datum: serializedState.toCore(),
-    }),
-  ];
 }
 
 export function createNativeMultisigScript(
@@ -225,38 +175,6 @@ export function findUtxoByTxRef(
       utxo.input().transactionId() === txHash &&
       utxo.input().index() === BigInt(txIndex),
   );
-}
-
-export function findUtxoWithStagingAsset(
-  utxos: TransactionUnspentOutput[],
-): TransactionUnspentOutput | undefined {
-  const stagingAssetName = Buffer.from("staging").toString("hex");
-
-  return utxos.find((utxo) => {
-    const assets = utxo.output().amount().multiasset();
-    if (!assets) return false;
-
-    for (const [assetId] of assets) {
-      if (assetId.endsWith(stagingAssetName)) {
-        return true;
-      }
-    }
-    return false;
-  });
-}
-
-export function findUtxoWithNft(
-  utxos: TransactionUnspentOutput[],
-  policyHash: string,
-  assetNameText: string,
-): TransactionUnspentOutput | undefined {
-  const assetNameHex = toHex(new TextEncoder().encode(assetNameText));
-  const targetAssetId = AssetId(policyHash + assetNameHex);
-
-  return utxos.find((utxo) => {
-    const assets = utxo.output().amount().multiasset();
-    return assets && (assets.get(targetAssetId) ?? 0n) === 1n;
-  });
 }
 
 export function parseInlineDatum<T, CT>(

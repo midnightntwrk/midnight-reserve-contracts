@@ -65,7 +65,6 @@ interface ContractOnChainInfo extends ContractInfo {
 interface InfoOptions extends GlobalOptions {
   format: string;
   component: string;
-  fetch: boolean;
   save: boolean;
   "release-dir": string;
   "use-build": boolean;
@@ -576,11 +575,6 @@ export function builder(yargs: Argv<GlobalOptions>) {
       type: "string",
       default: "all",
       description: "Filter by component (e.g., tech-auth, council, reserve)",
-    })
-    .option("fetch", {
-      type: "boolean",
-      default: false,
-      description: "Fetch current on-chain state",
     })
     .option("save", {
       type: "boolean",

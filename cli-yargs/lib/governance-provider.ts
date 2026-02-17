@@ -15,8 +15,6 @@ import {
   TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import type { Provider } from "@blaze-cardano/sdk";
-import type { ContractInstances } from "./contracts";
-import { findScriptByHash, getTwoStageContracts } from "./contracts";
 import { getCardanoNetwork } from "./types";
 import { getEnvVar } from "./config";
 
@@ -148,63 +146,11 @@ export function parseUpgradeState(
 }
 
 /**
- * Resolves a logic script from its hash using the loaded blueprint.
- */
-export function resolveLogicScript(
-  logicHash: string,
-  env?: string,
-  useBuild?: boolean,
-): Script | null {
-  return findScriptByHash(logicHash, env, useBuild);
-}
-
-/**
- * High-level: selects main/staging UTxO, parses UpgradeState, and resolves logic script.
- */
-export async function resolveUpgradeLogic(
-  provider: Provider,
-  networkId: number,
-  validatorName: string,
-  track: "main" | "staging" = "main",
-  env?: string,
-  useBuild?: boolean,
-): Promise<{
-  utxo: TransactionUnspentOutput;
-  upgradeState: UpgradeState;
-  logicScript: Script | null;
-}> {
-  const { twoStage } = getTwoStageContracts(validatorName, env, useBuild);
-
-  const { main, staging } = await getTwoStageUtxos(
-    provider,
-    twoStage.Script,
-    networkId,
-  );
-
-  const utxo = track === "main" ? main : staging;
-  const datum = utxo.output().datum()?.asInlineData();
-  if (!datum) {
-    throw new Error(`No inline datum on ${track} UTxO for ${validatorName}`);
-  }
-
-  const upgradeState = parseUpgradeState(datum.toCbor());
-  if (!upgradeState) {
-    throw new Error(
-      `Could not parse UpgradeState from ${track} datum for ${validatorName}`,
-    );
-  }
-
-  const logicScript = resolveLogicScript(upgradeState.logicHash, env, useBuild);
-
-  return { utxo, upgradeState, logicScript };
-}
-
-/**
  * Checks if a reward account (stake credential) is registered on-chain via Blockfrost.
  * Returns true if registered, false if not.
  * Throws if the provider is not Blockfrost (only Blockfrost REST API is supported).
  */
-export async function isRewardAccountRegistered(
+async function isRewardAccountRegistered(
   rewardAccount: RewardAccount,
   environment: string,
 ): Promise<boolean> {
@@ -264,31 +210,4 @@ export async function ensureRewardAccountsRegistered(
         `Or for v2 logic scripts, register the stake credential manually.`,
     );
   }
-}
-
-/**
- * Queries all governance contract UTxOs for an environment.
- * Returns UTxOs for all core governance contracts.
- */
-export async function getGovernanceUtxos(
-  provider: Provider,
-  contracts: ContractInstances,
-  networkId: number,
-): Promise<Record<string, TransactionUnspentOutput[]>> {
-  const contractMap: Record<string, Script> = {
-    councilForever: contracts.councilForever.Script,
-    councilTwoStage: contracts.councilTwoStage.Script,
-    techAuthForever: contracts.techAuthForever.Script,
-    techAuthTwoStage: contracts.techAuthTwoStage.Script,
-    reserveForever: contracts.reserveForever.Script,
-    reserveTwoStage: contracts.reserveTwoStage.Script,
-    icsForever: contracts.icsForever.Script,
-    icsTwoStage: contracts.icsTwoStage.Script,
-    federatedOpsForever: contracts.federatedOpsForever.Script,
-    federatedOpsTwoStage: contracts.federatedOpsTwoStage.Script,
-    termsAndConditionsForever: contracts.termsAndConditionsForever.Script,
-    termsAndConditionsTwoStage: contracts.termsAndConditionsTwoStage.Script,
-  };
-
-  return getContractUtxos(provider, contractMap, networkId);
 }

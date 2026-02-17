@@ -44,19 +44,6 @@ export function parseSignersWithCount(envVar: string): {
   return { totalSigners, signers };
 }
 
-export function createMultisigState(
-  signers: Signer[],
-  round: bigint = 0n,
-): Contracts.VersionedMultisig {
-  const signerMap: Record<string, string> = {};
-  for (const signer of signers) {
-    // Add CBOR prefix "8200581c" to each key for Multisig state
-    signerMap[`8200581c${signer.paymentHash}`] = signer.sr25519Key;
-  }
-  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
-  return [[BigInt(signers.length), signerMap], round];
-}
-
 export function createMultisigStateFromMap(
   totalSigners: bigint,
   signers: Record<string, string>,
@@ -71,16 +58,6 @@ export function createMultisigStateFromMap(
   return [[totalSigners, prefixedSigners], round];
 }
 
-export function createRedeemerMap(
-  signers: Signer[],
-): Contracts.PermissionedRedeemer {
-  const redeemerMap: Record<string, string> = {};
-  for (const signer of signers) {
-    redeemerMap[signer.paymentHash] = signer.sr25519Key;
-  }
-  return redeemerMap;
-}
-
 export function parsePrivateKeys(envVar: string): string[] {
   const keysEnv = process.env[envVar];
   if (!keysEnv) {
@@ -91,18 +68,6 @@ export function parsePrivateKeys(envVar: string): string[] {
     .split(",")
     .map((k) => k.trim())
     .filter((k) => k.length > 0);
-}
-
-export function extractSignersFromMultisigState(
-  versionedState: Contracts.VersionedMultisig,
-): Signer[] {
-  // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
-  const [multisig] = versionedState;
-  const [, signerMap] = multisig;
-  return Object.entries(signerMap).map(([credHex, sr25519Key]) => {
-    const paymentHash = credHex.slice(8);
-    return { paymentHash, sr25519Key };
-  });
 }
 
 /**

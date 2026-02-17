@@ -268,18 +268,6 @@ export function getContractInstances(
   return instances;
 }
 
-/**
- * Initializes contracts for a specific environment.
- */
-export function initContractsForEnvironment(
-  env: string,
-  useBuild: boolean = false,
-): void {
-  const configSection = getConfigSection(env);
-  activeEnvironment = configSection;
-  getContractInstances(env, useBuild);
-}
-
 export function getContractAddress(
   network: string,
   script: Script,

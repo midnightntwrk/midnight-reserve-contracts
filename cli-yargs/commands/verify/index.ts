@@ -52,9 +52,7 @@ interface CheckResult {
   details: string;
 }
 
-interface VerifyOptions extends GlobalOptions {
-  "use-build": boolean;
-}
+type VerifyOptions = GlobalOptions;
 
 // --- Constants ---
 
@@ -597,12 +595,7 @@ export const command = "verify";
 export const describe = "Verify on-chain deployment against local artifacts";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs.option("use-build", {
-    type: "boolean",
-    default: false,
-    description:
-      "Use build output instead of deployed-scripts versioned blueprint",
-  });
+  return yargs;
 }
 
 export async function handler(argv: VerifyOptions) {

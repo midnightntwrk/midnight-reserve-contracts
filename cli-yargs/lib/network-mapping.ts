@@ -115,33 +115,3 @@ export function getNetworkIdFromEnvironment(environment: string): NetworkId {
 export function getAikenConfigSection(environment: string): string {
   return resolveEnvironment(environment).aikenConfigSection;
 }
-
-/**
- * Checks if an environment is valid (known).
- */
-export function isKnownEnvironment(environment: string): boolean {
-  const env = environment.toLowerCase();
-
-  const knownExact = [
-    "local",
-    "emulator",
-    "preview",
-    "qanet",
-    "govnet",
-    "preprod",
-    "mainnet",
-  ];
-
-  if (knownExact.includes(env)) return true;
-
-  if (
-    env.startsWith("devnet-") ||
-    env.startsWith("devnet_") ||
-    env.startsWith("node-dev-") ||
-    env.startsWith("node_dev_")
-  ) {
-    return true;
-  }
-
-  return false;
-}

@@ -46,13 +46,6 @@ export function getDeployedScriptsPath(env: string): string {
 }
 
 /**
- * Checks if deployed-scripts exists for an environment.
- */
-export function hasDeployedScripts(env: string): boolean {
-  return existsSync(getDeployedScriptsPath(env));
-}
-
-/**
  * Gets the versions.json path for an environment.
  */
 function getVersionsJsonPath(env: string): string {
@@ -141,7 +134,7 @@ export function getNextVersionNumber(env: string): number {
 /**
  * Gets the version folder name derived from existing version directories.
  */
-export function getVersionFolderName(env: string): string {
+function getVersionFolderName(env: string): string {
   return `v${getNextVersionNumber(env)}`;
 }
 
@@ -253,75 +246,4 @@ export function saveVersionSnapshot(
   }
 
   return versionName;
-}
-
-/**
- * Gets the version history for an environment by reading all changelog.json files.
- *
- * @returns Array of Changelog objects sorted by version (newest first)
- */
-export function getVersionHistory(env: string): Changelog[] {
-  const basePath = getDeployedScriptsPath(env);
-  const versionsPath = resolve(basePath, "versions");
-
-  if (!existsSync(versionsPath)) {
-    return [];
-  }
-
-  const changelogs: Changelog[] = [];
-  const versionDirs = readdirSync(versionsPath);
-
-  for (const versionDir of versionDirs) {
-    const changelogPath = resolve(versionsPath, versionDir, "changelog.json");
-    if (existsSync(changelogPath)) {
-      try {
-        const content = readFileSync(changelogPath, "utf-8");
-        changelogs.push(JSON.parse(content) as Changelog);
-      } catch {
-        // Skip invalid changelog files
-      }
-    }
-  }
-
-  // Sort by version (parse round and logic numbers)
-  changelogs.sort((a, b) => {
-    const parseVer = (v: string) => {
-      const vMatch = v.match(/^v(\d+)$/);
-      if (vMatch) return { round: 0, logic: parseInt(vMatch[1]) - 1 };
-      const match = v.match(/round_(\d+)_logic_(\d+)/);
-      if (!match) return { round: 0, logic: 0 };
-      return { round: parseInt(match[1]), logic: parseInt(match[2]) };
-    };
-    const va = parseVer(a.version);
-    const vb = parseVer(b.version);
-    if (va.round !== vb.round) return vb.round - va.round;
-    return vb.logic - va.logic;
-  });
-
-  return changelogs;
-}
-
-/**
- * Parses a version string into round and logic round numbers.
- *
- * @returns Object with round and logicRound as bigints, or null if invalid
- */
-export function parseVersion(
-  version: string,
-): { round: bigint; logicRound: bigint } | null {
-  // New format: v1, v2, etc.
-  const vMatch = version.match(/^v(\d+)$/);
-  if (vMatch) {
-    return {
-      round: 0n,
-      logicRound: BigInt(parseInt(vMatch[1]) - 1),
-    };
-  }
-  // Legacy format: round_0_logic_0
-  const match = version.match(/round_(\d+)_logic_(\d+)/);
-  if (!match) return null;
-  return {
-    round: BigInt(match[1]),
-    logicRound: BigInt(match[2]),
-  };
 }
