@@ -35,6 +35,8 @@ export interface Changelog {
 export interface VersionsJson {
   current: string;
   versions: string[];
+  promoted: string[];
+  staged: string[];
 }
 
 /**
@@ -59,7 +61,12 @@ function getVersionsJsonPath(env: string): string {
 function readVersionsJson(env: string): VersionsJson | null {
   const path = getVersionsJsonPath(env);
   if (!existsSync(path)) return null;
-  return JSON.parse(readFileSync(path, "utf-8")) as VersionsJson;
+  const raw = JSON.parse(readFileSync(path, "utf-8"));
+  return {
+    promoted: [],
+    staged: [],
+    ...raw,
+  } as VersionsJson;
 }
 
 /**
@@ -104,6 +111,8 @@ export function setCurrentVersion(env: string, version: string): void {
     writeVersionsJson(env, {
       current: version,
       versions: [version],
+      promoted: [],
+      staged: [],
     });
   }
 }
@@ -154,6 +163,56 @@ function getGitCommit(): string {
  */
 function getCurrentTimestamp(): string {
   return new Date().toISOString();
+}
+
+/**
+ * Extracts unique validator names from a plutus.json file.
+ * Strips module prefix (first dot segment) and .else/.spend suffix (last dot segment).
+ * Filters out v2 and staging validators.
+ */
+export function extractValidatorNames(plutusJsonPath: string): string[] {
+  const plutus = JSON.parse(readFileSync(plutusJsonPath, "utf-8"));
+  const names = new Set<string>();
+
+  for (const v of plutus.validators) {
+    const parts = (v.title as string).split(".");
+    // Strip first segment (module prefix) and last segment if it's "else" or "spend"
+    const last = parts[parts.length - 1];
+    const inner =
+      last === "else" || last === "spend" ? parts.slice(1, -1) : parts.slice(1);
+    const name = inner.join(".");
+    if (!name) continue;
+    // Filter out v2 and staging validators
+    if (/_v2$/.test(name) || /_staging_/.test(name)) continue;
+    names.add(name);
+  }
+
+  return [...names];
+}
+
+/**
+ * Adds a validator to the staged list in versions.json.
+ */
+export function addStagedValidator(env: string, name: string): void {
+  const data = readVersionsJson(env);
+  if (!data) return;
+  if (!data.staged.includes(name)) {
+    data.staged.push(name);
+    writeVersionsJson(env, data);
+  }
+}
+
+/**
+ * Promotes a validator: removes from staged[], adds to promoted[] (deduplicating).
+ */
+export function promoteValidator(env: string, name: string): void {
+  const data = readVersionsJson(env);
+  if (!data) return;
+  data.staged = data.staged.filter((s) => s !== name);
+  if (!data.promoted.includes(name)) {
+    data.promoted.push(name);
+  }
+  writeVersionsJson(env, data);
 }
 
 /**
@@ -214,6 +273,10 @@ export function saveVersionSnapshot(
     copyFileSync(blueprintPath, resolve(versionPath, "contract_blueprint.ts"));
   }
 
+  // Extract promoted validator names from the versioned plutus.json
+  const versionedPlutusPath = resolve(versionPath, "plutus.json");
+  const promoted = extractValidatorNames(versionedPlutusPath);
+
   // Get previous version for changelog
   const previousVersion = getCurrentVersion(env);
 
@@ -236,12 +299,15 @@ export function saveVersionSnapshot(
   if (data) {
     if (!data.versions.includes(versionName)) {
       data.versions.push(versionName);
-      writeVersionsJson(env, data);
     }
+    data.promoted = promoted;
+    writeVersionsJson(env, data);
   } else {
     writeVersionsJson(env, {
       current: "",
       versions: [versionName],
+      promoted,
+      staged: [],
     });
   }
 

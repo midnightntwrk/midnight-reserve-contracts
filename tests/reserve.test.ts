@@ -19,7 +19,7 @@ import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import * as Contracts from "../contract_blueprint";
 import { describe, test } from "bun:test";
-import { loadAikenConfig } from "../cli/lib/config";
+import { loadAikenConfig } from "../cli-yargs/lib/config";
 
 describe("Reserve Deploy and Merge", () => {
   const amount = 100_000_000n;

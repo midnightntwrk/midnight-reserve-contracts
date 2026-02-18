@@ -25,7 +25,7 @@ import {
 import {
   createFederatedOpsDatumFromString,
   candidateToPermissionedDatum,
-} from "../cli/lib/candidates";
+} from "../cli-yargs/lib/candidates";
 
 describe("Federated Ops Deploy with FederatedOps Datum", () => {
   const amount = 100_000_000n;

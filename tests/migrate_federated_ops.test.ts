@@ -30,7 +30,7 @@ import {
 import {
   createFederatedOpsDatumFromString,
   createFederatedOpsDatumV2,
-} from "../cli/lib/candidates";
+} from "../cli-yargs/lib/candidates";
 
 describe("Migrate Federated Ops from v1 to v2 datum", () => {
   test("deploy federated ops, upgrade to v2 logic, then migrate datum", async () => {

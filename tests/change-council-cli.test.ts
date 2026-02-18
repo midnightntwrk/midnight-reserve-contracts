@@ -22,7 +22,7 @@ import * as Contracts from "../contract_blueprint";
 import {
   createMultisigStateCbor,
   createRedeemerMapCbor,
-} from "../cli/lib/signers";
+} from "../cli-yargs/lib/signers";
 import { describe, test } from "bun:test";
 
 describe("Change Council CLI Test", () => {
