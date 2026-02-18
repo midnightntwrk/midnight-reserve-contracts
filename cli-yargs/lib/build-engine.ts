@@ -9,6 +9,7 @@ import {
 } from "fs";
 import { resolve } from "path";
 import * as toml from "toml";
+import { getCurrentVersion, getDeployedScriptsPath } from "./versions";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -633,15 +634,24 @@ async function buildFromDeployed(
 ): Promise<BuildResult> {
   const { network, projectRoot, traceLevel } = opts;
   const outputFile = `plutus-${network}.json`;
-  const deployedJsonFile = resolve(
-    projectRoot,
-    `deployed-scripts/${network}/plutus.json`,
-  );
+
+  // Resolve plutus.json via versions.json current version
+  const currentVersion = getCurrentVersion(network);
+  const deployedJsonFile = currentVersion
+    ? resolve(
+        getDeployedScriptsPath(network),
+        "versions",
+        currentVersion,
+        "plutus.json",
+      )
+    : resolve(projectRoot, `deployed-scripts/${network}/plutus.json`);
 
   if (!existsSync(deployedJsonFile)) {
     throw new Error(
       `Deployed scripts file '${deployedJsonFile}' not found.\n` +
-        `Make sure deployed-scripts/${network}/plutus.json exists.`,
+        (currentVersion
+          ? `versions.json points to '${currentVersion}' but plutus.json is missing.`
+          : `No current version set in versions.json and no fallback plutus.json found.`),
     );
   }
 
