@@ -48,7 +48,6 @@ import {
 import { completeTx } from "./complete-tx";
 import { createTxMetadata } from "./metadata";
 import { getDatumHandler } from "./datum-versions";
-import type { DatumVersionHandler, MultisigData } from "./datum-versions";
 import * as Contracts from "../../contract_blueprint";
 
 interface ContractRef {
@@ -237,8 +236,7 @@ export async function buildMultisigChangeTx(
     throw new Error(`${config.commandLabel} forever UTxO missing inline datum`);
   }
 
-  // Both "council" and "tech-auth" families return DatumVersionHandler<MultisigData>
-  const datumHandler = getDatumHandler(config.primaryFamily, logicRound) as DatumVersionHandler<MultisigData>;
+  const datumHandler = getDatumHandler(config.primaryFamily, logicRound);
   const currentData = datumHandler.decode(foreverDatum);
   const currentPrimarySigners = currentData.signers;
 

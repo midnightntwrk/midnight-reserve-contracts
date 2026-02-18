@@ -67,6 +67,10 @@ export function getDatumHandler(
   logicRound: number,
 ): DatumVersionHandler<MultisigData>;
 export function getDatumHandler(
+  family: "council" | "tech-auth",
+  logicRound: number,
+): DatumVersionHandler<MultisigData>;
+export function getDatumHandler(
   family: "federated-ops",
   logicRound: number,
 ): DatumVersionHandler<FederatedOpsData>;
