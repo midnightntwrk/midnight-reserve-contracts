@@ -58,6 +58,11 @@ export async function mintTcnight(options: MintTcnightOptions): Promise<void> {
   const contracts = getContractInstances(network, options.useBuild);
 
   const tcnightPolicy = contracts.tcnightMintInfinite;
+  if (!tcnightPolicy) {
+    throw new Error(
+      "TCnight minting is only available on testnet networks (preview/preprod).",
+    );
+  }
   const policyId = PolicyId(tcnightPolicy.Script.hash());
   const assetName = AssetName(toHex(new TextEncoder().encode("NIGHT")));
   const assetId = AssetId.fromParts(policyId, assetName);

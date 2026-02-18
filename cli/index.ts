@@ -64,6 +64,7 @@ import {
   changeTerms,
   migrateFederatedOps,
   mintStagingState,
+  verify,
 } from "./commands";
 
 function printUsage(): void {
@@ -87,6 +88,7 @@ Commands:
   mint-tcnight        Mint or burn TCnight tokens (preview/preprod only)
   change-terms        Change terms and conditions hash and URL
   info                Display contract information
+  verify              Verify on-chain deployment against local artifacts
   generate-key        Generate a new signing key and Cardano address
   sign-and-submit     Sign and submit transactions from a JSON file
   combine-signatures  Combine wallet signatures and submit transactions
@@ -380,11 +382,31 @@ Options:
   --format            Output format: json, table (default: table)
   --component         Filter by component (default: all)
   --fetch             Fetch current on-chain state
+  --save              Save JSON and markdown report to release/<network>/
+  --release-dir       Output directory for --save (default: ./release)
   --use-build         Use freshly built blueprint instead of deployed scripts
 `);
   printGlobalOptions();
   console.log(`Examples:
   bun cli info -n preview --format json
+  bun cli info -n mainnet --save
+  bun cli info -n mainnet --save --release-dir ./my-release
+`);
+}
+
+function printVerifyHelp(): void {
+  console.log(`
+Usage: bun cli verify [options]
+
+Verify on-chain deployment against local artifacts.
+Checks script hash embedding, on-chain reference scripts, and UpgradeState datums.
+
+Options:
+  -n, --network       Network to verify (required, e.g. mainnet, preview)
+`);
+  console.log(`Examples:
+  bun cli verify -n mainnet
+  bun cli verify -n preview
 `);
 }
 
@@ -939,9 +961,21 @@ async function main(): Promise<void> {
           component: (options.component as string) || "all",
           fetch: options.fetch === true,
           useBuild: options["use-build"] === true,
+          save: options.save === true,
+          releaseDir: (options["release-dir"] as string) || undefined,
         };
 
         await info(infoOptions);
+        break;
+      }
+
+      case "verify": {
+        if (options.help) {
+          printVerifyHelp();
+          process.exit(0);
+        }
+
+        await verify({ network });
         break;
       }
 

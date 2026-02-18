@@ -63,14 +63,18 @@ export interface ContractInstances {
   mainTechAuthUpdateThreshold: ContractClass;
   mainFederatedOpsUpdateThreshold: ContractClass;
 
-  // TCnight Mint Infinite (testnet only)
-  tcnightMintInfinite: ContractClass;
+  // TCnight Mint Infinite (testnet only, not in mainnet blueprint)
+  tcnightMintInfinite?: ContractClass;
 
   // Terms and Conditions
   termsAndConditionsForever: ContractClass;
   termsAndConditionsTwoStage: ContractClass;
   termsAndConditionsLogic: ContractClass;
   termsAndConditionsThreshold: ContractClass;
+
+  // Utility validators
+  registeredCandidate: ContractClass;
+  cnightGeneratesDust: ContractClass;
 }
 
 // Per-environment cache for contract instances
@@ -228,8 +232,8 @@ function createInstances(
       "ThresholdsMainFederatedOpsUpdateThresholdElse",
     ),
 
-    // TCnight Mint Infinite (testnet only)
-    tcnightMintInfinite: create("TestCnightNoAuditTcnightMintInfiniteElse"),
+    // TCnight Mint Infinite (testnet only, not in mainnet blueprint)
+    tcnightMintInfinite: tryCreate("TestCnightNoAuditTcnightMintInfiniteElse"),
 
     // Terms and Conditions
     termsAndConditionsForever: create(
@@ -244,6 +248,10 @@ function createInstances(
     termsAndConditionsThreshold: create(
       "ThresholdsTermsAndConditionsThresholdElse",
     ),
+
+    // Utility validators
+    registeredCandidate: create("RegisteredCandidateRegisteredCandidateElse"),
+    cnightGeneratesDust: create("CnightGeneratesDustCnightGeneratesDustElse"),
   };
 }
 
