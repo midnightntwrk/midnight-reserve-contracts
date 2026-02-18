@@ -37,7 +37,8 @@ interface CombineSignaturesOptions extends GlobalOptions {
 }
 
 export const command = "combine-signatures";
-export const describe = "Combine wallet signatures and submit transactions";
+export const describe =
+  "Combine wallet signatures into a single transaction and submit";
 
 export function builder(yargs: Argv<GlobalOptions>) {
   return yargs
@@ -63,7 +64,12 @@ export function builder(yargs: Argv<GlobalOptions>) {
       type: "boolean",
       default: true,
       description: "Also sign with deployer key after merging (default: true)",
-    });
+    })
+    .epilogue(
+      "Merges external witness files into a single transaction and submits it.\n" +
+        "The --tx file must contain exactly one transaction (single-tx JSON format).\n" +
+        "For multi-transaction deployments, use the deploy command instead.",
+    );
 }
 
 // --- Witness parsing helpers ---
