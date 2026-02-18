@@ -40,8 +40,21 @@ import {
 import { writeTransactionFile, printSuccess } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
-import { getNextVersionNumber, setCurrentVersion } from "../../lib/versions";
+import {
+  getNextVersionNumber,
+  setCurrentVersion,
+  promoteValidator,
+} from "../../lib/versions";
 import * as Contracts from "../../../contract_blueprint";
+
+const VALIDATOR_LOGIC_V2_NAMES: Record<string, string> = {
+  "tech-auth": "tech_auth_logic_v2",
+  council: "council_logic_v2",
+  reserve: "reserve_logic_v2",
+  ics: "ics_logic_v2",
+  "federated-ops": "federated_ops_logic_v2",
+  "terms-and-conditions": "terms_and_conditions_logic_v2",
+};
 
 interface PromoteUpgradeOptions extends GlobalOptions {
   validator: string;
@@ -455,6 +468,13 @@ export async function handler(argv: PromoteUpgradeOptions) {
     console.warn(
       `Warning: No version directories found in deployed-scripts/${network}/versions/. Skipping versions.json update.`,
     );
+  }
+
+  // Track promoted validator in versions.json
+  const logicV2Name = VALIDATOR_LOGIC_V2_NAMES[validator];
+  if (logicV2Name) {
+    promoteValidator(network, logicV2Name);
+    printSuccess(`Tracked ${logicV2Name} as promoted in versions.json`);
   }
 }
 

@@ -45,11 +45,21 @@ import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
 import {
   saveVersionSnapshot,
+  addStagedValidator,
   type VersionInfo,
   type ChangeRecord,
 } from "../../lib/versions";
 import { diffBlueprints } from "../../lib/blueprint-diff";
 import * as Contracts from "../../../contract_blueprint";
+
+const VALIDATOR_LOGIC_V2_NAMES: Record<string, string> = {
+  "tech-auth": "tech_auth_logic_v2",
+  council: "council_logic_v2",
+  reserve: "reserve_logic_v2",
+  ics: "ics_logic_v2",
+  "federated-ops": "federated_ops_logic_v2",
+  "terms-and-conditions": "terms_and_conditions_logic_v2",
+};
 
 function getStagingForeverHash(
   validatorName: string,
@@ -574,6 +584,13 @@ export async function handler(argv: StageUpgradeOptions) {
   }
 
   console.log("\nTransaction ID:", tx.getId());
+
+  // Track staged validator in versions.json
+  const logicV2Name = VALIDATOR_LOGIC_V2_NAMES[validator];
+  if (logicV2Name) {
+    addStagedValidator(network, logicV2Name);
+    printSuccess(`Tracked ${logicV2Name} as staged in versions.json`);
+  }
 }
 
 const commandModule: CommandModule<GlobalOptions, StageUpgradeOptions> = {
