@@ -19,10 +19,10 @@
   "scripts": {
     "clean": "rm -rf ./dist",
     "check": "tsc --noEmit",
-    "lint": "eslint 'cli/**/*.ts' 'cli-yargs/**/*.ts' 'tests/**/*.ts' --ignore-pattern '**/dist/**'",
+    "lint": "eslint 'cli-yargs/**/*.ts' 'tests/**/*.ts' --ignore-pattern '**/dist/**'",
     "lint:fix": "bun lint --fix",
-    "fmt": "prettier --write 'cli/**/*.ts' 'cli-yargs/**/*.ts' 'tests/**/*.ts'",
-    "fmt:check": "prettier --check 'cli/**/*.ts' 'cli-yargs/**/*.ts' 'tests/**/*.ts'",
+    "fmt": "prettier --write 'cli-yargs/**/*.ts' 'tests/**/*.ts'",
+    "fmt:check": "prettier --check 'cli-yargs/**/*.ts' 'tests/**/*.ts'",
     "cli": "bun run cli-yargs/index.ts",
     "cli:deploy": "bun run cli-yargs/index.ts deploy",
     "cli:deploy:local": "bun run cli-yargs/index.ts deploy -n local",
