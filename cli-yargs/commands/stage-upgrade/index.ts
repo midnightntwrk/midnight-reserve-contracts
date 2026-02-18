@@ -187,8 +187,7 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("use-build", {
       type: "boolean",
       default: false,
-      description:
-        "Use build output instead of deployed-scripts versioned blueprint",
+      description: "Use build output instead of deployed blueprint",
     });
 }
 
@@ -410,12 +409,14 @@ export async function handler(argv: StageUpgradeOptions) {
   );
 
   // Detect if newLogicHash is a new contract (in build but not deployed) via blueprint diff
-  const configSection = getConfigSection(network);
-  const deployedModule = loadContractModule(configSection, false);
-  const buildModule = loadContractModule(configSection, true);
-  const diff = diffBlueprints(deployedModule, buildModule);
-  const newLogicContract =
-    diff.added.find((c) => c.hash === newLogicHash) ?? null;
+  let newLogicContract: { hash: string } | null = null;
+  if (useBuild) {
+    const configSection = getConfigSection(network);
+    const deployedModule = loadContractModule(configSection, false);
+    const buildModule = loadContractModule(configSection, true);
+    const diff = diffBlueprints(deployedModule, buildModule);
+    newLogicContract = diff.added.find((c) => c.hash === newLogicHash) ?? null;
+  }
   const isNewContract = newLogicContract !== null;
 
   // councilTwoStageMainUtxo is the same on-chain UTxO as mainUtxo when
@@ -530,16 +531,14 @@ export async function handler(argv: StageUpgradeOptions) {
         },
       ];
 
-      const versionName = saveVersionSnapshot(
+      saveVersionSnapshot(
         network,
         versionInfo,
         changes,
         plutusJsonPath,
         blueprintPath,
       );
-      printSuccess(
-        `Saved version snapshot to deployed-scripts/${network}/versions/${versionName}/`,
-      );
+      printSuccess(`Saved version snapshot to deployed-scripts/${network}/`);
     } else {
       console.warn(
         `\nWarning: Skipping version snapshot — build artifacts not found:` +
@@ -588,8 +587,13 @@ export async function handler(argv: StageUpgradeOptions) {
   // Track staged validator in versions.json
   const logicV2Name = VALIDATOR_LOGIC_V2_NAMES[validator];
   if (logicV2Name) {
-    addStagedValidator(network, logicV2Name);
-    printSuccess(`Tracked ${logicV2Name} as staged in versions.json`);
+    if (addStagedValidator(network, logicV2Name)) {
+      printSuccess(`Tracked ${logicV2Name} as staged in versions.json`);
+    } else {
+      console.warn(
+        `Warning: Could not track ${logicV2Name} as staged — versions.json not found`,
+      );
+    }
   }
 }
 

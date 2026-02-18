@@ -40,11 +40,7 @@ import {
 import { writeTransactionFile, printSuccess } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
-import {
-  getCurrentVersion,
-  setCurrentVersion,
-  promoteValidator,
-} from "../../lib/versions";
+import { promoteValidator } from "../../lib/versions";
 import * as Contracts from "../../../contract_blueprint";
 
 const VALIDATOR_LOGIC_V2_NAMES: Record<string, string> = {
@@ -62,7 +58,6 @@ interface PromoteUpgradeOptions extends GlobalOptions {
   "tx-index": number;
   sign: boolean;
   "output-file": string;
-  "use-build": boolean;
 }
 
 export const command = "promote-upgrade";
@@ -98,12 +93,6 @@ export function builder(yargs: Argv<GlobalOptions>) {
       type: "string",
       default: "promote-upgrade-tx.json",
       description: "Output file name for the transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description:
-        "Use build output instead of deployed-scripts versioned blueprint",
     });
 }
 
@@ -116,7 +105,6 @@ export async function handler(argv: PromoteUpgradeOptions) {
     "tx-hash": txHash,
     "tx-index": txIndex,
     "output-file": outputFile,
-    "use-build": useBuild,
   } = argv;
 
   const deploymentDir = resolve(output, network);
@@ -451,29 +439,16 @@ export async function handler(argv: PromoteUpgradeOptions) {
 
   console.log("\nTransaction ID:", tx.getId());
 
-  // Update versions.json after tx is written — operator should confirm tx on-chain
-  // before relying on this. If the tx fails at submission, re-run promote-upgrade.
-  const currentVer = getCurrentVersion(network);
-  if (currentVer) {
-    try {
-      setCurrentVersion(network, currentVer);
-      printSuccess(
-        `Updated deployed-scripts/${network}/versions.json current to ${currentVer}`,
-      );
-    } catch (error) {
-      console.warn(`Warning: Could not update versions.json: ${error}`);
-    }
-  } else {
-    console.warn(
-      `Warning: No current version set in deployed-scripts/${network}/versions.json. Skipping versions.json update.`,
-    );
-  }
-
   // Track promoted validator in versions.json
   const logicV2Name = VALIDATOR_LOGIC_V2_NAMES[validator];
   if (logicV2Name) {
-    promoteValidator(network, logicV2Name);
-    printSuccess(`Tracked ${logicV2Name} as promoted in versions.json`);
+    if (promoteValidator(network, logicV2Name)) {
+      printSuccess(`Tracked ${logicV2Name} as promoted in versions.json`);
+    } else {
+      console.warn(
+        `Warning: Could not track ${logicV2Name} as promoted — versions.json not found`,
+      );
+    }
   }
 }
 

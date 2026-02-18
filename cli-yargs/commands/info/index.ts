@@ -547,8 +547,7 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("use-build", {
       type: "boolean",
       default: false,
-      description:
-        "Use build output instead of deployed-scripts versioned blueprint",
+      description: "Use build output instead of deployed blueprint",
     });
 }
 

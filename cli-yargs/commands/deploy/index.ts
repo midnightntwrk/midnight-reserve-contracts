@@ -1150,7 +1150,7 @@ export async function handler(argv: DeployOptions) {
         setCurrentVersion(network, versionName);
 
         printSuccess(
-          `Deployment scripts saved to deployed-scripts/${network}/versions/${versionName}/`,
+          `Deployment scripts saved to deployed-scripts/${network}/`,
         );
       }
     } catch (error) {

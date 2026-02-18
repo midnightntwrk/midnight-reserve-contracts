@@ -8,7 +8,7 @@ import {
 } from "@blaze-cardano/core";
 import { getNetworkId, getConfigSection } from "./types";
 import { findContractByHash } from "./blueprint-diff";
-import { getCurrentVersion, getDeployedScriptsPath } from "./versions";
+import { getDeployedScriptsPath } from "./versions";
 import { resolve } from "path";
 import { existsSync } from "fs";
 
@@ -81,25 +81,15 @@ const instanceCache = new Map<string, ContractInstances>();
 let activeEnvironment: string | null = null;
 
 /**
- * Resolves the blueprint file path for a given environment using versions.json.
+ * Resolves the blueprint file path for a given environment.
  *
- * Non-build mode: strict versions.json resolution only.
+ * Non-build mode: deployed-scripts/{env}/contract_blueprint.ts.
  * Build mode: contract_blueprint_{env}.ts or contract_blueprint.ts at project root.
  */
 function getBlueprintPath(env: string, useBuild: boolean = false): string {
   const projectRoot = resolve(import.meta.dir, "../..");
 
   if (!useBuild) {
-    // Strict versions.json resolution — no fallback
-    const currentVersion = getCurrentVersion(env);
-    if (!currentVersion) {
-      throw new Error(
-        `No current version set for environment '${env}'. ` +
-          `Expected versions.json in deployed-scripts/${env}/ with a 'current' field. ` +
-          `Run deployment first or use --use-build to load from build outputs.`,
-      );
-    }
-
     const envRootPath = resolve(
       getDeployedScriptsPath(env),
       "contract_blueprint.ts",
@@ -107,7 +97,7 @@ function getBlueprintPath(env: string, useBuild: boolean = false): string {
     if (!existsSync(envRootPath)) {
       throw new Error(
         `Blueprint not found at deployed-scripts/${env}/contract_blueprint.ts. ` +
-          `The deployment for '${env}' may be incomplete. Check versions.json.`,
+          `Run deployment first or use --use-build to load from build outputs.`,
       );
     }
     return envRootPath;

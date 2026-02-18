@@ -153,27 +153,31 @@ function extractValidatorNames(plutusJsonPath: string): string[] {
 
 /**
  * Adds a validator to the staged list in versions.json.
+ * Returns false if versions.json is missing.
  */
-export function addStagedValidator(env: string, name: string): void {
+export function addStagedValidator(env: string, name: string): boolean {
   const data = readVersionsJson(env);
-  if (!data) return;
+  if (!data) return false;
   if (!data.staged.includes(name)) {
     data.staged.push(name);
     writeVersionsJson(env, data);
   }
+  return true;
 }
 
 /**
  * Promotes a validator: removes from staged[], adds to promoted[] (deduplicating).
+ * Returns false if versions.json is missing.
  */
-export function promoteValidator(env: string, name: string): void {
+export function promoteValidator(env: string, name: string): boolean {
   const data = readVersionsJson(env);
-  if (!data) return;
+  if (!data) return false;
   data.staged = data.staged.filter((s) => s !== name);
   if (!data.promoted.includes(name)) {
     data.promoted.push(name);
   }
   writeVersionsJson(env, data);
+  return true;
 }
 
 /**
