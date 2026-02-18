@@ -1,10 +1,14 @@
 import type { Argv, CommandModule } from "yargs";
 import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import { resolve } from "path";
-import { HexBlob, PlutusData, PlutusDataKind } from "@blaze-cardano/core";
 import type { GlobalOptions } from "../../lib/global-options";
 import { getCardanoNetwork } from "../../lib/network-mapping";
 import { getCurrentVersion } from "../../lib/versions";
+import {
+  blockfrostFetch,
+  parseUpgradeStateDatum,
+  getBlockfrostBaseUrl,
+} from "../../lib/blockfrost";
 
 // --- Types ---
 
@@ -163,22 +167,6 @@ function findValidatorHash(
   return findValidatorByName(validators, name)?.hash;
 }
 
-async function blockfrostFetch(
-  baseUrl: string,
-  apiKey: string,
-  path: string,
-): Promise<unknown> {
-  const resp = await fetch(`${baseUrl}${path}`, {
-    headers: { project_id: apiKey },
-  });
-  if (!resp.ok) {
-    throw new Error(
-      `Blockfrost ${path} failed: ${resp.status} ${resp.statusText}`,
-    );
-  }
-  return resp.json();
-}
-
 function sortedEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
   const sa = [...a].sort();
@@ -196,35 +184,6 @@ function extractPolicyIds(outputs: BlockfrostUtxoOutput[]): string[] {
     }
   }
   return [...policyIds];
-}
-
-function parseUpgradeStateDatum(inlineDatumCbor: string): {
-  logicHash: string;
-  authHash: string;
-} | null {
-  try {
-    const plutusData = PlutusData.fromCbor(HexBlob(inlineDatumCbor));
-    const items =
-      plutusData.asList() ?? plutusData.asConstrPlutusData()?.getData();
-    if (!items || items.getLength() < 3) return null;
-
-    const logicField = items.get(0);
-    const authField = items.get(2);
-
-    if (
-      logicField.getKind() !== PlutusDataKind.Bytes ||
-      authField.getKind() !== PlutusDataKind.Bytes
-    ) {
-      return null;
-    }
-
-    const logicHash = Buffer.from(logicField.asBoundedBytes()!).toString("hex");
-    const authHash = Buffer.from(authField.asBoundedBytes()!).toString("hex");
-
-    return { logicHash, authHash };
-  } catch {
-    return null;
-  }
 }
 
 function getTwoStagePolicyId(
@@ -352,11 +311,20 @@ async function checkOnChainScriptHashes(
 
     let utxos: BlockfrostTxUtxos;
     try {
-      utxos = (await blockfrostFetch(
+      const utxosResult = await blockfrostFetch(
         baseUrl,
         apiKey,
         `/txs/${tx.txHash}/utxos`,
-      )) as BlockfrostTxUtxos;
+      );
+      if (utxosResult === null) {
+        results.push({
+          name: `On-chain: ${tx.description}`,
+          passed: false,
+          details: `Transaction not found: ${tx.txHash}`,
+        });
+        continue;
+      }
+      utxos = utxosResult as BlockfrostTxUtxos;
     } catch (err) {
       results.push({
         name: `On-chain: ${tx.description}`,
@@ -458,11 +426,20 @@ async function checkUpgradeStateDatums(
 
     let utxos: BlockfrostTxUtxos;
     try {
-      utxos = (await blockfrostFetch(
+      const utxosResult = await blockfrostFetch(
         baseUrl,
         apiKey,
         `/txs/${tx.txHash}/utxos`,
-      )) as BlockfrostTxUtxos;
+      );
+      if (utxosResult === null) {
+        results.push({
+          name: `UpgradeState (${mode}): ${description}`,
+          passed: false,
+          details: `Transaction not found: ${tx.txHash}`,
+        });
+        continue;
+      }
+      utxos = utxosResult as BlockfrostTxUtxos;
     } catch (err) {
       results.push({
         name: `UpgradeState (${mode}): ${description}`,
@@ -617,12 +594,7 @@ export async function handler(argv: VerifyOptions) {
     );
   }
 
-  const networkNameMap: Record<string, string> = {
-    preview: "cardano-preview",
-    preprod: "cardano-preprod",
-    mainnet: "cardano-mainnet",
-  };
-  const baseUrl = `https://${networkNameMap[cardanoNetwork]}.blockfrost.io/api/v0`;
+  const baseUrl = getBlockfrostBaseUrl(cardanoNetwork);
 
   // Load plutus.json
   const currentVersion = getCurrentVersion(network);

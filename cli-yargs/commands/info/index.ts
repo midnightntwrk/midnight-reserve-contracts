@@ -1,7 +1,6 @@
 import type { Argv, CommandModule } from "yargs";
 import { resolve } from "path";
 import { writeFileSync, mkdirSync } from "fs";
-import { HexBlob, PlutusData, PlutusDataKind } from "@blaze-cardano/core";
 import type { GlobalOptions } from "../../lib/global-options";
 import {
   getContractInstances,
@@ -9,6 +8,11 @@ import {
 } from "../../lib/contracts";
 import { getCardanoNetwork } from "../../lib/network-mapping";
 import { printTable } from "../../lib/output";
+import {
+  blockfrostFetch,
+  parseUpgradeStateDatum,
+  getBlockfrostBaseUrl,
+} from "../../lib/blockfrost";
 
 // --- Types ---
 
@@ -93,25 +97,6 @@ const TWO_STAGE_NAMES = new Set([
 
 // --- Helpers ---
 
-async function blockfrostFetch(
-  baseUrl: string,
-  apiKey: string,
-  path: string,
-): Promise<unknown> {
-  const resp = await fetch(`${baseUrl}${path}`, {
-    headers: { project_id: apiKey },
-  });
-  if (resp.status === 404) {
-    return null;
-  }
-  if (!resp.ok) {
-    throw new Error(
-      `Blockfrost ${path} failed: ${resp.status} ${resp.statusText}`,
-    );
-  }
-  return resp.json();
-}
-
 async function fetchAddressUtxos(
   baseUrl: string,
   apiKey: string,
@@ -147,34 +132,6 @@ function parseTokensFromAmounts(amounts: BlockfrostAmount[]): TokenInfo[] {
     });
   }
   return tokens;
-}
-
-function parseUpgradeStateDatum(
-  inlineDatumCbor: string,
-): UpgradeStateInfo | null {
-  try {
-    const plutusData = PlutusData.fromCbor(HexBlob(inlineDatumCbor));
-    const items =
-      plutusData.asList() ?? plutusData.asConstrPlutusData()?.getData();
-    if (!items || items.getLength() < 3) return null;
-
-    const logicField = items.get(0);
-    const authField = items.get(2);
-
-    if (
-      logicField.getKind() !== PlutusDataKind.Bytes ||
-      authField.getKind() !== PlutusDataKind.Bytes
-    ) {
-      return null;
-    }
-
-    const logicHash = Buffer.from(logicField.asBoundedBytes()!).toString("hex");
-    const authHash = Buffer.from(authField.asBoundedBytes()!).toString("hex");
-
-    return { logicHash, authHash };
-  } catch {
-    return null;
-  }
 }
 
 function convertUtxo(utxo: BlockfrostUtxo): UtxoInfo {
@@ -634,12 +591,7 @@ export async function handler(argv: InfoOptions) {
       );
     }
 
-    const networkNameMap: Record<string, string> = {
-      preview: "cardano-preview",
-      preprod: "cardano-preprod",
-      mainnet: "cardano-mainnet",
-    };
-    const baseUrl = `https://${networkNameMap[cardanoNetwork]}.blockfrost.io/api/v0`;
+    const baseUrl = getBlockfrostBaseUrl(cardanoNetwork);
 
     console.log(
       `Fetching on-chain data for ${filteredContracts.length} contracts on ${network}...`,
