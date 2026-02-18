@@ -605,7 +605,7 @@ export async function handler(argv: VerifyOptions) {
     );
   }
   const plutusPath = resolve(
-    `deployed-scripts/${network}/versions/${currentVersion}/plutus.json`,
+    `deployed-scripts/${network}/plutus.json`,
   );
   let plutusJson: PlutusJson;
   try {

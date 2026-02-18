@@ -100,19 +100,17 @@ function getBlueprintPath(env: string, useBuild: boolean = false): string {
       );
     }
 
-    const versionedPath = resolve(
+    const envRootPath = resolve(
       getDeployedScriptsPath(env),
-      "versions",
-      currentVersion,
       "contract_blueprint.ts",
     );
-    if (!existsSync(versionedPath)) {
+    if (!existsSync(envRootPath)) {
       throw new Error(
-        `Blueprint not found at deployed-scripts/${env}/versions/${currentVersion}/contract_blueprint.ts. ` +
-          `The version '${currentVersion}' may be corrupt. Check versions.json.`,
+        `Blueprint not found at deployed-scripts/${env}/contract_blueprint.ts. ` +
+          `The deployment for '${env}' may be incomplete. Check versions.json.`,
       );
     }
-    return versionedPath;
+    return envRootPath;
   }
 
   // Build mode: explicit environment-specific or default build output
