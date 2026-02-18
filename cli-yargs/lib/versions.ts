@@ -5,7 +5,6 @@ import {
   writeFileSync,
   mkdirSync,
   copyFileSync,
-  readdirSync,
 } from "fs";
 import { execSync } from "child_process";
 
@@ -92,14 +91,6 @@ export function getCurrentVersion(env: string): string | null {
  * Creates versions.json if it doesn't exist.
  */
 export function setCurrentVersion(env: string, version: string): void {
-  // Validate target version directory exists
-  const versionDir = resolve(getDeployedScriptsPath(env), "versions", version);
-  if (!existsSync(versionDir)) {
-    throw new Error(
-      `Cannot set current version to '${version}': directory not found at ${versionDir}`,
-    );
-  }
-
   const data = readVersionsJson(env);
   if (data) {
     data.current = version;
@@ -115,36 +106,6 @@ export function setCurrentVersion(env: string, version: string): void {
       staged: [],
     });
   }
-}
-
-/**
- * Gets the next version number by reading existing version directories.
- */
-export function getNextVersionNumber(env: string): number {
-  const basePath = getDeployedScriptsPath(env);
-  const versionsPath = resolve(basePath, "versions");
-
-  if (!existsSync(versionsPath)) {
-    return 1;
-  }
-
-  const dirs = readdirSync(versionsPath);
-  let max = 0;
-  for (const dir of dirs) {
-    const match = dir.match(/^v(\d+)$/);
-    if (match) {
-      const n = parseInt(match[1]);
-      if (n > max) max = n;
-    }
-  }
-  return max + 1;
-}
-
-/**
- * Gets the version folder name derived from existing version directories.
- */
-function getVersionFolderName(env: string): string {
-  return `v${getNextVersionNumber(env)}`;
 }
 
 /**
@@ -216,7 +177,9 @@ export function promoteValidator(env: string, name: string): void {
 }
 
 /**
- * Saves a version snapshot to deployed-scripts/{env}/versions/{version}/
+ * Saves a version snapshot directly to deployed-scripts/{env}/.
+ * Writes plutus.json, contract_blueprint.ts, and changelog.json at the env root.
+ * Returns the version name recorded in versions.json.
  */
 export function saveVersionSnapshot(
   env: string,
@@ -226,19 +189,25 @@ export function saveVersionSnapshot(
   blueprintPath: string,
 ): string {
   const basePath = getDeployedScriptsPath(env);
-  const versionName = getVersionFolderName(env);
-  const versionPath = resolve(basePath, "versions", versionName);
+  mkdirSync(basePath, { recursive: true });
 
-  // Create version directory
-  mkdirSync(versionPath, { recursive: true });
+  // Derive version name from versions.json history
+  const data = readVersionsJson(env);
+  const existingVersions = data?.versions ?? [];
+  let maxNum = 0;
+  for (const v of existingVersions) {
+    const match = v.match(/^v(\d+)$/);
+    if (match) {
+      const n = parseInt(match[1]);
+      if (n > maxNum) maxNum = n;
+    }
+  }
+  const versionName = `v${maxNum + 1}`;
 
-  // Merge: take previous version's plutus.json as base, add only new validators from build
-  const previousVersionName = getCurrentVersion(env);
-  const previousPlutusPath = previousVersionName
-    ? resolve(basePath, "versions", previousVersionName, "plutus.json")
-    : null;
+  // Merge: take previous env plutus.json as base, add only new validators from build
+  const previousPlutusPath = resolve(basePath, "plutus.json");
 
-  if (previousPlutusPath && existsSync(previousPlutusPath)) {
+  if (existsSync(previousPlutusPath)) {
     const previousPlutus = JSON.parse(
       readFileSync(previousPlutusPath, "utf-8"),
     );
@@ -256,31 +225,28 @@ export function saveVersionSnapshot(
       validators: [...previousPlutus.validators, ...newValidators],
     };
 
-    const mergedPlutusPath = resolve(versionPath, "plutus.json");
+    const mergedPlutusPath = resolve(basePath, "plutus.json");
     writeFileSync(
       mergedPlutusPath,
       JSON.stringify(mergedPlutus, null, 2) + "\n",
     );
 
     // Regenerate contract_blueprint.ts from merged plutus.json
-    const blueprintOutputPath = resolve(versionPath, "contract_blueprint.ts");
+    const blueprintOutputPath = resolve(basePath, "contract_blueprint.ts");
     execSync(
       `bunx @blaze-cardano/blueprint@latest ${mergedPlutusPath} -o ${blueprintOutputPath}`,
     );
   } else {
     // No previous version — full copy (initial deployment)
-    copyFileSync(plutusJsonPath, resolve(versionPath, "plutus.json"));
-    copyFileSync(blueprintPath, resolve(versionPath, "contract_blueprint.ts"));
+    copyFileSync(plutusJsonPath, resolve(basePath, "plutus.json"));
+    copyFileSync(blueprintPath, resolve(basePath, "contract_blueprint.ts"));
   }
 
-  // Extract promoted validator names from the versioned plutus.json
-  const versionedPlutusPath = resolve(versionPath, "plutus.json");
-  const promoted = extractValidatorNames(versionedPlutusPath);
-
-  // Get previous version for changelog
-  const previousVersion = getCurrentVersion(env);
+  // Extract promoted validator names
+  const promoted = extractValidatorNames(resolve(basePath, "plutus.json"));
 
   // Write changelog.json
+  const previousVersion = getCurrentVersion(env);
   const changelog: Changelog = {
     version: versionName,
     previousVersion,
@@ -290,12 +256,11 @@ export function saveVersionSnapshot(
   };
 
   writeFileSync(
-    resolve(versionPath, "changelog.json"),
+    resolve(basePath, "changelog.json"),
     JSON.stringify(changelog, null, 2) + "\n",
   );
 
   // Record version in versions.json (don't change current — that's setCurrentVersion's job)
-  const data = readVersionsJson(env);
   if (data) {
     if (!data.versions.includes(versionName)) {
       data.versions.push(versionName);

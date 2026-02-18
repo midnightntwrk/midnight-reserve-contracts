@@ -41,7 +41,7 @@ import { writeTransactionFile, printSuccess } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
 import {
-  getNextVersionNumber,
+  getCurrentVersion,
   setCurrentVersion,
   promoteValidator,
 } from "../../lib/versions";
@@ -453,20 +453,19 @@ export async function handler(argv: PromoteUpgradeOptions) {
 
   // Update versions.json after tx is written — operator should confirm tx on-chain
   // before relying on this. If the tx fails at submission, re-run promote-upgrade.
-  const latestVersion = getNextVersionNumber(network) - 1;
-  if (latestVersion >= 1) {
-    const versionName = `v${latestVersion}`;
+  const currentVer = getCurrentVersion(network);
+  if (currentVer) {
     try {
-      setCurrentVersion(network, versionName);
+      setCurrentVersion(network, currentVer);
       printSuccess(
-        `Updated deployed-scripts/${network}/versions.json current to ${versionName}`,
+        `Updated deployed-scripts/${network}/versions.json current to ${currentVer}`,
       );
     } catch (error) {
       console.warn(`Warning: Could not update versions.json: ${error}`);
     }
   } else {
     console.warn(
-      `Warning: No version directories found in deployed-scripts/${network}/versions/. Skipping versions.json update.`,
+      `Warning: No current version set in deployed-scripts/${network}/versions.json. Skipping versions.json update.`,
     );
   }
 
