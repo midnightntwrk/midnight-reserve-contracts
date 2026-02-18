@@ -408,6 +408,13 @@ export async function handler(argv: StageUpgradeOptions) {
     diff.added.find((c) => c.hash === newLogicHash) ?? null;
   const isNewContract = newLogicContract !== null;
 
+  // councilTwoStageMainUtxo is the same on-chain UTxO as mainUtxo when
+  // validator === "council", so skip it to avoid a duplicate reference input.
+  const councilTwoStageIsSeparate =
+    councilTwoStageMainUtxo.input().transactionId() !==
+      mainUtxo.input().transactionId() ||
+    councilTwoStageMainUtxo.input().index() !== mainUtxo.input().index();
+
   const txBuilder = blaze
     .newTransaction()
     .addInput(stagingUtxo, redeemer)
@@ -416,7 +423,6 @@ export async function handler(argv: StageUpgradeOptions) {
     .addReferenceInput(stagingGovThresholdUtxo)
     .addReferenceInput(techAuthForeverUtxo)
     .addReferenceInput(councilForeverUtxo)
-    .addReferenceInput(councilTwoStageMainUtxo)
     .provideScript(targetContracts.twoStage.Script)
     .provideScript(contracts.stagingGovAuth.Script)
     .addMint(
@@ -451,6 +457,10 @@ export async function handler(argv: StageUpgradeOptions) {
     .setMetadata(createTxMetadata("stage-upgrade"))
     .setFeePadding(50000n);
 
+  if (councilTwoStageIsSeparate) {
+    txBuilder.addReferenceInput(councilTwoStageMainUtxo);
+  }
+
   // Log if new contract detected — StagingState NFT must be minted separately
   if (isNewContract && newLogicContract) {
     const aikenConfig = loadAikenConfig(network);
@@ -478,7 +488,7 @@ export async function handler(argv: StageUpgradeOptions) {
       stagingGovThresholdUtxo,
       techAuthForeverUtxo,
       councilForeverUtxo,
-      councilTwoStageMainUtxo,
+      ...(councilTwoStageIsSeparate ? [councilTwoStageMainUtxo] : []),
       userUtxo,
     ],
   });

@@ -4,6 +4,8 @@ import {
   Address,
   AssetId,
   AssetName,
+  Credential,
+  CredentialType,
   PaymentAddress,
   PolicyId,
   Script,
@@ -25,6 +27,7 @@ import {
   getContractUtxos,
   getTwoStageUtxos,
   ensureRewardAccountsRegistered,
+  isRewardAccountRegistered,
 } from "../../lib/governance-provider";
 import {
   createNativeMultisigScript,
@@ -256,6 +259,26 @@ export async function handler(argv: PromoteUpgradeOptions) {
     network,
   );
 
+  // Check if the promoted logic hash needs stake credential registration.
+  // After promote, governance commands use the new logic hash as a withdrawal
+  // (reward account). If it's a v2 logic script not yet registered, we must
+  // include addRegisterStake in this transaction so subsequent governance
+  // commands can use it immediately.
+  const promotedLogicRewardAccount = createRewardAccount(
+    stagedLogicHash,
+    networkId,
+  );
+  const promotedLogicAlreadyRegistered = await isRewardAccountRegistered(
+    promotedLogicRewardAccount,
+    network,
+  );
+  if (!promotedLogicAlreadyRegistered) {
+    console.log(
+      `\n  Promoted logic hash not yet registered as stake credential.`,
+    );
+    console.log(`  Will register ${stagedLogicHash} in this transaction.`);
+  }
+
   // Get staging UTxO reference for redeemer
   const stagingInput = stagingUtxo.input();
 
@@ -348,6 +371,17 @@ export async function handler(argv: PromoteUpgradeOptions) {
     .setChangeAddress(changeAddress)
     .setMetadata(createTxMetadata("promote-upgrade"))
     .setFeePadding(50000n);
+
+  // Register the promoted logic hash as a stake credential so subsequent
+  // governance commands can use it as a withdrawal (reward account).
+  if (!promotedLogicAlreadyRegistered) {
+    txBuilder.addRegisterStake(
+      Credential.fromCore({
+        hash: stagedLogicHash,
+        type: CredentialType.ScriptHash,
+      }),
+    );
+  }
 
   const { tx } = await completeTx(txBuilder, {
     commandName: "promote-upgrade",

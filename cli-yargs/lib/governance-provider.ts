@@ -150,7 +150,7 @@ export function parseUpgradeState(
  * Returns true if registered, false if not.
  * Throws if the provider is not Blockfrost (only Blockfrost REST API is supported).
  */
-async function isRewardAccountRegistered(
+export async function isRewardAccountRegistered(
   rewardAccount: RewardAccount,
   environment: string,
 ): Promise<boolean> {
