@@ -441,6 +441,12 @@ function updateCnightPolicyIfNotMainnet(
     return;
   }
 
+  if (!tcnightHash || tcnightHash === "null" || /^0+$/.test(tcnightHash)) {
+    throw new Error(
+      `tcnight_mint_infinite returned invalid hash: '${tcnightHash}'`,
+    );
+  }
+
   console.log(
     `Updating cnight_policy for ${network} network to tcnight_mint_infinite hash...`,
   );
