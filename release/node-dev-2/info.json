@@ -1,0 +1,691 @@
+[
+  {
+    "name": "Tech Auth Forever",
+    "component": "tech-auth",
+    "scriptHash": "511ef6e8a762c68a3736474e344876a049188ccba2397146e8505c90",
+    "address": "addr_test1wpg3aahg5a3vdz3hxer5udzgw6syjxyvew3rju2xapg9eyqqag444",
+    "utxos": [
+      {
+        "txHash": "95e3dbd57e64b9d030ed032a2b8ee0875b8c298e119576b2142c56992d2fb042",
+        "outputIndex": 2,
+        "lovelace": "1948120",
+        "ada": "1.948120",
+        "tokens": [
+          {
+            "policyId": "511ef6e8a762c68a3736474e344876a049188ccba2397146e8505c90",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f9f03a358208200581c3958ae4a79fa36f52c9e0f5fab7aac2d4c4446a290b44e2d2f53d3875820d6bbb84dd94522a105270aaad3a01547cbadb8722041add1a62fc7e43a00262e58208200581cc6f2de5adbbf0b77adcc6883d562a4f5a535017eaedc6804c5e55b3358201ee8b39debb5ff5fa436bf6b9b63154777e21c70e58c139a222d476794af331f58208200581ca7b42151bbc97e9ecd40f454d6dd0a24cf3e579c675f6552bd059c825820643db0035965b76ebb999f1e1d2634ede0679d92b6fdad9f2d1ba9acee47bc4cff00ff"
+      }
+    ],
+    "totalAda": "1.948120",
+    "totalLovelace": "1948120",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Tech Auth Two Stage",
+    "component": "tech-auth",
+    "scriptHash": "cb85e7f295187f328f3add60c6ffc72f819f6d72e3af16e5130f0b3a",
+    "address": "addr_test1wr9cteljj5v87v508twkp3hlcuhcr8mdwt3679h9zv8skws38hte2",
+    "utxos": [
+      {
+        "txHash": "95e3dbd57e64b9d030ed032a2b8ee0875b8c298e119576b2142c56992d2fb042",
+        "outputIndex": 0,
+        "lovelace": "1340410",
+        "ada": "1.340410",
+        "tokens": [
+          {
+            "policyId": "cb85e7f295187f328f3add60c6ffc72f819f6d72e3af16e5130f0b3a",
+            "assetName": "6d61696e",
+            "assetNameUtf8": "main",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581c3312422df33f38c9c7827347c8ca383acddd53ac0da1175e7e8aa0b840581cc154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff400000ff"
+      },
+      {
+        "txHash": "95e3dbd57e64b9d030ed032a2b8ee0875b8c298e119576b2142c56992d2fb042",
+        "outputIndex": 1,
+        "lovelace": "1353340",
+        "ada": "1.353340",
+        "tokens": [
+          {
+            "policyId": "cb85e7f295187f328f3add60c6ffc72f819f6d72e3af16e5130f0b3a",
+            "assetName": "73746167696e67",
+            "assetNameUtf8": "staging",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581c3312422df33f38c9c7827347c8ca383acddd53ac0da1175e7e8aa0b840581cd673c4dc29812525d6fbe0f9deef9698e2ed09b355277ba85e79dc3a400000ff"
+      }
+    ],
+    "totalAda": "2.693750",
+    "totalLovelace": "2693750",
+    "nftTokenNames": [
+      "main",
+      "staging"
+    ],
+    "upgradeState": {
+      "logicHash": "3312422df33f38c9c7827347c8ca383acddd53ac0da1175e7e8aa0b8",
+      "authHash": "c154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff"
+    }
+  },
+  {
+    "name": "Tech Auth Logic",
+    "component": "tech-auth",
+    "scriptHash": "3312422df33f38c9c7827347c8ca383acddd53ac0da1175e7e8aa0b8",
+    "address": "addr_test1wqe3ys3d7vln3jw8sfe50jx28qavmh2n4sx6z9670692pwq9m9sv6",
+    "utxos": [],
+    "totalAda": "0.000000",
+    "totalLovelace": "0",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Tech Auth Update Threshold",
+    "component": "tech-auth-threshold",
+    "scriptHash": "0de86c04c5649e5cc907c587dc913b71948678e329856d191e483b2e",
+    "address": "addr_test1wqx7smqyc4jfuhxfqlzc0hy38dcefpncuv5c2mgereyrktsevsj3f",
+    "utxos": [
+      {
+        "txHash": "63f9475eb609ecf66abc96e7d5faa5eb2c380d2f8923e049b4bd9af92c97ad64",
+        "outputIndex": 0,
+        "lovelace": "1060260",
+        "ada": "1.060260",
+        "tokens": [
+          {
+            "policyId": "0de86c04c5649e5cc907c587dc913b71948678e329856d191e483b2e",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f02030203ff"
+      }
+    ],
+    "totalAda": "1.060260",
+    "totalLovelace": "1060260",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Council Forever",
+    "component": "council",
+    "scriptHash": "85ad4a746301c0496e5a085ea0c5e78203c3fabdb032fa49bd389de2",
+    "address": "addr_test1wzz66jn5vvquqjtwtgy9agx9u7pq8sl6hkcr97jfh5ufmcse7rc90",
+    "utxos": [
+      {
+        "txHash": "4f785e13d0bb748721e6a4b7fdfae0c3cf6e1017cf5d474f4893345bfd2bb811",
+        "outputIndex": 2,
+        "lovelace": "1948120",
+        "ada": "1.948120",
+        "tokens": [
+          {
+            "policyId": "85ad4a746301c0496e5a085ea0c5e78203c3fabdb032fa49bd389de2",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f9f03a358208200581cf932cb4c0de84606b3da87214324887270f5fb0e04a6870dc7df5f2358208e2135d1086b6b26143e600986e64b5f5d38a67ebedccbe24c5471cd2755e35f58208200581c1ef4e15cba8217811b9a9b2a7ec4a24a110418a38c2a9f0ae7127e045820c403a1c5671ea079a27daf8f4a92ff9c1d36b425232d6f82ef5788fd7fdaae0558208200581c8585125fa41171f55c23cdadc3d0ad3692be927c6ed1b92d1f04833558203a8a798e373ddba8eba14982f90008768a4ecdc4b9ab1cfaae9d421129a9cd10ff00ff"
+      }
+    ],
+    "totalAda": "1.948120",
+    "totalLovelace": "1948120",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Council Two Stage",
+    "component": "council",
+    "scriptHash": "de5044557edefd2e571ab21df51ae66530d333c9ad041f26d13d38d7",
+    "address": "addr_test1wr09q3z40m006tjhr2epmag6uejnp5enexksg8ex6y7n34chwgc7a",
+    "utxos": [
+      {
+        "txHash": "4f785e13d0bb748721e6a4b7fdfae0c3cf6e1017cf5d474f4893345bfd2bb811",
+        "outputIndex": 0,
+        "lovelace": "1340410",
+        "ada": "1.340410",
+        "tokens": [
+          {
+            "policyId": "de5044557edefd2e571ab21df51ae66530d333c9ad041f26d13d38d7",
+            "assetName": "6d61696e",
+            "assetNameUtf8": "main",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581c8c665fb2f97d1bca068e51e9c7534ecc56351271edc9c0106972e0a840581cc154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff400000ff"
+      },
+      {
+        "txHash": "4f785e13d0bb748721e6a4b7fdfae0c3cf6e1017cf5d474f4893345bfd2bb811",
+        "outputIndex": 1,
+        "lovelace": "1353340",
+        "ada": "1.353340",
+        "tokens": [
+          {
+            "policyId": "de5044557edefd2e571ab21df51ae66530d333c9ad041f26d13d38d7",
+            "assetName": "73746167696e67",
+            "assetNameUtf8": "staging",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581c8c665fb2f97d1bca068e51e9c7534ecc56351271edc9c0106972e0a840581cd673c4dc29812525d6fbe0f9deef9698e2ed09b355277ba85e79dc3a400000ff"
+      }
+    ],
+    "totalAda": "2.693750",
+    "totalLovelace": "2693750",
+    "nftTokenNames": [
+      "main",
+      "staging"
+    ],
+    "upgradeState": {
+      "logicHash": "8c665fb2f97d1bca068e51e9c7534ecc56351271edc9c0106972e0a8",
+      "authHash": "c154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff"
+    }
+  },
+  {
+    "name": "Council Logic",
+    "component": "council",
+    "scriptHash": "8c665fb2f97d1bca068e51e9c7534ecc56351271edc9c0106972e0a8",
+    "address": "addr_test1wzxxvhajl973hjsx3eg7n36nfmx9vdgjw8kunsqsd9ewp2qlfwxgj",
+    "utxos": [],
+    "totalAda": "0.000000",
+    "totalLovelace": "0",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Council Update Threshold",
+    "component": "council-threshold",
+    "scriptHash": "cdef493e96505897c31d4945b9cb0ce18ae696cb4682c7e733b26bba",
+    "address": "addr_test1wrx77jf7jeg9397rr4y5twwtpnsc4e5kedrg93l8xwexhws4ddkpq",
+    "utxos": [
+      {
+        "txHash": "78d9b967e204cff4199f355b02c0413749baa01b1f8e1b66d1c903ea58eaee6f",
+        "outputIndex": 0,
+        "lovelace": "1060260",
+        "ada": "1.060260",
+        "tokens": [
+          {
+            "policyId": "cdef493e96505897c31d4945b9cb0ce18ae696cb4682c7e733b26bba",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f02030203ff"
+      }
+    ],
+    "totalAda": "1.060260",
+    "totalLovelace": "1060260",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Reserve Forever",
+    "component": "reserve",
+    "scriptHash": "bc77a88b8f7cb96c8a0f53458cb259c0b5d2ab0157a3b8c6fe0b7d14",
+    "address": "addr_test1wz7802yt3a7tjmy2paf5tr9jt8qtt54tq9t68wxxlc9h69qyq3kjr",
+    "utxos": [
+      {
+        "txHash": "1dceb621dfc74cde3ba5520a5eea910d959a8fe855b1e89a43ca2a5f13ec0c6f",
+        "outputIndex": 2,
+        "lovelace": "1060260",
+        "ada": "1.060260",
+        "tokens": [
+          {
+            "policyId": "bc77a88b8f7cb96c8a0f53458cb259c0b5d2ab0157a3b8c6fe0b7d14",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "d8799f0000ff"
+      }
+    ],
+    "totalAda": "1.060260",
+    "totalLovelace": "1060260",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Reserve Two Stage",
+    "component": "reserve",
+    "scriptHash": "4e6beb6bd272218c091f975b9ac31f784ff56df389cd479c0e296992",
+    "address": "addr_test1wp8xh6mt6fezrrqfr7t4hxkrrauylatd7wyu63uupc5knys7ltxd7",
+    "utxos": [
+      {
+        "txHash": "1dceb621dfc74cde3ba5520a5eea910d959a8fe855b1e89a43ca2a5f13ec0c6f",
+        "outputIndex": 0,
+        "lovelace": "1340410",
+        "ada": "1.340410",
+        "tokens": [
+          {
+            "policyId": "4e6beb6bd272218c091f975b9ac31f784ff56df389cd479c0e296992",
+            "assetName": "6d61696e",
+            "assetNameUtf8": "main",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581c939b00ad9a65f081f9d7737321f48caef86803fd2bf893665c46bedb40581cc154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff400000ff"
+      },
+      {
+        "txHash": "1dceb621dfc74cde3ba5520a5eea910d959a8fe855b1e89a43ca2a5f13ec0c6f",
+        "outputIndex": 1,
+        "lovelace": "1353340",
+        "ada": "1.353340",
+        "tokens": [
+          {
+            "policyId": "4e6beb6bd272218c091f975b9ac31f784ff56df389cd479c0e296992",
+            "assetName": "73746167696e67",
+            "assetNameUtf8": "staging",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581c939b00ad9a65f081f9d7737321f48caef86803fd2bf893665c46bedb40581cd673c4dc29812525d6fbe0f9deef9698e2ed09b355277ba85e79dc3a400000ff"
+      }
+    ],
+    "totalAda": "2.693750",
+    "totalLovelace": "2693750",
+    "nftTokenNames": [
+      "main",
+      "staging"
+    ],
+    "upgradeState": {
+      "logicHash": "939b00ad9a65f081f9d7737321f48caef86803fd2bf893665c46bedb",
+      "authHash": "c154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff"
+    }
+  },
+  {
+    "name": "Reserve Logic",
+    "component": "reserve",
+    "scriptHash": "939b00ad9a65f081f9d7737321f48caef86803fd2bf893665c46bedb",
+    "address": "addr_test1wzfekq9dnfjlpq0e6aehxg053jh0s6qrl54l3ymxt3rtakcse45rf",
+    "utxos": [],
+    "totalAda": "0.000000",
+    "totalLovelace": "0",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "ICS Forever",
+    "component": "ics",
+    "scriptHash": "0e7283e905c07880c9b3548812bbcbd97981897f23dd88fab90be5f9",
+    "address": "addr_test1wq889qlfqhq83qxfkd2gsy4me0vhnqvf0u3amz86hy97t7gpju3cp",
+    "utxos": [
+      {
+        "txHash": "b4a2acefc16e878d396b2dd999c2166f0d4a63aafd2fe54cef5752b7f9526956",
+        "outputIndex": 2,
+        "lovelace": "1060260",
+        "ada": "1.060260",
+        "tokens": [
+          {
+            "policyId": "0e7283e905c07880c9b3548812bbcbd97981897f23dd88fab90be5f9",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "d8799f0000ff"
+      }
+    ],
+    "totalAda": "1.060260",
+    "totalLovelace": "1060260",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "ICS Two Stage",
+    "component": "ics",
+    "scriptHash": "a4553f2a8ced53149449f8421e6b2ed581424c2bb5ad1792c2384647",
+    "address": "addr_test1wzj920e23nk4x9y5f8uyy8nt9m2czsjv9w6669ujcguyv3cs8pckg",
+    "utxos": [
+      {
+        "txHash": "b4a2acefc16e878d396b2dd999c2166f0d4a63aafd2fe54cef5752b7f9526956",
+        "outputIndex": 0,
+        "lovelace": "1340410",
+        "ada": "1.340410",
+        "tokens": [
+          {
+            "policyId": "a4553f2a8ced53149449f8421e6b2ed581424c2bb5ad1792c2384647",
+            "assetName": "6d61696e",
+            "assetNameUtf8": "main",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581cb86132f05d7304fc3a2d3b135756fddab38d45e549f57a691c2c80e840581cc154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff400000ff"
+      },
+      {
+        "txHash": "b4a2acefc16e878d396b2dd999c2166f0d4a63aafd2fe54cef5752b7f9526956",
+        "outputIndex": 1,
+        "lovelace": "1353340",
+        "ada": "1.353340",
+        "tokens": [
+          {
+            "policyId": "a4553f2a8ced53149449f8421e6b2ed581424c2bb5ad1792c2384647",
+            "assetName": "73746167696e67",
+            "assetNameUtf8": "staging",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581cb86132f05d7304fc3a2d3b135756fddab38d45e549f57a691c2c80e840581cd673c4dc29812525d6fbe0f9deef9698e2ed09b355277ba85e79dc3a400000ff"
+      }
+    ],
+    "totalAda": "2.693750",
+    "totalLovelace": "2693750",
+    "nftTokenNames": [
+      "main",
+      "staging"
+    ],
+    "upgradeState": {
+      "logicHash": "b86132f05d7304fc3a2d3b135756fddab38d45e549f57a691c2c80e8",
+      "authHash": "c154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff"
+    }
+  },
+  {
+    "name": "ICS Logic",
+    "component": "ics",
+    "scriptHash": "b86132f05d7304fc3a2d3b135756fddab38d45e549f57a691c2c80e8",
+    "address": "addr_test1wzuxzvhst4esflp695a3x46klhdt8r29u4yl27nfrskgp6q78zxxp",
+    "utxos": [],
+    "totalAda": "0.000000",
+    "totalLovelace": "0",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Gov Auth",
+    "component": "gov",
+    "scriptHash": "c154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff",
+    "address": "addr_test1wrq4gq6cvg28kapjsfcc569jqqgek05444nawm0h45rlflcl4k22w",
+    "utxos": [],
+    "totalAda": "0.000000",
+    "totalLovelace": "0",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Main Gov Threshold",
+    "component": "main-gov",
+    "scriptHash": "7979fc710549dd67963ab2da413220a3bb7916917804c38ab0e69645",
+    "address": "addr_test1wpuhnlr3q4ya6euk82ed5sfjyz3mk7gkj9uqfsu2krnfv3g2e36z9",
+    "utxos": [
+      {
+        "txHash": "c19162e3a3872225d41601c8d4c9dccf1c1a56d77addefa4e70a4e52311bfd65",
+        "outputIndex": 0,
+        "lovelace": "1060260",
+        "ada": "1.060260",
+        "tokens": [
+          {
+            "policyId": "7979fc710549dd67963ab2da413220a3bb7916917804c38ab0e69645",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f02030203ff"
+      }
+    ],
+    "totalAda": "1.060260",
+    "totalLovelace": "1060260",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Staging Gov Threshold",
+    "component": "staging-gov",
+    "scriptHash": "b770b08e6bb5814bba6b9e56bf957eb03acc43114a3c5582271b98b7",
+    "address": "addr_test1wzmhpvywdw6czja6dw09d0u406cr4nzrz99rc4vzyude3dcysm76d",
+    "utxos": [
+      {
+        "txHash": "2199523cca89f20ca8ac8f2bfafb305c5d39f7bb24fe6d73b026db15cc21dea3",
+        "outputIndex": 0,
+        "lovelace": "1060260",
+        "ada": "1.060260",
+        "tokens": [
+          {
+            "policyId": "b770b08e6bb5814bba6b9e56bf957eb03acc43114a3c5582271b98b7",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f01020001ff"
+      }
+    ],
+    "totalAda": "1.060260",
+    "totalLovelace": "1060260",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Federated Ops Forever",
+    "component": "federated-ops",
+    "scriptHash": "4a081eb41b2c00508184bf25116e12684e1270d1580195ca97bebbdf",
+    "address": "addr_test1wp9qs845rvkqq5ypsjlj2ytwzf5yuyns69vqr9w2j7lthhcqgqqlv",
+    "utxos": [
+      {
+        "txHash": "a455337d1e105364e09f19dcbd37a95b0b8dd6f9517aa69630bad9eee3f8d733",
+        "outputIndex": 2,
+        "lovelace": "5292680",
+        "ada": "5.292680",
+        "tokens": [
+          {
+            "policyId": "4a081eb41b2c00508184bf25116e12684e1270d1580195ca97bebbdf",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9fd879809f9f58210287d649e5818aae04026482d8060f6cbb4b71fa063cf29ee83a81dbd7de601d0b9f9f446175726158208e2135d1086b6b26143e600986e64b5f5d38a67ebedccbe24c5471cd2755e35fff9f446772616e5820778785d70f5f950c92ed80aad45cbe1bd941f814a76ba67e8d5a98e84f5a76cbff9f446265656658210287d649e5818aae04026482d8060f6cbb4b71fa063cf29ee83a81dbd7de601d0bffffff9f582102106624a579d3bfe20fc9e205effea540ec0550e9ce559c3c1e37305f8a37a9c59f9f44617572615820c403a1c5671ea079a27daf8f4a92ff9c1d36b425232d6f82ef5788fd7fdaae05ff9f446772616e58205e3576beb0cf4a47634497fecf2a5c8dff58d2ed442fc7a9824815533500a1c3ff9f4462656566582102106624a579d3bfe20fc9e205effea540ec0550e9ce559c3c1e37305f8a37a9c5ffffff9f582103d9aaf4a61e90738205eb14e45ea35e79a7d57f9351b06908e9008dfff38f196d9f9f446175726158203a8a798e373ddba8eba14982f90008768a4ecdc4b9ab1cfaae9d421129a9cd10ff9f446772616e5820c2ac5c22e8868fc86d6910d05be9f496e5bb73b95f991b7e6631bb1b65c94fb1ff9f4462656566582103d9aaf4a61e90738205eb14e45ea35e79a7d57f9351b06908e9008dfff38f196dffffff9f5821023d4ab3baa0b452cd6290a395540270d649609a6031eb6742913886e90f8716469f9f44617572615820d6bbb84dd94522a105270aaad3a01547cbadb8722041add1a62fc7e43a00262eff9f446772616e5820003c84eea8aed006cd13c0fe9bcf2a697fee86b4130a62358a1d35908fc3b22aff9f44626565665821023d4ab3baa0b452cd6290a395540270d649609a6031eb6742913886e90f871646ffffff9f58210208dc088a8a3cd73caf0d64bcc2d9148b79c496091f4640960bfb9aff5cc94f2e9f9f446175726158201ee8b39debb5ff5fa436bf6b9b63154777e21c70e58c139a222d476794af331fff9f446772616e5820382a6071840bb68cfdf95b06e99ecb19b6ea6c03b16024935eff0e370e73be6fff9f446265656658210208dc088a8a3cd73caf0d64bcc2d9148b79c496091f4640960bfb9aff5cc94f2effffff9f582102e7d8abfd5b3b6b49cdc1a2bab81d3f7e2499ae92a4462796dfe34f9ca4488a9f9f9f44617572615820643db0035965b76ebb999f1e1d2634ede0679d92b6fdad9f2d1ba9acee47bc4cff9f446772616e58208c33977f732733a752143cf6b805afec19f644a8f6a954aa3d7c097a039c1168ff9f4462656566582102e7d8abfd5b3b6b49cdc1a2bab81d3f7e2499ae92a4462796dfe34f9ca4488a9fffffffff01ff"
+      }
+    ],
+    "totalAda": "5.292680",
+    "totalLovelace": "5292680",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Federated Ops Two Stage",
+    "component": "federated-ops",
+    "scriptHash": "de444f3300b4c0f2d851fd1ff64672af7e47a170cf108c6a464614b8",
+    "address": "addr_test1wr0ygnenqz6vpukc2873lajxw2hhu3apwr83prr2gerpfwqfm3cka",
+    "utxos": [
+      {
+        "txHash": "a455337d1e105364e09f19dcbd37a95b0b8dd6f9517aa69630bad9eee3f8d733",
+        "outputIndex": 0,
+        "lovelace": "1340410",
+        "ada": "1.340410",
+        "tokens": [
+          {
+            "policyId": "de444f3300b4c0f2d851fd1ff64672af7e47a170cf108c6a464614b8",
+            "assetName": "6d61696e",
+            "assetNameUtf8": "main",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581cc76963dd635b1b88f438e3b4687ea3d80ee5ed9c4299eeddc2be9a6240581cc154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff400000ff"
+      },
+      {
+        "txHash": "a455337d1e105364e09f19dcbd37a95b0b8dd6f9517aa69630bad9eee3f8d733",
+        "outputIndex": 1,
+        "lovelace": "1353340",
+        "ada": "1.353340",
+        "tokens": [
+          {
+            "policyId": "de444f3300b4c0f2d851fd1ff64672af7e47a170cf108c6a464614b8",
+            "assetName": "73746167696e67",
+            "assetNameUtf8": "staging",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581cc76963dd635b1b88f438e3b4687ea3d80ee5ed9c4299eeddc2be9a6240581cd673c4dc29812525d6fbe0f9deef9698e2ed09b355277ba85e79dc3a400000ff"
+      }
+    ],
+    "totalAda": "2.693750",
+    "totalLovelace": "2693750",
+    "nftTokenNames": [
+      "main",
+      "staging"
+    ],
+    "upgradeState": {
+      "logicHash": "c76963dd635b1b88f438e3b4687ea3d80ee5ed9c4299eeddc2be9a62",
+      "authHash": "c154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff"
+    }
+  },
+  {
+    "name": "Federated Ops Logic",
+    "component": "federated-ops",
+    "scriptHash": "c76963dd635b1b88f438e3b4687ea3d80ee5ed9c4299eeddc2be9a62",
+    "address": "addr_test1wrrkjc7avdd3hz858r3mg6r750vqae0dn3pfnmkac2lf5csl0efke",
+    "utxos": [],
+    "totalAda": "0.000000",
+    "totalLovelace": "0",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Federated Ops Update Threshold",
+    "component": "federated-ops-threshold",
+    "scriptHash": "8bc10592766c4b457db793d05c6358203255711ecb5d7ed8c36ea0ec",
+    "address": "addr_test1wz9uzpvjwekyk3tak7faqhrrtqsry4t3rm946lkccdh2pmqtzxep4",
+    "utxos": [
+      {
+        "txHash": "70137ce6868b75573cdb1b0121c346a8fd0f77bf52fc93b54f2500a67e6444a8",
+        "outputIndex": 0,
+        "lovelace": "1060260",
+        "ada": "1.060260",
+        "tokens": [
+          {
+            "policyId": "8bc10592766c4b457db793d05c6358203255711ecb5d7ed8c36ea0ec",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f02030203ff"
+      }
+    ],
+    "totalAda": "1.060260",
+    "totalLovelace": "1060260",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Terms And Conditions Forever",
+    "component": "terms-and-conditions",
+    "scriptHash": "ef887e86b1973cbac2c3580e6ba584f488adeb1144550aec6054b8bd",
+    "address": "addr_test1wrhcsl5xkxtnewkzcdvqu6a9sn6g3t0tz9z92zhvvp2t30gfzuqp2",
+    "utxos": [
+      {
+        "txHash": "d81714c8e0a530f894ad683eaecc50fde2106d1b618f6a0bc87c8b54178740ef",
+        "outputIndex": 2,
+        "lovelace": "1211110",
+        "ada": "1.211110",
+        "tokens": [
+          {
+            "policyId": "ef887e86b1973cbac2c3580e6ba584f488adeb1144550aec6054b8bd",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f9f5820000000000000000000000000000000000000000000000000000000000000000040ff00ff"
+      }
+    ],
+    "totalAda": "1.211110",
+    "totalLovelace": "1211110",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Terms And Conditions Two Stage",
+    "component": "terms-and-conditions",
+    "scriptHash": "e7974d60e96f60aff687f5b732e09b5cecc874647603f40306d82a56",
+    "address": "addr_test1wrnewntqa9hkptlksl6mwvhqndwwejr5v3mq8aqrqmvz54s4savwg",
+    "utxos": [
+      {
+        "txHash": "d81714c8e0a530f894ad683eaecc50fde2106d1b618f6a0bc87c8b54178740ef",
+        "outputIndex": 0,
+        "lovelace": "1340410",
+        "ada": "1.340410",
+        "tokens": [
+          {
+            "policyId": "e7974d60e96f60aff687f5b732e09b5cecc874647603f40306d82a56",
+            "assetName": "6d61696e",
+            "assetNameUtf8": "main",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581cd96b823ba1e4b22add39ec0a1db9a7c4fe01b4b72f2129733bea918c40581cc154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff400000ff"
+      },
+      {
+        "txHash": "d81714c8e0a530f894ad683eaecc50fde2106d1b618f6a0bc87c8b54178740ef",
+        "outputIndex": 1,
+        "lovelace": "1353340",
+        "ada": "1.353340",
+        "tokens": [
+          {
+            "policyId": "e7974d60e96f60aff687f5b732e09b5cecc874647603f40306d82a56",
+            "assetName": "73746167696e67",
+            "assetNameUtf8": "staging",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581cd96b823ba1e4b22add39ec0a1db9a7c4fe01b4b72f2129733bea918c40581cd673c4dc29812525d6fbe0f9deef9698e2ed09b355277ba85e79dc3a400000ff"
+      }
+    ],
+    "totalAda": "2.693750",
+    "totalLovelace": "2693750",
+    "nftTokenNames": [
+      "main",
+      "staging"
+    ],
+    "upgradeState": {
+      "logicHash": "d96b823ba1e4b22add39ec0a1db9a7c4fe01b4b72f2129733bea918c",
+      "authHash": "c154035862147b743282718a68b200119b3e95ad67d76df7ad07f4ff"
+    }
+  },
+  {
+    "name": "Terms And Conditions Logic",
+    "component": "terms-and-conditions",
+    "scriptHash": "d96b823ba1e4b22add39ec0a1db9a7c4fe01b4b72f2129733bea918c",
+    "address": "addr_test1wrvkhq3m58jty2ka88kq58de5lz0uqd5kuhjz2tn804frrq3764fz",
+    "utxos": [],
+    "totalAda": "0.000000",
+    "totalLovelace": "0",
+    "nftTokenNames": [],
+    "upgradeState": null
+  },
+  {
+    "name": "Terms And Conditions Threshold",
+    "component": "terms-and-conditions-threshold",
+    "scriptHash": "b048974bf7b5f074d8766b8ecac8625de85e44cfde4f1b5657af6c33",
+    "address": "addr_test1wzcy396t776lqaxcwe4cajkgvfw7shjyel0y7x6k27hkcvc4qg7ft",
+    "utxos": [
+      {
+        "txHash": "5c2202220a565b24a01fc9d2e9e02a7f45bc0ec4c6fe798961cf8eae5ebc654a",
+        "outputIndex": 0,
+        "lovelace": "1060260",
+        "ada": "1.060260",
+        "tokens": [
+          {
+            "policyId": "b048974bf7b5f074d8766b8ecac8625de85e44cfde4f1b5657af6c33",
+            "assetName": "",
+            "assetNameUtf8": "",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f02030203ff"
+      }
+    ],
+    "totalAda": "1.060260",
+    "totalLovelace": "1060260",
+    "nftTokenNames": [],
+    "upgradeState": null
+  }
+]
