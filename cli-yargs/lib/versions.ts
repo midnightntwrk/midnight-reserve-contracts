@@ -24,7 +24,7 @@ export interface ChangeRecord {
   description?: string;
 }
 
-export interface Changelog {
+interface Changelog {
   version: string;
   previousVersion: string | null;
   timestamp: string;
@@ -170,7 +170,7 @@ function getCurrentTimestamp(): string {
  * Strips module prefix (first dot segment) and .else/.spend suffix (last dot segment).
  * Filters out v2 and staging validators.
  */
-export function extractValidatorNames(plutusJsonPath: string): string[] {
+function extractValidatorNames(plutusJsonPath: string): string[] {
   const plutus = JSON.parse(readFileSync(plutusJsonPath, "utf-8"));
   const names = new Set<string>();
 
