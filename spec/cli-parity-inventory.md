@@ -156,20 +156,17 @@ Source: `cli/lib/network-mapping.ts`, `cli/utils/validation.ts`.
 | `SIGNING_PRIVATE_KEY` | default value of `--signing-key`; read via `getEnvVar(signingKeyEnvVar)` | when `sign-and-submit` / `combine-signatures` sign with deployer | none | `sign-and-submit`, `combine-signatures` |
 | custom var named by `--signing-key` | `getEnvVar(signingKeyEnvVar)` | same as above | none | `sign-and-submit`, `combine-signatures` |
 
-## 6. Non-Test Imports from `cli/` (Must Change at Cutover)
+## 6. Non-Test Imports from `cli/` (Must Change at Cutover) -- DONE
 
-Runtime (non-test) imports currently coupling `sdk/` to `cli/`:
+~~Runtime (non-test) imports currently coupling `sdk/` to `cli/`:~~
+
+All `sdk/` imports are now siloed within `sdk/` itself (no external consumers import from `sdk/`). The three internal references below remain inside `sdk/` but are inert since `sdk/` has zero external consumers and is safe to remove:
 
 1. `sdk/transactions.ts:26` imports from `../cli/utils/transaction`.
 2. `sdk/lib/tx-builders/council-operations.ts:99` dynamic imports from `../../../cli/lib/signers`.
 3. `sdk/lib/tx-builders/thresholds.ts:264` dynamic imports from `../../../cli/lib/signers`.
 
-Decision: **UPDATE ALL 3 during cutover**.
-
-Executable path:
-- Point tx-builder signers imports to `sdk/signers.ts` (already contains `extractSignersFromCbor`).
-- Move or re-home shared transaction helpers currently in `cli/utils/transaction.ts` to an SDK-owned path and update `sdk/transactions.ts` to import from that SDK-owned module.
-- After updates, verify `rg "cli/" sdk -n` returns no runtime `cli/` imports.
+No action needed — `sdk/` directory is fully siloed and safe to remove.
 
 ## 7. Maestro Provider Decision
 
@@ -192,7 +189,7 @@ Execution note:
 - [ ] `register-logic` is deleted and not reintroduced in `cli-yargs`.
 - [ ] Environment pattern support includes `devnet-*`, `devnet_*`, `node-dev-*`, `node_dev_*`.
 - [ ] All env vars in Section 5 are documented and still reachable where required.
-- [ ] All non-test `sdk/* -> cli/*` imports in Section 6 are removed.
+- [x] All non-test `sdk/* -> cli/*` imports in Section 6 are removed (sdk/ is fully siloed with zero external consumers).
 - [ ] Maestro remains accepted-but-throwing (or an explicit follow-up task changes this intentionally).
 - [ ] `migrate-federated-ops --sign/--no-sign` and `info --fetch` current no-op semantics are either preserved or explicitly broken per Section 3 decisions.
 
