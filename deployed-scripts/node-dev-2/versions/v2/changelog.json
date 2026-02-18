@@ -1,0 +1,15 @@
+{
+  "version": "v2",
+  "previousVersion": "v1",
+  "timestamp": "2026-02-18T03:19:16.579Z",
+  "gitCommit": "e142b2c01cc100c144cb0136bc26bce1caf77afe",
+  "changes": [
+    {
+      "type": "stage",
+      "validator": "tech-auth",
+      "oldHash": "53ad21941fb6ea12bd09b1b3e80756b4008ac612688a260021b08004",
+      "newHash": "a1c7003acce73c765b9acfe51867c1f9950d2fef1158ee7eb75bf985",
+      "description": "Staged tech-auth logic upgrade"
+    }
+  ]
+}
