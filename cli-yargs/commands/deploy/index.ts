@@ -166,9 +166,9 @@ function parseThreshold(value: string): Threshold {
   }
   const numerator = BigInt(parts[0]);
   const denominator = BigInt(parts[1]);
-  if (denominator === 0n) {
+  if (denominator <= 0n) {
     throw new Error(
-      `Invalid threshold '${value}': denominator cannot be zero.`,
+      `Invalid threshold '${value}': denominator must be positive.`,
     );
   }
   if (numerator < 0n) {
