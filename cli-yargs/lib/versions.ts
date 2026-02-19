@@ -181,6 +181,57 @@ export function promoteValidator(env: string, name: string): boolean {
 }
 
 /**
+ * Looks up a promoted validator's hash from the deployed plutus.json.
+ * Returns the script hash if found, or null on any failure.
+ */
+export function getPromotedValidatorHash(
+  env: string,
+  logicV2Name: string,
+): string | null {
+  try {
+    const plutusPath = resolve(getDeployedScriptsPath(env), "plutus.json");
+    if (!existsSync(plutusPath)) return null;
+    const plutus = JSON.parse(readFileSync(plutusPath, "utf-8"));
+    for (const v of plutus.validators) {
+      const parts = (v.title as string).split(".");
+      if (parts.length >= 2 && parts[1] === logicV2Name) {
+        return v.hash as string;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolves a script hash to its validator name from the deployed plutus.json.
+ * Returns the inner title segment (e.g., "council_logic" or "council_logic_v2").
+ */
+export function resolveValidatorNameByHash(
+  env: string,
+  hash: string,
+): string | null {
+  try {
+    const plutusPath = resolve(getDeployedScriptsPath(env), "plutus.json");
+    if (!existsSync(plutusPath)) return null;
+    const plutus = JSON.parse(readFileSync(plutusPath, "utf-8"));
+    for (const v of plutus.validators) {
+      if (v.hash === hash) {
+        const parts = (v.title as string).split(".");
+        const last = parts[parts.length - 1];
+        return last === "else" || last === "spend"
+          ? parts.slice(1, -1).join(".")
+          : parts.slice(1).join(".");
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Saves a version snapshot directly to deployed-scripts/{env}/.
  * Writes plutus.json, contract_blueprint.ts, and changelog.json at the env root.
  * Returns the version name recorded in versions.json.

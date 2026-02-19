@@ -46,6 +46,8 @@ import {
   mergeValidatorToDeployedScripts,
   readVersionsJson,
   addStagedValidator,
+  getPromotedValidatorHash,
+  resolveValidatorNameByHash,
 } from "../../lib/versions";
 import { diffBlueprints } from "../../lib/blueprint-diff";
 import * as Contracts from "../../../contract_blueprint";
@@ -218,15 +220,29 @@ export async function handler(argv: StageUpgradeOptions) {
     }
   }
 
-  // Pre-flight: reject re-staging of already-promoted validators
+  // Pre-flight: warn (but allow) re-staging of already-promoted validators.
+  // Use case: rolling back to a previous logic version after a bad upgrade.
   const logicV2Name = VALIDATOR_LOGIC_V2_NAMES[validator];
+  let isRestage = false;
   if (logicV2Name) {
     const versionsData = readVersionsJson(network);
     if (versionsData?.promoted.includes(logicV2Name)) {
-      throw new Error(
-        `Cannot re-stage '${logicV2Name}': it has already been promoted and cannot be replaced.\n` +
-          `Promoted validators are immutable.`,
-      );
+      isRestage = true;
+      const promotedHash = getPromotedValidatorHash(network, logicV2Name);
+      const newName =
+        resolveValidatorNameByHash(network, newLogicHash) ?? newLogicHash;
+      if (promotedHash === newLogicHash) {
+        console.log(`\n  Re-staging ${newName} (same hash as promoted)`);
+      } else {
+        const currentName =
+          resolveValidatorNameByHash(network, promotedHash ?? "") ??
+          promotedHash ??
+          "(not found)";
+        console.log(
+          `\n  Re-staging ${validator}: ${newName} (${newLogicHash})` +
+            `\n    Currently promoted: ${currentName} (${promotedHash ?? "?"})`,
+        );
+      }
     }
   }
 
@@ -555,8 +571,8 @@ export async function handler(argv: StageUpgradeOptions) {
 
   console.log("\nTransaction ID:", tx.getId());
 
-  // Track staged validator in versions.json
-  if (logicV2Name) {
+  // Track staged validator in versions.json (skip for re-staged promoted validators)
+  if (logicV2Name && !isRestage) {
     if (addStagedValidator(network, logicV2Name)) {
       printSuccess(`Tracked ${logicV2Name} as staged in versions.json`);
     } else {
