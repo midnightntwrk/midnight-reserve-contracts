@@ -179,7 +179,9 @@ export function getTermsAndConditionsInitialHash(): string {
 }
 
 export function getTermsAndConditionsInitialLink(): string {
-  return process.env.TERMS_AND_CONDITIONS_INITIAL_LINK || "";
+  const value = process.env.TERMS_AND_CONDITIONS_INITIAL_LINK || "";
+  // Accept plain-text URL from env, convert to hex for on-chain ByteArray
+  return value ? Buffer.from(value).toString("hex") : "";
 }
 
 export function getSimpleTxCount(): number {

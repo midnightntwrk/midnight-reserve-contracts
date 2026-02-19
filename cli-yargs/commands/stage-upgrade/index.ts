@@ -25,6 +25,11 @@ import {
 } from "../../lib/contracts";
 import { extractSignersFromCbor } from "../../lib/signers";
 import {
+  validateScriptHash,
+  validateTxHash,
+  validateTxIndex,
+} from "../../lib/validation";
+import {
   getContractUtxos,
   getTwoStageUtxos,
   ensureRewardAccountsRegistered,
@@ -146,13 +151,20 @@ export function builder(yargs: Argv<GlobalOptions>) {
       alias: "v",
       type: "string",
       demandOption: true,
-      description:
-        "Validator to upgrade (tech-auth, council, reserve, ics, federated-ops, terms-and-conditions)",
+      choices: [
+        "tech-auth",
+        "council",
+        "reserve",
+        "ics",
+        "federated-ops",
+        "terms-and-conditions",
+      ] as const,
+      description: "Validator to upgrade",
     })
     .option("new-logic-hash", {
       type: "string",
       demandOption: true,
-      description: "New logic script hash to stage",
+      description: "New logic script hash to stage (56 hex chars, 28 bytes)",
     })
     .option("tx-hash", {
       type: "string",
@@ -196,6 +208,11 @@ export async function handler(argv: StageUpgradeOptions) {
 
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);
+
+  // Validate inputs before any processing
+  validateScriptHash(newLogicHash);
+  validateTxHash(txHash);
+  validateTxIndex(txIndex);
 
   console.log(`\nStaging upgrade for ${validator} on ${network} network`);
   console.log(`New logic hash: ${newLogicHash}`);

@@ -30,15 +30,15 @@ interface MintTcnightOptions extends GlobalOptions {
   "use-build": boolean;
 }
 
-export const command = "mint-tcnight <amount>";
+export const command = "mint-tcnight";
 export const describe = "Mint or burn TCnight tokens (preview/preprod only)";
 
 export function builder(yargs: Argv<GlobalOptions>) {
   return yargs
-    .positional("amount", {
+    .option("amount", {
       type: "string",
-      description: "Amount of NIGHT tokens to mint or burn",
       demandOption: true,
+      description: "Amount of NIGHT tokens to mint or burn",
     })
     .option("user-address", {
       alias: "u",

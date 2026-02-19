@@ -23,6 +23,7 @@ import {
   getTwoStageContracts,
 } from "../../lib/contracts";
 import { extractSignersFromCbor, parsePrivateKeys } from "../../lib/signers";
+import { validateTxHash, validateTxIndex } from "../../lib/validation";
 import {
   getContractUtxos,
   getTwoStageUtxos,
@@ -64,8 +65,15 @@ export function builder(yargs: Argv<GlobalOptions>) {
       alias: "v",
       type: "string",
       demandOption: true,
-      description:
-        "Validator to promote (tech-auth, council, reserve, ics, federated-ops, terms-and-conditions)",
+      choices: [
+        "tech-auth",
+        "council",
+        "reserve",
+        "ics",
+        "federated-ops",
+        "terms-and-conditions",
+      ] as const,
+      description: "Validator to promote",
     })
     .option("tx-hash", {
       type: "string",
@@ -100,6 +108,10 @@ export async function handler(argv: PromoteUpgradeOptions) {
     "tx-index": txIndex,
     "output-file": outputFile,
   } = argv;
+
+  // Validate inputs before any processing
+  validateTxHash(txHash);
+  validateTxIndex(txIndex);
 
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);

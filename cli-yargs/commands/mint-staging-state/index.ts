@@ -182,8 +182,15 @@ export function builder(yargs: Argv<GlobalOptions>) {
       alias: "v",
       type: "string",
       demandOption: true,
-      description:
-        "Validator to mint StagingState NFT for (tech-auth, council, reserve, ics, federated-ops, terms-and-conditions)",
+      choices: [
+        "tech-auth",
+        "council",
+        "reserve",
+        "ics",
+        "federated-ops",
+        "terms-and-conditions",
+      ] as const,
+      description: "Validator to mint StagingState NFT for",
     })
     .option("sign", {
       type: "boolean",

@@ -13,6 +13,7 @@ import {
 import { resolve } from "path";
 import type { GlobalOptions } from "../../lib/global-options";
 import { getNetworkId } from "../../lib/types";
+import { validateTxHash, validateTxIndex } from "../../lib/validation";
 import { getDeployerAddress } from "../../lib/config";
 import { createBlaze } from "../../lib/provider";
 import {
@@ -65,12 +66,13 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("hash", {
       type: "string",
       demandOption: true,
-      description: "New terms and conditions hash (hex)",
+      description:
+        "New terms and conditions hash (64 hex chars, 32 bytes SHA-256)",
     })
     .option("url", {
       type: "string",
       demandOption: true,
-      description: "New terms and conditions URL (hex-encoded)",
+      description: "New terms and conditions URL (plain text)",
     })
     .option("sign", {
       type: "boolean",
@@ -114,9 +116,13 @@ export async function handler(argv: ChangeTermsOptions) {
     "use-build": useBuild,
   } = argv;
 
-  // Validate hex inputs before any processing
+  // Validate inputs before any processing
+  validateTxHash(txHash);
+  validateTxIndex(txIndex);
   validateHex(hash, "--hash", 32);
-  validateHex(url, "--url");
+
+  // Convert plain-text URL to hex for on-chain bytes encoding
+  const urlHex = Buffer.from(url).toString("hex");
 
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);
@@ -125,6 +131,7 @@ export async function handler(argv: ChangeTermsOptions) {
   console.log(`Using UTxO: ${txHash}#${txIndex}`);
   console.log(`New hash: ${hash}`);
   console.log(`New URL: ${url}`);
+  console.log(`  (hex: ${urlHex})`);
 
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
@@ -260,15 +267,20 @@ export async function handler(argv: ChangeTermsOptions) {
   const currentData = datumHandler.decode(foreverDatum);
 
   console.log("  Current hash:", currentData.hash);
-  console.log("  Current link:", currentData.link);
+  console.log(
+    "  Current URL:",
+    Buffer.from(currentData.link, "hex").toString("utf8"),
+  );
+  console.log(`    (hex: ${currentData.link})`);
 
-  // Build new terms using version-aware handler
-  const newData = datumHandler.setTerms!(currentData, { hash, link: url });
+  // Build new terms using version-aware handler (link stored as hex bytes on-chain)
+  const newData = datumHandler.setTerms!(currentData, { hash, link: urlHex });
   const newTermsForeverStateCbor = datumHandler.encode(newData);
 
   console.log("\nNew terms and conditions:");
   console.log("  Hash:", hash);
   console.log("  URL:", url);
+  console.log(`    (hex: ${urlHex})`);
 
   // Parse current council state for ML-3 validation (version-aware)
   console.log("\nReading current council state for ML-3 validation...");

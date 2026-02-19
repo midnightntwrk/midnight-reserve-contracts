@@ -28,7 +28,7 @@ Flags that differ from what you might expect:
 | `info` | `--save` | Saves info.json + address-report.md to `release/<env>/`. Not `--fetch`. |
 | `sign-and-submit` | positional `<json-file>` | Takes the tx file as a positional argument |
 | `change-council`, `change-tech-auth`, `change-federated-ops`, `change-terms` | `--tx-hash`, `--tx-index` | Required: fee UTxO to spend. Query Blockfrost for a suitable UTxO before each call. |
-| `change-terms` | `--hash`, `--url` | `--hash` is the T&C document hash; `--url` must be hex-encoded |
+| `change-terms` | `--hash`, `--url` | `--hash` is the T&C document hash (64 hex chars); `--url` is plain text (auto-converted to hex for on-chain storage) |
 | `mint-staging-state`, `stage-upgrade`, `promote-upgrade` | `--validator <name>` | Required. E.g. `--validator council`, `--validator federated-ops` |
 
 ## migrate-federated-ops Ordering
@@ -60,10 +60,10 @@ bun run cli change-tech-auth --network <env> --tx-hash <h> --tx-index <i>
 bun run cli sign-and-submit <change-tech-auth-tx.json> --network <env>
 bun run cli change-federated-ops --network <env> --tx-hash <h> --tx-index <i>
 bun run cli sign-and-submit <change-federated-ops-tx.json> --network <env>
-bun run cli change-terms --network <env> --tx-hash <h> --tx-index <i> --hash <doc-hash> --url <hex-url>
+bun run cli change-terms --network <env> --tx-hash <h> --tx-index <i> --hash <doc-hash> --url <url>
 bun run cli sign-and-submit <change-terms-tx.json> --network <env>
 
-bun run cli mint-tcnight --network <env> --use-build
+bun run cli mint-tcnight --amount <amount> --user-address <addr> --network <env> --use-build
 bun run cli sign-and-submit <mint-tcnight-tx.json> --network <env>
 
 # === Phase 2: Staging track ===
@@ -87,6 +87,14 @@ bun run cli promote-upgrade --validator <name> --network <env>
 bun run cli sign-and-submit <promote-upgrade-tx.json> --network <env>
 bun run cli migrate-federated-ops --network <env>
 bun run cli sign-and-submit <migrate-federated-ops-tx.json> --network <env>
+
+# === Phase 4: Downgrade a validator back to v1 logic ===
+# Use --new-logic-hash with the original v1 logic hash (from deployed plutus.json)
+# No --use-build needed — the v1 validator already exists in the deployed blueprint
+bun run cli stage-upgrade --validator <name> --new-logic-hash <v1-logic-hash> --tx-hash <h> --tx-index <i> --network <env>
+bun run cli sign-and-submit <stage-upgrade-tx.json> --network <env>
+bun run cli promote-upgrade --validator <name> --tx-hash <h> --tx-index <i> --network <env>
+bun run cli sign-and-submit <promote-upgrade-tx.json> --network <env>
 
 # === Final verification ===
 bun run cli info --network <env> --save

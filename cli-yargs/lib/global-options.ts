@@ -5,7 +5,6 @@ export type GlobalOptions = {
   network: string;
   output: string;
   provider?: ProviderType;
-  "dry-run": boolean;
 };
 
 export function addGlobalOptions<T>(yargs: Argv<T>): Argv<T & GlobalOptions> {
@@ -29,10 +28,5 @@ export function addGlobalOptions<T>(yargs: Argv<T>): Argv<T & GlobalOptions> {
       choices: ["blockfrost", "maestro", "emulator", "kupmios"] as const,
       description:
         "Provider: emulator, blockfrost, kupmios, maestro (default: emulator for local, blockfrost otherwise)",
-    })
-    .option("dry-run", {
-      type: "boolean",
-      default: false,
-      description: "Build transaction without signing",
     });
 }

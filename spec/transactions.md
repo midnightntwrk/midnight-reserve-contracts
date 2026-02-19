@@ -437,7 +437,7 @@ Changes the terms and conditions hash and URL by spending the terms and conditio
 #### CLI Command
 
 ```
-bun cli change-terms -n <network> --hash <64-hex-char-hash> --url <url> <tx_hash> <tx_index>
+bun cli change-terms -n <network> --hash <64-hex-char-hash> --url <url> --tx-hash <tx_hash> --tx-index <tx_index>
 ```
 
 #### Validators Fired

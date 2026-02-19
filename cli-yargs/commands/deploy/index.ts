@@ -124,7 +124,7 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("utxo-amount", {
       type: "string",
       description:
-        "Lovelace amount per UTxO (default: from DEPLOY_UTXO_AMOUNT env or 20000000)",
+        "Lovelace amount per UTxO, e.g. 20000000 = 20 ADA (default: from DEPLOY_UTXO_AMOUNT env or 20000000)",
     })
     .option("tech-auth-threshold", {
       type: "string",

@@ -31,7 +31,8 @@ export function builder(yargs: Argv<GlobalOptions>) {
     })
     .option("amount", {
       type: "string",
-      description: "Lovelace amount per output",
+      description:
+        "Lovelace amount per output, e.g. 100000000 = 100 ADA (default: from SIMPLE_TX_AMOUNT env)",
     })
     .option("to", {
       type: "string",
