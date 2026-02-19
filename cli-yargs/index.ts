@@ -49,13 +49,17 @@ addGlobalOptions(yargs(hideBin(process.argv)))
   .demandCommand()
   .help()
   .strict()
-  .fail((msg: string | null, err: Error | undefined) => {
+  .fail((msg: string | null, err: Error | undefined, yargs) => {
     if (msg) {
-      console.error(msg);
+      yargs.showHelp("error");
+      console.error(`\n${msg}`);
     } else if (err) {
       console.error(err.message || err);
     }
     process.exit(1);
   })
   .parseAsync()
-  .catch(() => {});
+  .catch(() => {
+    // .fail() already handled the error and called process.exit(1).
+    // Suppress the unhandled-rejection from parseAsync.
+  });

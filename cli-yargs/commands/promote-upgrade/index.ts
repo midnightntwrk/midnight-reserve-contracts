@@ -438,6 +438,10 @@ export async function handler(argv: PromoteUpgradeOptions) {
     resolveValidatorNameByHash(network, stagedLogicHash) ?? stagedLogicHash;
   if (promoteValidator(network, promotedName)) {
     printSuccess(`Tracked ${promotedName} as promoted in versions.json`);
+  } else {
+    console.warn(
+      `Warning: Could not track promoted validator — versions.json not found for ${network}`,
+    );
   }
 }
 

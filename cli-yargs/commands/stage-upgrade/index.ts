@@ -86,7 +86,7 @@ function getStagingForeverHash(
   return contract.Script.hash();
 }
 
-function getLogicV2OneShotRef(
+function getLogicOneShotRef(
   validatorName: string,
   config: NetworkConfig,
 ): { hash: string; index: number } {
@@ -215,8 +215,9 @@ export async function handler(argv: StageUpgradeOptions) {
   const resolvedName = resolveValidatorNameByHash(network, newLogicHash);
   const versionsData = readVersionsJson(network);
   const isRestage =
-    resolvedName !== null &&
-    (versionsData?.promoted.includes(resolvedName) ?? false);
+    (resolvedName !== null &&
+      (versionsData?.promoted.includes(resolvedName) ?? false)) ||
+    (versionsData?.promoted.includes(newLogicHash) ?? false);
   if (isRestage) {
     console.log(
       `\n  Re-staging promoted validator: ${resolvedName} (${newLogicHash})`,
@@ -482,7 +483,7 @@ export async function handler(argv: StageUpgradeOptions) {
       validator,
       buildContracts ?? contracts,
     );
-    const oneShotRef = getLogicV2OneShotRef(validator, aikenConfig);
+    const oneShotRef = getLogicOneShotRef(validator, aikenConfig);
 
     console.log(`\n  New logic contract detected: ${newLogicHash}`);
     console.log(`  StagingState NFT must be minted in a separate transaction.`);
@@ -554,6 +555,10 @@ export async function handler(argv: StageUpgradeOptions) {
       resolveValidatorNameByHash(network, newLogicHash) ?? newLogicHash;
     if (addStagedValidator(network, stagedName)) {
       printSuccess(`Tracked ${stagedName} as staged in versions.json`);
+    } else {
+      console.warn(
+        `Warning: Could not track staged validator — versions.json not found for ${network}`,
+      );
     }
   }
 }

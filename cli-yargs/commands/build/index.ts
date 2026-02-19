@@ -13,12 +13,20 @@ export const describe =
   "Compile Aiken contracts and generate TypeScript bindings";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs.option("trace", {
-    type: "string",
-    choices: ["silent", "verbose", "compact"] as const,
-    default: "verbose",
-    description: "Aiken trace level",
-  });
+  return yargs
+    .option("network", {
+      alias: "n",
+      type: "string",
+      default: "default",
+      description:
+        "Network/environment for Aiken build (default: default — vanilla Aiken build with no env overrides)",
+    })
+    .option("trace", {
+      type: "string",
+      choices: ["silent", "verbose", "compact"] as const,
+      default: "verbose",
+      description: "Aiken trace level",
+    });
 }
 
 export async function handler(argv: BuildOptions) {

@@ -12,6 +12,13 @@ export const describe =
 
 export function builder(yargs: Argv<GlobalOptions>) {
   return yargs
+    .option("network", {
+      alias: "n",
+      type: "string",
+      default: "default",
+      description:
+        "Network/environment for Aiken build (default: default — vanilla Aiken build with no env overrides)",
+    })
     .option("trace", {
       type: "string",
       choices: ["silent", "verbose", "compact"] as const,
