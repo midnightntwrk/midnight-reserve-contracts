@@ -125,23 +125,22 @@ describe("datum-versions", () => {
   });
 
   describe("getDatumHandler error cases", () => {
-    test("throws on unknown logic_round for council", () => {
-      expect(() => getDatumHandler("council", 99)).toThrow(
-        "Unsupported logic_round 99",
-      );
-      expect(() => getDatumHandler("council", 99)).toThrow("Supported rounds:");
+    test("falls back to highest round for council round > max", () => {
+      // Round 99 > max(0,1) → falls back to round 1 handler
+      const handler = getDatumHandler("council", 99);
+      expect(handler.logicRound).toBe(1);
     });
 
-    test("throws on unknown logic_round for federated-ops", () => {
+    test("throws on unknown logic_round for federated-ops round < min", () => {
       expect(() => getDatumHandler("federated-ops", 0)).toThrow(
         "Unsupported logic_round 0",
       );
     });
 
-    test("throws on unknown logic_round for terms-and-conditions", () => {
-      expect(() => getDatumHandler("terms-and-conditions", 5)).toThrow(
-        "Unsupported logic_round 5",
-      );
+    test("falls back to highest round for terms-and-conditions round > max", () => {
+      // Round 5 > max(0,1) → falls back to round 1 handler
+      const handler = getDatumHandler("terms-and-conditions", 5);
+      expect(handler.logicRound).toBe(1);
     });
 
     test("returns correct handler for valid rounds", () => {

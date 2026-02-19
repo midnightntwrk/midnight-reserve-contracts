@@ -92,15 +92,24 @@ export function getDatumHandler(
   }
 
   const handler = familyHandlers[logicRound];
-  if (!handler) {
-    const supported = Object.keys(familyHandlers).join(", ");
-    throw new Error(
-      `Unsupported logic_round ${logicRound} for datum family "${family}". ` +
-        `Supported rounds: ${supported}`,
-    );
+  if (handler) return handler;
+
+  // Fallback: use the highest available round handler when the exact round
+  // isn't registered. This handles logic_round values that have been
+  // incremented by multiple stage/promote cycles without a datum format change.
+  const availableRounds = Object.keys(familyHandlers)
+    .map(Number)
+    .sort((a, b) => a - b);
+  const maxRound = availableRounds[availableRounds.length - 1];
+  if (maxRound !== undefined && logicRound > maxRound) {
+    return familyHandlers[maxRound];
   }
 
-  return handler;
+  const supported = availableRounds.join(", ");
+  throw new Error(
+    `Unsupported logic_round ${logicRound} for datum family "${family}". ` +
+      `Supported rounds: ${supported}`,
+  );
 }
 
 /**

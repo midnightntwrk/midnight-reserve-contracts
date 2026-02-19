@@ -8,6 +8,8 @@ import type { Provider, TxBuilder } from "@blaze-cardano/sdk";
 import { makeUplcEvaluator } from "@blaze-cardano/vm";
 import { printError, printSuccess, printWarning } from "./output";
 import { getCardanoNetwork } from "./network-mapping";
+import { buildRedeemerMapping, enrichErrorMessage } from "./redeemer-mapping";
+import type { RedeemerMapping } from "./redeemer-mapping";
 
 export class TransactionBuildError extends Error {
   readonly traces: string[];
@@ -68,6 +70,7 @@ export async function completeTx(
 ): Promise<CompleteTxResult> {
   const { commandName, provider, networkId, environment, knownUtxos } = options;
   let traces: string[] = [];
+  let redeemerMap: RedeemerMapping = {};
 
   // Phase 1: Local UPLC test against draft (non-mutating, advisory)
   if (knownUtxos && knownUtxos.length > 0) {
@@ -85,20 +88,34 @@ export async function completeTx(
             : SLOT_CONFIG_NETWORK.Preview;
 
       const draftCbor = txBuilder.toCbor();
+
+      try {
+        redeemerMap = buildRedeemerMapping(draftCbor, knownUtxos, environment);
+      } catch {
+        // Non-fatal: mapping is best-effort
+      }
+
       const draftTx = Transaction.fromCbor(draftCbor);
       const evaluator = makeUplcEvaluator(params, 1.2, 1.2, slotConfig);
       await evaluator(draftTx, knownUtxos);
       printSuccess("Local UPLC test passed");
     } catch (testError) {
-      const msg = String(testError);
-      traces = extractTraces(msg);
+      const rawMsg = String(testError);
+      traces = extractTraces(rawMsg);
+      const msg = enrichErrorMessage(rawMsg, redeemerMap);
 
       printWarning(`Local UPLC test failed (non-fatal): ${commandName}`);
+      if (Object.keys(redeemerMap).length > 0) {
+        console.error("\n  Redeemer → Validator mapping:");
+        for (const [ref, name] of Object.entries(redeemerMap)) {
+          console.error(`    ${ref} → ${name}`);
+        }
+      }
       console.error(`  ${msg}`);
       if (traces.length > 0) {
         printError("UPLC traces:");
         for (const trace of traces) {
-          console.error(`  ${trace}`);
+          console.error(`  ${enrichErrorMessage(trace, redeemerMap)}`);
         }
       }
     }
@@ -110,27 +127,39 @@ export async function completeTx(
     printSuccess(`Transaction built: ${tx.getId()}`);
     return { tx, traces };
   } catch (error) {
-    const msg = String(error);
-    const phase2Traces = extractTraces(msg);
+    const rawMsg = String(error);
+    const phase2Traces = extractTraces(rawMsg);
     if (phase2Traces.length > 0) {
       traces = [...traces, ...phase2Traces];
     }
 
     printError(`Transaction build failed: ${commandName}`);
+    if (Object.keys(redeemerMap).length > 0) {
+      console.error("\n  Redeemer → Validator mapping:");
+      for (const [ref, name] of Object.entries(redeemerMap)) {
+        console.error(`    ${ref} → ${name}`);
+      }
+    }
     if (error instanceof Error) {
-      console.error("  Error:", error.message);
+      console.error("  Error:", enrichErrorMessage(error.message, redeemerMap));
       if ("cause" in error && error.cause) {
         try {
           console.error(
             "  Cause:",
-            JSON.stringify(
-              error.cause,
-              (_k, v) => (typeof v === "bigint" ? v.toString() : v),
-              2,
+            enrichErrorMessage(
+              JSON.stringify(
+                error.cause,
+                (_k, v) => (typeof v === "bigint" ? v.toString() : v),
+                2,
+              ),
+              redeemerMap,
             ),
           );
         } catch {
-          console.error("  Cause:", String(error.cause));
+          console.error(
+            "  Cause:",
+            enrichErrorMessage(String(error.cause), redeemerMap),
+          );
         }
       }
     } else {
@@ -140,7 +169,7 @@ export async function completeTx(
     if (traces.length > 0) {
       printError("UPLC traces:");
       for (const trace of traces) {
-        console.error(`  ${trace}`);
+        console.error(`  ${enrichErrorMessage(trace, redeemerMap)}`);
       }
     }
 
