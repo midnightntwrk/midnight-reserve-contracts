@@ -48,4 +48,5 @@ Architecture patterns derived from:
 - [Architecture & Workspace Structure](.claude/docs/architecture.md)
 - [Code Conventions](.claude/docs/code-conventions.md)
 - [Testing](.claude/docs/testing.md)
+- [Live Deployment Runbook](.claude/docs/live-deployment.md)
 - [SPEC.md](SPEC.md) - detailed architecture context

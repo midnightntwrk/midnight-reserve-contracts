@@ -1,0 +1,94 @@
+# Live Deployment Runbook
+
+Operational notes from live testing on node-dev-2. Apply to all non-emulator environments.
+
+## One-Shot UTxO Setup (three separate simple-tx runs required)
+
+One-shot hashes in `aiken.toml` must be updated manually before each build. Three separate
+`simple-tx` runs are required for a full deployment — they cannot share a single tx because
+each phase consumes all available outputs:
+
+| Run | Purpose | aiken.toml keys to update |
+|-----|---------|--------------------------|
+| 1st | Main deployment | `*_one_shot_hash` (14 entries, indices 1–14) |
+| 2nd | Staging track deploy | `*_staging_one_shot_hash` + `*_logic_v2_one_shot_hash` staging indices (12 entries, indices 0–5 each) |
+| 3rd | v2 logic one-shots (mint-staging-state / stage-upgrade) | `*_logic_v2_one_shot_hash` (6 entries) |
+
+**Order matters:** always run `sign-and-submit` and wait for on-chain confirmation before running
+`just build <env>`. The build engine queries the deployer wallet to pick up new UTxOs; if you
+build before confirmation, it parameterizes `aiken.toml` with stale hashes and deploy will fail
+with `Unknown transaction input`.
+
+## CLI Flag Reference
+
+Flags that differ from what you might expect:
+
+| Command | Flag | Note |
+|---------|------|------|
+| `info` | `--save` | Saves info.json + address-report.md to `release/<env>/`. Not `--fetch`. |
+| `sign-and-submit` | positional `<json-file>` | Takes the tx file as a positional argument |
+| `change-council`, `change-tech-auth`, `change-federated-ops`, `change-terms` | `--tx-hash`, `--tx-index` | Required: fee UTxO to spend. Query Blockfrost for a suitable UTxO before each call. |
+| `change-terms` | `--hash`, `--url` | `--hash` is the T&C document hash; `--url` must be hex-encoded |
+| `mint-staging-state`, `stage-upgrade`, `promote-upgrade` | `--validator <name>` | Required. E.g. `--validator council`, `--validator federated-ops` |
+
+## migrate-federated-ops Ordering
+
+`migrate-federated-ops` correctly refuses to run until the v2 logic for that validator is
+**promoted** (not just staged). The full order is:
+
+```
+stage-upgrade → sign-and-submit → promote-upgrade → sign-and-submit → migrate-federated-ops
+```
+
+## Full Deployment Sequence
+
+```bash
+# === Phase 1: Main deployment ===
+bun run cli simple-tx --network <env>
+bun run cli sign-and-submit <simple-tx.json> --network <env>
+# Update *_one_shot_hash entries in aiken.toml (14 entries), then:
+just build <env>
+bun run cli deploy --network <env> --use-build
+bun run cli sign-and-submit <deploy-transactions.json> --network <env>
+bun run cli register-gov-auth --network <env>
+bun run cli sign-and-submit <register-gov-auth-tx.json> --network <env>
+
+# Governance changes (each requires --tx-hash + --tx-index from Blockfrost)
+bun run cli change-council --network <env> --tx-hash <h> --tx-index <i>
+bun run cli sign-and-submit <change-council-tx.json> --network <env>
+bun run cli change-tech-auth --network <env> --tx-hash <h> --tx-index <i>
+bun run cli sign-and-submit <change-tech-auth-tx.json> --network <env>
+bun run cli change-federated-ops --network <env> --tx-hash <h> --tx-index <i>
+bun run cli sign-and-submit <change-federated-ops-tx.json> --network <env>
+bun run cli change-terms --network <env> --tx-hash <h> --tx-index <i> --hash <doc-hash> --url <hex-url>
+bun run cli sign-and-submit <change-terms-tx.json> --network <env>
+
+bun run cli mint-tcnight --network <env> --use-build
+bun run cli sign-and-submit <mint-tcnight-tx.json> --network <env>
+
+# === Phase 2: Staging track ===
+bun run cli simple-tx --network <env>
+bun run cli sign-and-submit <simple-tx.json> --network <env>
+# Update *_staging_one_shot_hash + *_logic_v2_one_shot_hash (staging indices) in aiken.toml, then:
+just build <env>
+bun run cli deploy-staging-track --network <env> --use-build
+bun run cli sign-and-submit <staging-track-deployment-transactions.json> --network <env>
+
+# === Phase 3: v2 logic (per validator) ===
+bun run cli simple-tx --network <env>
+bun run cli sign-and-submit <simple-tx.json> --network <env>
+# Update *_logic_v2_one_shot_hash (6 entries) in aiken.toml, then:
+just build <env>
+bun run cli mint-staging-state --validator <name> --network <env> --use-build
+bun run cli sign-and-submit <mint-staging-state-tx.json> --network <env>
+bun run cli stage-upgrade --validator <name> --network <env> --use-build
+bun run cli sign-and-submit <stage-upgrade-tx.json> --network <env>
+bun run cli promote-upgrade --validator <name> --network <env>
+bun run cli sign-and-submit <promote-upgrade-tx.json> --network <env>
+bun run cli migrate-federated-ops --network <env>
+bun run cli sign-and-submit <migrate-federated-ops-tx.json> --network <env>
+
+# === Final verification ===
+bun run cli info --network <env> --save
+bun run cli verify --network <env>
+```
