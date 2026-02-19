@@ -1,5 +1,6 @@
 import type { Argv, CommandModule } from "yargs";
 import { resolve } from "path";
+import { copyFileSync } from "fs";
 import type { GlobalOptions } from "../../lib/global-options";
 import { buildContracts } from "../../lib/build-engine";
 
@@ -60,7 +61,6 @@ export async function handler(argv: BuildOptions) {
   }
 
   // Copy to contract_blueprint.ts for CLI and test imports (matches Justfile behavior)
-  const { copyFileSync } = await import("fs");
   copyFileSync(
     resolve(projectRoot, bindingsFile),
     resolve(projectRoot, "contract_blueprint.ts"),

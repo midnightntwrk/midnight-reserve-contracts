@@ -8,9 +8,6 @@ import {
 } from "@blaze-cardano/core";
 import { getNetworkId, getConfigSection } from "./types";
 import { findContractByHash } from "./blueprint-diff";
-import { getDeployedScriptsPath } from "./versions";
-import { resolve } from "path";
-import { existsSync } from "fs";
 
 /**
  * Contract instance type - all contract classes have a Script property
@@ -78,51 +75,79 @@ export interface ContractInstances {
 const instanceCache = new Map<string, ContractInstances>();
 
 /**
- * Resolves the blueprint file path for a given environment.
- *
- * Non-build mode: deployed-scripts/{env}/contract_blueprint.ts.
- * Build mode: contract_blueprint_{env}.ts at project root.
- */
-function getBlueprintPath(env: string, useBuild: boolean = false): string {
-  const projectRoot = resolve(import.meta.dir, "../..");
-
-  if (!useBuild) {
-    const envRootPath = resolve(
-      getDeployedScriptsPath(env),
-      "contract_blueprint.ts",
-    );
-    if (!existsSync(envRootPath)) {
-      throw new Error(
-        `Blueprint not found at deployed-scripts/${env}/contract_blueprint.ts. ` +
-          `Run 'just build' and deploy first to generate this file, or pass --use-build to load from build output.`,
-      );
-    }
-    return envRootPath;
-  }
-
-  // Build mode: environment-specific build output only
-  const envPath = resolve(projectRoot, `contract_blueprint_${env}.ts`);
-  if (existsSync(envPath)) {
-    return envPath;
-  }
-
-  throw new Error(
-    `No build output found for environment '${env}'. ` +
-      `Expected contract_blueprint_${env}.ts at project root. ` +
-      `Run 'just build ${env}' to generate the blueprint.`,
-  );
-}
-
-/**
  * Loads the contract module for a given environment.
+ *
+ * Uses static require paths (one per known env) so all possible imports are
+ * statically analyzable. To add a new environment: add a case in both branches.
+ *
+ * env must be an aikenConfigSection value (already resolved via getConfigSection).
  */
 export function loadContractModule(
   env: string,
   useBuild: boolean = false,
 ): Record<string, unknown> {
-  const blueprintPath = getBlueprintPath(env, useBuild);
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require(blueprintPath);
+  if (useBuild) {
+    switch (env) {
+      case "default":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../contract_blueprint_default");
+      case "mainnet":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../contract_blueprint_mainnet");
+      case "preprod":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../contract_blueprint_preprod");
+      case "preview":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../contract_blueprint_preview");
+      case "qanet":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../contract_blueprint_qanet");
+      case "govnet":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../contract_blueprint_govnet");
+      case "node-dev-01":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../contract_blueprint_node-dev-01");
+      case "node-dev-2":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../contract_blueprint_node-dev-2");
+      default:
+        throw new Error(
+          `Unknown environment '${env}' for build mode. ` +
+            `Run 'just build ${env}' and add a case for it in loadContractModule (cli-yargs/lib/contracts.ts).`,
+        );
+    }
+  } else {
+    switch (env) {
+      case "mainnet":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../deployed-scripts/mainnet/contract_blueprint");
+      case "preprod":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../deployed-scripts/preprod/contract_blueprint");
+      case "preview":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../deployed-scripts/preview/contract_blueprint");
+      case "qanet":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../deployed-scripts/qanet/contract_blueprint");
+      case "govnet":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../deployed-scripts/govnet/contract_blueprint");
+      case "node-dev-01":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../deployed-scripts/node-dev-01/contract_blueprint");
+      case "node-dev-2":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../deployed-scripts/node-dev-2/contract_blueprint");
+      default:
+        throw new Error(
+          `Unknown environment '${env}' for deployed mode. ` +
+            `Deploy first and add a case for it in loadContractModule (cli-yargs/lib/contracts.ts).`,
+        );
+    }
+  }
 }
 
 /**
