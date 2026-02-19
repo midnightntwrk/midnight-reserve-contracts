@@ -120,6 +120,11 @@ export function loadContractModule(
     }
   } else {
     switch (env) {
+      case "default":
+        throw new Error(
+          `The local/emulator environment has no deployed scripts. ` +
+            `Pass --use-build to load from build output instead.`,
+        );
       case "mainnet":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require("../../deployed-scripts/mainnet/contract_blueprint");
