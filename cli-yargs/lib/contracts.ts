@@ -77,14 +77,11 @@ export interface ContractInstances {
 // Per-environment cache for contract instances
 const instanceCache = new Map<string, ContractInstances>();
 
-// Track the currently active environment for backward compatibility
-let activeEnvironment: string | null = null;
-
 /**
  * Resolves the blueprint file path for a given environment.
  *
  * Non-build mode: deployed-scripts/{env}/contract_blueprint.ts.
- * Build mode: contract_blueprint_{env}.ts or contract_blueprint.ts at project root.
+ * Build mode: contract_blueprint_{env}.ts at project root.
  */
 function getBlueprintPath(env: string, useBuild: boolean = false): string {
   const projectRoot = resolve(import.meta.dir, "../..");
@@ -97,26 +94,21 @@ function getBlueprintPath(env: string, useBuild: boolean = false): string {
     if (!existsSync(envRootPath)) {
       throw new Error(
         `Blueprint not found at deployed-scripts/${env}/contract_blueprint.ts. ` +
-          `Run deployment first or use --use-build to load from build outputs.`,
+          `Run 'just build' and deploy first to generate this file, or pass --use-build to load from build output.`,
       );
     }
     return envRootPath;
   }
 
-  // Build mode: explicit environment-specific or default build output
+  // Build mode: environment-specific build output only
   const envPath = resolve(projectRoot, `contract_blueprint_${env}.ts`);
   if (existsSync(envPath)) {
     return envPath;
   }
 
-  const defaultPath = resolve(projectRoot, "contract_blueprint.ts");
-  if (existsSync(defaultPath)) {
-    return defaultPath;
-  }
-
   throw new Error(
     `No build output found for environment '${env}'. ` +
-      `Expected contract_blueprint_${env}.ts or contract_blueprint.ts at project root. ` +
+      `Expected contract_blueprint_${env}.ts at project root. ` +
       `Run 'just build ${env}' to generate the blueprint.`,
   );
 }
@@ -234,9 +226,7 @@ export function getContractInstances(
   env?: string,
   useBuild: boolean = false,
 ): ContractInstances {
-  const targetEnv = env
-    ? getConfigSection(env)
-    : (activeEnvironment ?? "default");
+  const targetEnv = env ? getConfigSection(env) : "default";
 
   const cacheKey = useBuild ? `${targetEnv}:build` : targetEnv;
 
@@ -248,10 +238,6 @@ export function getContractInstances(
   const Contracts = loadContractModule(targetEnv, useBuild);
   const instances = createInstances(Contracts);
   instanceCache.set(cacheKey, instances);
-
-  if (env) {
-    activeEnvironment = targetEnv;
-  }
 
   return instances;
 }
@@ -338,15 +324,23 @@ export function getTwoStageContracts(
 
 /**
  * Finds a script by its hash.
+ * Checks the instance cache first (fast path for v1 hashes), then falls back
+ * to a full blueprint module search to cover v2 and other non-standard classes.
  */
 export function findScriptByHash(
   hash: string,
   env?: string,
   useBuild?: boolean,
 ): Script | null {
-  const targetEnv = env
-    ? getConfigSection(env)
-    : (activeEnvironment ?? "default");
+  const instances = getContractInstances(env, useBuild);
+  for (const value of Object.values(instances)) {
+    if (value && typeof value === "object" && "Script" in value) {
+      const script = (value as ContractClass).Script;
+      if (script.hash() === hash) return script;
+    }
+  }
+  // Fallback: search the full blueprint module (handles v2 and other non-standard classes)
+  const targetEnv = env ? getConfigSection(env) : "default";
   const Contracts = loadContractModule(targetEnv, useBuild);
   const result = findContractByHash(Contracts, hash);
   return result?.script ?? null;

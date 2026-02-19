@@ -164,7 +164,24 @@ function parseThreshold(value: string): Threshold {
       `Invalid threshold format '${value}'. Expected 'numerator/denominator' (e.g., '2/3')`,
     );
   }
-  return { numerator: BigInt(parts[0]), denominator: BigInt(parts[1]) };
+  const numerator = BigInt(parts[0]);
+  const denominator = BigInt(parts[1]);
+  if (denominator === 0n) {
+    throw new Error(
+      `Invalid threshold '${value}': denominator cannot be zero.`,
+    );
+  }
+  if (numerator < 0n) {
+    throw new Error(
+      `Invalid threshold '${value}': numerator cannot be negative.`,
+    );
+  }
+  if (numerator >= denominator) {
+    throw new Error(
+      `Invalid threshold '${value}': numerator must be strictly less than denominator (got ${numerator}/${denominator}).`,
+    );
+  }
+  return { numerator, denominator };
 }
 
 export async function handler(argv: DeployOptions) {
@@ -187,7 +204,12 @@ export async function handler(argv: DeployOptions) {
   const techAuthStagingThreshold = argv["tech-auth-staging-threshold"]
     ? parseThreshold(argv["tech-auth-staging-threshold"])
     : getTechAuthStagingThreshold();
-  const components = argv.components ? argv.components.split(",") : [];
+  const components = argv.components
+    ? argv.components
+        .split(",")
+        .map((c) => c.trim())
+        .filter((c) => c.length > 0)
+    : [];
 
   console.log(`===========================================`);
   console.log(`Generating deployment transactions for ${network}`);
@@ -982,10 +1004,22 @@ export async function handler(argv: DeployOptions) {
     }
     transactions = [matched];
     printInfo(`Targeting single transaction: ${txName}`);
-  } else if (components.length > 0 && !components.includes("all")) {
-    transactions = allTransactionDefs.filter((t) =>
-      components.includes(t.component),
+  } else if (components.length > 0) {
+    const validComponents = allTransactionDefs.map((t) => t.component);
+    const unknownComponents = components.filter(
+      (c) => c !== "all" && !validComponents.includes(c),
     );
+    if (unknownComponents.length > 0) {
+      throw new Error(
+        `Unknown component(s): ${unknownComponents.join(", ")}.\n` +
+          `Valid components are: ${validComponents.join(", ")}`,
+      );
+    }
+    if (!components.includes("all")) {
+      transactions = allTransactionDefs.filter((t) =>
+        components.includes(t.component),
+      );
+    }
   }
 
   const allTransactions: TxOutput[] = [];

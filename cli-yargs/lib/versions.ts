@@ -57,7 +57,7 @@ function getVersionsJsonPath(env: string): string {
  * Reads versions.json for an environment.
  * Returns null if the file does not exist.
  */
-function readVersionsJson(env: string): VersionsJson | null {
+export function readVersionsJson(env: string): VersionsJson | null {
   const path = getVersionsJsonPath(env);
   if (!existsSync(path)) return null;
   const raw = JSON.parse(readFileSync(path, "utf-8"));
@@ -281,4 +281,70 @@ export function saveVersionSnapshot(
   }
 
   return versionName;
+}
+
+/**
+ * Merges a single staged validator into deployed-scripts/{env}/plutus.json.
+ * Only the validator matching targetHash is added (new) or replaced (same title, different hash).
+ * All other validators in the deployed plutus.json are preserved untouched.
+ * Does NOT create a version entry or modify versions.json.
+ */
+export function mergeValidatorToDeployedScripts(
+  env: string,
+  targetHash: string,
+  buildPlutuJsonPath: string,
+): void {
+  const basePath = getDeployedScriptsPath(env);
+  const deployedPlutusPath = resolve(basePath, "plutus.json");
+
+  // Throw if deployed plutus.json is missing
+  if (!existsSync(deployedPlutusPath)) {
+    throw new Error(
+      `deployed-scripts/${env}/plutus.json not found. Deploy first before staging an upgrade.`,
+    );
+  }
+
+  // Read build plutus.json
+  if (!existsSync(buildPlutuJsonPath)) {
+    throw new Error(
+      `Build plutus.json not found at ${buildPlutuJsonPath}. Run 'just build' first.`,
+    );
+  }
+
+  const deployedPlutus = JSON.parse(readFileSync(deployedPlutusPath, "utf-8"));
+  const buildPlutus = JSON.parse(readFileSync(buildPlutuJsonPath, "utf-8"));
+
+  // Find validator in build plutus by hash field
+  const buildValidator = buildPlutus.validators.find(
+    (v: { hash: string }) => v.hash === targetHash,
+  );
+  if (!buildValidator) {
+    throw new Error(
+      `Validator with hash '${targetHash}' not found in build plutus.json (${buildPlutuJsonPath}).`,
+    );
+  }
+
+  const targetTitle: string = buildValidator.title;
+
+  // Remove any existing entry with the same title (handles same-title replacement)
+  const filteredValidators = deployedPlutus.validators.filter(
+    (v: { title: string }) => v.title !== targetTitle,
+  );
+
+  // Append the new build validator
+  const mergedPlutus = {
+    ...deployedPlutus,
+    validators: [...filteredValidators, buildValidator],
+  };
+
+  writeFileSync(
+    deployedPlutusPath,
+    JSON.stringify(mergedPlutus, null, 2) + "\n",
+  );
+
+  // Regenerate contract_blueprint.ts from merged plutus.json
+  const blueprintOutputPath = resolve(basePath, "contract_blueprint.ts");
+  execSync(
+    `bunx @blaze-cardano/blueprint@latest ${deployedPlutusPath} -o ${blueprintOutputPath}`,
+  );
 }

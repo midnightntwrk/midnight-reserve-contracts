@@ -11,7 +11,6 @@ import {
   TransactionOutput,
 } from "@blaze-cardano/core";
 import { resolve } from "path";
-import { existsSync } from "fs";
 import type { GlobalOptions } from "../../lib/global-options";
 import type { NetworkConfig } from "../../lib/types";
 import { getNetworkId, getConfigSection } from "../../lib/types";
@@ -44,10 +43,9 @@ import { writeTransactionFile, printSuccess } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
 import {
-  saveVersionSnapshot,
+  mergeValidatorToDeployedScripts,
+  readVersionsJson,
   addStagedValidator,
-  type VersionInfo,
-  type ChangeRecord,
 } from "../../lib/versions";
 import { diffBlueprints } from "../../lib/blueprint-diff";
 import * as Contracts from "../../../contract_blueprint";
@@ -216,6 +214,18 @@ export async function handler(argv: StageUpgradeOptions) {
     if (!process.env.TECH_AUTH_PRIVATE_KEYS) {
       throw new Error(
         "TECH_AUTH_PRIVATE_KEYS environment variable is required when --sign is enabled",
+      );
+    }
+  }
+
+  // Pre-flight: reject re-staging of already-promoted validators
+  const logicV2Name = VALIDATOR_LOGIC_V2_NAMES[validator];
+  if (logicV2Name) {
+    const versionsData = readVersionsJson(network);
+    if (versionsData?.promoted.includes(logicV2Name)) {
+      throw new Error(
+        `Cannot re-stage '${logicV2Name}': it has already been promoted and cannot be replaced.\n` +
+          `Promoted validators are immutable.`,
       );
     }
   }
@@ -504,52 +514,13 @@ export async function handler(argv: StageUpgradeOptions) {
     ],
   });
 
-  // Save version snapshot when using build contracts (v2+ upgrade)
+  // Merge staged validator into deployed-scripts when using build contracts
   if (useBuild) {
     const projectRoot = resolve(import.meta.dir, "../../..");
     const plutusJsonPath = resolve(projectRoot, `plutus-${network}.json`);
-    const blueprintPath = resolve(
-      projectRoot,
-      `contract_blueprint_${network}.ts`,
-    );
-
-    if (existsSync(plutusJsonPath) && existsSync(blueprintPath)) {
-      const versionInfo: VersionInfo = {
-        round: newStagingState[4],
-        logicRound: newStagingState[5],
-        timestamp: new Date().toISOString(),
-        gitCommit: "",
-      };
-
-      const changes: ChangeRecord[] = [
-        {
-          type: "stage",
-          validator,
-          oldHash: currentStagingState[0],
-          newHash: newLogicHash,
-          description: `Staged ${validator} logic upgrade`,
-        },
-      ];
-
-      saveVersionSnapshot(
-        network,
-        versionInfo,
-        changes,
-        plutusJsonPath,
-        blueprintPath,
-      );
-      printSuccess(`Saved version snapshot to deployed-scripts/${network}/`);
-    } else {
-      console.warn(
-        `\nWarning: Skipping version snapshot — build artifacts not found:` +
-          `\n  plutus: ${plutusJsonPath} (${existsSync(plutusJsonPath) ? "exists" : "MISSING"})` +
-          `\n  blueprint: ${blueprintPath} (${existsSync(blueprintPath) ? "exists" : "MISSING"})` +
-          `\n  Run 'just build' first to generate these files.`,
-      );
-    }
-  } else {
-    console.warn(
-      `\nWarning: No version snapshot saved — pass --use-build to save a version snapshot to deployed-scripts.`,
+    mergeValidatorToDeployedScripts(network, newLogicHash, plutusJsonPath);
+    printSuccess(
+      `Merged ${validator} validator into deployed-scripts/${network}/plutus.json`,
     );
   }
 
@@ -585,7 +556,6 @@ export async function handler(argv: StageUpgradeOptions) {
   console.log("\nTransaction ID:", tx.getId());
 
   // Track staged validator in versions.json
-  const logicV2Name = VALIDATOR_LOGIC_V2_NAMES[validator];
   if (logicV2Name) {
     if (addStagedValidator(network, logicV2Name)) {
       printSuccess(`Tracked ${logicV2Name} as staged in versions.json`);
