@@ -1,7 +1,7 @@
 # Contract Address Report
 
 **Network:** node-dev-2
-**Generated:** 2026-02-18T22:06:17.645Z
+**Generated:** 2026-02-19T04:54:53.358Z
 **Contracts:** 19
 
 ---
@@ -12,8 +12,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wqnln2jw6d3ycq2aqefxrj485zn32l3w9fd2nkmn9pejdggknau9a` |
-| **Script Hash** | `27f9aa4ed3624c015d065261caa7a0a7157e2e2a5aa9db73287326a1` |
+| **Address** | `addr_test1wzc4nxhjw59rswwyurv97ztj88nf8z5qeszm0ae5lhmz5tcsw7t7g` |
+| **Script Hash** | `b1599af2750a3839c4e0d85f097239e6938a80cc05b7f734fdf62a2f` |
 | **ADA** | 1.948120 |
 | **Datum** | Inline datum present (211 bytes) |
 
@@ -21,20 +21,20 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wprharn69uz6jq6n5x89knmvjxr5ryum6lwf058pe8qwlfcrcakvs` |
-| **Script Hash** | `477e8e7a2f05a90353a18e5b4f6c918741939bd7dc97d0e1c9c0efa7` |
+| **Address** | `addr_test1wqmk5sp970vq6ur48x2vne2k6nrrvkulsefpjehxwjr6gqszr9k7m` |
+| **Script Hash** | `376a4025f3d80d70753994c9e556d4c6365b9f86521966e67487a402` |
 | **ADA** | 2.693750 |
 | **NFT Tokens** | `main`, `staging` |
-| **Active Logic Hash** | `72a3fefad6c1188394d985ddff4a4aeba359ba176854241da5636f77` |
-| **Auth Hash** | `597339a5167ea00315766c728cf1fd8e3ab04e0705846c470ed56f06` |
-| **Datum** | UpgradeState(logic=72a3fefad6c11883...); UpgradeState(logic=72a3fefad6c11883...) |
+| **Active Logic Hash** | `0e5e243678b79430339df114426a4bd0dd5753a3080f57a90d5eb01d` |
+| **Auth Hash** | `a06ca61685933b73215f27882c851fb1354f562187002640bedef09e` |
+| **Datum** | UpgradeState(logic=0e5e243678b79430...); UpgradeState(logic=0e5e243678b79430...) |
 
 ### Tech Auth Logic
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wpe28lh66mq33qu5mxzaml62ft46xkd6za59gfqa543k7acsrk7qq` |
-| **Script Hash** | `72a3fefad6c1188394d985ddff4a4aeba359ba176854241da5636f77` |
+| **Address** | `addr_test1wq89ufpk0zmegvpnnhc3gsn2f0gd646n5vyq74afp40tq8gz2p7uf` |
+| **Script Hash** | `0e5e243678b79430339df114426a4bd0dd5753a3080f57a90d5eb01d` |
 | **ADA** | 0.000000 |
 
 ## COUNCIL
@@ -43,8 +43,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wq8sr344he97y4rdyz2uf22gv7lqjahksl3wrhpzczdl3vgc24v3k` |
-| **Script Hash** | `0f01c6b5be4be2546d2095c4a94867be0976f687e2e1dc22c09bf8b1` |
+| **Address** | `addr_test1wqv43xmj23gpxrqh722r3xz7amke7a8s4n8ny0fkmvlw29gt44j4e` |
+| **Script Hash** | `19589b725450130c17f29438985eeeed9f74f0accf323d36db3ee515` |
 | **ADA** | 1.948120 |
 | **Datum** | Inline datum present (211 bytes) |
 
@@ -52,20 +52,20 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wzv072swqmffk2cadfqngev6zvefqg4qcjqtur0jjhaamsqd6ysvh` |
-| **Script Hash** | `98ff2a0e06d29b2b1d6a4134659a13329022a0c480be0df295fbddc0` |
+| **Address** | `addr_test1wqg29s5ad8prtngcxgetm7tyepxfhnalhjccufytju80laq99rx6q` |
+| **Script Hash** | `10a2c29d69c235cd183232bdf964c84c9bcfbfbcb18e248b970efff4` |
 | **ADA** | 2.693750 |
-| **NFT Tokens** | `main`, `staging` |
-| **Active Logic Hash** | `c5b9de7bac823a4740353ae8b7f56e57af1c97e06122315cf1cf82fa` |
-| **Auth Hash** | `597339a5167ea00315766c728cf1fd8e3ab04e0705846c470ed56f06` |
-| **Datum** | UpgradeState(logic=c5b9de7bac823a47...); UpgradeState(logic=c5b9de7bac823a47...) |
+| **NFT Tokens** | `staging`, `main` |
+| **Active Logic Hash** | `6e7730adc040b4415b9498dfb2ca668381d958773b9952778cf5b5ff` |
+| **Auth Hash** | `a06ca61685933b73215f27882c851fb1354f562187002640bedef09e` |
+| **Datum** | UpgradeState(logic=6e7730adc040b441...); UpgradeState(logic=6e7730adc040b441...) |
 
 ### Council Logic
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wrzmnhnm4jpr536qx5aw3dl4det678yhupsjyv2u788c97szk8ajg` |
-| **Script Hash** | `c5b9de7bac823a4740353ae8b7f56e57af1c97e06122315cf1cf82fa` |
+| **Address** | `addr_test1wpqequqwt0pz0jn7eea4kkfktjulep5qlklfn63hym5lm6clrp9t7` |
+| **Script Hash** | `4190700e5bc227ca7ece7b5b59365cb9fc8680fdbe99ea3726e9fdeb` |
 | **ADA** | 0.000000 |
 
 ## RESERVE
@@ -74,8 +74,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wrfaga9vkgdarezgvua69gv79p95uaf0w0ejrnx433dn9sszdlqqk` |
-| **Script Hash** | `d3d474acb21bd1e448673ba2a19e284b4e752f73f321ccd58c5b32c2` |
+| **Address** | `addr_test1wqwqhlcyhn8kp86w8pcyyp5767llt6a3kfd79u8nh5qjujqued3x8` |
+| **Script Hash** | `1c0bff04bccf609f4e387042069ed7bff5ebb1b25be2f0f3bd012e48` |
 | **ADA** | 1.060260 |
 | **Datum** | Inline datum present (6 bytes) |
 
@@ -83,20 +83,20 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wza6ppsd0c9h6tpce3wjkq6qd6nu4far70f68fj65hnz6sg80q5aa` |
-| **Script Hash** | `bba0860d7e0b7d2c38cc5d2b03406ea7caa7a3f3d3a3a65aa5e62d41` |
+| **Address** | `addr_test1wqtn7mgsdnq4fy52cyv3ushpgg0xaga3ujg523a2gwyp7yqtmgqgg` |
+| **Script Hash** | `173f6d106cc154928ac1191e42e1421e6ea3b1e4914547aa43881f10` |
 | **ADA** | 2.693750 |
 | **NFT Tokens** | `main`, `staging` |
-| **Active Logic Hash** | `aed91f80821b7ae39b9e5cb8880087021084fd0ee1a5ea785cddcdc9` |
-| **Auth Hash** | `597339a5167ea00315766c728cf1fd8e3ab04e0705846c470ed56f06` |
-| **Datum** | UpgradeState(logic=aed91f80821b7ae3...); UpgradeState(logic=aed91f80821b7ae3...) |
+| **Active Logic Hash** | `e9cc843ef8b95bd2a21b57ccaa26f7b85a4fe539bd6bddd6f857dde2` |
+| **Auth Hash** | `a06ca61685933b73215f27882c851fb1354f562187002640bedef09e` |
+| **Datum** | UpgradeState(logic=e9cc843ef8b95bd2...); UpgradeState(logic=e9cc843ef8b95bd2...) |
 
 ### Reserve Logic
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wzhdj8uqsgdh4cumnewt3zqqsupppp8apms6t6nctnwumjg2ndk72` |
-| **Script Hash** | `aed91f80821b7ae39b9e5cb8880087021084fd0ee1a5ea785cddcdc9` |
+| **Address** | `addr_test1wr5uepp7lzu4h54zrdtue23x77u95nl98x7khhwklptamcszuvym2` |
+| **Script Hash** | `e9cc843ef8b95bd2a21b57ccaa26f7b85a4fe539bd6bddd6f857dde2` |
 | **ADA** | 0.000000 |
 
 ## ICS
@@ -105,8 +105,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wzvetkt7yac9n05d0j2369akrnjcnrxfzlad87fascdgmcs205j0z` |
-| **Script Hash** | `9995d97e277059be8d7c951d17b61ce5898cc917fad3f93d861a8de2` |
+| **Address** | `addr_test1wpfdy9ltj0tkneeghpv6eyt4829q7mec0keayjpa80xwm2g7lxeds` |
+| **Script Hash** | `52d217eb93d769e728b859ac91753a8a0f6f387db3d2483d3bcceda9` |
 | **ADA** | 1.060260 |
 | **Datum** | Inline datum present (6 bytes) |
 
@@ -114,20 +114,20 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wquly7ajzr5ek64x0ad0xlh8zyug55005qnchg4zfmqxr4gl76hde` |
-| **Script Hash** | `39f27bb210e99b6aa67f5af37ee711388a51efa0278ba2a24ec061d5` |
+| **Address** | `addr_test1wpxyzxmxx55s2zjgxtmz9t4rhn0qyv6fw6rkm4jclcdcpgcdct0q0` |
+| **Script Hash** | `4c411b663529050a4832f622aea3bcde02334976876dd658fe1b80a3` |
 | **ADA** | 2.693750 |
 | **NFT Tokens** | `main`, `staging` |
-| **Active Logic Hash** | `404297b3aa2316585d239686860b1a6b600422aee9eeae8be1cc43c5` |
-| **Auth Hash** | `597339a5167ea00315766c728cf1fd8e3ab04e0705846c470ed56f06` |
-| **Datum** | UpgradeState(logic=404297b3aa231658...); UpgradeState(logic=404297b3aa231658...) |
+| **Active Logic Hash** | `69e0994ae071683094a3ab3c19a51b116839c8b7c9390d2d71112175` |
+| **Auth Hash** | `a06ca61685933b73215f27882c851fb1354f562187002640bedef09e` |
+| **Datum** | UpgradeState(logic=69e0994ae0716830...); UpgradeState(logic=69e0994ae0716830...) |
 
 ### ICS Logic
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wpqy99an4g33vkzaywtgdpstrf4kqppz4m57at5tu8xy83glj2fw0` |
-| **Script Hash** | `404297b3aa2316585d239686860b1a6b600422aee9eeae8be1cc43c5` |
+| **Address** | `addr_test1wp57px22upcksvy55w4ncxd9rvgkswwgklynjrfdwygjzage8tmc5` |
+| **Script Hash** | `69e0994ae071683094a3ab3c19a51b116839c8b7c9390d2d71112175` |
 | **ADA** | 0.000000 |
 
 ## GOV
@@ -136,8 +136,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wpvhxwd9zel2qqc4wek89r83lk8r4vzwquzcgmz8pm2k7pshw05xs` |
-| **Script Hash** | `597339a5167ea00315766c728cf1fd8e3ab04e0705846c470ed56f06` |
+| **Address** | `addr_test1wzsxefskskfnkueptuncsty9r7cn2n6kyxrsqfjqhm00p8sa2c6nk` |
+| **Script Hash** | `a06ca61685933b73215f27882c851fb1354f562187002640bedef09e` |
 | **ADA** | 0.000000 |
 
 ## FEDERATED-OPS
@@ -146,8 +146,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wrvqe8aufm7pskanartq603qeag7lar3js87uuj8n5nfzgs6pahyj` |
-| **Script Hash** | `d80c9fbc4efc185bb3e8d60d3e20cf51eff471940fee72479d269122` |
+| **Address** | `addr_test1wz7ftk3fmqkkg59xuk4nu9njmj9vlga6yq5sef8t3muk27gh65wln` |
+| **Script Hash** | `bc95da29d82d6450a6e5ab3e1672dc8acfa3ba20290ca4eb8ef96579` |
 | **ADA** | 5.292680 |
 | **Datum** | Inline datum present (986 bytes) |
 
@@ -155,20 +155,20 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wz9gyz3zft5uvru5ugdzfx5gmkgfxl8p23zl8pzndsj7czqqf3rua` |
-| **Script Hash** | `8a820a224ae9c60f94e21a249a88dd90937ce15445f384536c25ec08` |
+| **Address** | `addr_test1wqd4rf2syeettnf099s2qesty86ew0rp4p4xjtdhe0hju4qa2vgt3` |
+| **Script Hash** | `1b51a5502672b5cd2f2960a0660b21f5973c61a86a692db7cbef2e54` |
 | **ADA** | 2.693750 |
 | **NFT Tokens** | `main`, `staging` |
-| **Active Logic Hash** | `1aa84995d59a54ab8dac9b345b396c88eb0e01257bd0663ad12312fa` |
-| **Auth Hash** | `597339a5167ea00315766c728cf1fd8e3ab04e0705846c470ed56f06` |
-| **Datum** | UpgradeState(logic=1aa84995d59a54ab...); UpgradeState(logic=1aa84995d59a54ab...) |
+| **Active Logic Hash** | `2a5031ea27c383bb53098b56e96de3cff62acc45f8b9ff6719b839d8` |
+| **Auth Hash** | `a06ca61685933b73215f27882c851fb1354f562187002640bedef09e` |
+| **Datum** | UpgradeState(logic=2a5031ea27c383bb...); UpgradeState(logic=2a5031ea27c383bb...) |
 
 ### Federated Ops Logic
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wqd2sjv46kd9f2ud4jdngkeedjywkrspy4aaqe366y3397s8l9v2n` |
-| **Script Hash** | `1aa84995d59a54ab8dac9b345b396c88eb0e01257bd0663ad12312fa` |
+| **Address** | `addr_test1wq49qv02ylpc8w6npx94d6tdu08lv2kvghutnlm8rxurnkqsd2ltl` |
+| **Script Hash** | `2a5031ea27c383bb53098b56e96de3cff62acc45f8b9ff6719b839d8` |
 | **ADA** | 0.000000 |
 
 ## TERMS-AND-CONDITIONS
@@ -177,27 +177,27 @@
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wq0rnepdqmas8nj7kgnr5zvnzhmgss2cmmnh7y6qn84rasszrqytd` |
-| **Script Hash** | `1e39e42d06fb03ce5eb2263a099315f6884158dee77f134099ea3ec2` |
-| **ADA** | 1.211110 |
-| **Datum** | Inline datum present (40 bytes) |
+| **Address** | `addr_test1wqesayu0na9lzrstsd3ev9hex3xm7xwq3k728c76rnyq3esa32r3f` |
+| **Script Hash** | `330e938f9f4bf10e0b83639616f9344dbf19c08dbca3e3da1cc808e6` |
+| **ADA** | 1.323170 |
+| **Datum** | Inline datum present (66 bytes) |
 
 ### Terms And Conditions Two Stage
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wrhqjx4nwpkp8cgushlek9klwhq3u8sranqqdpffgzsqftgekwg3a` |
-| **Script Hash** | `ee091ab3706c13e11c85ff9b16df75c11e1e03ecc006852940a004ad` |
+| **Address** | `addr_test1wp7xp2vd0g23qy5zd07a03ng9lp39c9s9cl2p7gz37fe52cyuzpja` |
+| **Script Hash** | `7c60a98d7a151012826bfdd7c6682fc312e0b02e3ea0f9028f939a2b` |
 | **ADA** | 2.693750 |
 | **NFT Tokens** | `main`, `staging` |
-| **Active Logic Hash** | `d67a139da001be7540a9865bace6caba08db1418b97e31f2beed4cfa` |
-| **Auth Hash** | `597339a5167ea00315766c728cf1fd8e3ab04e0705846c470ed56f06` |
-| **Datum** | UpgradeState(logic=d67a139da001be75...); UpgradeState(logic=d67a139da001be75...) |
+| **Active Logic Hash** | `ba0bbd6533b7ced733184a1a7cb0dc9dd16f8eecc48dff5da55a5cdf` |
+| **Auth Hash** | `a06ca61685933b73215f27882c851fb1354f562187002640bedef09e` |
+| **Datum** | UpgradeState(logic=ba0bbd6533b7ced7...); UpgradeState(logic=ba0bbd6533b7ced7...) |
 
 ### Terms And Conditions Logic
 
 | Field | Value |
 |-------|-------|
-| **Address** | `addr_test1wrt85yua5qqmua2q4xr9ht8xe2aq3kc5rzuhuv0jhmk5e7szlszdc` |
-| **Script Hash** | `d67a139da001be7540a9865bace6caba08db1418b97e31f2beed4cfa` |
+| **Address** | `addr_test1wzaqh0t9xwmua4enrp9p5l9smjwazmuwanzgml6a54d9ehct40mls` |
+| **Script Hash** | `ba0bbd6533b7ced733184a1a7cb0dc9dd16f8eecc48dff5da55a5cdf` |
 | **ADA** | 0.000000 |
