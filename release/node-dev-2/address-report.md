@@ -1,7 +1,7 @@
 # Contract Address Report
 
 **Network:** node-dev-2
-**Generated:** 2026-02-19T04:54:53.358Z
+**Generated:** 2026-02-19T05:07:13.514Z
 **Contracts:** 19
 
 ---
@@ -158,10 +158,10 @@
 | **Address** | `addr_test1wqd4rf2syeettnf099s2qesty86ew0rp4p4xjtdhe0hju4qa2vgt3` |
 | **Script Hash** | `1b51a5502672b5cd2f2960a0660b21f5973c61a86a692db7cbef2e54` |
 | **ADA** | 2.693750 |
-| **NFT Tokens** | `main`, `staging` |
-| **Active Logic Hash** | `2a5031ea27c383bb53098b56e96de3cff62acc45f8b9ff6719b839d8` |
+| **NFT Tokens** | `staging`, `main` |
+| **Active Logic Hash** | `c0f3269c62b3edbec9e5e6771c03f9d8bcc18a4208a7c3e34dc4d567` |
 | **Auth Hash** | `a06ca61685933b73215f27882c851fb1354f562187002640bedef09e` |
-| **Datum** | UpgradeState(logic=2a5031ea27c383bb...); UpgradeState(logic=2a5031ea27c383bb...) |
+| **Datum** | UpgradeState(logic=c0f3269c62b3edbe...); UpgradeState(logic=c0f3269c62b3edbe...) |
 
 ### Federated Ops Logic
 

@@ -496,7 +496,22 @@
     "address": "addr_test1wqd4rf2syeettnf099s2qesty86ew0rp4p4xjtdhe0hju4qa2vgt3",
     "utxos": [
       {
-        "txHash": "5dd8b0445840d5e4076dc22893890f2c457077168c51cab6db89f229cecbf04b",
+        "txHash": "d4efcdab36823c08447051f00727075ecda5a3500cfd28259086db668b855c6e",
+        "outputIndex": 0,
+        "lovelace": "1353340",
+        "ada": "1.353340",
+        "tokens": [
+          {
+            "policyId": "1b51a5502672b5cd2f2960a0660b21f5973c61a86a692db7cbef2e54",
+            "assetName": "73746167696e67",
+            "assetNameUtf8": "staging",
+            "quantity": "1"
+          }
+        ],
+        "inlineDatum": "9f581cc0f3269c62b3edbec9e5e6771c03f9d8bcc18a4208a7c3e34dc4d56740581c419a467285559841c87a091286dc5525d1b2e9ed11eced90ea3b3380400001ff"
+      },
+      {
+        "txHash": "b7a71c863a3c0d4da0cf305322c1508a5a8975d5b53228cd889044f04885fc22",
         "outputIndex": 0,
         "lovelace": "1340410",
         "ada": "1.340410",
@@ -508,32 +523,17 @@
             "quantity": "1"
           }
         ],
-        "inlineDatum": "9f581c2a5031ea27c383bb53098b56e96de3cff62acc45f8b9ff6719b839d840581ca06ca61685933b73215f27882c851fb1354f562187002640bedef09e400000ff"
-      },
-      {
-        "txHash": "5dd8b0445840d5e4076dc22893890f2c457077168c51cab6db89f229cecbf04b",
-        "outputIndex": 1,
-        "lovelace": "1353340",
-        "ada": "1.353340",
-        "tokens": [
-          {
-            "policyId": "1b51a5502672b5cd2f2960a0660b21f5973c61a86a692db7cbef2e54",
-            "assetName": "73746167696e67",
-            "assetNameUtf8": "staging",
-            "quantity": "1"
-          }
-        ],
-        "inlineDatum": "9f581c2a5031ea27c383bb53098b56e96de3cff62acc45f8b9ff6719b839d840581c419a467285559841c87a091286dc5525d1b2e9ed11eced90ea3b3380400000ff"
+        "inlineDatum": "9f581cc0f3269c62b3edbec9e5e6771c03f9d8bcc18a4208a7c3e34dc4d56740581ca06ca61685933b73215f27882c851fb1354f562187002640bedef09e400001ff"
       }
     ],
     "totalAda": "2.693750",
     "totalLovelace": "2693750",
     "nftTokenNames": [
-      "main",
-      "staging"
+      "staging",
+      "main"
     ],
     "upgradeState": {
-      "logicHash": "2a5031ea27c383bb53098b56e96de3cff62acc45f8b9ff6719b839d8",
+      "logicHash": "c0f3269c62b3edbec9e5e6771c03f9d8bcc18a4208a7c3e34dc4d567",
       "authHash": "a06ca61685933b73215f27882c851fb1354f562187002640bedef09e"
     }
   },
