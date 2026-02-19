@@ -143,8 +143,8 @@ function extractValidatorNames(plutusJsonPath: string): string[] {
       last === "else" || last === "spend" ? parts.slice(1, -1) : parts.slice(1);
     const name = inner.join(".");
     if (!name) continue;
-    // Filter out v2 and staging validators
-    if (/_v2$/.test(name) || /_staging_/.test(name)) continue;
+    // Filter out versioned upgrades (v2, v3, ...) and staging validators
+    if (/_v\d+$/.test(name) || /_staging_/.test(name)) continue;
     names.add(name);
   }
 

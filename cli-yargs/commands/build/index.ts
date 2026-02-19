@@ -5,32 +5,24 @@ import type { GlobalOptions } from "../../lib/global-options";
 import { buildContracts } from "../../lib/build-engine";
 
 interface BuildOptions extends GlobalOptions {
-  env: string;
   trace?: string;
 }
 
-export const command = "build <env>";
+export const command = "build";
 export const describe =
   "Compile Aiken contracts and generate TypeScript bindings";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .positional("env", {
-      type: "string",
-      demandOption: true,
-      description:
-        "Target environment (default, preview, qanet, govnet, node-dev-01, preprod, mainnet)",
-    })
-    .option("trace", {
-      type: "string",
-      choices: ["silent", "verbose", "compact"] as const,
-      default: "verbose",
-      description: "Aiken trace level",
-    });
+  return yargs.option("trace", {
+    type: "string",
+    choices: ["silent", "verbose", "compact"] as const,
+    default: "verbose",
+    description: "Aiken trace level",
+  });
 }
 
 export async function handler(argv: BuildOptions) {
-  const { env, trace } = argv;
+  const { network: env, trace } = argv;
   const projectRoot = process.cwd();
 
   await buildContracts({

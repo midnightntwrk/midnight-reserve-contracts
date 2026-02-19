@@ -3,22 +3,15 @@ import type { GlobalOptions } from "../../lib/global-options";
 import { buildContracts } from "../../lib/build-engine";
 
 interface BuildFromDeployedOptions extends GlobalOptions {
-  env: string;
   trace?: string;
 }
 
-export const command = "build-from-deployed <env>";
+export const command = "build-from-deployed";
 export const describe =
   "Compile contracts against deployed validator hashes (single-phase build)";
 
 export function builder(yargs: Argv<GlobalOptions>) {
   return yargs
-    .positional("env", {
-      type: "string",
-      demandOption: true,
-      description:
-        "Target environment (preview, qanet, govnet, node-dev-01, preprod, mainnet)",
-    })
     .option("trace", {
       type: "string",
       choices: ["silent", "verbose", "compact"] as const,
@@ -36,7 +29,7 @@ export function builder(yargs: Argv<GlobalOptions>) {
 }
 
 export async function handler(argv: BuildFromDeployedOptions) {
-  const { env, trace } = argv;
+  const { network: env, trace } = argv;
   const projectRoot = process.cwd();
 
   await buildContracts({

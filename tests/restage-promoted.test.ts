@@ -52,32 +52,33 @@ describe("resolveValidatorNameByHash", () => {
   });
 });
 
-describe("re-staging promoted validator check", () => {
-  test("promoted validator is allowed (no throw) regardless of hash", () => {
-    const logicV2Name = "council_logic_v2";
+describe("version-agnostic re-staging check", () => {
+  test("known promoted hash is detected as re-stage", () => {
+    const v2Hash = "6e7730adc040b4415b9498dfb2ca668381d958773b9952778cf5b5ff";
+    const resolvedName = resolveValidatorNameByHash("node-dev-2", v2Hash);
     const versionsData = readVersionsJson("node-dev-2");
-    expect(versionsData?.promoted.includes(logicV2Name)).toBe(true);
 
-    // Any hash should be allowed — the CLI just warns, doesn't throw
-    const promotedHash = getPromotedValidatorHash("node-dev-2", logicV2Name);
-    expect(promotedHash).not.toBeNull();
-
-    // Same hash — allowed
-    expect(() => {
-      // no-op: CLI logs but does not throw
-    }).not.toThrow();
-
-    // Different hash — also allowed (rollback use case)
-    expect(() => {
-      // no-op: CLI logs but does not throw
-    }).not.toThrow();
+    // v2 hash resolves to council_logic_v2, which is in promoted list
+    expect(resolvedName).toBe("council_logic_v2");
+    expect(versionsData?.promoted.includes(resolvedName!)).toBe(true);
   });
 
-  test("non-promoted validator passes through without check", () => {
-    const logicV2Name = "reserve_logic_v2";
+  test("unknown hash is NOT detected as re-stage", () => {
+    const unknownHash =
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const resolvedName = resolveValidatorNameByHash("node-dev-2", unknownHash);
+
+    // Unknown hash resolves to null — not a re-stage
+    expect(resolvedName).toBeNull();
+  });
+
+  test("v1 promoted hash is also detected as re-stage", () => {
+    const v1Hash = "4190700e5bc227ca7ece7b5b59365cb9fc8680fdbe99ea3726e9fdeb";
+    const resolvedName = resolveValidatorNameByHash("node-dev-2", v1Hash);
     const versionsData = readVersionsJson("node-dev-2");
 
-    // reserve_logic_v2 is not in promoted list
-    expect(versionsData?.promoted.includes(logicV2Name)).toBe(false);
+    // v1 hash resolves to council_logic, which is also in promoted list
+    expect(resolvedName).toBe("council_logic");
+    expect(versionsData?.promoted.includes(resolvedName!)).toBe(true);
   });
 });

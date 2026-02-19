@@ -4,7 +4,7 @@ validator_json_indices env="default":
 
 
 build env="default" verbosity="verbose":
-    bun cli-yargs/index.ts build {{env}} --trace {{verbosity}}
+    bun cli-yargs/index.ts build -n {{env}} --trace {{verbosity}}
 
 
 aiken-check verbosity="verbose":

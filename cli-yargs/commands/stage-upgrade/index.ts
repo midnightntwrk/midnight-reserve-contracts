@@ -46,20 +46,10 @@ import {
   mergeValidatorToDeployedScripts,
   readVersionsJson,
   addStagedValidator,
-  getPromotedValidatorHash,
   resolveValidatorNameByHash,
 } from "../../lib/versions";
 import { diffBlueprints } from "../../lib/blueprint-diff";
 import * as Contracts from "../../../contract_blueprint";
-
-const VALIDATOR_LOGIC_V2_NAMES: Record<string, string> = {
-  "tech-auth": "tech_auth_logic_v2",
-  council: "council_logic_v2",
-  reserve: "reserve_logic_v2",
-  ics: "ics_logic_v2",
-  "federated-ops": "federated_ops_logic_v2",
-  "terms-and-conditions": "terms_and_conditions_logic_v2",
-};
 
 function getStagingForeverHash(
   validatorName: string,
@@ -220,30 +210,17 @@ export async function handler(argv: StageUpgradeOptions) {
     }
   }
 
-  // Pre-flight: warn (but allow) re-staging of already-promoted validators.
-  // Use case: rolling back to a previous logic version after a bad upgrade.
-  const logicV2Name = VALIDATOR_LOGIC_V2_NAMES[validator];
-  let isRestage = false;
-  if (logicV2Name) {
-    const versionsData = readVersionsJson(network);
-    if (versionsData?.promoted.includes(logicV2Name)) {
-      isRestage = true;
-      const promotedHash = getPromotedValidatorHash(network, logicV2Name);
-      const newName =
-        resolveValidatorNameByHash(network, newLogicHash) ?? newLogicHash;
-      if (promotedHash === newLogicHash) {
-        console.log(`\n  Re-staging ${newName} (same hash as promoted)`);
-      } else {
-        const currentName =
-          resolveValidatorNameByHash(network, promotedHash ?? "") ??
-          promotedHash ??
-          "(not found)";
-        console.log(
-          `\n  Re-staging ${validator}: ${newName} (${newLogicHash})` +
-            `\n    Currently promoted: ${currentName} (${promotedHash ?? "?"})`,
-        );
-      }
-    }
+  // Pre-flight: check if the hash being staged is already a promoted validator.
+  // This is version-agnostic — looks up the hash, not a hardcoded v2 name.
+  const resolvedName = resolveValidatorNameByHash(network, newLogicHash);
+  const versionsData = readVersionsJson(network);
+  const isRestage =
+    resolvedName !== null &&
+    (versionsData?.promoted.includes(resolvedName) ?? false);
+  if (isRestage) {
+    console.log(
+      `\n  Re-staging promoted validator: ${resolvedName} (${newLogicHash})`,
+    );
   }
 
   const networkId = getNetworkId(network);
@@ -572,13 +549,11 @@ export async function handler(argv: StageUpgradeOptions) {
   console.log("\nTransaction ID:", tx.getId());
 
   // Track staged validator in versions.json (skip for re-staged promoted validators)
-  if (logicV2Name && !isRestage) {
-    if (addStagedValidator(network, logicV2Name)) {
-      printSuccess(`Tracked ${logicV2Name} as staged in versions.json`);
-    } else {
-      console.warn(
-        `Warning: Could not track ${logicV2Name} as staged — versions.json not found`,
-      );
+  if (!isRestage) {
+    const stagedName =
+      resolveValidatorNameByHash(network, newLogicHash) ?? newLogicHash;
+    if (addStagedValidator(network, stagedName)) {
+      printSuccess(`Tracked ${stagedName} as staged in versions.json`);
     }
   }
 }

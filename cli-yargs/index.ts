@@ -49,4 +49,13 @@ addGlobalOptions(yargs(hideBin(process.argv)))
   .demandCommand()
   .help()
   .strict()
-  .parseAsync();
+  .fail((msg: string | null, err: Error | undefined) => {
+    if (msg) {
+      console.error(msg);
+    } else if (err) {
+      console.error(err.message || err);
+    }
+    process.exit(1);
+  })
+  .parseAsync()
+  .catch(() => {});
