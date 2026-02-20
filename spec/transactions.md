@@ -19,9 +19,13 @@
 6. [Change Federated Ops](#change-federated-ops)
 7. [Change Terms and Conditions](#change-terms-and-conditions)
 8. [Register Gov Auth](#register-gov-auth)
-9. [Dust Create](#dust-create)
-10. [Dust Update](#dust-update)
-11. [Dust Burn](#dust-burn)
+9. [Mint TCnight](#mint-tcnight)
+10. [Mint Staging State](#mint-staging-state)
+11. [Deploy Staging Track](#deploy-staging-track)
+12. [Migrate Federated Ops](#migrate-federated-ops)
+13. [Dust Create](#dust-create)
+14. [Dust Update](#dust-update)
+15. [Dust Burn](#dust-burn)
 
 ---
 
@@ -543,6 +547,172 @@ Registers the governance auth scripts as stake credentials (one-time setup after
 
 - `StakeRegistration` for `main_gov_auth` script hash
 - `StakeRegistration` for `staging_gov_auth` script hash
+
+---
+
+## Mint TCnight
+
+Mints or burns TCnight (test NIGHT) tokens on non-mainnet networks. Uses the `tcnight_mint_infinite` minting policy which allows unrestricted minting/burning on test networks.
+
+#### CLI Command
+
+```
+bun cli mint-tcnight --amount <amount> --user-address <addr> --network <env> --use-build
+```
+
+#### Validators Fired
+
+| Validator | Context | Constraints |
+|-----------|---------|-------------|
+| `tcnight_mint_infinite` | Minting | Unrestricted mint/burn on test networks |
+
+#### Inputs
+
+- User UTxO(s) (for fees; for burn: UTxOs containing TCnight tokens)
+
+#### Outputs
+
+- Mint: destination output with minted NIGHT tokens (min UTxO)
+- Burn: optional remainder output if not all tokens from consumed UTxOs are burned
+
+#### Minting
+
+- `amount` NIGHT tokens (positive for mint, negative for burn) under `tcnight_mint_infinite` policy
+
+#### Redeemer
+
+- Integer `0x00`
+
+---
+
+## Mint Staging State
+
+Mints a StagingState NFT for a v2 logic validator. This NFT is required before staging an upgrade to v2 logic.
+
+#### CLI Command
+
+```
+bun cli mint-staging-state --validator <name> --network <env> --use-build
+```
+
+#### Validators Fired
+
+| Validator | Context | Constraints |
+|-----------|---------|-------------|
+| `*_logic_v2` | Minting | Must consume one-shot UTxO; mint exactly 1 NFT with empty asset name |
+
+#### Inputs
+
+- V2 logic one-shot UTxO (consumed to authorize minting)
+
+#### Outputs
+
+1. StagingState UTxO at v2 logic script address with NFT and inline `StagingState` datum
+
+#### Minting
+
+- 1 NFT (empty asset name) under v2 logic policy
+
+#### Redeemer
+
+- Integer `0n`
+
+#### Datum Structure
+
+```
+StagingState = [
+  cnight_test_policy: ByteArray,    // 28 bytes
+  forever_script_hash: ByteArray    // 28 bytes (staging forever hash)
+]
+```
+
+---
+
+## Deploy Staging Track
+
+Deploys staging track forever validators for each governance domain. Each staging forever contract gets its own NFT and datum, mirroring the main track forever contracts.
+
+#### CLI Command
+
+```
+bun cli deploy-staging-track --network <env> --use-build
+```
+
+#### Validators Fired
+
+| Validator | Context | Constraints |
+|-----------|---------|-------------|
+| `*_staging_forever` (per component) | Minting | Must consume one-shot UTxO; mint exactly 1 NFT with empty asset name; output to staging forever address with inline datum |
+
+#### Inputs
+
+- One-shot UTxO per component (consumed to authorize minting)
+
+#### Outputs
+
+- Per component: staging forever UTxO at staging forever address with NFT and domain-specific inline datum
+
+#### Minting
+
+- 1 staging forever NFT (empty asset name) per component
+
+#### Redeemer
+
+- Council/Tech Auth: `PermissionedRedeemer` (signer map)
+- Others: Integer `0n`
+
+#### Components
+
+| Component | Datum Type |
+|-----------|-----------|
+| Council | `VersionedMultisig` |
+| Tech Auth | `VersionedMultisig` |
+| Federated Ops | `FederatedOps` |
+| Reserve | `Pair(0, 0)` |
+| ICS | `Pair(0, 0)` |
+| Terms and Conditions | `VersionedTermsAndConditions` |
+
+---
+
+## Migrate Federated Ops
+
+One-time migration of the federated ops forever datum from v1 (`FederatedOps`) to v2 (`FederatedOpsV2`) format. Requires v2 logic to be promoted first. Uses the `Migrate` redeemer which bypasses multisig validation.
+
+#### CLI Command
+
+```
+bun cli migrate-federated-ops --network <env> --tx-hash <h> --tx-index <i>
+```
+
+#### Validators Fired
+
+| Validator | Context | Constraints |
+|-----------|---------|-------------|
+| `federated_ops_forever` | Spending | Must spend forever NFT; output preserves NFT with updated `FederatedOpsV2` datum |
+| `federated_ops_logic_v2` | Withdrawal | Validates via `Migrate` redeemer; gated by `logic_round` check (can only happen once) |
+
+#### Inputs
+
+- Federated ops forever UTxO (spent with redeemer Integer `0n`)
+- User UTxO (for fees)
+
+#### Reference Inputs
+
+- Federated ops two-stage main UTxO (to verify v2 logic is active)
+
+#### Outputs
+
+1. Updated federated ops forever UTxO with same NFT and new `FederatedOpsV2` datum (adds `message` field, sets `logic_round` to 2)
+
+#### Withdrawals
+
+- `federated_ops_logic_v2` at 0 ADA with `Migrate` redeemer (constructor 1, empty fields)
+- Mitigation logic withdrawal (if present in `UpgradeState`)
+
+#### Redeemer
+
+- Federated ops forever: Integer `0n`
+- Logic withdrawal: `LogicRedeemer::Migrate` (constructor variant 1)
 
 ---
 

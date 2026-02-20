@@ -15,7 +15,6 @@ export const describe =
 export function builder(yargs: Argv<GlobalOptions>) {
   return yargs
     .option("network", {
-      alias: "n",
       type: "string",
       default: "default",
       description:

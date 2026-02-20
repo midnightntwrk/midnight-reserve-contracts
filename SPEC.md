@@ -49,24 +49,23 @@ midnight-reserve-contracts/
 │   ├── multisig/                    # Multisig structure validation
 │   ├── bridge/                      # BEEFY bridge codec and validation
 │   └── utils.ak                     # Common utilities
-├── cli/                           # TypeScript CLI
+├── cli-yargs/                     # TypeScript CLI
 │   ├── index.ts                     # Entry point, command routing
 │   ├── commands/                    # Command implementations
-│   │   ├── deploy.ts
-│   │   ├── deploy-staging-track.ts
-│   │   ├── change-council.ts
-│   │   ├── change-tech-auth.ts
-│   │   ├── change-federated-ops.ts
-│   │   ├── stage-upgrade.ts
-│   │   ├── promote-upgrade.ts
-│   │   ├── mint-staging-state.ts      # Mint StagingState NFT for v2 logic
-│   │   ├── migrate-federated-ops.ts   # Migrate federated ops datum v1→v2
-│   │   ├── sign-and-submit.ts
-│   │   ├── combine-signatures.ts
-│   │   ├── info.ts
+│   │   ├── deploy/
+│   │   ├── deploy-staging-track/
+│   │   ├── change-council/
+│   │   ├── change-tech-auth/
+│   │   ├── change-federated-ops/
+│   │   ├── stage-upgrade/
+│   │   ├── promote-upgrade/
+│   │   ├── mint-staging-state/        # Mint StagingState NFT for v2 logic
+│   │   ├── migrate-federated-ops/     # Migrate federated ops datum v1→v2
+│   │   ├── sign-and-submit/
+│   │   ├── combine-signatures/
+│   │   ├── info/
 │   │   └── ...
-│   ├── lib/                         # Blaze SDK helpers
-│   └── utils/                       # Validation, output helpers
+│   └── lib/                         # Blaze SDK helpers
 ├── tests/                         # Blaze emulator integration tests
 ├── deployments/                   # Network-specific artifacts
 └── spec/                          # Detailed specifications
@@ -84,7 +83,7 @@ validators/*.ak (entry points)
             ├─→ lib/auth/
             └─→ lib/bridge/
 
-cli/ (TypeScript)
+cli-yargs/ (TypeScript)
     └─→ @blaze-cardano/* (SDK)
             ├─→ contract_blueprint.ts (generated bindings)
             └─→ plutus.json (compiled scripts)

@@ -27,6 +27,7 @@ import {
   isSingleTransaction,
   isDeploymentTransactions,
 } from "../../lib/transaction-json";
+
 import { submitWithRetry, awaitTxConfirmation } from "../../lib/submit";
 
 interface CombineSignaturesOptions extends GlobalOptions {
@@ -301,60 +302,10 @@ export async function handler(argv: CombineSignaturesOptions) {
   const errors: Array<{ name: string; error: string }> = [];
 
   if (isDeploymentTransactions(txJson)) {
-    printProgress(
-      `Found ${txJson.transactions.length} transactions to process`,
+    throw new Error(
+      "combine-signatures only supports single-transaction files. " +
+        "For multi-transaction deployments, use sign-and-submit instead.",
     );
-
-    const submissions: Array<{ name: string; txId: TransactionId }> = [];
-    const submitErrors: Array<{ name: string; error: string }> = [];
-
-    for (const txData of txJson.transactions) {
-      try {
-        const tx = Transaction.fromCbor(TxCBOR(HexBlob(txData.cborHex)));
-        let signedTx = mergeSignaturesIntoTransaction(tx, allSignatures);
-
-        if (deployerPrivateKey) {
-          const txId = signedTx.getId();
-          const deployerSigs = signTransaction(txId as string, [
-            deployerPrivateKey,
-          ]);
-          signedTx = mergeSignaturesIntoTransaction(signedTx, deployerSigs);
-          printInfo(`  Added deployer signature`);
-        }
-
-        const txId = await submitWithRetry(
-          signedTx,
-          provider,
-          txData.description,
-        );
-        submissions.push({ name: txData.description, txId });
-        printSuccess(`Submitted: ${txData.description} - ${txId}`);
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        submitErrors.push({ name: txData.description, error: errorMsg });
-        printError(`Failed to submit ${txData.description}: ${errorMsg}`);
-      }
-    }
-
-    if (submissions.length > 0) {
-      printProgress(
-        `\nSubmitted ${submissions.length}/${txJson.transactions.length} transactions. Awaiting confirmations...`,
-      );
-    }
-
-    for (const { name, txId } of submissions) {
-      try {
-        await awaitTxConfirmation(txId, provider, name);
-        confirmedHashes.push(txId);
-        printSuccess(`Confirmed: ${name} - ${txId}`);
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        errors.push({ name, error: errorMsg });
-        printError(`Confirmation failed for ${name}: ${errorMsg}`);
-      }
-    }
-
-    errors.push(...submitErrors);
   } else if (isSingleTransaction(txJson)) {
     try {
       const tx = Transaction.fromCbor(TxCBOR(HexBlob(txJson.cborHex)));

@@ -48,6 +48,7 @@ import {
 import { completeTx } from "./complete-tx";
 import { createTxMetadata } from "./metadata";
 import { getDatumHandler } from "./datum-versions";
+import { validateTxHash, validateTxIndex } from "./validation";
 import * as Contracts from "../../contract_blueprint";
 
 interface ContractRef {
@@ -112,6 +113,9 @@ export async function buildMultisigChangeTx(
     "output-file": outputFile,
     "use-build": useBuild,
   } = argv;
+
+  validateTxHash(txHash);
+  validateTxIndex(txIndex);
 
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);

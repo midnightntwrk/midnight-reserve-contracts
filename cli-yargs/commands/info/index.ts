@@ -531,7 +531,23 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("component", {
       type: "string",
       default: "all",
-      description: "Filter by component (e.g., tech-auth, council, reserve)",
+      choices: [
+        "all",
+        "tech-auth",
+        "tech-auth-threshold",
+        "council",
+        "council-threshold",
+        "reserve",
+        "ics",
+        "gov",
+        "main-gov",
+        "staging-gov",
+        "federated-ops",
+        "federated-ops-threshold",
+        "terms-and-conditions",
+        "terms-and-conditions-threshold",
+      ] as const,
+      description: "Filter by component",
     })
     .option("save", {
       type: "boolean",

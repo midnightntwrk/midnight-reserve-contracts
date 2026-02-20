@@ -23,7 +23,7 @@ lib/                           # Shared Aiken helper modules
 ├── bridge/                      # BEEFY bridge codec
 └── utils.ak                     # Common utilities
 
-cli/                           # TypeScript CLI (Blaze SDK)
+cli-yargs/                     # TypeScript CLI (Blaze SDK)
 tests/                         # Blaze emulator integration tests
 deployments/                   # Network-specific artifacts
 ```

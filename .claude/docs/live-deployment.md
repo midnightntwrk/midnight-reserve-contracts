@@ -52,7 +52,7 @@ bun run cli sign-and-submit <simple-tx.json> --network <env>
 # Update *_one_shot_hash entries in aiken.toml (14 entries), then:
 just build <env>
 bun run cli deploy --network <env> --use-build
-bun run cli sign-and-submit <deploy-transactions.json> --network <env>
+bun run cli sign-and-submit <deployment-transactions.json> --network <env>
 bun run cli register-gov-auth --network <env>
 bun run cli sign-and-submit <register-gov-auth-tx.json> --network <env>
 

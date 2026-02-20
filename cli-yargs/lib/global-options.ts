@@ -14,19 +14,18 @@ export function addGlobalOptions<T>(yargs: Argv<T>): Argv<T & GlobalOptions> {
       type: "string",
       default: "local",
       description:
-        "Network: local, preview, qanet, govnet, devnet-*, node-dev-*, preprod, mainnet (default: local)",
+        "Network: local, preview, qanet, govnet, devnet-*, node-dev-*, preprod, mainnet",
     })
     .option("output", {
       alias: "o",
       type: "string",
       default: "./deployments",
-      description: "Output directory (default: ./deployments)",
+      description: "Output directory",
     })
     .option("provider", {
       alias: "p",
       type: "string",
       choices: ["blockfrost", "maestro", "emulator", "kupmios"] as const,
-      description:
-        "Provider: emulator, blockfrost, kupmios, maestro (default: emulator for local, blockfrost otherwise)",
+      description: "Provider: emulator, blockfrost, kupmios, maestro",
     });
 }

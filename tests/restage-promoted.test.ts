@@ -7,9 +7,12 @@ import {
 
 describe("getPromotedValidatorHash", () => {
   test("returns correct hash for a promoted v2 validator", () => {
-    const hash = getPromotedValidatorHash("node-dev-2", "council_logic_v2");
+    const hash = getPromotedValidatorHash(
+      "node-dev-2",
+      "federated_ops_logic_v2",
+    );
     expect(hash).toBe(
-      "6e7730adc040b4415b9498dfb2ca668381d958773b9952778cf5b5ff",
+      "4bd358f88dad3c17972d094ac405386667b4160b0b7ca87ee14e56d3",
     );
   });
 
@@ -25,18 +28,18 @@ describe("getPromotedValidatorHash", () => {
 });
 
 describe("resolveValidatorNameByHash", () => {
-  test("resolves v2 council logic hash to council_logic_v2", () => {
+  test("resolves v2 federated_ops logic hash to federated_ops_logic_v2", () => {
     const name = resolveValidatorNameByHash(
       "node-dev-2",
-      "6e7730adc040b4415b9498dfb2ca668381d958773b9952778cf5b5ff",
+      "4bd358f88dad3c17972d094ac405386667b4160b0b7ca87ee14e56d3",
     );
-    expect(name).toBe("council_logic_v2");
+    expect(name).toBe("federated_ops_logic_v2");
   });
 
   test("resolves v1 council logic hash to council_logic", () => {
     const name = resolveValidatorNameByHash(
       "node-dev-2",
-      "4190700e5bc227ca7ece7b5b59365cb9fc8680fdbe99ea3726e9fdeb",
+      "880a920778433c9cc721fc5c699d4f59573fd9009d7b47d007734fd1",
     );
     expect(name).toBe("council_logic");
   });
@@ -54,12 +57,12 @@ describe("resolveValidatorNameByHash", () => {
 
 describe("version-agnostic re-staging check", () => {
   test("known promoted hash is detected as re-stage", () => {
-    const v2Hash = "6e7730adc040b4415b9498dfb2ca668381d958773b9952778cf5b5ff";
+    const v2Hash = "4bd358f88dad3c17972d094ac405386667b4160b0b7ca87ee14e56d3";
     const resolvedName = resolveValidatorNameByHash("node-dev-2", v2Hash);
     const versionsData = readVersionsJson("node-dev-2");
 
-    // v2 hash resolves to council_logic_v2, which is in promoted list
-    expect(resolvedName).toBe("council_logic_v2");
+    // v2 hash resolves to federated_ops_logic_v2, which is in promoted list
+    expect(resolvedName).toBe("federated_ops_logic_v2");
     expect(versionsData?.promoted.includes(resolvedName!)).toBe(true);
   });
 
@@ -73,7 +76,7 @@ describe("version-agnostic re-staging check", () => {
   });
 
   test("v1 promoted hash is also detected as re-stage", () => {
-    const v1Hash = "4190700e5bc227ca7ece7b5b59365cb9fc8680fdbe99ea3726e9fdeb";
+    const v1Hash = "880a920778433c9cc721fc5c699d4f59573fd9009d7b47d007734fd1";
     const resolvedName = resolveValidatorNameByHash("node-dev-2", v1Hash);
     const versionsData = readVersionsJson("node-dev-2");
 

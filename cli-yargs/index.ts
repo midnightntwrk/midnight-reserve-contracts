@@ -26,6 +26,7 @@ import { addGlobalOptions } from "./lib/global-options";
 
 addGlobalOptions(yargs(hideBin(process.argv)))
   .scriptName("midnight-reserve")
+  .version("0.0.1")
   .command(deployCommand)
   .command(deployStagingTrackCommand)
   .command(changeCouncilCommand)

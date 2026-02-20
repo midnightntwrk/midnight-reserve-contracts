@@ -13,6 +13,7 @@ import {
 import { resolve } from "path";
 import type { GlobalOptions } from "../../lib/global-options";
 import { getNetworkId } from "../../lib/types";
+import { validateTxHash, validateTxIndex } from "../../lib/validation";
 import { getDeployerAddress } from "../../lib/config";
 import { createBlaze } from "../../lib/provider";
 import {
@@ -89,6 +90,9 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
     "output-file": outputFile,
     "use-build": useBuild,
   } = argv;
+
+  validateTxHash(txHash);
+  validateTxIndex(txIndex);
 
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);

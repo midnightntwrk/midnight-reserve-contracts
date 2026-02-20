@@ -31,7 +31,7 @@ interface MintTcnightOptions extends GlobalOptions {
 }
 
 export const command = "mint-tcnight";
-export const describe = "Mint or burn TCnight tokens (preview/preprod only)";
+export const describe = "Mint or burn TCnight tokens (non-mainnet only)";
 
 export function builder(yargs: Argv<GlobalOptions>) {
   return yargs
@@ -105,7 +105,7 @@ export async function handler(argv: MintTcnightOptions) {
   const tcnightPolicy = contracts.tcnightMintInfinite;
   if (!tcnightPolicy) {
     throw new Error(
-      "TCnight minting is only available on testnet networks (preview/preprod).",
+      "TCnight minting is only available on test networks (preview, preprod, qanet, devnet-*, node-dev-*).",
     );
   }
   const policyId = PolicyId(tcnightPolicy.Script.hash());
