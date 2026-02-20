@@ -30,6 +30,9 @@ Flags that differ from what you might expect:
 | `change-council`, `change-tech-auth`, `change-federated-ops`, `change-terms` | `--tx-hash`, `--tx-index` | Required: fee UTxO to spend. Query Blockfrost for a suitable UTxO before each call. |
 | `change-terms` | `--hash`, `--url` | `--hash` is the T&C document hash (64 hex chars); `--url` is plain text (auto-converted to hex for on-chain storage) |
 | `mint-staging-state`, `stage-upgrade`, `promote-upgrade` | `--validator <name>` | Required. E.g. `--validator council`, `--validator federated-ops` |
+| `stage-upgrade`, `promote-upgrade`, `migrate-federated-ops` | `--tx-hash`, `--tx-index` | Required: fee UTxO to spend (same as change-* commands) |
+| `combine-signatures` | `--tx`, `--signatures` | `--tx` is the unsigned tx JSON file; `--signatures` takes one or more witness file paths |
+| `create-witnesses.ts` | positional `<tx-hash>` | Creates witness files in `./witnesses/` from TECH_AUTH_PRIVATE_KEYS + COUNCIL_PRIVATE_KEYS env vars |
 
 ## migrate-federated-ops Ordering
 
@@ -81,11 +84,11 @@ bun run cli sign-and-submit <simple-tx.json> --network <env>
 just build <env>
 bun run cli mint-staging-state --validator <name> --network <env> --use-build
 bun run cli sign-and-submit <mint-staging-state-tx.json> --network <env>
-bun run cli stage-upgrade --validator <name> --network <env> --use-build
+bun run cli stage-upgrade --validator <name> --network <env> --use-build --tx-hash <h> --tx-index <i>
 bun run cli sign-and-submit <stage-upgrade-tx.json> --network <env>
-bun run cli promote-upgrade --validator <name> --network <env>
+bun run cli promote-upgrade --validator <name> --network <env> --tx-hash <h> --tx-index <i>
 bun run cli sign-and-submit <promote-upgrade-tx.json> --network <env>
-bun run cli migrate-federated-ops --network <env>
+bun run cli migrate-federated-ops --network <env> --tx-hash <h> --tx-index <i>
 bun run cli sign-and-submit <migrate-federated-ops-tx.json> --network <env>
 
 # === Phase 4: Downgrade a validator back to v1 logic ===
@@ -95,6 +98,28 @@ bun run cli stage-upgrade --validator <name> --new-logic-hash <v1-logic-hash> --
 bun run cli sign-and-submit <stage-upgrade-tx.json> --network <env>
 bun run cli promote-upgrade --validator <name> --tx-hash <h> --tx-index <i> --network <env>
 bun run cli sign-and-submit <promote-upgrade-tx.json> --network <env>
+
+# === Phase 5: Test combine-signatures (multi-party signing flow) ===
+# Build an unsigned governance tx (change-council has multiple required signers)
+bun run cli change-council --network <env> --tx-hash <h> --tx-index <i> --output-file change-council-combine-test.json
+
+# Extract the tx hash from the unsigned transaction
+TX_HASH=$(bun -e "
+  const {Transaction, TxCBOR, HexBlob} = require('@blaze-cardano/core');
+  const fs = require('fs');
+  const tx = JSON.parse(fs.readFileSync('deployments/<env>/change-council-combine-test.json','utf8'));
+  console.log(Transaction.fromCbor(TxCBOR(HexBlob(tx.cborHex))).getId());
+")
+
+# Create witness files from tech-auth + council signing keys
+bun create-witnesses.ts $TX_HASH
+
+# Combine witnesses and submit (--sign-deployer adds deployer sig automatically)
+bun run cli combine-signatures \
+  --tx deployments/<env>/change-council-combine-test.json \
+  --signatures witnesses/witness-1.json witnesses/witness-2.json witnesses/witness-3.json \
+    witnesses/witness-4.json witnesses/witness-5.json witnesses/witness-6.json \
+  --network <env>
 
 # === Final verification ===
 bun run cli info --network <env> --save
