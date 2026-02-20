@@ -1,13 +1,6 @@
 {
   "promoted": [
-    "always_fails",
     "cnight_generates_dust",
-    "cnight_mint_forever",
-    "cnight_mint_logic",
-    "cnight_mint_two_stage_upgrade",
-    "committee_bridge_forever",
-    "committee_bridge_logic",
-    "committee_bridge_two_stage_upgrade",
     "main_gov_auth",
     "staging_gov_auth",
     "ics_forever",
@@ -30,7 +23,6 @@
     "terms_and_conditions_logic",
     "terms_and_conditions_two_stage_upgrade",
     "tcnight_mint_infinite",
-    "beefy_signer_threshold",
     "main_council_update_threshold",
     "main_federated_ops_update_threshold",
     "main_gov_threshold",
@@ -46,9 +38,5 @@
     "z_two_stage_upgrade_types",
     "federated_ops_logic_v2"
   ],
-  "staged": [],
-  "current": "v1",
-  "versions": [
-    "v1"
-  ]
+  "staged": []
 }

@@ -38,11 +38,7 @@ import {
 import { createBlaze } from "../../lib/provider";
 import { getProtocolParameters, calculateMinUtxo } from "../../lib/protocol";
 import { getContractInstances } from "../../lib/contracts";
-import {
-  saveVersionSnapshot,
-  setCurrentVersion,
-  type ChangeRecord,
-} from "../../lib/versions";
+import { saveVersionSnapshot, type ChangeRecord } from "../../lib/versions";
 import {
   parseSignersWithCount,
   createMultisigStateFromMap,
@@ -1174,14 +1170,13 @@ export async function handler(argv: DeployOptions) {
           },
         ];
 
-        const versionName = saveVersionSnapshot(
+        saveVersionSnapshot(
           network,
           versionInfo,
           changes,
           plutusJsonPath,
           blueprintPath,
         );
-        setCurrentVersion(network, versionName);
 
         printSuccess(
           `Deployment scripts saved to deployed-scripts/${network}/`,

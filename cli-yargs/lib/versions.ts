@@ -24,16 +24,12 @@ export interface ChangeRecord {
 }
 
 interface Changelog {
-  version: string;
-  previousVersion: string | null;
   timestamp: string;
   gitCommit: string;
   changes: ChangeRecord[];
 }
 
 export interface VersionsJson {
-  current: string;
-  versions: string[];
   promoted: string[];
   staged: string[];
 }
@@ -77,38 +73,6 @@ function writeVersionsJson(env: string, data: VersionsJson): void {
 }
 
 /**
- * Gets the current version for an environment by reading versions.json.
- *
- * @returns The current version name (e.g., "v1") or null if not set
- */
-export function getCurrentVersion(env: string): string | null {
-  const data = readVersionsJson(env);
-  return data?.current ?? null;
-}
-
-/**
- * Sets the current version in versions.json.
- * Creates versions.json if it doesn't exist.
- */
-export function setCurrentVersion(env: string, version: string): void {
-  const data = readVersionsJson(env);
-  if (data) {
-    data.current = version;
-    if (!data.versions.includes(version)) {
-      data.versions.push(version);
-    }
-    writeVersionsJson(env, data);
-  } else {
-    writeVersionsJson(env, {
-      current: version,
-      versions: [version],
-      promoted: [],
-      staged: [],
-    });
-  }
-}
-
-/**
  * Gets the current git commit hash.
  */
 function getGitCommit(): string {
@@ -126,10 +90,24 @@ function getCurrentTimestamp(): string {
   return new Date().toISOString();
 }
 
+/** Validators excluded from promoted lists (not part of the active contract set). */
+const EXCLUDED_VALIDATORS = new Set([
+  "always_fails",
+  "cnight_mint_forever",
+  "cnight_mint_logic",
+  "cnight_mint_two_stage_upgrade",
+  "committee_bridge_forever",
+  "committee_bridge_logic",
+  "committee_bridge_two_stage_upgrade",
+  "beefy_signer_threshold",
+  "simple_bridge",
+  "reserve_logicV2",
+]);
+
 /**
  * Extracts unique validator names from a plutus.json file.
  * Strips module prefix (first dot segment) and .else/.spend suffix (last dot segment).
- * Filters out v2 and staging validators.
+ * Filters out v2, staging, and excluded validators.
  */
 function extractValidatorNames(plutusJsonPath: string): string[] {
   const plutus = JSON.parse(readFileSync(plutusJsonPath, "utf-8"));
@@ -145,6 +123,7 @@ function extractValidatorNames(plutusJsonPath: string): string[] {
     if (!name) continue;
     // Filter out versioned upgrades (v2, v3, ...) and staging validators
     if (/_v\d+$/.test(name) || /_staging_/.test(name)) continue;
+    if (EXCLUDED_VALIDATORS.has(name)) continue;
     names.add(name);
   }
 
@@ -234,7 +213,6 @@ export function resolveValidatorNameByHash(
 /**
  * Saves a version snapshot directly to deployed-scripts/{env}/.
  * Writes plutus.json, contract_blueprint.ts, and changelog.json at the env root.
- * Returns the version name recorded in versions.json.
  */
 export function saveVersionSnapshot(
   env: string,
@@ -242,22 +220,11 @@ export function saveVersionSnapshot(
   changes: ChangeRecord[],
   plutusJsonPath: string,
   blueprintPath: string,
-): string {
+): void {
   const basePath = getDeployedScriptsPath(env);
   mkdirSync(basePath, { recursive: true });
 
-  // Derive version name from versions.json history
   const data = readVersionsJson(env);
-  const existingVersions = data?.versions ?? [];
-  let maxNum = 0;
-  for (const v of existingVersions) {
-    const match = v.match(/^v(\d+)$/);
-    if (match) {
-      const n = parseInt(match[1]);
-      if (n > maxNum) maxNum = n;
-    }
-  }
-  const versionName = `v${maxNum + 1}`;
 
   // Merge: take previous env plutus.json as base, add only new validators from build
   const previousPlutusPath = resolve(basePath, "plutus.json");
@@ -301,10 +268,7 @@ export function saveVersionSnapshot(
   const promoted = extractValidatorNames(resolve(basePath, "plutus.json"));
 
   // Write changelog.json
-  const previousVersion = getCurrentVersion(env);
   const changelog: Changelog = {
-    version: versionName,
-    previousVersion,
     timestamp: versionInfo.timestamp || getCurrentTimestamp(),
     gitCommit: versionInfo.gitCommit || getGitCommit(),
     changes,
@@ -315,23 +279,21 @@ export function saveVersionSnapshot(
     JSON.stringify(changelog, null, 2) + "\n",
   );
 
-  // Record version in versions.json (don't change current — that's setCurrentVersion's job)
   if (data) {
-    if (!data.versions.includes(versionName)) {
-      data.versions.push(versionName);
+    // Merge: keep existing promoted entries (e.g., v2 validators added by promoteValidator)
+    // and add any new base validators from the fresh extraction
+    const existingPromoted = new Set(data.promoted);
+    for (const name of promoted) {
+      existingPromoted.add(name);
     }
-    data.promoted = promoted;
+    data.promoted = [...existingPromoted];
     writeVersionsJson(env, data);
   } else {
     writeVersionsJson(env, {
-      current: "",
-      versions: [versionName],
       promoted,
       staged: [],
     });
   }
-
-  return versionName;
 }
 
 /**
