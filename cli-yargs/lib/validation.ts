@@ -75,9 +75,9 @@ export function validateTxHash(txHash: string): void {
 }
 
 export function validateTxIndex(txIndex: number): void {
-  if (isNaN(txIndex) || txIndex < 0) {
+  if (isNaN(txIndex) || !Number.isInteger(txIndex) || txIndex < 0) {
     throw new Error(
-      `Invalid transaction index '${txIndex}'. Must be a non-negative number.`,
+      `Invalid transaction index '${txIndex}'. Must be a non-negative integer.`,
     );
   }
 }

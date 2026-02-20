@@ -1,3 +1,5 @@
+> **Historical reference.** This inventory documents the original `cli/` switch-case implementation. The `cli-yargs/` port has superseded it. Notable changes in cli-yargs: `--dry-run` global flag removed (was never functional), `mint-tcnight` amount changed from positional to `--amount` option, `change-terms --url` now accepts plain text (auto-hex-encoded).
+
 # CLI Parity Inventory Checklist
 
 Last verified against HEAD on 2026-02-14.

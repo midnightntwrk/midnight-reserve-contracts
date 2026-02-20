@@ -505,7 +505,7 @@ Outputs:
     datum (VersionedTermsAndConditions):
       terms_and_conditions:
         hash: <32-byte terms hash (64 hex chars)>
-        link: <hex-encoded URL string>
+        link: <URL string (stored as hex-encoded ByteArray)>
       logic_round: <round>
   <change_address> => <change_lovelace>
 Withdrawals:
@@ -696,7 +696,7 @@ FederatedOps = [
 VersionedTermsAndConditions = [
   terms_and_conditions: [
     hash: ByteArray,    // 32-byte hash (64 hex chars)
-    link: ByteArray     // hex-encoded URL string
+    link: ByteArray     // URL as ByteArray (CLI auto-encodes from plain text)
   ],
   logic_round: Int
 ]
