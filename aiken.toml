@@ -106,63 +106,63 @@ bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
 encoding = "hex"
 
 [config.default.reserve_two_stage_hash]
-bytes = "042fbee252f4c98c750d91ebb34da068f4587225364061335986007d"
+bytes = "fde08c936947f30b324360072b853e8bf47a74bc5b030b685adafbc9"
 encoding = "hex"
 
 [config.default.reserve_forever_hash]
-bytes = "d6396a15c46ee88d358f7b222a86c1bd2feacb56adaa376dd024b382"
+bytes = "35b592f1db572be389fe48ebf754ffc0216bf1eb6d5dfcbec7f0041c"
 encoding = "hex"
 
 [config.default.council_two_stage_hash]
-bytes = "cb8b0c09b744ddf551ccec565d7a7eaa782d87163b9122947ded40cf"
+bytes = "f8aa1a9a2b211b30db805e99c53c2ee2b92e05d2ab7c9c2c75120143"
 encoding = "hex"
 
 [config.default.council_forever_hash]
-bytes = "0b901ae52c24fd14f8cfd9474ba04a41e4f4c97021bfc5540c198c89"
+bytes = "550f98efa269429010176a120a739594d0985286fa80022509c61884"
 encoding = "hex"
 
 [config.default.ics_two_stage_hash]
-bytes = "6e0b6f14a707bb391c54f558d326fc90972428e3184ae4ba23187163"
+bytes = "306b4f0e4fe740249f62089506b7b0f617bcbeca7aa562d141355c7d"
 encoding = "hex"
 
 [config.default.ics_forever_hash]
-bytes = "f9a0eac308d34a35433338a56198dc5e13bc8092531e097d38b283f8"
+bytes = "552dbd81133d1942fb6df82f2e01453b985a1057210c87c3d3baa11f"
 encoding = "hex"
 
 [config.default.technical_authority_two_stage_hash]
-bytes = "28530994de520fb7815b743d2baf7547268606137bd8bce1d34508f3"
+bytes = "e6552c078d168aafbcec0db9a9c3d8bf1b156d149b85a01a215f7a86"
 encoding = "hex"
 
 [config.default.technical_authority_forever_hash]
-bytes = "947a53b0027bb5be691fd59c7e2cbb2894b830778b98db1754ead625"
+bytes = "ed86eae303d852e630894f0258c37ccf5bef0db5992615dbb28187ad"
 encoding = "hex"
 
 [config.default.federated_operators_two_stage_hash]
-bytes = "cdec00bdd3642ea9bb00c95dab92c53923b49f3dc1afef5c4376d146"
+bytes = "7ae52e74decc2ce5ec7a0611050c2c57846c27266f12ecaa7b3c612b"
 encoding = "hex"
 
 [config.default.federated_operators_forever_hash]
-bytes = "0fabf7ed4d63f1c346239b14bb08b69e66acd043cac38d9e5dc64f7f"
+bytes = "33c40f1ccf9d3475e918670dfbe2e094776d50397b3f69976b195dab"
 encoding = "hex"
 
 [config.default.main_gov_threshold_hash]
-bytes = "959fd004a7ef603aa959029548d87b510ecbc1da85a8d7bc82b7f86e"
+bytes = "9a8d5991f28634ff7c8a2ddfe851981f529a9bab932962b7daf0eb9d"
 encoding = "hex"
 
 [config.default.staging_gov_threshold_hash]
-bytes = "b265e4844a9881f8a03df9d37f8c3c256c9a02910fc0ba300dbd1f2c"
+bytes = "1ae5822d045ed15be602e9ddfe74ea6312656e3667b188bc50bbb847"
 encoding = "hex"
 
 [config.default.main_council_update_threshold_hash]
-bytes = "f8ba18001fd957eceb66e5aded8fd645185f93b34c422741a98c142f"
+bytes = "5e44472b4b63dff4911121e8f844c3926f3e92323aea6d2495678810"
 encoding = "hex"
 
 [config.default.main_tech_auth_update_threshold_hash]
-bytes = "646d73bf2b3436035e2e98ecab1a699d163b370f2d51cb73ac9d847b"
+bytes = "a136157d8e7f6149f4767dd6c228b15b13f9bd37f2bd826da3a55da4"
 encoding = "hex"
 
 [config.default.main_federated_ops_update_threshold_hash]
-bytes = "90b6e4315d8b72a5864f28344f7e4ebb0b6ee09148eb5d73bd9b6b2f"
+bytes = "344f8cf4f9f64a01cd9c85ef4d474ef6a101538c03571e083c04b4d7"
 encoding = "hex"
 
 [config.default.beefy_signer_threshold_hash]
@@ -170,35 +170,35 @@ bytes = "f6a94508bf423ac9189c3a1f0013d238c5f19964da1b30bc98ea0ea6f8b155bb"
 encoding = "hex"
 
 [config.default.committee_bridge_two_stage_hash]
-bytes = "75eb34768bd743b490c493ee204573c00987e7ae0167fa0d451c8a29"
+bytes = "4bb77a0d5af9e93f1577f9df5334c0f8f5e44857e5d36b3feb3ffc6d"
 encoding = "hex"
 
 [config.default.committee_bridge_forever_hash]
-bytes = "9ff400add9255383ecef6a907792ebba52160ea3689663c10c825ec1"
+bytes = "edb864082e9100092a564e35b44b2f0790b23b5a66d88022c6c26f6e"
 encoding = "hex"
 
 [config.default.bridge_signer_threshold_hash]
-bytes = "425dc256255516e5613780912963488de952d935670f38c74761c779"
+bytes = "fa66ab1c27b40b4eeda771a91f39216c4b0e1f2ae3dd84438c011e41"
 encoding = "hex"
 
 [config.default.terms_and_conditions_two_stage_hash]
-bytes = "a7c431432ea496658eb18e4ecfe0da731e041f1160efe605932aac57"
+bytes = "ed0718771917e49b1544ffb374c418766b07687506e96c2efc805da9"
 encoding = "hex"
 
 [config.default.terms_and_conditions_forever_hash]
-bytes = "195ccc65f23a6b3cb63e9c18f226ad4c68d29a9e0acd7fa1b0c44762"
+bytes = "32b36f1b4365baefeacd5c5fa4375348dcc367ec717027617e7b196e"
 encoding = "hex"
 
 [config.default.terms_and_conditions_threshold_hash]
-bytes = "3baa2055ead2235f1e356c0f41ca80f5f1026fec40e95acdfc23385f"
+bytes = "7d3e37522e5525effbff0c02211194a5987a733e3c426cd8d2325e28"
 encoding = "hex"
 
 [config.default.cnight_minting_two_stage_hash]
-bytes = "31a7531d4be9f28e55109267a14ad1dddd863f4659d660c788f083c5"
+bytes = "d01150611316789bac7be0510d63f72442e1196187c0dcbd2fe6a40a"
 encoding = "hex"
 
 [config.default.cnight_minting_forever_hash]
-bytes = "838d4108da4e847ee20275254af2c2134d27e4b30647803de3bdb737"
+bytes = "924cc64aa0087ea4b50c633fc76c965ce4eb0ff5c69abee84e3abe2e"
 encoding = "hex"
 
 [config.preview]
@@ -1122,4 +1122,2200 @@ encoding = "hex"
 
 [config.mainnet.cnight_minting_forever_hash]
 bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+[config.preview_test_2026-01-27_23-15-36]
+reserve_one_shot_index = 1
+council_one_shot_index = 2
+ics_one_shot_index = 0
+technical_authority_one_shot_index = 1
+federated_operators_one_shot_index = 0
+main_gov_one_shot_index = 0
+staging_gov_one_shot_index = 3
+main_council_update_one_shot_index = 4
+main_tech_auth_update_one_shot_index = 6
+main_federated_ops_update_one_shot_index = 1
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 2
+terms_and_conditions_threshold_one_shot_index = 3
+cnight_minting_one_shot_index = 4
+collateral_utxo_index = 15
+
+[config.preview_test_2026-01-27_23-15-36.reserve_one_shot_hash]
+bytes = "22f45df3c077433e6aa4ad4ce419f9cca42251a939e061a3df2b526b751ac8ff"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.council_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.ics_one_shot_hash]
+bytes = "e1c6a37919455abf8503b477d1eb1363ed1493ff6f350a63ea6a0822ec2d1e61"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.technical_authority_one_shot_hash]
+bytes = "0decfc3916c5068bb50993c37caab47c9f824a293cd3126d35bbc57c2e694066"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.federated_operators_one_shot_hash]
+bytes = "62816cc65027d76d7768b187f15218802445971f34de0b7532f8639719c9cc29"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.main_gov_one_shot_hash]
+bytes = "3bf7936c8263e199658d361e8136ed7d98602b927bbf7f3c7ba0628326448751"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.staging_gov_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.main_council_update_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.main_tech_auth_update_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.main_federated_ops_update_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.terms_and_conditions_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.terms_and_conditions_threshold_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.cnight_minting_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.cnight_policy]
+bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.reserve_two_stage_hash]
+bytes = "305f6cb93fbe7093478d2d58a893db87eb6b6dbbfe42015129527803"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.reserve_forever_hash]
+bytes = "9a16849963cf308e36590856c2ccba98575a2c0dfbb6ead6d3c1b92d"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.council_two_stage_hash]
+bytes = "2e74df06296a880f611ee6586388a0b2b49bf798cf9d78022960ba31"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.council_forever_hash]
+bytes = "895f09b002941417f53e28c7a4f1a7e4d90ac2afa1da0ba5c66f8ccb"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.ics_two_stage_hash]
+bytes = "83d827e59b1a0820855ba157849b8952f1ed8a65f7c16162b0ca8636"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.ics_forever_hash]
+bytes = "91d2a2ab768ab725819126463482605344bf273b3579f0b9b94086cc"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.technical_authority_two_stage_hash]
+bytes = "f63a7e9a8cf9b3fd33c28205037697a909fa7472f4c47be972845547"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.technical_authority_forever_hash]
+bytes = "57827ae51eed76cef38c99bd2f97cdf0055ef714d6c9bdf3078a1b9f"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.federated_operators_two_stage_hash]
+bytes = "81691008ed3d4e2abd4feec1b3c11e52bd506acc58b82140436e4bfd"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.federated_operators_forever_hash]
+bytes = "24dccfce2576ae6fa7149bc485850656ae6faf9f4158891316773a78"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.main_gov_threshold_hash]
+bytes = "6e58113aef37cf01071621236b1c59b886c5da0b4d46872861a88c1b"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.staging_gov_threshold_hash]
+bytes = "7df61de1971db6911c45b06c380d1be4df92c6cfdd27756cb5d30bdf"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.main_council_update_threshold_hash]
+bytes = "4ae0cec1a8bdaba1cde596d2f179c135ea31b759e587a40097173e9e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.main_tech_auth_update_threshold_hash]
+bytes = "8cbe93dfaa3e24cffe254e54d15593885219280f3c34d2e44a446b58"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.main_federated_ops_update_threshold_hash]
+bytes = "a6afbeac04881e5e0db294ccc5f9543025feabc6e08aa7cdd4ac097b"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.committee_bridge_two_stage_hash]
+bytes = "c38152c5f6b46857adc5ca2d7831f575fa31dc04c9a62ffb82b03289"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.committee_bridge_forever_hash]
+bytes = "0e4d64866dd1ff7ee21490ed6a15fdaf6f0919e39368af196896827b"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.bridge_signer_threshold_hash]
+bytes = "d63d470dc844bc368ef5aa89bbb4d5ef194ca4a46af2841b76dcdfc8"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.terms_and_conditions_two_stage_hash]
+bytes = "c25fd4c000ff173d71964b387057d1723ec157173ab2aed419a30023"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.terms_and_conditions_forever_hash]
+bytes = "0fd566187324138d7c2c3db04e80c1da38a158c22e7af069f796439c"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.terms_and_conditions_threshold_hash]
+bytes = "f115c735779880fcf295868ace8ee59c11cb64994a19ca2f77f89bba"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.cnight_minting_two_stage_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-15-36.cnight_minting_forever_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+
+[config.preview_test_2026-01-27_23-17-48]
+reserve_one_shot_index = 2
+council_one_shot_index = 0
+ics_one_shot_index = 1
+technical_authority_one_shot_index = 1
+federated_operators_one_shot_index = 0
+main_gov_one_shot_index = 0
+staging_gov_one_shot_index = 3
+main_council_update_one_shot_index = 4
+main_tech_auth_update_one_shot_index = 6
+main_federated_ops_update_one_shot_index = 1
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 2
+terms_and_conditions_threshold_one_shot_index = 3
+cnight_minting_one_shot_index = 4
+collateral_utxo_index = 15
+
+[config.preview_test_2026-01-27_23-17-48.reserve_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.council_one_shot_hash]
+bytes = "e1c6a37919455abf8503b477d1eb1363ed1493ff6f350a63ea6a0822ec2d1e61"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.ics_one_shot_hash]
+bytes = "0decfc3916c5068bb50993c37caab47c9f824a293cd3126d35bbc57c2e694066"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.technical_authority_one_shot_hash]
+bytes = "22f45df3c077433e6aa4ad4ce419f9cca42251a939e061a3df2b526b751ac8ff"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.federated_operators_one_shot_hash]
+bytes = "62816cc65027d76d7768b187f15218802445971f34de0b7532f8639719c9cc29"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.main_gov_one_shot_hash]
+bytes = "3bf7936c8263e199658d361e8136ed7d98602b927bbf7f3c7ba0628326448751"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.staging_gov_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.main_council_update_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.main_tech_auth_update_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.main_federated_ops_update_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.terms_and_conditions_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.terms_and_conditions_threshold_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.cnight_minting_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.cnight_policy]
+bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.reserve_two_stage_hash]
+bytes = "305f6cb93fbe7093478d2d58a893db87eb6b6dbbfe42015129527803"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.reserve_forever_hash]
+bytes = "9a16849963cf308e36590856c2ccba98575a2c0dfbb6ead6d3c1b92d"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.council_two_stage_hash]
+bytes = "2e74df06296a880f611ee6586388a0b2b49bf798cf9d78022960ba31"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.council_forever_hash]
+bytes = "895f09b002941417f53e28c7a4f1a7e4d90ac2afa1da0ba5c66f8ccb"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.ics_two_stage_hash]
+bytes = "83d827e59b1a0820855ba157849b8952f1ed8a65f7c16162b0ca8636"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.ics_forever_hash]
+bytes = "91d2a2ab768ab725819126463482605344bf273b3579f0b9b94086cc"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.technical_authority_two_stage_hash]
+bytes = "f63a7e9a8cf9b3fd33c28205037697a909fa7472f4c47be972845547"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.technical_authority_forever_hash]
+bytes = "57827ae51eed76cef38c99bd2f97cdf0055ef714d6c9bdf3078a1b9f"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.federated_operators_two_stage_hash]
+bytes = "81691008ed3d4e2abd4feec1b3c11e52bd506acc58b82140436e4bfd"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.federated_operators_forever_hash]
+bytes = "24dccfce2576ae6fa7149bc485850656ae6faf9f4158891316773a78"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.main_gov_threshold_hash]
+bytes = "6e58113aef37cf01071621236b1c59b886c5da0b4d46872861a88c1b"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.staging_gov_threshold_hash]
+bytes = "7df61de1971db6911c45b06c380d1be4df92c6cfdd27756cb5d30bdf"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.main_council_update_threshold_hash]
+bytes = "4ae0cec1a8bdaba1cde596d2f179c135ea31b759e587a40097173e9e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.main_tech_auth_update_threshold_hash]
+bytes = "8cbe93dfaa3e24cffe254e54d15593885219280f3c34d2e44a446b58"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.main_federated_ops_update_threshold_hash]
+bytes = "a6afbeac04881e5e0db294ccc5f9543025feabc6e08aa7cdd4ac097b"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.committee_bridge_two_stage_hash]
+bytes = "c38152c5f6b46857adc5ca2d7831f575fa31dc04c9a62ffb82b03289"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.committee_bridge_forever_hash]
+bytes = "0e4d64866dd1ff7ee21490ed6a15fdaf6f0919e39368af196896827b"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.bridge_signer_threshold_hash]
+bytes = "d63d470dc844bc368ef5aa89bbb4d5ef194ca4a46af2841b76dcdfc8"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.terms_and_conditions_two_stage_hash]
+bytes = "c25fd4c000ff173d71964b387057d1723ec157173ab2aed419a30023"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.terms_and_conditions_forever_hash]
+bytes = "0fd566187324138d7c2c3db04e80c1da38a158c22e7af069f796439c"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.terms_and_conditions_threshold_hash]
+bytes = "f115c735779880fcf295868ace8ee59c11cb64994a19ca2f77f89bba"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.cnight_minting_two_stage_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-17-48.cnight_minting_forever_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+
+[config.preview_test_2026-01-27_23-20-42]
+candidate_nonce = "preview"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 2
+council_one_shot_index = 0
+ics_one_shot_index = 1
+technical_authority_one_shot_index = 1
+federated_operators_one_shot_index = 0
+main_gov_one_shot_index = 0
+staging_gov_one_shot_index = 3
+main_council_update_one_shot_index = 4
+main_tech_auth_update_one_shot_index = 6
+main_federated_ops_update_one_shot_index = 1
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 2
+terms_and_conditions_threshold_one_shot_index = 3
+cnight_minting_one_shot_index = 4
+collateral_utxo_index = 15
+
+[config.preview_test_2026-01-27_23-20-42.reserve_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.council_one_shot_hash]
+bytes = "e1c6a37919455abf8503b477d1eb1363ed1493ff6f350a63ea6a0822ec2d1e61"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.ics_one_shot_hash]
+bytes = "0decfc3916c5068bb50993c37caab47c9f824a293cd3126d35bbc57c2e694066"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.technical_authority_one_shot_hash]
+bytes = "22f45df3c077433e6aa4ad4ce419f9cca42251a939e061a3df2b526b751ac8ff"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.federated_operators_one_shot_hash]
+bytes = "62816cc65027d76d7768b187f15218802445971f34de0b7532f8639719c9cc29"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.main_gov_one_shot_hash]
+bytes = "3bf7936c8263e199658d361e8136ed7d98602b927bbf7f3c7ba0628326448751"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.staging_gov_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.main_council_update_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.main_tech_auth_update_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.main_federated_ops_update_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.terms_and_conditions_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.terms_and_conditions_threshold_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.cnight_minting_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.cnight_policy]
+bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.reserve_two_stage_hash]
+bytes = "5dfc10a5ee72b82803acfca9a585f8617bcd1b27c0121d887377bfb8"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.reserve_forever_hash]
+bytes = "e119bef7d113992e3ac16fba0fbdd8e5fe88fb1cab3d44d2f4642aee"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.council_two_stage_hash]
+bytes = "545a530ed6729bbd212f9758a3abf3237f25f837c0e4ca68268fdbe1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.council_forever_hash]
+bytes = "3bb8208720b8d921d4443bac297b13cc0bd54d8872e45991117eb613"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.ics_two_stage_hash]
+bytes = "546db5454a6622768248e31e6e0ce89c874fe32d89223a6df714534d"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.ics_forever_hash]
+bytes = "42346cfaa432756e4bd2f37a22e34f14ae9b9f1aa337724be93064c1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.technical_authority_two_stage_hash]
+bytes = "5180cc2d37ed343f285ab1af123f20ed6af52982991f1b220079bcfc"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.technical_authority_forever_hash]
+bytes = "08f7672b54e680322305441a6f27d5a0c4c2220eb87ddc8f3b604eee"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.federated_operators_two_stage_hash]
+bytes = "04945f90df7828cae7bad39e3c123f7561ec1061ef208df6ad51ecc6"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.federated_operators_forever_hash]
+bytes = "402dd7f7dc3295417ab928d456cbfeb1c04e2437b49eed3608ade2a2"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.main_gov_threshold_hash]
+bytes = "9d7c1d86230d7aa18f3594aa6133ab5523a7dde6f9a5f2e5009ef9ca"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.staging_gov_threshold_hash]
+bytes = "3ddc3e9538bbb64de01fd609b092a3f94f824ef36637c14e0d2314e9"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.main_council_update_threshold_hash]
+bytes = "58aa4f24672b84208c247e9238bcd0095bdb6f89e1a165e2c8930d11"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.main_tech_auth_update_threshold_hash]
+bytes = "d13a9037f67493cfe00aa067c067c54e048e447ec9614776763c5535"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.main_federated_ops_update_threshold_hash]
+bytes = "92b1e22bf0669b62189f81e1be7389e1dad7d05e6e68cecb61f09e61"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.committee_bridge_two_stage_hash]
+bytes = "7a602b7182848282646d9f9eca1825186d848f3eb3f38956631a893f"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.committee_bridge_forever_hash]
+bytes = "ec6b862f8701d09f6c6034e710849ab57bb3c82f96ba88a6859f67a3"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.bridge_signer_threshold_hash]
+bytes = "d7fc9187fa6150b0dea2684ccf9dad2ca5c533610d50d79cdf4f96fd"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.terms_and_conditions_two_stage_hash]
+bytes = "b37adfa09163fadbf672f1d8b31506d65adfe1e246047a74e75fda29"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.terms_and_conditions_forever_hash]
+bytes = "5d146fa856c89462d23c9044f99ffa4cc3bd356886b6b131d3a93fd1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.terms_and_conditions_threshold_hash]
+bytes = "cb442da60d0bc7fcea67273bf07755ae04539a61d5fc70ebb7ac24b3"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.cnight_minting_two_stage_hash]
+bytes = "eb69e1d760cac6aa05e25d8d087ebbe0e3e200a3cfc47781ae5a2b2a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-20-42.cnight_minting_forever_hash]
+bytes = "b0354e1491c93b759cff836efbe5eefab70d622d842b59b18d004d21"
+encoding = "hex"
+[config.preview_test_2026-01-27_23-21-16]
+candidate_nonce = "preview"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 2
+council_one_shot_index = 0
+ics_one_shot_index = 1
+technical_authority_one_shot_index = 1
+federated_operators_one_shot_index = 0
+main_gov_one_shot_index = 0
+staging_gov_one_shot_index = 3
+main_council_update_one_shot_index = 4
+main_tech_auth_update_one_shot_index = 6
+main_federated_ops_update_one_shot_index = 1
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 2
+terms_and_conditions_threshold_one_shot_index = 3
+cnight_minting_one_shot_index = 4
+collateral_utxo_index = 15
+
+[config.preview_test_2026-01-27_23-21-16.reserve_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.council_one_shot_hash]
+bytes = "e1c6a37919455abf8503b477d1eb1363ed1493ff6f350a63ea6a0822ec2d1e61"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.ics_one_shot_hash]
+bytes = "0decfc3916c5068bb50993c37caab47c9f824a293cd3126d35bbc57c2e694066"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.technical_authority_one_shot_hash]
+bytes = "22f45df3c077433e6aa4ad4ce419f9cca42251a939e061a3df2b526b751ac8ff"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.federated_operators_one_shot_hash]
+bytes = "62816cc65027d76d7768b187f15218802445971f34de0b7532f8639719c9cc29"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.main_gov_one_shot_hash]
+bytes = "3bf7936c8263e199658d361e8136ed7d98602b927bbf7f3c7ba0628326448751"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.staging_gov_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.main_council_update_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.main_tech_auth_update_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.main_federated_ops_update_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.terms_and_conditions_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.terms_and_conditions_threshold_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.cnight_minting_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.cnight_policy]
+bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.reserve_two_stage_hash]
+bytes = "5dfc10a5ee72b82803acfca9a585f8617bcd1b27c0121d887377bfb8"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.reserve_forever_hash]
+bytes = "e119bef7d113992e3ac16fba0fbdd8e5fe88fb1cab3d44d2f4642aee"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.council_two_stage_hash]
+bytes = "545a530ed6729bbd212f9758a3abf3237f25f837c0e4ca68268fdbe1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.council_forever_hash]
+bytes = "3bb8208720b8d921d4443bac297b13cc0bd54d8872e45991117eb613"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.ics_two_stage_hash]
+bytes = "546db5454a6622768248e31e6e0ce89c874fe32d89223a6df714534d"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.ics_forever_hash]
+bytes = "42346cfaa432756e4bd2f37a22e34f14ae9b9f1aa337724be93064c1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.technical_authority_two_stage_hash]
+bytes = "5180cc2d37ed343f285ab1af123f20ed6af52982991f1b220079bcfc"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.technical_authority_forever_hash]
+bytes = "08f7672b54e680322305441a6f27d5a0c4c2220eb87ddc8f3b604eee"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.federated_operators_two_stage_hash]
+bytes = "04945f90df7828cae7bad39e3c123f7561ec1061ef208df6ad51ecc6"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.federated_operators_forever_hash]
+bytes = "402dd7f7dc3295417ab928d456cbfeb1c04e2437b49eed3608ade2a2"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.main_gov_threshold_hash]
+bytes = "9d7c1d86230d7aa18f3594aa6133ab5523a7dde6f9a5f2e5009ef9ca"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.staging_gov_threshold_hash]
+bytes = "3ddc3e9538bbb64de01fd609b092a3f94f824ef36637c14e0d2314e9"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.main_council_update_threshold_hash]
+bytes = "58aa4f24672b84208c247e9238bcd0095bdb6f89e1a165e2c8930d11"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.main_tech_auth_update_threshold_hash]
+bytes = "d13a9037f67493cfe00aa067c067c54e048e447ec9614776763c5535"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.main_federated_ops_update_threshold_hash]
+bytes = "92b1e22bf0669b62189f81e1be7389e1dad7d05e6e68cecb61f09e61"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.committee_bridge_two_stage_hash]
+bytes = "7a602b7182848282646d9f9eca1825186d848f3eb3f38956631a893f"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.committee_bridge_forever_hash]
+bytes = "ec6b862f8701d09f6c6034e710849ab57bb3c82f96ba88a6859f67a3"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.bridge_signer_threshold_hash]
+bytes = "d7fc9187fa6150b0dea2684ccf9dad2ca5c533610d50d79cdf4f96fd"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.terms_and_conditions_two_stage_hash]
+bytes = "b37adfa09163fadbf672f1d8b31506d65adfe1e246047a74e75fda29"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.terms_and_conditions_forever_hash]
+bytes = "5d146fa856c89462d23c9044f99ffa4cc3bd356886b6b131d3a93fd1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.terms_and_conditions_threshold_hash]
+bytes = "cb442da60d0bc7fcea67273bf07755ae04539a61d5fc70ebb7ac24b3"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.cnight_minting_two_stage_hash]
+bytes = "eb69e1d760cac6aa05e25d8d087ebbe0e3e200a3cfc47781ae5a2b2a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-21-16.cnight_minting_forever_hash]
+bytes = "b0354e1491c93b759cff836efbe5eefab70d622d842b59b18d004d21"
+encoding = "hex"
+[config.preview_test_2026-01-27_23-29-43]
+candidate_nonce = "preview"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 2
+council_one_shot_index = 0
+ics_one_shot_index = 1
+technical_authority_one_shot_index = 1
+federated_operators_one_shot_index = 0
+main_gov_one_shot_index = 0
+staging_gov_one_shot_index = 3
+main_council_update_one_shot_index = 4
+main_tech_auth_update_one_shot_index = 6
+main_federated_ops_update_one_shot_index = 1
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 2
+terms_and_conditions_threshold_one_shot_index = 3
+cnight_minting_one_shot_index = 4
+collateral_utxo_index = 15
+
+[config.preview_test_2026-01-27_23-29-43.reserve_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.council_one_shot_hash]
+bytes = "e1c6a37919455abf8503b477d1eb1363ed1493ff6f350a63ea6a0822ec2d1e61"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.ics_one_shot_hash]
+bytes = "0decfc3916c5068bb50993c37caab47c9f824a293cd3126d35bbc57c2e694066"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.technical_authority_one_shot_hash]
+bytes = "22f45df3c077433e6aa4ad4ce419f9cca42251a939e061a3df2b526b751ac8ff"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.federated_operators_one_shot_hash]
+bytes = "62816cc65027d76d7768b187f15218802445971f34de0b7532f8639719c9cc29"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.main_gov_one_shot_hash]
+bytes = "3bf7936c8263e199658d361e8136ed7d98602b927bbf7f3c7ba0628326448751"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.staging_gov_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.main_council_update_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.main_tech_auth_update_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.main_federated_ops_update_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.terms_and_conditions_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.terms_and_conditions_threshold_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.cnight_minting_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.cnight_policy]
+bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.reserve_two_stage_hash]
+bytes = "5dfc10a5ee72b82803acfca9a585f8617bcd1b27c0121d887377bfb8"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.reserve_forever_hash]
+bytes = "e119bef7d113992e3ac16fba0fbdd8e5fe88fb1cab3d44d2f4642aee"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.council_two_stage_hash]
+bytes = "545a530ed6729bbd212f9758a3abf3237f25f837c0e4ca68268fdbe1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.council_forever_hash]
+bytes = "3bb8208720b8d921d4443bac297b13cc0bd54d8872e45991117eb613"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.ics_two_stage_hash]
+bytes = "546db5454a6622768248e31e6e0ce89c874fe32d89223a6df714534d"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.ics_forever_hash]
+bytes = "42346cfaa432756e4bd2f37a22e34f14ae9b9f1aa337724be93064c1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.technical_authority_two_stage_hash]
+bytes = "5180cc2d37ed343f285ab1af123f20ed6af52982991f1b220079bcfc"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.technical_authority_forever_hash]
+bytes = "08f7672b54e680322305441a6f27d5a0c4c2220eb87ddc8f3b604eee"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.federated_operators_two_stage_hash]
+bytes = "04945f90df7828cae7bad39e3c123f7561ec1061ef208df6ad51ecc6"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.federated_operators_forever_hash]
+bytes = "402dd7f7dc3295417ab928d456cbfeb1c04e2437b49eed3608ade2a2"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.main_gov_threshold_hash]
+bytes = "9d7c1d86230d7aa18f3594aa6133ab5523a7dde6f9a5f2e5009ef9ca"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.staging_gov_threshold_hash]
+bytes = "3ddc3e9538bbb64de01fd609b092a3f94f824ef36637c14e0d2314e9"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.main_council_update_threshold_hash]
+bytes = "58aa4f24672b84208c247e9238bcd0095bdb6f89e1a165e2c8930d11"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.main_tech_auth_update_threshold_hash]
+bytes = "d13a9037f67493cfe00aa067c067c54e048e447ec9614776763c5535"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.main_federated_ops_update_threshold_hash]
+bytes = "92b1e22bf0669b62189f81e1be7389e1dad7d05e6e68cecb61f09e61"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.committee_bridge_two_stage_hash]
+bytes = "7a602b7182848282646d9f9eca1825186d848f3eb3f38956631a893f"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.committee_bridge_forever_hash]
+bytes = "ec6b862f8701d09f6c6034e710849ab57bb3c82f96ba88a6859f67a3"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.bridge_signer_threshold_hash]
+bytes = "d7fc9187fa6150b0dea2684ccf9dad2ca5c533610d50d79cdf4f96fd"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.terms_and_conditions_two_stage_hash]
+bytes = "b37adfa09163fadbf672f1d8b31506d65adfe1e246047a74e75fda29"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.terms_and_conditions_forever_hash]
+bytes = "5d146fa856c89462d23c9044f99ffa4cc3bd356886b6b131d3a93fd1"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.terms_and_conditions_threshold_hash]
+bytes = "cb442da60d0bc7fcea67273bf07755ae04539a61d5fc70ebb7ac24b3"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.cnight_minting_two_stage_hash]
+bytes = "eb69e1d760cac6aa05e25d8d087ebbe0e3e200a3cfc47781ae5a2b2a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-29-43.cnight_minting_forever_hash]
+bytes = "b0354e1491c93b759cff836efbe5eefab70d622d842b59b18d004d21"
+encoding = "hex"
+[config.preview_test_2026-01-27_23-35-51]
+candidate_nonce = "preview"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 2
+council_one_shot_index = 1
+ics_one_shot_index = 0
+technical_authority_one_shot_index = 0
+federated_operators_one_shot_index = 3
+main_gov_one_shot_index = 4
+staging_gov_one_shot_index = 6
+main_council_update_one_shot_index = 1
+main_tech_auth_update_one_shot_index = 2
+main_federated_ops_update_one_shot_index = 3
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 4
+terms_and_conditions_threshold_one_shot_index = 6
+cnight_minting_one_shot_index = 7
+collateral_utxo_index = 15
+
+[config.preview_test_2026-01-27_23-35-51.reserve_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.council_one_shot_hash]
+bytes = "0decfc3916c5068bb50993c37caab47c9f824a293cd3126d35bbc57c2e694066"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.ics_one_shot_hash]
+bytes = "62816cc65027d76d7768b187f15218802445971f34de0b7532f8639719c9cc29"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.technical_authority_one_shot_hash]
+bytes = "3bf7936c8263e199658d361e8136ed7d98602b927bbf7f3c7ba0628326448751"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.federated_operators_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.main_gov_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.staging_gov_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.main_council_update_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.main_tech_auth_update_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.main_federated_ops_update_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.terms_and_conditions_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.terms_and_conditions_threshold_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.cnight_minting_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.cnight_policy]
+bytes = "04a89576f065334c803d361c4b029404ac6c8871917013cec20fb870"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.reserve_two_stage_hash]
+bytes = "71c4322b86126bb36e12f10af70679e1a1375c179c908bbc59bf1376"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.reserve_forever_hash]
+bytes = "dc515d974632f0556110769226af1d042258a337732c375070d304a7"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.council_two_stage_hash]
+bytes = "e74800f349716c06526091bc5c730f1b2b88551dcc532a05dac1ccb6"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.council_forever_hash]
+bytes = "35c7a8e9afa8632f7278f5082c071e91de51907118a70ad19ac2fd37"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.ics_two_stage_hash]
+bytes = "b0786f79bebb52499387d768dd2b5ab76d6002b7c80873133668f5df"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.ics_forever_hash]
+bytes = "4d3ba182572c66c821b13ef998066eb41c09f8984eb56fa1df05bca7"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.technical_authority_two_stage_hash]
+bytes = "0435ebd3bca29d973e638e5cce75e5cf26ab58081246bca5b713f7b3"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.technical_authority_forever_hash]
+bytes = "70116d60fd1bfd0fd441f2d4f655e58ac42f70dfa26a0dd184a19cff"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.federated_operators_two_stage_hash]
+bytes = "2858464ef9576437831dcd4d4ec0ede044d04e94c8638cfc07ac00a6"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.federated_operators_forever_hash]
+bytes = "b760500caf6dc9a262157a6cd8bd6a32b671f06b0c50e527aed03683"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.main_gov_threshold_hash]
+bytes = "a42af140a48270e87b4527aac099abf0affcb840f79b028ef8b01b7e"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.staging_gov_threshold_hash]
+bytes = "67cfdcd169095d8bad62bed927e7cac3a64e2a781fa0d5e6d9b5cb6c"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.main_council_update_threshold_hash]
+bytes = "e8abaec72dad6d1543f9f4bc74ccdbb2e6dfff2df0ca4f8e170a9124"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.main_tech_auth_update_threshold_hash]
+bytes = "4daf81553375bf5acb6c147bb1b86c775131764ec6a9de878e068e05"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.main_federated_ops_update_threshold_hash]
+bytes = "10a0ee2b01f4c78216e3c9c64eb7835acb46905ad673ac7dcbcf165c"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.committee_bridge_two_stage_hash]
+bytes = "1e22e53c65d91eac8d9cfd81dd59129b617ad64261bbbb4e416796ec"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.committee_bridge_forever_hash]
+bytes = "dac61759e236c71f9a5f3cecd0efe12168852068e203d994befe9a44"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.bridge_signer_threshold_hash]
+bytes = "430621d120798329436b1e8cc1c7625f4bab4b62730db4c9fffdb510"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.terms_and_conditions_two_stage_hash]
+bytes = "555c958fdcd103ad207eb3c7271076ca0847428f43271de1814ffe97"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.terms_and_conditions_forever_hash]
+bytes = "9c5a081b567d28c170c9054d2eaa373f5739454d90a43774e8098c8c"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.terms_and_conditions_threshold_hash]
+bytes = "c045246281457f02f1800f29a76108cb93d44be2c55f76bb336a4a09"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.cnight_minting_two_stage_hash]
+bytes = "5f9ef6a8034e727e8f7b5e17c05f87d37509b3a4672f0fa2d16c1f32"
+encoding = "hex"
+
+[config.preview_test_2026-01-27_23-35-51.cnight_minting_forever_hash]
+bytes = "0d6da194d68a9bb9b06e78883182863323742aee72844ef1bc7338f8"
+encoding = "hex"
+[config.preview_test_2026-01-28_05-16-36]
+candidate_nonce = "preview"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 2
+council_one_shot_index = 0
+ics_one_shot_index = 3
+technical_authority_one_shot_index = 4
+federated_operators_one_shot_index = 6
+main_gov_one_shot_index = 7
+staging_gov_one_shot_index = 2
+main_council_update_one_shot_index = 2
+main_tech_auth_update_one_shot_index = 1
+main_federated_ops_update_one_shot_index = 1
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 1
+terms_and_conditions_threshold_one_shot_index = 1
+cnight_minting_one_shot_index = 2
+collateral_utxo_index = 15
+
+[config.preview_test_2026-01-28_05-16-36.reserve_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.council_one_shot_hash]
+bytes = "62816cc65027d76d7768b187f15218802445971f34de0b7532f8639719c9cc29"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.ics_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.technical_authority_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.federated_operators_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.main_gov_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.staging_gov_one_shot_hash]
+bytes = "f81fce11610825c6dfcfb658dbabb6634603d485bd3864650e9051c8abfd3156"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.main_council_update_one_shot_hash]
+bytes = "020ab55dfdba0181f43874319f82c2cfa12622f33fd838a46e5fe3cba3c1cf27"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.main_tech_auth_update_one_shot_hash]
+bytes = "9fe4d00fd2f53a5f6e1353c1afc20fae633012d78f0de8879cac74679bd5d964"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.main_federated_ops_update_one_shot_hash]
+bytes = "ea9d8fa6bb7a9da00e07fdafd071bab7cdb22feb484bbec3c42f0178e7d9a2ae"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.terms_and_conditions_one_shot_hash]
+bytes = "8f75884e6da22bee65b419dfea30d016d6b6f2d7d7e4c2c9d0b282f8fb030a05"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.terms_and_conditions_threshold_one_shot_hash]
+bytes = "485bc6b785e856308e19620fead9dcfde2ef5b486799507ce0729d9d9298b058"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.cnight_minting_one_shot_hash]
+bytes = "7f45ae9a438c189f648e6892d3be072595a1f2db0591d37a20ca59dd2cb1105b"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.cnight_policy]
+bytes = "04a89576f065334c803d361c4b029404ac6c8871917013cec20fb870"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.reserve_two_stage_hash]
+bytes = "71c4322b86126bb36e12f10af70679e1a1375c179c908bbc59bf1376"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.reserve_forever_hash]
+bytes = "dc515d974632f0556110769226af1d042258a337732c375070d304a7"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.council_two_stage_hash]
+bytes = "b0786f79bebb52499387d768dd2b5ab76d6002b7c80873133668f5df"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.council_forever_hash]
+bytes = "2b3f69f9740f38ac7982cfcd2c80b1f1c2c3eef75bb7079bdca4b255"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.ics_two_stage_hash]
+bytes = "2858464ef9576437831dcd4d4ec0ede044d04e94c8638cfc07ac00a6"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.ics_forever_hash]
+bytes = "229bc13fd7bb8b92ca5b207ed9f1d79631474727949c268bd93f7d7f"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.technical_authority_two_stage_hash]
+bytes = "555c958fdcd103ad207eb3c7271076ca0847428f43271de1814ffe97"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.technical_authority_forever_hash]
+bytes = "3d2ee317057084a0bc6ce83cc76248abde5a37ec57911b0d16a76ef0"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.federated_operators_two_stage_hash]
+bytes = "047c1cb73f121a820331763db6c61f15529f11b1044051965d936e86"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.federated_operators_forever_hash]
+bytes = "245121cf0835b104df0fd889511a1bcc2547fcf7a29b4c0f8b77ee57"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.main_gov_threshold_hash]
+bytes = "1d41ad2d38144ceb4edbdfdb0b7e180be7a47d237c5811a72142dfd6"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.staging_gov_threshold_hash]
+bytes = "2db66997853b131c4ef03f2b938ca516d667f3ad8182ff863a86908c"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.main_council_update_threshold_hash]
+bytes = "e78879ae8d031118460670743a9325f8e280b9c280c70a6f51112612"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.main_tech_auth_update_threshold_hash]
+bytes = "2a96659f6b1e8bed0a2f9c85eb38cd829a25ac37cba3758cfe8e653c"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.main_federated_ops_update_threshold_hash]
+bytes = "ef1d5f41e55eab08e7d70538eaa38c172622be57df7dc4883820a38c"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.committee_bridge_two_stage_hash]
+bytes = "1e22e53c65d91eac8d9cfd81dd59129b617ad64261bbbb4e416796ec"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.committee_bridge_forever_hash]
+bytes = "dac61759e236c71f9a5f3cecd0efe12168852068e203d994befe9a44"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.bridge_signer_threshold_hash]
+bytes = "8e0edd86f81a9d6b07584da10f0acafaf2f60bf9856d2365cd7c9156"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.terms_and_conditions_two_stage_hash]
+bytes = "b6da662066ca46569c6e36f6fbc17cbe1567c94994d5106e5d754a98"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.terms_and_conditions_forever_hash]
+bytes = "fc6a3b80af98ff90ee3b44bb824d6f3bc07742bbd2f2e0c99aa0d0ea"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.terms_and_conditions_threshold_hash]
+bytes = "5abcd706a5b20fc6fed47cc3301b659ee71a9a3ecc911fae09e123f0"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.cnight_minting_two_stage_hash]
+bytes = "d9945adc54e283d8570522a6111426ba2be3b8d708d22486c9baa041"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_05-16-36.cnight_minting_forever_hash]
+bytes = "499e8568b6f2ddfa88598617cccb9ee4ae542169bd8d445fb4cd1802"
+encoding = "hex"
+[config.preview_test_2026-01-28_14-19-31]
+candidate_nonce = "preview"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 2
+council_one_shot_index = 3
+ics_one_shot_index = 6
+technical_authority_one_shot_index = 1
+federated_operators_one_shot_index = 1
+main_gov_one_shot_index = 2
+staging_gov_one_shot_index = 1
+main_council_update_one_shot_index = 2
+main_tech_auth_update_one_shot_index = 1
+main_federated_ops_update_one_shot_index = 2
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 1
+terms_and_conditions_threshold_one_shot_index = 1
+cnight_minting_one_shot_index = 1
+collateral_utxo_index = 15
+
+[config.preview_test_2026-01-28_14-19-31.reserve_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.council_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.ics_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.technical_authority_one_shot_hash]
+bytes = "8f75884e6da22bee65b419dfea30d016d6b6f2d7d7e4c2c9d0b282f8fb030a05"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.federated_operators_one_shot_hash]
+bytes = "485bc6b785e856308e19620fead9dcfde2ef5b486799507ce0729d9d9298b058"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.main_gov_one_shot_hash]
+bytes = "7f45ae9a438c189f648e6892d3be072595a1f2db0591d37a20ca59dd2cb1105b"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.staging_gov_one_shot_hash]
+bytes = "0078a7467d20e317df1a76566a526d83d907dc4e308b89da2f3a2939cc07da41"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.main_council_update_one_shot_hash]
+bytes = "0078a7467d20e317df1a76566a526d83d907dc4e308b89da2f3a2939cc07da41"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.main_tech_auth_update_one_shot_hash]
+bytes = "2b956b0fcd8ba1f6a752671be4d188275c18860af75906f1ffcb0e717d87f9d8"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.main_federated_ops_update_one_shot_hash]
+bytes = "0685d6b050e8e10d110fb15e65e2a253f7d4e4aea094d66440481ef63386ef48"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.terms_and_conditions_one_shot_hash]
+bytes = "8df351a1a368bd9d721685f49b20385e1981fc7309a8b08c64ad854b0d1de07b"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.terms_and_conditions_threshold_one_shot_hash]
+bytes = "e2bf30d79bdc5599e9859cf465fadbd39d0ddfd5884398c71fbeca433ccfdd42"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.cnight_minting_one_shot_hash]
+bytes = "1bdc1accc1d63c44c42453c64f9e76cecaf30add86faa787e8416de56a0fabaf"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.cnight_policy]
+bytes = "04a89576f065334c803d361c4b029404ac6c8871917013cec20fb870"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.reserve_two_stage_hash]
+bytes = "71c4322b86126bb36e12f10af70679e1a1375c179c908bbc59bf1376"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.reserve_forever_hash]
+bytes = "dc515d974632f0556110769226af1d042258a337732c375070d304a7"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.council_two_stage_hash]
+bytes = "2858464ef9576437831dcd4d4ec0ede044d04e94c8638cfc07ac00a6"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.council_forever_hash]
+bytes = "93b9b16a77f0ec548db8596b9632188999c9da01a1cf7e61663f10ac"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.ics_two_stage_hash]
+bytes = "047c1cb73f121a820331763db6c61f15529f11b1044051965d936e86"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.ics_forever_hash]
+bytes = "b622d231a9e13ab6ecac9f2ceedb599072da7b611637108d7ca22f90"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.technical_authority_two_stage_hash]
+bytes = "b6da662066ca46569c6e36f6fbc17cbe1567c94994d5106e5d754a98"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.technical_authority_forever_hash]
+bytes = "d0604b94d21767e6df52eac21222cd2cc5bde56493da92db54ff54e7"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.federated_operators_two_stage_hash]
+bytes = "21574cf04662bd6b9e26d0ef26ee6cd0fa503982c542a3831cc8fd70"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.federated_operators_forever_hash]
+bytes = "fdf62bb595a8693a239f42df133718314c64b58e38e4e148fcb8aba8"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.main_gov_threshold_hash]
+bytes = "216447c75c90e911e3c0cf69aa9465d3077f0fc7187f92c4052bbfe8"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.staging_gov_threshold_hash]
+bytes = "51607c62a2807b87f94650c894c3caee44f27ddf8e76420aefbc1dec"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.main_council_update_threshold_hash]
+bytes = "98dc4e569bea954275c4f6dbe78d74590e42c2e8e53c08a3d12141d0"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.main_tech_auth_update_threshold_hash]
+bytes = "0103a1755f757d7ca9cdbf50cea63273e2746528c567b9508c7d9f6f"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.main_federated_ops_update_threshold_hash]
+bytes = "5c68bd8078c65cf669613eee64fa7653f0dfbcc9daeb6c3ff5c106e4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.committee_bridge_two_stage_hash]
+bytes = "1e22e53c65d91eac8d9cfd81dd59129b617ad64261bbbb4e416796ec"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.committee_bridge_forever_hash]
+bytes = "dac61759e236c71f9a5f3cecd0efe12168852068e203d994befe9a44"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.bridge_signer_threshold_hash]
+bytes = "eb9c41d5543e13ce99a9600af96a167f7ecfceb2d6ea2799d83d2939"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.terms_and_conditions_two_stage_hash]
+bytes = "d8feb9f9d95a6a5f14f50ca9fd6651becc676eb566a25820bc0e6ed3"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.terms_and_conditions_forever_hash]
+bytes = "5e3bf126f33f8909e06ce43e416bac4fa896f0d83c5ee26a9dfca4ac"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.terms_and_conditions_threshold_hash]
+bytes = "b19b662cdc1abbfbb2e4acd8fb11f75cb2c58ecc09969574a50d9cc8"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.cnight_minting_two_stage_hash]
+bytes = "d125da0fac8515dceac96567c86f6a1fdb8861c333bf19d585393c42"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-19-31.cnight_minting_forever_hash]
+bytes = "aa6ab3a1a2455e857b48dc9dc04d95fef8aaaff01673613fb870678c"
+encoding = "hex"
+[config.preview_test_2026-01-28_14-26-31]
+candidate_nonce = "preview"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 2
+council_one_shot_index = 3
+ics_one_shot_index = 6
+technical_authority_one_shot_index = 1
+federated_operators_one_shot_index = 1
+main_gov_one_shot_index = 2
+staging_gov_one_shot_index = 1
+main_council_update_one_shot_index = 2
+main_tech_auth_update_one_shot_index = 1
+main_federated_ops_update_one_shot_index = 2
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 1
+terms_and_conditions_threshold_one_shot_index = 1
+cnight_minting_one_shot_index = 1
+collateral_utxo_index = 15
+
+[config.preview_test_2026-01-28_14-26-31.reserve_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.council_one_shot_hash]
+bytes = "757875055a3c36cc761d3ec66f50717f6cd04206ead5682408b1ffeb2f1d301e"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.ics_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.technical_authority_one_shot_hash]
+bytes = "8f75884e6da22bee65b419dfea30d016d6b6f2d7d7e4c2c9d0b282f8fb030a05"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.federated_operators_one_shot_hash]
+bytes = "485bc6b785e856308e19620fead9dcfde2ef5b486799507ce0729d9d9298b058"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.main_gov_one_shot_hash]
+bytes = "7f45ae9a438c189f648e6892d3be072595a1f2db0591d37a20ca59dd2cb1105b"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.staging_gov_one_shot_hash]
+bytes = "0078a7467d20e317df1a76566a526d83d907dc4e308b89da2f3a2939cc07da41"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.main_council_update_one_shot_hash]
+bytes = "0078a7467d20e317df1a76566a526d83d907dc4e308b89da2f3a2939cc07da41"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.main_tech_auth_update_one_shot_hash]
+bytes = "2b956b0fcd8ba1f6a752671be4d188275c18860af75906f1ffcb0e717d87f9d8"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.main_federated_ops_update_one_shot_hash]
+bytes = "0685d6b050e8e10d110fb15e65e2a253f7d4e4aea094d66440481ef63386ef48"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.terms_and_conditions_one_shot_hash]
+bytes = "8df351a1a368bd9d721685f49b20385e1981fc7309a8b08c64ad854b0d1de07b"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.terms_and_conditions_threshold_one_shot_hash]
+bytes = "e2bf30d79bdc5599e9859cf465fadbd39d0ddfd5884398c71fbeca433ccfdd42"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.cnight_minting_one_shot_hash]
+bytes = "1bdc1accc1d63c44c42453c64f9e76cecaf30add86faa787e8416de56a0fabaf"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.cnight_policy]
+bytes = "04a89576f065334c803d361c4b029404ac6c8871917013cec20fb870"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.reserve_two_stage_hash]
+bytes = "71c4322b86126bb36e12f10af70679e1a1375c179c908bbc59bf1376"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.reserve_forever_hash]
+bytes = "dc515d974632f0556110769226af1d042258a337732c375070d304a7"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.council_two_stage_hash]
+bytes = "2858464ef9576437831dcd4d4ec0ede044d04e94c8638cfc07ac00a6"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.council_forever_hash]
+bytes = "93b9b16a77f0ec548db8596b9632188999c9da01a1cf7e61663f10ac"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.ics_two_stage_hash]
+bytes = "047c1cb73f121a820331763db6c61f15529f11b1044051965d936e86"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.ics_forever_hash]
+bytes = "b622d231a9e13ab6ecac9f2ceedb599072da7b611637108d7ca22f90"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.technical_authority_two_stage_hash]
+bytes = "b6da662066ca46569c6e36f6fbc17cbe1567c94994d5106e5d754a98"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.technical_authority_forever_hash]
+bytes = "d0604b94d21767e6df52eac21222cd2cc5bde56493da92db54ff54e7"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.federated_operators_two_stage_hash]
+bytes = "21574cf04662bd6b9e26d0ef26ee6cd0fa503982c542a3831cc8fd70"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.federated_operators_forever_hash]
+bytes = "fdf62bb595a8693a239f42df133718314c64b58e38e4e148fcb8aba8"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.main_gov_threshold_hash]
+bytes = "216447c75c90e911e3c0cf69aa9465d3077f0fc7187f92c4052bbfe8"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.staging_gov_threshold_hash]
+bytes = "51607c62a2807b87f94650c894c3caee44f27ddf8e76420aefbc1dec"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.main_council_update_threshold_hash]
+bytes = "98dc4e569bea954275c4f6dbe78d74590e42c2e8e53c08a3d12141d0"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.main_tech_auth_update_threshold_hash]
+bytes = "0103a1755f757d7ca9cdbf50cea63273e2746528c567b9508c7d9f6f"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.main_federated_ops_update_threshold_hash]
+bytes = "5c68bd8078c65cf669613eee64fa7653f0dfbcc9daeb6c3ff5c106e4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.committee_bridge_two_stage_hash]
+bytes = "1e22e53c65d91eac8d9cfd81dd59129b617ad64261bbbb4e416796ec"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.committee_bridge_forever_hash]
+bytes = "dac61759e236c71f9a5f3cecd0efe12168852068e203d994befe9a44"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.bridge_signer_threshold_hash]
+bytes = "eb9c41d5543e13ce99a9600af96a167f7ecfceb2d6ea2799d83d2939"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.terms_and_conditions_two_stage_hash]
+bytes = "d8feb9f9d95a6a5f14f50ca9fd6651becc676eb566a25820bc0e6ed3"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.terms_and_conditions_forever_hash]
+bytes = "5e3bf126f33f8909e06ce43e416bac4fa896f0d83c5ee26a9dfca4ac"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.terms_and_conditions_threshold_hash]
+bytes = "b19b662cdc1abbfbb2e4acd8fb11f75cb2c58ecc09969574a50d9cc8"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.cnight_minting_two_stage_hash]
+bytes = "d125da0fac8515dceac96567c86f6a1fdb8861c333bf19d585393c42"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-26-31.cnight_minting_forever_hash]
+bytes = "aa6ab3a1a2455e857b48dc9dc04d95fef8aaaff01673613fb870678c"
+encoding = "hex"
+[config.preview_test_2026-01-28_14-51-50]
+candidate_nonce = "preview"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 2
+council_one_shot_index = 6
+ics_one_shot_index = 1
+technical_authority_one_shot_index = 1
+federated_operators_one_shot_index = 1
+main_gov_one_shot_index = 1
+staging_gov_one_shot_index = 1
+main_council_update_one_shot_index = 2
+main_tech_auth_update_one_shot_index = 3
+main_federated_ops_update_one_shot_index = 0
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 1
+terms_and_conditions_threshold_one_shot_index = 2
+cnight_minting_one_shot_index = 1
+collateral_utxo_index = 15
+
+[config.preview_test_2026-01-28_14-51-50.reserve_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.council_one_shot_hash]
+bytes = "fbd8e9c1813c50adf4612a7e71b3d1a6c2a43f8dad8406ffaf3598c2f3edf83a"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.ics_one_shot_hash]
+bytes = "485bc6b785e856308e19620fead9dcfde2ef5b486799507ce0729d9d9298b058"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.technical_authority_one_shot_hash]
+bytes = "8df351a1a368bd9d721685f49b20385e1981fc7309a8b08c64ad854b0d1de07b"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.federated_operators_one_shot_hash]
+bytes = "e2bf30d79bdc5599e9859cf465fadbd39d0ddfd5884398c71fbeca433ccfdd42"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.main_gov_one_shot_hash]
+bytes = "1bdc1accc1d63c44c42453c64f9e76cecaf30add86faa787e8416de56a0fabaf"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.staging_gov_one_shot_hash]
+bytes = "4ef1683a42b2f3a663d52c2f56804ac4e437b171e7fcd031a84a6b3f933e280e"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.main_council_update_one_shot_hash]
+bytes = "0b7d10ce77eff8cd5e880d50009ac58688f1ede252d64ee2b64cf30ce99d3bd3"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.main_tech_auth_update_one_shot_hash]
+bytes = "0b7d10ce77eff8cd5e880d50009ac58688f1ede252d64ee2b64cf30ce99d3bd3"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.main_federated_ops_update_one_shot_hash]
+bytes = "2e6120555002209e0a9fb5c5d822a938bdbcb61de366357e4ef22eabd2972e68"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.terms_and_conditions_one_shot_hash]
+bytes = "8483e83a6f1f6c792fdf31cd3b3e3795ff1d0fdef2e1ed3afbbacf7a3ad3c079"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.terms_and_conditions_threshold_one_shot_hash]
+bytes = "9eb147a66e97b44e44d9472f7905b8727c6c4f3896ad42126bd23805cfbbce95"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.cnight_minting_one_shot_hash]
+bytes = "6d4f0706e0e91fc8c9339c556ff352f24dbc1ba5358ad72a6c991bee0a76b915"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.cnight_policy]
+bytes = "04a89576f065334c803d361c4b029404ac6c8871917013cec20fb870"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.reserve_two_stage_hash]
+bytes = "71c4322b86126bb36e12f10af70679e1a1375c179c908bbc59bf1376"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.reserve_forever_hash]
+bytes = "dc515d974632f0556110769226af1d042258a337732c375070d304a7"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.council_two_stage_hash]
+bytes = "047c1cb73f121a820331763db6c61f15529f11b1044051965d936e86"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.council_forever_hash]
+bytes = "aa3dc7a47a45cb1d75148a00c3bf20e98283570c5730614c85228237"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.ics_two_stage_hash]
+bytes = "21574cf04662bd6b9e26d0ef26ee6cd0fa503982c542a3831cc8fd70"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.ics_forever_hash]
+bytes = "0295cac651646422d2c2b683bc1006dbb6be87620f7946fc75fa52ec"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.technical_authority_two_stage_hash]
+bytes = "d8feb9f9d95a6a5f14f50ca9fd6651becc676eb566a25820bc0e6ed3"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.technical_authority_forever_hash]
+bytes = "a1f0c929883d5c541091b795d7f14fbefc1f68a4af23dded120e7bd5"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.federated_operators_two_stage_hash]
+bytes = "7bb4b79ed02299082b41a54b17f8b55d394b078a95bc6747d504940d"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.federated_operators_forever_hash]
+bytes = "78718298f25aef74f6c7490628ffa744025daa767af4a8e5bf6464de"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.main_gov_threshold_hash]
+bytes = "26de3b86c02b5c88221634664c2c04f61ae3075b1e087a5e62273579"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.staging_gov_threshold_hash]
+bytes = "b494b34a94d52f49a8652e432413d7c40c64f8a420f18919d7e74fb1"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.main_council_update_threshold_hash]
+bytes = "8501ce6d9d719e2440f159c5c4a3ca58d49b76b6942bb72554756297"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.main_tech_auth_update_threshold_hash]
+bytes = "060c7d99f88fde4ec4651ebd8b4f8ae98bf47953224ae7e096f2d06c"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.main_federated_ops_update_threshold_hash]
+bytes = "0228ae13dc2bb3864fc55a0c63f73794a30ef3cc3317ad288eb13ac1"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.committee_bridge_two_stage_hash]
+bytes = "1e22e53c65d91eac8d9cfd81dd59129b617ad64261bbbb4e416796ec"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.committee_bridge_forever_hash]
+bytes = "dac61759e236c71f9a5f3cecd0efe12168852068e203d994befe9a44"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.bridge_signer_threshold_hash]
+bytes = "31aa2d8225c9523cbbeca32e814812f6788cae1b589f0a9746d5d43e"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.terms_and_conditions_two_stage_hash]
+bytes = "891399bd842b7c50077fbde05024f123532e3ced49a23ee393776e56"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.terms_and_conditions_forever_hash]
+bytes = "f5275309183925ef7f8b4cd7fe870073cc8daeeb0a6d36bd225e52c0"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.terms_and_conditions_threshold_hash]
+bytes = "892902761f5938e494db36432b54e5934e95d010edb5fce80b90118d"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.cnight_minting_two_stage_hash]
+bytes = "1e9b1499b167e67988e30e2d2918b28e6c471d7ac542c79484087ec6"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_14-51-50.cnight_minting_forever_hash]
+bytes = "26579fa2efd085dda304f9dea7f4ff22e84c0db4c9a012d5eb378897"
+encoding = "hex"
+[config.preview_test_2026-01-28_16-30-00]
+candidate_nonce = "preview"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 2
+council_one_shot_index = 1
+ics_one_shot_index = 1
+technical_authority_one_shot_index = 1
+federated_operators_one_shot_index = 2
+main_gov_one_shot_index = 1
+staging_gov_one_shot_index = 2
+main_council_update_one_shot_index = 0
+main_tech_auth_update_one_shot_index = 1
+main_federated_ops_update_one_shot_index = 1
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 1
+terms_and_conditions_threshold_one_shot_index = 0
+cnight_minting_one_shot_index = 0
+collateral_utxo_index = 15
+
+[config.preview_test_2026-01-28_16-30-00.reserve_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.council_one_shot_hash]
+bytes = "485bc6b785e856308e19620fead9dcfde2ef5b486799507ce0729d9d9298b058"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.ics_one_shot_hash]
+bytes = "e2bf30d79bdc5599e9859cf465fadbd39d0ddfd5884398c71fbeca433ccfdd42"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.technical_authority_one_shot_hash]
+bytes = "8483e83a6f1f6c792fdf31cd3b3e3795ff1d0fdef2e1ed3afbbacf7a3ad3c079"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.federated_operators_one_shot_hash]
+bytes = "9eb147a66e97b44e44d9472f7905b8727c6c4f3896ad42126bd23805cfbbce95"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.main_gov_one_shot_hash]
+bytes = "6d4f0706e0e91fc8c9339c556ff352f24dbc1ba5358ad72a6c991bee0a76b915"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.staging_gov_one_shot_hash]
+bytes = "0d54fe04df33cdb96007940af25194984a40f031dbf260182803809c21f3acec"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.main_council_update_one_shot_hash]
+bytes = "d97b92d189a480215c2f8052df978becd3264a561a9205bbcb76572e27ab236e"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.main_tech_auth_update_one_shot_hash]
+bytes = "5ee3f5d760baa72a5e2c6eda72716420b1667c13acc8a5b963d7031d16ebeb4c"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.main_federated_ops_update_one_shot_hash]
+bytes = "183b2764f9dfd14d86a7c31771b7683f9a5b717a5e4937ad3ca6449572f28521"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.terms_and_conditions_one_shot_hash]
+bytes = "049a2e4742da3d625d784267234fa467dcacbf4efdf85928fa4957fbc8c13b3f"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.terms_and_conditions_threshold_one_shot_hash]
+bytes = "fef7e15dc1098bea708033fe08a9db75c76cd778c0d26bbbe12c1389395ad909"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.cnight_minting_one_shot_hash]
+bytes = "817cd9c30fde8e777f1bc155d01bc88bff9280ac372b9a8224f195d33cfa24f0"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.cnight_policy]
+bytes = "04a89576f065334c803d361c4b029404ac6c8871917013cec20fb870"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.reserve_two_stage_hash]
+bytes = "71c4322b86126bb36e12f10af70679e1a1375c179c908bbc59bf1376"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.reserve_forever_hash]
+bytes = "dc515d974632f0556110769226af1d042258a337732c375070d304a7"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.council_two_stage_hash]
+bytes = "21574cf04662bd6b9e26d0ef26ee6cd0fa503982c542a3831cc8fd70"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.council_forever_hash]
+bytes = "cbed808013e7f84dc4da32f3ee8601db74d668b1d431a9374d5bbb80"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.ics_two_stage_hash]
+bytes = "7bb4b79ed02299082b41a54b17f8b55d394b078a95bc6747d504940d"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.ics_forever_hash]
+bytes = "ed70834f2d2fb7596ab7dc0d549075bdf32b55c5eb195675a58d8ba9"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.technical_authority_two_stage_hash]
+bytes = "891399bd842b7c50077fbde05024f123532e3ced49a23ee393776e56"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.technical_authority_forever_hash]
+bytes = "c88ab6b14a84cc8266ebd5354b6acfb4ecac3e6bad086a22d824cc40"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.federated_operators_two_stage_hash]
+bytes = "e158a284f395ce8342a1bf4efe08fb8ab0e91ac05d0c04bd331d8295"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.federated_operators_forever_hash]
+bytes = "e640416139f4696ca92f7a16a6bb74e25b345242c5916c1b6f51008c"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.main_gov_threshold_hash]
+bytes = "426b358cd723b42136f99231a97a15c2d1f0e82bc65a8ddf6eb3defa"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.staging_gov_threshold_hash]
+bytes = "119c838af86771d6aa4fbd25bd6b767eb9ecae711533806aafeeacb9"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.main_council_update_threshold_hash]
+bytes = "bc7d82bfb32907496f66a574251305aca08e998a9935894b240d304d"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.main_tech_auth_update_threshold_hash]
+bytes = "9ea3a4d558fcb41c2dd938dea5d692046db003c49ffd1097f74feaa8"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.main_federated_ops_update_threshold_hash]
+bytes = "ef1213853f5dcc4f52ef69ffa058bbd78f9abf0a95a1d8d3e667d0cb"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.committee_bridge_two_stage_hash]
+bytes = "1e22e53c65d91eac8d9cfd81dd59129b617ad64261bbbb4e416796ec"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.committee_bridge_forever_hash]
+bytes = "dac61759e236c71f9a5f3cecd0efe12168852068e203d994befe9a44"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.bridge_signer_threshold_hash]
+bytes = "b86fd3112a3e87a326395276815d26afa3c3f61e9c3fedf98dbb0184"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.terms_and_conditions_two_stage_hash]
+bytes = "da137007735a2e6189609ef6caf88c23744c0b68da60d12e45996841"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.terms_and_conditions_forever_hash]
+bytes = "184d5a76b4c0cc341af9f11c3f18c7d0720be76905e223c92da80c40"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.terms_and_conditions_threshold_hash]
+bytes = "70cfbc583269bc7bd89d047f74eba053d9dd88148283b4bc9268e826"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.cnight_minting_two_stage_hash]
+bytes = "c37c0363fc07cfddceaf4e661cc7091f3db7a8917b0317bb935dba4b"
+encoding = "hex"
+
+[config.preview_test_2026-01-28_16-30-00.cnight_minting_forever_hash]
+bytes = "6ea128d4312ed0105228e01ab3682d1df2379d60a634f67d7fa50f4b"
+encoding = "hex"
+[config.preview_test_2026-02-03_01-49-04]
+candidate_nonce = "preview"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 2
+council_one_shot_index = 1
+ics_one_shot_index = 2
+technical_authority_one_shot_index = 0
+federated_operators_one_shot_index = 0
+main_gov_one_shot_index = 3
+staging_gov_one_shot_index = 3
+main_council_update_one_shot_index = 1
+main_tech_auth_update_one_shot_index = 1
+main_federated_ops_update_one_shot_index = 1
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 1
+terms_and_conditions_threshold_one_shot_index = 1
+cnight_minting_one_shot_index = 3
+collateral_utxo_index = 15
+
+[config.preview_test_2026-02-03_01-49-04.reserve_one_shot_hash]
+bytes = "f01947ae2b96204ee849b2b21b24a6c3dd50f9d36579c4b03795f2bb53cd105a"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.council_one_shot_hash]
+bytes = "e2bf30d79bdc5599e9859cf465fadbd39d0ddfd5884398c71fbeca433ccfdd42"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.ics_one_shot_hash]
+bytes = "9eb147a66e97b44e44d9472f7905b8727c6c4f3896ad42126bd23805cfbbce95"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.technical_authority_one_shot_hash]
+bytes = "817cd9c30fde8e777f1bc155d01bc88bff9280ac372b9a8224f195d33cfa24f0"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.federated_operators_one_shot_hash]
+bytes = "21cdea23a2650bb30183afd74d3745c24b841369729d93f7e2ad5287cd22d58f"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.main_gov_one_shot_hash]
+bytes = "ce0fa95fc2a4a35714ae28def3e75b37c5d7543dbbb604f47a480186ba08cb5a"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.staging_gov_one_shot_hash]
+bytes = "df4849af46b58e5378a07a0f7d6662e161f4d91b6d492789cf3a7920bb0718a2"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.main_council_update_one_shot_hash]
+bytes = "f6164d29ecfcfcaa04eb5d83532b043be45133dac191027cbc5c65a836d76efe"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.main_tech_auth_update_one_shot_hash]
+bytes = "91caa1fe546c3ce084ae6ba6a740bfe9307842df81fef98c3beed743b7dfd47e"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.main_federated_ops_update_one_shot_hash]
+bytes = "f97be893a772bb4fecb16bf21d0b67c239f8cd584cdf46d3b243d998ade926b5"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.committee_bridge_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.committee_threshold_one_shot_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.terms_and_conditions_one_shot_hash]
+bytes = "c03ee9b1ea35270daf5250e7dc231d3558fc34b2e9eee4138bb298a4c3ea4e67"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.terms_and_conditions_threshold_one_shot_hash]
+bytes = "c0100b6e9ce7e850803efa8391ef0f2c4a1bfc59315ddbea93f781214ebe6ba2"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.collateral_utxo_hash]
+bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.cnight_minting_one_shot_hash]
+bytes = "9e78a94946b7f3b297d4e72f75098289f6e162171ad3015c03540f0cd30a8da5"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.cnight_policy]
+bytes = "04a89576f065334c803d361c4b029404ac6c8871917013cec20fb870"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.reserve_two_stage_hash]
+bytes = "71c4322b86126bb36e12f10af70679e1a1375c179c908bbc59bf1376"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.reserve_forever_hash]
+bytes = "dc515d974632f0556110769226af1d042258a337732c375070d304a7"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.council_two_stage_hash]
+bytes = "7bb4b79ed02299082b41a54b17f8b55d394b078a95bc6747d504940d"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.council_forever_hash]
+bytes = "bf63ac107555d92297f98ba8039d33737fb1663debb9a63c76ce2821"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.ics_two_stage_hash]
+bytes = "e158a284f395ce8342a1bf4efe08fb8ab0e91ac05d0c04bd331d8295"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.ics_forever_hash]
+bytes = "0eb10fadcda850223d4a72c12b7168d65f46426bb2feed457ba53b95"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.technical_authority_two_stage_hash]
+bytes = "c37c0363fc07cfddceaf4e661cc7091f3db7a8917b0317bb935dba4b"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.technical_authority_forever_hash]
+bytes = "4b441cd27bae342c6e3520d10b625c249574c94273fe0bde7ab663da"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.federated_operators_two_stage_hash]
+bytes = "07809ecc99f0c5d15d4f0f3e9253de581af6cd03b08845f4c922e164"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.federated_operators_forever_hash]
+bytes = "17006d82454f488ab34fbf0daf2263cd93114a1a7fbfdded93af729f"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.main_gov_threshold_hash]
+bytes = "c3fb1e2d20863108b8b7c9be90a90e351e3a8802f2e0b799b5b26c58"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.staging_gov_threshold_hash]
+bytes = "b421f8eaf654303a901d03d12deaf5b94347a8bd578981c0ab9360d2"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.main_council_update_threshold_hash]
+bytes = "f5a29de398d35dc1ad86a703daa6ce71c420e14668cb69e9ce5aebb3"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.main_tech_auth_update_threshold_hash]
+bytes = "0965d4ed08baca270f74d1d66b9e293c56342b466f49913821042f6b"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.main_federated_ops_update_threshold_hash]
+bytes = "7c831844b36907965925bb8bc93623008c9d602788ca15f52665b844"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.beefy_signer_threshold_hash]
+bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.committee_bridge_two_stage_hash]
+bytes = "1e22e53c65d91eac8d9cfd81dd59129b617ad64261bbbb4e416796ec"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.committee_bridge_forever_hash]
+bytes = "dac61759e236c71f9a5f3cecd0efe12168852068e203d994befe9a44"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.bridge_signer_threshold_hash]
+bytes = "726a49769d3ea287007ae4ff58dafdca71aa05516e7cbfbea19fde24"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.terms_and_conditions_two_stage_hash]
+bytes = "969e25c51cc351939a1925ba613cb706280e74525dc56c50bdfcb0e9"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.terms_and_conditions_forever_hash]
+bytes = "f04afcd761706f9ad2a94062e6b94b9c2497dbcd38e1bdf26f52b7e3"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.terms_and_conditions_threshold_hash]
+bytes = "2182d6bff34a95ee751f985ebc364819c7ab54ff0d4ca613b47a9a40"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.cnight_minting_two_stage_hash]
+bytes = "a79bca6e0b58b24537143777e343809e6fb3fd372d1811ceb51e0c32"
+encoding = "hex"
+
+[config.preview_test_2026-02-03_01-49-04.cnight_minting_forever_hash]
+bytes = "46a3e8d0cc034c751e7fd1a52e4cd2ec5ac5d82c9ca292d2174d12c8"
 encoding = "hex"
