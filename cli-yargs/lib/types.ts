@@ -75,6 +75,9 @@ export interface NetworkConfig {
   federated_operators_logic_v2_one_shot_index: number;
   terms_and_conditions_logic_v2_one_shot_hash: string;
   terms_and_conditions_logic_v2_one_shot_index: number;
+  // cNIGHT Minting one-shot ref
+  cnight_minting_one_shot_hash: string;
+  cnight_minting_one_shot_index: number;
 }
 
 export interface TransactionOutput {

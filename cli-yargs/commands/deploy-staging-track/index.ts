@@ -19,7 +19,12 @@ import type { TransactionUnspentOutput } from "@blaze-cardano/core";
 import type { GlobalOptions } from "../../lib/global-options";
 import type { TransactionOutput as TxOutput } from "../../lib/types";
 import { getNetworkId } from "../../lib/types";
-import { loadAikenConfig, getDeployUtxoAmount } from "../../lib/config";
+import {
+  loadAikenConfig,
+  getDeployUtxoAmount,
+  getDeployerAddress,
+} from "../../lib/config";
+import { createOneShotUtxo } from "../../lib/transaction";
 import { createBlaze } from "../../lib/provider";
 import { getProtocolParameters, calculateMinUtxo } from "../../lib/protocol";
 import { getContractInstances } from "../../lib/contracts";
@@ -150,6 +155,7 @@ export async function handler(argv: DeployStagingTrackOptions) {
   const config = loadAikenConfig(network);
   const contracts = getContractInstances(network, useBuild);
   const networkId = getNetworkId(network);
+  const deployerAddr = getDeployerAddress();
 
   // Parse signers for multisig contracts (council, tech-auth)
   const { totalSigners: techAuthTotalSigners, signers: techAuthSigners } =
@@ -217,20 +223,12 @@ export async function handler(argv: DeployStagingTrackOptions) {
   async function generateStagingForeverDeployment(
     params: StagingForeverDeployParams,
   ) {
-    const oneShotInput = TransactionInput.fromCore({
-      txId: TransactionId(params.oneShotHash),
-      index: params.oneShotIndex,
-    });
-    const resolvedUtxos = await blaze.provider.resolveUnspentOutputs([
-      oneShotInput,
-    ]);
-    if (resolvedUtxos.length === 0) {
-      throw new Error(
-        `One-shot UTxO not found on chain: ${params.oneShotHash}#${params.oneShotIndex}. ` +
-          `Ensure the UTxO exists and has not been spent.`,
-      );
-    }
-    const oneShotUtxo = resolvedUtxos[0];
+    const oneShotUtxo = createOneShotUtxo(
+      params.oneShotHash,
+      params.oneShotIndex,
+      deployerAddr,
+      utxoAmount,
+    );
 
     const foreverAddress = addressFromValidator(
       networkId,

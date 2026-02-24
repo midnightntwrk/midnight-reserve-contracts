@@ -4,6 +4,7 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import deployCommand from "./commands/deploy";
 import deployStagingTrackCommand from "./commands/deploy-staging-track";
+import deployCnightMintingCommand from "./commands/deploy-cnight-minting";
 import changeCouncilCommand from "./commands/change-council";
 import changeTechAuthCommand from "./commands/change-tech-auth";
 import changeFederatedOpsCommand from "./commands/change-federated-ops";
@@ -29,6 +30,7 @@ addGlobalOptions(yargs(hideBin(process.argv)))
   .version("0.0.1")
   .command(deployCommand)
   .command(deployStagingTrackCommand)
+  .command(deployCnightMintingCommand)
   .command(changeCouncilCommand)
   .command(changeTechAuthCommand)
   .command(changeFederatedOpsCommand)

@@ -93,9 +93,6 @@ function getCurrentTimestamp(): string {
 /** Validators excluded from promoted lists (not part of the active contract set). */
 const EXCLUDED_VALIDATORS = new Set([
   "always_fails",
-  "cnight_mint_forever",
-  "cnight_mint_logic",
-  "cnight_mint_two_stage_upgrade",
   "committee_bridge_forever",
   "committee_bridge_logic",
   "committee_bridge_two_stage_upgrade",

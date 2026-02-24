@@ -69,6 +69,11 @@ export interface ContractInstances {
   termsAndConditionsTwoStage: ContractClass;
   termsAndConditionsLogic: ContractClass;
   termsAndConditionsThreshold: ContractClass;
+
+  // cNIGHT Minting (optional — not present in older deployed blueprints)
+  cnightMintTwoStage?: ContractClass;
+  cnightMintForever?: ContractClass;
+  cnightMintLogic?: ContractClass;
 }
 
 // Per-environment cache for contract instances
@@ -246,6 +251,10 @@ function createInstances(
     termsAndConditionsThreshold: create(
       "ThresholdsTermsAndConditionsThresholdElse",
     ),
+
+    cnightMintTwoStage: tryCreate("CnightMintingCnightMintTwoStageUpgradeElse"),
+    cnightMintForever: tryCreate("CnightMintingCnightMintForeverElse"),
+    cnightMintLogic: tryCreate("CnightMintingCnightMintLogicElse"),
   };
 }
 
@@ -346,6 +355,21 @@ export function getTwoStageContracts(
         twoStage: contracts.termsAndConditionsTwoStage,
         forever: contracts.termsAndConditionsForever,
         logic: contracts.termsAndConditionsLogic,
+      };
+    case "cnight-minting":
+      if (
+        !contracts.cnightMintTwoStage ||
+        !contracts.cnightMintForever ||
+        !contracts.cnightMintLogic
+      ) {
+        throw new Error(
+          `cNIGHT minting contracts not found in blueprint. Run 'just build <env>' first.`,
+        );
+      }
+      return {
+        twoStage: contracts.cnightMintTwoStage,
+        forever: contracts.cnightMintForever,
+        logic: contracts.cnightMintLogic,
       };
     default:
       throw new Error(`Unknown two-stage validator: ${validatorName}`);

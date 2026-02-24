@@ -105,6 +105,9 @@ export function loadAikenConfig(environment: string): NetworkConfig {
       networkConfig.terms_and_conditions_logic_v2_one_shot_hash.bytes,
     terms_and_conditions_logic_v2_one_shot_index:
       networkConfig.terms_and_conditions_logic_v2_one_shot_index,
+    cnight_minting_one_shot_hash:
+      networkConfig.cnight_minting_one_shot_hash.bytes,
+    cnight_minting_one_shot_index: networkConfig.cnight_minting_one_shot_index,
   };
 }
 
