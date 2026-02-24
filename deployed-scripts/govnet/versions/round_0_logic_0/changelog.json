@@ -1,0 +1,13 @@
+{
+  "version": "round_0_logic_0",
+  "previousVersion": null,
+  "timestamp": "2026-01-27T18:31:12Z",
+  "gitCommit": "71c29547ef4ad786a1ef7e2150e00d76d1d1ed1c",
+  "changes": [
+    {
+      "type": "initial",
+      "validator": "all",
+      "description": "Initial govnet deployment migration from plutus-govnet.json"
+    }
+  ]
+}

@@ -31,8 +31,8 @@ describe("Change Council CLI Test", () => {
     const amount = 100_000_000n;
 
     await emulator.as("deployer", async (blaze, addr) => {
-      await emulator.as("signer1", async (_, addr1) => {
-        await emulator.as("signer2", async (_, addr2) => {
+      await emulator.as("signer1", async (_blaze1, _addr1) => {
+        await emulator.as("signer2", async (_blaze2, _addr2) => {
           emulator.addUtxo(
             TransactionUnspentOutput.fromCore([
               {
@@ -330,7 +330,7 @@ describe("Change Council CLI Test", () => {
             }).toCore(),
             NetworkId.Testnet,
           );
-          emulator.accounts.set(councilLogicRewardAccount, 0n);
+          emulator.accounts.set(councilLogicRewardAccount, { balance: 0n });
 
           const txBuilder = blaze
             .newTransaction()

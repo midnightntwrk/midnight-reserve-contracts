@@ -2,7 +2,6 @@ import {
   addressFromValidator,
   AssetId,
   AssetName,
-  HexBlob,
   NetworkId,
   PaymentAddress,
   PlutusData,

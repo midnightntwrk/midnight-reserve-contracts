@@ -21,7 +21,6 @@ import {
   isDeploymentTransactions,
 } from "../utils/transaction-json";
 import {
-  CONFIRMATION_TIMEOUT_MS,
   MAX_SUBMIT_RETRIES,
   INITIAL_RETRY_DELAY_MS,
   sleep,
@@ -178,6 +177,8 @@ async function signAndSubmitTransaction(
         printProgress(
           `Submitting (attempt ${attempt}/${MAX_SUBMIT_RETRIES}): ${name}`,
         );
+      } else {
+        printProgress(`Submitting: ${name}`);
       }
       await provider.postTransactionToChain(signedTx);
       return txId;

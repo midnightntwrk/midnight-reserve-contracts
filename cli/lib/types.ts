@@ -16,7 +16,7 @@ export type Network = "local" | "preview" | "preprod" | "mainnet";
 export type ProviderType = "blockfrost" | "maestro" | "emulator" | "kupmios";
 
 export interface GlobalOptions {
-  /** Environment name (e.g., "preview", "qanet", "node-dev-01", "preprod", "mainnet") */
+  /** Environment name (e.g., "preview", "qanet", "govnet", "node-dev-01", "preprod", "mainnet") */
   network: string;
   output: string;
   provider: ProviderType;
@@ -25,8 +25,6 @@ export interface GlobalOptions {
 
 export interface DeployOptions extends GlobalOptions {
   utxoAmount: bigint;
-  outputAmount: bigint;
-  thresholdOutputAmount: bigint;
   techAuthThreshold: { numerator: bigint; denominator: bigint };
   councilThreshold: { numerator: bigint; denominator: bigint };
   councilStagingThreshold: { numerator: bigint; denominator: bigint };
@@ -41,6 +39,7 @@ export interface ChangeAuthOptions extends GlobalOptions {
   utxoAmount?: bigint;
   sign: boolean;
   outputFile: string;
+  useBuild?: boolean;
 }
 
 export interface SimpleTxOptions extends GlobalOptions {
@@ -54,6 +53,9 @@ export interface InfoOptions extends GlobalOptions {
   format: "json" | "table";
   component: string;
   fetch: boolean;
+  useBuild?: boolean;
+  save?: boolean;
+  releaseDir?: string;
 }
 
 export interface StageUpgradeOptions extends GlobalOptions {
@@ -64,6 +66,7 @@ export interface StageUpgradeOptions extends GlobalOptions {
   utxoAmount?: bigint;
   sign: boolean;
   outputFile: string;
+  useBuild?: boolean;
 }
 
 export interface PromoteUpgradeOptions extends GlobalOptions {
@@ -73,10 +76,18 @@ export interface PromoteUpgradeOptions extends GlobalOptions {
   utxoAmount?: bigint;
   sign: boolean;
   outputFile: string;
+  useBuild?: boolean;
 }
 
 export interface RegisterGovAuthOptions extends GlobalOptions {
   outputFile: string;
+  useBuild?: boolean;
+}
+
+export interface RegisterLogicOptions extends GlobalOptions {
+  scriptHash: string;
+  outputFile: string;
+  useBuild?: boolean;
 }
 
 export interface GenerateKeyOptions {
@@ -106,12 +117,24 @@ export interface CombineSignaturesOptions {
   signingKeyEnvVar: string;
 }
 
+export interface ChangeTermsOptions extends GlobalOptions {
+  txHash: string;
+  txIndex: number;
+  hash: string;
+  url: string;
+  utxoAmount?: bigint;
+  sign: boolean;
+  outputFile: string;
+  useBuild?: boolean;
+}
+
 export interface MintTcnightOptions extends GlobalOptions {
   userAddress: string;
   destinationAddress?: string;
   amount: bigint;
   burn: boolean;
   outputFile: string;
+  useBuild?: boolean;
 }
 
 export interface Signer {
@@ -148,6 +171,32 @@ export interface NetworkConfig {
   collateral_utxo_index: number;
   cnight_policy: string;
   cnight_name: string;
+  // Staging forever one-shot refs
+  reserve_staging_one_shot_hash: string;
+  reserve_staging_one_shot_index: number;
+  council_staging_one_shot_hash: string;
+  council_staging_one_shot_index: number;
+  ics_staging_one_shot_hash: string;
+  ics_staging_one_shot_index: number;
+  technical_authority_staging_one_shot_hash: string;
+  technical_authority_staging_one_shot_index: number;
+  federated_operators_staging_one_shot_hash: string;
+  federated_operators_staging_one_shot_index: number;
+  terms_and_conditions_staging_one_shot_hash: string;
+  terms_and_conditions_staging_one_shot_index: number;
+  // V2 logic one-shot refs (for StagingState NFT minting)
+  reserve_logic_v2_one_shot_hash: string;
+  reserve_logic_v2_one_shot_index: number;
+  ics_logic_v2_one_shot_hash: string;
+  ics_logic_v2_one_shot_index: number;
+  council_logic_v2_one_shot_hash: string;
+  council_logic_v2_one_shot_index: number;
+  technical_authority_logic_v2_one_shot_hash: string;
+  technical_authority_logic_v2_one_shot_index: number;
+  federated_operators_logic_v2_one_shot_hash: string;
+  federated_operators_logic_v2_one_shot_index: number;
+  terms_and_conditions_logic_v2_one_shot_hash: string;
+  terms_and_conditions_logic_v2_one_shot_index: number;
 }
 
 export interface TransactionOutput {
@@ -167,8 +216,6 @@ export interface DeploymentOutput {
   timestamp: string;
   config: {
     utxoAmount: string;
-    outputAmount: string;
-    thresholdOutputAmount: string;
   };
   transactions: TransactionOutput[];
 }

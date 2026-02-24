@@ -7,6 +7,7 @@ import {
   Script,
 } from "@blaze-cardano/core";
 import { getNetworkId, getConfigSection } from "./types";
+import { findContractByHash } from "./blueprint-diff";
 import { resolve } from "path";
 import { existsSync } from "fs";
 
@@ -37,6 +38,14 @@ export interface ContractInstances {
   govAuth: ContractClass;
   stagingGovAuth: ContractClass;
 
+  // Staging Forever (for staging track deployment)
+  councilStagingForever?: ContractClass;
+  techAuthStagingForever?: ContractClass;
+  federatedOpsStagingForever?: ContractClass;
+  reserveStagingForever?: ContractClass;
+  icsStagingForever?: ContractClass;
+  termsAndConditionsStagingForever?: ContractClass;
+
   // ICS
   icsForever: ContractClass;
   icsTwoStage: ContractClass;
@@ -54,14 +63,18 @@ export interface ContractInstances {
   mainTechAuthUpdateThreshold: ContractClass;
   mainFederatedOpsUpdateThreshold: ContractClass;
 
-  // TCnight Mint Infinite (testnet only)
-  tcnightMintInfinite: ContractClass;
+  // TCnight Mint Infinite (testnet only, not in mainnet blueprint)
+  tcnightMintInfinite?: ContractClass;
 
   // Terms and Conditions
   termsAndConditionsForever: ContractClass;
   termsAndConditionsTwoStage: ContractClass;
   termsAndConditionsLogic: ContractClass;
   termsAndConditionsThreshold: ContractClass;
+
+  // Utility validators
+  registeredCandidate: ContractClass;
+  cnightGeneratesDust: ContractClass;
 }
 
 // Per-environment cache for contract instances
@@ -72,10 +85,27 @@ let activeEnvironment: string | null = null;
 
 /**
  * Resolves the blueprint file path for a given environment.
- * Falls back to default if the environment-specific file doesn't exist.
+ * By default, checks deployed-scripts/ first for version-controlled artifacts.
+ * Falls back to build outputs if deployed-scripts doesn't exist.
+ *
+ * @param env - The environment name
+ * @param preferDeployed - If true (default), check deployed-scripts/ first
  */
-function getBlueprintPath(env: string): string {
+function getBlueprintPath(env: string, preferDeployed: boolean = true): string {
   const projectRoot = resolve(import.meta.dir, "../..");
+
+  // Check deployed-scripts first (version-controlled deployment artifacts)
+  if (preferDeployed) {
+    const deployedPath = resolve(
+      projectRoot,
+      `deployed-scripts/${env}/contract_blueprint.ts`,
+    );
+    if (existsSync(deployedPath)) {
+      return deployedPath;
+    }
+  }
+
+  // Fall back to root blueprint files (build outputs)
   const envPath = resolve(projectRoot, `contract_blueprint_${env}.ts`);
   const defaultPath = resolve(projectRoot, "contract_blueprint.ts");
 
@@ -92,7 +122,8 @@ function getBlueprintPath(env: string): string {
   }
 
   throw new Error(
-    `No blueprint file found. Expected: ${envPath} or ${defaultPath}. ` +
+    `No blueprint file found. Expected: deployed-scripts/${env}/contract_blueprint.ts, ` +
+      `${envPath}, or ${defaultPath}. ` +
       `Run 'just build ${env}' to generate the blueprint.`,
   );
 }
@@ -100,9 +131,15 @@ function getBlueprintPath(env: string): string {
 /**
  * Loads the contract module for a given environment.
  * Uses Bun's require for synchronous loading.
+ *
+ * @param env - The environment name
+ * @param preferDeployed - If true (default), prefer deployed-scripts/ over build outputs
  */
-function loadContractModule(env: string): Record<string, unknown> {
-  const blueprintPath = getBlueprintPath(env);
+export function loadContractModule(
+  env: string,
+  preferDeployed: boolean = true,
+): Record<string, unknown> {
+  const blueprintPath = getBlueprintPath(env, preferDeployed);
   // Use require for synchronous loading (Bun supports this)
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   return require(blueprintPath);
@@ -121,6 +158,17 @@ function createInstances(
       throw new Error(`Contract class '${className}' not found in blueprint`);
     }
     return new ContractClass();
+  };
+
+  // Helper to optionally instantiate a contract class (returns undefined if not found)
+  const tryCreate = (className: string): ContractClass | undefined => {
+    const ContractClass = Contracts[className] as new () => ContractClass;
+    if (!ContractClass) return undefined;
+    try {
+      return new ContractClass();
+    } catch {
+      return undefined;
+    }
   };
 
   return {
@@ -142,6 +190,24 @@ function createInstances(
     // Gov Auth
     govAuth: create("GovAuthMainGovAuthElse"),
     stagingGovAuth: create("GovAuthStagingGovAuthElse"),
+
+    // Staging Forever
+    councilStagingForever: tryCreate(
+      "StagingPermissionedCouncilStagingForeverElse",
+    ),
+    techAuthStagingForever: tryCreate(
+      "StagingPermissionedTechAuthStagingForeverElse",
+    ),
+    federatedOpsStagingForever: tryCreate(
+      "StagingPermissionedFederatedOpsStagingForeverElse",
+    ),
+    reserveStagingForever: tryCreate(
+      "StagingReserveIcsReserveStagingForeverElse",
+    ),
+    icsStagingForever: tryCreate("StagingReserveIcsIcsStagingForeverElse"),
+    termsAndConditionsStagingForever: tryCreate(
+      "StagingTandcTermsAndConditionsStagingForeverElse",
+    ),
 
     // ICS
     icsForever: create("IlliquidCirculationSupplyIcsForeverElse"),
@@ -166,8 +232,8 @@ function createInstances(
       "ThresholdsMainFederatedOpsUpdateThresholdElse",
     ),
 
-    // TCnight Mint Infinite (testnet only)
-    tcnightMintInfinite: create("TestCnightNoAuditTcnightMintInfiniteElse"),
+    // TCnight Mint Infinite (testnet only, not in mainnet blueprint)
+    tcnightMintInfinite: tryCreate("TestCnightNoAuditTcnightMintInfiniteElse"),
 
     // Terms and Conditions
     termsAndConditionsForever: create(
@@ -182,6 +248,10 @@ function createInstances(
     termsAndConditionsThreshold: create(
       "ThresholdsTermsAndConditionsThresholdElse",
     ),
+
+    // Utility validators
+    registeredCandidate: create("RegisteredCandidateRegisteredCandidateElse"),
+    cnightGeneratesDust: create("CnightGeneratesDustCnightGeneratesDustElse"),
   };
 }
 
@@ -190,28 +260,36 @@ function createInstances(
  *
  * @param env - The deployment environment (e.g., "preview", "preprod", "mainnet", or custom like "qanet")
  *              Maps to aiken.toml config section via getConfigSection()
+ * @param useBuild - If true, load from build outputs instead of deployed-scripts/
+ *                   Default is false (prefer deployed-scripts/)
  * @returns ContractInstances with environment-specific compiled scripts
  *
  * @example
- * const contracts = getContractInstances("preview");
- * const contracts = getContractInstances("preprod");
+ * const contracts = getContractInstances("preview");           // Uses deployed-scripts/
+ * const contracts = getContractInstances("preview", true);     // Uses build outputs
  */
-export function getContractInstances(env?: string): ContractInstances {
+export function getContractInstances(
+  env?: string,
+  useBuild: boolean = false,
+): ContractInstances {
   // If no env provided, use active environment or fall back to loading default blueprint
   const targetEnv = env
     ? getConfigSection(env)
     : (activeEnvironment ?? "default");
 
+  // Cache key includes useBuild to allow both versions to be cached
+  const cacheKey = useBuild ? `${targetEnv}:build` : targetEnv;
+
   // Check cache
-  const cached = instanceCache.get(targetEnv);
+  const cached = instanceCache.get(cacheKey);
   if (cached) {
     return cached;
   }
 
-  // Load and cache
-  const Contracts = loadContractModule(targetEnv);
+  // Load and cache (preferDeployed is opposite of useBuild)
+  const Contracts = loadContractModule(targetEnv, !useBuild);
   const instances = createInstances(Contracts);
-  instanceCache.set(targetEnv, instances);
+  instanceCache.set(cacheKey, instances);
 
   // Update active environment if this is the first load or if explicitly set
   if (env) {
@@ -226,12 +304,16 @@ export function getContractInstances(env?: string): ContractInstances {
  * Call this early in CLI commands to ensure the correct contracts are loaded.
  *
  * @param env - The deployment environment
+ * @param useBuild - If true, load from build outputs instead of deployed-scripts/
  */
-export function initContractsForEnvironment(env: string): void {
+export function initContractsForEnvironment(
+  env: string,
+  useBuild: boolean = false,
+): void {
   const configSection = getConfigSection(env);
   activeEnvironment = configSection;
   // Pre-load the contracts
-  getContractInstances(env);
+  getContractInstances(env, useBuild);
 }
 
 export function getContractAddress(
@@ -267,12 +349,14 @@ export interface TwoStageContracts {
  *
  * @param validatorName - The validator name (e.g., "tech-auth", "council")
  * @param env - Optional environment. If not provided, uses the active environment.
+ * @param useBuild - If true, load from build outputs instead of deployed-scripts/
  */
 export function getTwoStageContracts(
   validatorName: string,
   env?: string,
+  useBuild?: boolean,
 ): TwoStageContracts {
-  const contracts = getContractInstances(env);
+  const contracts = getContractInstances(env, useBuild);
 
   switch (validatorName) {
     case "tech-auth":
@@ -321,20 +405,17 @@ export function getTwoStageContracts(
  *
  * @param hash - The script hash to find
  * @param env - Optional environment. If not provided, uses the active environment.
+ * @param useBuild - If true, load from build outputs instead of deployed-scripts/
  */
-export function findScriptByHash(hash: string, env?: string): Script | null {
-  const contracts = getContractInstances(env);
-  const scriptMap: Record<string, Script> = {
-    [contracts.councilLogic.Script.hash()]: contracts.councilLogic.Script,
-    [contracts.techAuthLogic.Script.hash()]: contracts.techAuthLogic.Script,
-    [contracts.reserveLogic.Script.hash()]: contracts.reserveLogic.Script,
-    [contracts.icsLogic.Script.hash()]: contracts.icsLogic.Script,
-    [contracts.federatedOpsLogic.Script.hash()]:
-      contracts.federatedOpsLogic.Script,
-    [contracts.termsAndConditionsLogic.Script.hash()]:
-      contracts.termsAndConditionsLogic.Script,
-    [contracts.govAuth.Script.hash()]: contracts.govAuth.Script,
-    [contracts.stagingGovAuth.Script.hash()]: contracts.stagingGovAuth.Script,
-  };
-  return scriptMap[hash] ?? null;
+export function findScriptByHash(
+  hash: string,
+  env?: string,
+  useBuild?: boolean,
+): Script | null {
+  const targetEnv = env
+    ? getConfigSection(env)
+    : (activeEnvironment ?? "default");
+  const Contracts = loadContractModule(targetEnv, !useBuild);
+  const result = findContractByHash(Contracts, hash);
+  return result?.script ?? null;
 }

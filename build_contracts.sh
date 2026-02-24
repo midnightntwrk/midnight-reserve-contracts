@@ -8,12 +8,13 @@ set -euo pipefail
 # 2. Forever validators (batch update then single compile)
 # 3. Threshold validators (batch update then single compile - depend on forever contracts)
 #
-# Usage: ./build_contracts.sh <env> [silent|verbose|compact]
+# Usage: ./build_contracts.sh <env> [silent|verbose|compact] [--from-deployed]
 #
 # Environment options:
 #   default     - Use for local testing builds
 #   preview     - Use for preview testnet
 #   qanet       - Use for Midnight QA environment (Cardano Preview)
+#   govnet      - Use for Midnight Governance environment (Cardano Preview)
 #   node-dev-01 - Use for node dev environment (Cardano Preview)
 #   preprod     - Use for preprod testnet
 #   mainnet     - Use for mainnet
@@ -22,11 +23,19 @@ set -euo pipefail
 #   silent   - Minimal output
 #   verbose  - Detailed compilation output
 #   compact  - Compact compilation output
+#
+# Flags:
+#   --from-deployed - Build against deployed forever/two-stage/threshold hashes
+#                     Reads from deployed-scripts/<env>/plutus.json
+#                     Performs single build instead of multi-phase
 
 # Define files
 # JSON_FILE is set after NETWORK is parsed (see below)
 TOML_FILE="aiken.toml"
 LOCK_FILE="build/aiken-compile.lock"
+
+# Flag for building against deployed hashes
+FROM_DEPLOYED=false
 
 current_epoch_seconds() {
     date +%s
@@ -165,7 +174,7 @@ final_compile_run() {
     local compile_started_at
     compile_started_at=$(current_epoch_seconds)
 
-    if ! aiken build -S --env "$NETWORK" -o "$JSON_FILE" "${TRACE_ARGS[@]}"; then
+    if ! aiken build -S --env "$NETWORK" -o "$JSON_FILE" ${TRACE_ARGS[@]+"${TRACE_ARGS[@]}"}; then
         echo "Error: Failed to perform final build" >&2
         exit 1
     fi
@@ -252,12 +261,13 @@ TERMS_AND_CONDITIONS_THRESHOLD_TOML_KEY="terms_and_conditions_threshold_hash"
 show_help() {
     echo "Midnight Reserve Contracts Build Script"
     echo ""
-    echo "Usage: $0 <env> [trace_level]"
+    echo "Usage: $0 <env> [trace_level] [--from-deployed]"
     echo ""
     echo "Environments:"
     echo "  default      Use for local testing builds"
     echo "  preview      Use for preview testnet"
     echo "  qanet        Use for Midnight QA environment (Cardano Preview)"
+    echo "  govnet       Use for Midnight Governance environment (Cardano Preview)"
     echo "  node-dev-01  Use for node dev environment (Cardano Preview)"
     echo "  preprod      Use for preprod testnet"
     echo "  mainnet      Use for mainnet"
@@ -267,10 +277,16 @@ show_help() {
     echo "  verbose   Detailed compilation output"
     echo "  compact   Compact compilation output"
     echo ""
+    echo "Flags:"
+    echo "  --from-deployed  Build against deployed forever/two-stage hashes"
+    echo "                   Reads from deployed-scripts/<env>/plutus.json"
+    echo "                   Performs single build instead of multi-phase"
+    echo ""
     echo "Examples:"
     echo "  $0 preview"
     echo "  $0 qanet verbose"
     echo "  $0 node-dev-01 compact"
+    echo "  $0 preprod --from-deployed"
 }
 
 # Check if help is requested
@@ -287,23 +303,44 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-if [ $# -gt 2 ]; then
-    echo "Error: Too many arguments provided."
+# Parse arguments: <env> [trace_level] [--from-deployed]
+NETWORK=""
+TRACE_ARGS=()
+
+for arg in "$@"; do
+    case "$arg" in
+        --from-deployed)
+            FROM_DEPLOYED=true
+            ;;
+        silent|verbose|compact)
+            TRACE_ARGS=(-t "$arg")
+            ;;
+        *)
+            if [ -z "$NETWORK" ]; then
+                # Convert parameter to lowercase for consistent comparison
+                NETWORK=$(echo "$arg" | tr '[:upper:]' '[:lower:]')
+            else
+                echo "Error: Unknown argument: $arg"
+                echo ""
+                show_help
+                exit 1
+            fi
+            ;;
+    esac
+done
+
+if [ -z "$NETWORK" ]; then
+    echo "Error: Environment parameter required."
     echo ""
     show_help
     exit 1
 fi
 
-# Convert parameter to lowercase for consistent comparison
-NETWORK=$(echo "$1" | tr '[:upper:]' '[:lower:]')
-
 # Set output file based on network for multi-env support
 JSON_FILE="plutus-${NETWORK}.json"
 
-TRACE_ARGS=()
-if [ $# -ge 2 ]; then
-    TRACE_ARGS=(-t "$2")
-fi
+# Deployed scripts path for --from-deployed flag
+DEPLOYED_JSON_FILE="deployed-scripts/${NETWORK}/plutus.json"
 
 # Function to check if a command exists
 command_exists() {
@@ -431,7 +468,8 @@ update_cnight_policy_if_not_mainnet() {
     set_config_value "cnight_policy" "$tcnight_hash" "hex"
 }
 
-update_two_stage_hashes() {
+# Update core two-stage hashes (validators in deployed files)
+update_core_two_stage_hashes() {
     update_hash "$RESERVE_TWO_STAGE_TITLE" "$RESERVE_TWO_STAGE_TOML_KEY"
     update_hash "$COUNCIL_TWO_STAGE_TITLE" "$COUNCIL_TWO_STAGE_TOML_KEY"
     update_hash "$ICS_TWO_STAGE_TITLE" "$ICS_TWO_STAGE_TOML_KEY"
@@ -439,10 +477,15 @@ update_two_stage_hashes() {
     update_hash "$FEDERATED_OPS_TWO_STAGE_TITLE" "$FEDERATED_OPS_TWO_STAGE_TOML_KEY"
     update_hash "$TERMS_AND_CONDITIONS_TWO_STAGE_TITLE" "$TERMS_AND_CONDITIONS_TWO_STAGE_TOML_KEY"
     update_hash "$COMMITTEE_BRIDGE_TWO_STAGE_TITLE" "$COMMITTEE_BRIDGE_TWO_STAGE_TOML_KEY"
+}
+
+update_two_stage_hashes() {
+    update_core_two_stage_hashes
     update_hash "$CNIGHT_MINT_TWO_STAGE_TITLE" "$CNIGHT_MINT_TWO_STAGE_TOML_KEY"
 }
 
-update_forever_hashes() {
+# Update core forever hashes (validators in deployed files)
+update_core_forever_hashes() {
     update_hash "$RESERVE_FOREVER_TITLE" "$RESERVE_FOREVER_TOML_KEY"
     update_hash "$COUNCIL_FOREVER_TITLE" "$COUNCIL_FOREVER_TOML_KEY"
     update_hash "$ICS_FOREVER_TITLE" "$ICS_FOREVER_TOML_KEY"
@@ -450,6 +493,10 @@ update_forever_hashes() {
     update_hash "$FEDERATED_OPS_FOREVER_TITLE" "$FEDERATED_OPS_FOREVER_TOML_KEY"
     update_hash "$TERMS_AND_CONDITIONS_FOREVER_TITLE" "$TERMS_AND_CONDITIONS_FOREVER_TOML_KEY"
     update_hash "$COMMITTEE_BRIDGE_FOREVER_TITLE" "$COMMITTEE_BRIDGE_FOREVER_TOML_KEY"
+}
+
+update_forever_hashes() {
+    update_core_forever_hashes
     update_hash "$CNIGHT_MINT_FOREVER_TITLE" "$CNIGHT_MINT_FOREVER_TOML_KEY"
 }
 
@@ -479,7 +526,7 @@ compile_phase() {
     local compile_started_at
     compile_started_at=$(current_epoch_seconds)
 
-    if ! aiken build -S --env "$NETWORK" -o "$JSON_FILE" "${TRACE_ARGS[@]}"; then
+    if ! aiken build -S --env "$NETWORK" -o "$JSON_FILE" ${TRACE_ARGS[@]+"${TRACE_ARGS[@]}"}; then
         echo "Error: Failed to build aiken for $description" >&2
         exit 1
     fi
@@ -498,8 +545,57 @@ if [ ! -r "$TOML_FILE" ]; then
     exit 1
 fi
 
+# Validate deployed file exists when --from-deployed is set
+if [ "$FROM_DEPLOYED" = true ]; then
+    if [ ! -f "$DEPLOYED_JSON_FILE" ]; then
+        echo "Error: Deployed scripts file '$DEPLOYED_JSON_FILE' not found."
+        echo "Make sure deployed-scripts/${NETWORK}/plutus.json exists."
+        exit 1
+    fi
+    if [ ! -r "$DEPLOYED_JSON_FILE" ]; then
+        echo "Error: Cannot read deployed scripts file '$DEPLOYED_JSON_FILE'. Check permissions."
+        exit 1
+    fi
+fi
+
 echo "Starting compilation for network: $NETWORK"
+if [ "$FROM_DEPLOYED" = true ]; then
+    echo "Mode: Building against deployed hashes from $DEPLOYED_JSON_FILE"
+fi
 echo "=========================================="
+
+# --from-deployed mode: single build against deployed hashes
+if [ "$FROM_DEPLOYED" = true ]; then
+    # Backup aiken.toml with PID-scoped filename
+    backup_file="aiken.toml.backup.$$"
+    cp "$TOML_FILE" "$backup_file"
+    trap "mv '$backup_file' '$TOML_FILE'" EXIT
+
+    # Point JSON_FILE to deployed scripts for hash extraction
+    JSON_FILE="$DEPLOYED_JSON_FILE"
+
+    echo "Reading hashes from deployed scripts..."
+    # Use core functions that only include validators in deployed files
+    # (cnight_minting validators are newer and not in existing deployments)
+    update_core_two_stage_hashes
+    update_core_forever_hashes
+    update_threshold_hashes
+
+    # Reset JSON_FILE to output file for build
+    JSON_FILE="plutus-${NETWORK}.json"
+
+    echo "Building validators with deployed hashes..."
+    compile_phase "Single Build (from deployed)"
+
+    echo "=========================================="
+    echo "Successfully compiled midnight-reserve-contracts for $NETWORK network."
+    echo "Blueprint written to: $JSON_FILE"
+    echo "Built against deployed hashes from: $DEPLOYED_JSON_FILE"
+    # Trap will restore aiken.toml on exit
+    exit 0
+fi
+
+# Standard multi-phase build (existing behavior)
 
 # Initial compile to get tcnight_mint_infinite hash for cnight_policy
 echo "Initial compilation for cnight_policy..."

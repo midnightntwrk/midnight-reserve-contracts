@@ -9,9 +9,12 @@ import {
   PolicyId,
   Script,
   toHex,
+  TransactionId,
+  TransactionInput,
   TransactionOutput,
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
+import { calculateRequiredCollateral } from "@blaze-cardano/tx";
 import { resolve } from "path";
 
 import type {
@@ -26,7 +29,13 @@ import {
   getTermsAndConditionsInitialLink,
 } from "../lib/config";
 import { createBlaze } from "../lib/provider";
+import { getProtocolParameters, calculateMinUtxo } from "../lib/protocol";
 import { getContractInstances } from "../lib/contracts";
+import {
+  saveVersionSnapshot,
+  updateCurrentSymlinks,
+  type ChangeRecord,
+} from "../lib/versions";
 import {
   parseSignersWithCount,
   createMultisigStateFromMap,
@@ -37,7 +46,6 @@ import {
   createDeploymentOutput,
   printSuccess,
   printError,
-  printProgress,
   printInfo,
   printTransactionSummary,
   ensureDirectory,
@@ -97,8 +105,6 @@ export async function deploy(options: DeployOptions): Promise<void> {
     network,
     output,
     utxoAmount,
-    outputAmount,
-    thresholdOutputAmount,
     techAuthThreshold,
     councilThreshold,
     councilStagingThreshold,
@@ -111,8 +117,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
   console.log(`Generating deployment transactions for ${network}`);
   console.log(`===========================================`);
   console.log(`UTxO Amount: ${utxoAmount} lovelace`);
-  console.log(`Output Amount: ${outputAmount} lovelace`);
-  console.log(`Threshold Output Amount: ${thresholdOutputAmount} lovelace`);
+  console.log(`Min UTxO: calculated dynamically from protocol parameters`);
 
   const config = loadAikenConfig(network);
   const contracts = getContractInstances(network);
@@ -135,19 +140,48 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
   const { blaze } = await createBlaze(network, options.provider);
 
-  // Create collateral UTxO - this UTxO is NOT spent by any deployment transaction,
+  // Fetch protocol parameters for min UTxO calculation and collateral validation
+  const protocolParams = await getProtocolParameters(blaze.provider);
+
+  // Query collateral UTxO - this UTxO is NOT spent by any deployment transaction,
   // so it can be safely reused as collateral across all transactions
   let collateralUtxo: TransactionUnspentOutput | undefined;
   if (config.collateral_utxo_hash) {
-    collateralUtxo = createOneShotUtxo(
-      config.collateral_utxo_hash,
-      config.collateral_utxo_index,
-      deployerAddr,
-      utxoAmount,
-    );
-    console.log(
-      `\nUsing collateral UTxO: ${config.collateral_utxo_hash}#${config.collateral_utxo_index}`,
-    );
+    const collateralInput = TransactionInput.fromCore({
+      txId: TransactionId(config.collateral_utxo_hash),
+      index: config.collateral_utxo_index,
+    });
+    const resolved = await blaze.provider.resolveUnspentOutputs([
+      collateralInput,
+    ]);
+    if (resolved.length > 0) {
+      collateralUtxo = resolved[0];
+      console.log(
+        `\nUsing collateral UTxO: ${config.collateral_utxo_hash}#${config.collateral_utxo_index} with ${collateralUtxo.output().amount().coin()} lovelace`,
+      );
+
+      // Validate collateral is sufficient for deployment transactions
+      // Use conservative estimate for complex deploy transactions with scripts
+      const estimatedMaxFee = 5_000_000n;
+      const requiredCollateral = calculateRequiredCollateral(
+        estimatedMaxFee,
+        protocolParams.collateralPercentage,
+      );
+      const availableCollateral = collateralUtxo.output().amount().coin();
+
+      if (availableCollateral < requiredCollateral) {
+        throw new Error(
+          `Collateral UTxO has ${availableCollateral} lovelace but requires at least ${requiredCollateral} lovelace (collateralPercentage: ${protocolParams.collateralPercentage}%, estimated max fee: ${estimatedMaxFee} lovelace)`,
+        );
+      }
+      console.log(
+        `Collateral validation passed: ${availableCollateral} lovelace >= ${requiredCollateral} lovelace required`,
+      );
+    } else {
+      throw new Error(
+        `Collateral UTxO not found: ${config.collateral_utxo_hash}#${config.collateral_utxo_index}. Ensure the UTxO exists and has not been spent.`,
+      );
+    }
   }
 
   async function generateMultisigDeployment(params: MultisigDeployParams) {
@@ -184,6 +218,59 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
     let txBuilder = blaze.newTransaction().addInput(oneShotUtxo);
 
+    // Create outputs with dynamic min UTxO calculation
+    const twoStageMainOutput = TransactionOutput.fromCore({
+      address: PaymentAddress(twoStageAddress.toBech32()),
+      value: {
+        coins: 0n,
+        assets: new Map([
+          [
+            AssetId(
+              params.twoStageContract.Script.hash() +
+                toHex(new TextEncoder().encode("main")),
+            ),
+            1n,
+          ],
+        ]),
+      },
+      datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
+    });
+    twoStageMainOutput
+      .amount()
+      .setCoin(calculateMinUtxo(protocolParams, twoStageMainOutput));
+
+    const twoStageStagingOutput = TransactionOutput.fromCore({
+      address: PaymentAddress(twoStageAddress.toBech32()),
+      value: {
+        coins: 0n,
+        assets: new Map([
+          [
+            AssetId(
+              params.twoStageContract.Script.hash() +
+                toHex(new TextEncoder().encode("staging")),
+            ),
+            1n,
+          ],
+        ]),
+      },
+      datum: serialize(Contracts.UpgradeState, stagingUpgradeState).toCore(),
+    });
+    twoStageStagingOutput
+      .amount()
+      .setCoin(calculateMinUtxo(protocolParams, twoStageStagingOutput));
+
+    const foreverOutput = TransactionOutput.fromCore({
+      address: PaymentAddress(foreverAddress.toBech32()),
+      value: {
+        coins: 0n,
+        assets: new Map([[AssetId(params.foreverContract.Script.hash()), 1n]]),
+      },
+      datum: serialize(Contracts.VersionedMultisig, foreverState).toCore(),
+    });
+    foreverOutput
+      .amount()
+      .setCoin(calculateMinUtxo(protocolParams, foreverOutput));
+
     txBuilder = txBuilder
       .addMint(
         PolicyId(params.foreverContract.Script.hash()),
@@ -200,57 +287,9 @@ export async function deploy(options: DeployOptions): Promise<void> {
       )
       .provideScript(params.twoStageContract.Script)
       .provideScript(params.foreverContract.Script)
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(twoStageAddress.toBech32()),
-          value: {
-            coins: outputAmount,
-            assets: new Map([
-              [
-                AssetId(
-                  params.twoStageContract.Script.hash() +
-                    toHex(new TextEncoder().encode("main")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(twoStageAddress.toBech32()),
-          value: {
-            coins: outputAmount,
-            assets: new Map([
-              [
-                AssetId(
-                  params.twoStageContract.Script.hash() +
-                    toHex(new TextEncoder().encode("staging")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(
-            Contracts.UpgradeState,
-            stagingUpgradeState,
-          ).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(foreverAddress.toBech32()),
-          value: {
-            coins: outputAmount,
-            assets: new Map([
-              [AssetId(params.foreverContract.Script.hash()), 1n],
-            ]),
-          },
-          datum: serialize(Contracts.VersionedMultisig, foreverState).toCore(),
-        }),
-      )
+      .addOutput(twoStageMainOutput)
+      .addOutput(twoStageStagingOutput)
+      .addOutput(foreverOutput)
       .addRegisterStake(
         Credential.fromCore({
           hash: params.logicContract.Script.hash(),
@@ -292,6 +331,67 @@ export async function deploy(options: DeployOptions): Promise<void> {
       contracts.stagingGovAuth.Script.hash(),
     );
 
+    // Create outputs with dynamic min UTxO calculation
+    const twoStageMainOutput = TransactionOutput.fromCore({
+      address: PaymentAddress(twoStageAddress.toBech32()),
+      value: {
+        coins: 0n,
+        assets: new Map([
+          [
+            AssetId(
+              params.twoStageContract.Script.hash() +
+                toHex(new TextEncoder().encode("main")),
+            ),
+            1n,
+          ],
+        ]),
+      },
+      datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
+    });
+    twoStageMainOutput
+      .amount()
+      .setCoin(calculateMinUtxo(protocolParams, twoStageMainOutput));
+
+    const twoStageStagingOutput = TransactionOutput.fromCore({
+      address: PaymentAddress(twoStageAddress.toBech32()),
+      value: {
+        coins: 0n,
+        assets: new Map([
+          [
+            AssetId(
+              params.twoStageContract.Script.hash() +
+                toHex(new TextEncoder().encode("staging")),
+            ),
+            1n,
+          ],
+        ]),
+      },
+      datum: serialize(Contracts.UpgradeState, stagingUpgradeState).toCore(),
+    });
+    twoStageStagingOutput
+      .amount()
+      .setCoin(calculateMinUtxo(protocolParams, twoStageStagingOutput));
+
+    const foreverOutput = TransactionOutput.fromCore({
+      address: PaymentAddress(foreverAddress.toBech32()),
+      value: {
+        coins: 0n,
+        assets: new Map([[AssetId(params.foreverContract.Script.hash()), 1n]]),
+      },
+      datum: PlutusData.fromCore({
+        constructor: 0n,
+        fields: {
+          items: [
+            PlutusData.newInteger(0n).toCore(),
+            PlutusData.newInteger(0n).toCore(),
+          ],
+        },
+      }).toCore(),
+    });
+    foreverOutput
+      .amount()
+      .setCoin(calculateMinUtxo(protocolParams, foreverOutput));
+
     let txBuilder = blaze
       .newTransaction()
       .addInput(oneShotUtxo)
@@ -310,65 +410,9 @@ export async function deploy(options: DeployOptions): Promise<void> {
       )
       .provideScript(params.foreverContract.Script)
       .provideScript(params.twoStageContract.Script)
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(twoStageAddress.toBech32()),
-          value: {
-            coins: outputAmount,
-            assets: new Map([
-              [
-                AssetId(
-                  params.twoStageContract.Script.hash() +
-                    toHex(new TextEncoder().encode("main")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(twoStageAddress.toBech32()),
-          value: {
-            coins: outputAmount,
-            assets: new Map([
-              [
-                AssetId(
-                  params.twoStageContract.Script.hash() +
-                    toHex(new TextEncoder().encode("staging")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(
-            Contracts.UpgradeState,
-            stagingUpgradeState,
-          ).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(foreverAddress.toBech32()),
-          value: {
-            coins: outputAmount,
-            assets: new Map([
-              [AssetId(params.foreverContract.Script.hash()), 1n],
-            ]),
-          },
-          datum: PlutusData.fromCore({
-            constructor: 0n,
-            fields: {
-              items: [
-                PlutusData.newInteger(0n).toCore(),
-                PlutusData.newInteger(0n).toCore(),
-              ],
-            },
-          }).toCore(),
-        }),
-      );
+      .addOutput(twoStageMainOutput)
+      .addOutput(twoStageStagingOutput)
+      .addOutput(foreverOutput);
 
     if (collateralUtxo) {
       txBuilder = txBuilder.provideCollateral([collateralUtxo]);
@@ -390,6 +434,24 @@ export async function deploy(options: DeployOptions): Promise<void> {
       params.thresholdContract.Script,
     );
 
+    // Create output with dynamic min UTxO calculation
+    const thresholdOutput = TransactionOutput.fromCore({
+      address: PaymentAddress(thresholdAddress.toBech32()),
+      value: {
+        coins: 0n,
+        assets: new Map([
+          [AssetId(params.thresholdContract.Script.hash()), 1n],
+        ]),
+      },
+      datum: serialize(
+        Contracts.MultisigThreshold,
+        params.thresholdDatum,
+      ).toCore(),
+    });
+    thresholdOutput
+      .amount()
+      .setCoin(calculateMinUtxo(protocolParams, thresholdOutput));
+
     let txBuilder = blaze
       .newTransaction()
       .addInput(oneShotUtxo)
@@ -399,21 +461,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
         PlutusData.newInteger(0n),
       )
       .provideScript(params.thresholdContract.Script)
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(thresholdAddress.toBech32()),
-          value: {
-            coins: thresholdOutputAmount,
-            assets: new Map([
-              [AssetId(params.thresholdContract.Script.hash()), 1n],
-            ]),
-          },
-          datum: serialize(
-            Contracts.MultisigThreshold,
-            params.thresholdDatum,
-          ).toCore(),
-        }),
-      );
+      .addOutput(thresholdOutput);
 
     if (collateralUtxo) {
       txBuilder = txBuilder.provideCollateral([collateralUtxo]);
@@ -451,6 +499,62 @@ export async function deploy(options: DeployOptions): Promise<void> {
       contracts.stagingGovAuth.Script.hash(),
     );
 
+    // Create outputs with dynamic min UTxO calculation
+    const twoStageMainOutput = TransactionOutput.fromCore({
+      address: PaymentAddress(twoStageAddress.toBech32()),
+      value: {
+        coins: 0n,
+        assets: new Map([
+          [
+            AssetId(
+              params.twoStageContract.Script.hash() +
+                toHex(new TextEncoder().encode("main")),
+            ),
+            1n,
+          ],
+        ]),
+      },
+      datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
+    });
+    twoStageMainOutput
+      .amount()
+      .setCoin(calculateMinUtxo(protocolParams, twoStageMainOutput));
+
+    const twoStageStagingOutput = TransactionOutput.fromCore({
+      address: PaymentAddress(twoStageAddress.toBech32()),
+      value: {
+        coins: 0n,
+        assets: new Map([
+          [
+            AssetId(
+              params.twoStageContract.Script.hash() +
+                toHex(new TextEncoder().encode("staging")),
+            ),
+            1n,
+          ],
+        ]),
+      },
+      datum: serialize(Contracts.UpgradeState, stagingUpgradeState).toCore(),
+    });
+    twoStageStagingOutput
+      .amount()
+      .setCoin(calculateMinUtxo(protocolParams, twoStageStagingOutput));
+
+    const foreverOutput = TransactionOutput.fromCore({
+      address: PaymentAddress(foreverAddress.toBech32()),
+      value: {
+        coins: 0n,
+        assets: new Map([[AssetId(params.foreverContract.Script.hash()), 1n]]),
+      },
+      datum: serialize(
+        Contracts.FederatedOps,
+        params.federatedOpsDatum,
+      ).toCore(),
+    });
+    foreverOutput
+      .amount()
+      .setCoin(calculateMinUtxo(protocolParams, foreverOutput));
+
     let txBuilder = blaze
       .newTransaction()
       .addInput(oneShotUtxo)
@@ -469,60 +573,9 @@ export async function deploy(options: DeployOptions): Promise<void> {
       )
       .provideScript(params.twoStageContract.Script)
       .provideScript(params.foreverContract.Script)
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(twoStageAddress.toBech32()),
-          value: {
-            coins: outputAmount,
-            assets: new Map([
-              [
-                AssetId(
-                  params.twoStageContract.Script.hash() +
-                    toHex(new TextEncoder().encode("main")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(twoStageAddress.toBech32()),
-          value: {
-            coins: outputAmount,
-            assets: new Map([
-              [
-                AssetId(
-                  params.twoStageContract.Script.hash() +
-                    toHex(new TextEncoder().encode("staging")),
-                ),
-                1n,
-              ],
-            ]),
-          },
-          datum: serialize(
-            Contracts.UpgradeState,
-            stagingUpgradeState,
-          ).toCore(),
-        }),
-      )
-      .addOutput(
-        TransactionOutput.fromCore({
-          address: PaymentAddress(foreverAddress.toBech32()),
-          value: {
-            coins: outputAmount,
-            assets: new Map([
-              [AssetId(params.foreverContract.Script.hash()), 1n],
-            ]),
-          },
-          datum: serialize(
-            Contracts.FederatedOps,
-            params.federatedOpsDatum,
-          ).toCore(),
-        }),
-      )
+      .addOutput(twoStageMainOutput)
+      .addOutput(twoStageStagingOutput)
+      .addOutput(foreverOutput)
       .addRegisterStake(
         Credential.fromCore({
           hash: params.logicContract.Script.hash(),
@@ -735,6 +788,67 @@ export async function deploy(options: DeployOptions): Promise<void> {
             0n,
           ];
 
+        // Create outputs with dynamic min UTxO calculation
+        const twoStageMainOutput = TransactionOutput.fromCore({
+          address: PaymentAddress(twoStageAddress.toBech32()),
+          value: {
+            coins: 0n,
+            assets: new Map([
+              [
+                AssetId(
+                  contracts.termsAndConditionsTwoStage.Script.hash() +
+                    toHex(new TextEncoder().encode("main")),
+                ),
+                1n,
+              ],
+            ]),
+          },
+          datum: serialize(Contracts.UpgradeState, mainUpgradeState).toCore(),
+        });
+        twoStageMainOutput
+          .amount()
+          .setCoin(calculateMinUtxo(protocolParams, twoStageMainOutput));
+
+        const twoStageStagingOutput = TransactionOutput.fromCore({
+          address: PaymentAddress(twoStageAddress.toBech32()),
+          value: {
+            coins: 0n,
+            assets: new Map([
+              [
+                AssetId(
+                  contracts.termsAndConditionsTwoStage.Script.hash() +
+                    toHex(new TextEncoder().encode("staging")),
+                ),
+                1n,
+              ],
+            ]),
+          },
+          datum: serialize(
+            Contracts.UpgradeState,
+            stagingUpgradeState,
+          ).toCore(),
+        });
+        twoStageStagingOutput
+          .amount()
+          .setCoin(calculateMinUtxo(protocolParams, twoStageStagingOutput));
+
+        const foreverOutput = TransactionOutput.fromCore({
+          address: PaymentAddress(foreverAddress.toBech32()),
+          value: {
+            coins: 0n,
+            assets: new Map([
+              [AssetId(contracts.termsAndConditionsForever.Script.hash()), 1n],
+            ]),
+          },
+          datum: serialize(
+            Contracts.VersionedTermsAndConditions,
+            initialTermsAndConditions,
+          ).toCore(),
+        });
+        foreverOutput
+          .amount()
+          .setCoin(calculateMinUtxo(protocolParams, foreverOutput));
+
         let txBuilder = blaze
           .newTransaction()
           .addInput(oneShotUtxo)
@@ -753,66 +867,9 @@ export async function deploy(options: DeployOptions): Promise<void> {
           )
           .provideScript(contracts.termsAndConditionsForever.Script)
           .provideScript(contracts.termsAndConditionsTwoStage.Script)
-          .addOutput(
-            TransactionOutput.fromCore({
-              address: PaymentAddress(twoStageAddress.toBech32()),
-              value: {
-                coins: outputAmount,
-                assets: new Map([
-                  [
-                    AssetId(
-                      contracts.termsAndConditionsTwoStage.Script.hash() +
-                        toHex(new TextEncoder().encode("main")),
-                    ),
-                    1n,
-                  ],
-                ]),
-              },
-              datum: serialize(
-                Contracts.UpgradeState,
-                mainUpgradeState,
-              ).toCore(),
-            }),
-          )
-          .addOutput(
-            TransactionOutput.fromCore({
-              address: PaymentAddress(twoStageAddress.toBech32()),
-              value: {
-                coins: outputAmount,
-                assets: new Map([
-                  [
-                    AssetId(
-                      contracts.termsAndConditionsTwoStage.Script.hash() +
-                        toHex(new TextEncoder().encode("staging")),
-                    ),
-                    1n,
-                  ],
-                ]),
-              },
-              datum: serialize(
-                Contracts.UpgradeState,
-                stagingUpgradeState,
-              ).toCore(),
-            }),
-          )
-          .addOutput(
-            TransactionOutput.fromCore({
-              address: PaymentAddress(foreverAddress.toBech32()),
-              value: {
-                coins: outputAmount,
-                assets: new Map([
-                  [
-                    AssetId(contracts.termsAndConditionsForever.Script.hash()),
-                    1n,
-                  ],
-                ]),
-              },
-              datum: serialize(
-                Contracts.VersionedTermsAndConditions,
-                initialTermsAndConditions,
-              ).toCore(),
-            }),
-          )
+          .addOutput(twoStageMainOutput)
+          .addOutput(twoStageStagingOutput)
+          .addOutput(foreverOutput)
           .addRegisterStake(
             Credential.fromCore({
               hash: contracts.termsAndConditionsLogic.Script.hash(),
@@ -919,7 +976,7 @@ export async function deploy(options: DeployOptions): Promise<void> {
                   const bytes = new Uint8Array(
                     assetNameHex
                       .match(/.{1,2}/g)!
-                      .map((byte) => parseInt(byte, 16)),
+                      .map((byte: string) => parseInt(byte, 16)),
                   );
                   const decoded = new TextDecoder().decode(bytes);
                   if (/^[\x20-\x7E]*$/.test(decoded)) {
@@ -996,11 +1053,58 @@ export async function deploy(options: DeployOptions): Promise<void> {
 
   const deploymentOutput = createDeploymentOutput(
     network,
-    { utxoAmount, outputAmount, thresholdOutputAmount },
+    { utxoAmount },
     finalTransactions,
   );
 
   writeJsonFile(outputFile, deploymentOutput);
+
+  // Auto-save deployment scripts for full deployments
+  if (!name) {
+    try {
+      const projectRoot = resolve(import.meta.dir, "../..");
+      const plutusJsonPath = resolve(projectRoot, `plutus-${network}.json`);
+      const blueprintPath = resolve(
+        projectRoot,
+        `contract_blueprint_${network}.ts`,
+      );
+
+      // Only save if both source files exist
+      if (existsSync(plutusJsonPath) && existsSync(blueprintPath)) {
+        const versionInfo = {
+          round: 0n,
+          logicRound: 0n,
+          timestamp: new Date().toISOString(),
+          gitCommit: "",
+        };
+
+        const changes: ChangeRecord[] = [
+          {
+            type: "initial",
+            validator: "all",
+            description: "Initial deployment",
+          },
+        ];
+
+        const versionName = saveVersionSnapshot(
+          network,
+          versionInfo,
+          changes,
+          plutusJsonPath,
+          blueprintPath,
+        );
+        updateCurrentSymlinks(network, versionName);
+
+        printSuccess(
+          `Deployment scripts saved to deployed-scripts/${network}/versions/${versionName}/`,
+        );
+      }
+    } catch (error) {
+      printInfo(
+        `Note: Could not save deployment scripts: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
 
   console.log(`===========================================`);
   printSuccess(`Generated ${transactions.length} deployment transactions`);

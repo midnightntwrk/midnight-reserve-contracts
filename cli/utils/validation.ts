@@ -90,7 +90,7 @@ export function validateNetwork(environment: string): string {
   // Unknown environment - warn but accept (will default to local/emulator)
   console.warn(
     `Warning: Unknown environment '${environment}'. ` +
-      `Known values: ${VALID_NETWORKS.join(", ")}, qanet, devnet-*, node-dev-*. ` +
+      `Known values: ${VALID_NETWORKS.join(", ")}, qanet, govnet, devnet-*, node-dev-*. ` +
       `Defaulting to local/emulator.`,
   );
   return "local";
@@ -186,6 +186,19 @@ export function validateTwoStageValidator(
     );
   }
   return validator as TwoStageValidator;
+}
+
+export function validateHash32(hash: string): void {
+  if (!hash || hash.length !== 64) {
+    throw new Error(
+      `Invalid hash '${hash}'. Must be 64 hex characters (32 bytes).`,
+    );
+  }
+  if (!/^[a-fA-F0-9]+$/.test(hash)) {
+    throw new Error(
+      `Invalid hash '${hash}'. Must contain only hex characters.`,
+    );
+  }
 }
 
 export function validateScriptHash(hash: string): void {

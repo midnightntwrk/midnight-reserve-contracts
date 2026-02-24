@@ -1,20 +1,331 @@
+import { resolve } from "path";
+import { writeFileSync, mkdirSync } from "fs";
+import { HexBlob, PlutusData, PlutusDataKind } from "@blaze-cardano/core";
 import type { InfoOptions } from "../lib/types";
 import { getContractInstances, getCredentialAddress } from "../lib/contracts";
+import { getCardanoNetwork } from "../lib/network-mapping";
 import { printTable } from "../utils/output";
 
 interface ContractInfo {
   name: string;
   component: string;
   scriptHash: string;
-  address: string;
+  address?: string;
+}
+
+interface BlockfrostAmount {
+  unit: string;
+  quantity: string;
+}
+
+interface BlockfrostUtxo {
+  tx_hash: string;
+  tx_index: number;
+  output_index: number;
+  amount: BlockfrostAmount[];
+  inline_datum: string | null;
+  data_hash: string | null;
+}
+
+interface TokenInfo {
+  policyId: string;
+  assetName: string;
+  assetNameUtf8: string;
+  quantity: string;
+}
+
+interface UtxoInfo {
+  txHash: string;
+  outputIndex: number;
+  lovelace: string;
+  ada: string;
+  tokens: TokenInfo[];
+  inlineDatum: string | null;
+}
+
+interface UpgradeStateInfo {
+  logicHash: string;
+  authHash: string;
+}
+
+interface ContractOnChainInfo extends ContractInfo {
+  utxos: UtxoInfo[];
+  totalAda: string;
+  totalLovelace: string;
+  nftTokenNames: string[];
+  upgradeState: UpgradeStateInfo | null;
+}
+
+// Main track components for the markdown report
+const MAIN_TRACK_COMPONENTS = [
+  "tech-auth",
+  "council",
+  "reserve",
+  "ics",
+  "federated-ops",
+  "terms-and-conditions",
+  "gov",
+  "registered-candidate",
+  "cnight-generates-dust",
+];
+
+// Two-stage contracts that have UpgradeState datums
+const TWO_STAGE_NAMES = new Set([
+  "Tech Auth Two Stage",
+  "Council Two Stage",
+  "Reserve Two Stage",
+  "ICS Two Stage",
+  "Federated Ops Two Stage",
+  "Terms And Conditions Two Stage",
+]);
+
+async function blockfrostFetch(
+  baseUrl: string,
+  apiKey: string,
+  path: string,
+): Promise<unknown> {
+  const resp = await fetch(`${baseUrl}${path}`, {
+    headers: { project_id: apiKey },
+  });
+  if (resp.status === 404) {
+    return null;
+  }
+  if (!resp.ok) {
+    throw new Error(
+      `Blockfrost ${path} failed: ${resp.status} ${resp.statusText}`,
+    );
+  }
+  return resp.json();
+}
+
+async function fetchAddressUtxos(
+  baseUrl: string,
+  apiKey: string,
+  address: string,
+): Promise<BlockfrostUtxo[]> {
+  const result = await blockfrostFetch(
+    baseUrl,
+    apiKey,
+    `/addresses/${address}/utxos`,
+  );
+  if (result === null) return [];
+  return result as BlockfrostUtxo[];
+}
+
+function parseTokensFromAmounts(amounts: BlockfrostAmount[]): TokenInfo[] {
+  const tokens: TokenInfo[] = [];
+  for (const amt of amounts) {
+    if (amt.unit === "lovelace") continue;
+    if (amt.unit.length < 56) continue;
+    const policyId = amt.unit.slice(0, 56);
+    const assetNameHex = amt.unit.slice(56);
+    let assetNameUtf8 = "";
+    try {
+      assetNameUtf8 = Buffer.from(assetNameHex, "hex").toString("utf8");
+    } catch {
+      assetNameUtf8 = assetNameHex;
+    }
+    tokens.push({
+      policyId,
+      assetName: assetNameHex,
+      assetNameUtf8,
+      quantity: amt.quantity,
+    });
+  }
+  return tokens;
+}
+
+function parseUpgradeStateDatum(
+  inlineDatumCbor: string,
+): UpgradeStateInfo | null {
+  try {
+    const plutusData = PlutusData.fromCbor(HexBlob(inlineDatumCbor));
+    const items =
+      plutusData.asList() ?? plutusData.asConstrPlutusData()?.getData();
+    if (!items || items.getLength() < 3) return null;
+
+    const logicField = items.get(0);
+    const authField = items.get(2);
+
+    if (
+      logicField.getKind() !== PlutusDataKind.Bytes ||
+      authField.getKind() !== PlutusDataKind.Bytes
+    ) {
+      return null;
+    }
+
+    const logicHash = Buffer.from(logicField.asBoundedBytes()!).toString("hex");
+    const authHash = Buffer.from(authField.asBoundedBytes()!).toString("hex");
+
+    return { logicHash, authHash };
+  } catch {
+    return null;
+  }
+}
+
+function convertUtxo(utxo: BlockfrostUtxo): UtxoInfo {
+  const lovelaceAmt = utxo.amount.find((a) => a.unit === "lovelace");
+  const lovelace = lovelaceAmt?.quantity ?? "0";
+  const ada = (Number(lovelace) / 1_000_000).toFixed(6);
+
+  return {
+    txHash: utxo.tx_hash,
+    outputIndex: utxo.output_index,
+    lovelace,
+    ada,
+    tokens: parseTokensFromAmounts(utxo.amount),
+    inlineDatum: utxo.inline_datum ?? null,
+  };
+}
+
+async function enrichContractWithOnChainData(
+  contract: ContractInfo,
+  baseUrl: string,
+  apiKey: string,
+): Promise<ContractOnChainInfo> {
+  // Skip on-chain fetch for contracts without addresses (stake credentials)
+  if (!contract.address) {
+    return {
+      ...contract,
+      utxos: [],
+      totalAda: "0.000000",
+      totalLovelace: "0",
+      nftTokenNames: [],
+      upgradeState: null,
+    };
+  }
+
+  const utxos = await fetchAddressUtxos(baseUrl, apiKey, contract.address);
+  const utxoInfos = utxos.map(convertUtxo);
+
+  let totalLovelace = 0n;
+  const allTokenNames: string[] = [];
+  let upgradeState: UpgradeStateInfo | null = null;
+
+  for (const u of utxoInfos) {
+    totalLovelace += BigInt(u.lovelace);
+    for (const t of u.tokens) {
+      if (t.assetNameUtf8) {
+        allTokenNames.push(t.assetNameUtf8);
+      }
+    }
+  }
+
+  // For two-stage validators, find the UTxO carrying the "main" NFT
+  // (policy ID = contract script hash, asset name = "6d61696e" hex for "main")
+  if (TWO_STAGE_NAMES.has(contract.name)) {
+    const mainUtxo = utxoInfos.find((u) =>
+      u.tokens.some(
+        (t) => t.policyId === contract.scriptHash && t.assetName === "6d61696e",
+      ),
+    );
+    if (mainUtxo?.inlineDatum) {
+      upgradeState = parseUpgradeStateDatum(mainUtxo.inlineDatum);
+    }
+  }
+
+  return {
+    ...contract,
+    utxos: utxoInfos,
+    totalAda: (Number(totalLovelace) / 1_000_000).toFixed(6),
+    totalLovelace: totalLovelace.toString(),
+    nftTokenNames: allTokenNames,
+    upgradeState,
+  };
+}
+
+function generateMarkdownReport(
+  network: string,
+  contracts: ContractOnChainInfo[],
+): string {
+  const mainTrack = contracts.filter((c) =>
+    MAIN_TRACK_COMPONENTS.includes(c.component),
+  );
+
+  const lines: string[] = [
+    `# Contract Address Report`,
+    ``,
+    `**Network:** ${network}`,
+    `**Generated:** ${new Date().toISOString()}`,
+    `**Contracts:** ${mainTrack.length}`,
+    ``,
+    `---`,
+    ``,
+  ];
+
+  // Group by component
+  const grouped = new Map<string, ContractOnChainInfo[]>();
+  for (const contract of mainTrack) {
+    const existing = grouped.get(contract.component) || [];
+    existing.push(contract);
+    grouped.set(contract.component, existing);
+  }
+
+  for (const [comp, contractGroup] of grouped) {
+    lines.push(`## ${comp.toUpperCase()}`);
+    lines.push(``);
+
+    for (const c of contractGroup) {
+      lines.push(`### ${c.name}`);
+      lines.push(``);
+      lines.push(`| Field | Value |`);
+      lines.push(`|-------|-------|`);
+      if (c.address) {
+        lines.push(`| **Address** | \`${c.address}\` |`);
+      }
+      lines.push(`| **Script Hash** | \`${c.scriptHash}\` |`);
+      if (c.address) {
+        lines.push(`| **ADA** | ${c.totalAda} |`);
+      }
+
+      if (c.nftTokenNames.length > 0) {
+        lines.push(
+          `| **NFT Tokens** | ${c.nftTokenNames.map((n) => `\`${n}\``).join(", ")} |`,
+        );
+      }
+
+      if (c.upgradeState) {
+        lines.push(
+          `| **Active Logic Hash** | \`${c.upgradeState.logicHash}\` |`,
+        );
+        lines.push(`| **Auth Hash** | \`${c.upgradeState.authHash}\` |`);
+      }
+
+      if (c.utxos.length > 0) {
+        const datumSummaries: string[] = [];
+        for (const u of c.utxos) {
+          if (u.inlineDatum) {
+            if (c.upgradeState) {
+              datumSummaries.push(
+                `UpgradeState(logic=${c.upgradeState.logicHash.slice(0, 16)}...)`,
+              );
+            } else {
+              datumSummaries.push(
+                `Inline datum present (${u.inlineDatum.length / 2} bytes)`,
+              );
+            }
+          }
+        }
+        if (datumSummaries.length > 0) {
+          lines.push(`| **Datum** | ${datumSummaries.join("; ")} |`);
+        }
+      }
+
+      lines.push(``);
+    }
+  }
+
+  return lines.join("\n");
 }
 
 export async function info(options: InfoOptions): Promise<void> {
   const { network, format, component } = options;
 
-  console.log(`\nContract Information for ${network} network\n`);
+  if (format !== "json" && !options.save) {
+    console.log(`\nContract Information for ${network} network\n`);
+  }
 
-  const contracts = getContractInstances(network);
+  const contracts = getContractInstances(network, options.useBuild);
 
   const allContracts: ContractInfo[] = [
     // Tech Auth
@@ -40,10 +351,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Tech Auth Logic",
       component: "tech-auth",
       scriptHash: contracts.techAuthLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.techAuthLogic.Script.hash(),
-      ).toBech32(),
     },
     {
       name: "Tech Auth Update Threshold",
@@ -78,10 +385,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Council Logic",
       component: "council",
       scriptHash: contracts.councilLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.councilLogic.Script.hash(),
-      ).toBech32(),
     },
     {
       name: "Council Update Threshold",
@@ -116,10 +419,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Reserve Logic",
       component: "reserve",
       scriptHash: contracts.reserveLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.reserveLogic.Script.hash(),
-      ).toBech32(),
     },
 
     // ICS
@@ -145,10 +444,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "ICS Logic",
       component: "ics",
       scriptHash: contracts.icsLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.icsLogic.Script.hash(),
-      ).toBech32(),
     },
 
     // Gov
@@ -156,10 +451,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Gov Auth",
       component: "gov",
       scriptHash: contracts.govAuth.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.govAuth.Script.hash(),
-      ).toBech32(),
     },
     {
       name: "Main Gov Threshold",
@@ -203,10 +494,6 @@ export async function info(options: InfoOptions): Promise<void> {
       name: "Federated Ops Logic",
       component: "federated-ops",
       scriptHash: contracts.federatedOpsLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.federatedOpsLogic.Script.hash(),
-      ).toBech32(),
     },
     {
       name: "Federated Ops Update Threshold",
@@ -217,6 +504,62 @@ export async function info(options: InfoOptions): Promise<void> {
         contracts.mainFederatedOpsUpdateThreshold.Script.hash(),
       ).toBech32(),
     },
+
+    // Terms and Conditions
+    {
+      name: "Terms And Conditions Forever",
+      component: "terms-and-conditions",
+      scriptHash: contracts.termsAndConditionsForever.Script.hash(),
+      address: getCredentialAddress(
+        network,
+        contracts.termsAndConditionsForever.Script.hash(),
+      ).toBech32(),
+    },
+    {
+      name: "Terms And Conditions Two Stage",
+      component: "terms-and-conditions",
+      scriptHash: contracts.termsAndConditionsTwoStage.Script.hash(),
+      address: getCredentialAddress(
+        network,
+        contracts.termsAndConditionsTwoStage.Script.hash(),
+      ).toBech32(),
+    },
+    {
+      name: "Terms And Conditions Logic",
+      component: "terms-and-conditions",
+      scriptHash: contracts.termsAndConditionsLogic.Script.hash(),
+    },
+    {
+      name: "Terms And Conditions Threshold",
+      component: "terms-and-conditions-threshold",
+      scriptHash: contracts.termsAndConditionsThreshold.Script.hash(),
+      address: getCredentialAddress(
+        network,
+        contracts.termsAndConditionsThreshold.Script.hash(),
+      ).toBech32(),
+    },
+
+    // Registered Candidate
+    {
+      name: "Registered Candidate",
+      component: "registered-candidate",
+      scriptHash: contracts.registeredCandidate.Script.hash(),
+      address: getCredentialAddress(
+        network,
+        contracts.registeredCandidate.Script.hash(),
+      ).toBech32(),
+    },
+
+    // Cnight Generates Dust
+    {
+      name: "Cnight Generates Dust",
+      component: "cnight-generates-dust",
+      scriptHash: contracts.cnightGeneratesDust.Script.hash(),
+      address: getCredentialAddress(
+        network,
+        contracts.cnightGeneratesDust.Script.hash(),
+      ).toBech32(),
+    },
   ];
 
   const filteredContracts =
@@ -224,6 +567,69 @@ export async function info(options: InfoOptions): Promise<void> {
       ? allContracts
       : allContracts.filter((c) => c.component === component);
 
+  // --save mode: fetch on-chain data and write files
+  if (options.save) {
+    const cardanoNetwork = getCardanoNetwork(network);
+    if (!cardanoNetwork) {
+      throw new Error(
+        `Cannot fetch on-chain data for environment '${network}': no real Cardano network mapped. ` +
+          `Use a real network like preview, preprod, or mainnet.`,
+      );
+    }
+
+    const apiKeyVar = `BLOCKFROST_${cardanoNetwork.toUpperCase()}_API_KEY`;
+    const apiKey = process.env[apiKeyVar];
+    if (!apiKey) {
+      throw new Error(
+        `Environment variable ${apiKeyVar} is required for --save but not set.`,
+      );
+    }
+
+    const networkNameMap: Record<string, string> = {
+      preview: "cardano-preview",
+      preprod: "cardano-preprod",
+      mainnet: "cardano-mainnet",
+    };
+    const baseUrl = `https://${networkNameMap[cardanoNetwork]}.blockfrost.io/api/v0`;
+
+    console.log(
+      `Fetching on-chain data for ${filteredContracts.length} contracts on ${network}...`,
+    );
+
+    const enriched: ContractOnChainInfo[] = [];
+    for (const contract of filteredContracts) {
+      process.stdout.write(`  ${contract.name}...`);
+      const enrichedContract = await enrichContractWithOnChainData(
+        contract,
+        baseUrl,
+        apiKey,
+      );
+      console.log(
+        ` ${enrichedContract.totalAda} ADA, ${enrichedContract.utxos.length} UTxO(s)`,
+      );
+      enriched.push(enrichedContract);
+    }
+
+    // Determine output directory
+    const releaseBase = options.releaseDir || resolve("./release");
+    const releaseDir = resolve(releaseBase, network);
+    mkdirSync(releaseDir, { recursive: true });
+
+    // Write JSON
+    const jsonPath = resolve(releaseDir, "info.json");
+    writeFileSync(jsonPath, JSON.stringify(enriched, null, 2), "utf8");
+    console.log(`\nJSON saved to ${jsonPath}`);
+
+    // Write markdown report
+    const mdReport = generateMarkdownReport(network, enriched);
+    const mdPath = resolve(releaseDir, "address-report.md");
+    writeFileSync(mdPath, mdReport, "utf8");
+    console.log(`Markdown report saved to ${mdPath}`);
+
+    return;
+  }
+
+  // Standard display mode (no --save)
   if (format === "json") {
     console.log(JSON.stringify(filteredContracts, null, 2));
   } else {
@@ -234,14 +640,14 @@ export async function info(options: InfoOptions): Promise<void> {
       grouped.set(contract.component, existing);
     }
 
-    for (const [comp, contracts] of grouped) {
+    for (const [comp, contractGroup] of grouped) {
       console.log(`\n=== ${comp.toUpperCase()} ===`);
       printTable(
         ["Name", "Script Hash", "Address"],
-        contracts.map((c) => [
+        contractGroup.map((c) => [
           c.name,
           c.scriptHash.slice(0, 16) + "...",
-          c.address.slice(0, 40) + "...",
+          c.address ? c.address.slice(0, 40) + "..." : "(stake credential)",
         ]),
       );
     }

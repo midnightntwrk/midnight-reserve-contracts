@@ -36,7 +36,6 @@ describe("Reserve upgrade path", () => {
     const techAuthForever = new Contracts.PermissionedTechAuthForeverElse();
     const councilForever = new Contracts.PermissionedCouncilForeverElse();
 
-    const reserveForever = new Contracts.ReserveReserveForeverElse();
     const reserveTwoStage = new Contracts.ReserveReserveTwoStageUpgradeElse();
     const reserveLogic = new Contracts.ReserveReserveLogicElse();
 
@@ -47,7 +46,7 @@ describe("Reserve upgrade path", () => {
       }).toCore(),
       NetworkId.Testnet,
     );
-    emulator.accounts.set(govAuthRewardAccount, 0n);
+    emulator.accounts.set(govAuthRewardAccount, { balance: 0n });
 
     const reserveTwoStageAddress = addressFromValidator(
       NetworkId.Testnet,

@@ -29,22 +29,24 @@ import {
 
 describe("Stage upgrade for tech-auth (CLI reproduction)", () => {
   /**
-   * This test validates the correct configuration for stage-upgrade operations.
+   * This test validates staging a new logic hash for tech-auth using
+   * staging_gov_auth with staging_gov_threshold.
    *
-   * KEY INSIGHT: The two-stage datum stores stagingGovAuth as the 'auth' field.
-   * stagingGovAuth selects the threshold based on whether logic is on main:
-   * - If logic IS on main → uses stagingGovThreshold
-   * - If logic is NOT on main → uses stagingGovThreshold
+   * KEY INSIGHT: staging_gov_auth checks auth_is_on_main() to select threshold:
+   * - If staging_gov_auth IS the auth on council main → uses main_gov_threshold
+   * - If staging_gov_auth is NOT the auth on council main → uses staging_gov_threshold
    *
-   * For staging operations (where logic is not yet on main), stagingGovAuth
-   * will use stagingGovThreshold.
+   * For staging operations (before staging_gov_auth is promoted to council main),
+   * the council main datum still has main_gov_auth, so staging_gov_threshold is used.
    */
   test("stage new logic for tech-auth using STAGING gov auth and threshold", async () => {
     const emulator = new Emulator([]);
 
     // Contract instances
-    // The datum stores staging_gov_auth as the auth reference
+    // The transaction uses staging_gov_auth for the withdrawal
     const stagingGovAuth = new Contracts.GovAuthStagingGovAuthElse();
+    // But council main datum has main_gov_auth, so staging_gov_auth is NOT on main
+    const mainGovAuth = new Contracts.GovAuthMainGovAuthElse();
     const techAuthForever = new Contracts.PermissionedTechAuthForeverElse();
     const councilForever = new Contracts.PermissionedCouncilForeverElse();
     const techAuthTwoStage =
@@ -68,7 +70,7 @@ describe("Stage upgrade for tech-auth (CLI reproduction)", () => {
       }).toCore(),
       NetworkId.Testnet,
     );
-    emulator.accounts.set(govAuthRewardAccount, 0n);
+    emulator.accounts.set(govAuthRewardAccount, { balance: 0n });
 
     const twoStageAddress = addressFromValidator(
       NetworkId.Testnet,
@@ -277,15 +279,17 @@ describe("Stage upgrade for tech-auth (CLI reproduction)", () => {
       emulator.addUtxo(mainUtxo);
       emulator.addUtxo(stagingUtxo);
 
-      // Council two-stage main UTxO - needed for staging_gov_auth's logic_is_on_main check
+      // Council two-stage main UTxO - needed for staging_gov_auth's auth_is_on_main check
+      // The auth field must be main_gov_auth (not staging_gov_auth) so that
+      // auth_is_on_main returns false, causing staging_gov_threshold to be used
       const councilTwoStageAddress = addressFromValidator(
         NetworkId.Testnet,
         councilTwoStage.Script,
       );
       const councilTwoStageState: Contracts.UpgradeState = [
-        councilLogic.Script.hash(), // logic - different from stagingGovAuth.Script.hash()
+        councilLogic.Script.hash(), // logic
         "",
-        stagingGovAuth.Script.hash(), // auth
+        mainGovAuth.Script.hash(), // auth - main_gov_auth, NOT staging
         "",
         0n,
         0n,

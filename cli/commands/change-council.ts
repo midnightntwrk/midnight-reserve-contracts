@@ -31,7 +31,9 @@ import {
   printSuccess,
   printError,
   writeTransactionFile,
-} from "../utils/output";
+  getContractUtxos,
+  parseInlineDatum,
+} from "../utils";
 import {
   createNativeMultisigScript,
   createRewardAccount,
@@ -40,6 +42,7 @@ import {
   findUtxoWithMainAsset,
   findUtxoByTxRef,
 } from "../utils/transaction";
+import { createTxMetadata } from "../utils/metadata";
 import * as Contracts from "../../contract_blueprint";
 
 export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
@@ -52,80 +55,64 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
 
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
-  const contracts = getContractInstances(network);
+  const contracts = getContractInstances(network, options.useBuild);
 
   const councilForeverAddress = getCredentialAddress(
     network,
     contracts.councilForever.Script.hash(),
   );
-  const councilUpdateThresholdAddress = getCredentialAddress(
-    network,
-    contracts.mainCouncilUpdateThreshold.Script.hash(),
-  );
-  const techAuthForeverAddress = getCredentialAddress(
-    network,
-    contracts.techAuthForever.Script.hash(),
-  );
-  const councilTwoStageAddress = getCredentialAddress(
-    network,
-    contracts.councilTwoStage.Script.hash(),
-  );
 
   console.log("\nCouncil Forever Address:", councilForeverAddress.toBech32());
 
   const { blaze, provider } = await createBlaze(network, options.provider);
-  const councilForeverUtxos = await provider.getUnspentOutputs(
-    councilForeverAddress,
-  );
-  const councilThresholdUtxos = await provider.getUnspentOutputs(
-    councilUpdateThresholdAddress,
-  );
-  const techAuthForeverUtxos = await provider.getUnspentOutputs(
-    techAuthForeverAddress,
-  );
-  const councilTwoStageUtxos = await provider.getUnspentOutputs(
-    councilTwoStageAddress,
+
+  // Query all contract UTxOs in parallel
+  const allUtxos = await getContractUtxos(
+    provider,
+    {
+      councilForever: contracts.councilForever.Script,
+      councilThreshold: contracts.mainCouncilUpdateThreshold.Script,
+      techAuthForever: contracts.techAuthForever.Script,
+      councilTwoStage: contracts.councilTwoStage.Script,
+    },
+    networkId,
   );
 
   console.log("\nFound contract UTxOs:");
-  console.log("  Council forever:", councilForeverUtxos.length);
-  console.log("  Council threshold:", councilThresholdUtxos.length);
-  console.log("  Tech auth forever:", techAuthForeverUtxos.length);
-  console.log("  Council two stage:", councilTwoStageUtxos.length);
+  console.log("  Council forever:", allUtxos.councilForever.length);
+  console.log("  Council threshold:", allUtxos.councilThreshold.length);
+  console.log("  Tech auth forever:", allUtxos.techAuthForever.length);
+  console.log("  Council two stage:", allUtxos.councilTwoStage.length);
 
   if (
-    !councilForeverUtxos.length ||
-    !councilThresholdUtxos.length ||
-    !techAuthForeverUtxos.length ||
-    !councilTwoStageUtxos.length
+    !allUtxos.councilForever.length ||
+    !allUtxos.councilThreshold.length ||
+    !allUtxos.techAuthForever.length ||
+    !allUtxos.councilTwoStage.length
   ) {
     throw new Error("Missing required contract UTxOs");
   }
 
-  const councilForeverUtxo = councilForeverUtxos[0];
-  const councilThresholdUtxo = councilThresholdUtxos[0];
-  const techAuthForeverUtxo = techAuthForeverUtxos[0];
-  const councilTwoStageUtxo = findUtxoWithMainAsset(councilTwoStageUtxos);
+  const councilForeverUtxo = allUtxos.councilForever[0];
+  const councilThresholdUtxo = allUtxos.councilThreshold[0];
+  const techAuthForeverUtxo = allUtxos.techAuthForever[0];
+  const councilTwoStageUtxo = findUtxoWithMainAsset(allUtxos.councilTwoStage);
 
   if (!councilTwoStageUtxo) {
     throw new Error('Could not find council two-stage UTxO with "main" asset');
   }
 
   console.log("\nReading council two-stage upgrade state...");
-  const councilTwoStageDatum = councilTwoStageUtxo.output().datum();
-  if (!councilTwoStageDatum?.asInlineData()) {
-    throw new Error("Missing inline datum on council two-stage UTxO");
-  }
-
-  const upgradeState = parse(
+  const upgradeState = parseInlineDatum(
+    councilTwoStageUtxo,
     Contracts.UpgradeState,
-    councilTwoStageDatum.asInlineData()!,
+    parse,
   );
   const [logicHash, mitigationLogicHash] = upgradeState;
   console.log("  Logic hash:", logicHash);
   console.log("  Mitigation logic hash:", mitigationLogicHash || "(empty)");
 
-  const logicScript = findScriptByHash(logicHash, network);
+  const logicScript = findScriptByHash(logicHash, network, options.useBuild);
   if (!logicScript) {
     throw new Error(
       `Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.councilLogic.Script.hash()}`,
@@ -134,7 +121,11 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
 
   let mitigationLogicScript: Script | null = null;
   if (mitigationLogicHash && mitigationLogicHash !== "") {
-    mitigationLogicScript = findScriptByHash(mitigationLogicHash, network);
+    mitigationLogicScript = findScriptByHash(
+      mitigationLogicHash,
+      network,
+      options.useBuild,
+    );
     if (!mitigationLogicScript) {
       throw new Error(
         `Unknown mitigation logic script hash in UpgradeState: ${mitigationLogicHash}`,
@@ -143,20 +134,15 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
   }
 
   console.log("\nCurrent council forever datum:");
-  const currentDatum = councilForeverUtxo.output().datum();
-  if (!currentDatum?.asInlineData()) {
-    throw new Error("Missing inline datum on council forever UTxO");
-  }
-
-  console.log("  Has inline datum");
-  const currentCouncilState = parse(
+  const currentCouncilState = parseInlineDatum(
+    councilForeverUtxo,
     Contracts.VersionedMultisig,
-    currentDatum.asInlineData()!,
+    parse,
   );
+  console.log("  Has inline datum");
   // Use CBOR-aware extraction to preserve duplicate keys
-  const currentCouncilSigners = extractSignersFromCbor(
-    currentDatum.asInlineData()!,
-  );
+  const councilDatumRaw = councilForeverUtxo.output().datum()!.asInlineData()!;
+  const currentCouncilSigners = extractSignersFromCbor(councilDatumRaw);
 
   if (!currentCouncilSigners.length) {
     throw new Error("No council signers found in council forever datum");
@@ -189,13 +175,10 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
 
   // Read threshold datum from council threshold UTxO
   console.log("\nReading council update threshold...");
-  const thresholdDatum = councilThresholdUtxo.output().datum();
-  if (!thresholdDatum?.asInlineData()) {
-    throw new Error("Council update threshold UTxO missing inline datum");
-  }
-  const thresholdState = parse(
+  const thresholdState = parseInlineDatum(
+    councilThresholdUtxo,
     Contracts.MultisigThreshold,
-    thresholdDatum.asInlineData()!,
+    parse,
   );
 
   // Calculate required signers based on threshold
@@ -231,16 +214,6 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
 
   const councilPolicyId = PolicyId(nativeScriptCouncil.hash());
   const techAuthPolicyId = PolicyId(nativeScriptTechAuth.hash());
-
-  console.log("\n=== Debug Info ===");
-  console.log("Council native script hash:", councilPolicyId);
-  console.log("Tech auth native script hash:", techAuthPolicyId);
-  console.log("Current council signers:");
-  currentCouncilSigners.forEach((s, i) =>
-    console.log(`  ${i}: ${s.paymentHash}`),
-  );
-  console.log("Tech auth signers:");
-  techAuthSigners.forEach((s, i) => console.log(`  ${i}: ${s.paymentHash}`));
 
   const logicRewardAccount = createRewardAccount(logicHash, networkId);
   console.log("\nLogic reward account:", logicRewardAccount);
@@ -294,6 +267,7 @@ export async function changeCouncil(options: ChangeAuthOptions): Promise<void> {
       .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
       .provideScript(logicScript)
       .setChangeAddress(changeAddress)
+      .setMetadata(createTxMetadata("change-council"))
       .setFeePadding(50000n);
 
     // Add mitigation logic withdrawal if present in UpgradeState

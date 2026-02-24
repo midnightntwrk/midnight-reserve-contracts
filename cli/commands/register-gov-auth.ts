@@ -19,7 +19,7 @@ export async function registerGovAuth(
 
   console.log(`\nRegistering Gov Auth scripts on ${network} network`);
 
-  const contracts = getContractInstances(network);
+  const contracts = getContractInstances(network, options.useBuild);
 
   const mainGovAuthHash = contracts.govAuth.Script.hash();
   const stagingGovAuthHash = contracts.stagingGovAuth.Script.hash();

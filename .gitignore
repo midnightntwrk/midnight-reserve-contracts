@@ -3,7 +3,7 @@ artifacts/
 # Aiken's project working directory
 build/
 # Aiken's default documentation export
-docs/
+./docs/
 
 node_modules/
 
@@ -16,5 +16,12 @@ blueprint-rs
 
 
 code-search*
-.claude/
+.claude/settings.local.json
 prompt.md
+planner-prompt.md
+team-prompt.md
+.env-main
+.env-preprod
+.env-preview
+.env-preprod
+get_reserve_v2_hash.sh

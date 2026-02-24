@@ -17,10 +17,11 @@
 4. [Change Council](#change-council)
 5. [Change Tech Auth](#change-tech-auth)
 6. [Change Federated Ops](#change-federated-ops)
-7. [Register Gov Auth](#register-gov-auth)
-8. [Dust Create](#dust-create)
-9. [Dust Update](#dust-update)
-10. [Dust Burn](#dust-burn)
+7. [Change Terms and Conditions](#change-terms-and-conditions)
+8. [Register Gov Auth](#register-gov-auth)
+9. [Dust Create](#dust-create)
+10. [Dust Update](#dust-update)
+11. [Dust Burn](#dust-burn)
 
 ---
 
@@ -429,6 +430,96 @@ Updates the federated operators list by spending the federated ops forever UTxO.
 
 ---
 
+## Change Terms and Conditions
+
+Changes the terms and conditions hash and URL by spending the terms and conditions forever UTxO.
+
+#### CLI Command
+
+```
+bun cli change-terms -n <network> --hash <64-hex-char-hash> --url <url> <tx_hash> <tx_index>
+```
+
+#### Validators Fired
+
+| Validator | Context | Constraints |
+|-----------|---------|-------------|
+| `terms_and_conditions_forever` | Spending | Must spend forever NFT; output preserves NFT with updated `VersionedTermsAndConditions` datum (preserves `logic_round`) |
+| `terms_and_conditions_logic` | Withdrawal | Validates multisig authorization |
+| `terms_and_conditions_threshold` | Reference | Provides threshold fractions |
+| `council_forever` | Reference | For council witness validation |
+| `tech_auth_forever` | Reference | For tech auth witness validation |
+| `terms_and_conditions_two_stage` | Reference | To read logic hash from `UpgradeState` |
+
+#### Inputs
+
+- Terms and conditions forever UTxO (spent with redeemer Integer `0n`)
+- User UTxO (for fees)
+
+#### Reference Inputs
+
+- Terms and conditions threshold UTxO
+- Council forever UTxO
+- Tech auth forever UTxO
+- Terms and conditions two-stage main UTxO
+
+#### Outputs
+
+1. Updated terms and conditions forever UTxO with same NFT and new `VersionedTermsAndConditions` datum
+
+#### Minting
+
+- Council witness token (empty asset name, native multisig script)
+- Tech auth witness token (empty asset name, native multisig script)
+
+#### Withdrawals
+
+- `terms_and_conditions_logic` at 0 ADA with Integer `0n` redeemer
+- Mitigation logic withdrawal (if present in `UpgradeState`)
+
+#### Metadata
+
+- CIP-20 label `674`: `{"msg": ["midnight-reserve:change-terms"]}`
+
+#### Transaction Example
+
+```
+change-terms-tx.json
+Imported from raw transaction.
+Transaction ID: <tx_id>
+Minted assets:
+  <council_native_script_hash> "" => 1
+  <tech_auth_native_script_hash> "" => 1
+Inputs:
+  <tx_hash>#<tx_index>  (user UTxO for fees)
+  <terms_forever_utxo>  (terms and conditions forever, redeemer: 0)
+Reference inputs:
+  <terms_threshold_utxo>
+  <council_forever_utxo>
+  <tech_auth_forever_utxo>
+  <terms_two_stage_utxo>
+Outputs:
+  <terms_forever_address> => <lovelace>
+    assets:
+      <terms_forever_script_hash> "" => 1
+    datum (VersionedTermsAndConditions):
+      terms_and_conditions:
+        hash: <32-byte terms hash (64 hex chars)>
+        link: <hex-encoded URL string>
+      logic_round: <round>
+  <change_address> => <change_lovelace>
+Withdrawals:
+  <terms_and_conditions_logic_reward_account> => 0
+Metadata:
+  674: {"msg": ["midnight-reserve:change-terms"]}
+```
+
+#### Datum Structure
+
+See [VersionedTermsAndConditions](#versionedtermsandconditions) in Appendix.
+
+---
+
 ## Register Gov Auth
 
 Registers the governance auth scripts as stake credentials (one-time setup after deploy).
@@ -595,6 +686,18 @@ VersionedMultisig = [
 FederatedOps = [
   Unit,
   List<PermissionedCandidateDatumV1>,
+  logic_round: Int
+]
+```
+
+### VersionedTermsAndConditions
+
+```
+VersionedTermsAndConditions = [
+  terms_and_conditions: [
+    hash: ByteArray,    // 32-byte hash (64 hex chars)
+    link: ByteArray     // hex-encoded URL string
+  ],
   logic_round: Int
 ]
 ```

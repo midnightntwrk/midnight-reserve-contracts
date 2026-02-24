@@ -31,7 +31,9 @@ import {
   printSuccess,
   printError,
   writeTransactionFile,
-} from "../utils/output";
+  getContractUtxos,
+  parseInlineDatum,
+} from "../utils";
 import {
   createNativeMultisigScript,
   createRewardAccount,
@@ -40,6 +42,7 @@ import {
   findUtxoWithMainAsset,
   findUtxoByTxRef,
 } from "../utils/transaction";
+import { createTxMetadata } from "../utils/metadata";
 import * as Contracts from "../../contract_blueprint";
 
 export async function changeTechAuth(
@@ -54,23 +57,11 @@ export async function changeTechAuth(
 
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress();
-  const contracts = getContractInstances(network);
+  const contracts = getContractInstances(network, options.useBuild);
 
   const techAuthForeverAddress = getCredentialAddress(
     network,
     contracts.techAuthForever.Script.hash(),
-  );
-  const techAuthUpdateThresholdAddress = getCredentialAddress(
-    network,
-    contracts.mainTechAuthUpdateThreshold.Script.hash(),
-  );
-  const councilForeverAddress = getCredentialAddress(
-    network,
-    contracts.councilForever.Script.hash(),
-  );
-  const techAuthTwoStageAddress = getCredentialAddress(
-    network,
-    contracts.techAuthTwoStage.Script.hash(),
   );
 
   console.log(
@@ -79,38 +70,38 @@ export async function changeTechAuth(
   );
 
   const { blaze, provider } = await createBlaze(network, options.provider);
-  const techAuthForeverUtxos = await provider.getUnspentOutputs(
-    techAuthForeverAddress,
-  );
-  const techAuthThresholdUtxos = await provider.getUnspentOutputs(
-    techAuthUpdateThresholdAddress,
-  );
-  const councilForeverUtxos = await provider.getUnspentOutputs(
-    councilForeverAddress,
-  );
-  const techAuthTwoStageUtxos = await provider.getUnspentOutputs(
-    techAuthTwoStageAddress,
+
+  // Query all contract UTxOs in parallel
+  const allUtxos = await getContractUtxos(
+    provider,
+    {
+      techAuthForever: contracts.techAuthForever.Script,
+      techAuthThreshold: contracts.mainTechAuthUpdateThreshold.Script,
+      councilForever: contracts.councilForever.Script,
+      techAuthTwoStage: contracts.techAuthTwoStage.Script,
+    },
+    networkId,
   );
 
   console.log("\nFound contract UTxOs:");
-  console.log("  Tech auth forever:", techAuthForeverUtxos.length);
-  console.log("  Tech auth threshold:", techAuthThresholdUtxos.length);
-  console.log("  Council forever:", councilForeverUtxos.length);
-  console.log("  Tech auth two stage:", techAuthTwoStageUtxos.length);
+  console.log("  Tech auth forever:", allUtxos.techAuthForever.length);
+  console.log("  Tech auth threshold:", allUtxos.techAuthThreshold.length);
+  console.log("  Council forever:", allUtxos.councilForever.length);
+  console.log("  Tech auth two stage:", allUtxos.techAuthTwoStage.length);
 
   if (
-    !techAuthForeverUtxos.length ||
-    !techAuthThresholdUtxos.length ||
-    !councilForeverUtxos.length ||
-    !techAuthTwoStageUtxos.length
+    !allUtxos.techAuthForever.length ||
+    !allUtxos.techAuthThreshold.length ||
+    !allUtxos.councilForever.length ||
+    !allUtxos.techAuthTwoStage.length
   ) {
     throw new Error("Missing required contract UTxOs");
   }
 
-  const techAuthForeverUtxo = techAuthForeverUtxos[0];
-  const techAuthThresholdUtxo = techAuthThresholdUtxos[0];
-  const councilForeverUtxo = councilForeverUtxos[0];
-  const techAuthTwoStageUtxo = findUtxoWithMainAsset(techAuthTwoStageUtxos);
+  const techAuthForeverUtxo = allUtxos.techAuthForever[0];
+  const techAuthThresholdUtxo = allUtxos.techAuthThreshold[0];
+  const councilForeverUtxo = allUtxos.councilForever[0];
+  const techAuthTwoStageUtxo = findUtxoWithMainAsset(allUtxos.techAuthTwoStage);
 
   if (!techAuthTwoStageUtxo) {
     throw new Error(
@@ -119,20 +110,16 @@ export async function changeTechAuth(
   }
 
   console.log("\nReading tech auth two-stage upgrade state...");
-  const techAuthTwoStageDatum = techAuthTwoStageUtxo.output().datum();
-  if (!techAuthTwoStageDatum?.asInlineData()) {
-    throw new Error("Missing inline datum on tech auth two-stage UTxO");
-  }
-
-  const upgradeState = parse(
+  const upgradeState = parseInlineDatum(
+    techAuthTwoStageUtxo,
     Contracts.UpgradeState,
-    techAuthTwoStageDatum.asInlineData()!,
+    parse,
   );
   const [logicHash, mitigationLogicHash] = upgradeState;
   console.log("  Logic hash:", logicHash);
   console.log("  Mitigation logic hash:", mitigationLogicHash || "(empty)");
 
-  const logicScript = findScriptByHash(logicHash, network);
+  const logicScript = findScriptByHash(logicHash, network, options.useBuild);
   if (!logicScript) {
     throw new Error(
       `Unknown logic script hash in UpgradeState: ${logicHash}. Expected: ${contracts.techAuthLogic.Script.hash()}`,
@@ -141,7 +128,11 @@ export async function changeTechAuth(
 
   let mitigationLogicScript: Script | null = null;
   if (mitigationLogicHash && mitigationLogicHash !== "") {
-    mitigationLogicScript = findScriptByHash(mitigationLogicHash, network);
+    mitigationLogicScript = findScriptByHash(
+      mitigationLogicHash,
+      network,
+      options.useBuild,
+    );
     if (!mitigationLogicScript) {
       throw new Error(
         `Unknown mitigation logic script hash in UpgradeState: ${mitigationLogicHash}`,
@@ -150,25 +141,23 @@ export async function changeTechAuth(
   }
 
   console.log("\nCurrent tech auth forever datum:");
-  const currentDatum = techAuthForeverUtxo.output().datum();
-  if (!currentDatum?.asInlineData()) {
-    throw new Error("Missing inline datum on tech auth forever UTxO");
-  }
-
-  console.log("  Has inline datum");
-  const currentTechAuthState = parse(
+  const currentTechAuthState = parseInlineDatum(
+    techAuthForeverUtxo,
     Contracts.VersionedMultisig,
-    currentDatum.asInlineData()!,
+    parse,
   );
+  console.log("  Has inline datum");
   // VersionedMultisig is now a tuple: [[totalSigners, signerMap], round]
   const [multisig] = currentTechAuthState;
   const [currentThreshold] = multisig;
   console.log("  Current threshold:", currentThreshold);
 
   // Use CBOR-aware extraction to preserve duplicate keys
-  const currentTechAuthSigners = extractSignersFromCbor(
-    currentDatum.asInlineData()!,
-  );
+  const techAuthDatumRaw = techAuthForeverUtxo
+    .output()
+    .datum()!
+    .asInlineData()!;
+  const currentTechAuthSigners = extractSignersFromCbor(techAuthDatumRaw);
 
   if (!currentTechAuthSigners.length) {
     throw new Error("No tech auth signers found in tech auth forever datum");
@@ -207,13 +196,10 @@ export async function changeTechAuth(
 
   // Read threshold datum from tech auth threshold UTxO
   console.log("\nReading tech auth update threshold...");
-  const thresholdDatum = techAuthThresholdUtxo.output().datum();
-  if (!thresholdDatum?.asInlineData()) {
-    throw new Error("Tech auth update threshold UTxO missing inline datum");
-  }
-  const thresholdState = parse(
+  const thresholdState = parseInlineDatum(
+    techAuthThresholdUtxo,
     Contracts.MultisigThreshold,
-    thresholdDatum.asInlineData()!,
+    parse,
   );
 
   // Calculate required signers based on threshold
@@ -304,6 +290,7 @@ export async function changeTechAuth(
       .addWithdrawal(logicRewardAccount, 0n, memberRedeemerCbor)
       .provideScript(logicScript)
       .setChangeAddress(changeAddress)
+      .setMetadata(createTxMetadata("change-tech-auth"))
       .setFeePadding(50000n);
 
     // Add mitigation logic withdrawal if present in UpgradeState
