@@ -91,7 +91,7 @@ export async function handler(argv: MigrateFederatedOpsOptions) {
   console.log(`Using UTxO: ${txHash}#${txIndex}`);
 
   const networkId = getNetworkId(network);
-  const deployerAddress = getDeployerAddress();
+  const deployerAddress = getDeployerAddress(network);
   const contracts = getContractInstances(network, useBuild);
 
   const federatedOpsForeverAddress = getContractAddress(

@@ -84,7 +84,7 @@ export async function handler(argv: DeployCnightMintingOptions) {
     );
   }
   const networkId = getNetworkId(network);
-  const deployerAddr = getDeployerAddress();
+  const deployerAddr = getDeployerAddress(network);
 
   const { blaze } = await createBlaze(network, argv.provider);
   const protocolParams = await getProtocolParameters(blaze.provider);

@@ -239,7 +239,7 @@ export async function handler(argv: MintStagingStateOptions) {
   const config = loadAikenConfig(network);
   const contracts = getContractInstances(network, useBuild);
   const networkId = getNetworkId(network);
-  const deployerAddress = getDeployerAddress();
+  const deployerAddress = getDeployerAddress(network);
 
   // Get v2 logic script (this is the minting policy)
   const v2LogicContract = getV2LogicScript(validator, network, useBuild);

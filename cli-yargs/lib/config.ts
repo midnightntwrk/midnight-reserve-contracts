@@ -119,12 +119,19 @@ export function getEnvVar(name: string, required: boolean = true): string {
   return value || "";
 }
 
-export function getDeployerAddress(): string {
+export function getDeployerAddress(environment?: string): string {
   const deployerAddr = process.env.DEPLOYER_ADDRESS;
   if (deployerAddr) {
     return deployerAddr;
   }
-  // Default test address
+  const isLocal =
+    !environment || environment === "local" || environment === "emulator";
+  if (!isLocal) {
+    throw new Error(
+      `DEPLOYER_ADDRESS environment variable is required for non-local environment '${environment}'`,
+    );
+  }
+  // Default test address for local/emulator only
   return "addr_test1qruhen60uwzpwnnr7gjs50z2v8u9zyfw6zunet4k42zrpr54mrlv55f93rs6j48wt29w90hlxt4rvpvshe55k5r9mpvqjv2wt4";
 }
 
@@ -189,7 +196,7 @@ export function getTermsAndConditionsInitialLink(): string {
 
 export function getSimpleTxCount(): number {
   const value = process.env.SIMPLE_TX_COUNT;
-  return value ? parseInt(value, 10) : 15;
+  return value ? parseInt(value, 10) : 16;
 }
 
 export function getSimpleTxAmount(): bigint {

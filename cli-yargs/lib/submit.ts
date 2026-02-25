@@ -26,19 +26,26 @@ export function isNetworkError(error: Error): boolean {
   );
 }
 
-export function isAlreadySubmittedError(error: Error): boolean {
-  const message = error.message.toLowerCase();
-  return (
-    message.includes("already") ||
-    message.includes("exists") ||
-    message.includes("duplicate") ||
-    message.includes("known")
-  );
+/**
+ * Checks whether a transaction is already confirmed on-chain.
+ * Uses awaitTransactionConfirmation with a minimal timeout so it performs
+ * a single lookup rather than polling.
+ */
+async function isAlreadyOnChain(
+  txId: TransactionId,
+  provider: Provider,
+): Promise<boolean> {
+  try {
+    return await provider.awaitTransactionConfirmation(txId, 1);
+  } catch {
+    return false;
+  }
 }
 
 /**
  * Submits a signed transaction with retry on network errors.
- * Returns the transaction ID on success.
+ * On submit failure, queries the chain to check if the tx already landed
+ * rather than relying on error string matching.
  */
 export async function submitWithRetry(
   tx: Transaction,
@@ -61,8 +68,11 @@ export async function submitWithRetry(
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
 
-      if (isAlreadySubmittedError(err)) {
-        printInfo(`Transaction may already be submitted: ${name}`);
+      // Before giving up, check if the tx already landed on-chain
+      // (e.g. from a previous submission attempt that succeeded but
+      // whose response was lost due to a network error)
+      if (await isAlreadyOnChain(txId, provider)) {
+        printInfo(`Transaction already confirmed on-chain: ${name}`);
         return txId;
       }
 

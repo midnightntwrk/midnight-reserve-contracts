@@ -58,6 +58,12 @@ export function parsePermissionedCandidatesString(
   // Split by },{ to get individual candidate blocks
   const candidateBlocks = splitCandidateBlocks(content);
 
+  if (content.length > 0 && candidateBlocks.length === 0) {
+    throw new Error(
+      "Non-empty PERMISSIONED_CANDIDATES input yielded zero candidate blocks — check for malformed braces",
+    );
+  }
+
   return candidateBlocks.map((block, index) => {
     const candidate = parseCandidateBlock(block);
     validateCandidate(candidate, index);
@@ -93,6 +99,12 @@ function splitCandidateBlocks(content: string): string[] {
     if (depth > 0) {
       currentBlock += char;
     }
+  }
+
+  if (depth !== 0) {
+    throw new Error(
+      `Unbalanced braces in PERMISSIONED_CANDIDATES input (depth=${depth})`,
+    );
   }
 
   return blocks.filter((b) => b.length > 0);

@@ -51,11 +51,6 @@ export async function createProvider(
     case "kupmios": {
       const kupoUrl = getEnvVar("KUPO_URL");
       const ogmiosUrl = getEnvVar("OGMIOS_URL");
-      if (!kupoUrl || !ogmiosUrl) {
-        throw new Error(
-          "Both KUPO_URL and OGMIOS_URL environment variables must be set for kupmios provider",
-        );
-      }
       const ogmios = await Unwrapped.Ogmios.new(ogmiosUrl);
       return new Kupmios(kupoUrl, ogmios);
     }
@@ -71,7 +66,7 @@ export async function createBlaze(
 ): Promise<{ blaze: Blaze<Provider, ColdWallet>; provider: Provider }> {
   const provider = await createProvider(environment, providerType);
   const networkId = getNetworkId(environment);
-  const deployerAddress = getDeployerAddress();
+  const deployerAddress = getDeployerAddress(environment);
   const address = Address.fromBech32(deployerAddress);
   const wallet = new ColdWallet(address, networkId, provider);
   const blaze = await Blaze.from(provider, wallet);

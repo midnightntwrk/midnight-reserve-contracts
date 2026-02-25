@@ -2,6 +2,25 @@ import { HexBlob, PlutusData } from "@blaze-cardano/core";
 import type { Signer } from "./types";
 import * as Contracts from "../../contract_blueprint";
 
+const HEX_RE = /^[0-9a-fA-F]+$/;
+
+function validateSignerHex(
+  paymentHash: string,
+  sr25519Key: string,
+  context: string,
+): void {
+  if (paymentHash.length !== 56 || !HEX_RE.test(paymentHash)) {
+    throw new Error(
+      `${context}: payment hash must be 56 hex characters (28 bytes), got '${paymentHash}'`,
+    );
+  }
+  if (!HEX_RE.test(sr25519Key)) {
+    throw new Error(
+      `${context}: sr25519 key must be valid hex, got '${sr25519Key}'`,
+    );
+  }
+}
+
 export function parseSigners(envVar: string): Signer[] {
   const signersEnv = process.env[envVar];
   if (!signersEnv) {
@@ -17,6 +36,7 @@ export function parseSigners(envVar: string): Signer[] {
       if (!paymentHash || !sr25519Key) {
         throw new Error(`Invalid signer pair: ${pair}`);
       }
+      validateSignerHex(paymentHash, sr25519Key, envVar);
       return { paymentHash, sr25519Key };
     });
 }
@@ -36,6 +56,7 @@ export function parseSignersWithCount(envVar: string): {
   for (const pair of signerPairs) {
     const [paymentHash, sr25519Key] = pair.trim().split(":");
     if (paymentHash && sr25519Key) {
+      validateSignerHex(paymentHash, sr25519Key, envVar);
       signers[paymentHash] = sr25519Key;
     }
   }

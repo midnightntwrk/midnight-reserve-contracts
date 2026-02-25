@@ -136,7 +136,7 @@ export async function handler(argv: PromoteUpgradeOptions) {
   }
 
   const networkId = getNetworkId(network);
-  const deployerAddress = getDeployerAddress();
+  const deployerAddress = getDeployerAddress(network);
   // Always use deployed contracts for on-chain infrastructure
   const contracts = getContractInstances(network, false);
   const targetContracts = getTwoStageContracts(validator, network, false);

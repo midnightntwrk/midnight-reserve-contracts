@@ -126,7 +126,7 @@ export async function buildMultisigChangeTx(
   console.log(`Using UTxO: ${txHash}#${txIndex}`);
 
   const networkId = getNetworkId(network);
-  const deployerAddress = getDeployerAddress();
+  const deployerAddress = getDeployerAddress(network);
   const contracts = getContractInstances(network, useBuild);
 
   const selected = config.getContracts(contracts);

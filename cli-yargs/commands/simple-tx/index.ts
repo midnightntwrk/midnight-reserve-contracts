@@ -53,7 +53,7 @@ export async function handler(argv: SimpleTxOptions) {
 
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);
-  const recipientAddress = to || getDeployerAddress();
+  const recipientAddress = to || getDeployerAddress(network);
 
   console.log(`\nGenerating simple transaction on ${network} network`);
   console.log(`Creating ${count} outputs of ${amount} lovelace each`);

@@ -216,7 +216,7 @@ export async function handler(argv: DeployOptions) {
   const config = loadAikenConfig(network);
   const contracts = getContractInstances(network, useBuild);
   const networkId = getNetworkId(network);
-  const deployerAddr = getDeployerAddress();
+  const deployerAddr = getDeployerAddress(network);
 
   const { totalSigners: techAuthTotalSigners, signers: techAuthSigners } =
     parseSignersWithCount("TECH_AUTH_SIGNERS");

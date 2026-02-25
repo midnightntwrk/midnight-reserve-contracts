@@ -155,7 +155,7 @@ export async function handler(argv: DeployStagingTrackOptions) {
   const config = loadAikenConfig(network);
   const contracts = getContractInstances(network, useBuild);
   const networkId = getNetworkId(network);
-  const deployerAddr = getDeployerAddress();
+  const deployerAddr = getDeployerAddress(network);
 
   // Parse signers for multisig contracts (council, tech-auth)
   const { totalSigners: techAuthTotalSigners, signers: techAuthSigners } =

@@ -83,15 +83,10 @@ function resolveEnvironment(environment: string): EnvironmentResolution {
         };
       }
 
-      console.warn(
-        `Warning: Unknown environment '${environment}'. Using local emulator. ` +
-          `Known environments: local, preview, qanet, govnet, devnet-*, node-dev-*, preprod, mainnet`,
+      throw new Error(
+        `Unknown environment '${environment}'. ` +
+          `Known environments: local, emulator, preview, qanet, govnet, devnet-*, node-dev-*, preprod, mainnet`,
       );
-      return {
-        cardanoNetwork: null,
-        networkId: NetworkId.Testnet,
-        aikenConfigSection: "default",
-      };
   }
 }
 

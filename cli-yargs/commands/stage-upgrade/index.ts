@@ -242,7 +242,7 @@ export async function handler(argv: StageUpgradeOptions) {
   }
 
   const networkId = getNetworkId(network);
-  const deployerAddress = getDeployerAddress();
+  const deployerAddress = getDeployerAddress(network);
   // Always use deployed contracts for on-chain infrastructure
   const contracts = getContractInstances(network, false);
   const targetContracts = getTwoStageContracts(validator, network, false);
@@ -525,16 +525,6 @@ export async function handler(argv: StageUpgradeOptions) {
     ],
   });
 
-  // Merge staged validator into deployed-scripts when using build contracts
-  if (useBuild) {
-    const projectRoot = resolve(import.meta.dir, "../../..");
-    const plutusJsonPath = resolve(projectRoot, `plutus-${network}.json`);
-    mergeValidatorToDeployedScripts(network, newLogicHash, plutusJsonPath);
-    printSuccess(
-      `Merged ${validator} validator into deployed-scripts/${network}/plutus.json`,
-    );
-  }
-
   if (sign) {
     const techAuthKeys = parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS");
 
@@ -565,6 +555,16 @@ export async function handler(argv: StageUpgradeOptions) {
   }
 
   console.log("\nTransaction ID:", tx.getId());
+
+  // Merge staged validator into deployed-scripts after transaction is written
+  if (useBuild) {
+    const projectRoot = resolve(import.meta.dir, "../../..");
+    const plutusJsonPath = resolve(projectRoot, `plutus-${network}.json`);
+    mergeValidatorToDeployedScripts(network, newLogicHash, plutusJsonPath);
+    printSuccess(
+      `Merged ${validator} validator into deployed-scripts/${network}/plutus.json`,
+    );
+  }
 
   // Track staged validator in versions.json (skip for re-staged promoted validators)
   if (!isRestage) {
