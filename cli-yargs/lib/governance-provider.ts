@@ -6,7 +6,6 @@ import {
   CredentialType,
   Hash28ByteBase16,
   HexBlob,
-
   PlutusData,
   PlutusDataKind,
   RewardAccount,
