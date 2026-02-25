@@ -77,6 +77,16 @@ const ONE_SHOT_CONFIGS: OneShotConfig[] = [
     tomlKey: "cnight_minting_one_shot",
     description: "One-shot UTxO for cNIGHT Minting contract deployment",
   },
+  {
+    name: "Reserve Staging",
+    tomlKey: "reserve_staging_one_shot",
+    description: "One-shot UTxO for Reserve Staging contract deployment",
+  },
+  {
+    name: "ICS Staging",
+    tomlKey: "ics_staging_one_shot",
+    description: "One-shot UTxO for ICS Staging contract deployment",
+  },
 ];
 
 interface SelectedUtxo {

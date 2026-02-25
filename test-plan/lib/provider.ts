@@ -42,6 +42,10 @@ export interface NetworkConfig {
   terms_and_conditions_threshold_one_shot_index: number;
   cnight_minting_one_shot_hash: string;
   cnight_minting_one_shot_index: number;
+  reserve_staging_one_shot_hash: string;
+  reserve_staging_one_shot_index: number;
+  ics_staging_one_shot_hash: string;
+  ics_staging_one_shot_index: number;
   cnight_policy: string;
 }
 
@@ -149,6 +153,10 @@ export class EmulatorProvider implements TestProvider {
       terms_and_conditions_threshold_one_shot_index: 1,
       cnight_minting_one_shot_hash: "0".repeat(62) + "10",
       cnight_minting_one_shot_index: 1,
+      reserve_staging_one_shot_hash: "0".repeat(62) + "11",
+      reserve_staging_one_shot_index: 1,
+      ics_staging_one_shot_hash: "0".repeat(62) + "12",
+      ics_staging_one_shot_index: 1,
       cnight_policy: cnightPolicy,
     };
   }
@@ -218,6 +226,8 @@ export class EmulatorProvider implements TestProvider {
         { hash: "0".repeat(63) + "d", index: 1 }, // terms_and_conditions
         { hash: "0".repeat(62) + "0e", index: 1 }, // terms_and_conditions_threshold
         { hash: "0".repeat(62) + "10", index: 1 }, // cnight_minting
+        { hash: "0".repeat(62) + "11", index: 1 }, // reserve_staging
+        { hash: "0".repeat(62) + "12", index: 1 }, // ics_staging
       ];
 
       for (const config of oneShotConfigs) {
@@ -420,11 +430,6 @@ export class EmulatorProvider implements TestProvider {
       }
     }
 
-    console.log(`  [DEBUG] Controlled signing:`);
-    for (const [wId, needsStake] of walletSigningMode) {
-      console.log(`    Wallet '${wId}': needsStakeKey=${needsStake}`);
-    }
-
     // Complete the transaction with the emulator's evaluator
     const params = this.emulator.params;
     const slotConfig = SLOT_CONFIG_NETWORK.Preprod;
@@ -456,14 +461,6 @@ export class EmulatorProvider implements TestProvider {
           }
         }
       });
-    }
-
-    // Debug: Print what VKey witnesses are in the transaction
-    const vkeys = tx.witnessSet().vkeys();
-    if (vkeys) {
-      console.log(`  [DEBUG] Transaction has ${vkeys.size()} VKey witnesses`);
-    } else {
-      console.log(`  [DEBUG] Transaction has NO VKey witnesses`);
     }
 
     // IMPORTANT: The emulator doesn't validate native script signature requirements.
@@ -504,51 +501,48 @@ export class EmulatorProvider implements TestProvider {
       }
     }
 
-    console.log(`  [DEBUG] VKey hashes that signed: ${Array.from(vkeyHashes).join(", ") || "(none)"}`);
-
     // Validate each native script
     for (const script of nativeScripts.values()) {
       const scriptHash = script.hash();
       const isValid = this.validateNativeScript(script, vkeyHashes);
 
       if (!isValid) {
-        console.log(`  [DEBUG] Native script ${scriptHash} validation FAILED`);
         throw new Error(
           `Native script validation failed: script ${scriptHash} requirements not satisfied. ` +
           `This transaction requires signatures that are not present in the witness set.`
         );
       }
-      console.log(`  [DEBUG] Native script ${scriptHash} validation PASSED`);
     }
   }
 
   /**
    * Recursively validate a native script against available VKey signatures.
    * Returns true if the script's requirements are satisfied.
+   *
+   * Native script kinds (from Blaze/CML):
+   *   0 = ScriptPubkey (RequireSignature)
+   *   1 = ScriptAll (RequireAllOf)
+   *   2 = ScriptAny (RequireAnyOf)
+   *   3 = ScriptNOfK (RequireNOf)
+   *   4 = TimelockStart (InvalidBefore)
+   *   5 = TimelockExpiry (InvalidAfter)
    */
   private validateNativeScript(script: any, vkeyHashes: Set<string>): boolean {
-    // Native script types:
-    // 0 = RequireSignature (sig)
-    // 1 = RequireAllOf (all)
-    // 2 = RequireAnyOf (any)
-    // 3 = RequireNOf (n_of_k)
-    // 4 = InvalidBefore (after)
-    // 5 = InvalidAfter (before)
-
     const kind = script.kind();
 
     switch (kind) {
-      case 0: { // RequireSignature
-        const keyHash = script.asSignature()?.hex();
-        if (!keyHash) return false;
-        const hasSignature = vkeyHashes.has(keyHash);
-        console.log(`    [DEBUG] RequireSignature(${keyHash}): ${hasSignature ? "SATISFIED" : "MISSING"}`);
-        return hasSignature;
+      case 0: { // ScriptPubkey - requires a specific key hash
+        const pubkey = script.asScriptPubkey();
+        if (!pubkey) return false;
+        const keyHash = pubkey.keyHash();
+        return vkeyHashes.has(keyHash);
       }
 
-      case 1: { // RequireAllOf
-        const scripts = script.asAllOf()?.values() ?? [];
-        for (const subScript of scripts) {
+      case 1: { // ScriptAll - all sub-scripts must be satisfied
+        const allOf = script.asScriptAll();
+        if (!allOf) return false;
+        const subScripts = allOf.nativeScripts() ?? [];
+        for (const subScript of subScripts) {
           if (!this.validateNativeScript(subScript, vkeyHashes)) {
             return false;
           }
@@ -556,39 +550,40 @@ export class EmulatorProvider implements TestProvider {
         return true;
       }
 
-      case 2: { // RequireAnyOf
-        const scripts = script.asAnyOf()?.values() ?? [];
-        for (const subScript of scripts) {
+      case 2: { // ScriptAny - at least one sub-script must be satisfied
+        const anyOf = script.asScriptAny();
+        if (!anyOf) return false;
+        const subScripts = anyOf.nativeScripts() ?? [];
+        for (const subScript of subScripts) {
           if (this.validateNativeScript(subScript, vkeyHashes)) {
             return true;
           }
         }
-        return scripts.length === 0; // Empty AnyOf is trivially satisfied
+        return subScripts.length === 0; // Empty AnyOf is trivially satisfied
       }
 
-      case 3: { // RequireNOf (N-of-M multisig)
-        const nOf = script.asNOf();
-        if (!nOf) return false;
-        const required = nOf.required();
-        const scripts = nOf.scripts()?.values() ?? [];
+      case 3: { // ScriptNOfK - N-of-M multisig
+        const nOfK = script.asScriptNOfK();
+        if (!nOfK) return false;
+        const required = nOfK.required();
+        const subScripts = nOfK.nativeScripts() ?? [];
 
         let satisfied = 0;
-        for (const subScript of scripts) {
+        for (const subScript of subScripts) {
           if (this.validateNativeScript(subScript, vkeyHashes)) {
             satisfied++;
           }
         }
 
-        console.log(`    [DEBUG] RequireNOf(${required} of ${scripts.length}): ${satisfied} satisfied`);
         return satisfied >= required;
       }
 
-      case 4: // InvalidBefore (time-based, assume satisfied for now)
-      case 5: // InvalidAfter (time-based, assume satisfied for now)
+      case 4: // TimelockStart (time-based, assume satisfied in emulator)
+      case 5: // TimelockExpiry (time-based, assume satisfied in emulator)
         return true;
 
       default:
-        console.warn(`    [DEBUG] Unknown native script kind: ${kind}`);
+        console.warn(`Unknown native script kind: ${kind}`);
         return false;
     }
   }

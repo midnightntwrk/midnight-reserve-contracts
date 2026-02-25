@@ -85,6 +85,16 @@ export class ContractsManager {
     };
   }
 
+  async getStagingReserve() {
+    const C = await this.loadContracts();
+    return { forever: new C.StagingReserveIcsReserveStagingForeverElse() };
+  }
+
+  async getStagingICS() {
+    const C = await this.loadContracts();
+    return { forever: new C.StagingReserveIcsIcsStagingForeverElse() };
+  }
+
   async getGovAuth() {
     const C = await this.loadContracts();
     return new C.GovAuthMainGovAuthElse();
