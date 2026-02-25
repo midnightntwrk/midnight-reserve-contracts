@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-02-25T00:56:56.219Z",
-  "gitCommit": "33807d8ce80a41644cec111706cfc97d5a6f2503",
+  "timestamp": "2026-02-25T03:14:19.574Z",
+  "gitCommit": "81b56265d5ee7d47993c01b693ce83309f96fe1a",
   "changes": [
     {
       "type": "initial",
-      "validator": "all",
-      "description": "Initial deployment"
+      "validator": "cnight-minting",
+      "description": "cNIGHT minting deployment"
     }
   ]
 }
