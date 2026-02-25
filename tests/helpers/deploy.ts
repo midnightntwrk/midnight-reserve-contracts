@@ -15,39 +15,33 @@ import {
 import { serialize } from "@blaze-cardano/data";
 import type { Emulator } from "@blaze-cardano/emulator";
 import type { Blaze, Provider, Wallet } from "@blaze-cardano/sdk";
-import * as Contracts from "../../contract_blueprint";
+import * as Contracts from "../../deployed-scripts/mainnet/contract_blueprint";
+
+// Mainnet one-shot UTxO: all contracts share the same deployment tx hash
+const MAINNET_ONE_SHOT_HASH =
+  "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717";
 
 export const DEFAULT_CONFIG = {
-  technical_authority_one_shot_hash:
-    "0000000000000000000000000000000000000000000000000000000000000004",
-  technical_authority_one_shot_index: 1,
-  council_one_shot_hash:
-    "0000000000000000000000000000000000000000000000000000000000000002",
+  technical_authority_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+  technical_authority_one_shot_index: 3,
+  council_one_shot_hash: MAINNET_ONE_SHOT_HASH,
   council_one_shot_index: 1,
-  reserve_one_shot_hash:
-    "0000000000000000000000000000000000000000000000000000000000000001",
-  reserve_one_shot_index: 1,
-  ics_one_shot_hash:
-    "0000000000000000000000000000000000000000000000000000000000000003",
-  ics_one_shot_index: 1,
-  federated_operators_one_shot_hash:
-    "0000000000000000000000000000000000000000000000000000000000000005",
-  federated_operators_one_shot_index: 1,
-  main_gov_one_shot_hash:
-    "0000000000000000000000000000000000000000000000000000000000000006",
-  main_gov_one_shot_index: 1,
-  staging_gov_one_shot_hash:
-    "0000000000000000000000000000000000000000000000000000000000000007",
-  staging_gov_one_shot_index: 1,
-  main_council_update_one_shot_hash:
-    "0000000000000000000000000000000000000000000000000000000000000008",
-  main_council_update_one_shot_index: 1,
-  main_tech_auth_update_one_shot_hash:
-    "0000000000000000000000000000000000000000000000000000000000000009",
-  main_tech_auth_update_one_shot_index: 1,
-  main_federated_ops_update_one_shot_hash:
-    "000000000000000000000000000000000000000000000000000000000000000a",
-  main_federated_ops_update_one_shot_index: 1,
+  reserve_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+  reserve_one_shot_index: 0,
+  ics_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+  ics_one_shot_index: 2,
+  federated_operators_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+  federated_operators_one_shot_index: 4,
+  main_gov_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+  main_gov_one_shot_index: 5,
+  staging_gov_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+  staging_gov_one_shot_index: 6,
+  main_council_update_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+  main_council_update_one_shot_index: 7,
+  main_tech_auth_update_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+  main_tech_auth_update_one_shot_index: 8,
+  main_federated_ops_update_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+  main_federated_ops_update_one_shot_index: 9,
 };
 
 export const createContracts = () => ({

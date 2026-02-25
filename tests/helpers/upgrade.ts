@@ -16,7 +16,7 @@ import {
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
 import type { Emulator } from "@blaze-cardano/emulator";
-import * as Contracts from "../../contract_blueprint";
+import * as Contracts from "../../deployed-scripts/mainnet/contract_blueprint";
 import { expect } from "bun:test";
 
 export const MAIN_TOKEN_HEX = toHex(new TextEncoder().encode("main"));

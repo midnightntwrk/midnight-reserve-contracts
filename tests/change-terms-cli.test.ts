@@ -22,7 +22,7 @@ import {
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { Blaze, Provider, Wallet } from "@blaze-cardano/sdk";
-import * as Contracts from "../contract_blueprint";
+import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import { beforeEach, describe, expect, test } from "bun:test";
 
 describe("Change Terms and Conditions", () => {
@@ -55,26 +55,22 @@ describe("Change Terms and Conditions", () => {
   const mainTechAuthUpdateThreshold =
     new Contracts.ThresholdsMainTechAuthUpdateThresholdElse();
 
-  // Default network config
+  // Mainnet one-shot config (all contracts share the same deployment tx)
+  const MAINNET_ONE_SHOT_HASH =
+    "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717";
   const config = {
-    technical_authority_one_shot_hash:
-      "0000000000000000000000000000000000000000000000000000000000000004",
-    technical_authority_one_shot_index: 1,
-    council_one_shot_hash:
-      "0000000000000000000000000000000000000000000000000000000000000002",
+    technical_authority_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+    technical_authority_one_shot_index: 3,
+    council_one_shot_hash: MAINNET_ONE_SHOT_HASH,
     council_one_shot_index: 1,
-    terms_one_shot_hash:
-      "000000000000000000000000000000000000000000000000000000000000000d",
-    terms_one_shot_index: 1,
-    terms_threshold_one_shot_hash:
-      "000000000000000000000000000000000000000000000000000000000000000e",
-    terms_threshold_one_shot_index: 1,
-    main_council_update_one_shot_hash:
-      "0000000000000000000000000000000000000000000000000000000000000008",
-    main_council_update_one_shot_index: 1,
-    main_tech_auth_update_one_shot_hash:
-      "0000000000000000000000000000000000000000000000000000000000000009",
-    main_tech_auth_update_one_shot_index: 1,
+    terms_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+    terms_one_shot_index: 12,
+    terms_threshold_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+    terms_threshold_one_shot_index: 13,
+    main_council_update_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+    main_council_update_one_shot_index: 7,
+    main_tech_auth_update_one_shot_hash: MAINNET_ONE_SHOT_HASH,
+    main_tech_auth_update_one_shot_index: 8,
   };
 
   beforeEach(async () => {

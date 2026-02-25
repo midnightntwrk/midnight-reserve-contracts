@@ -16,7 +16,7 @@ import {
 } from "@blaze-cardano/core";
 import { serialize, parse } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
-import * as Contracts from "../contract_blueprint";
+import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import { describe, expect, test } from "bun:test";
 import {
   buildNativeScriptFromState,
