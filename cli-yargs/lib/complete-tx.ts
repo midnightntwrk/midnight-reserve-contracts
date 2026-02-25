@@ -68,7 +68,7 @@ export async function completeTx(
   txBuilder: TxBuilder,
   options: CompleteTxOptions,
 ): Promise<CompleteTxResult> {
-  const { commandName, provider, networkId, environment, knownUtxos } = options;
+  const { commandName, provider, environment, knownUtxos } = options;
   let traces: string[] = [];
   let redeemerMap: RedeemerMapping = {};
 

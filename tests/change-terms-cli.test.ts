@@ -17,9 +17,11 @@ import {
   TransactionId,
   TransactionOutput,
   TransactionUnspentOutput,
+  type Address,
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
+import type { Blaze, Provider, Wallet } from "@blaze-cardano/sdk";
 import * as Contracts from "../contract_blueprint";
 import { beforeEach, describe, expect, test } from "bun:test";
 
@@ -48,7 +50,7 @@ describe("Change Terms and Conditions", () => {
   const councilForever = new Contracts.PermissionedCouncilForeverElse();
   const councilLogic = new Contracts.PermissionedCouncilLogicElse();
 
-  const mainCouncilUpdateThreshold =
+  const _mainCouncilUpdateThreshold =
     new Contracts.ThresholdsMainCouncilUpdateThresholdElse();
   const mainTechAuthUpdateThreshold =
     new Contracts.ThresholdsMainTechAuthUpdateThresholdElse();
@@ -80,7 +82,7 @@ describe("Change Terms and Conditions", () => {
   });
 
   /** Deploy all prerequisite contracts and return UTxO references */
-  async function deployAll(emulator: Emulator, blaze: any, addr: any) {
+  async function deployAll(emulator: Emulator, blaze: Blaze<Provider, Wallet>, addr: Address) {
     const thresholdDatum: Contracts.MultisigThreshold = [2n, 3n, 2n, 3n];
 
     // --- Deploy Tech Auth Update Threshold ---
@@ -722,8 +724,8 @@ describe("Change Terms and Conditions", () => {
 
   /** Build the change-terms transaction */
   function buildChangeTermsTx(
-    blaze: any,
-    addr: any,
+    blaze: Blaze<Provider, Wallet>,
+    addr: Address,
     deps: Awaited<ReturnType<typeof deployAll>>,
     newHash: string,
     newUrl: string,

@@ -13,7 +13,7 @@ import {
 import type { GlobalOptions } from "../../lib/global-options";
 import { getNetworkId } from "../../lib/types";
 
-interface GenerateKeyOptions extends GlobalOptions {}
+type GenerateKeyOptions = GlobalOptions;
 
 export const command = "generate-key";
 export const describe = "Generate a new signing key and Cardano address";

@@ -11,7 +11,6 @@ import {
   TxCBOR,
   VkeyWitness,
 } from "@blaze-cardano/core";
-import type { Provider } from "@blaze-cardano/sdk";
 
 import type { GlobalOptions } from "../../lib/global-options";
 import { createProvider } from "../../lib/provider";

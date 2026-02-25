@@ -1,22 +1,12 @@
 import { describe, test, expect } from "bun:test";
-import { HexBlob, PlutusData, PlutusList } from "@blaze-cardano/core";
-import {
-  createMultisigStateCbor,
-  extractSignersFromCbor,
-} from "../cli-yargs/lib/signers";
+import { PlutusData, PlutusList } from "@blaze-cardano/core";
+import { createMultisigStateCbor } from "../cli-yargs/lib/signers";
 import {
   getDatumHandler,
   extractLogicRound,
-  councilRound0,
   termsRound0,
-  federatedOpsRound1,
-  federatedOpsRound2,
 } from "../cli-yargs/lib/datum-versions";
-import type {
-  MultisigData,
-  FederatedOpsData,
-  TermsData,
-} from "../cli-yargs/lib/datum-versions";
+import type { TermsData } from "../cli-yargs/lib/datum-versions";
 import type { Signer } from "../cli-yargs/lib/types";
 
 describe("datum-versions", () => {
