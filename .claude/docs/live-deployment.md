@@ -51,7 +51,7 @@ bun run cli simple-tx --network <env>
 bun run cli sign-and-submit <simple-tx.json> --network <env>
 # Update *_one_shot_hash entries in aiken.toml (14 entries), then:
 just build <env>
-bun run cli deploy --network <env> --use-build
+bun run cli deploy --network <env>
 bun run cli sign-and-submit <deployment-transactions.json> --network <env>
 bun run cli register-gov-auth --network <env>
 bun run cli sign-and-submit <register-gov-auth-tx.json> --network <env>
@@ -66,7 +66,7 @@ bun run cli sign-and-submit <change-federated-ops-tx.json> --network <env>
 bun run cli change-terms --network <env> --tx-hash <h> --tx-index <i> --hash <doc-hash> --url <url>
 bun run cli sign-and-submit <change-terms-tx.json> --network <env>
 
-bun run cli mint-tcnight --amount <amount> --user-address <addr> --network <env> --use-build
+bun run cli mint-tcnight --amount <amount> --user-address <addr> --network <env>
 bun run cli sign-and-submit <mint-tcnight-tx.json> --network <env>
 
 # === Phase 2: Staging track ===
@@ -74,7 +74,7 @@ bun run cli simple-tx --network <env>
 bun run cli sign-and-submit <simple-tx.json> --network <env>
 # Update *_staging_one_shot_hash + *_logic_v2_one_shot_hash (staging indices) in aiken.toml, then:
 just build <env>
-bun run cli deploy-staging-track --network <env> --use-build
+bun run cli deploy-staging-track --network <env>
 bun run cli sign-and-submit <staging-track-deployment-transactions.json> --network <env>
 
 # === Phase 3: v2 logic (per validator) ===
@@ -82,7 +82,7 @@ bun run cli simple-tx --network <env>
 bun run cli sign-and-submit <simple-tx.json> --network <env>
 # Update *_logic_v2_one_shot_hash (6 entries) in aiken.toml, then:
 just build <env>
-bun run cli mint-staging-state --validator <name> --network <env> --use-build
+bun run cli mint-staging-state --validator <name> --network <env>
 bun run cli sign-and-submit <mint-staging-state-tx.json> --network <env>
 bun run cli stage-upgrade --validator <name> --network <env> --use-build --tx-hash <h> --tx-index <i>
 bun run cli sign-and-submit <stage-upgrade-tx.json> --network <env>

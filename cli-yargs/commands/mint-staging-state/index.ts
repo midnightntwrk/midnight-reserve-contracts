@@ -170,7 +170,6 @@ interface MintStagingStateOptions extends GlobalOptions {
   validator: string;
   sign: boolean;
   "output-file": string;
-  "use-build": boolean;
 }
 
 export const command = "mint-staging-state";
@@ -201,23 +200,11 @@ export function builder(yargs: Argv<GlobalOptions>) {
       type: "string",
       default: "mint-staging-state-tx.json",
       description: "Output file name for the transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use freshly built blueprint instead of deployed scripts",
     });
 }
 
 export async function handler(argv: MintStagingStateOptions) {
-  const {
-    network,
-    output,
-    validator,
-    sign,
-    "output-file": outputFile,
-    "use-build": useBuild,
-  } = argv;
+  const { network, output, validator, sign, "output-file": outputFile } = argv;
 
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);
@@ -237,12 +224,13 @@ export async function handler(argv: MintStagingStateOptions) {
   }
 
   const config = loadAikenConfig(network);
-  const contracts = getContractInstances(network, useBuild);
+  // Always use build blueprint — v2 logic contracts don't exist in deployed-scripts until after promotion
+  const contracts = getContractInstances(network, true);
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress(network);
 
   // Get v2 logic script (this is the minting policy)
-  const v2LogicContract = getV2LogicScript(validator, network, useBuild);
+  const v2LogicContract = getV2LogicScript(validator, network, true);
   const v2LogicScript = v2LogicContract.Script;
   const v2LogicHash = v2LogicScript.hash();
 

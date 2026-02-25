@@ -91,7 +91,6 @@ interface DeployStagingTrackOptions extends GlobalOptions {
   "utxo-amount"?: string;
   components?: string;
   name?: string;
-  "use-build": boolean;
 }
 
 export const command = "deploy-staging-track";
@@ -112,17 +111,11 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("name", {
       type: "string",
       description: "Deploy a single named transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use freshly built blueprint instead of deployed scripts",
     });
 }
 
 export async function handler(argv: DeployStagingTrackOptions) {
   const { network, output } = argv;
-  const useBuild = argv["use-build"];
   const txName = argv.name;
 
   const utxoAmount = argv["utxo-amount"]
@@ -153,7 +146,8 @@ export async function handler(argv: DeployStagingTrackOptions) {
   console.log(`UTxO Amount: ${utxoAmount} lovelace`);
 
   const config = loadAikenConfig(network);
-  const contracts = getContractInstances(network, useBuild);
+  // Always use build blueprint — deploy consumes one-shot UTxOs so contracts can't be in deployed-scripts yet
+  const contracts = getContractInstances(network, true);
   const networkId = getNetworkId(network);
   const deployerAddr = getDeployerAddress(network);
 

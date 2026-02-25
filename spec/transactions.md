@@ -557,7 +557,7 @@ Mints or burns TCnight (test NIGHT) tokens on non-mainnet networks. Uses the `tc
 #### CLI Command
 
 ```
-bun cli mint-tcnight --amount <amount> --user-address <addr> --network <env> --use-build
+bun cli mint-tcnight --amount <amount> --user-address <addr> --network <env>
 ```
 
 #### Validators Fired
@@ -592,7 +592,7 @@ Mints a StagingState NFT for a v2 logic validator. This NFT is required before s
 #### CLI Command
 
 ```
-bun cli mint-staging-state --validator <name> --network <env> --use-build
+bun cli mint-staging-state --validator <name> --network <env>
 ```
 
 #### Validators Fired
@@ -635,7 +635,7 @@ Deploys staging track forever validators for each governance domain. Each stagin
 #### CLI Command
 
 ```
-bun cli deploy-staging-track --network <env> --use-build
+bun cli deploy-staging-track --network <env>
 ```
 
 #### Validators Fired

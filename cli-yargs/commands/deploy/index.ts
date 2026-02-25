@@ -109,7 +109,6 @@ interface DeployOptions extends GlobalOptions {
   "tech-auth-staging-threshold"?: string;
   components?: string;
   name?: string;
-  "use-build": boolean;
 }
 
 export const command = "deploy";
@@ -145,11 +144,6 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("name", {
       type: "string",
       description: "Deploy a single named transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use freshly built blueprint instead of deployed scripts",
     });
 }
 
@@ -182,7 +176,6 @@ function parseThreshold(value: string): Threshold {
 
 export async function handler(argv: DeployOptions) {
   const { network, output } = argv;
-  const useBuild = argv["use-build"];
   const txName = argv.name;
 
   const utxoAmount = argv["utxo-amount"]
@@ -214,7 +207,8 @@ export async function handler(argv: DeployOptions) {
   console.log(`Min UTxO: calculated dynamically from protocol parameters`);
 
   const config = loadAikenConfig(network);
-  const contracts = getContractInstances(network, useBuild);
+  // Always use build blueprint — deploy consumes one-shot UTxOs so contracts can't be in deployed-scripts yet
+  const contracts = getContractInstances(network, true);
   const networkId = getNetworkId(network);
   const deployerAddr = getDeployerAddress(network);
 

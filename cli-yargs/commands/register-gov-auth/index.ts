@@ -11,7 +11,6 @@ import { completeTx } from "../../lib/complete-tx";
 
 interface RegisterGovAuthOptions extends GlobalOptions {
   "output-file": string;
-  "use-build": boolean;
 }
 
 export const command = "register-gov-auth";
@@ -19,18 +18,11 @@ export const describe =
   "Register main and staging gov auth scripts as stake credentials";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("output-file", {
-      type: "string",
-      default: "register-gov-auth-tx.json",
-      description: "Output filename (default: register-gov-auth-tx.json)",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description:
-        "Use build-time compiled scripts instead of deployed scripts",
-    });
+  return yargs.option("output-file", {
+    type: "string",
+    default: "register-gov-auth-tx.json",
+    description: "Output filename (default: register-gov-auth-tx.json)",
+  });
 }
 
 export async function handler(argv: RegisterGovAuthOptions) {
@@ -40,7 +32,8 @@ export async function handler(argv: RegisterGovAuthOptions) {
 
   console.log(`\nRegistering Gov Auth scripts on ${network} network`);
 
-  const contracts = getContractInstances(network, argv["use-build"]);
+  // govAuth/stagingGovAuth are audited immutable contracts — hash is identical in build vs deployed
+  const contracts = getContractInstances(network, false);
 
   const mainGovAuthHash = contracts.govAuth.Script.hash();
   const stagingGovAuthHash = contracts.stagingGovAuth.Script.hash();

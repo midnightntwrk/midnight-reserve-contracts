@@ -27,7 +27,6 @@ interface MintTcnightOptions extends GlobalOptions {
   burn: boolean;
   amount: string;
   "output-file": string;
-  "use-build": boolean;
 }
 
 export const command = "mint-tcnight";
@@ -62,11 +61,6 @@ export function builder(yargs: Argv<GlobalOptions>) {
       type: "string",
       default: "mint-tcnight-tx.json",
       description: "Output filename",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use freshly built blueprint instead of deployed scripts",
     });
 }
 
@@ -75,7 +69,6 @@ export async function handler(argv: MintTcnightOptions) {
   const userAddress = argv["user-address"];
   const destination = argv.destination || userAddress;
   const outputFile = argv["output-file"];
-  const useBuild = argv["use-build"];
 
   const amount = BigInt(argv.amount);
   if (amount <= 0n) {
@@ -100,7 +93,8 @@ export async function handler(argv: MintTcnightOptions) {
   }
 
   const networkId = getNetworkId(network);
-  const contracts = getContractInstances(network, useBuild);
+  // tcnightMintInfinite is a fixed test contract — hash is identical in build vs deployed
+  const contracts = getContractInstances(network, false);
 
   const tcnightPolicy = contracts.tcnightMintInfinite;
   if (!tcnightPolicy) {
