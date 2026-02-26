@@ -15,7 +15,6 @@ import {
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
-import type { TxBuilder } from "@blaze-cardano/tx";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 // cnight-minting is not yet in the mainnet deployed blueprint — must use default.
 import {
