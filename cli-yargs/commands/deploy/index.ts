@@ -161,9 +161,10 @@ function parseThreshold(value: string): Threshold {
       `Invalid threshold '${value}': denominator must be positive.`,
     );
   }
-  if (numerator <= 0n) {
+  // numerator == 0 is valid: 0/N means no signatures required (e.g. council 0/1 in staging)
+  if (numerator < 0n) {
     throw new Error(
-      `Invalid threshold '${value}': numerator must be positive.`,
+      `Invalid threshold '${value}': numerator cannot be negative.`,
     );
   }
   if (numerator >= denominator) {
