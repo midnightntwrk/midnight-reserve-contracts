@@ -22,6 +22,7 @@ import combineSignaturesCommand from "./commands/combine-signatures";
 import mintTcnightCommand from "./commands/mint-tcnight";
 import changeTermsCommand from "./commands/change-terms";
 import dustParticipantsCommand from "./commands/dust-participants";
+import mergeUtxosCommand from "./commands/merge-utxos";
 import buildCommand from "./commands/build";
 import buildFromDeployedCommand from "./commands/build-from-deployed";
 import { addGlobalOptions } from "./lib/global-options";
@@ -51,6 +52,7 @@ const parser = addGlobalOptions(yargs(hideBin(process.argv)))
   .command(mintTcnightCommand)
   .command(changeTermsCommand)
   .command(dustParticipantsCommand)
+  .command(mergeUtxosCommand)
   .command(buildCommand)
   .command(buildFromDeployedCommand)
   .demandCommand(1, "You must specify a command")
