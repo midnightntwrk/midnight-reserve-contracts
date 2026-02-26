@@ -165,7 +165,7 @@ export const federatedOpsRound1: DatumVersionHandler<FederatedOpsData> = {
     const list = new PlutusList();
     list.add(datum.data);
     list.add(encodeCandidatesToPlutus(datum.candidates));
-    list.add(PlutusData.newInteger(1n));
+    list.add(PlutusData.newInteger(BigInt(federatedOpsRound1.logicRound)));
     return PlutusData.newList(list);
   },
 
@@ -202,7 +202,7 @@ export const federatedOpsRound2: DatumVersionHandler<FederatedOpsData> = {
     list.add(datum.data);
     list.add(PlutusData.newBytes(Buffer.from(datum.message ?? "", "hex")));
     list.add(encodeCandidatesToPlutus(datum.candidates));
-    list.add(PlutusData.newInteger(2n));
+    list.add(PlutusData.newInteger(BigInt(federatedOpsRound2.logicRound)));
     return PlutusData.newList(list);
   },
 

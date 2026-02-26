@@ -102,6 +102,9 @@ export function getDatumHandler(
     .sort((a, b) => a - b);
   const maxRound = availableRounds[availableRounds.length - 1];
   if (maxRound !== undefined && logicRound > maxRound) {
+    console.warn(
+      `[datum-versions] logic_round ${logicRound} not registered for "${family}", falling back to round ${maxRound}`,
+    );
     return familyHandlers[maxRound];
   }
 

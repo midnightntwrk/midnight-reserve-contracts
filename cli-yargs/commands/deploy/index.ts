@@ -161,9 +161,9 @@ function parseThreshold(value: string): Threshold {
       `Invalid threshold '${value}': denominator must be positive.`,
     );
   }
-  if (numerator < 0n) {
+  if (numerator <= 0n) {
     throw new Error(
-      `Invalid threshold '${value}': numerator cannot be negative.`,
+      `Invalid threshold '${value}': numerator must be positive.`,
     );
   }
   if (numerator >= denominator) {

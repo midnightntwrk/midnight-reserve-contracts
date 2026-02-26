@@ -6,7 +6,7 @@ import {
   mkdirSync,
   copyFileSync,
 } from "fs";
-import { execSync } from "child_process";
+import { execSync, execFileSync } from "child_process";
 
 export interface VersionInfo {
   round: bigint;
@@ -252,9 +252,12 @@ export function saveVersionSnapshot(
 
     // Regenerate contract_blueprint.ts from merged plutus.json
     const blueprintOutputPath = resolve(basePath, "contract_blueprint.ts");
-    execSync(
-      `bunx @blaze-cardano/blueprint@latest ${mergedPlutusPath} -o ${blueprintOutputPath}`,
-    );
+    execFileSync("bunx", [
+      "@blaze-cardano/blueprint@latest",
+      mergedPlutusPath,
+      "-o",
+      blueprintOutputPath,
+    ]);
   } else {
     // No previous version — full copy (initial deployment)
     copyFileSync(plutusJsonPath, resolve(basePath, "plutus.json"));
@@ -354,7 +357,10 @@ export function mergeValidatorToDeployedScripts(
 
   // Regenerate contract_blueprint.ts from merged plutus.json
   const blueprintOutputPath = resolve(basePath, "contract_blueprint.ts");
-  execSync(
-    `bunx @blaze-cardano/blueprint@latest ${deployedPlutusPath} -o ${blueprintOutputPath}`,
-  );
+  execFileSync("bunx", [
+    "@blaze-cardano/blueprint@latest",
+    deployedPlutusPath,
+    "-o",
+    blueprintOutputPath,
+  ]);
 }

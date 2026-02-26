@@ -56,7 +56,7 @@ export const termsRound0: DatumVersionHandler<TermsData> = {
 
     const outerList = new PlutusList();
     outerList.add(PlutusData.newList(tcTuple));
-    outerList.add(PlutusData.newInteger(0n));
+    outerList.add(PlutusData.newInteger(BigInt(termsRound0.logicRound)));
 
     return PlutusData.newList(outerList);
   },
@@ -101,7 +101,7 @@ export const termsRound1: DatumVersionHandler<TermsData> = {
 
     const outerList = new PlutusList();
     outerList.add(PlutusData.newList(tcTuple));
-    outerList.add(PlutusData.newInteger(1n));
+    outerList.add(PlutusData.newInteger(BigInt(termsRound1.logicRound)));
 
     return PlutusData.newList(outerList);
   },
