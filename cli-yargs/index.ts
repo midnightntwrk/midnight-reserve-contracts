@@ -25,8 +25,9 @@ import buildCommand from "./commands/build";
 import buildFromDeployedCommand from "./commands/build-from-deployed";
 import { addGlobalOptions } from "./lib/global-options";
 
-addGlobalOptions(yargs(hideBin(process.argv)))
+const parser = addGlobalOptions(yargs(hideBin(process.argv)))
   .scriptName("midnight-reserve")
+  .usage("$0 <command> [options]")
   .version("0.0.1")
   .command(deployCommand)
   .command(deployStagingTrackCommand)
@@ -49,20 +50,19 @@ addGlobalOptions(yargs(hideBin(process.argv)))
   .command(changeTermsCommand)
   .command(buildCommand)
   .command(buildFromDeployedCommand)
-  .demandCommand()
+  .demandCommand(1, "You must specify a command")
   .help()
   .strict()
-  .fail((msg: string | null, err: Error | undefined, yargs) => {
-    if (msg) {
-      yargs.showHelp("error");
-      console.error(`\n${msg}`);
-    } else if (err) {
-      console.error(err.message || err);
-    }
-    process.exit(1);
-  })
-  .parseAsync()
-  .catch(() => {
-    // .fail() already handled the error and called process.exit(1).
-    // Suppress the unhandled-rejection from parseAsync.
-  });
+  .strictCommands()
+  .wrap(Math.min(process.stdout.columns ?? 80, 120))
+  .fail(false);
+
+try {
+  await parser.parse();
+} catch (err) {
+  const message = err instanceof Error ? err.message : String(err);
+  if (message) {
+    console.error(message);
+  }
+  process.exit(1);
+}
