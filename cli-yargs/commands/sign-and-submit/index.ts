@@ -155,6 +155,7 @@ export async function handler(argv: SignAndSubmitOptions) {
     }
     process.exit(1);
   }
+  process.exit(0);
 }
 
 async function signAndSubmitTransaction(
