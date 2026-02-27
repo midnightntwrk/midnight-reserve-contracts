@@ -90,6 +90,7 @@ export async function handler(argv: SimpleTxOptions) {
   console.log(`  - Amount per output: ${Number(amount) / 1_000_000} ADA`);
   console.log(`  - Total sent: ${(Number(amount) * count) / 1_000_000} ADA`);
   console.log(`\nTransaction written to ${outputPath}`);
+  process.exit(0);
 }
 
 const commandModule: CommandModule<GlobalOptions, SimpleTxOptions> = {
