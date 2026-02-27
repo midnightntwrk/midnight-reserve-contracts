@@ -1,5 +1,6 @@
 import {
   addressFromCredential,
+  addressFromValidator,
   AssetId,
   AssetName,
   Credential,
@@ -12,17 +13,18 @@ import {
   PolicyId,
   RewardAccount,
   Script,
+  toHex,
   TransactionId,
   TransactionOutput,
   TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
-import * as Contracts from "../contract_blueprint";
+import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import {
   createMultisigStateCbor,
   createRedeemerMapCbor,
-} from "../cli/lib/signers";
+} from "../cli-yargs/lib/signers";
 import { describe, test } from "bun:test";
 
 describe("Change Council CLI Test", () => {
@@ -59,36 +61,24 @@ describe("Change Council CLI Test", () => {
           const councilTwoStage =
             new Contracts.PermissionedCouncilTwoStageUpgradeElse();
 
-          const councilForeverAddress = addressFromCredential(
+          const councilForeverAddress = addressFromValidator(
             NetworkId.Testnet,
-            Credential.fromCore({
-              type: CredentialType.ScriptHash,
-              hash: councilForever.Script.hash(),
-            }),
+            councilForever.Script,
           );
 
-          const councilUpdateThresholdAddress = addressFromCredential(
+          const councilUpdateThresholdAddress = addressFromValidator(
             NetworkId.Testnet,
-            Credential.fromCore({
-              type: CredentialType.ScriptHash,
-              hash: mainCouncilUpdateThreshold.Script.hash(),
-            }),
+            mainCouncilUpdateThreshold.Script,
           );
 
-          const techAuthForeverAddress = addressFromCredential(
+          const techAuthForeverAddress = addressFromValidator(
             NetworkId.Testnet,
-            Credential.fromCore({
-              type: CredentialType.ScriptHash,
-              hash: techAuthForever.Script.hash(),
-            }),
+            techAuthForever.Script,
           );
 
-          const councilTwoStageAddress = addressFromCredential(
+          const councilTwoStageAddress = addressFromValidator(
             NetworkId.Testnet,
-            Credential.fromCore({
-              type: CredentialType.ScriptHash,
-              hash: councilTwoStage.Script.hash(),
-            }),
+            councilTwoStage.Script,
           );
 
           // Current council state - exact on-chain state from preview
@@ -227,7 +217,7 @@ describe("Change Council CLI Test", () => {
                     [
                       AssetId(
                         councilTwoStage.Script.hash() +
-                          Buffer.from("main").toString("hex"),
+                          toHex(new TextEncoder().encode("main")),
                       ),
                       1n,
                     ],
@@ -422,7 +412,7 @@ describe("Change Council CLI Test", () => {
                       [
                         AssetId(
                           councilTwoStage.Script.hash() +
-                            Buffer.from("main").toString("hex"),
+                            toHex(new TextEncoder().encode("main")),
                         ),
                         1n,
                       ],

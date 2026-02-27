@@ -4,7 +4,7 @@ import tsparser from "@typescript-eslint/parser";
 
 export default [
   {
-    files: ["cli/**/*.ts"],
+    files: ["cli/**/*.ts", "cli-yargs/**/*.ts"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",

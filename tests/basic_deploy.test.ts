@@ -11,8 +11,8 @@ import {
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
-import * as Contracts from "../contract_blueprint";
-import { describe, test } from "bun:test";
+import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
+import { beforeEach, describe, test } from "bun:test";
 import {
   addFundingUtxo,
   createContracts,
@@ -23,9 +23,13 @@ import {
 
 describe("Basic Deploy", () => {
   const amount = 100_000_000n;
-  const emulator = new Emulator([]);
+  let emulator: Emulator;
   const contracts = createContracts();
   const config = DEFAULT_CONFIG;
+
+  beforeEach(() => {
+    emulator = new Emulator([]);
+  });
 
   describe("Sequential minting of governance tokens", () => {
     test("Can Deploy Reserve contracts", async () => {

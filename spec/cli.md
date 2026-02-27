@@ -6,29 +6,28 @@
 
 ## Overview
 
-The CLI (`cli/`) provides TypeScript tooling for contract deployment and governance operations. Built on Blaze Cardano SDK.
+The CLI (`cli-yargs/`) provides TypeScript tooling for contract deployment and governance operations. Built on Blaze Cardano SDK.
 
 ## Directory Structure
 
 ```
-cli/
+cli-yargs/
 ├── index.ts              # Entry point, command routing
-├── commands/             # Individual command implementations
-│   ├── deploy.ts           # Deploy all contracts
-│   ├── change-council.ts   # Council membership changes
-│   ├── change-tech-auth.ts # Tech authority changes
-│   ├── change-federated-ops.ts # Federated ops changes
-│   ├── stage-upgrade.ts    # Stage contract upgrades
-│   ├── promote-upgrade.ts  # Promote staged upgrades
-│   ├── sign-and-submit.ts  # Sign and submit transactions
-│   ├── combine-signatures.ts # Combine wallet signatures
-│   ├── info.ts             # Query contract state
-│   ├── mint-tcnight.ts     # Mint/burn TCnight tokens
-│   ├── register-gov-auth.ts # Register auth stake credentials
-│   ├── generate-key.ts     # Generate signing keys
-│   └── simple-tx.ts        # Simple transaction helper
-├── lib/                  # Shared utilities
-└── utils/                # Validation and output
+├── commands/             # Individual command implementations (each in its own directory)
+│   ├── deploy/             # Deploy all contracts
+│   ├── change-council/     # Council membership changes
+│   ├── change-tech-auth/   # Tech authority changes
+│   ├── change-federated-ops/ # Federated ops changes
+│   ├── stage-upgrade/      # Stage contract upgrades
+│   ├── promote-upgrade/    # Promote staged upgrades
+│   ├── sign-and-submit/    # Sign and submit transactions
+│   ├── combine-signatures/ # Combine wallet signatures
+│   ├── info/               # Query contract state
+│   ├── mint-tcnight/       # Mint/burn TCnight tokens
+│   ├── register-gov-auth/  # Register auth stake credentials
+│   ├── generate-key/       # Generate signing keys
+│   └── simple-tx/          # Simple transaction helper
+└── lib/                  # Shared utilities
 ```
 
 ## Command Pattern
@@ -109,9 +108,9 @@ bun run cli sign-and-submit --tx deploy-tx.cbor --network preview
 
 ## Adding New Commands
 
-1. Create `cli/commands/new-command.ts`
-2. Export async function following command pattern
-3. Add command routing in `cli/index.ts`
+1. Create `cli-yargs/commands/new-command/index.ts`
+2. Export command, describe, builder, handler following command pattern
+3. Add command routing in `cli-yargs/index.ts`
 4. Document in this file
 
 ## Configuration

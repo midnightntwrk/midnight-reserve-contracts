@@ -17,9 +17,9 @@ import {
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
-import * as Contracts from "../contract_blueprint";
+import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import { describe, test } from "bun:test";
-import { loadAikenConfig } from "../cli/lib/config";
+import { loadAikenConfig } from "../cli-yargs/lib/config";
 
 describe("Reserve Deploy and Merge", () => {
   const amount = 100_000_000n;
@@ -31,7 +31,7 @@ describe("Reserve Deploy and Merge", () => {
   const reserveLogic = new Contracts.ReserveReserveLogicElse();
   const govAuth = new Contracts.GovAuthMainGovAuthElse();
 
-  const config = loadAikenConfig("local");
+  const config = loadAikenConfig("mainnet");
 
   const cnightAsset =
     config.cnight_policy + toHex(new TextEncoder().encode(config.cnight_name));
