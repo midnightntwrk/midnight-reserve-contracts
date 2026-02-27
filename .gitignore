@@ -1,7 +1,7 @@
 # Aiken compilation artifacts
 artifacts/
 # Aiken's project working directory
-build/
+/build/
 # Aiken's default documentation export
 ./docs/
 
@@ -17,6 +17,7 @@ blueprint-rs
 
 code-search*
 .claude/settings.local.json
+.claude-session
 prompt.md
 planner-prompt.md
 team-prompt.md

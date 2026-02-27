@@ -17,6 +17,8 @@ import {
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { TxBuilder } from "@blaze-cardano/tx";
+// V2 contracts are not yet deployed to mainnet — the V2 and v1 scripts must
+// come from the same compilation so their cross-script hash references match.
 import * as Contracts from "../contract_blueprint";
 import { describe, test, expect } from "bun:test";
 import {
@@ -30,7 +32,7 @@ import {
 import {
   createFederatedOpsDatumFromString,
   createFederatedOpsDatumV2,
-} from "../cli/lib/candidates";
+} from "../cli-yargs/lib/candidates";
 
 describe("Migrate Federated Ops from v1 to v2 datum", () => {
   test("deploy federated ops, upgrade to v2 logic, then migrate datum", async () => {

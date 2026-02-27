@@ -4,11 +4,7 @@ validator_json_indices env="default":
 
 
 build env="default" verbosity="verbose":
-    #!/usr/bin/env bash
-    ./build_contracts.sh {{env}} {{verbosity}}
-    bunx @blaze-cardano/blueprint@latest plutus-{{env}}.json -o contract_blueprint_{{env}}.ts
-    # Copy to contract_blueprint.ts for CLI and test imports (always uses last-built env)
-    cp contract_blueprint_{{env}}.ts contract_blueprint.ts
+    bun cli-yargs/index.ts build -n {{env}} --trace {{verbosity}}
 
 
 aiken-check verbosity="verbose":
@@ -51,4 +47,4 @@ use-env env:
 
 
 cli *args:
-    bun cli/index.ts {{args}}
+    bun cli-yargs/index.ts {{args}}

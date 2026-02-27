@@ -5,7 +5,7 @@ import {
   candidateToPermissionedDatum,
   createFederatedOpsDatumFromString,
   type PermissionedCandidate,
-} from "../cli/lib/candidates";
+} from "../cli-yargs/lib/candidates";
 
 // Expected 4-char key identifiers as hex
 const KEY_IDS = {

@@ -13,7 +13,7 @@ import {
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
-import * as Contracts from "../contract_blueprint";
+import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import { describe, test, expect } from "bun:test";
 import {
   addFundingUtxo,
@@ -25,7 +25,7 @@ import {
 import {
   createFederatedOpsDatumFromString,
   candidateToPermissionedDatum,
-} from "../cli/lib/candidates";
+} from "../cli-yargs/lib/candidates";
 
 describe("Federated Ops Deploy with FederatedOps Datum", () => {
   const amount = 100_000_000n;
