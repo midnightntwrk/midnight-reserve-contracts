@@ -115,7 +115,9 @@ export function getNetworkId(network: Network | string): NetworkId {
  */
 export function getDefaultProvider(network: Network | string): ProviderType {
   const cardanoNetwork = _getCardanoNetwork(network);
-  return cardanoNetwork === null ? "emulator" : "blockfrost";
+  if (cardanoNetwork === null) return "emulator";
+  if (cardanoNetwork === "local") return "kupmios";
+  return "blockfrost";
 }
 
 /**
