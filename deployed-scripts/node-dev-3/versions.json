@@ -40,7 +40,7 @@
     "z_threshold_types",
     "z_two_stage_upgrade_types",
     "z_federated_ops_v2_types",
-    "council_logic_v2"
+    "federated_ops_logic_v2"
   ],
   "staged": []
 }
