@@ -27,44 +27,44 @@ import { addGlobalOptions } from "./lib/global-options";
 import packageJson from "../package.json";
 
 const parser = addGlobalOptions(yargs(hideBin(process.argv)))
-   .scriptName("midnight-reserve")
-   .usage("$0 <command> [options]")
-   .version(packageJson.version)
-   .command(deployCommand)
-   .command(deployStagingTrackCommand)
-   .command(deployCnightMintingCommand)
-   .command(changeCouncilCommand)
-   .command(changeTechAuthCommand)
-   .command(changeFederatedOpsCommand)
-   .command(migrateFederatedOpsCommand)
-   .command(mintStagingStateCommand)
-   .command(simpleTxCommand)
-   .command(infoCommand)
-   .command(verifyCommand)
-   .command(stageUpgradeCommand)
-   .command(promoteUpgradeCommand)
-   .command(registerGovAuthCommand)
-   .command(generateKeyCommand)
-   .command(signAndSubmitCommand)
-   .command(combineSignaturesCommand)
-   .command(mintTcnightCommand)
-   .command(changeTermsCommand)
-   .command(buildCommand)
-   .command(buildFromDeployedCommand)
-   .demandCommand(1, "You must specify a command")
-   .help()
-   .strict()
-   .strictCommands()
-   .wrap(Math.min(process.stdout.columns ?? 80, 120))
-   .fail(false);
+  .scriptName("midnight-reserve")
+  .usage("$0 <command> [options]")
+  .version(packageJson.version)
+  .command(deployCommand)
+  .command(deployStagingTrackCommand)
+  .command(deployCnightMintingCommand)
+  .command(changeCouncilCommand)
+  .command(changeTechAuthCommand)
+  .command(changeFederatedOpsCommand)
+  .command(migrateFederatedOpsCommand)
+  .command(mintStagingStateCommand)
+  .command(simpleTxCommand)
+  .command(infoCommand)
+  .command(verifyCommand)
+  .command(stageUpgradeCommand)
+  .command(promoteUpgradeCommand)
+  .command(registerGovAuthCommand)
+  .command(generateKeyCommand)
+  .command(signAndSubmitCommand)
+  .command(combineSignaturesCommand)
+  .command(mintTcnightCommand)
+  .command(changeTermsCommand)
+  .command(buildCommand)
+  .command(buildFromDeployedCommand)
+  .demandCommand(1, "You must specify a command")
+  .help()
+  .strict()
+  .strictCommands()
+  .wrap(Math.min(process.stdout.columns ?? 80, 120))
+  .fail(false);
 
 try {
-   await parser.parse();
+  await parser.parse();
 } catch (err) {
-   if (err instanceof Error) {
-      console.error(err.stack ?? err.message);
-   } else {
-      console.error("Unhandled non-Error exception:", err);
-   }
-   process.exit(1);
+  if (err instanceof Error) {
+    console.error(err.stack ?? err.message);
+  } else {
+    console.error("Unhandled non-Error exception:", err);
+  }
+  process.exit(1);
 }

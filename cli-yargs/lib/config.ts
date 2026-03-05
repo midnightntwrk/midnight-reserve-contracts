@@ -16,7 +16,9 @@ function requireObjectField(
   const value = source[key];
   const path = `${parentPath}.${key}`;
   if (!isObjectLike(value)) {
-    throw new Error(`Invalid aiken.toml field '${path}': expected table/object`);
+    throw new Error(
+      `Invalid aiken.toml field '${path}': expected table/object`,
+    );
   }
   return value;
 }
@@ -65,7 +67,11 @@ function requireIntegerField(
 ): number {
   const value = source[key];
   const path = `${parentPath}.${key}`;
-  if (typeof value !== "number" || !Number.isFinite(value) || !Number.isInteger(value)) {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    !Number.isInteger(value)
+  ) {
     throw new Error(`Invalid aiken.toml field '${path}': expected integer`);
   }
   return value;
@@ -82,7 +88,11 @@ function optionalIntegerField(
     return fallback;
   }
   const path = `${parentPath}.${key}`;
-  if (typeof value !== "number" || !Number.isFinite(value) || !Number.isInteger(value)) {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    !Number.isInteger(value)
+  ) {
     throw new Error(`Invalid aiken.toml field '${path}': expected integer`);
   }
   return value;
@@ -113,7 +123,9 @@ export function loadAikenConfig(environment: string): NetworkConfig {
   const configSection = getConfigSection(environment);
   const config = parsedToml.config;
   if (!isObjectLike(config)) {
-    throw new Error("Invalid aiken.toml: expected 'config' to be a table/object");
+    throw new Error(
+      "Invalid aiken.toml: expected 'config' to be a table/object",
+    );
   }
   const sectionPath = `config.${configSection}`;
   const networkConfig = config[configSection];
@@ -130,28 +142,52 @@ export function loadAikenConfig(environment: string): NetworkConfig {
     requireIntegerField(networkConfig, field, sectionPath);
 
   return {
-    technical_authority_one_shot_hash: getHash("technical_authority_one_shot_hash"),
-    technical_authority_one_shot_index: getIndex("technical_authority_one_shot_index"),
+    technical_authority_one_shot_hash: getHash(
+      "technical_authority_one_shot_hash",
+    ),
+    technical_authority_one_shot_index: getIndex(
+      "technical_authority_one_shot_index",
+    ),
     council_one_shot_hash: getHash("council_one_shot_hash"),
     council_one_shot_index: getIndex("council_one_shot_index"),
     reserve_one_shot_hash: getHash("reserve_one_shot_hash"),
     reserve_one_shot_index: getIndex("reserve_one_shot_index"),
     ics_one_shot_hash: getHash("ics_one_shot_hash"),
     ics_one_shot_index: getIndex("ics_one_shot_index"),
-    federated_operators_one_shot_hash: getHash("federated_operators_one_shot_hash"),
-    federated_operators_one_shot_index: getIndex("federated_operators_one_shot_index"),
+    federated_operators_one_shot_hash: getHash(
+      "federated_operators_one_shot_hash",
+    ),
+    federated_operators_one_shot_index: getIndex(
+      "federated_operators_one_shot_index",
+    ),
     main_gov_one_shot_hash: getHash("main_gov_one_shot_hash"),
     main_gov_one_shot_index: getIndex("main_gov_one_shot_index"),
     staging_gov_one_shot_hash: getHash("staging_gov_one_shot_hash"),
     staging_gov_one_shot_index: getIndex("staging_gov_one_shot_index"),
-    main_council_update_one_shot_hash: getHash("main_council_update_one_shot_hash"),
-    main_council_update_one_shot_index: getIndex("main_council_update_one_shot_index"),
-    main_tech_auth_update_one_shot_hash: getHash("main_tech_auth_update_one_shot_hash"),
-    main_tech_auth_update_one_shot_index: getIndex("main_tech_auth_update_one_shot_index"),
-    main_federated_ops_update_one_shot_hash: getHash("main_federated_ops_update_one_shot_hash"),
-    main_federated_ops_update_one_shot_index: getIndex("main_federated_ops_update_one_shot_index"),
-    terms_and_conditions_one_shot_hash: getHash("terms_and_conditions_one_shot_hash"),
-    terms_and_conditions_one_shot_index: getIndex("terms_and_conditions_one_shot_index"),
+    main_council_update_one_shot_hash: getHash(
+      "main_council_update_one_shot_hash",
+    ),
+    main_council_update_one_shot_index: getIndex(
+      "main_council_update_one_shot_index",
+    ),
+    main_tech_auth_update_one_shot_hash: getHash(
+      "main_tech_auth_update_one_shot_hash",
+    ),
+    main_tech_auth_update_one_shot_index: getIndex(
+      "main_tech_auth_update_one_shot_index",
+    ),
+    main_federated_ops_update_one_shot_hash: getHash(
+      "main_federated_ops_update_one_shot_hash",
+    ),
+    main_federated_ops_update_one_shot_index: getIndex(
+      "main_federated_ops_update_one_shot_index",
+    ),
+    terms_and_conditions_one_shot_hash: getHash(
+      "terms_and_conditions_one_shot_hash",
+    ),
+    terms_and_conditions_one_shot_index: getIndex(
+      "terms_and_conditions_one_shot_index",
+    ),
     terms_and_conditions_threshold_one_shot_hash: getHash(
       "terms_and_conditions_threshold_one_shot_hash",
     ),
@@ -197,11 +233,15 @@ export function loadAikenConfig(environment: string): NetworkConfig {
       "terms_and_conditions_staging_one_shot_index",
     ),
     reserve_logic_v2_one_shot_hash: getHash("reserve_logic_v2_one_shot_hash"),
-    reserve_logic_v2_one_shot_index: getIndex("reserve_logic_v2_one_shot_index"),
+    reserve_logic_v2_one_shot_index: getIndex(
+      "reserve_logic_v2_one_shot_index",
+    ),
     ics_logic_v2_one_shot_hash: getHash("ics_logic_v2_one_shot_hash"),
     ics_logic_v2_one_shot_index: getIndex("ics_logic_v2_one_shot_index"),
     council_logic_v2_one_shot_hash: getHash("council_logic_v2_one_shot_hash"),
-    council_logic_v2_one_shot_index: getIndex("council_logic_v2_one_shot_index"),
+    council_logic_v2_one_shot_index: getIndex(
+      "council_logic_v2_one_shot_index",
+    ),
     technical_authority_logic_v2_one_shot_hash: getHash(
       "technical_authority_logic_v2_one_shot_hash",
     ),

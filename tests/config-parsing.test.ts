@@ -14,7 +14,9 @@ const ENV_KEYS = ["COUNCIL_THRESHOLD", "SIMPLE_TX_COUNT", "SIMPLE_TX_AMOUNT"];
 let envSnapshot: Record<string, string | undefined> = {};
 
 beforeEach(() => {
-  envSnapshot = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]));
+  envSnapshot = Object.fromEntries(
+    ENV_KEYS.map((key) => [key, process.env[key]]),
+  );
 });
 
 afterEach(() => {
@@ -56,12 +58,16 @@ describe("threshold parsing from env", () => {
 
   test("rejects denominator <= 0", () => {
     process.env.COUNCIL_THRESHOLD = "1/0";
-    expect(() => getCouncilThreshold()).toThrow("denominator must be greater than zero");
+    expect(() => getCouncilThreshold()).toThrow(
+      "denominator must be greater than zero",
+    );
   });
 
   test("rejects numerator < 0", () => {
     process.env.COUNCIL_THRESHOLD = "-1/3";
-    expect(() => getCouncilThreshold()).toThrow("numerator must be non-negative");
+    expect(() => getCouncilThreshold()).toThrow(
+      "numerator must be non-negative",
+    );
   });
 
   test("rejects numerator > denominator", () => {
