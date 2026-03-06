@@ -106,7 +106,7 @@ export function createMultisigStateFromMap(
 export function parsePrivateKeys(envVar: string): string[] {
   const keysEnv = process.env[envVar];
   if (!keysEnv) {
-    throw new Error(`${envVar} environment variable is required`);
+    return [];
   }
 
   return keysEnv
