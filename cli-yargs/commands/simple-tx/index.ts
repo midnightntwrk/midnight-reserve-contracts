@@ -9,7 +9,11 @@ import {
   getSimpleTxCount,
   getSimpleTxAmount,
 } from "../../lib/config";
-import { ensureDirectory, writeTransactionFile, formatLovelaceToAda } from "../../lib/output";
+import {
+  ensureDirectory,
+  writeTransactionFile,
+  formatLovelaceToAda,
+} from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 
 interface SimpleTxOptions extends GlobalOptions {
@@ -77,20 +81,22 @@ export async function handler(argv: SimpleTxOptions) {
     environment: network,
   });
 
-   ensureDirectory(deploymentDir);
-   writeTransactionFile(
-      outputPath,
-      tx.toCbor(),
-      tx.getId(),
-      false,
-      "Simple Transaction",
-   );
-   console.log("\nTransaction details:");
-   console.log(`  - Outputs: ${count}`);
-   console.log(`  - Amount per output: ${formatLovelaceToAda(amount)} ADA`);
-   console.log(`  - Total sent: ${formatLovelaceToAda(amount * BigInt(count))} ADA`);
-   console.log(`\nTransaction written to ${outputPath}`);
-   process.exit(0);
+  ensureDirectory(deploymentDir);
+  writeTransactionFile(
+    outputPath,
+    tx.toCbor(),
+    tx.getId(),
+    false,
+    "Simple Transaction",
+  );
+  console.log("\nTransaction details:");
+  console.log(`  - Outputs: ${count}`);
+  console.log(`  - Amount per output: ${formatLovelaceToAda(amount)} ADA`);
+  console.log(
+    `  - Total sent: ${formatLovelaceToAda(amount * BigInt(count))} ADA`,
+  );
+  console.log(`\nTransaction written to ${outputPath}`);
+  process.exit(0);
 }
 
 const commandModule: CommandModule<GlobalOptions, SimpleTxOptions> = {
