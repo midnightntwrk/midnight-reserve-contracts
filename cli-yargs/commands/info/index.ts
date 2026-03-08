@@ -7,7 +7,7 @@ import {
   getCredentialAddress,
 } from "../../lib/contracts";
 import { getCardanoNetwork } from "../../lib/network-mapping";
-import { printTable } from "../../lib/output";
+import { printTable, formatLovelaceToAda } from "../../lib/output";
 import {
   blockfrostFetch,
   parseUpgradeStateDatum,
@@ -137,7 +137,7 @@ function parseTokensFromAmounts(amounts: BlockfrostAmount[]): TokenInfo[] {
 function convertUtxo(utxo: BlockfrostUtxo): UtxoInfo {
   const lovelaceAmt = utxo.amount.find((a) => a.unit === "lovelace");
   const lovelace = lovelaceAmt?.quantity ?? "0";
-  const ada = (Number(lovelace) / 1_000_000).toFixed(6);
+  const ada = formatLovelaceToAda(BigInt(lovelace));
 
   return {
     txHash: utxo.tx_hash,
@@ -184,7 +184,7 @@ async function enrichContractWithOnChainData(
   return {
     ...contract,
     utxos: utxoInfos,
-    totalAda: (Number(totalLovelace) / 1_000_000).toFixed(6),
+    totalAda: formatLovelaceToAda(totalLovelace),
     totalLovelace: totalLovelace.toString(),
     nftTokenNames: allTokenNames,
     upgradeState,

@@ -117,6 +117,12 @@ export function loadContractModule(
       case "node-dev-2":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require("../../contract_blueprint_node-dev-2");
+      case "node-dev-3":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../contract_blueprint_node-dev-3");
+      case "local":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../contract_blueprint_local");
       default:
         throw new Error(
           `Unknown environment '${env}' for build mode. ` +
@@ -128,6 +134,11 @@ export function loadContractModule(
       case "default":
         throw new Error(
           `The local/emulator environment has no deployed scripts. ` +
+            `Pass --use-build to load from build output instead.`,
+        );
+      case "local":
+        throw new Error(
+          `The local environment has no deployed scripts. ` +
             `Pass --use-build to load from build output instead.`,
         );
       case "mainnet":
@@ -151,6 +162,9 @@ export function loadContractModule(
       case "node-dev-2":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require("../../deployed-scripts/node-dev-2/contract_blueprint");
+      case "node-dev-3":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../deployed-scripts/node-dev-3/contract_blueprint");
       default:
         throw new Error(
           `Unknown environment '${env}' for deployed mode. ` +

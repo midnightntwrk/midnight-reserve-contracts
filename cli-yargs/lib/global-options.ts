@@ -25,7 +25,7 @@ export function addGlobalOptions<T>(yargs: Argv<T>): Argv<T & GlobalOptions> {
     .option("provider", {
       alias: "p",
       type: "string",
-      choices: ["blockfrost", "maestro", "emulator", "kupmios"] as const,
-      description: "Provider: emulator, blockfrost, kupmios, maestro",
+      choices: ["blockfrost", "emulator", "kupmios"] as const,
+      description: "Provider: emulator, blockfrost, kupmios",
     });
 }
