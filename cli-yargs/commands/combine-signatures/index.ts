@@ -131,7 +131,9 @@ function parseCardanoCliWitness(
         `Expected byte string of length 32 (0x5820) for vkey, got 0x${bytes[vkeyOffset].toString(16)}${bytes[vkeyOffset + 1].toString(16)}`,
       );
     }
-    const vkey = bytes.subarray(vkeyOffset + 2, vkeyOffset + 34).toString("hex");
+    const vkey = bytes
+      .subarray(vkeyOffset + 2, vkeyOffset + 34)
+      .toString("hex");
 
     const sigOffset = vkeyOffset + 34;
     if (bytes[sigOffset] !== 0x58 || bytes[sigOffset + 1] !== 0x40) {

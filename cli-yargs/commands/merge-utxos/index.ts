@@ -114,9 +114,7 @@ function mergeValues(
   const cnight2Amount = val2.multiasset()?.get(cnightAssetId) ?? 0n;
 
   if (cnight1Amount === 0n && cnight2Amount === 0n) {
-    throw new Error(
-      `Neither UTxO contains CNIGHT asset ${cnightAssetId}`,
-    );
+    throw new Error(`Neither UTxO contains CNIGHT asset ${cnightAssetId}`);
   }
 
   const totalCnight = cnight1Amount + cnight2Amount;
