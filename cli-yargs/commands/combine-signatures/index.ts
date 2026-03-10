@@ -111,29 +111,35 @@ function parseCardanoCliWitness(
         `Expected CBOR array (0x82) at start of cardano-cli witness, got 0x${bytes[0].toString(16)}`,
       );
     }
-    if (bytes[1] !== 0x00) {
-      throw new Error(
-        `Expected vkeywitness type (0x00), got 0x${bytes[1].toString(16)}`,
-      );
-    }
-    if (bytes[2] !== 0x82) {
-      throw new Error(
-        `Expected CBOR array (0x82) for vkeywitness data, got 0x${bytes[2].toString(16)}`,
-      );
-    }
-    if (bytes[3] !== 0x58 || bytes[4] !== 0x20) {
-      throw new Error(
-        `Expected byte string of length 32 (0x5820) for vkey, got 0x${bytes[3].toString(16)}${bytes[4].toString(16)}`,
-      );
-    }
-    const vkey = bytes.subarray(5, 37).toString("hex");
 
-    if (bytes[37] !== 0x58 || bytes[38] !== 0x40) {
+    // Determine format: [0, [vkey, sig]] (tagged) or [vkey, sig] (direct)
+    let vkeyOffset: number;
+    if (bytes[1] === 0x00 && bytes[2] === 0x82) {
+      // Tagged format: 82 00 82 5820 <vkey> 5840 <sig>
+      vkeyOffset = 3;
+    } else if (bytes[1] === 0x58) {
+      // Direct format: 82 5820 <vkey> 5840 <sig>
+      vkeyOffset = 1;
+    } else {
       throw new Error(
-        `Expected byte string of length 64 (0x5840) for signature, got 0x${bytes[37].toString(16)}${bytes[38].toString(16)}`,
+        `Unexpected CBOR structure after array tag: 0x${bytes[1].toString(16)}`,
       );
     }
-    const sig = bytes.subarray(39, 103).toString("hex");
+
+    if (bytes[vkeyOffset] !== 0x58 || bytes[vkeyOffset + 1] !== 0x20) {
+      throw new Error(
+        `Expected byte string of length 32 (0x5820) for vkey, got 0x${bytes[vkeyOffset].toString(16)}${bytes[vkeyOffset + 1].toString(16)}`,
+      );
+    }
+    const vkey = bytes.subarray(vkeyOffset + 2, vkeyOffset + 34).toString("hex");
+
+    const sigOffset = vkeyOffset + 34;
+    if (bytes[sigOffset] !== 0x58 || bytes[sigOffset + 1] !== 0x40) {
+      throw new Error(
+        `Expected byte string of length 64 (0x5840) for signature, got 0x${bytes[sigOffset].toString(16)}${bytes[sigOffset + 1].toString(16)}`,
+      );
+    }
+    const sig = bytes.subarray(sigOffset + 2, sigOffset + 66).toString("hex");
 
     return [[Ed25519PublicKeyHex(vkey), Ed25519SignatureHex(sig)]];
   } catch (e) {
