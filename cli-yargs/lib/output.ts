@@ -49,6 +49,15 @@ export function createDeploymentOutput(
   };
 }
 
+export function formatLovelaceToAda(lovelace: bigint): string {
+  const ADA_DECIMALS = 1_000_000n;
+  const sign = lovelace < 0n ? "-" : "";
+  const absolute = lovelace < 0n ? -lovelace : lovelace;
+  const whole = absolute / ADA_DECIMALS;
+  const fractional = absolute % ADA_DECIMALS;
+
+  return `${sign}${whole}.${fractional.toString().padStart(6, "0")}`;
+}
 export function printTable(
   headers: string[],
   rows: string[][],

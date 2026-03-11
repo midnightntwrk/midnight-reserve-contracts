@@ -21,7 +21,7 @@ import { readFileSync, existsSync } from "fs";
 import type { TransactionUnspentOutput } from "@blaze-cardano/core";
 
 import type { GlobalOptions } from "../../lib/global-options";
-import type { TransactionOutput as TxOutput } from "../../lib/types";
+import type { TransactionOutput as TxOutput, Signer } from "../../lib/types";
 import { getNetworkId } from "../../lib/types";
 import {
   loadAikenConfig,
@@ -41,7 +41,8 @@ import { getContractInstances } from "../../lib/contracts";
 import { saveVersionSnapshot, type ChangeRecord } from "../../lib/versions";
 import {
   parseSignersWithCount,
-  createMultisigStateFromMap,
+  createMultisigStateCbor,
+  createRedeemerMapCbor,
 } from "../../lib/signers";
 import { createFederatedOpsDatum } from "../../lib/candidates";
 import {
@@ -65,7 +66,7 @@ interface MultisigDeployParams {
   foreverContract: { Script: Script };
   logicContract: { Script: Script };
   totalSigners: bigint;
-  signers: Record<string, string>;
+  signers: Signer[];
 }
 
 interface SimpleDeployParams {
@@ -213,19 +214,15 @@ export async function handler(argv: DeployOptions) {
   const networkId = getNetworkId(network);
   const deployerAddr = getDeployerAddress(network);
 
-  const { totalSigners: techAuthTotalSigners, signers: techAuthSigners } =
+  const { totalSigners: techAuthTotalSigners, signerEntries: techAuthSigners } =
     parseSignersWithCount("TECH_AUTH_SIGNERS");
-  const { totalSigners: councilTotalSigners, signers: councilSigners } =
+  const { totalSigners: councilTotalSigners, signerEntries: councilSigners } =
     parseSignersWithCount("COUNCIL_SIGNERS");
 
   console.log(`\nTotal tech auth signers: ${techAuthTotalSigners}`);
-  console.log(
-    `Number of tech auth signer pairs: ${Object.keys(techAuthSigners).length}`,
-  );
+  console.log(`Number of tech auth signer pairs: ${techAuthSigners.length}`);
   console.log(`Total council signers: ${councilTotalSigners}`);
-  console.log(
-    `Number of council signer pairs: ${Object.keys(councilSigners).length}`,
-  );
+  console.log(`Number of council signer pairs: ${councilSigners.length}`);
 
   const { blaze } = await createBlaze(network, argv.provider);
 
@@ -294,9 +291,10 @@ export async function handler(argv: DeployOptions) {
       contracts.stagingGovAuth.Script.hash(),
     );
 
-    const foreverState = createMultisigStateFromMap(
-      params.totalSigners,
+    const foreverState = createMultisigStateCbor(
       params.signers,
+      0n,
+      params.totalSigners,
     );
 
     let txBuilder = blaze.newTransaction().addInput(oneShotUtxo);
@@ -347,7 +345,7 @@ export async function handler(argv: DeployOptions) {
         coins: 0n,
         assets: new Map([[AssetId(params.foreverContract.Script.hash()), 1n]]),
       },
-      datum: serialize(Contracts.VersionedMultisig, foreverState).toCore(),
+      datum: foreverState.toCore(),
     });
     foreverOutput
       .amount()
@@ -357,7 +355,7 @@ export async function handler(argv: DeployOptions) {
       .addMint(
         PolicyId(params.foreverContract.Script.hash()),
         new Map([[AssetName(""), 1n]]),
-        serialize(Contracts.PermissionedRedeemer, params.signers),
+        createRedeemerMapCbor(params.signers),
       )
       .addMint(
         PolicyId(params.twoStageContract.Script.hash()),
@@ -1205,6 +1203,7 @@ export async function handler(argv: DeployOptions) {
       }
       console.log(``);
     }
+    console.log(``);
   }
   process.exit(0);
 }

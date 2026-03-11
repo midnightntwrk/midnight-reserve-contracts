@@ -144,13 +144,13 @@ Source: `cli-yargs/lib/types.ts`
 | `TECH_AUTH_STAGING_THRESHOLD` | `cli-yargs/lib/config.ts` | optional | `1/2` | `deploy` |
 | `TERMS_AND_CONDITIONS_INITIAL_HASH` | `cli-yargs/lib/config.ts` | optional | 64 zeros | `deploy` |
 | `TERMS_AND_CONDITIONS_INITIAL_LINK` | `cli-yargs/lib/config.ts` | optional | empty string | `deploy` |
-| `SIMPLE_TX_COUNT` | `cli-yargs/lib/config.ts` | optional | `15` | `simple-tx` |
+| `SIMPLE_TX_COUNT` | `cli-yargs/lib/config.ts` | optional | `16` | `simple-tx` |
 | `SIMPLE_TX_AMOUNT` | `cli-yargs/lib/config.ts` | optional | `20_000_000` | `simple-tx` |
 | `TECH_AUTH_SIGNERS` | `cli-yargs/lib/signers.ts` | required for signer-set commands | none | `deploy`, `deploy-staging-track`, `change-tech-auth` |
 | `COUNCIL_SIGNERS` | `cli-yargs/lib/signers.ts` | required for signer-set commands | none | `deploy`, `deploy-staging-track`, `change-council` |
 | `PERMISSIONED_CANDIDATES` | `cli-yargs/lib/candidates.ts` | required for federated ops | none | `deploy`, `deploy-staging-track`, `change-federated-ops` |
 | `TECH_AUTH_PRIVATE_KEYS` | `cli-yargs/lib/signers.ts` | required when signing | none | `change-council`, `change-tech-auth`, `change-federated-ops`, `stage-upgrade`, `promote-upgrade`, `mint-staging-state`, `change-terms` |
-| `COUNCIL_PRIVATE_KEYS` | `cli-yargs/lib/signers.ts` | required when signing | none | `change-council`, `change-tech-auth`, `change-federated-ops`, `promote-upgrade`, `change-terms` |
+| `COUNCIL_PRIVATE_KEYS` | `cli-yargs/lib/signers.ts` | required when signing | none | `change-council`, `change-tech-auth`, `change-federated-ops`, `stage-upgrade`, `promote-upgrade`, `change-terms` |
 | `BLOCKFROST_PREVIEW_API_KEY` | `cli-yargs/lib/provider.ts` | blockfrost on preview-mapped envs | none | Most networked commands |
 | `BLOCKFROST_PREPROD_API_KEY` | `cli-yargs/lib/provider.ts` | blockfrost on preprod | none | Same |
 | `BLOCKFROST_MAINNET_API_KEY` | `cli-yargs/lib/provider.ts` | blockfrost on mainnet | none | Same |
@@ -165,4 +165,3 @@ Source: `cli-yargs/lib/types.ts`
 | `blockfrost` | Supported (default for all real networks) |
 | `kupmios` | Supported (Kupo + Ogmios) |
 | `emulator` | Supported (default for `local`/`emulator`) |
-| `maestro` | Accepted by CLI but throws at runtime (not yet implemented) |

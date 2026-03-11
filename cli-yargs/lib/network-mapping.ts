@@ -3,7 +3,7 @@ import { NetworkId } from "@blaze-cardano/core";
 /**
  * Cardano network identifiers for blockchain connections.
  */
-export type CardanoNetwork = "preview" | "preprod" | "mainnet";
+export type CardanoNetwork = "preview" | "preprod" | "mainnet" | "local";
 
 interface EnvironmentResolution {
   cardanoNetwork: CardanoNetwork | null;
@@ -61,7 +61,18 @@ function resolveEnvironment(environment: string): EnvironmentResolution {
         networkId: NetworkId.Testnet,
         aikenConfigSection: "node-dev-2",
       };
+    case "node-dev-3":
+      return {
+        cardanoNetwork: "preview",
+        networkId: NetworkId.Testnet,
+        aikenConfigSection: "node-dev-3",
+      };
     case "local":
+      return {
+        cardanoNetwork: "local",
+        networkId: NetworkId.Testnet,
+        aikenConfigSection: "local",
+      };
     case "emulator":
       return {
         cardanoNetwork: null,

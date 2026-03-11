@@ -44,6 +44,7 @@ export function parseSigners(envVar: string): Signer[] {
 export function parseSignersWithCount(envVar: string): {
   totalSigners: bigint;
   signers: Record<string, string>;
+  signerEntries: Signer[];
 } {
   const signersEnv = process.env[envVar];
   if (!signersEnv) {
@@ -51,18 +52,41 @@ export function parseSignersWithCount(envVar: string): {
   }
 
   const signers: Record<string, string> = {};
-  const signerPairs = signersEnv.split(",");
+  const signerEntries: Signer[] = [];
+  const signerPairs = signersEnv.split(",").map((segment, index) => ({
+    segment,
+    trimmed: segment.trim(),
+    index,
+  }));
 
-  for (const pair of signerPairs) {
-    const [paymentHash, sr25519Key] = pair.trim().split(":");
-    if (paymentHash && sr25519Key) {
-      validateSignerHex(paymentHash, sr25519Key, envVar);
-      signers[paymentHash] = sr25519Key;
+  for (const { segment, trimmed, index } of signerPairs) {
+    if (trimmed.length === 0) {
+      throw new Error(
+        `${envVar}: signer entry at position ${index + 1} is empty (segment '${segment}')`,
+      );
     }
+
+    const fields = trimmed.split(":");
+    if (fields.length !== 2) {
+      throw new Error(
+        `${envVar}: signer entry '${trimmed}' must contain exactly one ':' delimiter`,
+      );
+    }
+
+    const [paymentHash, sr25519Key] = fields.map((field) => field.trim());
+    if (!paymentHash || !sr25519Key) {
+      throw new Error(
+        `${envVar}: signer entry '${trimmed}' must include non-empty payment hash and sr25519 key`,
+      );
+    }
+
+    validateSignerHex(paymentHash, sr25519Key, envVar);
+    signerEntries.push({ paymentHash, sr25519Key });
+    signers[paymentHash] = sr25519Key;
   }
 
-  const totalSigners = BigInt(Object.keys(signers).length);
-  return { totalSigners, signers };
+  const totalSigners = BigInt(signerEntries.length);
+  return { totalSigners, signers, signerEntries };
 }
 
 export function createMultisigStateFromMap(
@@ -82,7 +106,7 @@ export function createMultisigStateFromMap(
 export function parsePrivateKeys(envVar: string): string[] {
   const keysEnv = process.env[envVar];
   if (!keysEnv) {
-    throw new Error(`${envVar} environment variable is required`);
+    return [];
   }
 
   return keysEnv

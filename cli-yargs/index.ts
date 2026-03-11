@@ -24,11 +24,12 @@ import changeTermsCommand from "./commands/change-terms";
 import buildCommand from "./commands/build";
 import buildFromDeployedCommand from "./commands/build-from-deployed";
 import { addGlobalOptions } from "./lib/global-options";
+import packageJson from "../package.json";
 
 const parser = addGlobalOptions(yargs(hideBin(process.argv)))
   .scriptName("midnight-reserve")
   .usage("$0 <command> [options]")
-  .version("0.0.1")
+  .version(packageJson.version)
   .command(deployCommand)
   .command(deployStagingTrackCommand)
   .command(deployCnightMintingCommand)
@@ -60,9 +61,10 @@ const parser = addGlobalOptions(yargs(hideBin(process.argv)))
 try {
   await parser.parse();
 } catch (err) {
-  const message = err instanceof Error ? err.message : String(err);
-  if (message) {
-    console.error(message);
+  if (err instanceof Error) {
+    console.error(err.stack ?? err.message);
+  } else {
+    console.error("Unhandled non-Error exception:", err);
   }
   process.exit(1);
 }

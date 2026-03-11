@@ -20,10 +20,11 @@ export async function createProvider(
     case "blockfrost": {
       const cardanoNetwork = getCardanoNetwork(environment);
 
-      if (cardanoNetwork === null) {
+      if (cardanoNetwork === null || cardanoNetwork === "local") {
         throw new Error(
           `Blockfrost provider requires a real Cardano network (preview/preprod/mainnet). ` +
-            `Environment '${environment}' maps to local/emulator. Use --provider emulator instead.`,
+            `Environment '${environment}' maps to local/emulator. ` +
+            `Use --provider emulator or --provider kupmios instead.`,
         );
       }
 
@@ -41,12 +42,6 @@ export async function createProvider(
         projectId: apiKey,
       });
     }
-
-    case "maestro":
-      throw new Error(
-        "Maestro provider is not currently available in @blaze-cardano/query. " +
-          "Please use --provider blockfrost or --provider kupmios instead.",
-      );
 
     case "kupmios": {
       const kupoUrl = getEnvVar("KUPO_URL");
