@@ -13,7 +13,11 @@ import {
 import { resolve } from "path";
 import type { GlobalOptions } from "../../lib/global-options";
 import { getNetworkId } from "../../lib/types";
-import { validateTxHash, validateTxIndex } from "../../lib/validation";
+import {
+  validateTxHash,
+  validateTxIndex,
+  thresholdToRequiredSigners,
+} from "../../lib/validation";
 import { getDeployerAddress } from "../../lib/config";
 import { createBlaze } from "../../lib/provider";
 import {
@@ -360,13 +364,17 @@ export async function handler(argv: ChangeTermsOptions) {
 
   // MultisigThreshold is a tuple: [tech_auth_num, tech_auth_denom, council_num, council_denom]
   const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
-  const techAuthRequiredSigners = Number(
-    (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
-      techAuthDenom,
+  const techAuthRequiredSigners = thresholdToRequiredSigners(
+    techAuthSigners.length,
+    techAuthNum,
+    techAuthDenom,
+    "multisig threshold",
   );
-  const councilRequiredSigners = Number(
-    (BigInt(councilSigners.length) * councilNum + (councilDenom - 1n)) /
-      councilDenom,
+  const councilRequiredSigners = thresholdToRequiredSigners(
+    councilSigners.length,
+    councilNum,
+    councilDenom,
+    "multisig threshold",
   );
 
   console.log(

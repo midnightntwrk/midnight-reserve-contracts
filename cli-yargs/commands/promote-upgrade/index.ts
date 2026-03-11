@@ -23,7 +23,11 @@ import {
   getTwoStageContracts,
 } from "../../lib/contracts";
 import { extractSignersFromCbor, parsePrivateKeys } from "../../lib/signers";
-import { validateTxHash, validateTxIndex } from "../../lib/validation";
+import {
+  validateTxHash,
+  validateTxIndex,
+  thresholdToRequiredSigners,
+} from "../../lib/validation";
 import {
   getContractUtxos,
   getTwoStageUtxos,
@@ -53,6 +57,7 @@ interface PromoteUpgradeOptions extends GlobalOptions {
   "tx-index": number;
   sign: boolean;
   "output-file": string;
+  "use-build": boolean;
 }
 
 export const command = "promote-upgrade";
@@ -95,6 +100,11 @@ export function builder(yargs: Argv<GlobalOptions>) {
       type: "string",
       default: "promote-upgrade-tx.json",
       description: "Output file name for the transaction",
+    })
+    .option("use-build", {
+      type: "boolean",
+      default: false,
+      description: "Use build output instead of deployed blueprint",
     });
 }
 
@@ -107,6 +117,7 @@ export async function handler(argv: PromoteUpgradeOptions) {
     "tx-hash": txHash,
     "tx-index": txIndex,
     "output-file": outputFile,
+    "use-build": useBuild,
   } = argv;
 
   // Validate inputs before any processing
@@ -138,8 +149,8 @@ export async function handler(argv: PromoteUpgradeOptions) {
   const networkId = getNetworkId(network);
   const deployerAddress = getDeployerAddress(network);
   // Always use deployed contracts for on-chain infrastructure
-  const contracts = getContractInstances(network, false);
-  const targetContracts = getTwoStageContracts(validator, network, false);
+  const contracts = getContractInstances(network, useBuild);
+  const targetContracts = getTwoStageContracts(validator, network, useBuild);
 
   const twoStageAddress = getContractAddress(
     network,
@@ -218,13 +229,17 @@ export async function handler(argv: PromoteUpgradeOptions) {
 
   // Calculate required signers based on threshold
   const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
-  const techAuthRequiredSigners = Number(
-    (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
-      techAuthDenom,
+  const techAuthRequiredSigners = thresholdToRequiredSigners(
+    techAuthSigners.length,
+    techAuthNum,
+    techAuthDenom,
+    "multisig threshold",
   );
-  const councilRequiredSigners = Number(
-    (BigInt(councilSigners.length) * councilNum + (councilDenom - 1n)) /
-      councilDenom,
+  const councilRequiredSigners = thresholdToRequiredSigners(
+    councilSigners.length,
+    councilNum,
+    councilDenom,
+    "multisig threshold",
   );
 
   console.log(

@@ -84,7 +84,8 @@ bun run cli sign-and-submit <simple-tx.json> --network <env>
 just build <env>
 bun run cli mint-staging-state --validator <name> --network <env>
 bun run cli sign-and-submit <mint-staging-state-tx.json> --network <env>
-bun run cli stage-upgrade --validator <name> --network <env> --use-build --tx-hash <h> --tx-index <i>
+IMPORTANT: do NOT pass --use-build to stage-upgrade in live deploys
+bun run cli stage-upgrade --validator <name> --network <env> --new-logic-hash <v2-logic-hash> --tx-hash <h> --tx-index <i>
 bun run cli sign-and-submit <stage-upgrade-tx.json> --network <env>
 bun run cli promote-upgrade --validator <name> --network <env> --tx-hash <h> --tx-index <i>
 bun run cli sign-and-submit <promote-upgrade-tx.json> --network <env>

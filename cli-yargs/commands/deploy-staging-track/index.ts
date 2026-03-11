@@ -30,7 +30,8 @@ import { getProtocolParameters, calculateMinUtxo } from "../../lib/protocol";
 import { getContractInstances } from "../../lib/contracts";
 import {
   parseSignersWithCount,
-  createMultisigStateFromMap,
+  createMultisigStateCbor,
+  createRedeemerMapCbor,
 } from "../../lib/signers";
 import { createFederatedOpsDatum } from "../../lib/candidates";
 import {
@@ -152,19 +153,15 @@ export async function handler(argv: DeployStagingTrackOptions) {
   const deployerAddr = getDeployerAddress(network);
 
   // Parse signers for multisig contracts (council, tech-auth)
-  const { totalSigners: techAuthTotalSigners, signers: techAuthSigners } =
+  const { totalSigners: techAuthTotalSigners, signerEntries: techAuthSigners } =
     parseSignersWithCount("TECH_AUTH_SIGNERS");
-  const { totalSigners: councilTotalSigners, signers: councilSigners } =
+  const { totalSigners: councilTotalSigners, signerEntries: councilSigners } =
     parseSignersWithCount("COUNCIL_SIGNERS");
 
   console.log(`\nTotal tech auth signers: ${techAuthTotalSigners}`);
-  console.log(
-    `Number of tech auth signer pairs: ${Object.keys(techAuthSigners).length}`,
-  );
+  console.log(`Number of tech auth signer pairs: ${techAuthSigners.length}`);
   console.log(`Total council signers: ${councilTotalSigners}`);
-  console.log(
-    `Number of council signer pairs: ${Object.keys(councilSigners).length}`,
-  );
+  console.log(`Number of council signer pairs: ${councilSigners.length}`);
 
   const { blaze } = await createBlaze(network, argv.provider);
 
@@ -276,13 +273,15 @@ export async function handler(argv: DeployStagingTrackOptions) {
   }
 
   // Build versioned multisig state for council/tech-auth
-  const councilState = createMultisigStateFromMap(
-    councilTotalSigners,
+  const councilState = createMultisigStateCbor(
     councilSigners,
+    0n,
+    councilTotalSigners,
   );
-  const techAuthState = createMultisigStateFromMap(
-    techAuthTotalSigners,
+  const techAuthState = createMultisigStateCbor(
     techAuthSigners,
+    0n,
+    techAuthTotalSigners,
   );
 
   // Build federated ops datum
@@ -320,10 +319,8 @@ export async function handler(argv: DeployStagingTrackOptions) {
           oneShotHash: config.council_staging_one_shot_hash,
           oneShotIndex: config.council_staging_one_shot_index,
           stagingForeverContract: contracts.councilStagingForever!,
-          datumBuilder: () =>
-            serialize(Contracts.VersionedMultisig, councilState),
-          redeemerBuilder: () =>
-            serialize(Contracts.PermissionedRedeemer, councilSigners),
+          datumBuilder: () => councilState,
+          redeemerBuilder: () => createRedeemerMapCbor(councilSigners),
         };
         return generateStagingForeverDeployment(params);
       },
@@ -338,10 +335,8 @@ export async function handler(argv: DeployStagingTrackOptions) {
           oneShotHash: config.technical_authority_staging_one_shot_hash,
           oneShotIndex: config.technical_authority_staging_one_shot_index,
           stagingForeverContract: contracts.techAuthStagingForever!,
-          datumBuilder: () =>
-            serialize(Contracts.VersionedMultisig, techAuthState),
-          redeemerBuilder: () =>
-            serialize(Contracts.PermissionedRedeemer, techAuthSigners),
+          datumBuilder: () => techAuthState,
+          redeemerBuilder: () => createRedeemerMapCbor(techAuthSigners),
         };
         return generateStagingForeverDeployment(params);
       },

@@ -154,7 +154,7 @@ export async function isRewardAccountRegistered(
   environment: string,
 ): Promise<boolean> {
   const cardanoNetwork = getCardanoNetwork(environment);
-  if (!cardanoNetwork) return true; // emulator — skip check, assume registered
+  if (!cardanoNetwork || cardanoNetwork === "local") return true; // emulator/local — skip check, assume registered
 
   const apiKeyVar = `BLOCKFROST_${cardanoNetwork.toUpperCase()}_API_KEY`;
   const apiKey = getEnvVar(apiKeyVar);

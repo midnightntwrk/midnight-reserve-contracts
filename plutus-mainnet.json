@@ -594,11 +594,35 @@
       },
       "compiledCode": "59026f01010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cdc3a400530090024888966002600460146ea800e2646644b3001007805402a2646644b3001001806c4c96600200313259800800c03e264b30010018acc004c05c00a26644b300130080018acc004c058dd5002c00a02480ba2b3001300d0018acc004c058dd5002c00a02480ba2b30013370e9002000c566002602c6ea8016005012405d15980099b87480180062b30013016375400b002809202e8092026404c80990130992cc004c01c006264b300100180944c966002003159800980d00146600200316809a010809a030809c04e027013406c603000280b8c054dd50014566002601800313259800800c04a264b30010018992cc00400602913259800800c05602b01580ac4c966002603a0071980080245a02c805a02c80d8dd7000a03a301a00140646034005013809c04e02680d8c060005017180a9baa002808a024404860266ea8004c04cdd5001c0410154042021010808203030150014050602a00500e807403a01c80b0c04c0050121112cc004c010c044dd5001c4c9660020030028992cc004006007003801c00e26644b3001001802c4c966002003006803401a264b3001301b003804401d0191bad00180320363018001405c6eb8004c05c009018180a800a02830123754007001403c6eb0020dc3a400100a8052024300e001300e300f001300b3754007164020300900130053754015149a2a6600692011856616c696461746f722072657475726e65642066616c7365001365640082a6600492011b5f72656465656d65723a2054776f537461676552656465656d6572001601",
       "hash": "abe0faa878c6b96f7fa8f2f6bea49a4c306585b8de7feffabca949ce"
+    },
+    {
+      "title": "validator_types_v2.z_federated_ops_v2_types.spend",
+      "datum": {
+        "title": "_datum",
+        "schema": {
+          "$ref": "#/definitions/forever~1types_v2~1FederatedOpsV2"
+        }
+      },
+      "redeemer": {
+        "title": "_redeemer",
+        "schema": {
+          "$ref": "#/definitions/Data"
+        }
+      },
+      "compiledCode": "587c01010029800aba2aba1aab9eaab9dab9cab9a48888896600264653001300700198039804000cc01c0092225980099b8748008c020dd500144c8cc898c02c004c02cc030004c024dd50014590060c01c004c010dd5003c5268a998012491856616c696461746f722072657475726e65642066616c7365001365640041",
+      "hash": "a51fdc4c8695b8f7d38e583f18c721af522afda403b8a14464212b18"
+    },
+    {
+      "title": "validator_types_v2.z_federated_ops_v2_types.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "compiledCode": "587c01010029800aba2aba1aab9eaab9dab9cab9a48888896600264653001300700198039804000cc01c0092225980099b8748008c020dd500144c8cc898c02c004c02cc030004c024dd50014590060c01c004c010dd5003c5268a998012491856616c696461746f722072657475726e65642066616c7365001365640041",
+      "hash": "a51fdc4c8695b8f7d38e583f18c721af522afda403b8a14464212b18"
     }
   ],
   "definitions": {
     "ByteArray": {
-      "title": "ByteArray",
       "dataType": "bytes"
     },
     "Data": {
@@ -995,6 +1019,29 @@
         {
           "title": "link",
           "$ref": "#/definitions/ByteArray"
+        }
+      ]
+    },
+    "forever/types_v2/FederatedOpsV2": {
+      "title": "FederatedOpsV2",
+      "description": "FederatedOpsV2 adds a `message` field compared to FederatedOps v1.\n Used after migration from v1 datum. Expects logic_round: 2.",
+      "dataType": "list",
+      "items": [
+        {
+          "title": "data",
+          "$ref": "#/definitions/Data"
+        },
+        {
+          "title": "message",
+          "$ref": "#/definitions/ByteArray"
+        },
+        {
+          "title": "appendix",
+          "$ref": "#/definitions/List<forever~1types~1PermissionedCandidateDatumV1>"
+        },
+        {
+          "title": "logic_round",
+          "$ref": "#/definitions/Int"
         }
       ]
     },

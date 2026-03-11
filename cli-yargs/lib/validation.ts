@@ -10,12 +10,7 @@ export const VALID_NETWORKS: Network[] = [
   "mainnet",
 ];
 
-export const VALID_PROVIDERS = [
-  "blockfrost",
-  "maestro",
-  "emulator",
-  "kupmios",
-] as const;
+export const VALID_PROVIDERS = ["blockfrost", "emulator", "kupmios"] as const;
 
 export const VALID_COMPONENTS = [
   "tech-auth",
@@ -114,6 +109,41 @@ export function parseThreshold(thresholdStr: string): {
   return { numerator, denominator };
 }
 
+export function thresholdToRequiredSigners(
+  totalSigners: number,
+  numerator: bigint,
+  denominator: bigint,
+  context: string,
+): number {
+  if (!Number.isInteger(totalSigners) || totalSigners < 0) {
+    throw new Error(
+      `${context}: total signers must be a non-negative integer, got ${totalSigners}`,
+    );
+  }
+
+  if (denominator <= 0n) {
+    throw new Error(
+      `${context}: threshold denominator must be greater than zero, got ${denominator}`,
+    );
+  }
+
+  if (numerator < 0n || numerator > denominator) {
+    throw new Error(
+      `${context}: threshold numerator must be between 0 and denominator (inclusive), got ${numerator}/${denominator}`,
+    );
+  }
+
+  const requiredSigners =
+    (BigInt(totalSigners) * numerator + (denominator - 1n)) / denominator;
+
+  if (requiredSigners > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error(
+      `${context}: required signer count exceeds Number.MAX_SAFE_INTEGER, got ${requiredSigners}`,
+    );
+  }
+
+  return Number(requiredSigners);
+}
 export function parseAmount(amountStr: string): bigint {
   const amount = BigInt(amountStr);
   if (amount <= 0n) {

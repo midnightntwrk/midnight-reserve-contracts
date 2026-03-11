@@ -28,6 +28,7 @@ import {
   validateScriptHash,
   validateTxHash,
   validateTxIndex,
+  thresholdToRequiredSigners,
 } from "../../lib/validation";
 import {
   getContractUtxos,
@@ -179,7 +180,8 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("sign", {
       type: "boolean",
       default: true,
-      description: "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS)",
+      description:
+        "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
     })
     .option("output-file", {
       type: "string",
@@ -223,6 +225,11 @@ export async function handler(argv: StageUpgradeOptions) {
     if (!process.env.TECH_AUTH_PRIVATE_KEYS) {
       throw new Error(
         "TECH_AUTH_PRIVATE_KEYS environment variable is required when --sign is enabled",
+      );
+    }
+    if (!process.env.COUNCIL_PRIVATE_KEYS) {
+      throw new Error(
+        "COUNCIL_PRIVATE_KEYS environment variable is required when --sign is enabled",
       );
     }
   }
@@ -327,13 +334,17 @@ export async function handler(argv: StageUpgradeOptions) {
 
   // Calculate required signers based on threshold
   const [techAuthNum, techAuthDenom, councilNum, councilDenom] = thresholdState;
-  const techAuthRequiredSigners = Number(
-    (BigInt(techAuthSigners.length) * techAuthNum + (techAuthDenom - 1n)) /
-      techAuthDenom,
+  const techAuthRequiredSigners = thresholdToRequiredSigners(
+    techAuthSigners.length,
+    techAuthNum,
+    techAuthDenom,
+    "multisig threshold",
   );
-  const councilRequiredSigners = Number(
-    (BigInt(councilSigners.length) * councilNum + (councilDenom - 1n)) /
-      councilDenom,
+  const councilRequiredSigners = thresholdToRequiredSigners(
+    councilSigners.length,
+    councilNum,
+    councilDenom,
+    "multisig threshold",
   );
 
   console.log(
@@ -527,11 +538,13 @@ export async function handler(argv: StageUpgradeOptions) {
 
   if (sign) {
     const techAuthKeys = parsePrivateKeys("TECH_AUTH_PRIVATE_KEYS");
+    const councilKeys = parsePrivateKeys("COUNCIL_PRIVATE_KEYS");
+    const signingKeys = [...techAuthKeys, ...councilKeys];
 
     console.log(
-      `\nSigning with ${techAuthKeys.length} tech auth private keys...`,
+      `\nSigning with ${techAuthKeys.length} tech auth and ${councilKeys.length} council private keys...`,
     );
-    const signatures = signTransaction(tx.getId(), techAuthKeys);
+    const signatures = signTransaction(tx.getId(), signingKeys);
     console.log(`  Created ${signatures.length} signatures`);
 
     const signedTx = attachWitnesses(tx.toCbor(), signatures);

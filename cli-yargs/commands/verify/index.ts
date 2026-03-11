@@ -17,23 +17,12 @@ interface PlutusValidator {
   compiledCode: string;
 }
 
-interface PlutusJson {
-  validators: PlutusValidator[];
-}
-
 interface DeploymentTx {
   type: string;
   description: string;
   cborHex: string;
   txHash: string;
   signed: boolean;
-}
-
-interface DeploymentTransactionsJson {
-  network: string;
-  timestamp: string;
-  config: { utxoAmount: string };
-  transactions: DeploymentTx[];
 }
 
 interface BlockfrostUtxoOutput {
@@ -56,6 +45,29 @@ interface CheckResult {
 }
 
 type VerifyOptions = GlobalOptions;
+
+export function isObjectLike(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+export function requireArrayField(
+  value: unknown,
+  fieldName: string,
+  filePath: string,
+): unknown[] {
+  if (!isObjectLike(value) || Array.isArray(value)) {
+    throw new Error(
+      `Invalid JSON schema in ${filePath}: expected top-level JSON object`,
+    );
+  }
+  const fieldValue = value[fieldName];
+  if (!Array.isArray(fieldValue)) {
+    throw new Error(
+      `Invalid JSON schema in ${filePath}: expected '${fieldName}' to be an array`,
+    );
+  }
+  return fieldValue;
+}
 
 // --- Constants ---
 
@@ -597,7 +609,7 @@ export async function handler(argv: VerifyOptions) {
 
   // Load plutus.json
   const plutusPath = resolve(`deployed-scripts/${network}/plutus.json`);
-  let plutusJson: PlutusJson;
+  let plutusJson: unknown;
   try {
     plutusJson = JSON.parse(readFileSync(plutusPath, "utf8"));
   } catch {
@@ -608,7 +620,7 @@ export async function handler(argv: VerifyOptions) {
   const deployTxPath = resolve(
     `deployments/${network}/deployment-transactions.json`,
   );
-  let deploymentData: DeploymentTransactionsJson;
+  let deploymentData: unknown;
   try {
     deploymentData = JSON.parse(readFileSync(deployTxPath, "utf8"));
   } catch {
@@ -617,8 +629,16 @@ export async function handler(argv: VerifyOptions) {
     );
   }
 
-  const validators = plutusJson.validators;
-  const deploymentTxs = deploymentData.transactions;
+  const validators = requireArrayField(
+    plutusJson,
+    "validators",
+    plutusPath,
+  ) as PlutusValidator[];
+  const deploymentTxs = requireArrayField(
+    deploymentData,
+    "transactions",
+    deployTxPath,
+  ) as DeploymentTx[];
 
   console.log(
     `Verifying ${network} deployment (${validators.length} validators, ${deploymentTxs.length} transactions)...`,

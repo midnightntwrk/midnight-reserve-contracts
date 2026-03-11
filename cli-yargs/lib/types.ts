@@ -13,7 +13,7 @@ export { getCardanoNetwork, getAikenConfigSection } from "./network-mapping";
  * Use string environment names for new code - they map to Cardano networks via getCardanoNetwork().
  */
 export type Network = "local" | "preview" | "preprod" | "mainnet";
-export type ProviderType = "blockfrost" | "maestro" | "emulator" | "kupmios";
+export type ProviderType = "blockfrost" | "emulator" | "kupmios";
 
 export interface Signer {
   paymentHash: string;
@@ -115,7 +115,9 @@ export function getNetworkId(network: Network | string): NetworkId {
  */
 export function getDefaultProvider(network: Network | string): ProviderType {
   const cardanoNetwork = _getCardanoNetwork(network);
-  return cardanoNetwork === null ? "emulator" : "blockfrost";
+  if (cardanoNetwork === null) return "emulator";
+  if (cardanoNetwork === "local") return "kupmios";
+  return "blockfrost";
 }
 
 /**
