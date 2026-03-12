@@ -23,6 +23,190 @@ export async function blockfrostFetch(
   return resp.json();
 }
 
+export interface BlockfrostAmount {
+  unit: string;
+  quantity: string;
+}
+
+export interface BlockfrostAddressUtxo {
+  tx_hash: string;
+  tx_index: number;
+  output_index: number;
+  amount: BlockfrostAmount[];
+  inline_datum: string | null;
+  data_hash: string | null;
+}
+
+function isObjectLike(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function invalidAddressUtxoResponse(
+  responsePath: string,
+  detail: string,
+  entryIndex?: number,
+  fieldPath?: string,
+): never {
+  const location =
+    entryIndex === undefined
+      ? responsePath
+      : `${responsePath}[${entryIndex}]${fieldPath ? `.${fieldPath}` : ""}`;
+  throw new Error(`Invalid Blockfrost ${location} response: ${detail}`);
+}
+
+function requireString(
+  value: unknown,
+  responsePath: string,
+  entryIndex: number,
+  fieldPath: string,
+  fieldName: string,
+): string {
+  if (typeof value !== "string") {
+    invalidAddressUtxoResponse(
+      responsePath,
+      `expected ${fieldName} to be a string`,
+      entryIndex,
+      fieldPath,
+    );
+  }
+  return value;
+}
+
+function requireInteger(
+  value: unknown,
+  responsePath: string,
+  entryIndex: number,
+  fieldPath: string,
+  fieldName: string,
+): number {
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    invalidAddressUtxoResponse(
+      responsePath,
+      `expected ${fieldName} to be an integer`,
+      entryIndex,
+      fieldPath,
+    );
+  }
+  return value;
+}
+
+function requireNullableString(
+  value: unknown,
+  responsePath: string,
+  entryIndex: number,
+  fieldPath: string,
+  fieldName: string,
+): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    invalidAddressUtxoResponse(
+      responsePath,
+      `expected ${fieldName} to be a string or null`,
+      entryIndex,
+      fieldPath,
+    );
+  }
+  return value;
+}
+
+export function parseBlockfrostAddressUtxos(
+  value: unknown,
+  responsePath = "/addresses/.../utxos",
+): BlockfrostAddressUtxo[] {
+  if (!Array.isArray(value)) {
+    invalidAddressUtxoResponse(responsePath, "expected an array");
+  }
+
+  return value.map((entry, entryIndex) => {
+    if (!isObjectLike(entry)) {
+      invalidAddressUtxoResponse(
+        responsePath,
+        "expected an object",
+        entryIndex,
+      );
+    }
+
+    const amount = entry.amount;
+    if (!Array.isArray(amount)) {
+      invalidAddressUtxoResponse(
+        responsePath,
+        "expected amount to be an array",
+        entryIndex,
+        "amount",
+      );
+    }
+
+    const parsedAmount = amount.map((amountEntry, amountIndex) => {
+      if (!isObjectLike(amountEntry)) {
+        invalidAddressUtxoResponse(
+          responsePath,
+          "expected amount entry to be an object",
+          entryIndex,
+          `amount[${amountIndex}]`,
+        );
+      }
+
+      return {
+        unit: requireString(
+          amountEntry.unit,
+          responsePath,
+          entryIndex,
+          `amount[${amountIndex}].unit`,
+          "unit",
+        ),
+        quantity: requireString(
+          amountEntry.quantity,
+          responsePath,
+          entryIndex,
+          `amount[${amountIndex}].quantity`,
+          "quantity",
+        ),
+      };
+    });
+
+    return {
+      tx_hash: requireString(
+        entry.tx_hash,
+        responsePath,
+        entryIndex,
+        "tx_hash",
+        "tx_hash",
+      ),
+      tx_index: requireInteger(
+        entry.tx_index,
+        responsePath,
+        entryIndex,
+        "tx_index",
+        "tx_index",
+      ),
+      output_index: requireInteger(
+        entry.output_index,
+        responsePath,
+        entryIndex,
+        "output_index",
+        "output_index",
+      ),
+      amount: parsedAmount,
+      inline_datum: requireNullableString(
+        entry.inline_datum,
+        responsePath,
+        entryIndex,
+        "inline_datum",
+        "inline_datum",
+      ),
+      data_hash: requireNullableString(
+        entry.data_hash,
+        responsePath,
+        entryIndex,
+        "data_hash",
+        "data_hash",
+      ),
+    };
+  });
+}
+
 /**
  * Parse an UpgradeState datum from inline CBOR hex.
  * Returns { logicHash, authHash } or null if parsing fails.

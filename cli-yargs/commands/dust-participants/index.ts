@@ -5,31 +5,24 @@ import {
   getCredentialAddress,
 } from "../../lib/contracts";
 import { getCardanoNetwork } from "../../lib/network-mapping";
-import { blockfrostFetch, getBlockfrostBaseUrl } from "../../lib/blockfrost";
+import {
+  blockfrostFetch,
+  getBlockfrostBaseUrl,
+  parseBlockfrostAddressUtxos,
+  type BlockfrostAddressUtxo,
+} from "../../lib/blockfrost";
 
 interface DustParticipantsOptions extends GlobalOptions {
   format: string;
   "use-build": boolean;
 }
 
-interface BlockfrostAmount {
-  unit: string;
-  quantity: string;
-}
-
-interface BlockfrostUtxo {
-  tx_hash: string;
-  tx_index: number;
-  output_index: number;
-  amount: BlockfrostAmount[];
-}
-
 async function fetchAllAddressUtxos(
   baseUrl: string,
   apiKey: string,
   address: string,
-): Promise<BlockfrostUtxo[]> {
-  const allUtxos: BlockfrostUtxo[] = [];
+): Promise<BlockfrostAddressUtxo[]> {
+  const allUtxos: BlockfrostAddressUtxo[] = [];
   let page = 1;
   while (true) {
     const result = await blockfrostFetch(
@@ -38,7 +31,10 @@ async function fetchAllAddressUtxos(
       `/addresses/${address}/utxos?count=100&page=${page}`,
     );
     if (result === null) break;
-    const batch = result as BlockfrostUtxo[];
+    const batch = parseBlockfrostAddressUtxos(
+      result,
+      `/addresses/${address}/utxos?count=100&page=${page}`,
+    );
     if (batch.length === 0) break;
     allUtxos.push(...batch);
     if (batch.length < 100) break;

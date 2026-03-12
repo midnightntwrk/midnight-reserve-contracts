@@ -117,9 +117,13 @@ function parseCardanoCliWitness(
     if (bytes[1] === 0x00 && bytes[2] === 0x82) {
       // Tagged format: 82 00 82 5820 <vkey> 5840 <sig>
       vkeyOffset = 3;
-    } else if (bytes[1] === 0x58) {
+    } else if (bytes[1] === 0x58 && bytes[2] === 0x20) {
       // Direct format: 82 5820 <vkey> 5840 <sig>
       vkeyOffset = 1;
+    } else if (bytes[1] === 0x58) {
+      throw new Error(
+        `Expected byte string of length 32 (0x5820) for vkey, got 0x${bytes[1].toString(16)}${bytes[2].toString(16)}`,
+      );
     } else {
       throw new Error(
         `Unexpected CBOR structure after array tag: 0x${bytes[1].toString(16)}`,
