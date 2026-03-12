@@ -985,6 +985,526 @@ describe("Mainnet snapshot upgrade transactions", () => {
       await emulator.expectValidTransaction(blaze, txBuilder);
     });
   });
+  test("reserve stage-logic via staging authority references council main and uses staging threshold", async () => {
+    const emulator = new Emulator([]);
+    await emulator.as("deployer", async (blaze, addr) => {
+      const fundingUtxo = makeFundingUtxo(addr, "fa".repeat(32));
+      emulator.addUtxo(fundingUtxo);
+      emulator.addUtxo(mainnetSnapshotUtxos.reserveMain);
+      emulator.addUtxo(mainnetSnapshotUtxos.reserveStaging);
+      emulator.addUtxo(mainnetSnapshotUtxos.councilMain);
+      emulator.addUtxo(mainnetSnapshotUtxos.techAuthForever);
+      emulator.addUtxo(mainnetSnapshotUtxos.councilForever);
+      emulator.addUtxo(mainnetSnapshotUtxos.stagingGovThreshold);
+      emulator.accounts.set(
+        createRewardAccount(stagingGovAuth.Script.hash(), NetworkId.Mainnet),
+        {
+          balance: 0n,
+        },
+      );
+
+      const mainInput = mainnetSnapshotUtxos.reserveMain.input();
+      const newLogicHash = liveUpgradeStates.reserve.main[0];
+      const redeemer = serialize(Contracts.TwoStageRedeemer, [
+        "Logic",
+        {
+          Staging: [
+            {
+              transaction_id: mainInput.transactionId(),
+              output_index: BigInt(mainInput.index()),
+            },
+            newLogicHash,
+          ],
+        },
+      ]);
+      const expectedStagingState: Contracts.UpgradeState = [
+        newLogicHash,
+        liveUpgradeStates.reserve.staging[1],
+        liveUpgradeStates.reserve.staging[2],
+        liveUpgradeStates.reserve.staging[3],
+        liveUpgradeStates.reserve.staging[4],
+        liveUpgradeStates.reserve.staging[5] + 1n,
+      ];
+
+      const txBuilder = addGovernanceWitnesses(
+        blaze
+          .newTransaction()
+          .addInput(mainnetSnapshotUtxos.reserveStaging, redeemer)
+          .addInput(fundingUtxo)
+          .addReferenceInput(mainnetSnapshotUtxos.reserveMain)
+          .addReferenceInput(mainnetSnapshotUtxos.stagingGovThreshold)
+          .addReferenceInput(mainnetSnapshotUtxos.techAuthForever)
+          .addReferenceInput(mainnetSnapshotUtxos.councilForever)
+          .addReferenceInput(mainnetSnapshotUtxos.councilMain)
+          .provideScript(reserveTwoStage.Script)
+          .provideScript(stagingGovAuth.Script)
+          .addWithdrawal(
+            createRewardAccount(
+              stagingGovAuth.Script.hash(),
+              NetworkId.Mainnet,
+            ),
+            0n,
+            govRedeemerData(),
+          )
+          .addOutput(
+            TransactionOutput.fromCore({
+              address: PaymentAddress(
+                mainnetSnapshotUtxos.reserveStaging.output().address().toBech32(),
+              ),
+              value: {
+                coins: mainnetSnapshotUtxos.reserveStaging
+                  .output()
+                  .amount()
+                  .coin(),
+                assets: new Map([
+                  [AssetId(reserveTwoStage.Script.hash() + STAGING_TOKEN_HEX), 1n],
+                ]),
+              },
+              datum: serialize(
+                Contracts.UpgradeState,
+                expectedStagingState,
+              ).toCore(),
+            }),
+          )
+          .setChangeAddress(addr),
+        liveThresholds.staging,
+      );
+      const tx = draftTransaction(txBuilder);
+
+      expect(txRefs(tx.toCore().body.inputs)).toEqual([
+        mainnetReviewRefs.reserveStaging,
+        utxoRef(fundingUtxo),
+      ]);
+      expect(txRefs(tx.toCore().body.referenceInputs ?? [])).toEqual([
+        mainnetReviewRefs.reserveMain,
+        mainnetReviewRefs.stagingGovThreshold,
+        mainnetReviewRefs.techAuthForever,
+        mainnetReviewRefs.councilForever,
+        mainnetReviewRefs.councilMain,
+      ]);
+      expect(spendRedeemer(tx)).toEqual([
+        "Logic",
+        {
+          Staging: [
+            {
+              transaction_id: mainnetSnapshotUtxos.reserveMain
+                .input()
+                .transactionId(),
+              output_index: BigInt(
+                mainnetSnapshotUtxos.reserveMain.input().index(),
+              ),
+            },
+            newLogicHash,
+          ],
+        },
+      ]);
+      expectUpgradeDatum(
+        outputWithAsset(
+          tx,
+          AssetId(reserveTwoStage.Script.hash() + STAGING_TOKEN_HEX),
+        ),
+        expectedStagingState,
+      );
+
+      const { techRequired, councilRequired } = expectGovernanceMultisigs(
+        tx,
+        liveThresholds.staging,
+      );
+      expect(techRequired).toBe(5);
+      expect(councilRequired).toBe(0);
+      await emulator.expectValidTransaction(blaze, txBuilder);
+    });
+  });
+
+  test("reserve promote-logic via main authority copies staged logic and logic round", async () => {
+    const emulator = new Emulator([]);
+    await emulator.as("deployer", async (blaze, addr) => {
+      const fundingUtxo = makeFundingUtxo(addr, "fb".repeat(32));
+      const stagedLogicHash = liveUpgradeStates.reserve.main[0];
+      const stagedReserveState: Contracts.UpgradeState = [
+        stagedLogicHash,
+        liveUpgradeStates.reserve.staging[1],
+        liveUpgradeStates.reserve.staging[2],
+        liveUpgradeStates.reserve.staging[3],
+        liveUpgradeStates.reserve.staging[4],
+        liveUpgradeStates.reserve.staging[5] + 1n,
+      ];
+      const stagedReserveUtxo = cloneUpgradeUtxo(
+        mainnetSnapshotUtxos.reserveStaging,
+        stagedReserveState,
+        "b6".repeat(32),
+      );
+
+      emulator.addUtxo(fundingUtxo);
+      emulator.addUtxo(mainnetSnapshotUtxos.reserveMain);
+      emulator.addUtxo(stagedReserveUtxo);
+      emulator.addUtxo(mainnetSnapshotUtxos.techAuthForever);
+      emulator.addUtxo(mainnetSnapshotUtxos.councilForever);
+      emulator.addUtxo(mainnetSnapshotUtxos.mainGovThreshold);
+      emulator.accounts.set(
+        createRewardAccount(mainGovAuth.Script.hash(), NetworkId.Mainnet),
+        {
+          balance: 0n,
+        },
+      );
+
+      const stagingInput = stagedReserveUtxo.input();
+      const redeemer = serialize(Contracts.TwoStageRedeemer, [
+        "Logic",
+        {
+          Main: [
+            {
+              transaction_id: stagingInput.transactionId(),
+              output_index: BigInt(stagingInput.index()),
+            },
+          ],
+        },
+      ]);
+      const expectedMainState: Contracts.UpgradeState = [
+        stagedReserveState[0],
+        liveUpgradeStates.reserve.main[1],
+        liveUpgradeStates.reserve.main[2],
+        liveUpgradeStates.reserve.main[3],
+        liveUpgradeStates.reserve.main[4],
+        stagedReserveState[5],
+      ];
+
+      const txBuilder = addGovernanceWitnesses(
+        blaze
+          .newTransaction()
+          .addInput(mainnetSnapshotUtxos.reserveMain, redeemer)
+          .addInput(fundingUtxo)
+          .addReferenceInput(stagedReserveUtxo)
+          .addReferenceInput(mainnetSnapshotUtxos.mainGovThreshold)
+          .addReferenceInput(mainnetSnapshotUtxos.techAuthForever)
+          .addReferenceInput(mainnetSnapshotUtxos.councilForever)
+          .provideScript(reserveTwoStage.Script)
+          .provideScript(mainGovAuth.Script)
+          .addWithdrawal(
+            createRewardAccount(mainGovAuth.Script.hash(), NetworkId.Mainnet),
+            0n,
+            govRedeemerData(),
+          )
+          .addOutput(
+            TransactionOutput.fromCore({
+              address: PaymentAddress(
+                mainnetSnapshotUtxos.reserveMain.output().address().toBech32(),
+              ),
+              value: {
+                coins: mainnetSnapshotUtxos.reserveMain.output().amount().coin(),
+                assets: new Map([
+                  [AssetId(reserveTwoStage.Script.hash() + MAIN_TOKEN_HEX), 1n],
+                ]),
+              },
+              datum: serialize(
+                Contracts.UpgradeState,
+                expectedMainState,
+              ).toCore(),
+            }),
+          )
+          .setChangeAddress(addr),
+        liveThresholds.main,
+      );
+      const tx = draftTransaction(txBuilder);
+
+      expect(txRefs(tx.toCore().body.inputs)).toEqual([
+        mainnetReviewRefs.reserveMain,
+        utxoRef(fundingUtxo),
+      ]);
+      expect(txRefs(tx.toCore().body.referenceInputs ?? [])).toEqual([
+        utxoRef(stagedReserveUtxo),
+        mainnetReviewRefs.mainGovThreshold,
+        mainnetReviewRefs.techAuthForever,
+        mainnetReviewRefs.councilForever,
+      ]);
+      expect(spendRedeemer(tx)).toEqual([
+        "Logic",
+        {
+          Main: [
+            {
+              transaction_id: stagedReserveUtxo.input().transactionId(),
+              output_index: BigInt(stagedReserveUtxo.input().index()),
+            },
+          ],
+        },
+      ]);
+      expectUpgradeDatum(
+        outputWithAsset(
+          tx,
+          AssetId(reserveTwoStage.Script.hash() + MAIN_TOKEN_HEX),
+        ),
+        expectedMainState,
+      );
+
+      const { techRequired, councilRequired } = expectGovernanceMultisigs(
+        tx,
+        liveThresholds.main,
+      );
+      expect(techRequired).toBe(6);
+      expect(councilRequired).toBe(4);
+      await emulator.expectValidTransaction(blaze, txBuilder);
+    });
+  });
+
+  test("ICS stage-logic via staging authority references council main and uses staging threshold", async () => {
+    const emulator = new Emulator([]);
+    await emulator.as("deployer", async (blaze, addr) => {
+      const fundingUtxo = makeFundingUtxo(addr, "fc".repeat(32));
+      emulator.addUtxo(fundingUtxo);
+      emulator.addUtxo(mainnetSnapshotUtxos.icsMain);
+      emulator.addUtxo(mainnetSnapshotUtxos.icsStaging);
+      emulator.addUtxo(mainnetSnapshotUtxos.councilMain);
+      emulator.addUtxo(mainnetSnapshotUtxos.techAuthForever);
+      emulator.addUtxo(mainnetSnapshotUtxos.councilForever);
+      emulator.addUtxo(mainnetSnapshotUtxos.stagingGovThreshold);
+      emulator.accounts.set(
+        createRewardAccount(stagingGovAuth.Script.hash(), NetworkId.Mainnet),
+        {
+          balance: 0n,
+        },
+      );
+
+      const mainInput = mainnetSnapshotUtxos.icsMain.input();
+      const newLogicHash = liveUpgradeStates.ics.main[0];
+      const redeemer = serialize(Contracts.TwoStageRedeemer, [
+        "Logic",
+        {
+          Staging: [
+            {
+              transaction_id: mainInput.transactionId(),
+              output_index: BigInt(mainInput.index()),
+            },
+            newLogicHash,
+          ],
+        },
+      ]);
+      const expectedStagingState: Contracts.UpgradeState = [
+        newLogicHash,
+        liveUpgradeStates.ics.staging[1],
+        liveUpgradeStates.ics.staging[2],
+        liveUpgradeStates.ics.staging[3],
+        liveUpgradeStates.ics.staging[4],
+        liveUpgradeStates.ics.staging[5] + 1n,
+      ];
+
+      const txBuilder = addGovernanceWitnesses(
+        blaze
+          .newTransaction()
+          .addInput(mainnetSnapshotUtxos.icsStaging, redeemer)
+          .addInput(fundingUtxo)
+          .addReferenceInput(mainnetSnapshotUtxos.icsMain)
+          .addReferenceInput(mainnetSnapshotUtxos.stagingGovThreshold)
+          .addReferenceInput(mainnetSnapshotUtxos.techAuthForever)
+          .addReferenceInput(mainnetSnapshotUtxos.councilForever)
+          .addReferenceInput(mainnetSnapshotUtxos.councilMain)
+          .provideScript(icsTwoStage.Script)
+          .provideScript(stagingGovAuth.Script)
+          .addWithdrawal(
+            createRewardAccount(
+              stagingGovAuth.Script.hash(),
+              NetworkId.Mainnet,
+            ),
+            0n,
+            govRedeemerData(),
+          )
+          .addOutput(
+            TransactionOutput.fromCore({
+              address: PaymentAddress(
+                mainnetSnapshotUtxos.icsStaging.output().address().toBech32(),
+              ),
+              value: {
+                coins: mainnetSnapshotUtxos.icsStaging.output().amount().coin(),
+                assets: new Map([
+                  [AssetId(icsTwoStage.Script.hash() + STAGING_TOKEN_HEX), 1n],
+                ]),
+              },
+              datum: serialize(
+                Contracts.UpgradeState,
+                expectedStagingState,
+              ).toCore(),
+            }),
+          )
+          .setChangeAddress(addr),
+        liveThresholds.staging,
+      );
+      const tx = draftTransaction(txBuilder);
+
+      expect(txRefs(tx.toCore().body.inputs)).toEqual([
+        mainnetReviewRefs.icsStaging,
+        utxoRef(fundingUtxo),
+      ]);
+      expect(txRefs(tx.toCore().body.referenceInputs ?? [])).toEqual([
+        mainnetReviewRefs.icsMain,
+        mainnetReviewRefs.stagingGovThreshold,
+        mainnetReviewRefs.techAuthForever,
+        mainnetReviewRefs.councilForever,
+        mainnetReviewRefs.councilMain,
+      ]);
+      expect(spendRedeemer(tx)).toEqual([
+        "Logic",
+        {
+          Staging: [
+            {
+              transaction_id: mainnetSnapshotUtxos.icsMain
+                .input()
+                .transactionId(),
+              output_index: BigInt(
+                mainnetSnapshotUtxos.icsMain.input().index(),
+              ),
+            },
+            newLogicHash,
+          ],
+        },
+      ]);
+      expectUpgradeDatum(
+        outputWithAsset(
+          tx,
+          AssetId(icsTwoStage.Script.hash() + STAGING_TOKEN_HEX),
+        ),
+        expectedStagingState,
+      );
+
+      const { techRequired, councilRequired } = expectGovernanceMultisigs(
+        tx,
+        liveThresholds.staging,
+      );
+      expect(techRequired).toBe(5);
+      expect(councilRequired).toBe(0);
+      await emulator.expectValidTransaction(blaze, txBuilder);
+    });
+  });
+
+  test("ICS promote-logic via main authority copies staged logic and logic round", async () => {
+    const emulator = new Emulator([]);
+    await emulator.as("deployer", async (blaze, addr) => {
+      const fundingUtxo = makeFundingUtxo(addr, "fd".repeat(32));
+      const stagedLogicHash = liveUpgradeStates.ics.main[0];
+      const stagedIcsState: Contracts.UpgradeState = [
+        stagedLogicHash,
+        liveUpgradeStates.ics.staging[1],
+        liveUpgradeStates.ics.staging[2],
+        liveUpgradeStates.ics.staging[3],
+        liveUpgradeStates.ics.staging[4],
+        liveUpgradeStates.ics.staging[5] + 1n,
+      ];
+      const stagedIcsUtxo = cloneUpgradeUtxo(
+        mainnetSnapshotUtxos.icsStaging,
+        stagedIcsState,
+        "b7".repeat(32),
+      );
+
+      emulator.addUtxo(fundingUtxo);
+      emulator.addUtxo(mainnetSnapshotUtxos.icsMain);
+      emulator.addUtxo(stagedIcsUtxo);
+      emulator.addUtxo(mainnetSnapshotUtxos.techAuthForever);
+      emulator.addUtxo(mainnetSnapshotUtxos.councilForever);
+      emulator.addUtxo(mainnetSnapshotUtxos.mainGovThreshold);
+      emulator.accounts.set(
+        createRewardAccount(mainGovAuth.Script.hash(), NetworkId.Mainnet),
+        {
+          balance: 0n,
+        },
+      );
+
+      const stagingInput = stagedIcsUtxo.input();
+      const redeemer = serialize(Contracts.TwoStageRedeemer, [
+        "Logic",
+        {
+          Main: [
+            {
+              transaction_id: stagingInput.transactionId(),
+              output_index: BigInt(stagingInput.index()),
+            },
+          ],
+        },
+      ]);
+      const expectedMainState: Contracts.UpgradeState = [
+        stagedIcsState[0],
+        liveUpgradeStates.ics.main[1],
+        liveUpgradeStates.ics.main[2],
+        liveUpgradeStates.ics.main[3],
+        liveUpgradeStates.ics.main[4],
+        stagedIcsState[5],
+      ];
+
+      const txBuilder = addGovernanceWitnesses(
+        blaze
+          .newTransaction()
+          .addInput(mainnetSnapshotUtxos.icsMain, redeemer)
+          .addInput(fundingUtxo)
+          .addReferenceInput(stagedIcsUtxo)
+          .addReferenceInput(mainnetSnapshotUtxos.mainGovThreshold)
+          .addReferenceInput(mainnetSnapshotUtxos.techAuthForever)
+          .addReferenceInput(mainnetSnapshotUtxos.councilForever)
+          .provideScript(icsTwoStage.Script)
+          .provideScript(mainGovAuth.Script)
+          .addWithdrawal(
+            createRewardAccount(mainGovAuth.Script.hash(), NetworkId.Mainnet),
+            0n,
+            govRedeemerData(),
+          )
+          .addOutput(
+            TransactionOutput.fromCore({
+              address: PaymentAddress(
+                mainnetSnapshotUtxos.icsMain.output().address().toBech32(),
+              ),
+              value: {
+                coins: mainnetSnapshotUtxos.icsMain.output().amount().coin(),
+                assets: new Map([
+                  [AssetId(icsTwoStage.Script.hash() + MAIN_TOKEN_HEX), 1n],
+                ]),
+              },
+              datum: serialize(
+                Contracts.UpgradeState,
+                expectedMainState,
+              ).toCore(),
+            }),
+          )
+          .setChangeAddress(addr),
+        liveThresholds.main,
+      );
+      const tx = draftTransaction(txBuilder);
+
+      expect(txRefs(tx.toCore().body.inputs)).toEqual([
+        mainnetReviewRefs.icsMain,
+        utxoRef(fundingUtxo),
+      ]);
+      expect(txRefs(tx.toCore().body.referenceInputs ?? [])).toEqual([
+        utxoRef(stagedIcsUtxo),
+        mainnetReviewRefs.mainGovThreshold,
+        mainnetReviewRefs.techAuthForever,
+        mainnetReviewRefs.councilForever,
+      ]);
+      expect(spendRedeemer(tx)).toEqual([
+        "Logic",
+        {
+          Main: [
+            {
+              transaction_id: stagedIcsUtxo.input().transactionId(),
+              output_index: BigInt(stagedIcsUtxo.input().index()),
+            },
+          ],
+        },
+      ]);
+      expectUpgradeDatum(
+        outputWithAsset(
+          tx,
+          AssetId(icsTwoStage.Script.hash() + MAIN_TOKEN_HEX),
+        ),
+        expectedMainState,
+      );
+
+      const { techRequired, councilRequired } = expectGovernanceMultisigs(
+        tx,
+        liveThresholds.main,
+      );
+      expect(techRequired).toBe(6);
+      expect(councilRequired).toBe(4);
+      await emulator.expectValidTransaction(blaze, txBuilder);
+    });
+  });
+
+
   test("reserve stage-mitigation-logic via main authority updates only mitigation logic and round", async () => {
     const emulator = new Emulator([]);
     await emulator.as("deployer", async (blaze, addr) => {
