@@ -1,8 +1,8 @@
 # Contract Address Report
 
 **Network:** preview
-**Generated:** 2026-03-12T17:42:20.880Z
-**Contracts:** 19
+**Generated:** 2026-03-12T20:28:56.156Z
+**Contracts:** 21
 
 ---
 
@@ -141,6 +141,16 @@
 | **Script Hash** | `bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b` |
 | **ADA** | 0.000000 |
 
+## REGISTERED-CANDIDATE
+
+### Registered Candidate
+
+| Field | Value |
+|-------|-------|
+| **Address** | `addr_test1wz5ax0hjvhx2uqef8sqrxnmfywd37hea4truhqxu4yxp9hsvggkfm` |
+| **Script Hash** | `a9d33ef265ccae03293c00334f69239b1f5f3daac7cb80dca90c12de` |
+| **ADA** | 0.000000 |
+
 ## FEDERATED-OPS
 
 ### Federated Ops Forever
@@ -202,3 +212,13 @@
 | **Address** | `addr_test1wqy9rhvf9ylm4ng2cecv086dm623jfpyy85z3cvmhu935rqkygazk` |
 | **Script Hash** | `0851dd89293fbacd0ac670c79f4dde9519242421e828e19bbf0b1a0c` |
 | **ADA** | 0.000000 |
+
+## CNIGHT-GENERATES-DUST
+
+### cNIGHT Generates Dust
+
+| Field | Value |
+|-------|-------|
+| **Address** | `addr_test1wplxjzranravtp574s2wz00md7vz9rzpucu252je68u9a8qzjheng` |
+| **Script Hash** | `7e69087d98fac5869eac14e13dfb6f98228c41e638aa2a59d1f85e9c` |
+| **ADA** | 200.000000 |
