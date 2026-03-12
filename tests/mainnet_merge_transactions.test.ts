@@ -43,20 +43,28 @@ function rewardAccount(scriptHash: string) {
   );
 }
 
-function mergeValue(utxo1: TransactionUnspentOutput, utxo2: TransactionUnspentOutput) {
+function mergeValue(
+  utxo1: TransactionUnspentOutput,
+  utxo2: TransactionUnspentOutput,
+) {
   const amount1 = utxo1.output().amount();
   const amount2 = utxo2.output().amount();
-  return new Value(amount1.coin() + amount2.coin(), new Map([
-    [
-      cnightAssetId,
-      (amount1.multiasset()?.get(cnightAssetId) ?? 0n) +
-        (amount2.multiasset()?.get(cnightAssetId) ?? 0n),
-    ],
-  ]));
+  return new Value(
+    amount1.coin() + amount2.coin(),
+    new Map([
+      [
+        cnightAssetId,
+        (amount1.multiasset()?.get(cnightAssetId) ?? 0n) +
+          (amount2.multiasset()?.get(cnightAssetId) ?? 0n),
+      ],
+    ]),
+  );
 }
 
 function contractOutput(tx: Transaction, address: string) {
-  const output = tx.toCore().body.outputs.find((candidate) => candidate.address === address);
+  const output = tx
+    .toCore()
+    .body.outputs.find((candidate) => candidate.address === address);
   if (!output) {
     throw new Error(`Missing contract output for ${address}`);
   }
@@ -158,11 +166,15 @@ describe("Mainnet snapshot merge transactions", () => {
       );
       expect(mergedContractOutput.value.coins).toBe(12_000_000n);
       expect(mergedContractOutput.value.assets?.get(cnightAssetId)).toBe(3n);
-      expect(mergedContractOutput.value.assets?.has(randomAssetId) ?? false).toBe(false);
+      expect(
+        mergedContractOutput.value.assets?.has(randomAssetId) ?? false,
+      ).toBe(false);
 
       const walletOutputs = inspectTx
         .toCore()
-        .body.outputs.filter((candidate) => candidate.address === addr.toBech32());
+        .body.outputs.filter(
+          (candidate) => candidate.address === addr.toBech32(),
+        );
       expect(sumAsset(walletOutputs, randomAssetId)).toBe(18n);
       expect(sumAsset(walletOutputs, cnightAssetId)).toBe(0n);
 
@@ -232,11 +244,15 @@ describe("Mainnet snapshot merge transactions", () => {
       );
       expect(mergedContractOutput.value.coins).toBe(13_000_000n);
       expect(mergedContractOutput.value.assets?.get(cnightAssetId)).toBe(3n);
-      expect(mergedContractOutput.value.assets?.has(randomAssetId) ?? false).toBe(false);
+      expect(
+        mergedContractOutput.value.assets?.has(randomAssetId) ?? false,
+      ).toBe(false);
 
       const walletOutputs = inspectTx
         .toCore()
-        .body.outputs.filter((candidate) => candidate.address === addr.toBech32());
+        .body.outputs.filter(
+          (candidate) => candidate.address === addr.toBech32(),
+        );
       expect(sumAsset(walletOutputs, randomAssetId)).toBe(18n);
       expect(sumAsset(walletOutputs, cnightAssetId)).toBe(0n);
 

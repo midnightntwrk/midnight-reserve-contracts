@@ -1049,7 +1049,10 @@ describe("Mainnet snapshot upgrade transactions", () => {
           .addOutput(
             TransactionOutput.fromCore({
               address: PaymentAddress(
-                mainnetSnapshotUtxos.reserveStaging.output().address().toBech32(),
+                mainnetSnapshotUtxos.reserveStaging
+                  .output()
+                  .address()
+                  .toBech32(),
               ),
               value: {
                 coins: mainnetSnapshotUtxos.reserveStaging
@@ -1057,7 +1060,10 @@ describe("Mainnet snapshot upgrade transactions", () => {
                   .amount()
                   .coin(),
                 assets: new Map([
-                  [AssetId(reserveTwoStage.Script.hash() + STAGING_TOKEN_HEX), 1n],
+                  [
+                    AssetId(reserveTwoStage.Script.hash() + STAGING_TOKEN_HEX),
+                    1n,
+                  ],
                 ]),
               },
               datum: serialize(
@@ -1191,7 +1197,10 @@ describe("Mainnet snapshot upgrade transactions", () => {
                 mainnetSnapshotUtxos.reserveMain.output().address().toBech32(),
               ),
               value: {
-                coins: mainnetSnapshotUtxos.reserveMain.output().amount().coin(),
+                coins: mainnetSnapshotUtxos.reserveMain
+                  .output()
+                  .amount()
+                  .coin(),
                 assets: new Map([
                   [AssetId(reserveTwoStage.Script.hash() + MAIN_TOKEN_HEX), 1n],
                 ]),
@@ -1503,7 +1512,6 @@ describe("Mainnet snapshot upgrade transactions", () => {
       await emulator.expectValidTransaction(blaze, txBuilder);
     });
   });
-
 
   test("reserve stage-mitigation-logic via main authority updates only mitigation logic and round", async () => {
     const emulator = new Emulator([]);
