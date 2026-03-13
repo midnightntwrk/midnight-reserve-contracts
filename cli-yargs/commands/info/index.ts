@@ -20,7 +20,7 @@ import {
 
 interface ContractInfo {
   name: string;
-  component: string;
+  component: ContractComponent;
   scriptHash: string;
   address: string;
 }
@@ -64,18 +64,6 @@ interface InfoOptions extends GlobalOptions {
 
 // --- Constants ---
 
-const MAIN_TRACK_COMPONENTS = [
-  "tech-auth",
-  "council",
-  "reserve",
-  "ics",
-  "federated-ops",
-  "terms-and-conditions",
-  "gov",
-  "registered-candidate",
-  "cnight-generates-dust",
-] as const;
-
 const INFO_COMPONENT_CHOICES = [
   "all",
   "tech-auth",
@@ -95,10 +83,37 @@ const INFO_COMPONENT_CHOICES = [
   "terms-and-conditions-threshold",
 ] as const;
 
-const SUMMARY_ONLY_COMPONENTS = new Set([
+type InfoComponent = (typeof INFO_COMPONENT_CHOICES)[number];
+type ContractComponent = Exclude<InfoComponent, "all">;
+
+const MAIN_TRACK_COMPONENTS = [
+  "tech-auth",
+  "council",
+  "reserve",
+  "ics",
+  "federated-ops",
+  "terms-and-conditions",
+  "gov",
   "registered-candidate",
   "cnight-generates-dust",
-] as const);
+] as const satisfies readonly ContractComponent[];
+
+type MainTrackComponent = (typeof MAIN_TRACK_COMPONENTS)[number];
+
+const SUMMARY_ONLY_COMPONENTS = [
+  "registered-candidate",
+  "cnight-generates-dust",
+] as const satisfies readonly ContractComponent[];
+
+type SummaryOnlyComponent = (typeof SUMMARY_ONLY_COMPONENTS)[number];
+
+const MAIN_TRACK_COMPONENT_SET: ReadonlySet<ContractComponent> = new Set(
+  MAIN_TRACK_COMPONENTS,
+);
+
+const SUMMARY_ONLY_COMPONENT_SET: ReadonlySet<ContractComponent> = new Set(
+  SUMMARY_ONLY_COMPONENTS,
+);
 
 const TWO_STAGE_NAMES = new Set([
   "Tech Auth Two Stage",
@@ -110,6 +125,18 @@ const TWO_STAGE_NAMES = new Set([
 ]);
 
 // --- Helpers ---
+
+function isMainTrackComponent(
+  component: ContractComponent,
+): component is MainTrackComponent {
+  return MAIN_TRACK_COMPONENT_SET.has(component);
+}
+
+function isSummaryOnlyComponent(
+  component: ContractComponent,
+): component is SummaryOnlyComponent {
+  return SUMMARY_ONLY_COMPONENT_SET.has(component);
+}
 
 async function fetchAddressUtxos(
   baseUrl: string,
@@ -208,9 +235,7 @@ export function generateMarkdownReport(
   network: string,
   contracts: ContractOnChainInfo[],
 ): string {
-  const mainTrack = contracts.filter((c) =>
-    MAIN_TRACK_COMPONENTS.includes(c.component),
-  );
+  const mainTrack = contracts.filter((c) => isMainTrackComponent(c.component));
 
   const lines: string[] = [
     `# Contract Address Report`,
@@ -235,7 +260,7 @@ export function generateMarkdownReport(
     lines.push(``);
 
     for (const c of contractGroup) {
-      const summaryOnly = SUMMARY_ONLY_COMPONENTS.has(c.component);
+      const summaryOnly = isSummaryOnlyComponent(c.component);
 
       lines.push(`### ${c.name}`);
       lines.push(``);
@@ -288,7 +313,7 @@ export function generateMarkdownReport(
 function createContractInfo(
   network: string,
   name: string,
-  component: string,
+  component: ContractComponent,
   contract: { Script: { hash(): string } },
 ): ContractInfo {
   const scriptHash = contract.Script.hash();
