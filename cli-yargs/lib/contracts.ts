@@ -75,6 +75,9 @@ export interface ContractInstances {
   cnightMintForever?: ContractClass;
   cnightMintLogic?: ContractClass;
 
+  // Registered Candidate
+  registeredCandidate?: ContractClass;
+
   // cNIGHT Generates Dust
   cnightGeneratesDust?: ContractClass;
 }
@@ -273,6 +276,9 @@ function createInstances(
     cnightMintForever: tryCreate("CnightMintingCnightMintForeverElse"),
     cnightMintLogic: tryCreate("CnightMintingCnightMintLogicElse"),
 
+    registeredCandidate: tryCreate(
+      "RegisteredCandidateRegisteredCandidateElse",
+    ),
     cnightGeneratesDust: tryCreate(
       "CnightGeneratesDustCnightGeneratesDustElse",
     ),

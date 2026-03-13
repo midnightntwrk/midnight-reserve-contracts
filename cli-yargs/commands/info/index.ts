@@ -20,7 +20,7 @@ import {
 
 interface ContractInfo {
   name: string;
-  component: string;
+  component: ContractComponent;
   scriptHash: string;
   address: string;
 }
@@ -64,6 +64,28 @@ interface InfoOptions extends GlobalOptions {
 
 // --- Constants ---
 
+const INFO_COMPONENT_CHOICES = [
+  "all",
+  "tech-auth",
+  "tech-auth-threshold",
+  "council",
+  "council-threshold",
+  "reserve",
+  "ics",
+  "gov",
+  "registered-candidate",
+  "cnight-generates-dust",
+  "main-gov",
+  "staging-gov",
+  "federated-ops",
+  "federated-ops-threshold",
+  "terms-and-conditions",
+  "terms-and-conditions-threshold",
+] as const;
+
+type InfoComponent = (typeof INFO_COMPONENT_CHOICES)[number];
+type ContractComponent = Exclude<InfoComponent, "all">;
+
 const MAIN_TRACK_COMPONENTS = [
   "tech-auth",
   "council",
@@ -72,7 +94,26 @@ const MAIN_TRACK_COMPONENTS = [
   "federated-ops",
   "terms-and-conditions",
   "gov",
-];
+  "registered-candidate",
+  "cnight-generates-dust",
+] as const satisfies readonly ContractComponent[];
+
+type MainTrackComponent = (typeof MAIN_TRACK_COMPONENTS)[number];
+
+const SUMMARY_ONLY_COMPONENTS = [
+  "registered-candidate",
+  "cnight-generates-dust",
+] as const satisfies readonly ContractComponent[];
+
+type SummaryOnlyComponent = (typeof SUMMARY_ONLY_COMPONENTS)[number];
+
+const MAIN_TRACK_COMPONENT_SET: ReadonlySet<ContractComponent> = new Set(
+  MAIN_TRACK_COMPONENTS,
+);
+
+const SUMMARY_ONLY_COMPONENT_SET: ReadonlySet<ContractComponent> = new Set(
+  SUMMARY_ONLY_COMPONENTS,
+);
 
 const TWO_STAGE_NAMES = new Set([
   "Tech Auth Two Stage",
@@ -84,6 +125,18 @@ const TWO_STAGE_NAMES = new Set([
 ]);
 
 // --- Helpers ---
+
+function isMainTrackComponent(
+  component: ContractComponent,
+): component is MainTrackComponent {
+  return MAIN_TRACK_COMPONENT_SET.has(component);
+}
+
+function isSummaryOnlyComponent(
+  component: ContractComponent,
+): component is SummaryOnlyComponent {
+  return SUMMARY_ONLY_COMPONENT_SET.has(component);
+}
 
 async function fetchAddressUtxos(
   baseUrl: string,
@@ -178,13 +231,11 @@ async function enrichContractWithOnChainData(
   };
 }
 
-function generateMarkdownReport(
+export function generateMarkdownReport(
   network: string,
   contracts: ContractOnChainInfo[],
 ): string {
-  const mainTrack = contracts.filter((c) =>
-    MAIN_TRACK_COMPONENTS.includes(c.component),
-  );
+  const mainTrack = contracts.filter((c) => isMainTrackComponent(c.component));
 
   const lines: string[] = [
     `# Contract Address Report`,
@@ -209,6 +260,8 @@ function generateMarkdownReport(
     lines.push(``);
 
     for (const c of contractGroup) {
+      const summaryOnly = isSummaryOnlyComponent(c.component);
+
       lines.push(`### ${c.name}`);
       lines.push(``);
       lines.push(`| Field | Value |`);
@@ -217,20 +270,20 @@ function generateMarkdownReport(
       lines.push(`| **Script Hash** | \`${c.scriptHash}\` |`);
       lines.push(`| **ADA** | ${c.totalAda} |`);
 
-      if (c.nftTokenNames.length > 0) {
+      if (!summaryOnly && c.nftTokenNames.length > 0) {
         lines.push(
           `| **NFT Tokens** | ${c.nftTokenNames.map((n) => `\`${n}\``).join(", ")} |`,
         );
       }
 
-      if (c.upgradeState) {
+      if (!summaryOnly && c.upgradeState) {
         lines.push(
           `| **Active Logic Hash** | \`${c.upgradeState.logicHash}\` |`,
         );
         lines.push(`| **Auth Hash** | \`${c.upgradeState.authHash}\` |`);
       }
 
-      if (c.utxos.length > 0) {
+      if (!summaryOnly && c.utxos.length > 0) {
         const datumSummaries: string[] = [];
         for (const u of c.utxos) {
           if (u.inlineDatum) {
@@ -257,248 +310,193 @@ function generateMarkdownReport(
   return lines.join("\n");
 }
 
-function buildContractList(network: string, useBuild: boolean): ContractInfo[] {
-  const contracts = getContractInstances(network, useBuild);
+function createContractInfo(
+  network: string,
+  name: string,
+  component: ContractComponent,
+  contract: { Script: { hash(): string } },
+): ContractInfo {
+  const scriptHash = contract.Script.hash();
+
+  return {
+    name,
+    component,
+    scriptHash,
+    address: getCredentialAddress(network, scriptHash).toBech32(),
+  };
+}
+
+export function buildContractList(
+  network: string,
+  useBuild: boolean,
+  contractSource = getContractInstances,
+): ContractInfo[] {
+  const contracts = contractSource(network, useBuild);
 
   return [
     // Tech Auth
-    {
-      name: "Tech Auth Forever",
-      component: "tech-auth",
-      scriptHash: contracts.techAuthForever.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.techAuthForever.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Tech Auth Two Stage",
-      component: "tech-auth",
-      scriptHash: contracts.techAuthTwoStage.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.techAuthTwoStage.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Tech Auth Logic",
-      component: "tech-auth",
-      scriptHash: contracts.techAuthLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.techAuthLogic.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Tech Auth Update Threshold",
-      component: "tech-auth-threshold",
-      scriptHash: contracts.mainTechAuthUpdateThreshold.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.mainTechAuthUpdateThreshold.Script.hash(),
-      ).toBech32(),
-    },
+    createContractInfo(
+      network,
+      "Tech Auth Forever",
+      "tech-auth",
+      contracts.techAuthForever,
+    ),
+    createContractInfo(
+      network,
+      "Tech Auth Two Stage",
+      "tech-auth",
+      contracts.techAuthTwoStage,
+    ),
+    createContractInfo(
+      network,
+      "Tech Auth Logic",
+      "tech-auth",
+      contracts.techAuthLogic,
+    ),
+    createContractInfo(
+      network,
+      "Tech Auth Update Threshold",
+      "tech-auth-threshold",
+      contracts.mainTechAuthUpdateThreshold,
+    ),
 
     // Council
-    {
-      name: "Council Forever",
-      component: "council",
-      scriptHash: contracts.councilForever.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.councilForever.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Council Two Stage",
-      component: "council",
-      scriptHash: contracts.councilTwoStage.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.councilTwoStage.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Council Logic",
-      component: "council",
-      scriptHash: contracts.councilLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.councilLogic.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Council Update Threshold",
-      component: "council-threshold",
-      scriptHash: contracts.mainCouncilUpdateThreshold.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.mainCouncilUpdateThreshold.Script.hash(),
-      ).toBech32(),
-    },
+    createContractInfo(
+      network,
+      "Council Forever",
+      "council",
+      contracts.councilForever,
+    ),
+    createContractInfo(
+      network,
+      "Council Two Stage",
+      "council",
+      contracts.councilTwoStage,
+    ),
+    createContractInfo(
+      network,
+      "Council Logic",
+      "council",
+      contracts.councilLogic,
+    ),
+    createContractInfo(
+      network,
+      "Council Update Threshold",
+      "council-threshold",
+      contracts.mainCouncilUpdateThreshold,
+    ),
 
     // Reserve
-    {
-      name: "Reserve Forever",
-      component: "reserve",
-      scriptHash: contracts.reserveForever.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.reserveForever.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Reserve Two Stage",
-      component: "reserve",
-      scriptHash: contracts.reserveTwoStage.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.reserveTwoStage.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Reserve Logic",
-      component: "reserve",
-      scriptHash: contracts.reserveLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.reserveLogic.Script.hash(),
-      ).toBech32(),
-    },
+    createContractInfo(
+      network,
+      "Reserve Forever",
+      "reserve",
+      contracts.reserveForever,
+    ),
+    createContractInfo(
+      network,
+      "Reserve Two Stage",
+      "reserve",
+      contracts.reserveTwoStage,
+    ),
+    createContractInfo(
+      network,
+      "Reserve Logic",
+      "reserve",
+      contracts.reserveLogic,
+    ),
 
     // ICS
-    {
-      name: "ICS Forever",
-      component: "ics",
-      scriptHash: contracts.icsForever.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.icsForever.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "ICS Two Stage",
-      component: "ics",
-      scriptHash: contracts.icsTwoStage.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.icsTwoStage.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "ICS Logic",
-      component: "ics",
-      scriptHash: contracts.icsLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.icsLogic.Script.hash(),
-      ).toBech32(),
-    },
+    createContractInfo(network, "ICS Forever", "ics", contracts.icsForever),
+    createContractInfo(network, "ICS Two Stage", "ics", contracts.icsTwoStage),
+    createContractInfo(network, "ICS Logic", "ics", contracts.icsLogic),
 
     // Gov
-    {
-      name: "Gov Auth",
-      component: "gov",
-      scriptHash: contracts.govAuth.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.govAuth.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Main Gov Threshold",
-      component: "main-gov",
-      scriptHash: contracts.mainGovThreshold.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.mainGovThreshold.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Staging Gov Threshold",
-      component: "staging-gov",
-      scriptHash: contracts.stagingGovThreshold.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.stagingGovThreshold.Script.hash(),
-      ).toBech32(),
-    },
+    createContractInfo(network, "Gov Auth", "gov", contracts.govAuth),
+    createContractInfo(
+      network,
+      "Main Gov Threshold",
+      "main-gov",
+      contracts.mainGovThreshold,
+    ),
+    createContractInfo(
+      network,
+      "Staging Gov Threshold",
+      "staging-gov",
+      contracts.stagingGovThreshold,
+    ),
+    ...(contracts.registeredCandidate
+      ? [
+          createContractInfo(
+            network,
+            "Registered Candidate",
+            "registered-candidate",
+            contracts.registeredCandidate,
+          ),
+        ]
+      : []),
 
     // Federated Ops
-    {
-      name: "Federated Ops Forever",
-      component: "federated-ops",
-      scriptHash: contracts.federatedOpsForever.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.federatedOpsForever.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Federated Ops Two Stage",
-      component: "federated-ops",
-      scriptHash: contracts.federatedOpsTwoStage.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.federatedOpsTwoStage.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Federated Ops Logic",
-      component: "federated-ops",
-      scriptHash: contracts.federatedOpsLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.federatedOpsLogic.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Federated Ops Update Threshold",
-      component: "federated-ops-threshold",
-      scriptHash: contracts.mainFederatedOpsUpdateThreshold.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.mainFederatedOpsUpdateThreshold.Script.hash(),
-      ).toBech32(),
-    },
+    createContractInfo(
+      network,
+      "Federated Ops Forever",
+      "federated-ops",
+      contracts.federatedOpsForever,
+    ),
+    createContractInfo(
+      network,
+      "Federated Ops Two Stage",
+      "federated-ops",
+      contracts.federatedOpsTwoStage,
+    ),
+    createContractInfo(
+      network,
+      "Federated Ops Logic",
+      "federated-ops",
+      contracts.federatedOpsLogic,
+    ),
+    createContractInfo(
+      network,
+      "Federated Ops Update Threshold",
+      "federated-ops-threshold",
+      contracts.mainFederatedOpsUpdateThreshold,
+    ),
 
     // Terms and Conditions
-    {
-      name: "Terms And Conditions Forever",
-      component: "terms-and-conditions",
-      scriptHash: contracts.termsAndConditionsForever.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.termsAndConditionsForever.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Terms And Conditions Two Stage",
-      component: "terms-and-conditions",
-      scriptHash: contracts.termsAndConditionsTwoStage.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.termsAndConditionsTwoStage.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Terms And Conditions Logic",
-      component: "terms-and-conditions",
-      scriptHash: contracts.termsAndConditionsLogic.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.termsAndConditionsLogic.Script.hash(),
-      ).toBech32(),
-    },
-    {
-      name: "Terms And Conditions Threshold",
-      component: "terms-and-conditions-threshold",
-      scriptHash: contracts.termsAndConditionsThreshold.Script.hash(),
-      address: getCredentialAddress(
-        network,
-        contracts.termsAndConditionsThreshold.Script.hash(),
-      ).toBech32(),
-    },
+    createContractInfo(
+      network,
+      "Terms And Conditions Forever",
+      "terms-and-conditions",
+      contracts.termsAndConditionsForever,
+    ),
+    createContractInfo(
+      network,
+      "Terms And Conditions Two Stage",
+      "terms-and-conditions",
+      contracts.termsAndConditionsTwoStage,
+    ),
+    createContractInfo(
+      network,
+      "Terms And Conditions Logic",
+      "terms-and-conditions",
+      contracts.termsAndConditionsLogic,
+    ),
+    createContractInfo(
+      network,
+      "Terms And Conditions Threshold",
+      "terms-and-conditions-threshold",
+      contracts.termsAndConditionsThreshold,
+    ),
+    ...(contracts.cnightGeneratesDust
+      ? [
+          createContractInfo(
+            network,
+            "cNIGHT Generates Dust",
+            "cnight-generates-dust",
+            contracts.cnightGeneratesDust,
+          ),
+        ]
+      : []),
   ];
 }
 
@@ -518,22 +516,7 @@ export function builder(yargs: Argv<GlobalOptions>) {
     .option("component", {
       type: "string",
       default: "all",
-      choices: [
-        "all",
-        "tech-auth",
-        "tech-auth-threshold",
-        "council",
-        "council-threshold",
-        "reserve",
-        "ics",
-        "gov",
-        "main-gov",
-        "staging-gov",
-        "federated-ops",
-        "federated-ops-threshold",
-        "terms-and-conditions",
-        "terms-and-conditions-threshold",
-      ] as const,
+      choices: INFO_COMPONENT_CHOICES,
       description: "Filter by component",
     })
     .option("save", {

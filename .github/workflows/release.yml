@@ -46,7 +46,7 @@ jobs:
           MISSING=()
 
           FILES=(
-            "deployed-scripts/${NETWORK}/versions/v1/plutus.json"
+            "deployed-scripts/${NETWORK}/plutus.json"
             "release/${NETWORK}/verification-report.md"
             "release/${NETWORK}/address-report.md"
             "release/${NETWORK}/info.json"
@@ -126,7 +126,7 @@ jobs:
           gh release create "${TAG}" \
             --title "${TITLE}" \
             --notes-file /tmp/release-notes.md \
-            "deployed-scripts/${NETWORK}/versions/v1/plutus.json" \
+            "deployed-scripts/${NETWORK}/plutus.json" \
             "release/${NETWORK}/verification-report.md" \
             "release/${NETWORK}/address-report.md" \
             "release/${NETWORK}/info.json"
