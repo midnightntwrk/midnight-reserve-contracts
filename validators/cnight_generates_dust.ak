@@ -94,6 +94,7 @@ validator cnight_generates_dust {
           and {
             [Pair("", spent_inputs)] == to_pairs(tokens),
             own_policy != config.cnight_policy,
+            own_policy != config.candidate_nonce,
           }
         }
 
