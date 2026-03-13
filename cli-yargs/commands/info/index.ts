@@ -12,6 +12,8 @@ import {
   blockfrostFetch,
   parseUpgradeStateDatum,
   getBlockfrostBaseUrl,
+  parseBlockfrostAddressUtxos,
+  type BlockfrostAddressUtxo,
 } from "../../lib/blockfrost";
 
 // --- Types ---
@@ -21,20 +23,6 @@ interface ContractInfo {
   component: string;
   scriptHash: string;
   address: string;
-}
-
-interface BlockfrostAmount {
-  unit: string;
-  quantity: string;
-}
-
-interface BlockfrostUtxo {
-  tx_hash: string;
-  tx_index: number;
-  output_index: number;
-  amount: BlockfrostAmount[];
-  inline_datum: string | null;
-  data_hash: string | null;
 }
 
 interface TokenInfo {
@@ -101,17 +89,16 @@ async function fetchAddressUtxos(
   baseUrl: string,
   apiKey: string,
   address: string,
-): Promise<BlockfrostUtxo[]> {
-  const result = await blockfrostFetch(
-    baseUrl,
-    apiKey,
-    `/addresses/${address}/utxos`,
-  );
+): Promise<BlockfrostAddressUtxo[]> {
+  const responsePath = `/addresses/${address}/utxos`;
+  const result = await blockfrostFetch(baseUrl, apiKey, responsePath);
   if (result === null) return [];
-  return result as BlockfrostUtxo[];
+  return parseBlockfrostAddressUtxos(result, responsePath);
 }
 
-function parseTokensFromAmounts(amounts: BlockfrostAmount[]): TokenInfo[] {
+function parseTokensFromAmounts(
+  amounts: BlockfrostAddressUtxo["amount"],
+): TokenInfo[] {
   const tokens: TokenInfo[] = [];
   for (const amt of amounts) {
     if (amt.unit === "lovelace") continue;
@@ -134,7 +121,7 @@ function parseTokensFromAmounts(amounts: BlockfrostAmount[]): TokenInfo[] {
   return tokens;
 }
 
-function convertUtxo(utxo: BlockfrostUtxo): UtxoInfo {
+function convertUtxo(utxo: BlockfrostAddressUtxo): UtxoInfo {
   const lovelaceAmt = utxo.amount.find((a) => a.unit === "lovelace");
   const lovelace = lovelaceAmt?.quantity ?? "0";
   const ada = formatLovelaceToAda(BigInt(lovelace));

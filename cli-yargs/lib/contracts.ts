@@ -74,6 +74,9 @@ export interface ContractInstances {
   cnightMintTwoStage?: ContractClass;
   cnightMintForever?: ContractClass;
   cnightMintLogic?: ContractClass;
+
+  // cNIGHT Generates Dust
+  cnightGeneratesDust?: ContractClass;
 }
 
 // Per-environment cache for contract instances
@@ -269,6 +272,10 @@ function createInstances(
     cnightMintTwoStage: tryCreate("CnightMintingCnightMintTwoStageUpgradeElse"),
     cnightMintForever: tryCreate("CnightMintingCnightMintForeverElse"),
     cnightMintLogic: tryCreate("CnightMintingCnightMintLogicElse"),
+
+    cnightGeneratesDust: tryCreate(
+      "CnightGeneratesDustCnightGeneratesDustElse",
+    ),
   };
 }
 
