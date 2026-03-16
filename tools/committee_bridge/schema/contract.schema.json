@@ -1,0 +1,280 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://midnight-reserve-contracts.local/tools/committee_bridge/schema/contract.schema.json",
+  "title": "Committee bridge claim contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "claims",
+    "forbidden_inference_rules",
+    "open_questions"
+  ],
+  "properties": {
+    "format_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/claimSpec"
+      }
+    },
+    "forbidden_inference_rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/forbiddenInferenceRule"
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/openQuestion"
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "semanticAssertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposition",
+        "value"
+      ],
+      "properties": {
+        "proposition": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "forbiddenInferenceRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule_id",
+        "proposition",
+        "forbidden_truth",
+        "description"
+      ],
+      "properties": {
+        "rule_id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "proposition": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "forbidden_truth": {
+          "type": "boolean"
+        },
+        "description": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "localSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "reader_partition",
+        "source_class",
+        "path",
+        "start_line",
+        "end_line"
+      ],
+      "properties": {
+        "kind": {
+          "const": "local"
+        },
+        "reader_partition": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "source_class": {
+          "enum": [
+            "code",
+            "test"
+          ]
+        },
+        "path": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "start_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "remoteSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "reader_partition",
+        "source_class",
+        "url",
+        "snippet",
+        "location_label"
+      ],
+      "properties": {
+        "kind": {
+          "const": "remote"
+        },
+        "reader_partition": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "source_class": {
+          "enum": [
+            "upstream-beefy",
+            "upstream-grandpa"
+          ]
+        },
+        "url": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "snippet": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "location_label": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "userDecisionSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "reader_partition",
+        "record_id",
+        "location_label",
+        "quote"
+      ],
+      "properties": {
+        "kind": {
+          "const": "user-decision"
+        },
+        "reader_partition": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "record_id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "location_label": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "quote": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "claimSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "claim_text",
+        "source",
+        "confidence",
+        "canonical_terms_used"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "claim_text": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "source": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/localSource"
+            },
+            {
+              "$ref": "#/$defs/remoteSource"
+            },
+            {
+              "$ref": "#/$defs/userDecisionSource"
+            }
+          ]
+        },
+        "confidence": {
+          "enum": [
+            "confirmed",
+            "open-question"
+          ]
+        },
+        "canonical_terms_used": {
+          "$ref": "#/$defs/stringList"
+        },
+        "prerequisites": {
+          "$ref": "#/$defs/stringList"
+        },
+        "exclusions_or_forbidden_inference": {
+          "$ref": "#/$defs/stringList"
+        },
+        "affected_sections": {
+          "$ref": "#/$defs/stringList"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "semantic_assertions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/semanticAssertion"
+          }
+        }
+      }
+    },
+    "openQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "question_id",
+        "reader_partition",
+        "question",
+        "why_it_matters",
+        "blocked_claim_ids",
+        "candidate_sources_checked"
+      ],
+      "properties": {
+        "question_id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "reader_partition": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "question": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "why_it_matters": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "blocked_claim_ids": {
+          "$ref": "#/$defs/stringList"
+        },
+        "candidate_sources_checked": {
+          "$ref": "#/$defs/stringList"
+        }
+      }
+    }
+  }
+}

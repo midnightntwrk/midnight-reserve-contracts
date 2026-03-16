@@ -1,0 +1,621 @@
+{
+  "format_version": 1,
+  "claims": [
+    {
+      "claim_id": "validator.forever.authority-set-guard",
+      "claim_text": "`committee_bridge_forever` only allows minting an initial bridge state whose next authority-set ID is strictly greater than the current authority-set ID.",
+      "source": {
+        "reader_partition": "validator-entry-points",
+        "source_class": "code",
+        "path": "validators/committee_bridge.ak",
+        "start_line": 24,
+        "end_line": 32,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "BEEFY-backed committee bridge",
+        "current authority set",
+        "next authority set"
+      ],
+      "affected_sections": [
+        "spec/validators.md"
+      ],
+      "notes": "This is the narrow initialization guard; it does not imply any generic block-validation behavior."
+    },
+    {
+      "claim_id": "validator.logic.committee-state-transition-only",
+      "claim_text": "On the `Withdrawing` and unregister-publish path, `committee_bridge_logic` reads the current bridge state, proposed output bridge state, and the `BeefyThreshold`, then delegates acceptance to `verify_consensus`; register-publish returns `True`.",
+      "source": {
+        "reader_partition": "validator-entry-points",
+        "source_class": "code",
+        "path": "validators/committee_bridge.ak",
+        "start_line": 52,
+        "end_line": 79,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "BEEFY-backed committee bridge",
+        "BeefyConsensusState",
+        "BeefyThreshold"
+      ],
+      "affected_sections": [
+        "spec/validators.md",
+        "spec/upgrade.md",
+        "spec/committee-bridge-truth-table.md"
+      ],
+      "exclusions_or_forbidden_inference": [
+        "This validator entrypoint is about committee-state transition verification, not generic block validation."
+      ],
+      "semantic_assertions": [
+        {
+          "proposition": "committee_update_validation",
+          "value": true
+        },
+        {
+          "proposition": "generic_block_validation",
+          "value": false
+        },
+        {
+          "proposition": "generic_message_passing",
+          "value": false
+        }
+      ]
+    },
+    {
+      "claim_id": "bridge.verify-consensus.output-state-must-match-derived-state",
+      "claim_text": "`verify_consensus` accepts only when the state derived from the proof exactly equals the explicit output bridge state.",
+      "source": {
+        "reader_partition": "bridge-helpers-types",
+        "source_class": "code",
+        "path": "lib/bridge/beefy.ak",
+        "start_line": 10,
+        "end_line": 19,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "BEEFY-backed committee bridge",
+        "BeefyConsensusState"
+      ],
+      "affected_sections": [
+        "spec/validators.md",
+        "spec/committee-bridge-truth-table.md"
+      ],
+      "notes": "This is the core state-update boundary enforced by the helper path.",
+      "semantic_assertions": [
+        {
+          "proposition": "committee_state_update",
+          "value": true
+        }
+      ]
+    },
+    {
+      "claim_id": "bridge.verify-consensus.rejects-non-monotonic-height",
+      "claim_text": "The helper requires the accepted signed commitment block number to be strictly newer than the trusted state's latest height.",
+      "source": {
+        "reader_partition": "bridge-helpers-types",
+        "source_class": "code",
+        "path": "lib/bridge/beefy.ak",
+        "start_line": 47,
+        "end_line": 49,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "BEEFY-backed committee bridge",
+        "latest height",
+        "signed commitment"
+      ],
+      "affected_sections": [
+        "spec/validators.md"
+      ]
+    },
+    {
+      "claim_id": "bridge.verify-consensus.current-or-next-validator-set",
+      "claim_text": "The proof is validated against the current authority set when `validator_set_id` matches the current set ID; otherwise it must match the next authority set ID.",
+      "source": {
+        "reader_partition": "bridge-helpers-types",
+        "source_class": "code",
+        "path": "lib/bridge/beefy.ak",
+        "start_line": 50,
+        "end_line": 58,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "current authority set",
+        "next authority set",
+        "validator_set_id"
+      ],
+      "affected_sections": [
+        "spec/validators.md",
+        "spec/committee-bridge-truth-table.md"
+      ],
+      "semantic_assertions": [
+        {
+          "proposition": "committee_update_validation",
+          "value": true
+        }
+      ]
+    },
+    {
+      "claim_id": "bridge.verify-consensus.threshold-is-configurable",
+      "claim_text": "The acceptance threshold is computed from the selected stake total and the configured `BeefyThreshold` numerator and denominator before checking `signed_stake >= validating_threshold`.",
+      "source": {
+        "reader_partition": "bridge-helpers-types",
+        "source_class": "code",
+        "path": "lib/bridge/beefy.ak",
+        "start_line": 42,
+        "end_line": 45,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "BeefyThreshold",
+        "signed stake"
+      ],
+      "affected_sections": [
+        "spec/validators.md",
+        "spec/committee-bridge-truth-table.md"
+      ],
+      "exclusions_or_forbidden_inference": [
+        "Do not restate this local check as a fixed upstream `2/3 + 1` rule; the repository path reads a configurable threshold datum."
+      ],
+      "notes": "The exact rounding semantics should stay bounded unless separately confirmed.",
+      "semantic_assertions": [
+        {
+          "proposition": "local_threshold_is_fixed_two_thirds_plus_one",
+          "value": false
+        }
+      ]
+    },
+    {
+      "claim_id": "bridge.verify-consensus.requires-next-committee-payload",
+      "claim_text": "The commitment must contain the `nc` payload entry identified by `next_committee_payload_id`.",
+      "source": {
+        "reader_partition": "bridge-helpers-types",
+        "source_class": "code",
+        "path": "lib/bridge/beefy.ak",
+        "start_line": 60,
+        "end_line": 61,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "next committee payload",
+        "next_committee_payload_id"
+      ],
+      "affected_sections": [
+        "spec/validators.md"
+      ]
+    },
+    {
+      "claim_id": "bridge.verify-consensus.payload-must-hash-latest-leaf",
+      "claim_text": "The `nc` payload data must equal `keccak256(scale_encode_beefy_mmr_leaf(latest_mmr_leaf))`.",
+      "source": {
+        "reader_partition": "bridge-helpers-types",
+        "source_class": "code",
+        "path": "lib/bridge/beefy.ak",
+        "start_line": 79,
+        "end_line": 82,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "next committee payload",
+        "latest MMR leaf",
+        "keccak256"
+      ],
+      "affected_sections": [
+        "spec/validators.md"
+      ]
+    },
+    {
+      "claim_id": "bridge.verify-consensus-signatures-use-secp256k1",
+      "claim_text": "The current implementation uses `keccak256(public_key)` to match a proved authority-set leaf, then verifies the vote with `verify_ecdsa_secp256k1_signature(public_key, msg_hash, signature)`.",
+      "source": {
+        "reader_partition": "bridge-helpers-types",
+        "source_class": "code",
+        "path": "lib/bridge/beefy.ak",
+        "start_line": 126,
+        "end_line": 167,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "ECDSA",
+        "secp256k1",
+        "authority-set leaves"
+      ],
+      "affected_sections": [
+        "spec/validators.md"
+      ],
+      "notes": "This is the current implementation path, not a promise that future bridge versions cannot support different crypto.",
+      "semantic_assertions": [
+        {
+          "proposition": "current_path_uses_ecdsa_secp256k1",
+          "value": true
+        }
+      ]
+    },
+    {
+      "claim_id": "bridge.verify-consensus-derives-next-committee-from-leaf",
+      "claim_text": "When the latest MMR leaf advertises a newer next authority-set ID than the trusted state's current next authority set, the derived output state advances the current set to the prior next set and takes the leaf's next authority set plus stake total from `latest_mmr_leaf.extra`.",
+      "source": {
+        "reader_partition": "bridge-helpers-types",
+        "source_class": "code",
+        "path": "lib/bridge/beefy.ak",
+        "start_line": 84,
+        "end_line": 115,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "latest MMR leaf",
+        "current authority set",
+        "next authority set"
+      ],
+      "affected_sections": [
+        "spec/validators.md",
+        "spec/committee-bridge-truth-table.md"
+      ],
+      "notes": "If the leaf does not advance the next authority-set ID, the helper preserves the existing current/next committee pair.",
+      "semantic_assertions": [
+        {
+          "proposition": "derives_future_trusted_committee_data",
+          "value": true
+        }
+      ]
+    },
+    {
+      "claim_id": "bridge.vote-type-includes-index-and-strength",
+      "claim_text": "The `Vote` type includes `authority_index` and `vote_strength` fields alongside the signature and public key.",
+      "source": {
+        "reader_partition": "bridge-helpers-types",
+        "source_class": "code",
+        "path": "lib/bridge/types.ak",
+        "start_line": 1,
+        "end_line": 6,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "Vote",
+        "authority_index",
+        "vote_strength"
+      ],
+      "affected_sections": [
+        "spec/validators.md"
+      ]
+    },
+    {
+      "claim_id": "bridge.acceptance-path-does-not-read-vote-index-or-strength",
+      "claim_text": "The current acceptance path reads `public_key` and `signature` from each `Vote`, derives signer stake from the proved authority-set leaf, and does not actively check `authority_index` or `vote_strength`.",
+      "source": {
+        "reader_partition": "bridge-helpers-types",
+        "source_class": "code",
+        "path": "lib/bridge/beefy.ak",
+        "start_line": 123,
+        "end_line": 167,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "Vote",
+        "authority_index",
+        "vote_strength",
+        "signed stake"
+      ],
+      "affected_sections": [
+        "spec/validators.md"
+      ],
+      "exclusions_or_forbidden_inference": [
+        "Do not claim `Vote.authority_index` or `Vote.vote_strength` are active acceptance checks unless repository evidence changes."
+      ],
+      "notes": "The fields still exist in the data type; this claim is about the current acceptance logic only.",
+      "semantic_assertions": [
+        {
+          "proposition": "active_vote_authority_index_check",
+          "value": false
+        },
+        {
+          "proposition": "active_vote_strength_check",
+          "value": false
+        }
+      ]
+    },
+    {
+      "claim_id": "test.beefy-helper-aggregate-stake-positive-case",
+      "claim_text": "The helper test suite proves a positive case where `check_auth_sigs_and_get_stake` returns `9000` for the fixture votes and message hash.",
+      "source": {
+        "reader_partition": "tests",
+        "source_class": "test",
+        "path": "lib/bridge/beefy.test.ak",
+        "start_line": 71,
+        "end_line": 76,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "signed stake",
+        "ECDSA",
+        "BEEFY-backed committee bridge"
+      ],
+      "affected_sections": [
+        "spec/validators.md"
+      ],
+      "notes": "This is helper-level evidence only; it does not exercise validator entrypoints."
+    },
+    {
+      "claim_id": "test.beefy-helper-secp256k1-positive-case",
+      "claim_text": "The helper test suite proves a positive secp256k1 signature verification case for a fixed validator key, message hash, and signature.",
+      "source": {
+        "reader_partition": "tests",
+        "source_class": "test",
+        "path": "lib/bridge/beefy.test.ak",
+        "start_line": 78,
+        "end_line": 85,
+        "kind": "local"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "ECDSA",
+        "secp256k1"
+      ],
+      "affected_sections": [
+        "spec/validators.md"
+      ],
+      "notes": "This confirms the primitive used by the current path, not end-to-end validator behavior."
+    },
+    {
+      "claim_id": "beefy.protocol-is-bridge-oriented",
+      "claim_text": "Upstream BEEFY describes itself as a consensus protocol designed for efficient trustless bridging in restricted environments rather than as a standalone protocol.",
+      "source": {
+        "reader_partition": "upstream-beefy",
+        "source_class": "upstream-beefy",
+        "url": "https://raw.githubusercontent.com/paritytech/grandpa-bridge-gadget/master/docs/beefy.md",
+        "snippet": "BEEFY is a consensus protocol designed with efficient trustless bridging in mind. It means\nthat building a light client of BEEFY protocol should be optimized for restricted environments\nlike Ethereum Smart Contracts or On-Chain State Transition Function (e.g. Substrate Runtime).",
+        "location_label": "Introduction",
+        "kind": "remote"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "BEEFY-backed committee bridge",
+        "BEEFY"
+      ],
+      "affected_sections": [
+        "spec/validators.md",
+        "spec/upgrade.md",
+        "spec/committee-bridge-truth-table.md"
+      ],
+      "exclusions_or_forbidden_inference": [
+        "This supports narrow bridge framing only; it does not prove generic cross-chain message passing by this repository."
+      ],
+      "semantic_assertions": [
+        {
+          "proposition": "generic_block_validation",
+          "value": false
+        },
+        {
+          "proposition": "generic_message_passing",
+          "value": false
+        }
+      ]
+    },
+    {
+      "claim_id": "beefy.runs-alongside-grandpa-on-finalized-chain",
+      "claim_text": "Upstream BEEFY is defined to run on top of GRANDPA and on the finalized canonical chain.",
+      "source": {
+        "reader_partition": "upstream-beefy",
+        "source_class": "upstream-beefy",
+        "url": "https://raw.githubusercontent.com/paritytech/grandpa-bridge-gadget/master/docs/beefy.md",
+        "snippet": "BEEFY is required to be running on top of GRANDPA. This allows us to take couple of shortcuts:\n1. BEEFY validator set is **the same** as GRANDPA's (i.e. the same bonded actors), they might be\n   identified by different session keys though.\n1. BEEFY runs on **finalized** canonical chain, i.e. no forks",
+        "location_label": "Introduction",
+        "kind": "remote"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "BEEFY",
+        "GRANDPA",
+        "finalized canonical chain"
+      ],
+      "prerequisites": [
+        "GRANDPA finality background may be cited only as prerequisite context."
+      ],
+      "affected_sections": [
+        "spec/validators.md",
+        "spec/upgrade.md",
+        "spec/committee-bridge-truth-table.md"
+      ],
+      "semantic_assertions": [
+        {
+          "proposition": "broader_chain_correctness_guarantee",
+          "value": false
+        }
+      ]
+    },
+    {
+      "claim_id": "beefy.initial-path-uses-secp256k1-and-keccak",
+      "claim_text": "Upstream BEEFY's initial Ethereum-oriented path uses secp256k1 signatures and keccak256 hashing.",
+      "source": {
+        "reader_partition": "upstream-beefy",
+        "source_class": "upstream-beefy",
+        "url": "https://raw.githubusercontent.com/paritytech/grandpa-bridge-gadget/master/docs/beefy.md",
+        "snippet": "Initial version of BEEFY was made to enable efficient bridging with Ethereum, where the light client\nis a Solidity Smart Contract compiled to EVM bytecode. Hence the choice of the initial cryptography\nfor BEEFY: `secp256k1` and usage of `keccak256` hashing function.",
+        "location_label": "Ethereum",
+        "kind": "remote"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "ECDSA",
+        "secp256k1",
+        "keccak256",
+        "BEEFY"
+      ],
+      "affected_sections": [
+        "spec/validators.md"
+      ],
+      "notes": "This matches the current repository path but remains upstream background rather than a promise about all future bridge versions."
+    },
+    {
+      "claim_id": "beefy.upstream-justification-threshold-is-2of3-plus-1",
+      "claim_text": "Upstream BEEFY describes a justification round as collecting `2/3rd + 1` valid votes for the round.",
+      "source": {
+        "reader_partition": "upstream-beefy",
+        "source_class": "upstream-beefy",
+        "url": "https://raw.githubusercontent.com/paritytech/grandpa-bridge-gadget/master/docs/beefy.md",
+        "snippet": "Round ends when the next round is started, which may happen when\none of the events occur:\n1. Either the node collects `2/3rd + 1` valid votes for that round.",
+        "location_label": "Details / Round ends",
+        "kind": "remote"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "BEEFY",
+        "justification threshold"
+      ],
+      "affected_sections": [
+        "spec/validators.md",
+        "spec/committee-bridge-truth-table.md"
+      ],
+      "exclusions_or_forbidden_inference": [
+        "Do not map this upstream wording directly onto the repository's local acceptance rule without also citing the configurable `BeefyThreshold` datum path."
+      ]
+    },
+    {
+      "claim_id": "grandpa.provides-provable-finality-background",
+      "claim_text": "The Polkadot protocol documentation describes GRANDPA as the relay-chain finality service that provides provable finality and finalized blocks that cannot be reverted.",
+      "source": {
+        "reader_partition": "upstream-grandpa-prerequisites",
+        "source_class": "upstream-grandpa",
+        "url": "https://docs.polkadot.com/ai/pages/reference-polkadot-hub-consensus-and-security-pos-consensus.md",
+        "snippet": "- **Provable finality**: GRANDPA guarantees that once a block is finalized, it can never be reverted, ensuring that all network participants agree on the finalized chain.",
+        "location_label": "Hybrid Consensus",
+        "kind": "remote"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "GRANDPA",
+        "provable finality"
+      ],
+      "prerequisites": [
+        "Use only as prerequisite/background context for BEEFY-backed committee bridge material."
+      ],
+      "affected_sections": [
+        "spec/validators.md",
+        "spec/upgrade.md"
+      ],
+      "exclusions_or_forbidden_inference": [
+        "Do not present GRANDPA's broader chain-finality guarantee as if it were the committee bridge's own runtime validation boundary."
+      ],
+      "semantic_assertions": [
+        {
+          "proposition": "broader_chain_correctness_guarantee",
+          "value": false
+        }
+      ]
+    },
+    {
+      "claim_id": "decision.exclude-unresolved-claims-from-normative-prose",
+      "claim_text": "Unresolved committee-bridge claims must stay out of normative prose and remain only in generated reports or open-question outputs until the user resolves them.",
+      "source": {
+        "reader_partition": "user-decisions",
+        "record_id": "user-2026-03-19-unresolved-claims",
+        "location_label": "user clarification: unresolved-claims",
+        "quote": "Exclude unresolved claims from normative prose and leave them only in generated reports/open-question outputs",
+        "kind": "user-decision"
+      },
+      "confidence": "confirmed",
+      "canonical_terms_used": [
+        "BEEFY-backed committee bridge",
+        "open question",
+        "normative prose"
+      ],
+      "affected_sections": [
+        "spec/validators.md",
+        "spec/upgrade.md"
+      ]
+    }
+  ],
+  "forbidden_inference_rules": [
+    {
+      "rule_id": "rule.no-generic-block-validation",
+      "proposition": "generic_block_validation",
+      "forbidden_truth": true,
+      "description": "The committee bridge must not be described as generic block validation."
+    },
+    {
+      "rule_id": "rule.no-generic-message-passing",
+      "proposition": "generic_message_passing",
+      "forbidden_truth": true,
+      "description": "The committee bridge must not be described as generic cross-chain messaging."
+    },
+    {
+      "rule_id": "rule.no-broader-chain-correctness-guarantee",
+      "proposition": "broader_chain_correctness_guarantee",
+      "forbidden_truth": true,
+      "description": "The docs must not upgrade BEEFY-backed committee verification into broader finality or chain-correctness guarantees."
+    },
+    {
+      "rule_id": "rule.no-fixed-local-two-thirds-threshold",
+      "proposition": "local_threshold_is_fixed_two_thirds_plus_one",
+      "forbidden_truth": true,
+      "description": "The repository path must not be summarized as a fixed local `2/3 + 1` threshold because it reads a configurable `BeefyThreshold` datum."
+    },
+    {
+      "rule_id": "rule.no-active-authority-index-check",
+      "proposition": "active_vote_authority_index_check",
+      "forbidden_truth": true,
+      "description": "The docs must not claim `Vote.authority_index` is an active acceptance check."
+    },
+    {
+      "rule_id": "rule.no-active-vote-strength-check",
+      "proposition": "active_vote_strength_check",
+      "forbidden_truth": true,
+      "description": "The docs must not claim `Vote.vote_strength` is an active acceptance check."
+    }
+  ],
+  "open_questions": [
+    {
+      "question_id": "tests.no-committee-bridge-validator-entrypoint-coverage",
+      "reader_partition": "tests",
+      "question": "Which admissible tests exercise `committee_bridge_logic`, `committee_bridge_forever`, or end-to-end `verify_consensus` entrypoint behavior?",
+      "why_it_matters": "Without direct validator-entrypoint coverage, prose should not overstate observed rejection or acceptance behavior beyond the helper/code boundary.",
+      "blocked_claim_ids": [
+        "validator.logic.committee-state-transition-only",
+        "bridge.verify-consensus.output-state-must-match-derived-state"
+      ],
+      "candidate_sources_checked": [
+        "lib/bridge/beefy.test.ak",
+        "tests/"
+      ]
+    },
+    {
+      "question_id": "tests.no-negative-proof-rejection-coverage",
+      "reader_partition": "tests",
+      "question": "Do any admissible tests show malformed proof material, wrong payload data, or insufficient signed stake causing end-to-end rejection at the committee-bridge validator boundary?",
+      "why_it_matters": "Negative-path observations matter for bounded prose about how failed bridge updates are rejected in practice.",
+      "blocked_claim_ids": [
+        "bridge.verify-consensus.payload-must-hash-latest-leaf",
+        "bridge.verify-consensus.threshold-is-configurable"
+      ],
+      "candidate_sources_checked": [
+        "lib/bridge/beefy.test.ak",
+        "tests/"
+      ]
+    },
+    {
+      "question_id": "bridge.threshold-rounding-semantics-not-yet-worded",
+      "reader_partition": "bridge-helpers-types",
+      "question": "What exact arithmetic wording should documentation use for the `BeefyThreshold` numerator/denominator rule beyond the bounded statement that the repository computes a configurable validating threshold from stake totals?",
+      "why_it_matters": "The docs should not claim a specific local rounding formula unless the language-level arithmetic semantics are pinned down and reviewed.",
+      "blocked_claim_ids": [
+        "bridge.verify-consensus.threshold-is-configurable"
+      ],
+      "candidate_sources_checked": [
+        "lib/bridge/beefy.ak"
+      ]
+    }
+  ]
+}
