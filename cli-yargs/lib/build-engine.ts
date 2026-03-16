@@ -76,10 +76,6 @@ const TWO_STAGE_CORE = [
     title: "terms_and_conditions.terms_and_conditions_two_stage_upgrade.else",
     tomlKey: "terms_and_conditions_two_stage_hash",
   },
-  {
-    title: "committee_bridge.committee_bridge_two_stage_upgrade.else",
-    tomlKey: "committee_bridge_two_stage_hash",
-  },
 ] as const satisfies readonly ValidatorMapping[];
 
 const TWO_STAGE_EXTRA = [
@@ -110,10 +106,6 @@ const FOREVER_CORE = [
   {
     title: "terms_and_conditions.terms_and_conditions_forever.else",
     tomlKey: "terms_and_conditions_forever_hash",
-  },
-  {
-    title: "committee_bridge.committee_bridge_forever.else",
-    tomlKey: "committee_bridge_forever_hash",
   },
 ] as const satisfies readonly ValidatorMapping[];
 
