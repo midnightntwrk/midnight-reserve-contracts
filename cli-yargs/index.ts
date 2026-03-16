@@ -16,6 +16,8 @@ import verifyCommand from "./commands/verify";
 import stageUpgradeCommand from "./commands/stage-upgrade";
 import promoteUpgradeCommand from "./commands/promote-upgrade";
 import registerGovAuthCommand from "./commands/register-gov-auth";
+import registerCnightMintLogicCommand from "./commands/register-cnight-mint-logic";
+import runCnightMintMainnetCommand from "./commands/run-cnight-mint-mainnet";
 import generateKeyCommand from "./commands/generate-key";
 import signAndSubmitCommand from "./commands/sign-and-submit";
 import combineSignaturesCommand from "./commands/combine-signatures";
@@ -46,6 +48,8 @@ const parser = addGlobalOptions(yargs(hideBin(process.argv)))
   .command(stageUpgradeCommand)
   .command(promoteUpgradeCommand)
   .command(registerGovAuthCommand)
+  .command(registerCnightMintLogicCommand)
+  .command(runCnightMintMainnetCommand)
   .command(generateKeyCommand)
   .command(signAndSubmitCommand)
   .command(combineSignaturesCommand)

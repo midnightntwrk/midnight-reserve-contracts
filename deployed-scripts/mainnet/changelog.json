@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-03-16T15:57:02.721Z",
+  "gitCommit": "c41d091e0eb34b46ed30a93f72671b4aed11d88e",
+  "changes": [
+    {
+      "type": "initial",
+      "validator": "cnight-minting",
+      "description": "cNIGHT minting deployment"
+    }
+  ]
+}

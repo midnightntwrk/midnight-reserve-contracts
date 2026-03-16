@@ -67,7 +67,7 @@ validator cnight_mint_two_stage_upgrade {
   }
 }
 
-/// Enforces no Night tokens can be minted
+/// Enforces we can always run the script
 validator cnight_mint_logic {
   else(_ctx: ScriptContext) {
     True

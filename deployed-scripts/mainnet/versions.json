@@ -33,7 +33,14 @@
     "z_permissioned_types",
     "z_terms_and_cond_types",
     "z_threshold_types",
-    "z_two_stage_upgrade_types"
+    "z_two_stage_upgrade_types",
+    "cnight_mint_forever",
+    "cnight_mint_logic",
+    "cnight_mint_two_stage_upgrade",
+    "test_cnight_minting_proxy",
+    "tcnight_mint_infinite",
+    "z_committee_bridge_types",
+    "z_federated_ops_v2_types"
   ],
   "staged": []
 }

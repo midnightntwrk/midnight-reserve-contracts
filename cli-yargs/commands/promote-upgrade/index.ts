@@ -77,6 +77,7 @@ export function builder(yargs: Argv<GlobalOptions>) {
         "ics",
         "federated-ops",
         "terms-and-conditions",
+        "cnight-minting",
       ] as const,
       description: "Validator to promote",
     })

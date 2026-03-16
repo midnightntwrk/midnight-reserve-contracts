@@ -12,12 +12,10 @@ import {
 } from "@blaze-cardano/core";
 import { resolve } from "path";
 import type { GlobalOptions } from "../../lib/global-options";
-import type { NetworkConfig } from "../../lib/types";
 import { getNetworkId, getConfigSection } from "../../lib/types";
-import { loadAikenConfig, getDeployerAddress } from "../../lib/config";
+import { getDeployerAddress } from "../../lib/config";
 import { createBlaze } from "../../lib/provider";
 import {
-  type ContractInstances,
   getContractInstances,
   getContractAddress,
   getTwoStageContracts,
@@ -57,81 +55,6 @@ import {
 import { diffBlueprints } from "../../lib/blueprint-diff";
 import * as Contracts from "../../../contract_blueprint";
 
-function getStagingForeverHash(
-  validatorName: string,
-  contracts: ContractInstances,
-): string {
-  let contract: { Script: Script } | undefined;
-  switch (validatorName) {
-    case "tech-auth":
-      contract = contracts.techAuthStagingForever;
-      break;
-    case "council":
-      contract = contracts.councilStagingForever;
-      break;
-    case "reserve":
-      contract = contracts.reserveStagingForever;
-      break;
-    case "ics":
-      contract = contracts.icsStagingForever;
-      break;
-    case "federated-ops":
-      contract = contracts.federatedOpsStagingForever;
-      break;
-    case "terms-and-conditions":
-      contract = contracts.termsAndConditionsStagingForever;
-      break;
-    default:
-      throw new Error(`Unknown validator: ${validatorName}`);
-  }
-  if (!contract) {
-    throw new Error(
-      `Staging forever contract not found for ${validatorName}. Ensure the blueprint includes staging forever validators.`,
-    );
-  }
-  return contract.Script.hash();
-}
-
-function getLogicOneShotRef(
-  validatorName: string,
-  config: NetworkConfig,
-): { hash: string; index: number } {
-  switch (validatorName) {
-    case "tech-auth":
-      return {
-        hash: config.technical_authority_logic_v2_one_shot_hash,
-        index: config.technical_authority_logic_v2_one_shot_index,
-      };
-    case "council":
-      return {
-        hash: config.council_logic_v2_one_shot_hash,
-        index: config.council_logic_v2_one_shot_index,
-      };
-    case "reserve":
-      return {
-        hash: config.reserve_logic_v2_one_shot_hash,
-        index: config.reserve_logic_v2_one_shot_index,
-      };
-    case "ics":
-      return {
-        hash: config.ics_logic_v2_one_shot_hash,
-        index: config.ics_logic_v2_one_shot_index,
-      };
-    case "federated-ops":
-      return {
-        hash: config.federated_operators_logic_v2_one_shot_hash,
-        index: config.federated_operators_logic_v2_one_shot_index,
-      };
-    case "terms-and-conditions":
-      return {
-        hash: config.terms_and_conditions_logic_v2_one_shot_hash,
-        index: config.terms_and_conditions_logic_v2_one_shot_index,
-      };
-    default:
-      throw new Error(`Unknown validator: ${validatorName}`);
-  }
-}
-
 interface StageUpgradeOptions extends GlobalOptions {
   validator: string;
   "new-logic-hash": string;
@@ -159,6 +82,7 @@ export function builder(yargs: Argv<GlobalOptions>) {
         "ics",
         "federated-ops",
         "terms-and-conditions",
+        "cnight-minting",
       ] as const,
       description: "Validator to upgrade",
     })
@@ -253,10 +177,6 @@ export async function handler(argv: StageUpgradeOptions) {
   // Always use deployed contracts for on-chain infrastructure
   const contracts = getContractInstances(network, false);
   const targetContracts = getTwoStageContracts(validator, network, false);
-  // Load build contracts separately for new contract detection when --use-build
-  const buildContracts = useBuild
-    ? getContractInstances(network, true)
-    : undefined;
 
   const twoStageAddress = getContractAddress(
     network,
@@ -449,7 +369,9 @@ export async function handler(argv: StageUpgradeOptions) {
     const diff = diffBlueprints(deployedModule, buildModule);
     newLogicContract = diff.added.find((c) => c.hash === newLogicHash) ?? null;
   }
-  const isNewContract = newLogicContract !== null;
+  if (newLogicContract) {
+    console.log(`\n  New logic contract detected: ${newLogicHash}`);
+  }
 
   // councilTwoStageMainUtxo is the same on-chain UTxO as mainUtxo when
   // validator === "council", so skip it to avoid a duplicate reference input.
@@ -504,21 +426,6 @@ export async function handler(argv: StageUpgradeOptions) {
     txBuilder.addReferenceInput(councilTwoStageMainUtxo);
   }
 
-  // Log if new contract detected — StagingState NFT must be minted separately
-  if (isNewContract && newLogicContract) {
-    const aikenConfig = loadAikenConfig(network);
-    const stagingForeverHash = getStagingForeverHash(
-      validator,
-      buildContracts ?? contracts,
-    );
-    const oneShotRef = getLogicOneShotRef(validator, aikenConfig);
-
-    console.log(`\n  New logic contract detected: ${newLogicHash}`);
-    console.log(`  StagingState NFT must be minted in a separate transaction.`);
-    console.log(`  One-shot UTxO: ${oneShotRef.hash}#${oneShotRef.index}`);
-    console.log(`  Staging forever hash: ${stagingForeverHash}`);
-    console.log(`  CNIGHT test policy: ${aikenConfig.cnight_policy}`);
-  }
 
   const { tx } = await completeTx(txBuilder, {
     commandName: "stage-upgrade",
