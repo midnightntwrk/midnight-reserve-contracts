@@ -138,10 +138,6 @@ const THRESHOLDS = [
     tomlKey: "main_federated_ops_update_threshold_hash",
   },
   {
-    title: "thresholds.beefy_signer_threshold.else",
-    tomlKey: "bridge_signer_threshold_hash",
-  },
-  {
     title: "thresholds.terms_and_conditions_threshold.else",
     tomlKey: "terms_and_conditions_threshold_hash",
   },
@@ -179,13 +175,7 @@ const LOGIC_DEPENDENCIES: readonly LogicDependency[] = [
 ] as const;
 
 /** Threshold config entry that must match the blueprint hash. */
-const THRESHOLD_CONFIG_CHECKS = [
-  {
-    displayName: "committee_signer_threshold",
-    tomlKey: "bridge_signer_threshold_hash",
-    validatorTitle: "thresholds.beefy_signer_threshold.else",
-  },
-] as const;
+const THRESHOLD_CONFIG_CHECKS = [] as const;
 
 const MAX_VERIFY_ATTEMPTS = 2;
 const TOML_FILE = "aiken.toml";
