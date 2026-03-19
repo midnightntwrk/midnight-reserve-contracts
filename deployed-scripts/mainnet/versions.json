@@ -37,10 +37,7 @@
     "cnight_mint_forever",
     "cnight_mint_logic",
     "cnight_mint_two_stage_upgrade",
-    "test_cnight_minting_proxy",
-    "tcnight_mint_infinite",
-    "z_committee_bridge_types",
-    "z_federated_ops_v2_types"
+    "cnight_mint_logic_v2"
   ],
   "staged": []
 }
