@@ -2,29 +2,24 @@ import type { Argv, CommandModule } from "yargs";
 import { Address, PlutusData } from "@blaze-cardano/core";
 import { resolve } from "path";
 
-import type { GlobalOptions } from "../../lib/global-options";
+import type { GlobalOptions, TxOptions } from "../../lib/global-options";
+import { addTxOptions } from "../../lib/global-options";
 import { getNetworkId } from "../../lib/types";
 import { validateTxHash, validateTxIndex } from "../../lib/validation";
 import { getDeployerAddress } from "../../lib/config";
 import { createBlaze } from "../../lib/provider";
-import {
-  getContractInstances,
-  findScriptByHash,
-} from "../../lib/contracts";
+import { getContractInstances, findScriptByHash } from "../../lib/contracts";
 import {
   getTwoStageUtxos,
   parseUpgradeState,
   ensureRewardAccountsRegistered,
 } from "../../lib/governance-provider";
-import {
-  createRewardAccount,
-  findUtxoByTxRef,
-} from "../../lib/transaction";
+import { createRewardAccount, findUtxoByTxRef } from "../../lib/transaction";
 import { writeTransactionFile } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
 
-interface RunCnightMintMainnetOptions extends GlobalOptions {
+interface RunCnightMintMainnetOptions extends GlobalOptions, TxOptions {
   "tx-hash": string;
   "tx-index": number;
   "output-file": string;
@@ -36,27 +31,29 @@ export const describe =
   "Run cNIGHT mint forever and logic withdrawals using two-stage as reference input";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("tx-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash for the fee-paying UTxO",
-    })
-    .option("tx-index", {
-      type: "number",
-      demandOption: true,
-      description: "Transaction index for the fee-paying UTxO",
-    })
-    .option("output-file", {
-      type: "string",
-      default: "run-cnight-mint-mainnet-tx.json",
-      description: "Output file name for the transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use build output instead of deployed blueprint",
-    });
+  return addTxOptions(
+    yargs
+      .option("tx-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash for the fee-paying UTxO",
+      })
+      .option("tx-index", {
+        type: "number",
+        demandOption: true,
+        description: "Transaction index for the fee-paying UTxO",
+      })
+      .option("output-file", {
+        type: "string",
+        default: "run-cnight-mint-mainnet-tx.json",
+        description: "Output file name for the transaction",
+      })
+      .option("use-build", {
+        type: "boolean",
+        default: false,
+        description: "Use build output instead of deployed blueprint",
+      }),
+  );
 }
 
 export async function handler(argv: RunCnightMintMainnetOptions) {
@@ -67,6 +64,7 @@ export async function handler(argv: RunCnightMintMainnetOptions) {
     "tx-index": txIndex,
     "output-file": outputFile,
     "use-build": useBuild,
+    "fee-padding": feePadding,
   } = argv;
 
   validateTxHash(txHash);
@@ -75,9 +73,7 @@ export async function handler(argv: RunCnightMintMainnetOptions) {
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);
 
-  console.log(
-    `\nRunning cNIGHT mint withdrawals on ${network} network`,
-  );
+  console.log(`\nRunning cNIGHT mint withdrawals on ${network} network`);
   console.log(`Using UTxO: ${txHash}#${txIndex}`);
 
   const networkId = getNetworkId(network);
@@ -218,7 +214,7 @@ export async function handler(argv: RunCnightMintMainnetOptions) {
     .provideScript(logicScript)
     .setChangeAddress(changeAddress)
     .setMetadata(createTxMetadata("run-cnight-mint-mainnet"))
-    .setFeePadding(50000n);
+    .setFeePadding(BigInt(feePadding));
 
   // Add mitigation logic withdrawal if present in UpgradeState
   if (mitigationLogicScript && mitigationLogicRewardAccount) {
@@ -247,14 +243,12 @@ export async function handler(argv: RunCnightMintMainnetOptions) {
   console.log("\nTransaction ID:", tx.getId());
 }
 
-const commandModule: CommandModule<
-  GlobalOptions,
-  RunCnightMintMainnetOptions
-> = {
-  command,
-  describe,
-  builder,
-  handler,
-};
+const commandModule: CommandModule<GlobalOptions, RunCnightMintMainnetOptions> =
+  {
+    command,
+    describe,
+    builder,
+    handler,
+  };
 
 export default commandModule;

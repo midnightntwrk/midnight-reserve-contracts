@@ -9,7 +9,8 @@ import {
   PaymentAddress,
 } from "@blaze-cardano/core";
 import { resolve } from "path";
-import type { GlobalOptions } from "../../lib/global-options";
+import type { GlobalOptions, TxOptions } from "../../lib/global-options";
+import { addTxOptions } from "../../lib/global-options";
 import { getNetworkId } from "../../lib/types";
 import { validateTxHash, validateTxIndex } from "../../lib/validation";
 import { getDeployerAddress } from "../../lib/config";
@@ -35,7 +36,7 @@ import { completeTx } from "../../lib/complete-tx";
 import { createTxMetadata } from "../../lib/metadata";
 import * as Contracts from "../../../contract_blueprint";
 
-interface MigrateFederatedOpsOptions extends GlobalOptions {
+interface MigrateFederatedOpsOptions extends GlobalOptions, TxOptions {
   "tx-hash": string;
   "tx-index": number;
   "output-file": string;
@@ -46,27 +47,29 @@ export const command = "migrate-federated-ops";
 export const describe = "Migrate federated ops datum from v1 to v2";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("tx-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash for the fee-paying UTxO",
-    })
-    .option("tx-index", {
-      type: "number",
-      demandOption: true,
-      description: "Transaction index for the fee-paying UTxO",
-    })
-    .option("output-file", {
-      type: "string",
-      default: "migrate-federated-ops-tx.json",
-      description: "Output file name for the transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use build output instead of deployed blueprint",
-    });
+  return addTxOptions(
+    yargs
+      .option("tx-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash for the fee-paying UTxO",
+      })
+      .option("tx-index", {
+        type: "number",
+        demandOption: true,
+        description: "Transaction index for the fee-paying UTxO",
+      })
+      .option("output-file", {
+        type: "string",
+        default: "migrate-federated-ops-tx.json",
+        description: "Output file name for the transaction",
+      })
+      .option("use-build", {
+        type: "boolean",
+        default: false,
+        description: "Use build output instead of deployed blueprint",
+      }),
+  );
 }
 
 export async function handler(argv: MigrateFederatedOpsOptions) {
@@ -77,6 +80,7 @@ export async function handler(argv: MigrateFederatedOpsOptions) {
     "tx-index": txIndex,
     "output-file": outputFile,
     "use-build": useBuild,
+    "fee-padding": feePadding,
   } = argv;
 
   validateTxHash(txHash);
@@ -294,7 +298,7 @@ export async function handler(argv: MigrateFederatedOpsOptions) {
     .provideScript(logicScript)
     .setChangeAddress(changeAddress)
     .setMetadata(createTxMetadata("migrate-federated-ops"))
-    .setFeePadding(50000n);
+    .setFeePadding(BigInt(feePadding));
 
   // Add mitigation logic withdrawal if present in UpgradeState
   if (mitigationLogicScript && mitigationLogicRewardAccount) {

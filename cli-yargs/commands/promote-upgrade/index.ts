@@ -13,7 +13,8 @@ import {
   TransactionOutput,
 } from "@blaze-cardano/core";
 import { resolve } from "path";
-import type { GlobalOptions } from "../../lib/global-options";
+import type { GlobalOptions, TxOptions } from "../../lib/global-options";
+import { addTxOptions } from "../../lib/global-options";
 import { getNetworkId } from "../../lib/types";
 import { getDeployerAddress } from "../../lib/config";
 import { createBlaze } from "../../lib/provider";
@@ -51,7 +52,7 @@ import {
 } from "../../lib/versions";
 import * as Contracts from "../../../contract_blueprint";
 
-interface PromoteUpgradeOptions extends GlobalOptions {
+interface PromoteUpgradeOptions extends GlobalOptions, TxOptions {
   validator: string;
   "tx-hash": string;
   "tx-index": number;
@@ -65,48 +66,50 @@ export const describe =
   "Promote staged logic to main for a two-stage upgrade validator";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("validator", {
-      alias: "v",
-      type: "string",
-      demandOption: true,
-      choices: [
-        "tech-auth",
-        "council",
-        "reserve",
-        "ics",
-        "federated-ops",
-        "terms-and-conditions",
-        "cnight-minting",
-      ] as const,
-      description: "Validator to promote",
-    })
-    .option("tx-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash for the fee-paying UTxO",
-    })
-    .option("tx-index", {
-      type: "number",
-      demandOption: true,
-      description: "Transaction index for the fee-paying UTxO",
-    })
-    .option("sign", {
-      type: "boolean",
-      default: true,
-      description:
-        "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
-    })
-    .option("output-file", {
-      type: "string",
-      default: "promote-upgrade-tx.json",
-      description: "Output file name for the transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use build output instead of deployed blueprint",
-    });
+  return addTxOptions(
+    yargs
+      .option("validator", {
+        alias: "v",
+        type: "string",
+        demandOption: true,
+        choices: [
+          "tech-auth",
+          "council",
+          "reserve",
+          "ics",
+          "federated-ops",
+          "terms-and-conditions",
+          "cnight-minting",
+        ] as const,
+        description: "Validator to promote",
+      })
+      .option("tx-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash for the fee-paying UTxO",
+      })
+      .option("tx-index", {
+        type: "number",
+        demandOption: true,
+        description: "Transaction index for the fee-paying UTxO",
+      })
+      .option("sign", {
+        type: "boolean",
+        default: true,
+        description:
+          "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
+      })
+      .option("output-file", {
+        type: "string",
+        default: "promote-upgrade-tx.json",
+        description: "Output file name for the transaction",
+      })
+      .option("use-build", {
+        type: "boolean",
+        default: false,
+        description: "Use build output instead of deployed blueprint",
+      }),
+  );
 }
 
 export async function handler(argv: PromoteUpgradeOptions) {
@@ -119,6 +122,7 @@ export async function handler(argv: PromoteUpgradeOptions) {
     "tx-index": txIndex,
     "output-file": outputFile,
     "use-build": useBuild,
+    "fee-padding": feePadding,
   } = argv;
 
   // Validate inputs before any processing
@@ -393,7 +397,7 @@ export async function handler(argv: PromoteUpgradeOptions) {
     )
     .setChangeAddress(changeAddress)
     .setMetadata(createTxMetadata("promote-upgrade"))
-    .setFeePadding(50000n);
+    .setFeePadding(BigInt(feePadding));
 
   // Register the promoted logic hash as a stake credential so subsequent
   // governance commands can use it as a withdrawal (reward account).

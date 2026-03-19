@@ -11,7 +11,8 @@ import {
   TransactionOutput,
 } from "@blaze-cardano/core";
 import { resolve } from "path";
-import type { GlobalOptions } from "../../lib/global-options";
+import type { GlobalOptions, TxOptions } from "../../lib/global-options";
+import { addTxOptions } from "../../lib/global-options";
 import { getNetworkId, getConfigSection } from "../../lib/types";
 import { getDeployerAddress } from "../../lib/config";
 import { createBlaze } from "../../lib/provider";
@@ -55,7 +56,7 @@ import {
 import { diffBlueprints } from "../../lib/blueprint-diff";
 import * as Contracts from "../../../contract_blueprint";
 
-interface StageUpgradeOptions extends GlobalOptions {
+interface StageUpgradeOptions extends GlobalOptions, TxOptions {
   validator: string;
   "new-logic-hash": string;
   "tx-hash": string;
@@ -70,53 +71,55 @@ export const describe =
   "Stage a new logic hash for a two-stage upgrade validator";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("validator", {
-      alias: "v",
-      type: "string",
-      demandOption: true,
-      choices: [
-        "tech-auth",
-        "council",
-        "reserve",
-        "ics",
-        "federated-ops",
-        "terms-and-conditions",
-        "cnight-minting",
-      ] as const,
-      description: "Validator to upgrade",
-    })
-    .option("new-logic-hash", {
-      type: "string",
-      demandOption: true,
-      description: "New logic script hash to stage (56 hex chars, 28 bytes)",
-    })
-    .option("tx-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash for the fee-paying UTxO",
-    })
-    .option("tx-index", {
-      type: "number",
-      demandOption: true,
-      description: "Transaction index for the fee-paying UTxO",
-    })
-    .option("sign", {
-      type: "boolean",
-      default: true,
-      description:
-        "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
-    })
-    .option("output-file", {
-      type: "string",
-      default: "stage-upgrade-tx.json",
-      description: "Output file name for the transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use build output instead of deployed blueprint",
-    });
+  return addTxOptions(
+    yargs
+      .option("validator", {
+        alias: "v",
+        type: "string",
+        demandOption: true,
+        choices: [
+          "tech-auth",
+          "council",
+          "reserve",
+          "ics",
+          "federated-ops",
+          "terms-and-conditions",
+          "cnight-minting",
+        ] as const,
+        description: "Validator to upgrade",
+      })
+      .option("new-logic-hash", {
+        type: "string",
+        demandOption: true,
+        description: "New logic script hash to stage (56 hex chars, 28 bytes)",
+      })
+      .option("tx-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash for the fee-paying UTxO",
+      })
+      .option("tx-index", {
+        type: "number",
+        demandOption: true,
+        description: "Transaction index for the fee-paying UTxO",
+      })
+      .option("sign", {
+        type: "boolean",
+        default: true,
+        description:
+          "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
+      })
+      .option("output-file", {
+        type: "string",
+        default: "stage-upgrade-tx.json",
+        description: "Output file name for the transaction",
+      })
+      .option("use-build", {
+        type: "boolean",
+        default: false,
+        description: "Use build output instead of deployed blueprint",
+      }),
+  );
 }
 
 export async function handler(argv: StageUpgradeOptions) {
@@ -130,6 +133,7 @@ export async function handler(argv: StageUpgradeOptions) {
     "tx-index": txIndex,
     "output-file": outputFile,
     "use-build": useBuild,
+    "fee-padding": feePadding,
   } = argv;
 
   const deploymentDir = resolve(output, network);
@@ -420,12 +424,11 @@ export async function handler(argv: StageUpgradeOptions) {
     )
     .setChangeAddress(changeAddress)
     .setMetadata(createTxMetadata("stage-upgrade"))
-    .setFeePadding(50000n);
+    .setFeePadding(BigInt(feePadding));
 
   if (councilTwoStageIsSeparate) {
     txBuilder.addReferenceInput(councilTwoStageMainUtxo);
   }
-
 
   const { tx } = await completeTx(txBuilder, {
     commandName: "stage-upgrade",

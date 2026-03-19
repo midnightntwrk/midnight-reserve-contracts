@@ -24,7 +24,7 @@ import {
   PaymentAddress,
 } from "@blaze-cardano/core";
 import { resolve } from "path";
-import type { GlobalOptions } from "./global-options";
+import type { GlobalOptions, TxOptions } from "./global-options";
 import type { Signer } from "./types";
 import { getNetworkId } from "./types";
 import { getDeployerAddress } from "./config";
@@ -92,7 +92,7 @@ export interface MultisigChangeConfig {
   ): Signer[];
 }
 
-interface MultisigChangeOptions extends GlobalOptions {
+interface MultisigChangeOptions extends GlobalOptions, TxOptions {
   "tx-hash": string;
   "tx-index": number;
   sign: boolean;
@@ -112,6 +112,7 @@ export async function buildMultisigChangeTx(
     "tx-index": txIndex,
     "output-file": outputFile,
     "use-build": useBuild,
+    "fee-padding": feePadding,
   } = argv;
 
   validateTxHash(txHash);
@@ -413,7 +414,7 @@ export async function buildMultisigChangeTx(
     .provideScript(logicScript)
     .setChangeAddress(changeAddress)
     .setMetadata(createTxMetadata(config.commandName))
-    .setFeePadding(50000n);
+    .setFeePadding(BigInt(feePadding));
 
   // Add mitigation logic withdrawal if present in UpgradeState
   if (mitigationLogicScript && mitigationLogicRewardAccount) {
