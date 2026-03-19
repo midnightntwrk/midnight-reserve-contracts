@@ -1,11 +1,17 @@
 {
-  "timestamp": "2026-03-16T15:57:02.721Z",
-  "gitCommit": "c41d091e0eb34b46ed30a93f72671b4aed11d88e",
+  "timestamp": "2026-03-19T02:44:07.914Z",
+  "gitCommit": "287d1f9c56e9647c37763f45fcafe96423307e9b",
   "changes": [
     {
       "type": "initial",
       "validator": "cnight-minting",
       "description": "cNIGHT minting deployment"
+    },
+    {
+      "type": "promote",
+      "validator": "cnight_mint_logic_v2",
+      "newHash": "870590a23a736f480ed45df14c6b0e78139c251fda4e746e59983d62",
+      "description": "Promote cNIGHT mint logic v2 (always-fails, disables minting)"
     }
   ]
 }
