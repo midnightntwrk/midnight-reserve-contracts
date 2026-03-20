@@ -68,6 +68,7 @@ const parser = addGlobalOptions(yargs(hideBin(process.argv)))
 
 try {
   await parser.parse();
+  process.exit(0);
 } catch (err) {
   if (err instanceof Error) {
     console.error(err.stack ?? err.message);

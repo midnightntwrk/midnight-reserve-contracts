@@ -39,5 +39,6 @@ export function addTxOptions<T>(yargs: Argv<T>): Argv<T & TxOptions> {
     type: "number",
     default: 50000,
     description: "Fee padding in lovelace (0 or greater)",
+    min: 0,
   }) as unknown as Argv<T & TxOptions>;
 }

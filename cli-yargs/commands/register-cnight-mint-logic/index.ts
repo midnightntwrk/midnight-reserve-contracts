@@ -2,7 +2,8 @@ import type { Argv, CommandModule } from "yargs";
 import { Address, Credential, CredentialType } from "@blaze-cardano/core";
 import { resolve } from "path";
 
-import type { GlobalOptions } from "../../lib/global-options";
+import type { GlobalOptions, TxOptions } from "../../lib/global-options";
+import { addTxOptions } from "../../lib/global-options";
 import { getNetworkId } from "../../lib/types";
 import { getDeployerAddress } from "../../lib/config";
 import { validateTxHash, validateTxIndex } from "../../lib/validation";
@@ -12,7 +13,7 @@ import { findUtxoByTxRef } from "../../lib/transaction";
 import { ensureDirectory, writeTransactionFile } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 
-interface RegisterCnightMintLogicOptions extends GlobalOptions {
+interface RegisterCnightMintLogicOptions extends GlobalOptions, TxOptions {
   "tx-hash": string;
   "tx-index": number;
   "output-file": string;
@@ -24,28 +25,30 @@ export const describe =
   "Register cNIGHT mint logic script as a stake credential";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("tx-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash for the fee-paying UTxO",
-    })
-    .option("tx-index", {
-      type: "number",
-      demandOption: true,
-      description: "Transaction index for the fee-paying UTxO",
-    })
-    .option("output-file", {
-      type: "string",
-      default: "register-cnight-mint-logic-tx.json",
-      description:
-        "Output filename (default: register-cnight-mint-logic-tx.json)",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use build output instead of deployed blueprint",
-    });
+  return addTxOptions(
+    yargs
+      .option("tx-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash for the fee-paying UTxO",
+      })
+      .option("tx-index", {
+        type: "number",
+        demandOption: true,
+        description: "Transaction index for the fee-paying UTxO",
+      })
+      .option("output-file", {
+        type: "string",
+        default: "register-cnight-mint-logic-tx.json",
+        description:
+          "Output filename (default: register-cnight-mint-logic-tx.json)",
+      })
+      .option("use-build", {
+        type: "boolean",
+        default: false,
+        description: "Use build output instead of deployed blueprint",
+      }),
+  );
 }
 
 export async function handler(argv: RegisterCnightMintLogicOptions) {
@@ -55,6 +58,7 @@ export async function handler(argv: RegisterCnightMintLogicOptions) {
     "tx-hash": txHash,
     "tx-index": txIndex,
     "use-build": useBuild,
+    "fee-padding": feePadding,
   } = argv;
 
   validateTxHash(txHash);
@@ -100,7 +104,8 @@ export async function handler(argv: RegisterCnightMintLogicOptions) {
         type: CredentialType.ScriptHash,
       }),
     )
-    .setChangeAddress(changeAddress);
+    .setChangeAddress(changeAddress)
+    .setFeePadding(BigInt(feePadding));
 
   const { tx } = await completeTx(txBuilder, {
     commandName: "register-cnight-mint-logic",
@@ -120,7 +125,6 @@ export async function handler(argv: RegisterCnightMintLogicOptions) {
   );
 
   console.log("Transaction ID:", tx.getId());
-  process.exit(0);
 }
 
 const commandModule: CommandModule<
