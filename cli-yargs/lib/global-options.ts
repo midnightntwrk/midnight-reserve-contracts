@@ -29,3 +29,16 @@ export function addGlobalOptions<T>(yargs: Argv<T>): Argv<T & GlobalOptions> {
       description: "Provider: emulator, blockfrost, kupmios",
     });
 }
+
+export type TxOptions = {
+  "fee-padding": number;
+};
+
+export function addTxOptions<T>(yargs: Argv<T>): Argv<T & TxOptions> {
+  return yargs.option("fee-padding", {
+    type: "number",
+    default: 50000,
+    description: "Fee padding in lovelace (0 or greater)",
+    min: 0,
+  }) as unknown as Argv<T & TxOptions>;
+}
