@@ -1,0 +1,164 @@
+name: Change Federated Ops
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Target network'
+        required: true
+        type: choice
+        options:
+          - mainnet
+          - preprod
+          - preview
+          - qanet
+          - govnet
+          - node-dev-01
+      permissioned_candidates:
+        description: 'PERMISSIONED_CANDIDATES (relaxed JSON format)'
+        required: true
+        type: string
+      tx_hash:
+        description: 'Fee-paying UTxO transaction hash (64 hex chars)'
+        required: true
+        type: string
+      tx_index:
+        description: 'Fee-paying UTxO output index'
+        required: true
+        type: string
+      fee_padding:
+        description: 'Fee padding in lovelace'
+        required: false
+        default: '50000'
+        type: string
+
+permissions: {}
+
+jobs:
+  build-tx:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Validate inputs
+        id: validate
+        run: |
+          set -euo pipefail
+          NETWORK="${{ inputs.network }}"
+          TX_HASH="${{ inputs.tx_hash }}"
+          TX_INDEX="${{ inputs.tx_index }}"
+
+          # Validate tx hash (64 hex chars)
+          if [[ ! "$TX_HASH" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "::error::tx_hash must be exactly 64 hex characters"
+            exit 1
+          fi
+
+          # Validate tx index (non-negative integer)
+          if [[ ! "$TX_INDEX" =~ ^[0-9]+$ ]]; then
+            echo "::error::tx_index must be a non-negative integer"
+            exit 1
+          fi
+
+          TIMESTAMP=$(date -u +%Y%m%d-%H%M%S)
+          BRANCH="gov/change-federated-ops/${NETWORK}/${TIMESTAMP}"
+          echo "network=${NETWORK}" >> "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "timestamp=${TIMESTAMP}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install cardano-cli
+        run: |
+          curl -sL https://github.com/IntersectMBO/cardano-cli/releases/download/cardano-cli-10.15.1.0/cardano-cli-10.15.1.0-x86_64-linux.tar.gz \
+            | tar xz -C /usr/local/bin/
+          cardano-cli --version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build unsigned transaction
+        id: build-tx
+        run: |
+          set -euo pipefail
+          TX_DIR="deployments/${{ steps.validate.outputs.network }}"
+          OUTPUT_FILE="${TX_DIR}/change-federated-ops-tx.json"
+
+          bun run cli-yargs/index.ts change-federated-ops \
+            --network "${{ steps.validate.outputs.network }}" \
+            --tx-hash "${{ inputs.tx_hash }}" \
+            --tx-index "${{ inputs.tx_index }}" \
+            --sign false \
+            --fee-padding "${{ inputs.fee_padding }}" \
+            --output-file "${OUTPUT_FILE}"
+
+          echo "tx_path=${OUTPUT_FILE}" >> "$GITHUB_OUTPUT"
+          TX_HASH=$(jq -r .txHash "${OUTPUT_FILE}")
+          echo "tx_hash=${TX_HASH}" >> "$GITHUB_OUTPUT"
+        env:
+          PERMISSIONED_CANDIDATES: ${{ inputs.permissioned_candidates }}
+          DEPLOYER_ADDRESS: ${{ secrets.DEPLOYER_ADDRESS }}
+          BLOCKFROST_PREVIEW_API_KEY: ${{ secrets.BLOCKFROST_PREVIEW_API_KEY }}
+          BLOCKFROST_PREPROD_API_KEY: ${{ secrets.BLOCKFROST_PREPROD_API_KEY }}
+          BLOCKFROST_MAINNET_API_KEY: ${{ secrets.BLOCKFROST_MAINNET_API_KEY }}
+
+      - name: Generate transaction summary
+        run: |
+          set -euo pipefail
+          bun run cli-yargs/index.ts tx-summary \
+            --tx-file "${{ steps.build-tx.outputs.tx_path }}" \
+            --network "${{ steps.validate.outputs.network }}" \
+            --output-file /tmp/tx-summary.md
+        env:
+          BLOCKFROST_PREVIEW_API_KEY: ${{ secrets.BLOCKFROST_PREVIEW_API_KEY }}
+          BLOCKFROST_PREPROD_API_KEY: ${{ secrets.BLOCKFROST_PREPROD_API_KEY }}
+          BLOCKFROST_MAINNET_API_KEY: ${{ secrets.BLOCKFROST_MAINNET_API_KEY }}
+
+      - name: Create branch and commit
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${{ steps.validate.outputs.branch }}"
+          git add "${{ steps.build-tx.outputs.tx_path }}"
+          git commit -m "$(cat <<'EOF'
+          gov: build change-federated-ops tx for ${{ steps.validate.outputs.network }}
+
+          Tx hash: ${{ steps.build-tx.outputs.tx_hash }}
+          Network: ${{ steps.validate.outputs.network }}
+          Triggered by: ${{ github.actor }}
+          EOF
+          )"
+          git push origin "${{ steps.validate.outputs.branch }}"
+
+      - name: Create Pull Request
+        run: |
+          set -euo pipefail
+          {
+            cat /tmp/tx-summary.md
+            echo ""
+            echo "---"
+            echo ""
+            echo "**Signing instructions:**"
+            echo "1. Download \`${{ steps.build-tx.outputs.tx_path }}\` from this branch"
+            echo "2. Sign offline with your key"
+            echo "3. Send witness file to the coordinator"
+            echo "4. Coordinator submits via the **Submit Transaction** workflow"
+            echo ""
+            echo "**Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > /tmp/pr-body.md
+
+          gh pr create \
+            --base main \
+            --head "${{ steps.validate.outputs.branch }}" \
+            --title "gov: change-federated-ops on ${{ steps.validate.outputs.network }} (${{ steps.validate.outputs.timestamp }})" \
+            --body-file /tmp/pr-body.md
+        env:
+          GH_TOKEN: ${{ github.token }}
