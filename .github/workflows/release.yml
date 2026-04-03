@@ -14,7 +14,7 @@ on:
           - preview
           - qanet
           - govnet
-          - node-dev-01
+          - devnet
 
 permissions: {}
 

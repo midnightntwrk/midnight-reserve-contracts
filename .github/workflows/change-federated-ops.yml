@@ -13,7 +13,7 @@ on:
           - preview
           - qanet
           - govnet
-          - node-dev-01
+          - devnet
       permissioned_candidates:
         description: 'PERMISSIONED_CANDIDATES (relaxed JSON format)'
         required: true
@@ -104,7 +104,7 @@ jobs:
           echo "tx_hash=${TX_HASH}" >> "$GITHUB_OUTPUT"
         env:
           PERMISSIONED_CANDIDATES: ${{ inputs.permissioned_candidates }}
-          DEPLOYER_ADDRESS: ${{ secrets.DEPLOYER_ADDRESS }}
+          DEPLOYER_ADDRESS: ${{ inputs.network == 'mainnet' && secrets.DEPLOYER_ADDRESS_MAINNET || secrets.DEPLOYER_ADDRESS_TESTNET }}
           BLOCKFROST_PREVIEW_API_KEY: ${{ secrets.BLOCKFROST_PREVIEW_API_KEY }}
           BLOCKFROST_PREPROD_API_KEY: ${{ secrets.BLOCKFROST_PREPROD_API_KEY }}
           BLOCKFROST_MAINNET_API_KEY: ${{ secrets.BLOCKFROST_MAINNET_API_KEY }}

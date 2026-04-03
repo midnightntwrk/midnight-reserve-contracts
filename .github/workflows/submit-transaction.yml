@@ -17,7 +17,7 @@ on:
           - preview
           - qanet
           - govnet
-          - node-dev-01
+          - devnet
       witness_json:
         description: 'Combined witness JSON (array of TextEnvelope objects)'
         required: true
