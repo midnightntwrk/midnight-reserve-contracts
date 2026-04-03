@@ -14,7 +14,7 @@ export function addGlobalOptions<T>(yargs: Argv<T>): Argv<T & GlobalOptions> {
       type: "string",
       default: "local",
       description:
-        "Network: local, preview, qanet, govnet, devnet-*, node-dev-*, preprod, mainnet",
+        "Network: local, preview, qanet, govnet, devnet, preprod, mainnet",
     })
     .option("output", {
       alias: "o",

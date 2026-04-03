@@ -7,7 +7,7 @@ const files = [
   'deployments/preview/deployment-transactions.json',
   'deployments/preprod/deployment-transactions.json',
   'deployments/qanet/deployment-transactions.json',
-  'deployments/node-dev-01/deployment-transactions.json',
+  'deployments/devnet/deployment-transactions.json',
 ];
 
 for (const file of files) {
