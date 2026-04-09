@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://midnight-reserve-contracts.local/tools/committee_bridge/schema/claim-row.schema.json",
+  "title": "Committee bridge normalized claim row",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/claimRow"
+  },
+  "$defs": {
+    "claimId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$"
+    },
+    "semanticAssertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposition",
+        "value"
+      ],
+      "properties": {
+        "proposition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "claimRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "claim_text",
+        "exact_quote_or_snippet",
+        "source_class",
+        "source_path_or_url",
+        "source_location",
+        "confidence",
+        "canonical_terms_used",
+        "prerequisites",
+        "exclusions_or_forbidden_inference",
+        "affected_sections",
+        "notes",
+        "semantic_assertions"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/claimId"
+        },
+        "claim_text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exact_quote_or_snippet": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_class": {
+          "type": "string",
+          "enum": [
+            "code",
+            "test",
+            "upstream-beefy",
+            "upstream-grandpa",
+            "user-decision"
+          ]
+        },
+        "source_path_or_url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "confirmed",
+            "open-question"
+          ]
+        },
+        "canonical_terms_used": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "exclusions_or_forbidden_inference": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "affected_sections": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "notes": {
+          "type": "string"
+        },
+        "semantic_assertions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/semanticAssertion"
+          },
+          "default": []
+        },
+        "reader_partition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_record_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "supports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claimId"
+          },
+          "default": []
+        },
+        "contradicts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claimId"
+          },
+          "default": []
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claimId"
+          },
+          "default": []
+        },
+        "supersedes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claimId"
+          },
+          "default": []
+        },
+        "duplicates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claimId"
+          },
+          "default": []
+        }
+      }
+    }
+  }
+}

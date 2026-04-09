@@ -1,0 +1,42 @@
+[
+  {
+    "question_id": "bridge.threshold-rounding-semantics-not-yet-worded",
+    "reader_partition": "bridge-helpers-types",
+    "question": "What exact arithmetic wording should documentation use for the `BeefyThreshold` numerator/denominator rule beyond the bounded statement that the repository computes a configurable validating threshold from stake totals?",
+    "why_it_matters": "The docs should not claim a specific local rounding formula unless the language-level arithmetic semantics are pinned down and reviewed.",
+    "blocked_claim_ids": [
+      "bridge.verify-consensus.threshold-is-configurable"
+    ],
+    "candidate_sources_checked": [
+      "lib/bridge/beefy.ak"
+    ]
+  },
+  {
+    "question_id": "tests.no-committee-bridge-validator-entrypoint-coverage",
+    "reader_partition": "tests",
+    "question": "Which admissible tests exercise `committee_bridge_logic`, `committee_bridge_forever`, or end-to-end `verify_consensus` entrypoint behavior?",
+    "why_it_matters": "Without direct validator-entrypoint coverage, prose should not overstate observed rejection or acceptance behavior beyond the helper/code boundary.",
+    "blocked_claim_ids": [
+      "validator.logic.committee-state-transition-only",
+      "bridge.verify-consensus.output-state-must-match-derived-state"
+    ],
+    "candidate_sources_checked": [
+      "lib/bridge/beefy.test.ak",
+      "tests/"
+    ]
+  },
+  {
+    "question_id": "tests.no-negative-proof-rejection-coverage",
+    "reader_partition": "tests",
+    "question": "Do any admissible tests show malformed proof material, wrong payload data, or insufficient signed stake causing end-to-end rejection at the committee-bridge validator boundary?",
+    "why_it_matters": "Negative-path observations matter for bounded prose about how failed bridge updates are rejected in practice.",
+    "blocked_claim_ids": [
+      "bridge.verify-consensus.payload-must-hash-latest-leaf",
+      "bridge.verify-consensus.threshold-is-configurable"
+    ],
+    "candidate_sources_checked": [
+      "lib/bridge/beefy.test.ak",
+      "tests/"
+    ]
+  }
+]

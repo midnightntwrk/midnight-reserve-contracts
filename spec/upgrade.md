@@ -6,8 +6,11 @@
 
 ## Overview
 
-All governance domains (Reserve, Council, Tech Auth, Federated Ops, ICS, Committee Bridge) use the same three-contract upgrade pattern:
+The Forever/Two-Stage/Logic upgrade architecture is reused across multiple governance domains, including Reserve, Council, Tech Auth, Federated Ops, ICS, and the BEEFY-backed committee bridge.
 
+The shared statements in this document describe upgrade mechanics only. They do not define any domain's runtime validation semantics, including the committee-bridge proof-verification boundary.
+
+The common three-contract pattern is:
 1. **Forever Contract** - Immutable proxy that delegates to current logic
 2. **Two-Stage Contract** - Holds upgrade state with staging area
 3. **Logic Contract** - Actual validation rules (swappable)

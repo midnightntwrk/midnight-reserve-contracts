@@ -127,10 +127,14 @@ pub fn check_auth_sigs_and_get_stake(
 
       let pkh = public_key |> builtin.keccak_256
 
-      let
-        rest_leaves,
-        stake,
-      <- find_auth_in_leaves(leaves, pkh, public_key, signature, msg_hash)
+      let rest_leaves, stake <- find_auth_in_leaves(leaves, pkh)
+
+      expect
+        builtin.verify_ecdsa_secp256k1_signature(
+          public_key,
+          msg_hash,
+          signature,
+        )
 
       check_auth_sigs_and_get_stake(rest_leaves, vs, msg_hash) + stake
     }
@@ -139,23 +143,13 @@ pub fn check_auth_sigs_and_get_stake(
 
 /// Rather than doing a merge sort on chain.
 /// The simpler option is to include all leaves necessary for the proof
-/// And just ensure the authorized signatories are included among the leaves
-pub fn find_auth_in_leaves(
-  leaves: List<Leaf>,
-  pkh: ByteArray,
-  public_key: ByteArray,
-  signature: ByteArray,
-  msg_hash: ByteArray,
-  callback,
-) {
+/// And just ensure the authorized signatory leaf is included among the leaves
+pub fn find_auth_in_leaves(leaves: List<Leaf>, pkh: ByteArray, callback) {
   expect [leaf, ..rest] = leaves
 
   let hash = builtin.slice_bytearray(0, 32, leaf)
 
   if pkh == hash {
-    expect
-      builtin.verify_ecdsa_secp256k1_signature(public_key, msg_hash, signature)
-
     // Stake could never be a million bytes due to tx limits
     let stake =
       builtin.slice_bytearray(32, 1_000_000, leaf)
@@ -163,6 +157,6 @@ pub fn find_auth_in_leaves(
 
     callback(rest, stake)
   } else {
-    find_auth_in_leaves(rest, pkh, public_key, signature, msg_hash, callback)
+    find_auth_in_leaves(rest, pkh, callback)
   }
 }

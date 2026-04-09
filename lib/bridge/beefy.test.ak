@@ -75,6 +75,13 @@ test beefy_candidate_sig() {
   i == 9000
 }
 
+test beefy_candidate_sig_wrong_hash() fail {
+  let signed_stake =
+    check_auth_sigs_and_get_stake(leaves, votes, #"01" |> builtin.keccak_256)
+
+  signed_stake >= 0
+}
+
 test single_sig_check() {
   expect Some(sig) = at(signatures, 1)
   let sig = bytearray.take(sig, 64)
