@@ -7,7 +7,14 @@ on:
         description: 'Network to publish artifacts for'
         required: true
         default: 'mainnet'
-        type: string
+        type: choice
+        options:
+          - mainnet
+          - preprod
+          - preview
+          - qanet
+          - govnet
+          - devnet
 
 permissions: {}
 
@@ -40,35 +47,40 @@ jobs:
         env:
           NETWORK: ${{ inputs.network }}
 
-      - name: Validate artifacts exist
+      - name: Validate plutus.json exists
         run: |
           set -euo pipefail
-          MISSING=()
-
-          FILES=(
-            "deployed-scripts/${NETWORK}/plutus.json"
-            "release/${NETWORK}/verification-report.md"
-            "release/${NETWORK}/address-report.md"
-            "release/${NETWORK}/info.json"
-          )
-
-          for f in "${FILES[@]}"; do
-            if [ ! -f "$f" ]; then
-              MISSING+=("$f")
-            fi
-          done
-
-          if [ ${#MISSING[@]} -ne 0 ]; then
-            echo "::error::Missing required artifact files for network '${NETWORK}':"
-            for m in "${MISSING[@]}"; do
-              echo "::error::  - ${m}"
-            done
+          if [ ! -f "deployed-scripts/${NETWORK}/plutus.json" ]; then
+            echo "::error::Missing deployed-scripts/${NETWORK}/plutus.json"
             exit 1
           fi
-
-          echo "All 4 artifact files found for network '${NETWORK}'"
+          echo "plutus.json found for network '${NETWORK}'"
         env:
           NETWORK: ${{ steps.validate.outputs.network }}
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run verification
+        run: bun run cli-yargs/index.ts verify --network "$NETWORK"
+        env:
+          NETWORK: ${{ steps.validate.outputs.network }}
+          BLOCKFROST_PREVIEW_API_KEY: ${{ secrets.BLOCKFROST_PREVIEW_API_KEY }}
+          BLOCKFROST_PREPROD_API_KEY: ${{ secrets.BLOCKFROST_PREPROD_API_KEY }}
+          BLOCKFROST_MAINNET_API_KEY: ${{ secrets.BLOCKFROST_MAINNET_API_KEY }}
+
+      - name: Generate contract info report
+        run: bun run cli-yargs/index.ts info --network "$NETWORK" --save
+        env:
+          NETWORK: ${{ steps.validate.outputs.network }}
+          BLOCKFROST_PREVIEW_API_KEY: ${{ secrets.BLOCKFROST_PREVIEW_API_KEY }}
+          BLOCKFROST_PREPROD_API_KEY: ${{ secrets.BLOCKFROST_PREPROD_API_KEY }}
+          BLOCKFROST_MAINNET_API_KEY: ${{ secrets.BLOCKFROST_MAINNET_API_KEY }}
 
       - name: Generate release tag
         id: tag
@@ -100,7 +112,6 @@ jobs:
 
           TITLE="${NETWORK} Deployment Artifacts - ${SHORT_SHA}"
 
-          # Build release notes combining both reports
           {
             echo "# ${NETWORK} Deployment Artifacts"
             echo ""
@@ -113,10 +124,6 @@ jobs:
             echo "- \`verification-report.md\` — Deployment verification checks"
             echo "- \`address-report.md\` — Contract addresses and UTxO details"
             echo "- \`info.json\` — Structured contract information"
-            echo ""
-            echo "---"
-            echo ""
-            cat "release/${NETWORK}/verification-report.md"
             echo ""
             echo "---"
             echo ""
