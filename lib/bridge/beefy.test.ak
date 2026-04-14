@@ -44,15 +44,15 @@ const signatures =
 
 const votes =
   list.zip(validator_set, signatures)
-    |> list.indexed_map(
-        fn(i, x) {
+    |> list.map(
+        fn(x) {
           if x.2nd == None {
             None
           } else {
             let (key, sig) = x
             expect Some(sig) = sig
             let sig = bytearray.take(sig, 64)
-            Some(Vote(sig, i, key, 0))
+            Some(Vote(sig, key))
           }
         },
       )

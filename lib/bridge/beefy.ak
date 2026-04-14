@@ -123,7 +123,7 @@ pub fn check_auth_sigs_and_get_stake(
   when votes is {
     [] -> 0
     [v, ..vs] -> {
-      let Vote { public_key, signature, .. } = v
+      let Vote { public_key, signature } = v
 
       let pkh = public_key |> builtin.keccak_256
 
