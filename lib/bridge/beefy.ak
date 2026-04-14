@@ -7,6 +7,12 @@ use bridge/types.{
 }
 use utils.{must_find}
 
+/// Entry point used by `committee_bridge_logic`.
+/// Runs `verify_mmr_update_proof` against `trusted_state` and the redeemer
+/// proof, then asserts the derived post-state equals the declared
+/// `out_state` (read from the continuing output's datum). Returns `True`
+/// on success; any check inside `verify_mmr_update_proof` that fails will
+/// abort the script.
 pub fn verify_consensus(
   trusted_state: BeefyConsensusState,
   proof: BeefyConsensusProof,
@@ -18,6 +24,36 @@ pub fn verify_consensus(
   state == out_state
 }
 
+/// Core BEEFY proof verifier. Derives the next `BeefyConsensusState` from
+/// a `trusted_state` and a `RelayChainProof`, failing the script if any
+/// check does not hold.
+///
+/// Steps, in order:
+/// 1. The new commitment must strictly advance the checkpoint
+///    (`block_number > trusted_state.latest_height`).
+/// 2. Select the signing authority set and its stake total by matching
+///    `commitment.validator_set_id` against either the current or the
+///    next authority set id; any other id aborts.
+/// 3. Locate the `"nc"` payload in the commitment (see
+///    `next_committee_payload_id`).
+/// 4. Verify the Merkle multi-proof against the signing set's `root` to
+///    extract the authority leaves that the votes reference.
+/// 5. Verify each vote's secp256k1 signature over
+///    `keccak256(scale_encode_commitment(commitment))` and sum the
+///    per-validator stakes.
+/// 6. Require the summed stake to meet the threshold. The threshold is
+///    computed using the Substrate/BEEFY reference behaviour: the
+///    `(denominator - 1)` bias in the inline `threshold_fn` implements
+///    integer ceiling.
+/// 7. Check that the `"nc"` payload equals
+///    `keccak256(scale_encode_beefy_mmr_leaf(latest_mmr_leaf))`.
+/// 8. If the incoming leaf advances the next-authority-set id, rotate:
+///    the old next set becomes current, and the leaf's next set (with
+///    stake total read from `extra` as a big-endian integer) becomes the
+///    new next set.
+///
+/// Returns the rotated-or-unrotated `BeefyConsensusState` with
+/// `latest_height` set to `block_number`.
 pub fn verify_mmr_update_proof(
   trusted_state: BeefyConsensusState,
   relay_proof: RelayChainProof,
@@ -115,6 +151,17 @@ pub fn verify_mmr_update_proof(
   }
 }
 
+/// Walks the vote list in order, and for each vote:
+///   - hashes the voter's public key (`keccak256(public_key)`);
+///   - looks up the matching authority leaf via `find_auth_in_leaves`,
+///     which returns the leaf's stake and the remaining unused leaves;
+///   - verifies the ECDSA/secp256k1 signature against `msg_hash`;
+///   - adds the leaf's stake to the running total.
+///
+/// Relies on leaves and votes being supplied in the same order (the
+/// authority-leaf lookup never rewinds). `find_auth_in_leaves` aborts if a
+/// voter's key-hash is not present in the remaining leaves, so every vote
+/// must be accounted for; there is no silent skip.
 pub fn check_auth_sigs_and_get_stake(
   leaves: List<Leaf>,
   votes: List<Vote>,
