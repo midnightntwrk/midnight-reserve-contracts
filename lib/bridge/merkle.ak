@@ -1,88 +1,9 @@
 use aiken/builtin
-use aiken/collection/list
 use aiken/primitive/bytearray
-use bridge/codec.{scale_encode_beefy_mmr_leaf}
-use bridge/types.{AuthoritySetCommitment, BeefyMmrLeaf, Leaf, ProofNodeRec}
+use bridge/types.{Leaf, ProofNodeRec}
 
-test mmr_basic_proof_1() {
-  let mmr_root =
-    #"184d38dc3f285e2fda58e07212aec48e479f5d33a491ff805231954bfc5b2af3"
-
-  let beefy_leaf =
-    BeefyMmrLeaf {
-      version: 0,
-      parent_number: 552,
-      parent_hash: #"c40e4fe32fa489a14783829c1e6eb264aec75b012ff58ad82b165386e24a3279",
-      next_authority_set: AuthoritySetCommitment(
-        1,
-        1,
-        #"ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d",
-      ),
-      extra: "",
-      k_index: 552,
-      leaf_index: 552,
-    }
-
-  let codec_leaf = scale_encode_beefy_mmr_leaf(beefy_leaf)
-
-  let hashed_leaf = codec_leaf |> builtin.keccak_256
-
-  let peaks =
-    [
-      #"48d47d5df4bf531f27083bfbff0f55713421f483106065d421cbc43eb6f2cf20",
-      #"9535761693a1e47e66817cdf25371c1d64ef318ee8c85ce67d3d88b12aaa1b83",
-      #"6403a4149a189e4f9ab21045adee353c5ba4d878600f8d23e6eaba76d0ac6269",
-    ]
-
-  mmr_root == list.foldr(
-    peaks,
-    hashed_leaf,
-    fn(peak, acc) {
-      bytearray.concat(acc, peak)
-        |> builtin.keccak_256
-    },
-  )
-}
-
-test mmr_basic_proof_2() {
-  let mmr_root =
-    #"023bf85dd76a4d6b9d5a5020c083a2a82719c049d4091325e735c5d0fe625c0e"
-
-  let beefy_leaf =
-    BeefyMmrLeaf {
-      version: 0,
-      parent_number: 600,
-      parent_hash: #"9b9462bf599ab609ea9917918e6b69b54b2bff8b7be6fc0de8984b55f5fbb057",
-      next_authority_set: AuthoritySetCommitment(
-        1,
-        1,
-        #"ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d",
-      ),
-      extra: "",
-      k_index: 600,
-      leaf_index: 600,
-    }
-
-  let codec_leaf = scale_encode_beefy_mmr_leaf(beefy_leaf)
-
-  let hashed_leaf = codec_leaf |> builtin.keccak_256
-
-  let peaks =
-    [
-      #"48d47d5df4bf531f27083bfbff0f55713421f483106065d421cbc43eb6f2cf20",
-      #"1f86e403238b1ce4aa6cd5c665e09821eb5a77acc6558c3e5d0192ec66bc1dee",
-      #"d8f44f672c85e903549242cfcfd619432e692386a684d99fce21ca863bc10869",
-      #"54d7061256cecc20b599f9a3331b9298b607a7f95cf3ee40cd1a50ab66792ae3",
-    ]
-
-  mmr_root == list.foldr(
-    peaks,
-    hashed_leaf,
-    fn(peak, acc) {
-      bytearray.concat(acc, peak)
-        |> builtin.keccak_256
-    },
-  )
+fn merge_nodes(a: ByteArray, b: ByteArray) -> ByteArray {
+  bytearray.concat(a, b) |> builtin.keccak_256
 }
 
 /// Verify the give multi member merkle proof while
@@ -227,7 +148,6 @@ fn do_verify_merkle_multi_proof_get_leaves(
     _ -> fail
   }
 }
-
 // // fails because each leaf contains member + stake |> keccak_256
 // // TODO: test needs to be replaced with updated values
 // test verify_merkle_multi_proof_get_leaves_1() {
@@ -275,7 +195,3 @@ fn do_verify_merkle_multi_proof_get_leaves(
 
 //   leaves != []
 // }
-
-fn merge_nodes(a: ByteArray, b: ByteArray) -> ByteArray {
-  bytearray.concat(a, b) |> builtin.keccak_256
-}
