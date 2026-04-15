@@ -78,7 +78,7 @@ pub fn verify_mmr_update_proof(
   let BeefyThreshold { numerator, denominator } = threshold
 
   let threshold_fn =
-    fn(threshold) { threshold * numerator + ( denominator - 1 ) / denominator }
+    fn(threshold) { ( threshold * numerator + denominator - 1 ) / denominator }
 
   // Don't accept older signed commitments
   expect last_height < block_number
