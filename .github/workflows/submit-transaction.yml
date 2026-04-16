@@ -3,10 +3,6 @@ name: Submit Transaction
 on:
   workflow_dispatch:
     inputs:
-      pr_number:
-        description: 'PR number containing the unsigned transaction'
-        required: true
-        type: string
       network:
         description: 'Target network'
         required: true
@@ -18,6 +14,10 @@ on:
           - qanet
           - govnet
           - devnet
+      tx_file:
+        description: 'Path to tx JSON on main (e.g. deployments/mainnet/change-federated-ops-tx.json)'
+        required: true
+        type: string
       witness_json:
         description: 'Combined witness JSON (array of TextEnvelope objects)'
         required: true
@@ -34,97 +34,121 @@ jobs:
     steps:
       - name: Validate inputs
         id: validate
-        run: |
-          set -euo pipefail
-          PR_NUMBER="${{ inputs.pr_number }}"
-
-          # Validate PR number (positive integer)
-          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
-            echo "::error::pr_number must be a positive integer"
-            exit 1
-          fi
-
-          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
-
-      - name: Get PR info
-        id: pr-info
-        run: |
-          set -euo pipefail
-          PR_JSON=$(gh pr view "${{ steps.validate.outputs.pr_number }}" \
-            --repo "${{ github.repository }}" \
-            --json headRefName,files)
-
-          BRANCH=$(echo "$PR_JSON" | jq -r '.headRefName')
-          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
-
-          # Find the tx file (first .json file in the PR)
-          TX_FILE=$(echo "$PR_JSON" | jq -r '.files[].path' | grep -E '\.json$' | head -1)
-          if [[ -z "$TX_FILE" ]]; then
-            echo "::error::No JSON transaction file found in PR"
-            exit 1
-          fi
-          echo "tx_file=${TX_FILE}" >> "$GITHUB_OUTPUT"
         env:
-          GH_TOKEN: ${{ github.token }}
+          NETWORK: ${{ inputs.network }}
+          TX_FILE: ${{ inputs.tx_file }}
+        run: |
+          set -euo pipefail
 
-      - name: Checkout PR branch
+          if [[ ! "$NETWORK" =~ ^(mainnet|preprod|preview|qanet|govnet|devnet)$ ]]; then
+            echo "::error::Unknown network '${NETWORK}'"
+            exit 1
+          fi
+
+          if [[ "$TX_FILE" == *..* ]] || [[ "$TX_FILE" == /* ]]; then
+            echo "::error::tx_file must be a repo-relative path without '..'"
+            exit 1
+          fi
+          if [[ ! "$TX_FILE" =~ ^deployments/[a-z0-9-]+/[A-Za-z0-9._/-]+\.json$ ]]; then
+            echo "::error::tx_file must match 'deployments/<network>/<name>.json'"
+            exit 1
+          fi
+
+          {
+            echo "network=${NETWORK}"
+            echo "tx_file=${TX_FILE}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout main
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
-          ref: ${{ steps.pr-info.outputs.branch }}
+          ref: main
+          persist-credentials: false
+
+      - name: Verify tx file exists on main
+        env:
+          TX_FILE: ${{ steps.validate.outputs.tx_file }}
+        run: |
+          set -euo pipefail
+          if [[ ! -f "$TX_FILE" ]]; then
+            echo "::error::tx_file '${TX_FILE}' not found on main. Is the governance PR merged?"
+            exit 1
+          fi
+
+      - name: Resolve originating PR (for comment-back)
+        id: pr
+        env:
+          TX_FILE: ${{ steps.validate.outputs.tx_file }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          COMMIT_SHA=$(git log --diff-filter=A --format=%H -n 1 -- "$TX_FILE")
+          if [[ -z "$COMMIT_SHA" ]]; then
+            echo "::warning::Could not resolve originating commit for ${TX_FILE}; skipping PR comment"
+            echo "pr_number=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          PR_NUMBER=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${COMMIT_SHA}/pulls" \
+            --jq '.[] | select(.merged_at != null) | .number' | head -1)
+          echo "pr_number=${PR_NUMBER:-}" >> "$GITHUB_OUTPUT"
 
       - name: Install Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6  # v2.2.0
         with:
-          bun-version: latest
+          bun-version: 1.3.12
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Write witness files
+        env:
+          WITNESS_JSON: ${{ inputs.witness_json }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/witnesses
 
-          # Parse JSON array of TextEnvelope objects into individual files
-          WITNESS_COUNT=$(echo '${{ inputs.witness_json }}' | jq 'length')
+          WITNESS_COUNT=$(echo "$WITNESS_JSON" | jq 'length')
           echo "Writing ${WITNESS_COUNT} witness files..."
 
           for i in $(seq 0 $((WITNESS_COUNT - 1))); do
-            echo '${{ inputs.witness_json }}' | jq ".[$i]" > "/tmp/witnesses/witness-$(printf '%02d' $i).json"
+            echo "$WITNESS_JSON" | jq ".[$i]" > "/tmp/witnesses/witness-$(printf '%02d' $i).json"
             echo "  Wrote /tmp/witnesses/witness-$(printf '%02d' $i).json"
           done
 
       - name: Combine signatures and submit
         id: submit
-        run: |
-          set -euo pipefail
-          TX_FILE="${{ steps.pr-info.outputs.tx_file }}"
-
-          echo "Submitting transaction from ${TX_FILE}..."
-          bun run cli-yargs/index.ts combine-signatures \
-            --network "${{ inputs.network }}" \
-            --tx "${TX_FILE}" \
-            --signatures /tmp/witnesses/witness-*.json \
-            --sign-deployer 2>&1 | tee /tmp/submit-output.txt
-
-          echo "status=success" >> "$GITHUB_OUTPUT"
         env:
+          NETWORK: ${{ steps.validate.outputs.network }}
+          TX_FILE: ${{ steps.validate.outputs.tx_file }}
           SIGNING_PRIVATE_KEY: ${{ secrets.SIGNING_PRIVATE_KEY }}
           BLOCKFROST_PREVIEW_API_KEY: ${{ secrets.BLOCKFROST_PREVIEW_API_KEY }}
           BLOCKFROST_PREPROD_API_KEY: ${{ secrets.BLOCKFROST_PREPROD_API_KEY }}
           BLOCKFROST_MAINNET_API_KEY: ${{ secrets.BLOCKFROST_MAINNET_API_KEY }}
+        run: |
+          set -euo pipefail
+          echo "Submitting transaction from ${TX_FILE}..."
+          bun run cli-yargs/index.ts combine-signatures \
+            --network "${NETWORK}" \
+            --tx "${TX_FILE}" \
+            --signatures /tmp/witnesses/witness-*.json \
+            --sign-deployer 2>&1 | tee /tmp/submit-output.txt
 
       - name: Comment on PR (success)
-        if: success()
+        if: success() && steps.pr.outputs.pr_number != ''
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+          NETWORK: ${{ steps.validate.outputs.network }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           OUTPUT=$(cat /tmp/submit-output.txt)
-          gh pr comment "${{ steps.validate.outputs.pr_number }}" \
-            --repo "${{ github.repository }}" \
+          gh pr comment "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
             --body "$(cat <<EOF
           ## Transaction Submitted
 
-          **Network:** ${{ inputs.network }}
+          **Network:** ${NETWORK}
           **Status:** Confirmed
 
           <details><summary>CLI output</summary>
@@ -135,23 +159,25 @@ jobs:
 
           </details>
 
-          **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          **Workflow run:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
           EOF
           )"
-        env:
-          GH_TOKEN: ${{ github.token }}
 
       - name: Comment on PR (failure)
-        if: failure()
+        if: failure() && steps.pr.outputs.pr_number != ''
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+          NETWORK: ${{ steps.validate.outputs.network }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           OUTPUT=$(cat /tmp/submit-output.txt 2>/dev/null || echo "No output captured")
-          gh pr comment "${{ steps.validate.outputs.pr_number }}" \
-            --repo "${{ github.repository }}" \
+          gh pr comment "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
             --body "$(cat <<EOF
           ## Transaction Submission Failed
 
-          **Network:** ${{ inputs.network }}
+          **Network:** ${NETWORK}
           **Status:** Failed
 
           <details><summary>CLI output</summary>
@@ -162,8 +188,6 @@ jobs:
 
           </details>
 
-          **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          **Workflow run:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
           EOF
           )"
-        env:
-          GH_TOKEN: ${{ github.token }}
