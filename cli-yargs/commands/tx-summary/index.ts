@@ -1,7 +1,7 @@
 import type { Argv, CommandModule } from "yargs";
 import { resolve } from "path";
 import { readFileSync, writeFileSync } from "fs";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import type { GlobalOptions } from "../../lib/global-options";
 import { isSingleTransaction } from "../../lib/transaction-json";
 import { getCardanoNetwork } from "../../lib/network-mapping";
@@ -49,8 +49,9 @@ export async function handler(argv: TxSummaryOptions) {
   // Structural: cardano-cli debug transaction view
   let structuralJson: unknown;
   try {
-    const raw = execSync(
-      `cardano-cli debug transaction view --tx-file "${txPath}"`,
+    const raw = execFileSync(
+      "cardano-cli",
+      ["debug", "transaction", "view", "--tx-file", txPath],
       { encoding: "utf8", timeout: 30_000 },
     );
     structuralJson = JSON.parse(raw);
