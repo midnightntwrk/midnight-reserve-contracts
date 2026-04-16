@@ -6,6 +6,7 @@ import {
   getContractInstances,
   getCredentialAddress,
 } from "../../lib/contracts";
+import { loadAikenConfig } from "../../lib/config";
 import { getCardanoNetwork } from "../../lib/network-mapping";
 import { printTable, formatLovelaceToAda } from "../../lib/output";
 import {
@@ -23,6 +24,7 @@ interface ContractInfo {
   component: ContractComponent;
   scriptHash: string;
   address: string;
+  withdrawalOnly?: boolean;
 }
 
 interface TokenInfo {
@@ -75,6 +77,7 @@ const INFO_COMPONENT_CHOICES = [
   "gov",
   "registered-candidate",
   "cnight-generates-dust",
+  "cnight-minting",
   "main-gov",
   "staging-gov",
   "federated-ops",
@@ -96,6 +99,7 @@ const MAIN_TRACK_COMPONENTS = [
   "gov",
   "registered-candidate",
   "cnight-generates-dust",
+  "cnight-minting",
 ] as const satisfies readonly ContractComponent[];
 
 type MainTrackComponent = (typeof MAIN_TRACK_COMPONENTS)[number];
@@ -122,6 +126,7 @@ const TWO_STAGE_NAMES = new Set([
   "ICS Two Stage",
   "Federated Ops Two Stage",
   "Terms And Conditions Two Stage",
+  "cNIGHT Mint Two Stage",
 ]);
 
 // --- Helpers ---
@@ -194,6 +199,17 @@ async function enrichContractWithOnChainData(
   baseUrl: string,
   apiKey: string,
 ): Promise<ContractOnChainInfo> {
+  if (contract.withdrawalOnly) {
+    return {
+      ...contract,
+      utxos: [],
+      totalAda: "0",
+      totalLovelace: "0",
+      nftTokenNames: [],
+      upgradeState: null,
+    };
+  }
+
   const utxos = await fetchAddressUtxos(baseUrl, apiKey, contract.address);
   const utxoInfos = utxos.map(convertUtxo);
 
@@ -266,9 +282,14 @@ export function generateMarkdownReport(
       lines.push(``);
       lines.push(`| Field | Value |`);
       lines.push(`|-------|-------|`);
-      lines.push(`| **Address** | \`${c.address}\` |`);
-      lines.push(`| **Script Hash** | \`${c.scriptHash}\` |`);
-      lines.push(`| **ADA** | ${c.totalAda} |`);
+      if (c.withdrawalOnly) {
+        lines.push(`| **Script Hash** | \`${c.scriptHash}\` |`);
+        lines.push(`| **Type** | Withdrawal script (no spending address) |`);
+      } else {
+        lines.push(`| **Address** | \`${c.address}\` |`);
+        lines.push(`| **Script Hash** | \`${c.scriptHash}\` |`);
+        lines.push(`| **ADA** | ${c.totalAda} |`);
+      }
 
       if (!summaryOnly && c.nftTokenNames.length > 0) {
         lines.push(
@@ -307,6 +328,27 @@ export function generateMarkdownReport(
     }
   }
 
+  // cNIGHT Policy ID (external)
+  try {
+    const aikenConfig = loadAikenConfig(network);
+    if (
+      aikenConfig.cnight_policy &&
+      aikenConfig.cnight_policy.replace(/0/g, "") !== ""
+    ) {
+      lines.push(`## cNIGHT POLICY (External)`);
+      lines.push(``);
+      lines.push(`| Field | Value |`);
+      lines.push(`|-------|-------|`);
+      lines.push(`| **Policy ID** | \`${aikenConfig.cnight_policy}\` |`);
+      lines.push(
+        `| **Note** | External minting policy (not built by this repo) |`,
+      );
+      lines.push(``);
+    }
+  } catch {
+    // aiken.toml may not have this network configured
+  }
+
   return lines.join("\n");
 }
 
@@ -324,6 +366,46 @@ function createContractInfo(
     scriptHash,
     address: getCredentialAddress(network, scriptHash).toBech32(),
   };
+}
+
+function buildCnightMintingContracts(
+  network: string,
+  contracts: ReturnType<typeof getContractInstances>,
+): ContractInfo[] {
+  if (
+    !contracts.cnightMintTwoStage ||
+    !contracts.cnightMintForever ||
+    !contracts.cnightMintLogic
+  ) {
+    return [];
+  }
+
+  return [
+    createContractInfo(
+      network,
+      "cNIGHT Mint Two Stage",
+      "cnight-minting",
+      contracts.cnightMintTwoStage,
+    ),
+    {
+      ...createContractInfo(
+        network,
+        "cNIGHT Mint Forever",
+        "cnight-minting",
+        contracts.cnightMintForever,
+      ),
+      withdrawalOnly: true,
+    },
+    {
+      ...createContractInfo(
+        network,
+        "cNIGHT Mint Logic",
+        "cnight-minting",
+        contracts.cnightMintLogic,
+      ),
+      withdrawalOnly: true,
+    },
+  ];
 }
 
 export function buildContractList(
@@ -497,6 +579,7 @@ export function buildContractList(
           ),
         ]
       : []),
+    ...buildCnightMintingContracts(network, contracts),
   ];
 }
 
@@ -631,7 +714,9 @@ export async function handler(argv: InfoOptions) {
         contractGroup.map((c) => [
           c.name,
           c.scriptHash.slice(0, 16) + "...",
-          c.address.slice(0, 40) + "...",
+          c.withdrawalOnly
+            ? "(withdrawal script)"
+            : c.address.slice(0, 40) + "...",
         ]),
       );
     }
