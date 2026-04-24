@@ -27,6 +27,7 @@ import dustParticipantsCommand from "./commands/dust-participants";
 import mergeUtxosCommand from "./commands/merge-utxos";
 import buildCommand from "./commands/build";
 import buildFromDeployedCommand from "./commands/build-from-deployed";
+import describeTxCommand from "./commands/describe-tx";
 import { addGlobalOptions } from "./lib/global-options";
 import packageJson from "../package.json";
 
@@ -59,6 +60,7 @@ const parser = addGlobalOptions(yargs(hideBin(process.argv)))
   .command(mergeUtxosCommand)
   .command(buildCommand)
   .command(buildFromDeployedCommand)
+  .command(describeTxCommand)
   .demandCommand(1, "You must specify a command")
   .help()
   .strict()
