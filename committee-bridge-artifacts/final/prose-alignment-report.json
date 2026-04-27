@@ -1,0 +1,129 @@
+{
+  "findings": [
+    {
+      "check_id": "validators.scope-narrowing",
+      "path": "spec/validators.md",
+      "status": "supported",
+      "line_span": "882-882",
+      "matched_text": "does not claim generic block validation or generic cross-chain message passing",
+      "rationale": "The committee-bridge section must keep the bridge boundary narrow.",
+      "supporting_claim_ids": [
+        "validator.logic.committee-state-transition-only",
+        "beefy.protocol-is-bridge-oriented"
+      ],
+      "related_open_question_ids": []
+    },
+    {
+      "check_id": "validators.committee-update-proof-path",
+      "path": "spec/validators.md",
+      "status": "supported",
+      "line_span": "965-965",
+      "matched_text": "verify a BEEFY-backed committee update proof against the trusted input state, referenced threshold datum, and explicit output state",
+      "rationale": "The main validator path should be described as committee-update verification against trusted input/output state and threshold data.",
+      "supporting_claim_ids": [
+        "validator.logic.committee-state-transition-only"
+      ],
+      "related_open_question_ids": []
+    },
+    {
+      "check_id": "validators.current-or-next-authority-set",
+      "path": "spec/validators.md",
+      "status": "supported",
+      "line_span": "976-976",
+      "matched_text": "must match either `current_authority_set.id` or `next_authority_set.id`",
+      "rationale": "The prose should preserve the current-or-next authority-set selection boundary.",
+      "supporting_claim_ids": [
+        "bridge.verify-consensus.current-or-next-validator-set"
+      ],
+      "related_open_question_ids": []
+    },
+    {
+      "check_id": "validators.next-committee-payload-hash",
+      "path": "spec/validators.md",
+      "status": "supported",
+      "line_span": "978-978",
+      "matched_text": "must equal `keccak256(scale_encode_beefy_mmr_leaf(latest_mmr_leaf))`",
+      "rationale": "The prose should retain the exact payload-hash check for the next-committee payload.",
+      "supporting_claim_ids": [
+        "bridge.verify-consensus.payload-must-hash-latest-leaf"
+      ],
+      "related_open_question_ids": []
+    },
+    {
+      "check_id": "validators.current-signature-path",
+      "path": "spec/validators.md",
+      "status": "supported",
+      "line_span": "982-982",
+      "matched_text": "ECDSA/secp256k1",
+      "rationale": "The current signature verification path should remain explicitly bounded to ECDSA/secp256k1.",
+      "supporting_claim_ids": [
+        "bridge.verify-consensus-signatures-use-secp256k1"
+      ],
+      "related_open_question_ids": []
+    },
+    {
+      "check_id": "validators.fixed-threshold-wording",
+      "path": "spec/validators.md",
+      "status": "supported",
+      "line_span": null,
+      "matched_text": null,
+      "rationale": "Exact local threshold arithmetic wording should stay out of normative prose until the rounding wording is explicitly resolved.",
+      "supporting_claim_ids": [
+        "bridge.verify-consensus.threshold-is-configurable"
+      ],
+      "related_open_question_ids": [
+        "bridge.threshold-rounding-semantics-not-yet-worded"
+      ]
+    },
+    {
+      "check_id": "validators.no-update-on-rejection-wording",
+      "path": "spec/validators.md",
+      "status": "supported",
+      "line_span": null,
+      "matched_text": null,
+      "rationale": "The current code strongly suggests rejection on failure, but the wording should remain out of normative prose until the exact operational boundary is carried through the evidence package or explicit user decision rows.",
+      "supporting_claim_ids": [
+        "bridge.verify-consensus.output-state-must-match-derived-state"
+      ],
+      "related_open_question_ids": [
+        "tests.no-negative-proof-rejection-coverage"
+      ]
+    },
+    {
+      "check_id": "validators.no-vote-index-claim",
+      "path": "spec/validators.md",
+      "status": "supported",
+      "line_span": null,
+      "matched_text": null,
+      "rationale": "The docs must not claim `Vote.authority_index` or `Vote.vote_strength` are active acceptance checks.",
+      "supporting_claim_ids": [
+        "bridge.acceptance-path-does-not-read-vote-index-or-strength"
+      ],
+      "related_open_question_ids": []
+    },
+    {
+      "check_id": "validators.no-fixed-two-thirds-claim",
+      "path": "spec/validators.md",
+      "status": "supported",
+      "line_span": null,
+      "matched_text": null,
+      "rationale": "The repository path reads a configurable `BeefyThreshold`; the docs must not restate a fixed local two-thirds threshold.",
+      "supporting_claim_ids": [
+        "bridge.verify-consensus.threshold-is-configurable"
+      ],
+      "related_open_question_ids": []
+    },
+    {
+      "check_id": "upgrade.architecture-only-disclaimer",
+      "path": "spec/upgrade.md",
+      "status": "supported",
+      "line_span": "11-11",
+      "matched_text": "do not define any domain's runtime validation semantics",
+      "rationale": "The upgrade overview should remain architecture-only and avoid serving as runtime semantics proof for the committee bridge.",
+      "supporting_claim_ids": [
+        "beefy.protocol-is-bridge-oriented"
+      ],
+      "related_open_question_ids": []
+    }
+  ]
+}

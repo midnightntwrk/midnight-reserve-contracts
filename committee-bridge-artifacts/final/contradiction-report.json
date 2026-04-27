@@ -1,0 +1,57 @@
+{
+  "unsupported_claims": [],
+  "contradiction_check": {
+    "status": "satisfied",
+    "conflicts": []
+  },
+  "forbidden_inference_check": [
+    {
+      "rule_id": "rule.no-generic-block-validation",
+      "status": "enforced",
+      "description": "The committee bridge must not be described as generic block validation.",
+      "claim_or_rule_ids": [
+        "beefy.protocol-is-bridge-oriented"
+      ]
+    },
+    {
+      "rule_id": "rule.no-generic-message-passing",
+      "status": "enforced",
+      "description": "The committee bridge must not be described as generic cross-chain messaging.",
+      "claim_or_rule_ids": [
+        "beefy.protocol-is-bridge-oriented"
+      ]
+    },
+    {
+      "rule_id": "rule.no-broader-chain-correctness-guarantee",
+      "status": "enforced",
+      "description": "The docs must not upgrade BEEFY-backed committee verification into broader finality or chain-correctness guarantees.",
+      "claim_or_rule_ids": [
+        "beefy.runs-alongside-grandpa-on-finalized-chain"
+      ]
+    },
+    {
+      "rule_id": "rule.no-fixed-local-two-thirds-threshold",
+      "status": "enforced",
+      "description": "The repository path must not be summarized as a fixed local `2/3 + 1` threshold because it reads a configurable `BeefyThreshold` datum.",
+      "claim_or_rule_ids": [
+        "bridge.verify-consensus.threshold-is-configurable"
+      ]
+    },
+    {
+      "rule_id": "rule.no-active-authority-index-check",
+      "status": "enforced",
+      "description": "The docs must not claim `Vote.authority_index` is an active acceptance check.",
+      "claim_or_rule_ids": [
+        "bridge.acceptance-path-does-not-read-vote-index-or-strength"
+      ]
+    },
+    {
+      "rule_id": "rule.no-active-vote-strength-check",
+      "status": "enforced",
+      "description": "The docs must not claim `Vote.vote_strength` is an active acceptance check.",
+      "claim_or_rule_ids": [
+        "bridge.acceptance-path-does-not-read-vote-index-or-strength"
+      ]
+    }
+  ]
+}
