@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  #v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  #v6.0.3
       - uses: aiken-lang/setup-aiken@c8a4cc81f420d1cf03776bc5367675f9a08582e6  #v1.0.3
         with:
           version: v1.1.19
