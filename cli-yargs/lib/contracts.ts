@@ -117,6 +117,9 @@ export function loadContractModule(
       case "govnet":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require("../../contract_blueprint_govnet");
+      case "stagenet":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../contract_blueprint_stagenet");
       case "node-dev-01":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require("../../contract_blueprint_node-dev-01");
@@ -162,6 +165,9 @@ export function loadContractModule(
       case "govnet":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require("../../deployed-scripts/govnet/contract_blueprint");
+      case "stagenet":
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require("../../deployed-scripts/stagenet/contract_blueprint");
       case "node-dev-01":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require("../../deployed-scripts/node-dev-01/contract_blueprint");

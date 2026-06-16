@@ -49,6 +49,12 @@ function resolveEnvironment(environment: string): EnvironmentResolution {
         networkId: NetworkId.Testnet,
         aikenConfigSection: "govnet",
       };
+    case "stagenet":
+      return {
+        cardanoNetwork: "preview",
+        networkId: NetworkId.Testnet,
+        aikenConfigSection: "stagenet",
+      };
     case "node-dev-01":
       return {
         cardanoNetwork: "preview",
@@ -96,7 +102,7 @@ function resolveEnvironment(environment: string): EnvironmentResolution {
 
       throw new Error(
         `Unknown environment '${environment}'. ` +
-          `Known environments: local, emulator, preview, qanet, govnet, devnet-*, node-dev-*, preprod, mainnet`,
+          `Known environments: local, emulator, preview, qanet, govnet, stagenet, devnet-*, node-dev-*, preprod, mainnet`,
       );
   }
 }
