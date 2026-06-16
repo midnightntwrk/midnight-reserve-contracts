@@ -2467,3 +2467,248 @@ encoding = "hex"
 [config.node-dev-3.cnight_minting_forever_hash]
 bytes = "23a3dde3b1d4e881c53117efd56620ab72ea643eef55ea82d39b64b0"
 encoding = "hex"
+
+[config.stagenet]
+candidate_nonce="stagenet"
+cnight_name = "NIGHT"
+reserve_one_shot_index = 0
+council_one_shot_index = 1
+ics_one_shot_index = 2
+technical_authority_one_shot_index = 3
+federated_operators_one_shot_index = 4
+main_gov_one_shot_index = 5
+staging_gov_one_shot_index = 6
+main_council_update_one_shot_index = 7
+main_tech_auth_update_one_shot_index = 8
+main_federated_ops_update_one_shot_index = 9
+
+committee_bridge_one_shot_index = 10
+committee_threshold_one_shot_index = 11
+terms_and_conditions_one_shot_index = 12
+terms_and_conditions_threshold_one_shot_index = 13
+cnight_minting_one_shot_index = 14
+reserve_logic_v2_one_shot_index = 0
+ics_logic_v2_one_shot_index = 1
+council_logic_v2_one_shot_index = 2
+technical_authority_logic_v2_one_shot_index = 3
+federated_operators_logic_v2_one_shot_index = 4
+terms_and_conditions_logic_v2_one_shot_index = 5
+reserve_staging_one_shot_index = 0
+council_staging_one_shot_index = 1
+ics_staging_one_shot_index = 2
+technical_authority_staging_one_shot_index = 3
+federated_operators_staging_one_shot_index = 4
+terms_and_conditions_staging_one_shot_index = 5
+collateral_utxo_index = 15
+
+[config.stagenet.reserve_logic_v2_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.ics_logic_v2_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.council_logic_v2_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.technical_authority_logic_v2_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.federated_operators_logic_v2_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.terms_and_conditions_logic_v2_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.reserve_staging_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.council_staging_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.ics_staging_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.technical_authority_staging_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.federated_operators_staging_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.terms_and_conditions_staging_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.reserve_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.council_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.ics_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.technical_authority_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.federated_operators_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.main_gov_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.staging_gov_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.main_council_update_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.main_tech_auth_update_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.main_federated_ops_update_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.committee_bridge_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.committee_threshold_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.terms_and_conditions_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.terms_and_conditions_threshold_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.collateral_utxo_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.cnight_minting_one_shot_hash]
+bytes = "709dc6ad2f4ff43d1eac965cb2241f44fb9786615959fa308cd597b1fabd5e18"
+encoding = "hex"
+
+[config.stagenet.cnight_policy]
+bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
+encoding = "hex"
+
+[config.stagenet.reserve_two_stage_hash]
+bytes = "f0c11c641a42839edca59b55d5fc7bfb134bcafdb2fdd1d25a8adeba"
+encoding = "hex"
+
+[config.stagenet.reserve_forever_hash]
+bytes = "7807d131658972cac2d025004b4b14186f4badb54eeb2e7961d62b08"
+encoding = "hex"
+
+[config.stagenet.council_two_stage_hash]
+bytes = "1baa3f088413c27f151f496e71c076fda3890beaced581f15c0cdded"
+encoding = "hex"
+
+[config.stagenet.council_forever_hash]
+bytes = "9da52221ea232f549e06df92456ac882c363abdcd7b0b46466e7878a"
+encoding = "hex"
+
+[config.stagenet.ics_two_stage_hash]
+bytes = "976c8d4c7a32b9c90fab30fbc1e484dec78e83dbe7f33ce773111d0d"
+encoding = "hex"
+
+[config.stagenet.ics_forever_hash]
+bytes = "db316bab1dcfa985edcc0151a76a60ee3693ba9145cd4de7aecb88e5"
+encoding = "hex"
+
+[config.stagenet.technical_authority_two_stage_hash]
+bytes = "d0cbb39dc4b3a54150a6566c9e8e997958a50177d575b91749603426"
+encoding = "hex"
+
+[config.stagenet.technical_authority_forever_hash]
+bytes = "7ddd651f9b0ec1dc7c5aede6e18f183625ee9c25b097cb534bfacc1c"
+encoding = "hex"
+
+[config.stagenet.federated_operators_two_stage_hash]
+bytes = "5de10c37c0f9d9c60e037d413dbde849ad8b768d347b3995a2f0e9d7"
+encoding = "hex"
+
+[config.stagenet.federated_operators_forever_hash]
+bytes = "924a6b4c0becbd9d4506a91ecc7992e50008ec5051c7ea2e9219ee49"
+encoding = "hex"
+
+[config.stagenet.main_gov_threshold_hash]
+bytes = "0c21a401ef5a84d0d09c6c565b7146d682548497a5d6479b8726f5be"
+encoding = "hex"
+
+[config.stagenet.staging_gov_threshold_hash]
+bytes = "1d777586edfbce7d4c71bfb9957cd9cd5185caaa2f938482e06988d1"
+encoding = "hex"
+
+[config.stagenet.main_council_update_threshold_hash]
+bytes = "25c6c772c4033141898828c268917719281c5870789358bcf86f4ad3"
+encoding = "hex"
+
+[config.stagenet.main_tech_auth_update_threshold_hash]
+bytes = "2c58b2d85ddfaa0602fa24d7477de067cf74472bf05a726bfc8b1341"
+encoding = "hex"
+
+[config.stagenet.main_federated_ops_update_threshold_hash]
+bytes = "6874115375e8db37c6e9101d2106ebe976df3f091285c008f0246027"
+encoding = "hex"
+
+[config.stagenet.beefy_signer_threshold_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.stagenet.committee_bridge_two_stage_hash]
+bytes = "2fd83b8322079255a36e1e681f2fd1fdc23568eb008962f10168bce4"
+encoding = "hex"
+
+[config.stagenet.committee_bridge_forever_hash]
+bytes = "dac92935ec8195564cf388c433febb4dcc8443082e3b9a249e17b411"
+encoding = "hex"
+
+[config.stagenet.bridge_signer_threshold_hash]
+bytes = "4fdb9a2ea3285b9c0deb3741f1dd6f3507143134e4eea9dba8a24436"
+encoding = "hex"
+
+[config.stagenet.terms_and_conditions_two_stage_hash]
+bytes = "3103db8495fb6bdc1fe209ddf90ebcea9f026a50a0387c2d77565cbe"
+encoding = "hex"
+
+[config.stagenet.terms_and_conditions_forever_hash]
+bytes = "9bfc2f3b840b364118b39e4b21e088029f2c7aa04d5c2d58531be4a0"
+encoding = "hex"
+
+[config.stagenet.terms_and_conditions_threshold_hash]
+bytes = "853831a33eef04f2d4217638907e7120052b2d1f233f0a3d0d598718"
+encoding = "hex"
+
+[config.stagenet.cnight_minting_two_stage_hash]
+bytes = "c74e052033660af87d2251caf7d68a12bbae2a018273e1b9d57fecd1"
+encoding = "hex"
+
+[config.stagenet.cnight_minting_forever_hash]
+bytes = "4a0c7087eb06c3e257521fb301d7f58d3089d55b1d510d629b9bcba0"
+encoding = "hex"

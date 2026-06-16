@@ -1,0 +1,164 @@
+[
+  {
+    "name": "Tech Auth Forever",
+    "component": "tech-auth",
+    "scriptHash": "7ddd651f9b0ec1dc7c5aede6e18f183625ee9c25b097cb534bfacc1c",
+    "address": "addr_test1wp7a6eglnv8vrhruttk7dcv0rqmztm5uykcf0j6nf0avc8qez92y4"
+  },
+  {
+    "name": "Tech Auth Two Stage",
+    "component": "tech-auth",
+    "scriptHash": "d0cbb39dc4b3a54150a6566c9e8e997958a50177d575b91749603426",
+    "address": "addr_test1wrgvhvuacje62s2s5etxe85wn9u43fgpwl2htwghf9srgfsrd4fcy"
+  },
+  {
+    "name": "Tech Auth Logic",
+    "component": "tech-auth",
+    "scriptHash": "f53062d106f6cbbca58b23157e8b47a0c22a3537027affe109eb5e65",
+    "address": "addr_test1wr6nqck3qmmvh0993v332l5tg7svy234xup84llpp844uega0sfp8"
+  },
+  {
+    "name": "Tech Auth Update Threshold",
+    "component": "tech-auth-threshold",
+    "scriptHash": "2c58b2d85ddfaa0602fa24d7477de067cf74472bf05a726bfc8b1341",
+    "address": "addr_test1wqk93vkcth065pszlgjdw3maupnu7az890c95untlj93xsgzhnxxx"
+  },
+  {
+    "name": "Council Forever",
+    "component": "council",
+    "scriptHash": "9da52221ea232f549e06df92456ac882c363abdcd7b0b46466e7878a",
+    "address": "addr_test1wzw62g3pag3j74y7qm0ey3t2ezpvxcatmntmpdryvmnc0zspam4lg"
+  },
+  {
+    "name": "Council Two Stage",
+    "component": "council",
+    "scriptHash": "1baa3f088413c27f151f496e71c076fda3890beaced581f15c0cdded",
+    "address": "addr_test1wqd650cgssfuylc4raykuuwqwm768zgtat8dtq03tsxdmmgwnqar7"
+  },
+  {
+    "name": "Council Logic",
+    "component": "council",
+    "scriptHash": "312820815761dceec6f39d1585a90a30bdf02ad76e45e1f96e7607d5",
+    "address": "addr_test1wqcjsgyp2asaemkx7ww3tpdfpgctmup26ahytc0edemq04gf863fg"
+  },
+  {
+    "name": "Council Update Threshold",
+    "component": "council-threshold",
+    "scriptHash": "25c6c772c4033141898828c268917719281c5870789358bcf86f4ad3",
+    "address": "addr_test1wqjud3mjcspnzsvf3q5vy6y3wuvjs8zcwpufxk9ulph545cl5f922"
+  },
+  {
+    "name": "Reserve Forever",
+    "component": "reserve",
+    "scriptHash": "7807d131658972cac2d025004b4b14186f4badb54eeb2e7961d62b08",
+    "address": "addr_test1wpuq05f3vkyh9jkz6qjsqj6tzsvx7jadk48wktnev8tzkzqk8v6h3"
+  },
+  {
+    "name": "Reserve Two Stage",
+    "component": "reserve",
+    "scriptHash": "f0c11c641a42839edca59b55d5fc7bfb134bcafdb2fdd1d25a8adeba",
+    "address": "addr_test1wrcvz8ryrfpg88ku5kd4t40u00a3xj72lke0m5wjt29daws0p2sxn"
+  },
+  {
+    "name": "Reserve Logic",
+    "component": "reserve",
+    "scriptHash": "2546d3408b81fd64d8c435d2b3dce813f7f475867fea27fe14db6f17",
+    "address": "addr_test1wqj5d56q3wql6exccs6a9v7uaqfl0ar4sel75fl7zndk79cp2dsws"
+  },
+  {
+    "name": "ICS Forever",
+    "component": "ics",
+    "scriptHash": "db316bab1dcfa985edcc0151a76a60ee3693ba9145cd4de7aecb88e5",
+    "address": "addr_test1wrdnz6atrh86np0desq4rfm2vrhrdya6j9zu6n084m9c3eg4tr250"
+  },
+  {
+    "name": "ICS Two Stage",
+    "component": "ics",
+    "scriptHash": "976c8d4c7a32b9c90fab30fbc1e484dec78e83dbe7f33ce773111d0d",
+    "address": "addr_test1wztker2v0getnjg04vc0hs0ysn0v0r5rm0nlx088wvg36rgmqx0xh"
+  },
+  {
+    "name": "ICS Logic",
+    "component": "ics",
+    "scriptHash": "5fe7161f099a0c92852d3bd32e8b995a1fc05873ab7923df39f31088",
+    "address": "addr_test1wp07w9slpxdqey5995aaxt5tn9dplszcww4hjg7l88e3pzq82r7en"
+  },
+  {
+    "name": "Gov Auth",
+    "component": "gov",
+    "scriptHash": "4c22b3ebf63ee35920f7c77856a86206ea0e6b1066290735cbbcc879",
+    "address": "addr_test1wpxz9vlt7clwxkfq7lrhs44gvgrw5rntzpnzjpe4ew7vs7g9frnr5"
+  },
+  {
+    "name": "Main Gov Threshold",
+    "component": "main-gov",
+    "scriptHash": "0c21a401ef5a84d0d09c6c565b7146d682548497a5d6479b8726f5be",
+    "address": "addr_test1wqxzrfqpaadgf5xsn3k9vkm3gmtgy4yyj7jav3umsun0t0sw0ftw8"
+  },
+  {
+    "name": "Staging Gov Threshold",
+    "component": "staging-gov",
+    "scriptHash": "1d777586edfbce7d4c71bfb9957cd9cd5185caaa2f938482e06988d1",
+    "address": "addr_test1wqwhwavxahauul2vwxlmn9tum8x4rpw24ghe8pyzup5c35gqj632x"
+  },
+  {
+    "name": "Registered Candidate",
+    "component": "registered-candidate",
+    "scriptHash": "2d3c4c827c8ec16bb5081a8f57f7a1e31538a00b15e3996bbebe083b",
+    "address": "addr_test1wqkncnyz0j8vz6a4pqdg74lh58332w9qpv278xtth6lqswcauaurn"
+  },
+  {
+    "name": "Federated Ops Forever",
+    "component": "federated-ops",
+    "scriptHash": "924a6b4c0becbd9d4506a91ecc7992e50008ec5051c7ea2e9219ee49",
+    "address": "addr_test1wzfy566vp0ktm829q653anrejtjsqz8v2pgu063wjgv7ujg05t36f"
+  },
+  {
+    "name": "Federated Ops Two Stage",
+    "component": "federated-ops",
+    "scriptHash": "5de10c37c0f9d9c60e037d413dbde849ad8b768d347b3995a2f0e9d7",
+    "address": "addr_test1wpw7zrphcruan3swqd75z0daapy6mzmk3568kwv45tcwn4chealv6"
+  },
+  {
+    "name": "Federated Ops Logic",
+    "component": "federated-ops",
+    "scriptHash": "110aa4e3112309b0cca47e1a610bc8f94341693b890a5dd4111794f8",
+    "address": "addr_test1wqgs4f8rzy3snvxv53lp5cgteru5xstf8wys5hw5zytef7qgv0822"
+  },
+  {
+    "name": "Federated Ops Update Threshold",
+    "component": "federated-ops-threshold",
+    "scriptHash": "6874115375e8db37c6e9101d2106ebe976df3f091285c008f0246027",
+    "address": "addr_test1wp58gy2nwh5dkd7xaygp6ggxa05hdhelpyfgtsqg7qjxqfcd8t5mp"
+  },
+  {
+    "name": "Terms And Conditions Forever",
+    "component": "terms-and-conditions",
+    "scriptHash": "9bfc2f3b840b364118b39e4b21e088029f2c7aa04d5c2d58531be4a0",
+    "address": "addr_test1wzdlctemss9nvsgckw0ykg0q3qpf7tr65px4ct2c2vd7fgqrf3crz"
+  },
+  {
+    "name": "Terms And Conditions Two Stage",
+    "component": "terms-and-conditions",
+    "scriptHash": "3103db8495fb6bdc1fe209ddf90ebcea9f026a50a0387c2d77565cbe",
+    "address": "addr_test1wqcs8kuyjhakhhqlugyam7gwhn4f7qn22zsrslpdwat9e0s5z79qy"
+  },
+  {
+    "name": "Terms And Conditions Logic",
+    "component": "terms-and-conditions",
+    "scriptHash": "be058a546cb7b529aa4a59fab6c4492515630cb42d903a88d216df6a",
+    "address": "addr_test1wzlqtzj5djmm22d2ffvl4dkyfyj32ccvkskeqw5g6gtd76sau7wna"
+  },
+  {
+    "name": "Terms And Conditions Threshold",
+    "component": "terms-and-conditions-threshold",
+    "scriptHash": "853831a33eef04f2d4217638907e7120052b2d1f233f0a3d0d598718",
+    "address": "addr_test1wzznsvdr8mhsfuk5y9mr3yr7wysq22edru3n7z3ap4vcwxqyj7dch"
+  },
+  {
+    "name": "cNIGHT Generates Dust",
+    "component": "cnight-generates-dust",
+    "scriptHash": "7e69087d98fac5869eac14e13dfb6f98228c41e638aa2a59d1f85e9c",
+    "address": "addr_test1wplxjzranravtp574s2wz00md7vz9rzpucu252je68u9a8qzjheng"
+  }
+]
