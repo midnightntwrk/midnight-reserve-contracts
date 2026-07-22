@@ -20,8 +20,10 @@ import type { TxBuilder } from "@blaze-cardano/tx";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import {
   CnightMintingCnightMintTwoStageUpgradeElse,
-  CnightMintingCnightMintLogicElse,
+  CnightMintingV2CnightMintLogicV2Else,
   CnightMintingCnightMintForeverElse,
+} from "../deployed-scripts/mainnet/contract_blueprint";
+import {
   TestCnightMintingProxyTestCnightMintingProxyElse,
   TestCnightNoAuditTcnightMintInfiniteElse,
 } from "../contract_blueprint";
@@ -41,7 +43,7 @@ describe("CNight minting proxy chain", () => {
 
     // CNight contracts
     const cnightTwoStage = new CnightMintingCnightMintTwoStageUpgradeElse();
-    const cnightLogic = new CnightMintingCnightMintLogicElse(); // always-false
+    const cnightLogic = new CnightMintingV2CnightMintLogicV2Else(); // always-false
     const cnightForever = new CnightMintingCnightMintForeverElse();
     const mintingProxy = new TestCnightMintingProxyTestCnightMintingProxyElse();
     const alwaysTrueLogic = new TestCnightNoAuditTcnightMintInfiniteElse();

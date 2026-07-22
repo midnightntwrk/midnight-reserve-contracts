@@ -15,7 +15,8 @@ import {
 import { resolve } from "path";
 import type { TransactionUnspentOutput } from "@blaze-cardano/core";
 
-import type { GlobalOptions } from "../../lib/global-options";
+import type { GlobalOptions, TxOptions } from "../../lib/global-options";
+import { addTxOptions } from "../../lib/global-options";
 import type { NetworkConfig } from "../../lib/types";
 import { getNetworkId, getConfigSection } from "../../lib/types";
 import { loadAikenConfig, getDeployerAddress } from "../../lib/config";
@@ -166,7 +167,7 @@ function getV2LogicScript(
   );
 }
 
-interface MintStagingStateOptions extends GlobalOptions {
+interface MintStagingStateOptions extends GlobalOptions, TxOptions {
   validator: string;
   sign: boolean;
   "output-file": string;
@@ -176,35 +177,44 @@ export const command = "mint-staging-state";
 export const describe = "Mint StagingState NFT for a v2 logic contract";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("validator", {
-      alias: "v",
-      type: "string",
-      demandOption: true,
-      choices: [
-        "tech-auth",
-        "council",
-        "reserve",
-        "ics",
-        "federated-ops",
-        "terms-and-conditions",
-      ] as const,
-      description: "Validator to mint StagingState NFT for",
-    })
-    .option("sign", {
-      type: "boolean",
-      default: true,
-      description: "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS)",
-    })
-    .option("output-file", {
-      type: "string",
-      default: "mint-staging-state-tx.json",
-      description: "Output file name for the transaction",
-    });
+  return addTxOptions(
+    yargs
+      .option("validator", {
+        alias: "v",
+        type: "string",
+        demandOption: true,
+        choices: [
+          "tech-auth",
+          "council",
+          "reserve",
+          "ics",
+          "federated-ops",
+          "terms-and-conditions",
+        ] as const,
+        description: "Validator to mint StagingState NFT for",
+      })
+      .option("sign", {
+        type: "boolean",
+        default: true,
+        description: "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS)",
+      })
+      .option("output-file", {
+        type: "string",
+        default: "mint-staging-state-tx.json",
+        description: "Output file name for the transaction",
+      }),
+  );
 }
 
 export async function handler(argv: MintStagingStateOptions) {
-  const { network, output, validator, sign, "output-file": outputFile } = argv;
+  const {
+    network,
+    output,
+    validator,
+    sign,
+    "output-file": outputFile,
+    "fee-padding": feePadding,
+  } = argv;
 
   const deploymentDir = resolve(output, network);
   const outputPath = resolve(deploymentDir, outputFile);
@@ -327,7 +337,7 @@ export async function handler(argv: MintStagingStateOptions) {
     .addOutput(v2Output)
     .setChangeAddress(changeAddress)
     .setMetadata(createTxMetadata("mint-staging-state"))
-    .setFeePadding(50000n);
+    .setFeePadding(BigInt(feePadding));
 
   if (collateralUtxo) {
     txBuilder = txBuilder.provideCollateral([collateralUtxo]);

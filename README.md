@@ -56,8 +56,7 @@ The CLI maps Midnight deployment environments to their underlying Cardano networ
 | `preview` | Cardano Preview | Direct mapping |
 | `qanet` | Cardano Preview | Midnight QA environment |
 | `govnet` | Cardano Preview | Midnight Governance environment |
-| `devnet-*` | Cardano Preview | Any devnet (devnet-01, devnet-02...) |
-| `node-dev-*` | Cardano Preview | Node dev envs (node-dev-01, etc.) |
+| `devnet` | Cardano Preview | Midnight Devnet environment |
 | `preprod` | Cardano Preprod | Direct mapping |
 | `mainnet` | Cardano Mainnet | Direct mapping |
 | (unknown) | (emulator) | Fallback with warning |
@@ -70,7 +69,7 @@ All CLI commands accept the `--network` flag with any environment name:
 bun cli deploy --network preview      # Uses Cardano Preview
 bun cli deploy --network qanet        # Uses Cardano Preview
 bun cli deploy --network govnet       # Uses Cardano Preview
-bun cli deploy --network node-dev-01  # Uses Cardano Preview
+bun cli deploy --network devnet       # Uses Cardano Preview
 bun cli deploy --network preprod      # Uses Cardano Preprod
 bun cli info --network mainnet        # Uses Cardano Mainnet
 ```
@@ -80,7 +79,7 @@ bun cli info --network mainnet        # Uses Cardano Mainnet
 Set the appropriate API key for your target Cardano network:
 
 **Blockfrost (default provider):**
-- `BLOCKFROST_PREVIEW_API_KEY` - For preview, qanet, devnet-*, node-dev-*
+- `BLOCKFROST_PREVIEW_API_KEY` - For preview, qanet, devnet
 - `BLOCKFROST_PREPROD_API_KEY` - For preprod
 - `BLOCKFROST_MAINNET_API_KEY` - For mainnet
 

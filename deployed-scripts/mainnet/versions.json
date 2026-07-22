@@ -33,7 +33,11 @@
     "z_permissioned_types",
     "z_terms_and_cond_types",
     "z_threshold_types",
-    "z_two_stage_upgrade_types"
+    "z_two_stage_upgrade_types",
+    "cnight_mint_forever",
+    "cnight_mint_logic",
+    "cnight_mint_two_stage_upgrade",
+    "cnight_mint_logic_v2"
   ],
   "staged": []
 }

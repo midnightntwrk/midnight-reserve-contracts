@@ -1205,7 +1205,6 @@ export async function handler(argv: DeployOptions) {
     }
     console.log(``);
   }
-  process.exit(0);
 }
 
 const commandModule: CommandModule<GlobalOptions, DeployOptions> = {

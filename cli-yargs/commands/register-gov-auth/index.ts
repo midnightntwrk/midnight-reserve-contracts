@@ -86,7 +86,6 @@ export async function handler(argv: RegisterGovAuthOptions) {
   );
 
   console.log("Transaction ID:", tx.getId());
-  process.exit(0);
 }
 
 const commandModule: CommandModule<GlobalOptions, RegisterGovAuthOptions> = {

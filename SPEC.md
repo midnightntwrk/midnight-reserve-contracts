@@ -214,8 +214,7 @@ Contracts are deployed to multiple environments on Cardano networks. Each enviro
 | `preview` | Preview | Cardano Preview testnet |
 | `qanet` | Preview | Midnight QA environment |
 | `govnet` | Preview | Midnight Governance environment |
-| `node-dev-01` | Preview | Node development environment 1 |
-| `node-dev-2` | Preview | Node development environment 2 |
+| `devnet` | Preview | Midnight Devnet environment |
 
 ---
 

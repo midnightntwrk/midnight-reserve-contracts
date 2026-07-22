@@ -83,7 +83,7 @@ export async function handler(argv: MintTcnightOptions) {
 
   if (network === "mainnet") {
     throw new Error(
-      "mint-tcnight is only available on test networks (preview, preprod, qanet, devnet-*, node-dev-*)",
+      "mint-tcnight is only available on test networks (preview, preprod, qanet, devnet)",
     );
   }
 
@@ -105,7 +105,7 @@ export async function handler(argv: MintTcnightOptions) {
   const tcnightPolicy = contracts.tcnightMintInfinite;
   if (!tcnightPolicy) {
     throw new Error(
-      "TCnight minting is only available on test networks (preview, preprod, qanet, devnet-*, node-dev-*).",
+      "TCnight minting is only available on test networks (preview, preprod, qanet, devnet).",
     );
   }
   const policyId = PolicyId(tcnightPolicy.Script.hash());

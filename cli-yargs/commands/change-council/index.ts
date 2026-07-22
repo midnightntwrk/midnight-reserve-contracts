@@ -1,9 +1,10 @@
 import type { Argv, CommandModule } from "yargs";
 import type { GlobalOptions } from "../../lib/global-options";
+import { addTxOptions, type TxOptions } from "../../lib/global-options";
 import { extractSignersFromCbor } from "../../lib/signers";
 import { buildMultisigChangeTx } from "../../lib/change-multisig";
 
-interface ChangeCouncilOptions extends GlobalOptions {
+interface ChangeCouncilOptions extends GlobalOptions, TxOptions {
   "tx-hash": string;
   "tx-index": number;
   sign: boolean;
@@ -15,33 +16,35 @@ export const command = "change-council";
 export const describe = "Update council multisig members";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("tx-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash for the fee-paying UTxO",
-    })
-    .option("tx-index", {
-      type: "number",
-      demandOption: true,
-      description: "Transaction index for the fee-paying UTxO",
-    })
-    .option("sign", {
-      type: "boolean",
-      default: true,
-      description:
-        "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
-    })
-    .option("output-file", {
-      type: "string",
-      default: "change-council-tx.json",
-      description: "Output file name for the transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use build output instead of deployed blueprint",
-    });
+  return addTxOptions(
+    yargs
+      .option("tx-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash for the fee-paying UTxO",
+      })
+      .option("tx-index", {
+        type: "number",
+        demandOption: true,
+        description: "Transaction index for the fee-paying UTxO",
+      })
+      .option("sign", {
+        type: "boolean",
+        default: true,
+        description:
+          "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
+      })
+      .option("output-file", {
+        type: "string",
+        default: "change-council-tx.json",
+        description: "Output file name for the transaction",
+      })
+      .option("use-build", {
+        type: "boolean",
+        default: false,
+        description: "Use build output instead of deployed blueprint",
+      }),
+  );
 }
 
 export async function handler(argv: ChangeCouncilOptions) {
