@@ -40,7 +40,7 @@ use-env env:
     fi
     if [ ! -f "contract_blueprint_{{env}}.ts" ]; then
         echo "Generating contract_blueprint_{{env}}.ts from plutus-{{env}}.json..."
-        bunx @blaze-cardano/blueprint@latest plutus-{{env}}.json -o contract_blueprint_{{env}}.ts
+        bunx @blaze-cardano/blueprint@0.8.2 plutus-{{env}}.json -o contract_blueprint_{{env}}.ts
     fi
     cp contract_blueprint_{{env}}.ts contract_blueprint.ts
     echo "Activated environment: {{env}}"
