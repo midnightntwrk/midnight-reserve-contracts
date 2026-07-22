@@ -1,5 +1,5 @@
 import type { Argv, CommandModule } from "yargs";
-import { readFileSync, writeFileSync, mkdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { resolve } from "path";
 import type { GlobalOptions } from "../../lib/global-options";
 import { getCardanoNetwork } from "../../lib/network-mapping";
@@ -254,6 +254,240 @@ function checkForeverEmbedding(validators: PlutusValidator[]): CheckResult[] {
         : `FAIL: ${foreverName} compiledCode does NOT contain two-stage hash ${twoStage.hash}`,
     });
   }
+
+  return results;
+}
+
+function checkCnightForeverEmbedding(
+  validators: PlutusValidator[],
+): CheckResult[] {
+  const forever = findValidatorByName(validators, "cnight_mint_forever");
+  const twoStage = findValidatorByName(
+    validators,
+    "cnight_mint_two_stage_upgrade",
+  );
+
+  if (!forever) {
+    return [
+      {
+        name: "cNIGHT Embedding: cnight_mint_forever",
+        passed: false,
+        details: "cnight_mint_forever not found in plutus.json",
+      },
+    ];
+  }
+  if (!twoStage) {
+    return [
+      {
+        name: "cNIGHT Embedding: cnight_mint_forever",
+        passed: false,
+        details: "cnight_mint_two_stage_upgrade not found in plutus.json",
+      },
+    ];
+  }
+
+  const embedded = forever.compiledCode.includes(twoStage.hash);
+  return [
+    {
+      name: `cNIGHT Embedding: cnight_mint_forever contains cnight_mint_two_stage_upgrade hash`,
+      passed: embedded,
+      details: embedded
+        ? `PASS: cnight_mint_forever compiledCode contains two-stage hash ${twoStage.hash}`
+        : `FAIL: cnight_mint_forever compiledCode does NOT contain two-stage hash ${twoStage.hash}`,
+    },
+  ];
+}
+
+async function checkCnightOnChainScriptHashes(
+  validators: PlutusValidator[],
+  cnightDeploymentTxs: DeploymentTx[],
+  baseUrl: string,
+  apiKey: string,
+): Promise<CheckResult[]> {
+  const results: CheckResult[] = [];
+
+  const tx = cnightDeploymentTxs.find(
+    (t) => t.description === "cnight-minting-deployment",
+  );
+  if (!tx) {
+    results.push({
+      name: "cNIGHT On-chain: cnight-minting-deployment",
+      passed: false,
+      details: "cNIGHT minting deployment tx not found in transactions array",
+    });
+    return results;
+  }
+
+  const twoStageHash = findValidatorHash(
+    validators,
+    "cnight_mint_two_stage_upgrade",
+  );
+  if (!twoStageHash) {
+    results.push({
+      name: "cNIGHT On-chain: cnight-minting-deployment",
+      passed: false,
+      details: "cnight_mint_two_stage_upgrade not found in plutus.json",
+    });
+    return results;
+  }
+
+  let utxos: BlockfrostTxUtxos;
+  try {
+    const utxosResult = await blockfrostFetch(
+      baseUrl,
+      apiKey,
+      `/txs/${tx.txHash}/utxos`,
+    );
+    if (utxosResult === null) {
+      results.push({
+        name: "cNIGHT On-chain: cnight-minting-deployment",
+        passed: false,
+        details: `Transaction not found: ${tx.txHash}`,
+      });
+      return results;
+    }
+    utxos = utxosResult as BlockfrostTxUtxos;
+  } catch (err) {
+    results.push({
+      name: "cNIGHT On-chain: cnight-minting-deployment",
+      passed: false,
+      details: `Blockfrost query failed for ${tx.txHash}: ${err}`,
+    });
+    return results;
+  }
+
+  const onChainPolicyIds = extractPolicyIds(utxos.outputs);
+  const hasTwoStagePolicy = onChainPolicyIds.includes(twoStageHash);
+
+  results.push({
+    name: "cNIGHT On-chain: cnight-minting-deployment",
+    passed: hasTwoStagePolicy,
+    details: [
+      `Tx: ${tx.txHash}`,
+      `Expected cnight_mint_two_stage policy: ${twoStageHash}`,
+      `On-chain policy IDs: [${onChainPolicyIds.sort().join(", ")}]`,
+      hasTwoStagePolicy
+        ? "PASS"
+        : "FAIL: Two-stage policy not found in outputs",
+    ].join("\n"),
+  });
+
+  return results;
+}
+
+async function checkCnightUpgradeStateDatum(
+  validators: PlutusValidator[],
+  cnightDeploymentTxs: DeploymentTx[],
+  baseUrl: string,
+  apiKey: string,
+): Promise<CheckResult[]> {
+  const results: CheckResult[] = [];
+
+  const tx = cnightDeploymentTxs.find(
+    (t) => t.description === "cnight-minting-deployment",
+  );
+  if (!tx) {
+    results.push({
+      name: "cNIGHT UpgradeState (main): cnight-minting-deployment",
+      passed: false,
+      details: "cNIGHT minting deployment tx not found",
+    });
+    return results;
+  }
+
+  const expectedLogicHash = findValidatorHash(validators, "cnight_mint_logic");
+  const expectedAuthHash = findValidatorHash(validators, "main_gov_auth");
+  const twoStagePolicyId = findValidatorHash(
+    validators,
+    "cnight_mint_two_stage_upgrade",
+  );
+
+  if (!expectedLogicHash || !expectedAuthHash || !twoStagePolicyId) {
+    results.push({
+      name: "cNIGHT UpgradeState (main): cnight-minting-deployment",
+      passed: false,
+      details: [
+        "Missing required validator hashes:",
+        !expectedLogicHash ? "  - cnight_mint_logic" : "",
+        !expectedAuthHash ? "  - main_gov_auth" : "",
+        !twoStagePolicyId ? "  - cnight_mint_two_stage_upgrade" : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    });
+    return results;
+  }
+
+  let utxos: BlockfrostTxUtxos;
+  try {
+    const utxosResult = await blockfrostFetch(
+      baseUrl,
+      apiKey,
+      `/txs/${tx.txHash}/utxos`,
+    );
+    if (utxosResult === null) {
+      results.push({
+        name: "cNIGHT UpgradeState (main): cnight-minting-deployment",
+        passed: false,
+        details: `Transaction not found: ${tx.txHash}`,
+      });
+      return results;
+    }
+    utxos = utxosResult as BlockfrostTxUtxos;
+  } catch (err) {
+    results.push({
+      name: "cNIGHT UpgradeState (main): cnight-minting-deployment",
+      passed: false,
+      details: `Blockfrost query failed for ${tx.txHash}: ${err}`,
+    });
+    return results;
+  }
+
+  const targetUnit = `${twoStagePolicyId}${MAIN_ASSET_NAME_HEX}`;
+  const targetOutput = utxos.outputs.find((o) =>
+    o.amount.some((a) => a.unit === targetUnit),
+  );
+
+  if (!targetOutput) {
+    results.push({
+      name: "cNIGHT UpgradeState (main): cnight-minting-deployment",
+      passed: false,
+      details: `No output found with main NFT (${targetUnit}) in tx ${tx.txHash}`,
+    });
+    return results;
+  }
+
+  if (!targetOutput.inline_datum) {
+    results.push({
+      name: "cNIGHT UpgradeState (main): cnight-minting-deployment",
+      passed: false,
+      details: `Output with main NFT has no inline datum in tx ${tx.txHash}`,
+    });
+    return results;
+  }
+
+  const parsed = parseUpgradeStateDatum(targetOutput.inline_datum);
+  if (!parsed) {
+    results.push({
+      name: "cNIGHT UpgradeState (main): cnight-minting-deployment",
+      passed: false,
+      details: `Could not parse UpgradeState datum. Raw CBOR: ${targetOutput.inline_datum.slice(0, 80)}...`,
+    });
+    return results;
+  }
+
+  const logicOk = parsed.logicHash === expectedLogicHash;
+  const authOk = parsed.authHash === expectedAuthHash;
+
+  results.push({
+    name: "cNIGHT UpgradeState (main): cnight-minting-deployment",
+    passed: logicOk && authOk,
+    details: [
+      `Tx: ${tx.txHash}`,
+      `Logic hash - expected: ${expectedLogicHash}, actual: ${parsed.logicHash} ${logicOk ? "PASS" : "FAIL"}`,
+      `Auth hash (main_gov_auth) - expected: ${expectedAuthHash}, actual: ${parsed.authHash} ${authOk ? "PASS" : "FAIL"}`,
+    ].join("\n"),
+  });
 
   return results;
 }
@@ -544,6 +778,15 @@ function generateReport(network: string, allResults: CheckResult[]): string {
   const stagingDatumResults = allResults.filter((r) =>
     r.name.startsWith("UpgradeState (staging):"),
   );
+  const cnightEmbeddingResults = allResults.filter((r) =>
+    r.name.startsWith("cNIGHT Embedding:"),
+  );
+  const cnightOnChainResults = allResults.filter((r) =>
+    r.name.startsWith("cNIGHT On-chain:"),
+  );
+  const cnightDatumResults = allResults.filter((r) =>
+    r.name.startsWith("cNIGHT UpgradeState"),
+  );
 
   function renderSection(title: string, results: CheckResult[]): void {
     if (results.length === 0) return;
@@ -572,6 +815,18 @@ function generateReport(network: string, allResults: CheckResult[]): string {
   renderSection(
     "Check 4: UpgradeState Datum Verification (Staging Outputs)",
     stagingDatumResults,
+  );
+  renderSection(
+    "Check 5: cNIGHT Forever -> Two-Stage Embedding",
+    cnightEmbeddingResults,
+  );
+  renderSection(
+    "Check 6: cNIGHT On-Chain Script Hash Verification",
+    cnightOnChainResults,
+  );
+  renderSection(
+    "Check 7: cNIGHT UpgradeState Datum Verification (Main)",
+    cnightDatumResults,
   );
 
   return lines.join("\n");
@@ -694,12 +949,84 @@ export async function handler(argv: VerifyOptions) {
   }
   console.log();
 
+  // cNIGHT minting checks
+  let cnightEmbeddingResults: CheckResult[] = [];
+  let cnightOnChainResults: CheckResult[] = [];
+  let cnightDatumResults: CheckResult[] = [];
+
+  const cnightDeployTxPath = resolve(
+    `deployments/${network}/cnight-minting-deployment.json`,
+  );
+
+  if (!existsSync(cnightDeployTxPath)) {
+    console.log(
+      "Skipping cNIGHT minting checks (no cnight-minting-deployment.json)",
+    );
+    console.log();
+  } else {
+    let cnightDeploymentData: unknown;
+    try {
+      cnightDeploymentData = JSON.parse(
+        readFileSync(cnightDeployTxPath, "utf8"),
+      );
+    } catch {
+      console.warn(
+        `Warning: Cannot parse ${cnightDeployTxPath} — skipping cNIGHT on-chain checks`,
+      );
+    }
+
+    if (cnightDeploymentData) {
+      const cnightDeploymentTxs = requireArrayField(
+        cnightDeploymentData,
+        "transactions",
+        cnightDeployTxPath,
+      ) as DeploymentTx[];
+
+      // Check 5: cNIGHT Forever -> Two-Stage Embedding
+      console.log("Check 5: cNIGHT forever script -> two-stage embedding...");
+      cnightEmbeddingResults = checkCnightForeverEmbedding(validators);
+      for (const r of cnightEmbeddingResults) {
+        console.log(`  ${r.passed ? "PASS" : "FAIL"}: ${r.name}`);
+      }
+      console.log();
+
+      // Check 6: cNIGHT on-chain script hash verification
+      console.log("Check 6: cNIGHT on-chain script hash verification...");
+      cnightOnChainResults = await checkCnightOnChainScriptHashes(
+        validators,
+        cnightDeploymentTxs,
+        baseUrl,
+        apiKey,
+      );
+      for (const r of cnightOnChainResults) {
+        console.log(`  ${r.passed ? "PASS" : "FAIL"}: ${r.name}`);
+      }
+      console.log();
+
+      // Check 7: cNIGHT UpgradeState datum verification (main only)
+      console.log("Check 7: cNIGHT UpgradeState datum verification (main)...");
+      cnightDatumResults = await checkCnightUpgradeStateDatum(
+        validators,
+        cnightDeploymentTxs,
+        baseUrl,
+        apiKey,
+      );
+      for (const r of cnightDatumResults) {
+        console.log(`  ${r.passed ? "PASS" : "FAIL"}: ${r.name}`);
+      }
+      console.log();
+    }
+  }
+
   // Generate report
   const allResults = [
     ...embeddingResults,
     ...onChainResults,
     ...mainDatumResults,
     ...stagingDatumResults,
+    ...cnightEmbeddingResults,
+    ...cnightOnChainResults,
+    ...cnightDatumResults,
   ];
 
   const report = generateReport(network, allResults);

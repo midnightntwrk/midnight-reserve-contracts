@@ -1,0 +1,186 @@
+name: Change Federated Ops
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Target network'
+        required: true
+        type: choice
+        options:
+          - mainnet
+          - preprod
+          - preview
+          - qanet
+          - govnet
+          - devnet
+      permissioned_candidates:
+        description: 'PERMISSIONED_CANDIDATES (relaxed JSON format)'
+        required: true
+        type: string
+      tx_hash:
+        description: 'Fee-paying UTxO transaction hash (64 hex chars)'
+        required: true
+        type: string
+      tx_index:
+        description: 'Fee-paying UTxO output index'
+        required: true
+        type: string
+      fee_padding:
+        description: 'Fee padding in lovelace'
+        required: false
+        default: '50000'
+        type: string
+
+permissions: {}
+
+jobs:
+  build-tx:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Validate inputs
+        id: validate
+        env:
+          NETWORK: ${{ inputs.network }}
+          TX_HASH: ${{ inputs.tx_hash }}
+          TX_INDEX: ${{ inputs.tx_index }}
+          FEE_PADDING: ${{ inputs.fee_padding }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$NETWORK" =~ ^(mainnet|preprod|preview|qanet|govnet|devnet)$ ]]; then
+            echo "::error::Unknown network '${NETWORK}'"
+            exit 1
+          fi
+          if [[ ! "$TX_HASH" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "::error::tx_hash must be exactly 64 hex characters"
+            exit 1
+          fi
+          if [[ ! "$TX_INDEX" =~ ^[0-9]+$ ]]; then
+            echo "::error::tx_index must be a non-negative integer"
+            exit 1
+          fi
+          if [[ ! "$FEE_PADDING" =~ ^[0-9]+$ ]]; then
+            echo "::error::fee_padding must be a non-negative integer"
+            exit 1
+          fi
+
+          TIMESTAMP=$(date -u +%Y%m%d-%H%M%S)
+          BRANCH="gov/change-federated-ops/${NETWORK}/${TIMESTAMP}"
+          {
+            echo "network=${NETWORK}"
+            echo "tx_hash=${TX_HASH}"
+            echo "tx_index=${TX_INDEX}"
+            echo "fee_padding=${FEE_PADDING}"
+            echo "branch=${BRANCH}"
+            echo "timestamp=${TIMESTAMP}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6  #v2.2.0
+        with:
+          bun-version: 1.3.12
+
+      - name: Install cardano-cli
+        env:
+          CARDANO_CLI_VERSION: "10.15.1.0"
+          CARDANO_CLI_SHA256: "cbb982534212053e4ffaa0bf4db43f467865e9bf9a20aea9d4aff5ff662dadfe"
+        run: |
+          set -euo pipefail
+          URL="https://github.com/IntersectMBO/cardano-cli/releases/download/cardano-cli-${CARDANO_CLI_VERSION}/cardano-cli-${CARDANO_CLI_VERSION}-x86_64-linux.tar.gz"
+          curl -sL "$URL" -o /tmp/cardano-cli.tar.gz
+          echo "${CARDANO_CLI_SHA256}  /tmp/cardano-cli.tar.gz" | sha256sum -c -
+          tar xz -C /usr/local/bin/ -f /tmp/cardano-cli.tar.gz
+          cardano-cli --version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build unsigned transaction
+        id: build-tx
+        env:
+          NETWORK: ${{ steps.validate.outputs.network }}
+          TX_HASH: ${{ steps.validate.outputs.tx_hash }}
+          TX_INDEX: ${{ steps.validate.outputs.tx_index }}
+          FEE_PADDING: ${{ steps.validate.outputs.fee_padding }}
+          PERMISSIONED_CANDIDATES: ${{ inputs.permissioned_candidates }}
+          DEPLOYER_ADDRESS: ${{ inputs.network == 'mainnet' && secrets.DEPLOYER_ADDRESS_MAINNET || secrets.DEPLOYER_ADDRESS_TESTNET }}
+          BLOCKFROST_PREVIEW_API_KEY: ${{ secrets.BLOCKFROST_PREVIEW_API_KEY }}
+          BLOCKFROST_PREPROD_API_KEY: ${{ secrets.BLOCKFROST_PREPROD_API_KEY }}
+          BLOCKFROST_MAINNET_API_KEY: ${{ secrets.BLOCKFROST_MAINNET_API_KEY }}
+        run: |
+          set -euo pipefail
+          TX_DIR="deployments/${NETWORK}"
+          OUTPUT_FILE="${TX_DIR}/change-federated-ops-tx.json"
+
+          bun run cli-yargs/index.ts change-federated-ops \
+            --network "${NETWORK}" \
+            --tx-hash "${TX_HASH}" \
+            --tx-index "${TX_INDEX}" \
+            --sign false \
+            --fee-padding "${FEE_PADDING}" \
+            --output-file "${OUTPUT_FILE}"
+
+          echo "tx_path=${OUTPUT_FILE}" >> "$GITHUB_OUTPUT"
+          TX_HASH_OUT=$(jq -r .txHash "${OUTPUT_FILE}")
+          echo "tx_hash=${TX_HASH_OUT}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate transaction summary
+        run: |
+          set -euo pipefail
+          bun run cli-yargs/index.ts tx-summary \
+            --tx-file "${{ steps.build-tx.outputs.tx_path }}" \
+            --network "${{ steps.validate.outputs.network }}" \
+            --output-file /tmp/tx-summary.md
+        env:
+          BLOCKFROST_PREVIEW_API_KEY: ${{ secrets.BLOCKFROST_PREVIEW_API_KEY }}
+          BLOCKFROST_PREPROD_API_KEY: ${{ secrets.BLOCKFROST_PREPROD_API_KEY }}
+          BLOCKFROST_MAINNET_API_KEY: ${{ secrets.BLOCKFROST_MAINNET_API_KEY }}
+
+      - name: Create branch and commit
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${{ steps.validate.outputs.branch }}"
+          git add "${{ steps.build-tx.outputs.tx_path }}"
+          git commit -m "$(cat <<'EOF'
+          gov: build change-federated-ops tx for ${{ steps.validate.outputs.network }}
+
+          Tx hash: ${{ steps.build-tx.outputs.tx_hash }}
+          Network: ${{ steps.validate.outputs.network }}
+          Triggered by: ${{ github.actor }}
+          EOF
+          )"
+          git push origin "${{ steps.validate.outputs.branch }}"
+
+      - name: Create Pull Request
+        run: |
+          set -euo pipefail
+          {
+            cat /tmp/tx-summary.md
+            echo ""
+            echo "---"
+            echo ""
+            echo "**Signing instructions:**"
+            echo "1. Download \`${{ steps.build-tx.outputs.tx_path }}\` from this branch"
+            echo "2. Sign offline with your key"
+            echo "3. Send witness file to the coordinator"
+            echo "4. Coordinator submits via the **Submit Transaction** workflow"
+            echo ""
+            echo "**Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > /tmp/pr-body.md
+
+          gh pr create \
+            --base main \
+            --head "${{ steps.validate.outputs.branch }}" \
+            --title "gov: change-federated-ops on ${{ steps.validate.outputs.network }} (${{ steps.validate.outputs.timestamp }})" \
+            --body-file /tmp/pr-body.md
+        env:
+          GH_TOKEN: ${{ github.token }}

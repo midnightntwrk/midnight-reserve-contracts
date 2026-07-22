@@ -26,3 +26,7 @@ team-prompt.md
 .env-preview
 .env-preprod
 get_reserve_v2_hash.sh
+
+__pycache__/
+*.pyc
+**/__pycache__/
