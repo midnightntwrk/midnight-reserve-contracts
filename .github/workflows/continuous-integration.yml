@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  #v7.0.0
-      - uses: aiken-lang/setup-aiken@c8a4cc81f420d1cf03776bc5367675f9a08582e6  #v1.0.3
+      - uses: aiken-lang/setup-aiken@1728a4be43be099752e22d8b841706caaa6fdd88  #v1.0.4
         with:
           version: v1.1.19
       - run: aiken fmt --check
