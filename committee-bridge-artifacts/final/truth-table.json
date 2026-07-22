@@ -1,0 +1,77 @@
+[
+  {
+    "statement": "The BEEFY-backed committee bridge validates blocks.",
+    "status": "prohibited-claim",
+    "why": "The admissible code path is bounded to committee-state / authority-set transition verification and output-state equality, while upstream BEEFY material supports bridge-oriented framing rather than generic block validation.",
+    "primary_evidence": "validator.logic.committee-state-transition-only @ validators/committee_bridge.ak:52-79; bridge.verify-consensus.output-state-must-match-derived-state @ lib/bridge/beefy.ak:10-19; beefy.protocol-is-bridge-oriented @ Introduction (https://raw.githubusercontent.com/paritytech/grandpa-bridge-gadget/master/docs/beefy.md:7-9)",
+    "notes": "Use narrower committee-update wording; do not broaden this path into generic block-validation semantics.",
+    "supporting_claim_ids": [
+      "validator.logic.committee-state-transition-only",
+      "bridge.verify-consensus.output-state-must-match-derived-state",
+      "beefy.protocol-is-bridge-oriented"
+    ]
+  },
+  {
+    "statement": "The BEEFY-backed committee bridge validates committee updates.",
+    "status": "confirmed",
+    "why": "The validator loads trusted committee state, proposed output state, and threshold data, then accepts only when `verify_consensus` derives a matching output state from the proof using the current or next authority set.",
+    "primary_evidence": "validator.logic.committee-state-transition-only @ validators/committee_bridge.ak:52-79; bridge.verify-consensus.current-or-next-validator-set @ lib/bridge/beefy.ak:50-58; bridge.verify-consensus.output-state-must-match-derived-state @ lib/bridge/beefy.ak:10-19",
+    "notes": "Confirmed from repository code. No admissible validator-entrypoint tests were found, so prose should stay close to the code boundary.",
+    "supporting_claim_ids": [
+      "validator.logic.committee-state-transition-only",
+      "bridge.verify-consensus.current-or-next-validator-set",
+      "bridge.verify-consensus.output-state-must-match-derived-state"
+    ],
+    "related_open_question_ids": [
+      "tests.no-committee-bridge-validator-entrypoint-coverage"
+    ]
+  },
+  {
+    "statement": "The BEEFY-backed committee bridge maintains or updates committee state.",
+    "status": "confirmed",
+    "why": "The accepted transition explicitly produces a `BeefyConsensusState`, preserves or advances the current and next authority sets, and requires the derived state to equal the output state written on chain.",
+    "primary_evidence": "bridge.verify-consensus-derives-next-committee-from-leaf @ lib/bridge/beefy.ak:84-115; bridge.verify-consensus.output-state-must-match-derived-state @ lib/bridge/beefy.ak:10-19",
+    "notes": "This is a state-update claim, not a broader claim about validating arbitrary relay-chain history.",
+    "supporting_claim_ids": [
+      "bridge.verify-consensus-derives-next-committee-from-leaf",
+      "bridge.verify-consensus.output-state-must-match-derived-state"
+    ]
+  },
+  {
+    "statement": "The BEEFY-backed committee bridge performs generic cross-chain message passing.",
+    "status": "prohibited-claim",
+    "why": "The admissible sources support a narrow bridge boundary: committee-state verification over BEEFY proof material. They do not establish generic message-passing behavior for this repository.",
+    "primary_evidence": "beefy.protocol-is-bridge-oriented @ Introduction (https://raw.githubusercontent.com/paritytech/grandpa-bridge-gadget/master/docs/beefy.md:7-9); validator.logic.committee-state-transition-only @ validators/committee_bridge.ak:52-79",
+    "notes": "Do not use generic bridging or messaging language in the rewritten docs.",
+    "supporting_claim_ids": [
+      "beefy.protocol-is-bridge-oriented",
+      "validator.logic.committee-state-transition-only"
+    ]
+  },
+  {
+    "statement": "The BEEFY-backed committee bridge derives future trusted committee data from accepted proof material.",
+    "status": "confirmed",
+    "why": "The code requires the `nc` payload to match the hashed SCALE-encoded latest MMR leaf and, when that leaf advertises a newer authority set, derives the next trusted committee data from that leaf before matching the explicit output state.",
+    "primary_evidence": "bridge.verify-consensus.payload-must-hash-latest-leaf @ lib/bridge/beefy.ak:79-82; bridge.verify-consensus-derives-next-committee-from-leaf @ lib/bridge/beefy.ak:84-115",
+    "notes": "The exact local threshold arithmetic remains an open wording question, but the derivation path from accepted proof material is source-backed.",
+    "supporting_claim_ids": [
+      "bridge.verify-consensus.payload-must-hash-latest-leaf",
+      "bridge.verify-consensus-derives-next-committee-from-leaf"
+    ],
+    "related_open_question_ids": [
+      "bridge.threshold-rounding-semantics-not-yet-worded"
+    ]
+  },
+  {
+    "statement": "The BEEFY-backed committee bridge implies broader finality or overall chain correctness than the cited sources support.",
+    "status": "prohibited-claim",
+    "why": "GRANDPA's provable-finality guarantees are prerequisite background, while upstream and repository bridge claims stay narrower. The committee-bridge docs must not upgrade BEEFY proof verification into broader finality, honesty, or chain-correctness guarantees.",
+    "primary_evidence": "grandpa.provides-provable-finality-background @ Hybrid Consensus (https://docs.polkadot.com/ai/pages/reference-polkadot-hub-consensus-and-security-pos-consensus.md:36-36); beefy.runs-alongside-grandpa-on-finalized-chain @ Introduction (https://raw.githubusercontent.com/paritytech/grandpa-bridge-gadget/master/docs/beefy.md:42-45); beefy.upstream-justification-threshold-is-2of3-plus-1 @ Details / Round ends (https://raw.githubusercontent.com/paritytech/grandpa-bridge-gadget/master/docs/beefy.md:133-135)",
+    "notes": "Keep GRANDPA in prerequisite/background context only, and do not equate threshold-signed commitments with broader chain correctness claims.",
+    "supporting_claim_ids": [
+      "grandpa.provides-provable-finality-background",
+      "beefy.runs-alongside-grandpa-on-finalized-chain",
+      "beefy.upstream-justification-threshold-is-2of3-plus-1"
+    ]
+  }
+]

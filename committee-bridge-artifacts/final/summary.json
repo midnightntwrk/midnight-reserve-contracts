@@ -1,0 +1,10 @@
+{
+  "claim_count": 20,
+  "truth_table_row_count": 6,
+  "open_question_count": 3,
+  "unsupported_claim_count": 0,
+  "contradiction_status": "satisfied",
+  "alignment_status_counts": {
+    "supported": 10
+  }
+}

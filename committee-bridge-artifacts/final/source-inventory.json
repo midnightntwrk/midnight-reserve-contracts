@@ -1,0 +1,40 @@
+{
+  "sources": [
+    {
+      "reader_partition": "bridge-helpers-types",
+      "source_class": "code",
+      "path_or_url": "lib/bridge/beefy.ak",
+      "line_count": 162
+    },
+    {
+      "reader_partition": "bridge-helpers-types",
+      "source_class": "code",
+      "path_or_url": "lib/bridge/types.ak",
+      "line_count": 70
+    },
+    {
+      "reader_partition": "tests",
+      "source_class": "test",
+      "path_or_url": "lib/bridge/beefy.test.ak",
+      "line_count": 113
+    },
+    {
+      "reader_partition": "upstream-beefy",
+      "source_class": "upstream-beefy",
+      "path_or_url": "https://raw.githubusercontent.com/paritytech/grandpa-bridge-gadget/master/docs/beefy.md",
+      "line_count": 402
+    },
+    {
+      "reader_partition": "upstream-grandpa-prerequisites",
+      "source_class": "upstream-grandpa",
+      "path_or_url": "https://docs.polkadot.com/ai/pages/reference-polkadot-hub-consensus-and-security-pos-consensus.md",
+      "line_count": 128
+    },
+    {
+      "reader_partition": "validator-entry-points",
+      "source_class": "code",
+      "path_or_url": "validators/committee_bridge.ak",
+      "line_count": 86
+    }
+  ]
+}

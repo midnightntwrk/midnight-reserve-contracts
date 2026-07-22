@@ -877,9 +877,9 @@ When these tags appear in domain-specific sections below, they refer to these sa
 
 ---
 
-## Committee Bridge Validators
+## BEEFY-Backed Committee Bridge Validators
 
-The committee bridge validators manage BEEFY consensus state for Midnight-Cardano bridging. They follow the Forever/Two-Stage/Logic pattern and store `BeefyConsensusState` for tracking authority set transitions.
+These validators maintain the BEEFY-backed committee bridge state used for committee-data updates. They follow the Forever/Two-Stage/Logic pattern, with `BeefyConsensusState` recording the trusted current and next authority sets, their stake totals, and the latest accepted height. This section documents only that committee-state verification path; it does not claim generic block validation or generic cross-chain message passing.
 
 - `committee_bridge_forever`
   Minting / setup constraints:
@@ -962,7 +962,7 @@ The committee bridge validators manage BEEFY consensus state for Midnight-Cardan
   - RUN-1, RUN-2, RUN-3: withdrawal credential checks described above must be satisfied.
 - `committee_bridge_logic`
   Operational constraints:
-  - CBL-1: on `Withdrawing` or `UnregisterCredential`, verify BEEFY consensus proof.
+  - CBL-1: on `Withdrawing` or `UnregisterCredential`, verify a BEEFY-backed committee update proof against the trusted input state, referenced threshold datum, and explicit output state.
   - CBL-2: on `RegisterCredential`, allow script registration unconditionally.
   - CBL-3: all other script purposes are rejected.
   - BCP-1: redeemer must decode to `BeefyConsensusProof`.
@@ -974,12 +974,13 @@ The committee bridge validators manage BEEFY consensus state for Midnight-Cardan
   - BCP-7: threshold datum must decode to `BeefyThreshold`.
   - BCP-8: proof's signed commitment block number must exceed trusted state's `latest_height`.
   - BCP-9: proof's validator set ID must match either `current_authority_set.id` or `next_authority_set.id`.
-  - BCP-10: total signed stake must meet the threshold fraction of the validating authority set's total stake.
-  - BCP-11: commitment's next-committee payload must match the keccak256 hash of the scale-encoded MMR leaf.
-  - BCP-12: output state must equal the computed new state from `verify_consensus`.
+  - BCP-10: required signed stake must meet or exceed the validating threshold computed from the authority-set stake total selected by `validator_set_id` and the referenced `BeefyThreshold` datum.
+  - BCP-11: the signed commitment must carry the next-committee payload, and that payload must equal `keccak256(scale_encode_beefy_mmr_leaf(latest_mmr_leaf))`.
+  - BCP-12: output state must equal the derived post-verification `BeefyConsensusState`.
   Implementation notes:
-  - BEEFY verification is delegated to `verify_consensus` from `lib/bridge/beefy`, which validates MMR proofs and ECDSA signatures.
-  - Authority set transitions occur when `latest_mmr_leaf.next_authority_set.id > trusted_state.next_authority_set.id`.
+  - `verify_consensus` in `lib/bridge/beefy` verifies the BEEFY proof components used here: the signed commitment, the latest MMR leaf, and the proof data, then accepts only when the derived state equals the explicit output state.
+  - The current signature verification path is ECDSA/secp256k1 via `builtin.verify_ecdsa_secp256k1_signature`.
+  - Authority set rotation occurs only when `latest_mmr_leaf.next_authority_set.id > trusted_state.next_authority_set.id`; otherwise the verifier keeps the previous authority-set pair and updates only the accepted height.
 
 ---
 
