@@ -71,6 +71,9 @@ export async function completeTx(
   const { commandName, provider, environment, knownUtxos } = options;
   let traces: string[] = [];
   let redeemerMap: RedeemerMapping = {};
+  // Set when the Phase 1 local UPLC evaluation succeeds; reused in Phase 2 so
+  // completion evaluates scripts locally instead of via the provider.
+  let localEvaluator: ReturnType<typeof makeUplcEvaluator> | undefined;
 
   // Phase 1: Local UPLC test against draft (non-mutating, advisory)
   if (knownUtxos && knownUtxos.length > 0) {
@@ -99,6 +102,7 @@ export async function completeTx(
       const evaluator = makeUplcEvaluator(params, 1.2, 1.2, slotConfig);
       await evaluator(draftTx, knownUtxos);
       printSuccess("Local UPLC test passed");
+      localEvaluator = evaluator;
     } catch (testError) {
       const rawMsg = String(testError);
       traces = extractTraces(rawMsg);
@@ -121,8 +125,16 @@ export async function completeTx(
     }
   }
 
-  // Phase 2: Real complete via provider (Blockfrost) — authoritative
+  // Phase 2: complete + balance. When spending existing Plutus script UTxOs,
+  // the provider's Ogmios evaluateTransaction rejects the on-chain inputs
+  // passed as `additionalUtxo` (error 3002). Since Phase 1's local UPLC
+  // evaluation already succeeded for this exact tx, reuse it for completion so
+  // no provider evaluate round-trip happens. Falls back to the provider
+  // evaluator when Phase 1 didn't run (no knownUtxos) or failed.
   try {
+    if (localEvaluator) {
+      txBuilder.useEvaluator(localEvaluator);
+    }
     const tx = await txBuilder.complete();
     printSuccess(`Transaction built: ${tx.getId()}`);
     return { tx, traces };
