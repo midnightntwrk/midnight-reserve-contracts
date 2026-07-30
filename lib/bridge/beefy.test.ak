@@ -44,15 +44,15 @@ const signatures =
 
 const votes =
   list.zip(validator_set, signatures)
-    |> list.indexed_map(
-        fn(i, x) {
+    |> list.map(
+        fn(x) {
           if x.2nd == None {
             None
           } else {
             let (key, sig) = x
             expect Some(sig) = sig
             let sig = bytearray.take(sig, 64)
-            Some(Vote(sig, i, key, 0))
+            Some(Vote(sig, key))
           }
         },
       )
@@ -73,6 +73,13 @@ test beefy_candidate_sig() {
     check_auth_sigs_and_get_stake(leaves, votes, msg |> builtin.keccak_256)
 
   i == 9000
+}
+
+test beefy_candidate_sig_wrong_hash() fail {
+  let signed_stake =
+    check_auth_sigs_and_get_stake(leaves, votes, #"01" |> builtin.keccak_256)
+
+  signed_stake >= 0
 }
 
 test single_sig_check() {
