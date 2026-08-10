@@ -44,11 +44,16 @@ pub fn scale_encode_commitment(commitment: Commitment) -> ByteArray {
 /// hash equals the `"nc"` payload in the signed commitment. Layout:
 ///   u8 version ||
 ///   little-endian u32 parent_number ||
-///   parent_hash (32 bytes) ||
+///   parent_hash (32 bytes, enforced) ||
 ///   little-endian u64 next_authority_set.id ||
 ///   little-endian u32 next_authority_set.len ||
-///   next_authority_set.root (32 bytes) ||
+///   next_authority_set.root (32 bytes, enforced) ||
 ///   extra (or a single 0x00 byte when `extra` is empty)
+///
+/// The two 32-byte widths are load-bearing, not decorative: the fields are
+/// raw-concatenated with no delimiter or length prefix, so if either width
+/// floats then one byte string parses as many distinct leaves and a single
+/// relay-chain signature authorises all of them. Hence the guards below.
 pub fn scale_encode_beefy_mmr_leaf(leaf: BeefyMmrLeaf) -> ByteArray {
   let BeefyMmrLeaf {
     version,
@@ -57,6 +62,9 @@ pub fn scale_encode_beefy_mmr_leaf(leaf: BeefyMmrLeaf) -> ByteArray {
     next_authority_set,
     extra,
   } = leaf
+
+  expect builtin.length_of_bytearray(parent_hash) == 32
+  expect builtin.length_of_bytearray(next_authority_set.root) == 32
 
   let first =
     builtin.integer_to_bytearray(False, 1, version)
@@ -193,4 +201,49 @@ test scale_encode_beefy_leaf_1() {
   let codec_leaf = scale_encode_beefy_mmr_leaf(beefy_leaf)
 
   codec_leaf == #"0011010000c773b67e92868f58aef6874146464646331be113fba51bd89a48d65b6d81bf3d010000000000000001000000ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d00"
+}
+
+// Encoding malleability. `parent_hash`, `next_authority_set.root` and `extra`
+// are plain `ByteArray`s concatenated with no delimiter or length prefix, so a
+// single signed byte string parses as many distinct leaves — 2145 of them for
+// the 82-byte vector above. `verify_mmr_update_proof` copies the *parsed*
+// `next_authority_set` and `extra` into the new trusted state, so re-partitioning
+// rewrites consensus state while preserving the keccak256 the relay chain signed:
+// a genuine justification authorises every reading. Only the field widths make
+// the encoding injective, and only these guards enforce them.
+//
+// Both leaves below encode to the exact byte string asserted in
+// `scale_encode_beefy_leaf_1`, so both must be rejected.
+
+// Root emptied; its 32 bytes plus the trailing 0x00 absorbed into `extra`,
+// yielding an unusable empty root and a ~2^264 next_stake_total.
+test leaf_encoding_rejects_empty_root() fail {
+  scale_encode_beefy_mmr_leaf(
+    BeefyMmrLeaf {
+      version: 0,
+      parent_number: 273,
+      parent_hash: #"c773b67e92868f58aef6874146464646331be113fba51bd89a48d65b6d81bf3d",
+      next_authority_set: AuthoritySetCommitment(1, 1, ""),
+      extra: #"ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d00",
+    },
+  ) != ""
+}
+
+// `parent_hash` one byte short, so the 12 fixed-width bytes after it slide
+// left: id 1 -> 317, len 1 -> 256, and a wholly different 32-byte root. The
+// root is still 32 bytes, so this case pins the `parent_hash` guard specifically.
+test leaf_encoding_rejects_short_parent_hash() fail {
+  scale_encode_beefy_mmr_leaf(
+    BeefyMmrLeaf {
+      version: 0,
+      parent_number: 273,
+      parent_hash: #"c773b67e92868f58aef6874146464646331be113fba51bd89a48d65b6d81bf",
+      next_authority_set: AuthoritySetCommitment(
+        317,
+        256,
+        #"00ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d6",
+      ),
+      extra: #"6d00",
+    },
+  ) != ""
 }
