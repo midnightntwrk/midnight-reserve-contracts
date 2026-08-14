@@ -22,13 +22,10 @@ validator committee_bridge_forever {
       one_shot_ref,
       config.committee_bridge_two_stage_hash,
       fn(datum, _redeemer) {
-        expect BeefyConsensusState {
-          current_authority_set,
-          next_authority_set,
-          ..
-        }: BeefyConsensusState = datum
+        expect BeefyConsensusState { current_committee, next_committee, .. }: BeefyConsensusState =
+          datum
 
-        current_authority_set.id < next_authority_set.id
+        current_committee.id < next_committee.id
       },
     )
   }

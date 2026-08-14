@@ -41,13 +41,13 @@ pub fn scale_encode_commitment(commitment: Commitment) -> ByteArray {
 }
 
 /// SCALE-encode a `BeefyMmrLeaf` into the byte sequence whose keccak256
-/// hash equals the `"nc"` payload in the signed commitment. Layout:
+/// hash is the MMR leaf hash proven against the signed MMR root. Layout:
 ///   u8 version ||
 ///   little-endian u32 parent_number ||
 ///   parent_hash (32 bytes, enforced) ||
 ///   little-endian u64 next_authority_set.id ||
 ///   little-endian u32 next_authority_set.len ||
-///   next_authority_set.root (32 bytes, enforced) ||
+///   next_authority_set.keyset_commitment (32 bytes, enforced) ||
 ///   extra (or a single 0x00 byte when `extra` is empty)
 ///
 /// The two 32-byte widths are load-bearing, not decorative: the fields are
@@ -64,7 +64,7 @@ pub fn scale_encode_beefy_mmr_leaf(leaf: BeefyMmrLeaf) -> ByteArray {
   } = leaf
 
   expect builtin.length_of_bytearray(parent_hash) == 32
-  expect builtin.length_of_bytearray(next_authority_set.root) == 32
+  expect builtin.length_of_bytearray(next_authority_set.keyset_commitment) == 32
 
   let first =
     builtin.integer_to_bytearray(False, 1, version)
@@ -78,7 +78,7 @@ pub fn scale_encode_beefy_mmr_leaf(leaf: BeefyMmrLeaf) -> ByteArray {
 
   let third =
     builtin.integer_to_bytearray(False, 4, next_authority_set.len)
-      |> bytearray.concat(next_authority_set.root)
+      |> bytearray.concat(next_authority_set.keyset_commitment)
 
   first
     |> bytearray.concat(second)
@@ -203,7 +203,7 @@ test scale_encode_beefy_leaf_1() {
   codec_leaf == #"0011010000c773b67e92868f58aef6874146464646331be113fba51bd89a48d65b6d81bf3d010000000000000001000000ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d00"
 }
 
-// Encoding malleability. `parent_hash`, `next_authority_set.root` and `extra`
+// Encoding malleability. `parent_hash`, `next_authority_set.keyset_commitment` and `extra`
 // are plain `ByteArray`s concatenated with no delimiter or length prefix, so a
 // single signed byte string parses as many distinct leaves — 2145 of them for
 // the 82-byte vector above. `verify_mmr_update_proof` copies the *parsed*
