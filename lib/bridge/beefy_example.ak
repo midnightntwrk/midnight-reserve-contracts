@@ -22,9 +22,7 @@ pub const leaves =
   list.map(
     validator_set,
     fn(x) {
-      bytearray.concat(
-        x |> builtin.keccak_256,
-        1000 |> builtin.integer_to_bytearray(True, 0, _),
-      )
+      // Leaf = 33-byte compressed pubkey || little-endian u64 seat count
+      bytearray.concat(x, 1000 |> builtin.integer_to_bytearray(False, 8, _))
     },
   )
