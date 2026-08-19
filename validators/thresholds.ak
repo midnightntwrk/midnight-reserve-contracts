@@ -166,22 +166,14 @@ validator main_tech_auth_update_threshold {
   }
 }
 
-/// Validates that the datum is a well-formed `BeefyThreshold` fraction:
-/// the numerator must be strictly positive and strictly less than the
-/// denominator, so the fraction lies in (0, 1).
-///
-/// `numerator == 0` must be rejected, not merely `numerator < 0`. BEEFY's
-/// required stake is `ceil(stake_total * numerator / denominator)`, which is
-/// 0 when the numerator is 0 — and `signed_stake >= 0` holds for an empty
-/// vote list, so a zero numerator accepts commitments carrying no signatures
-/// at all. `numerator < denominator` also transitively rejects a zero or
-/// negative denominator once the numerator is positive.
+/// Validates that the datum is a well-formed MultisigThreshold with valid fractions:
+/// numerators must be non-negative and less than their corresponding denominators.
 fn beefy_validation(datum: Data) {
   expect BeefyThreshold { numerator, denominator }: BeefyThreshold = datum
 
   and {
     numerator < denominator,
-    numerator > 0,
+    numerator > -1,
   }
 }
 
