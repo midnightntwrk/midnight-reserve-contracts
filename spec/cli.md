@@ -64,8 +64,7 @@ export async function exampleCommand(args: ExampleArgs): Promise<void> {
 | `mainnet` | Production (requires explicit confirmation) |
 | `govnet` | Governance network testing |
 | `qanet` | QA environment |
-| `devnet-*` | Development environments |
-| `node-dev-*` | Node development environments |
+| `devnet` | Development environment |
 
 ## Key Commands
 

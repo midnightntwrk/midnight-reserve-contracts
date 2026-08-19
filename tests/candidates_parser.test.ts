@@ -29,6 +29,7 @@ describe("Candidates Parser", () => {
       sidechain_pub_key:020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8,
       aura_pub_key:1254f7017f0b8347ce7ab14f96d818802e7e9e0c0d1b7c9acb3c726b080e7a03,
       grandpa_pub_key:5079bcd20fd97d7d2f752c4607012600b401950260a91821f73e692071c82bf5,
+      babe_pub_key:b0521e374b0586d6829dad320753c62cdc6ef5edbd37ffdd36da0ae97c521819,
       beefy_pub_key:020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8
     },
     {
@@ -75,6 +76,9 @@ describe("Candidates Parser", () => {
       // Check first candidate
       expect(candidates[0].sidechain_pub_key).toBe(
         "020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8",
+      );
+      expect(candidates[0].babe_pub_key).toBe(
+        "b0521e374b0586d6829dad320753c62cdc6ef5edbd37ffdd36da0ae97c521819",
       );
 
       // Check second candidate
@@ -164,6 +168,48 @@ describe("Candidates Parser", () => {
 
       expect(beefKey[0]).toBe(KEY_IDS.beef);
       expect(beefKey[1]).toBe(candidate.beefy_pub_key);
+    });
+
+    test("appends babe_pub_key as an extra key when present", () => {
+      const babe = toHex(new TextEncoder().encode("babe")); // 62616265
+      const candidate: PermissionedCandidate = {
+        sidechain_pub_key:
+          "020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8",
+        aura_pub_key:
+          "1254f7017f0b8347ce7ab14f96d818802e7e9e0c0d1b7c9acb3c726b080e7a03",
+        grandpa_pub_key:
+          "5079bcd20fd97d7d2f752c4607012600b401950260a91821f73e692071c82bf5",
+        beefy_pub_key:
+          "020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8",
+        babe_pub_key:
+          "b0521e374b0586d6829dad320753c62cdc6ef5edbd37ffdd36da0ae97c521819",
+      };
+
+      const datum = candidateToPermissionedDatum(candidate);
+
+      // aura, gran, beef, babe
+      expect(datum[1]).toHaveLength(4);
+      const babeKey = datum[1][3];
+      expect(babeKey[0]).toBe(babe);
+      expect(babeKey[1]).toBe(candidate.babe_pub_key!);
+    });
+
+    test("omits babe_pub_key key when absent", () => {
+      const candidate: PermissionedCandidate = {
+        sidechain_pub_key:
+          "020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8",
+        aura_pub_key:
+          "1254f7017f0b8347ce7ab14f96d818802e7e9e0c0d1b7c9acb3c726b080e7a03",
+        grandpa_pub_key:
+          "5079bcd20fd97d7d2f752c4607012600b401950260a91821f73e692071c82bf5",
+        beefy_pub_key:
+          "020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8",
+      };
+
+      const datum = candidateToPermissionedDatum(candidate);
+
+      // Only aura, gran, beef — no babe entry.
+      expect(datum[1]).toHaveLength(3);
     });
   });
 

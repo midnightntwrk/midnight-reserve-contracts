@@ -44,7 +44,7 @@ export async function handler(argv: BuildOptions) {
 
   console.log(`\nGenerating TypeScript bindings...`);
   const proc = Bun.spawn(
-    ["bunx", "@blaze-cardano/blueprint@latest", outputFile, "-o", bindingsFile],
+    ["bunx", "@blaze-cardano/blueprint@0.8.2", outputFile, "-o", bindingsFile],
     {
       cwd: projectRoot,
       stdout: "inherit",
