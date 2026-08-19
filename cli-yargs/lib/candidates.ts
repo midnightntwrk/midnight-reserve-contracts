@@ -7,6 +7,7 @@ export interface PermissionedCandidate {
   aura_pub_key: string;
   grandpa_pub_key: string;
   beefy_pub_key: string;
+  babe_pub_key?: string;
 }
 
 // 4-character key identifiers as hex
@@ -14,6 +15,7 @@ const KEY_IDS = {
   aura: toHex(new TextEncoder().encode("aura")), // 61757261
   gran: toHex(new TextEncoder().encode("gran")), // 6772616e
   beef: toHex(new TextEncoder().encode("beef")), // 62656566
+  babe: toHex(new TextEncoder().encode("babe")), // 62616265
 } as const;
 
 /**
@@ -137,12 +139,19 @@ function parseCandidateBlock(block: string): PermissionedCandidate {
     }
   }
 
-  return {
+  const candidate: PermissionedCandidate = {
     sidechain_pub_key: result.sidechain_pub_key || "",
     aura_pub_key: result.aura_pub_key || "",
     grandpa_pub_key: result.grandpa_pub_key || "",
     beefy_pub_key: result.beefy_pub_key || "",
   };
+
+  // babe_pub_key is optional — only include it when present in the input.
+  if (result.babe_pub_key) {
+    candidate.babe_pub_key = result.babe_pub_key;
+  }
+
+  return candidate;
 }
 
 /**
@@ -172,6 +181,16 @@ function validateCandidate(
       );
     }
   }
+
+  // babe_pub_key is optional, but must be valid hex when provided.
+  if (
+    candidate.babe_pub_key &&
+    !/^[0-9a-fA-F]+$/.test(candidate.babe_pub_key)
+  ) {
+    throw new Error(
+      `Candidate at index ${index} has invalid hex value for babe_pub_key: ${candidate.babe_pub_key}`,
+    );
+  }
 }
 
 /**
@@ -188,6 +207,11 @@ export function candidateToPermissionedDatum(
     [KEY_IDS.gran, candidate.grandpa_pub_key],
     [KEY_IDS.beef, candidate.beefy_pub_key],
   ];
+
+  // babe_pub_key is optional — append it as another key/value pair when present.
+  if (candidate.babe_pub_key) {
+    candidateKeys.push([KEY_IDS.babe, candidate.babe_pub_key]);
+  }
 
   return [candidate.sidechain_pub_key, candidateKeys];
 }

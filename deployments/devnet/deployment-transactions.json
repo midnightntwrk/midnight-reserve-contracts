@@ -1,5 +1,5 @@
 {
-  "network": "node-dev-01",
+  "network": "devnet",
   "timestamp": "2026-02-02T19:16:32.556Z",
   "config": {
     "utxoAmount": "20000000"
