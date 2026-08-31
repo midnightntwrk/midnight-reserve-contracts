@@ -26,7 +26,7 @@ import {
 import {
   TestCnightMintingProxyTestCnightMintingProxyElse,
   TestCnightNoAuditTcnightMintInfiniteElse,
-} from "../contract_blueprint";
+} from "../contract_blueprint_mainnet";
 import { describe, expect, test } from "bun:test";
 import {
   buildNativeScriptFromState,
