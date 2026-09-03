@@ -178,11 +178,20 @@ const THRESHOLDS = [
   },
 ] as const satisfies readonly ValidatorMapping[];
 
+/** Validators whose hash is only published to aiken.toml, never rebuilt against. */
+const FIXED = [
+  {
+    title: "virtual_account.virtual_account.else",
+    tomlKey: "virtual_account_hash",
+  },
+] as const satisfies readonly ValidatorMapping[];
+
 /** Validators grouped by compilation phase. */
 const VALIDATORS = {
   twoStage: [...TWO_STAGE_CORE, ...TWO_STAGE_EXTRA],
   forever: [...FOREVER_CORE, ...FOREVER_EXTRA],
   thresholds: THRESHOLDS,
+  fixed: FIXED,
 } as const;
 
 /** Logic validators that must embed specific threshold hashes. */
@@ -472,6 +481,7 @@ const refreshAllValidatorHashes = (
     yield* updateHashes(build, blueprint, "build", VALIDATORS.twoStage);
     yield* updateHashes(build, blueprint, "build", VALIDATORS.forever);
     yield* updateHashes(build, blueprint, "build", VALIDATORS.thresholds);
+    yield* updateHashes(build, blueprint, "build", VALIDATORS.fixed);
   });
 
 /** Point cnight_policy at tcnight_mint_infinite on every network but mainnet. */
