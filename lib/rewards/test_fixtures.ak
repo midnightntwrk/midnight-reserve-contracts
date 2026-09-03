@@ -106,16 +106,13 @@ pub fn mk_deposit_output_for(
 pub fn mk_registration_output(
   skh: ByteArray,
   owner: Credential,
-  dust_address: ByteArray,
-  validator_keys: ByteArray,
-  spo_intent: Bool,
+  destinations: Pairs<ByteArray, Int>,
+  operator_keys: Pairs<ByteArray, ByteArray>,
 ) -> Output {
   Output(
     account_address,
     from_lovelace(2_000_000) |> add(account_policy, registration_name(skh), 1),
-    InlineDatum(
-      Registration { owner, dust_address, validator_keys, spo_intent },
-    ),
+    InlineDatum(Registration { owner, destinations, operator_keys }),
     None,
   )
 }

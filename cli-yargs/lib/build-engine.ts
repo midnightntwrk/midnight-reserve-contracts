@@ -109,6 +109,14 @@ const FOREVER_CORE = [
   },
 ] as const satisfies readonly ValidatorMapping[];
 
+/** Validators whose hash is only published to aiken.toml, never rebuilt against. */
+const FIXED = [
+  {
+    title: "virtual_account.virtual_account.else",
+    tomlKey: "virtual_account_hash",
+  },
+] as const satisfies readonly ValidatorMapping[];
+
 const FOREVER_EXTRA = [
   {
     title: "cnight_minting.cnight_mint_forever.else",
@@ -152,6 +160,7 @@ export const VALIDATORS = {
   foreverExtra: FOREVER_EXTRA,
   forever: [...FOREVER_CORE, ...FOREVER_EXTRA],
   thresholds: THRESHOLDS,
+  fixed: FIXED,
 } as const;
 
 /** Logic validators that must embed specific threshold hashes. */
@@ -605,6 +614,7 @@ function refreshAllValidatorHashes(
   updateHashes(projectRoot, network, blueprint, VALIDATORS.twoStage);
   updateHashes(projectRoot, network, blueprint, VALIDATORS.forever);
   updateHashes(projectRoot, network, blueprint, VALIDATORS.thresholds);
+  updateHashes(projectRoot, network, blueprint, VALIDATORS.fixed);
 }
 
 // ---------------------------------------------------------------------------
