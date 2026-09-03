@@ -1,19 +1,14 @@
 use rewards/types.{
-  AccountDatum, AccountMintRedeemer, AccountSpendRedeemer, BatcherRedeemer,
-  BatcherState, PoolRedeemer, ReleaseState,
+  AccountAction, AccountDatum, AccountGate, BatcherRedeemer, BatcherState,
+  PoolRedeemer, ReleaseState,
 }
 
 validator z_rewards_types {
-  spend(
-    _datum: Option<AccountDatum>,
-    _redeemer: AccountSpendRedeemer,
-    _output,
-    _tx,
-  ) {
+  spend(_datum: Option<AccountDatum>, _redeemer: AccountGate, _output, _tx) {
     fail
   }
 
-  mint(_redeemer: AccountMintRedeemer, _policy, _tx) {
+  mint(_redeemer: AccountAction, _policy, _tx) {
     fail
   }
 

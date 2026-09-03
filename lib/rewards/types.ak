@@ -26,22 +26,26 @@ pub type AccountDatum {
   Tail
 }
 
-/// `BurnRegistration` is only valid inside a `SetDeregister` transaction.
-pub type AccountMintRedeemer {
-  InitHead
-  Register { cred: Credential }
-  BurnDeposit
-  BurnRegistration
+/// Spend and mint redeemer: which withdrawal validates this UTXO.
+pub type AccountGate {
+  User
+  Batcher
 }
 
-pub type AccountSpendRedeemer {
+/// Withdraw redeemer: one kind of user action, applied to every account-address
+/// input; outputs from `offset` match those inputs 1:1 in ledger order.
+pub type AccountAction {
+  kind: ActionKind,
+  offset: Int,
+}
+
+pub type ActionKind {
+  InitList
+  Register
   Withdraw
   TopUp
-  SetDeregister(Address)
-  AnchorInsert
-  BatcherPay
+  SetDeregister
   UpdateRegistration
-  Deregister
 }
 
 /// Inline datum on the batcher state NFT UTXO.

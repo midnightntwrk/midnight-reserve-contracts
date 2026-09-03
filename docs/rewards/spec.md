@@ -34,7 +34,7 @@ Validators:
 
 | File | Validator | Purposes |
 |---|---|---|
-| `validators/virtual_account.ak` | `virtual_account` | mint, spend |
+| `validators/virtual_account.ak` | `virtual_account` | mint, spend (gates), withdraw (user logic), publish |
 | `validators/rewards_batcher.ak` | `rewards_batcher` | mint (state NFT), spend (state UTXO), withdraw (batch logic), publish |
 | `validators/rewards_pool.ak` | `rewards_pool_forever`, `rewards_pool_two_stage_upgrade`, `rewards_pool_logic` | forever pattern |
 | `validators/staging_rewards_pool.ak` | `rewards_pool_staging_forever` | staging track |
@@ -46,7 +46,7 @@ Libraries:
 |---|---|
 | `lib/rewards/types.ak` | every datum / redeemer below |
 | `lib/rewards/linked_list.ak` | head/insert/unlink primitives (hand-ported, §4.2) |
-| `lib/rewards/account.ak` | virtual account mint + spend logic |
+| `lib/rewards/account.ak` | virtual account gates + withdraw logic |
 | `lib/rewards/merkle_range.ak` | sorted multiproof verifier with contiguity (§6) |
 | `lib/rewards/digest.ak` | MMR positional proof + SCALE header parse + digest extraction (§7) |
 | `lib/rewards/batch.ak` | batcher withdraw logic (§5) |
@@ -127,9 +127,9 @@ Value: ADA + `0x01 ++ skh` NFT, nothing else.
 
 | Action | Redeemer | Rule |
 |---|---|---|
-| create | only inside `Register` (§4.3) | minted together with the deposit node; stake auth from the mint |
-| update | `Spend: UpdateRegistration` | `owner` auth; NFT continues to the same address; `dust_address` ≤ 33 bytes |
-| delete | `Spend: Deregister`, only inside the deposit's `SetDeregister` tx (§4.4) | `owner` auth; mint = −1 of `0x01 ++ skh`; the deposit with the same `skh` flips `committed` in the same tx |
+| create | only inside `Register` (§4.3) | minted together with the deposit node; stake auth |
+| update | `UpdateRegistration` | `owner` auth; NFT continues to the same address; `dust_address` ≤ 33 bytes |
+| delete | only inside `SetDeregister` (§4.4) | `owner` auth; mint = −1 of `0x01 ++ skh`; the deposit with the same `skh` flips `committed` in the same tx |
 
 No standalone delete: deregistration is one atomic user tx that burns the
 registration and flags the deposit. Invariant: a registration NFT exists
@@ -171,29 +171,28 @@ Deposit value: ADA + `0x00 ++ skh` NFT + NIGHT (≥ 0). No other assets.
 Hand-ported subset of the Anastasia Labs pattern, kept to what is used:
 
 ```aiken
-pub fn init_list(inputs, mint, outputs, own_policy, one_shot_ref) -> Bool
-pub fn insert_ascending(inputs, outputs, mint, own_policy, new_key) -> (Output /*anchor out*/, Output /*node out*/)
-pub fn unlink(inputs, outputs, own_policy, removed_key, removed_next) -> Bool
+pub fn init_list(inputs, mint, head: Output, tail: Output, own_policy, one_shot_ref) -> Bool
+pub fn insert_ascending(anchor: Input, anchor_out: Output, node: Output, own_policy) -> Credential
+pub fn unlink(pred: Input, pred_out: Output, own_policy, removed_key, removed_next) -> Bool
 ```
-Rules enforced by the **mint policy** (spend paths only check "a mint/burn
-under own policy exists"):
+Callers pass indexed inputs and outputs; the list code never searches the
+transaction. A node's kind comes from its NFT name (`""` head, `0x00 ++ skh`
+deposit); the datum is decoded afterwards and must agree.
+Rules enforced by the **account withdraw handler** (§4.4); mint and spend
+only gate on the authority named by their redeemer:
 - `init_list`: one-shot ref consumed; mint exactly
   `[("", 1), (0x00 ++ tail_key, 1)]`; two outputs at own address:
   `Head { next: tail_key }` with ADA + head NFT, `Tail` with ADA + tail NFT.
-- `insert_ascending(new_key)`: exactly one list input with a `Head` or
-  `Deposit` datum carrying a list NFT = anchor; `anchor.key < new_key`
+- `insert_ascending(anchor, anchor_out, node)`: `anchor` carries the head
+  or a deposit NFT; `new_key = key(node.cred)`; `anchor.key < new_key`
   (head: always) and `new_key < anchor.next` (so `new_key < tail_key`);
-  anchor output identical except `next = new_key`; new node output at own
-  address with `Deposit { cred, next: anchor.next, committed: None }` where
-  `key(cred) == new_key`.
-- `unlink(removed_key, removed_next)`: predecessor input with
-  `next == removed_key` continues with `next = removed_next`, all else
-  unchanged; mint = −1 of `0x00 ++ removed_key`. The tail node is never
-  unlinked (a `Tail` datum has no spend path).
-- All `inputs`/`outputs` passed are the full transaction lists in ledger
-  order; a caller never filters them first.
+  `anchor_out` identical except `next = new_key`; `node` at own address
+  with `Deposit { cred, next: anchor.next, committed: None }`.
+- `unlink(pred, pred_out, removed_key, removed_next)`: `pred.next ==
+  removed_key`; `pred_out` identical except `next = removed_next`. The
+  caller burns `0x00 ++ removed_key`. The tail node is never unlinked.
 
-### 4.3 Register (mint redeemer `Register { cred: Credential }`)
+### 4.3 Register (withdraw action `Register { cred: Credential }`)
 
 `skh = key(cred)`. One tx, mint = `[(0x00++skh, 1), (0x01++skh, 1)]`:
 1. `stake_auth(cred, …)`; the new deposit datum stores this `cred`.
@@ -202,15 +201,45 @@ under own policy exists"):
 3. Exactly one registration output (§3) carrying the `0x01 ++ skh` NFT.
 4. `own_policy != config.cnight_policy` (hash-touch idiom).
 
-### 4.4 User spend paths on a deposit
+### 4.4 User actions (account withdraw handler)
 
-| Redeemer | Auth | Continuing output rule |
-|---|---|---|
-| `Withdraw` | stake auth for `cred` | same address, same datum, same NFT, NIGHT = 0, ADA unchanged |
-| `TopUp` | stake auth for `cred` | same datum/NFT/NIGHT; `ADA_out − ADA_in ≥ deposit_min`; `ADA_out ≤ deposit_cap` |
-| `SetDeregister(addr)` | stake auth for `cred`; `committed == None`; the registration UTXO `0x01 ++ key` is spent with `owner` auth and its NFT burned in this tx | same value/NFT; datum `committed = Some(addr)` |
-| `AnchorInsert` | none | mint of `+1` under own policy exists (mint policy validates the anchor) |
-| `BatcherPay` | none | withdrawal from `config.rewards_batcher_hash` present (batch logic validates) |
+All user logic runs once per transaction in the `virtual_account` withdraw
+handler (withdraw-zero pattern; the script stake credential is registered at
+deployment). Mint and spend take a gate redeemer:
+
+```aiken
+pub type AccountGate { User  Batcher }
+pub type AccountAction { kind: ActionKind, offset: Int }
+pub type ActionKind { InitList  Register  Withdraw  TopUp  SetDeregister  UpdateRegistration }
+```
+`User`: a withdrawal from the `virtual_account` credential exists.
+`Batcher`: a withdrawal from `config.rewards_batcher_hash` exists (batch
+logic validates, §4.5). Nothing else is checked per input.
+
+The withdraw redeemer is one action kind applied to **every** input at the
+account address (`own inputs`, ledger order, `n` of them); the handler folds
+over `tx.inputs` once and skips foreign inputs. Outputs are addressed by
+index: `tx.outputs[offset..]` are consumed in order, one group per own
+input; no output is found by search. The mint under the account policy must
+be exactly what the action needs. Off-chain code uses one account per tx;
+on-chain accepts any `n`.
+
+| Kind | Own inputs | Outputs from `offset` | Own mint | Auth per account | Rule |
+|---|---|---|---|---|---|
+| `InitList` | none | head, tail | head + tail | none | §4.2 `init_list` |
+| `Register` | `n` anchors | per anchor: anchor', node, registration | `+1` deposit and `+1` registration per node; exactly `2n` | stake auth for node `cred` | §4.3; one anchor links one key |
+| `Withdraw` | `n` deposits | `n` deposits' | none | stake auth for `cred` | same address, same datum, same NFT, NIGHT = 0, ADA unchanged |
+| `TopUp` | `n` deposits | `n` deposits' | none | stake auth for `cred` | same datum/NFT/NIGHT; `ADA_out − ADA_in ≥ deposit_min`; `ADA_out ≤ deposit_cap` |
+| `SetDeregister` | `n` deposits and their `n` registrations, any order | one per deposit, in deposit order | `−1` per registration; exactly `n` | stake auth for `cred`; `owner` auth | `committed == None`; deposit continues with same value, datum `committed = Some(addr)` for any `addr` in the output; every registration input's NFT is burned. The registration inputs themselves are forced by the ledger: a burn needs the NFT among the inputs |
+| `UpdateRegistration` | `n` registrations | `n` registrations' | none | `owner` auth | NFT continues to the same address; `dust_address` ≤ 33 bytes |
+
+Node kind is read from the NFT name, never from the datum alone.
+
+Mutual exclusion with the batcher needs no explicit check: the batcher
+withdraw covers every `account_policy` input it accepts (§5.3), and every
+user action covers every account-address input, so a list UTXO is validated
+by exactly one authority and a tx mixing both fails on whichever side sees
+an input it does not own.
 
 `Withdraw` is total-balance only; combined with the cap on top-ups and the
 once-per-lifetime flag, user-caused spends of a deposit are bounded.
@@ -228,8 +257,9 @@ Withdrawal destination is unconstrained.
   output to `addr` with `ADA ≥ ADA_in − skim` and `NIGHT ≥ NIGHT_in + amount`.
   The registration is already gone (burned in the `SetDeregister` tx).
 
-Head spend: only `AnchorInsert` and the batcher exit (unlink of the first
-node, gated by the batcher withdrawal). Tail spend: always fails.
+Head spend: only as the `Register` anchor (gate `User`) or as exit
+predecessor (gate `Batcher`). Tail: no action accepts it; the batcher never
+unlinks it.
 
 ---
 
@@ -313,7 +343,10 @@ There is no standalone load: an epoch opens with its first batch, so
    `paid[0]`).
 5. Every paid leaf: find deposit input/output by `pairs[i]`; input value
    holds `0x00 ++ key` under `account_policy`; apply §4.5 Pay or Exit.
-   Indices in `pairs` strictly increase (no double satisfaction).
+   Indices in `pairs` strictly increase (no double satisfaction). Every
+   input carrying an `account_policy` token is a paid deposit, an exit
+   predecessor (head or deposit) from `exits`, or nothing else: the count
+   of such inputs equals `len(paid) + len(exits)`.
 6. Pool: all inputs at `Script(pool_forever)` are summed (none may carry the
    pool forever NFT); exactly one output to that address with
    `NIGHT_out == NIGHT_in − Σ amount`, `ADA_out ≥ ADA_in`, value shape
@@ -553,10 +586,11 @@ test tokens before promotion.
 
 | Tx | Inputs | Outputs | Scripts run |
 |---|---|---|---|
-| Init list | one-shot ref | head UTXO, tail UTXO | `virtual_account` mint |
-| Register | anchor node, user funds | anchor', deposit, registration | `virtual_account` mint + anchor spend; stake auth |
-| Top up / Withdraw / SetDeregister | deposit | deposit' | `virtual_account` spend; stake auth |
-| Update / Delete registration | registration | registration' / burn | `virtual_account` spend (+ mint on delete); owner auth |
+| Init list | one-shot ref | head UTXO, tail UTXO | `virtual_account` withdraw `InitList` + mint gate |
+| Register | anchor node, user funds | anchor', deposit, registration | `virtual_account` withdraw `Register` + mint/spend gates; stake auth |
+| Top up / Withdraw | deposit | deposit' | `virtual_account` withdraw + spend gate; stake auth |
+| SetDeregister | deposit, registration | deposit' (burn registration) | `virtual_account` withdraw + gates; stake auth + owner auth |
+| Update registration | registration | registration' | `virtual_account` withdraw + spend gate; owner auth |
 | Init batcher | one-shot ref | state UTXO | `rewards_batcher` mint |
 | Load and pay (first batch) | as Pay batch; ref: bridge NFT | as Pay batch | as Pay batch |
 | Pay batch | state, pool value, K deposits (+ predecessors for exits) | state', pool', K deposits' (or refunds), skim change | batcher withdraw; K account gates; pool forever spend + pool logic `Disburse` (+ mitigation) |
@@ -572,6 +606,9 @@ Every governance-domain spend still needs the domain's `logic` and
 - **Uniqueness**: at most one deposit and one registration NFT per `skh`;
   head unique.
 - **List order**: following `next` from head visits strictly ascending keys.
+- **One authority per list UTXO**: every account-address input is covered
+  by exactly one of the account withdraw (its action's exact set) or the
+  batcher withdraw (`pairs` + `exits`).
 - **Exactly-once**: within an epoch a `skh` is paid at most once; a leaf is
   never skipped (contiguity + cursor + start check).
 - **Completion**: `complete` becomes `True` only after every leaf between
