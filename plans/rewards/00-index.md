@@ -21,9 +21,8 @@ Phases 01, 02, 03 are independent and can run in parallel after 00.
 | Item | Owner | Blocks |
 |---|---|---|
 | Emission formula + per-network numbers | Jon / tokenomics | 05 final values (code uses config placeholders; interval = one Midnight epoch) |
-| Digest payload SCALE layout (engine id `MNRW`, first block of `E + 1` decided) | node team | 03 extraction function; vectors |
-| Midnight header hasher (BlakeTwo256 assumed) | node team | 03 |
-| Even-block BEEFY commitment vector (bridge fold parity, spec §7.1) | relayer / bridge re-audit | nothing in rewards; informs the bridge |
+| Node-team confirmation of `docs/rewards/node-team-brief.md` (payload layout, epoch counter, tree builder, even-block vector) | node team | 03 vectors only; layout is pinned on our side |
+| Bridge swap to `lib/rewards/mmr.ak` + `parent_number` binding, then re-audit | separate change after 03 | not a rewards phase |
 
 Decided in the follow-up interview (spec §14): keccak-256 leaves, skim
 `≤ min(ceil(fee / n_paid), 0.01 ADA)`, deregister = one atomic user tx,

@@ -30,11 +30,12 @@ log); a synthetic header with `[PreRuntime, Consensus, Seal]` logs;
 ```aiken
 pub fn parse_rewards_digest(engine: ByteArray, payload: ByteArray) -> Digest
 ```
-`engine == config.rewards_digest_engine_id`; payload
-`u64 LE epoch || 32-byte root || Vec<u8> min || Vec<u8> max`. Engine id
-`MNRW` and carrier (first block of `E + 1`, `Consensus` item) are decided;
-the payload layout is our proposal until the node team confirms. Keep this
-function the only place that knows the layout.
+`engine == config.rewards_digest_engine_id`; payload is exactly 105 bytes:
+`0x01 | epoch u64 LE @1 | leaf_count u64 LE @9 | root @17 | min_key @49 | max_key @77`
+(spec §7.1). Engine id `MNRW`, carrier (first block of `E + 1`,
+`Consensus` item), and this layout are decided on our side; the node team
+confirms (brief question 1). Keep this function the only place that knows
+the layout.
 
 ### 4. Positional MMR verifier `lib/rewards/mmr.ak`
 ```aiken
@@ -52,10 +53,10 @@ Validate `leaf_index < leaf_count` and that `mmr_size` is a valid MMR size
 Regression: for `leaf_index == leaf_count − 1` with odd `leaf_count` the
 result must equal `bridge/merkle.calculate_mmr_root` on the same items
 (import the bridge module in tests only; both golden vectors are odd: 553
-and 601). The bridge function stays as is (decided; mandatory BEEFY
-commitments land on odd blocks). Add one even-count test here so the
-positional verifier is proven on the case the bridge never exercises, and
-note the result for the bridge re-audit. Do not edit bridge files.
+and 601). Add even-count tests here: the bridge will swap to this verifier
+in its own change after this phase (spec §7.1), so `verify_leaf` must be
+complete and vectored for both parities. Do not edit bridge files in this
+phase.
 
 Vectors: derive a small MMR (leaf_count 1..8) by hand in the test module
 with a builder `build_mmr(leaves) -> (root, fn(index) -> items)`; plus the
@@ -75,7 +76,8 @@ pub fn verify_digest(mmr_root: ByteArray, proof: DigestProof) -> Digest
 
 Tests: end-to-end synthetic (builder MMR + synthetic header + digest);
 mutated header byte fails; wrong `log_index` fails; leaf from another
-position fails.
+position fails; payload of 104 or 106 bytes fails; variant index ≠ 1 fails;
+`leaf_count == 0` returns a digest the batcher treats as complete.
 
 ## Done when
 - Tests green; budget for `verify_digest` recorded (it runs once per epoch,
