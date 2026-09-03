@@ -19,7 +19,7 @@ mint like `logic_merge_v2`):
   `logic_merge_v2` (own copy in `lib/rewards/pool.ak`, parameterized by
   forever hash and cnight policy; do not import `lib/logic/next_version`'s
   internals if they are not `pub`).
-- `Pay` → `list.any(withdrawals, cred == Script(config.rewards_batcher_hash))`.
+- `Disburse` → `list.any(withdrawals, cred == Script(config.rewards_batcher_hash))`.
 Track switch via `logic_is_on_main` exactly as `logic_merge_v2`.
 
 Mitigation logic for the pool: reuse whatever the reserve uses today for
@@ -48,14 +48,14 @@ validator rewards_batcher {
   1. `state_in` = inline datum of the input holding own NFT `""`;
      `state_out` = same for outputs (`is_singleton` from utils works: value
      is ADA + NFT only).
-  2. Dispatch `LoadEpoch | PayBatch | LoadAndPay`.
+  2. Dispatch `Pay | LoadAndPay`.
 - `load(state_in, digest_proof, reference_inputs) -> BatcherState` (spec
-  §5.3 LoadEpoch): bridge state from the reference input carrying
+  §5.3 LoadAndPay steps 1–4): bridge state from the reference input carrying
   `config.committee_bridge_forever_hash` singleton NFT
   (`get_input_state_by_policy(reference_inputs, …)`), `verify_digest`,
-  succession, reset cursor fields.
-- `pay(state_in, proof, pairs, exits, tx) -> BatcherState` (spec §5.3
-  PayBatch):
+  succession; `start_key`/`cursor` untouched (the first batch sets them).
+- `pay(state_in, first: Bool, proof, pairs, exits, tx) -> BatcherState`
+  (spec §5.3 batch rules; `first` selects the no-anchor split):
   - `leaves = verify_range(state_in.root, proof) |> map(parse_leaf)`;
   - split into anchor / paid / boundary per §5.3 step 3 (write as a pure
     function `split_run(state, keys) -> (paid_keys, new_cursor, complete)`
@@ -80,11 +80,12 @@ Build a 7-leaf sorted digest with the phase 02 builder (keys `k1 < … < k7`),
 deposits for all seven in a list, pool with NIGHT.
 - init: ok; bad hash length; `complete == False` at init fails.
 - load: ok on complete state; on incomplete state fails; epoch `+2` fails;
-  bad digest proof fails; empty epoch (`leaf_count == 0`) → complete.
+  bad digest proof fails; empty epoch (`leaf_count == 0`) with empty batch
+  → complete; empty epoch with a non-empty batch fails.
 - first batch from each of the 7 possible starts, run length 1..7:
   `split_run` table test.
 - full fold from start `k4`: batches `[k4,k5]`, `[k6,k7]`, wrap `[k1]`,
-  `[k2,k3,+boundary k4]` → complete. Then `LoadEpoch` for the next epoch ok.
+  `[k2,k3,+boundary k4]` → complete. Then `LoadAndPay` for the next epoch ok.
 - start `k1`: `[k1..k7]` → complete via `cursor == max && start == min`.
 - start `k7`: `[k7]`, wrap `[k1..k6, +boundary k7]` → complete.
 - failures: non-contiguous proof; run that includes `start_key` again;
@@ -94,7 +95,7 @@ deposits for all seven in a list, pool with NIGHT.
   NIGHT under-paid; pool over-drawn; two pairs pointing at one output;
   exit leaf with `committed == None`; exit without burn; exit without
   predecessor relink; refund short.
-- pool logic: `Receive` merge ok / value decreased fails; `Pay` without
+- pool logic: `Receive` merge ok / value decreased fails; `Disburse` without
   batcher withdrawal fails.
 - budget: record mem/cpu for a 30-pair batch with depth-16 proof; adjust
   the recommended K in spec §5.4.
