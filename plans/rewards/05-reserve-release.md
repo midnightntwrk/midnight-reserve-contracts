@@ -33,10 +33,12 @@ pub fn reserve_logic_v2(tx: Transaction, info: ScriptInfo, redeemer: Data) -> Bo
   - `Release { intervals }` → spec §8.2:
     1. `now` = `validity_range.lower_bound` (`Finite`, else fail).
     2. NFT UTXO: input at forever address carrying `(forever_hash, "", 1)`;
-       datum → `ReleaseState` or, if its shape is not `Constr 0 [Int, Int]`
-       (inspect with `builtin.choose_data` / `unconstr_fields` guarded by
-       `choose_data`), the initial state from config. Output NFT UTXO: same
-       address, same value, inline `ReleaseState'`.
+       datum is the unit constructor on mainnet today (`Constr 0 []`):
+       `builtin.unconstr_fields(datum) == []` → initial state from config;
+       otherwise `expect ReleaseState`. Output NFT UTXO: same address, same
+       value, inline `ReleaseState'`. Confirm the unit datum against
+       `deployments/mainnet/deployment-transactions.json` (`reserve-deployment`)
+       before shipping.
     3. `intervals >= 1`, `last + intervals * interval_ms <= now`.
     4. `(released, next') = matured(...)`; `released = min(released, night_in)`.
     5. Reserve value inputs: all other inputs at the forever address; exactly

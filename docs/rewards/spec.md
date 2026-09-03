@@ -45,7 +45,7 @@ Libraries:
 | File | Content |
 |---|---|
 | `lib/rewards/types.ak` | every datum / redeemer below |
-| `lib/rewards/hash.ak` | `leaf_hash`, `node_hash` (blake2b-256 now, one-line switch) |
+| `lib/rewards/hash.ak` | `leaf_hash`, `node_hash` (keccak-256; single switch point) |
 | `lib/rewards/linked_list.ak` | head/insert/unlink primitives (hand-ported, §4.2) |
 | `lib/rewards/account.ak` | virtual account mint + spend logic |
 | `lib/rewards/merkle_range.ak` | sorted multiproof verifier with contiguity (§6) |
@@ -91,14 +91,16 @@ leaf = ack(1) ++ skh(28) ++ amount(big-endian unsigned, 0..n bytes)
 - `amount`: NIGHT in base units; empty bytes = 0. Parsed with
   `bytearray.to_int_big_endian` (stdlib v2: `builtin.byte_string_to_integer(True, _)`).
 - Leaves are **sorted ascending by `skh`**, unique per `skh`.
-- `leaf_hash = H(leaf)`, `node_hash = H(left ++ right)`, `H = blake2b_256`
-  (**TBD**: keep in `lib/rewards/hash.ak`, one place to switch to keccak).
+- `leaf_hash = H(leaf)`, `node_hash = H(left ++ right)`, `H = keccak_256`
+  (decided: one hash family across the whole bridge path; the pallet can
+  use `binary-merkle-tree<Keccak256>`). Kept behind `lib/rewards/hash.ak`.
 
 ### 2.4 Digest
 
-Per Midnight epoch `E`, the pallet emits `Digest { epoch: E, root, min_key, max_key }`.
-`min_key`/`max_key` are the first and last leaf `skh`. Empty epoch:
-`min_key == max_key == ""` and `root` = `H("")` (**TBD**, any fixed value).
+Per Midnight epoch `E`, the pallet emits `Digest { epoch: E, root, min_key, max_key }`
+as a `Consensus("MNRW", …)` log in the header of the **first block of epoch
+`E + 1`**. `min_key`/`max_key` are the first and last leaf `skh`. Empty
+epoch: `min_key == max_key == ""` and `root` = `H("")` (any fixed value).
 
 ---
 
@@ -122,13 +124,16 @@ Value: ADA + `0x01 ++ skh` NFT, nothing else.
 |---|---|---|
 | create | only inside `Register` (§4.3) | minted together with the deposit node; stake auth from the mint |
 | update | `Spend: UpdateRegistration` | `owner` auth; NFT continues to the same address; `stake_key_hash` unchanged; `dust_address` ≤ 33 bytes |
-| delete | `Spend: DeleteRegistration` | `owner` auth; mint = −1 of `0x01 ++ skh` |
+| delete | `Spend: Deregister`, only inside the deposit's `SetDeregister` tx (§4.4) | `owner` auth; mint = −1 of `0x01 ++ skh`; the deposit with the same `skh` flips `committed` in the same tx |
 
-There is no path to mint a registration NFT without inserting a deposit
-node, so one registration per `skh` holds by construction. After a delete
-the user re-registers only after a full deposit exit (§4.5), which takes
-the 12 h lag plus an epoch plus the batcher ack. Midnight reads the new
-schema first and falls back to `cnight_generates_dust` records forever; no
+No standalone delete: deregistration is one atomic user tx that burns the
+registration and flags the deposit. Invariant: a registration NFT exists
+iff a deposit with the same `skh` exists with `committed == None`. There
+is no path to mint a registration NFT without inserting a deposit node, so
+one registration per `skh` holds by construction. Re-registering the same
+`skh` needs a fresh insert, possible only after the deposit exit (§4.5):
+12 h lag plus an epoch plus the batcher ack. Midnight reads the new schema
+first and falls back to `cnight_generates_dust` records forever; no
 migration path on chain.
 
 ---
@@ -195,7 +200,7 @@ One tx, mint = `[(0x00++skh, 1), (0x01++skh, 1)]`:
 |---|---|---|
 | `Withdraw` | stake auth for `key` | same address, same datum, same NFT, NIGHT = 0, ADA unchanged |
 | `TopUp` | stake auth for `key` | same datum/NFT/NIGHT; `ADA_out − ADA_in ≥ deposit_min`; `ADA_out ≤ deposit_cap` |
-| `SetDeregister(addr)` | stake auth for `key`; `committed == None` | same value/NFT; datum `committed = Some(addr)` |
+| `SetDeregister(addr)` | stake auth for `key`; `committed == None`; the registration UTXO `0x01 ++ key` is spent with `owner` auth and its NFT burned in this tx | same value/NFT; datum `committed = Some(addr)` |
 | `AnchorInsert` | none | mint of `+1` under own policy exists (mint policy validates the anchor) |
 | `BatcherPay` | none | withdrawal from `config.rewards_batcher_hash` present (batch logic validates) |
 
@@ -205,12 +210,15 @@ Withdrawal destination is unconstrained.
 
 ### 4.5 Batcher paths on a deposit (checked inside `rewards_batcher` withdraw, §5.4)
 
-- **Pay**: `ADA_out = ADA_in − skim`; `NIGHT_out = NIGHT_in + amount`;
-  datum, address, NFT unchanged.
+- **Pay**: `ADA_out ≥ ADA_in − skim`; `NIGHT_out = NIGHT_in + amount`;
+  datum, address, NFT unchanged. `skim ≤ min(ceil(fee / n_paid), batcher_skim_max_lovelace)`
+  where `fee` is the tx fee and `n_paid` the number of leaves paid in this
+  tx (exits included). Cost recovery only, no margin; the per-account cap
+  stops a padded fee from draining deposits and rewards larger batches.
 - **Exit** (leaf `ack = 1`): requires `committed == Some(addr)`; no
   continuing deposit output; burn `0x00++skh`; `unlink(skh, next)`; an
   output to `addr` with `ADA ≥ ADA_in − skim` and `NIGHT ≥ NIGHT_in + amount`.
-  The registration UTXO is untouched (owner deletes it whenever).
+  The registration is already gone (burned in the `SetDeregister` tx).
 
 Head spend: only `AnchorInsert` and the batcher exit (unlink of the first
 node, gated by the batcher withdrawal).
@@ -307,7 +315,14 @@ lookup). The withdraw script does one multiproof verification plus a linear
 pass over paid leaves and their `pairs`. Tx size bounds the batch: about
 300 bytes per deposit in/out pair plus ~64 bytes per proof node. Target
 K ≈ 25–40 accounts per batch on mainnet limits; tune with `aiken check`
-budgets in phase 04.
+budgets in phase 04. The skim cap (§4.5) makes larger K the only way for a
+batcher to recover a large fee, so incentives point the same way.
+
+Standalone `LoadEpoch` and the reserve `Release` are uncompensated; a
+batcher uses `LoadAndPay` and recovers the fee from that batch's skims.
+
+Mid-fold contention from user withdrawals is accepted without a lock: each
+account can do it once per payout and the batcher retries.
 
 ---
 
@@ -395,9 +410,14 @@ bag right-to-left        : acc = rightmost; acc = H(acc || next_left_peak) ...; 
 ```
 Reject `leaf_count` whose `mmr_size` is not a valid MMR size, and
 `leaf_index ≥ leaf_count`. The existing `bridge/merkle.calculate_mmr_root`
-is the latest-leaf special case (`foldr` with `H(acc || item)`); the new
-verifier must reproduce it for that case (regression vectors in
-`lib/bridge/merkle.ak` tests).
+is the lone-peak special case (`foldr` with `H(acc || item)`, correct only
+when `leaf_count` is odd, which holds for both golden vectors: 553 and 601).
+The bridge keeps that function; BEEFY mandatory commitments land on odd
+blocks under the current session length and offset. The rewards verifier
+is a new, positional function and must reproduce the bridge result for the
+odd case (regression vectors in `lib/bridge/merkle.ak` tests). If an
+even-block commitment ever has to be relayed, the bridge needs this
+verifier too — flagged for the bridge re-audit, not changed here.
 
 **BEEFY MMR leaf**: `version: u8` (major << 5 | minor), `parent_number_and_hash: (BlockNumber u32 LE, H256)`,
 `beefy_next_authority_set { id: u64, len: u32, keyset_commitment: H256 }`,
@@ -421,7 +441,9 @@ Compact<u32/u64>: low two bits of the first byte select 1/2/4-byte LE
 (first >> 2) + 4, LE). The parser needs only: skip 32, compact, skip 64,
 compact count, then walk logs skipping by tag until `log_index`.
 
-Rewards digest log (**TBD**): `Consensus("MNRW", SCALE(epoch: u64, root: [u8;32], min_key: Vec<u8>, max_key: Vec<u8>))`.
+Rewards digest log: `Consensus("MNRW", SCALE(epoch: u64, root: [u8;32], min_key: Vec<u8>, max_key: Vec<u8>))`
+in the first block of epoch `E + 1` (decided). Payload field order and
+widths above are the proposal to the node team (**TBD** until they confirm).
 `Vec<u8>` = Compact(len) || bytes. `[u8;32]` raw.
 
 ---
@@ -450,6 +472,9 @@ pub type StagingStateV2 {            // lib/rewards/types.ak; replaces StagingSt
 ```
 Config per network (`aiken.toml`): `release_t0_ms`, `release_interval_ms`,
 `release_initial_amount`, `release_decay_num`, `release_decay_den`.
+Interval is one Midnight epoch (1–2 h). No separate lifetime cap: the
+geometric series converges and every release is capped at the reserve
+balance, which is the block-rewards allocation.
 
 **Emission formula is a placeholder (TBD, pending Jon / FinDaS alignment):**
 `amount_n = initial_amount × (decay_num / decay_den)^n`, floor at each step.
@@ -460,10 +485,10 @@ Config per network (`aiken.toml`): `release_t0_ms`, `release_interval_ms`,
 2. `now = validity_range.lower_bound` (finite, inclusive). `intervals ≥ 1`
    and `last_release_time + intervals × interval_ms ≤ now`. Partial catch-up
    is allowed (`intervals` may be less than elapsed); fully permissionless.
-3. First release: if the reserve NFT UTXO datum is not a `ReleaseState`
-   (checked by shape via `builtin.choose_data`; the current mainnet datum is
-   whatever deployment set, verify in phase 05), treat it as
-   `{ last_release_time: release_t0_ms, next_amount: release_initial_amount }`.
+3. First release: the mainnet reserve NFT UTXO datum is the unit
+   constructor (`Constr 0 []`). If the datum's constructor has no fields,
+   treat it as `{ last_release_time: release_t0_ms, next_amount: release_initial_amount }`;
+   otherwise decode `ReleaseState` (`Constr 0 [Int, Int]`).
 4. `released = Σ_{i<intervals} next_amount × r^i` computed by a loop;
    `next_amount' = next_amount × r^intervals` (same loop);
    `last_release_time' = last_release_time + intervals × interval_ms`.
@@ -541,7 +566,9 @@ Every governance-domain spend still needs the domain's `logic` and
 - **Reserve flow limit**: NIGHT leaving the reserve ≤ schedule cumulative at
   `validity_range.lower_bound`.
 - **Registration**: `stake_key_hash` immutable; only `owner` can change or
-  delete.
+  delete; a registration NFT exists iff its deposit exists with
+  `committed == None`.
+- **Skim bound**: per paid account `≤ min(ceil(fee / n_paid), batcher_skim_max_lovelace)`.
 
 ---
 
@@ -572,9 +599,29 @@ rewards_pool_two_stage_hash, rewards_pool_forever_hash   (derived by build)
 rewards_batcher_hash, virtual_account_hash                (derived by build)
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
-batcher_skim_lovelace = 10_000
-release_t0_ms, release_interval_ms, release_initial_amount, release_decay_num, release_decay_den   (TBD values)
-rewards_digest_engine_id = "MNRW"                          (TBD)
+batcher_skim_max_lovelace = 10_000                         (0.01 ADA; 5_000 is the alternative)
+release_t0_ms, release_interval_ms, release_initial_amount, release_decay_num, release_decay_den   (TBD values; interval = one Midnight epoch)
+rewards_digest_engine_id = "MNRW"
 ```
+
+---
+
+## 14. Decisions log (open-question interview, 2026-09-03)
+
+| Question | Decision |
+|---|---|
+| Leaf hash | keccak-256 everywhere |
+| Digest carrier | `Consensus("MNRW")` log, first block of `E + 1`; payload layout proposed, node team to confirm |
+| Lifetime emission cap | none; balance and series bound it; interval = Midnight epoch |
+| Batcher compensation | `≤ min(ceil(fee / n_paid), 0.01 ADA)` per paid account; no margin; Midnight funded floor ~3 ADA |
+| Deposit sizes | min 10, cap 40 ADA |
+| Mid-fold lock | none; griefing bounded and cheap to retry |
+| Deregister | one user tx: flag deposit + burn registration (owner auth); no standalone registration delete |
+| Exit | batcher unlinks deposit, burns its NFT, refunds to `addr` |
+| SPO renewal field | out of scope now |
+| Multi-partner-chain | one deployment per chain |
+| Uncompensated load/release | accepted; batchers use `LoadAndPay` |
+| Bridge MMR fold parity | bridge untouched; rewards use a positional verifier; flagged for bridge re-audit |
+| Mainnet reserve datum | unit constructor; first release migrates by field count |
 Test profiles (`local`, `devnet`) use short intervals (e.g. 60 s) and small
 amounts.
