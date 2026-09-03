@@ -22,10 +22,10 @@ does not paint the tooling into a corner.
 - `account-init-list`, `account-register`, `account-top-up`,
   `account-withdraw`, `account-deregister`, `registration-update`,
   `registration-delete`.
-- `batcher-init`, `batcher-load-epoch`, `batcher-pay-batch`
-  (`--start`, `--count`, `--digest-file`), `batcher-run` (loop: release if
-  matured → load if complete and next digest available → pay batches until
-  complete).
+- `batcher-init`, `batcher-pay-batch` (`--start`, `--count`;
+  `--digest-file` selects `LoadAndPay`), `batcher-run` (loop: release if
+  matured → `LoadAndPay` if complete and next digest available → `Pay`
+  until complete).
 - `reserve-release` (`--intervals`), `mint-staging-state` extended with the
   pool hash.
 - CIP-20 metadata labels `midnight-reserve:<type>` for every new tx type;

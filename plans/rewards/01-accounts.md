@@ -13,15 +13,17 @@ Hand-ported subset of Anastasia Labs `aiken-design-patterns` linked list
 pub fn deposit_name(skh: ByteArray) -> AssetName        // #"00" ++ skh
 pub fn registration_name(skh: ByteArray) -> AssetName   // #"01" ++ skh
 pub fn is_list_nft(value, policy) -> Option<AssetName>  // exactly one asset under policy, name "" or 0x00-prefixed
-pub fn init_head(inputs, mint, outputs, own_policy, one_shot_ref) -> Bool
+pub fn init_list(inputs, mint, outputs, own_policy, one_shot_ref) -> Bool
 pub fn insert_ascending(inputs, outputs, mint, own_policy, new_key) -> Output   // returns the new node output
 pub fn unlink(inputs, outputs, own_policy, removed_key, removed_next) -> Bool
 ```
-Rules per spec §4.2. `insert_ascending` finds exactly one input carrying a
-head or deposit NFT (fail on zero or two), checks `anchor.key < new_key`
-(head: skip), `anchor.next == None || new_key < next`, finds the anchor
-output (same address, same value, datum with only `next` changed), and the
-node output (own address, `Deposit { key: new_key, next: anchor.next, committed: None }`,
+Rules per spec §4.2. `init_list` mints head and tail NFTs and checks both
+outputs. `insert_ascending` finds exactly one input with a `Head` or
+`Deposit` datum carrying a list NFT (fail on zero or two; a `Tail` input
+fails), checks `anchor.key < new_key` (head: skip) and `new_key < anchor.next`,
+finds the anchor output (same address, same value, datum with only `next`
+changed), and the node output (own address,
+`Deposit { cred, next: anchor.next, committed: None }`,
 value = ADA + NFT only). Mint must be exactly `[(deposit_name, 1), (registration_name, 1)]`
 under own policy (checked by the caller in `account.ak`, not here).
 
@@ -31,11 +33,11 @@ pub fn account_mint(tx: Transaction, own_policy: PolicyId, redeemer: Data) -> Bo
 pub fn account_spend(tx: Transaction, own_hash: ScriptHash, datum: Data, redeemer: Data, own_ref: OutputReference) -> Bool
 ```
 Mint:
-- `InitHead` → `init_head` with `config.virtual_account_one_shot_*`.
+- `InitHead` → `init_list` with `config.virtual_account_one_shot_*`.
 - `Register { cred }` → spec §4.3 (`skh = key(cred)`; `stake_auth(cred)`;
   insert; new deposit datum `cred == redeemer cred`; deposit ADA in
   `[deposit_min_lovelace, deposit_cap_lovelace]`, NIGHT 0; exactly one
-  registration output with matching `stake_key_hash`, `dust_address ≤ 33`).
+  registration output carrying `0x01 ++ skh`, `dust_address ≤ 33`).
   Helper `key(cred: Credential) -> ByteArray` in `linked_list.ak`.
 - `BurnDeposit` → mint is exactly `[(deposit_name(k), -1)]` for one `k` and a
   withdrawal from `config.rewards_batcher_hash` exists.
@@ -47,14 +49,14 @@ Mint:
 - `own_policy != config.cnight_policy`.
 
 Spend (dispatch on datum constructor, then redeemer):
-- `HeadDatum`: `AnchorInsert` (positive mint under own policy exists) or
+- `Head`: `AnchorInsert` (positive mint under own policy exists) or
   `BatcherPay` (batcher withdrawal exists; unlink of first node).
-- `DepositDatum`: table in spec §4.4. Continuing output = the output at the
+- `Deposit`: table in spec §4.4. Continuing output = the output at the
   same address carrying the same NFT (find by NFT, not by index).
-- `RegistrationDatum`: `UpdateRegistration` (owner auth, NFT continues) /
+- `Registration`: `UpdateRegistration` (owner auth, NFT continues) /
   `Deregister` (owner auth; burn of own NFT in `mint`; the paired deposit
   spend is verified by the mint branch) per §3.
-- `DepositDatum` + `SetDeregister(addr)`: stake auth, `committed` flips
+- `Deposit` + `SetDeregister(addr)`: stake auth, `committed` flips
   `None → Some(addr)`, and `mint` contains `(registration_name(key), -1)`.
 
 Value predicates: `deposit_value_ok(value, policy, skh)` — exactly ADA,
@@ -74,7 +76,7 @@ Positive and `fail` cases, using phase 00 fixtures:
   (key < anchor, key > next); duplicate key (equal to anchor / next); two
   anchors spent; missing stake sig; script-credential via withdrawal ok;
   deposit below min / above cap; NIGHT in fresh deposit; missing
-  registration output; registration `stake_key_hash` mismatch;
+  registration output; registration NFT name mismatch;
   `dust_address` 34 bytes.
 - withdraw: ok; partial NIGHT left; ADA changed; datum changed; no sig.
 - top up: ok; below min increment; above cap; NIGHT changed.
@@ -82,8 +84,7 @@ Positive and `fail` cases, using phase 00 fixtures:
   stake sig); already set; no stake sig; no owner sig; registration burn
   without deposit flag; deposit flag without registration burn; burn of a
   different `skh`'s registration.
-- registration update: ok; owner rotate ok; `stake_key_hash` changed;
-  NFT dropped; wrong signer. No standalone delete path exists: a spend
+- registration update: ok; owner rotate ok; NFT dropped; wrong signer. No standalone delete path exists: a spend
   with a burn but no `SetDeregister` deposit input fails.
 - gates: `AnchorInsert` without mint; `BatcherPay` without batcher
   withdrawal.
