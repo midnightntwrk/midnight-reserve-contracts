@@ -38,7 +38,10 @@ Mint:
 - `BurnDeposit` → mint is exactly `[(deposit_name(k), -1)]` for one `k` and a
   withdrawal from `config.rewards_batcher_hash` exists.
 - `BurnRegistration` → mint is exactly `[(registration_name(k), -1)]`; the
-  spent registration input with that NFT exists (owner auth is in the spend).
+  spent registration input with that NFT exists (owner auth is in the
+  spend) and a deposit input with `deposit_name(k)` is spent with redeemer
+  `SetDeregister` (the deposit spend checks the flag flip; this mint branch
+  checks the pairing so neither can happen alone).
 - `own_policy != config.cnight_policy`.
 
 Spend (dispatch on datum constructor, then redeemer):
@@ -46,7 +49,11 @@ Spend (dispatch on datum constructor, then redeemer):
   `BatcherPay` (batcher withdrawal exists; unlink of first node).
 - `DepositDatum`: table in spec §4.4. Continuing output = the output at the
   same address carrying the same NFT (find by NFT, not by index).
-- `RegistrationDatum`: `UpdateRegistration` / `DeleteRegistration` per §3.
+- `RegistrationDatum`: `UpdateRegistration` (owner auth, NFT continues) /
+  `Deregister` (owner auth; burn of own NFT in `mint`; the paired deposit
+  spend is verified by the mint branch) per §3.
+- `DepositDatum` + `SetDeregister(addr)`: stake auth, `committed` flips
+  `None → Some(addr)`, and `mint` contains `(registration_name(key), -1)`.
 
 Value predicates: `deposit_value_ok(value, policy, skh)` — exactly ADA,
 the NFT, and optionally NIGHT; `registration_value_ok` — exactly ADA + NFT.
@@ -69,9 +76,13 @@ Positive and `fail` cases, using phase 00 fixtures:
   `dust_address` 34 bytes.
 - withdraw: ok; partial NIGHT left; ADA changed; datum changed; no sig.
 - top up: ok; below min increment; above cap; NIGHT changed.
-- set deregister: ok; already set; no sig.
+- set deregister: ok (deposit flag + registration burn + owner sig +
+  stake sig); already set; no stake sig; no owner sig; registration burn
+  without deposit flag; deposit flag without registration burn; burn of a
+  different `skh`'s registration.
 - registration update: ok; owner rotate ok; `stake_key_hash` changed;
-  NFT dropped; wrong signer. delete: ok; burn without owner.
+  NFT dropped; wrong signer. No standalone delete path exists: a spend
+  with a burn but no `SetDeregister` deposit input fails.
 - gates: `AnchorInsert` without mint; `BatcherPay` without batcher
   withdrawal.
 - property test (`aiken/fuzz` is not a dependency; write a small

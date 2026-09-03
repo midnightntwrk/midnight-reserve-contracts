@@ -20,11 +20,14 @@ Phases 01, 02, 03 are independent and can run in parallel after 00.
 
 | Item | Owner | Blocks |
 |---|---|---|
-| Emission formula + per-network numbers | Jon / tokenomics | 05 final values (code uses config placeholders) |
-| Leaf hash function (blake2b vs keccak) | node team | one-line switch in `lib/rewards/hash.ak`; tests re-vector |
-| Digest log engine id + payload SCALE layout | node team | 03 extraction function; vectors |
+| Emission formula + per-network numbers | Jon / tokenomics | 05 final values (code uses config placeholders; interval = one Midnight epoch) |
+| Digest payload SCALE layout (engine id `MNRW`, first block of `E + 1` decided) | node team | 03 extraction function; vectors |
 | Midnight header hasher (BlakeTwo256 assumed) | node team | 03 |
-| Current mainnet reserve forever NFT datum contents | ops | 05 first-release migration branch |
+| Even-block BEEFY commitment vector (bridge fold parity, spec §7.1) | relayer / bridge re-audit | nothing in rewards; informs the bridge |
+
+Decided in the follow-up interview (spec §14): keccak-256 leaves, skim
+`≤ min(ceil(fee / n_paid), 0.01 ADA)`, deregister = one atomic user tx,
+mainnet reserve datum is the unit constructor.
 
 ## Guardrails for every phase
 

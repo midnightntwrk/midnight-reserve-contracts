@@ -31,8 +31,10 @@ log); a synthetic header with `[PreRuntime, Consensus, Seal]` logs;
 pub fn parse_rewards_digest(engine: ByteArray, payload: ByteArray) -> Digest
 ```
 `engine == config.rewards_digest_engine_id`; payload
-`u64 LE epoch || 32-byte root || Vec<u8> min || Vec<u8> max`. **TBD**: pin
-with the node team; keep this function the only place that knows the layout.
+`u64 LE epoch || 32-byte root || Vec<u8> min || Vec<u8> max`. Engine id
+`MNRW` and carrier (first block of `E + 1`, `Consensus` item) are decided;
+the payload layout is our proposal until the node team confirms. Keep this
+function the only place that knows the layout.
 
 ### 4. Positional MMR verifier `lib/rewards/mmr.ak`
 ```aiken
@@ -47,12 +49,13 @@ then bag right-to-left with `H(acc || left_peak)`), keccak-256 throughout.
 Validate `leaf_index < leaf_count` and that `mmr_size` is a valid MMR size
 (peak decomposition round-trips).
 
-Regression: for `leaf_index == leaf_count − 1` the result must equal
-`bridge/merkle.calculate_mmr_root` on the same items (import the bridge
-module in tests only). If they disagree for even `leaf_count`, the bridge
-function is the suspect (it hashes `acc || item` for every step, which is
-only right when the latest leaf is a lone peak) — report, do not edit the
-bridge file.
+Regression: for `leaf_index == leaf_count − 1` with odd `leaf_count` the
+result must equal `bridge/merkle.calculate_mmr_root` on the same items
+(import the bridge module in tests only; both golden vectors are odd: 553
+and 601). The bridge function stays as is (decided; mandatory BEEFY
+commitments land on odd blocks). Add one even-count test here so the
+positional verifier is proven on the case the bridge never exercises, and
+note the result for the bridge re-audit. Do not edit bridge files.
 
 Vectors: derive a small MMR (leaf_count 1..8) by hand in the test module
 with a builder `build_mmr(leaves) -> (root, fn(index) -> items)`; plus the

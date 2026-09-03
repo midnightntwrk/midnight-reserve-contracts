@@ -42,8 +42,10 @@ into per-stake-key **Midnight virtual accounts**. Four on-chain pieces:
   committee bridge's `latest_mmr_root` (already on chain) through the MMR
   leaf of the following block and that block's parent header. No batcher
   key is trusted.
-- **Fees from ADA deposits.** Each paid account is skimmed a flat ADA fee.
-  No NIGHT liquidity assumption in the operational layer.
+- **Fees from ADA deposits.** Each paid account is skimmed its share of
+  the batch tx fee, capped per account. Cost recovery only; bigger batches
+  are the batcher's lever. No NIGHT liquidity assumption in the operational
+  layer.
 - **Reserve and pool upgradable; accounts and batcher not.** Governance can
   fix the emission side. Governance cannot reach user NIGHT.
 
@@ -85,12 +87,12 @@ sequenceDiagram
 | Parameter | Value | Note |
 |---|---|---|
 | Deposit min / cap | 10 / 40 ADA | at register and top-up |
-| Skim per paid account | 0.01 ADA | per network config |
+| Skim per paid account | ≤ min(fee / n_paid, 0.01 ADA) | cap per network config |
 | Funded floor (Midnight) | ~3 ADA | pallet parameter; below it no leaf is emitted |
 | Observation lag | ~12 h | `k / f` on Cardano |
-| Epoch length | 1–2 h (MIP) | settlement cadence |
-| Emission | geometric decay per interval | **TBD** with Jon; placeholder in spec |
-| Leaf hash | blake2b-256 | **TBD**; abstracted, switchable |
+| Epoch length | 1–2 h (MIP) | settlement cadence; also the release interval |
+| Emission | geometric decay per interval | numbers **TBD** with Jon; placeholder in spec |
+| Leaf hash | keccak-256 | same family as the bridge |
 
 ## Latency
 
