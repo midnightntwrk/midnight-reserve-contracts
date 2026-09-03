@@ -1,7 +1,9 @@
 # Block Production Rewards on Cardano — Overview
 
-Status: Draft (design settled in interview 2026-09-03; emission numbers and
-digest encoding pending node team). Detailed contract spec: [spec.md](spec.md).
+Status: Draft (design settled in interview 2026-09-03; emission numbers
+pending tokenomics, digest layout pending node-team confirmation).
+Detailed contract spec: [spec.md](spec.md). Node-side contract and
+questions: [node-team-brief.md](node-team-brief.md).
 Implementation plan: [`plans/rewards/`](../../plans/rewards/00-index.md).
 
 ## What
