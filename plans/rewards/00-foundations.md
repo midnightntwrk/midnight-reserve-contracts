@@ -8,8 +8,9 @@ registration, and test fixtures so phases 01–03 can start in parallel.
 ### 1. `lib/rewards/types.ak`
 Define exactly the types in spec §3, §4.1, §5.1, §5.3, §7, §8.1, §9:
 `Registration`, `Deposit`, `Head`, `AccountDatum`, `AccountMintRedeemer`
-(`InitHead | Register { skh, cred_kind } | BurnDeposit | BurnRegistration`),
-`AccountSpendRedeemer` (`Withdraw | TopUp | SetDeregister(Address) | AnchorInsert | BatcherPay | UpdateRegistration | DeleteRegistration`),
+(`InitHead | Register { skh, cred_kind } | BurnDeposit | BurnRegistration` — the
+last only inside a `SetDeregister` tx),
+`AccountSpendRedeemer` (`Withdraw | TopUp | SetDeregister(Address) | AnchorInsert | BatcherPay | UpdateRegistration | Deregister`),
 `BatcherState`, `BatcherRedeemer`, `PayPair`, `ExitInfo`, `DigestProof`,
 `Digest`, `ReserveRedeemer`, `ReleaseState`, `StagingStateV2`, `PoolRedeemer`.
 Keep constructors ordered as listed in the spec; blueprint consumers rely on
@@ -17,11 +18,11 @@ the indices.
 
 ### 2. `lib/rewards/hash.ak`
 ```aiken
-pub fn leaf_hash(leaf: ByteArray) -> ByteArray   // blake2b_256
+pub fn leaf_hash(leaf: ByteArray) -> ByteArray   // keccak_256
 pub fn node_hash(l: ByteArray, r: ByteArray) -> ByteArray
 ```
-Single switch point for the TBD hash choice. Unit test with one known vector
-each.
+Decided: keccak-256. Kept as the single switch point anyway. Unit test with
+one known vector each.
 
 ### 3. `lib/rewards/auth.ak`
 `stake_auth(cred, extra_signatories, withdrawals)` per spec §2.1. Tests: key

@@ -70,9 +70,10 @@ validator rewards_batcher {
     the pool forever NFT), exactly one output there, NIGHT conservation,
     ADA non-decreasing, `[ada, night]` shape, inline datum;
   - result state; compare with `state_out` (`==` on the whole record).
-- Skim: `ADA_out == ADA_in − config.batcher_skim_lovelace` exactly (the
-  batcher takes the skim as free change; exactness keeps the deposit
-  balance predictable for Midnight).
+- Skim: `n_paid = length(paid)`; `cap = min((tx.fee + n_paid − 1) / n_paid, config.batcher_skim_max_lovelace)`;
+  per paid deposit `ADA_in − ADA_out ≤ cap` (exit: refund `ADA ≥ ADA_in − cap`).
+  The batcher takes the skims as free change. Test: fee padded to 5 ADA
+  with 3 paid leaves → cap is the config max, not 1.67 ADA.
 
 ### 4. Tests `validators/rewards_batcher.test.ak`, `validators/rewards_pool.test.ak`
 Build a 7-leaf sorted digest with the phase 02 builder (keys `k1 < … < k7`),
@@ -88,7 +89,8 @@ deposits for all seven in a list, pool with NIGHT.
 - start `k7`: `[k7]`, wrap `[k1..k6, +boundary k7]` → complete.
 - failures: non-contiguous proof; run that includes `start_key` again;
   jump to `min_key` when `cursor != max_key`; anchor key ≠ cursor; paying a
-  leaf twice across batches; wrong deposit NFT for a leaf; skim too large;
+  leaf twice across batches; wrong deposit NFT for a leaf; skim above
+  `fee / n_paid`; skim above the config max with a padded fee;
   NIGHT under-paid; pool over-drawn; two pairs pointing at one output;
   exit leaf with `committed == None`; exit without burn; exit without
   predecessor relink; refund short.
