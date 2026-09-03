@@ -80,7 +80,7 @@ Build a 7-leaf sorted digest with the phase 02 builder (keys `k1 < … < k7`),
 deposits for all seven in a list, pool with NIGHT.
 - init: ok; bad hash length; `complete == False` at init fails.
 - load: ok on complete state; on incomplete state fails; epoch `+2` fails;
-  bad digest proof fails; empty epoch (`min_key == ""`) → complete.
+  bad digest proof fails; empty epoch (`leaf_count == 0`) → complete.
 - first batch from each of the 7 possible starts, run length 1..7:
   `split_run` table test.
 - full fold from start `k4`: batches `[k4,k5]`, `[k6,k7]`, wrap `[k1]`,

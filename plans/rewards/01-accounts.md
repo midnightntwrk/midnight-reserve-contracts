@@ -32,9 +32,11 @@ pub fn account_spend(tx: Transaction, own_hash: ScriptHash, datum: Data, redeeme
 ```
 Mint:
 - `InitHead` → `init_head` with `config.virtual_account_one_shot_*`.
-- `Register { skh, cred_kind }` → spec §4.3 (stake auth; insert; deposit
-  ADA in `[deposit_min_lovelace, deposit_cap_lovelace]`, NIGHT 0; exactly
-  one registration output with matching `stake_key_hash`, `dust_address ≤ 33`).
+- `Register { cred }` → spec §4.3 (`skh = key(cred)`; `stake_auth(cred)`;
+  insert; new deposit datum `cred == redeemer cred`; deposit ADA in
+  `[deposit_min_lovelace, deposit_cap_lovelace]`, NIGHT 0; exactly one
+  registration output with matching `stake_key_hash`, `dust_address ≤ 33`).
+  Helper `key(cred: Credential) -> ByteArray` in `linked_list.ak`.
 - `BurnDeposit` → mint is exactly `[(deposit_name(k), -1)]` for one `k` and a
   withdrawal from `config.rewards_batcher_hash` exists.
 - `BurnRegistration` → mint is exactly `[(registration_name(k), -1)]`; the

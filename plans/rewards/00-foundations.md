@@ -8,7 +8,7 @@ registration, and test fixtures so phases 01–03 can start in parallel.
 ### 1. `lib/rewards/types.ak`
 Define exactly the types in spec §3, §4.1, §5.1, §5.3, §7, §8.1, §9:
 `Registration`, `Deposit`, `Head`, `AccountDatum`, `AccountMintRedeemer`
-(`InitHead | Register { skh, cred_kind } | BurnDeposit | BurnRegistration` — the
+(`InitHead | Register { cred: Credential } | BurnDeposit | BurnRegistration` — the
 last only inside a `SetDeregister` tx),
 `AccountSpendRedeemer` (`Withdraw | TopUp | SetDeregister(Address) | AnchorInsert | BatcherPay | UpdateRegistration | Deregister`),
 `BatcherState`, `BatcherRedeemer`, `PayPair`, `ExitInfo`, `DigestProof`,

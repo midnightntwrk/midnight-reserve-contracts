@@ -28,7 +28,7 @@ ascending.
 Parsing helper:
 ```aiken
 pub type RewardLeaf { ack: Int, key: ByteArray, amount: Int }
-pub fn parse_leaf(leaf: ByteArray) -> RewardLeaf   // length >= 29; amount = big-endian of bytes 29..
+pub fn parse_leaf(leaf: ByteArray) -> RewardLeaf   // length == 45; ack @0, key @1..29, amount = u128 BE @29..45
 ```
 
 ### 2. Test-side builder `lib/rewards/merkle_range_builder.ak`
