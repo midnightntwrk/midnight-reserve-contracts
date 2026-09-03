@@ -14,34 +14,38 @@ use cardano/assets.{PolicyId}
 pub const tail_key = #"ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 
 /// One datum per list NFT: head `""`, deposit `0x00 ++ skh`, registration `0x01 ++ skh`, tail `0x00 ++ tail_key`.
+/// `destinations`: `kind_byte ++ address -> weight`; weights > 0 and sum to 1000. `operator_keys`: opaque, node-owned.
 pub type AccountDatum {
   Head { next: ByteArray }
   Deposit { cred: Credential, next: ByteArray, committed: Option<Address> }
   Registration {
     owner: Credential,
-    dust_address: ByteArray,
-    validator_keys: ByteArray,
-    spo_intent: Bool,
+    destinations: Pairs<ByteArray, Int>,
+    operator_keys: Pairs<ByteArray, ByteArray>,
   }
   Tail
 }
 
-/// `BurnRegistration` is only valid inside a `SetDeregister` transaction.
-pub type AccountMintRedeemer {
-  InitHead
-  Register { cred: Credential }
-  BurnDeposit
-  BurnRegistration
+/// Spend and mint redeemer: which withdrawal validates this UTXO.
+pub type AccountGate {
+  User
+  Batcher
 }
 
-pub type AccountSpendRedeemer {
+/// Withdraw redeemer: one kind of user action, applied to every account-address
+/// input; outputs from `offset` match those inputs 1:1 in ledger order.
+pub type AccountAction {
+  kind: ActionKind,
+  offset: Int,
+}
+
+pub type ActionKind {
+  InitList
+  Register
   Withdraw
   TopUp
-  SetDeregister(Address)
-  AnchorInsert
-  BatcherPay
+  SetDeregister
   UpdateRegistration
-  Deregister
 }
 
 /// Inline datum on the batcher state NFT UTXO.

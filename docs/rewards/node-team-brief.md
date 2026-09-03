@@ -84,7 +84,30 @@ accounts still emits a digest with `leaf_count = 0`).
 So any block at or below the bridge checkpoint is provable; payouts lag at
 least one bridge checkpoint behind the digest.
 
-## 6. Questions for the node team
+## 6. Registration record (what the node reads)
+
+Inline datum of the UTXO holding `0x01 ++ skh` under the `virtual_account`
+policy (`AccountDatum::Registration`, constructor index 2):
+
+```
+owner:          Credential                    (edit/delete authority; not for the node)
+destinations:   Pairs<ByteArray, Int>         kind_byte ++ address -> weight
+operator_keys:  Pairs<ByteArray, ByteArray>   name -> key bytes
+```
+
+- Kind bytes now: `0x00` = dust address (DUST generation target), `0x01`
+  = stake / NIGHT address. No others yet; new kinds are a node-side
+  decision, the contract does not interpret the byte.
+- Weights: every weight `> 0`, sum over the whole list `== 1000`
+  (enforced on chain). The split is across all destinations together,
+  e.g. `[0x00‖A: 600, 0x01‖B: 400]` = 60 % dust at A, 40 % NIGHT at B.
+- `operator_keys` names: `"beefy"`, `"babe"`, `"aura"`, `"sidechain"`,
+  `"spo"`, … — opaque on chain; the node schema owns names and lengths.
+  Empty list = not an operator.
+- The deposit UTXO (`0x00 ++ skh`) holds the NIGHT; the registration
+  holds no value besides its NFT.
+
+## 7. Questions for the node team
 
 1. Confirm the enum/index/field layout in §4 or propose the change; we pin
    the on-chain parser to it.
