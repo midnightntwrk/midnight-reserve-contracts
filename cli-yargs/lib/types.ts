@@ -78,6 +78,15 @@ export interface NetworkConfig {
   // cNIGHT Minting one-shot ref
   cnight_minting_one_shot_hash: string;
   cnight_minting_one_shot_index: number;
+  // Rewards one-shot refs
+  virtual_account_one_shot_hash: string;
+  virtual_account_one_shot_index: number;
+  rewards_batcher_one_shot_hash: string;
+  rewards_batcher_one_shot_index: number;
+  rewards_pool_one_shot_hash: string;
+  rewards_pool_one_shot_index: number;
+  rewards_pool_staging_one_shot_hash: string;
+  rewards_pool_staging_one_shot_index: number;
 }
 
 export interface TransactionOutput {
