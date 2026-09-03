@@ -85,22 +85,26 @@ every node by construction (`Head` has no key).
 ### 2.3 Reward leaf
 
 ```
-leaf = ack(1) ++ skh(28) ++ amount(big-endian unsigned, 0..n bytes)
+leaf = ack(1) ++ skh(28) ++ amount(16, u128 big-endian)      // 45 bytes, fixed
 ```
 - `ack`: `0x00` normal, `0x01` Midnight acknowledges `Deregister`.
-- `amount`: NIGHT in base units; empty bytes = 0. Parsed with
-  `bytearray.to_int_big_endian` (stdlib v2: `builtin.byte_string_to_integer(True, _)`).
-- Leaves are **sorted ascending by `skh`**, unique per `skh`.
+- `amount`: cNIGHT token units (1:1 with ledger STARs). Parsed with
+  `builtin.byte_string_to_integer(True, slice)`.
+- Leaves are **sorted ascending by `skh`** (bytewise), unique per `skh`.
+- The contract rejects a leaf whose length is not 45.
 - `leaf_hash = H(leaf)`, `node_hash = H(left ++ right)`, `H = keccak_256`
   (decided: one hash family across the whole bridge path; the pallet can
   use `binary-merkle-tree<Keccak256>`). Kept behind `lib/rewards/hash.ak`.
 
 ### 2.4 Digest
 
-Per Midnight epoch `E`, the pallet emits `Digest { epoch: E, root, min_key, max_key }`
-as a `Consensus("MNRW", …)` log in the header of the **first block of epoch
+Per Midnight epoch `E` (partner-chains sidechain epoch), the pallet emits
+`Digest { epoch: E, leaf_count, root, min_key, max_key }` as a
+`Consensus("MNRW", …)` log in the header of the **first block of epoch
 `E + 1`**. `min_key`/`max_key` are the first and last leaf `skh`. Empty
-epoch: `min_key == max_key == ""` and `root` = `H("")` (any fixed value).
+epoch: `leaf_count == 0`, `root` = 32 zero bytes, keys zero; the contract
+ignores `root` and keys when `leaf_count == 0`. Payload bytes in §7.1.
+Full node-side contract: [node-team-brief.md](node-team-brief.md).
 
 ---
 
@@ -144,10 +148,15 @@ migration path on chain.
 
 ```aiken
 pub type Deposit {
-  key: ByteArray,                 // skh, 28
+  cred: Credential,               // stake credential; key = its 28-byte hash
   next: Option<ByteArray>,        // next skh in ascending order; None = tail
   committed: Option<Address>,     // None | Some(refund_addr) once Deregister is set
 }
+```
+`key(d) = hash bytes of d.cred` (`VerificationKey(h) | Script(h) → h`).
+The kind is only used by `stake_auth`; NFT names, ordering, leaves, and the
+digest all use the 28-byte hash.
+```aiken
 
 pub type Head { next: Option<ByteArray> }
 
@@ -176,19 +185,18 @@ under own policy exists"):
   carrying a list NFT = anchor; `anchor.key < new_key` (head: always) and
   `anchor.next == None || new_key < anchor.next`; anchor output identical
   except `next = Some(new_key)`; new node output at own address with
-  `Deposit { key: new_key, next: anchor.next, committed: None }`.
+  `Deposit { cred, next: anchor.next, committed: None }` where
+  `key(cred) == new_key`.
 - `unlink(removed_key, removed_next)`: predecessor input with
   `next == Some(removed_key)` continues with `next = removed_next`, all
   else unchanged; mint = −1 of `0x00 ++ removed_key`.
 - All `inputs`/`outputs` passed are the full transaction lists in ledger
   order; a caller never filters them first.
 
-### 4.3 Register (mint redeemer `Register { skh }`)
+### 4.3 Register (mint redeemer `Register { cred: Credential }`)
 
-One tx, mint = `[(0x00++skh, 1), (0x01++skh, 1)]`:
-1. `stake_auth(VerificationKey(skh) | Script(skh), …)` — the credential kind
-   comes from the redeemer (`RegisterKey | RegisterScript`); the hash must
-   equal `skh`.
+`skh = key(cred)`. One tx, mint = `[(0x00++skh, 1), (0x01++skh, 1)]`:
+1. `stake_auth(cred, …)`; the new deposit datum stores this `cred`.
 2. `insert_ascending(skh)`; the new deposit output has
    `deposit_min ≤ ADA ≤ deposit_cap` and NIGHT = 0.
 3. Exactly one registration output (§3) with `stake_key_hash == skh`.
@@ -198,9 +206,9 @@ One tx, mint = `[(0x00++skh, 1), (0x01++skh, 1)]`:
 
 | Redeemer | Auth | Continuing output rule |
 |---|---|---|
-| `Withdraw` | stake auth for `key` | same address, same datum, same NFT, NIGHT = 0, ADA unchanged |
-| `TopUp` | stake auth for `key` | same datum/NFT/NIGHT; `ADA_out − ADA_in ≥ deposit_min`; `ADA_out ≤ deposit_cap` |
-| `SetDeregister(addr)` | stake auth for `key`; `committed == None`; the registration UTXO `0x01 ++ key` is spent with `owner` auth and its NFT burned in this tx | same value/NFT; datum `committed = Some(addr)` |
+| `Withdraw` | stake auth for `cred` | same address, same datum, same NFT, NIGHT = 0, ADA unchanged |
+| `TopUp` | stake auth for `cred` | same datum/NFT/NIGHT; `ADA_out − ADA_in ≥ deposit_min`; `ADA_out ≤ deposit_cap` |
+| `SetDeregister(addr)` | stake auth for `cred`; `committed == None`; the registration UTXO `0x01 ++ key` is spent with `owner` auth and its NFT burned in this tx | same value/NFT; datum `committed = Some(addr)` |
 | `AnchorInsert` | none | mint of `+1` under own policy exists (mint policy validates the anchor) |
 | `BatcherPay` | none | withdrawal from `config.rewards_batcher_hash` present (batch logic validates) |
 
@@ -278,7 +286,7 @@ pub type ExitInfo { pred_input_index: Int, pred_output_index: Int, refund_output
    where `bridge_state` is the inline datum of the reference input holding
    the `config.committee_bridge_forever_hash` singleton NFT.
 3. `digest.epoch == state_in.epoch + 1` (strict succession).
-4. `state_out = state_in with { epoch, root, min_key, max_key, start_key: None, cursor: None, complete: min_key == "" }`.
+4. `state_out = state_in with { epoch, root, min_key, max_key, start_key: None, cursor: None, complete: leaf_count == 0 }`.
 5. State NFT and value continue; no pool or deposit inputs unless composite.
 
 **PayBatch**
@@ -380,12 +388,11 @@ pub fn verify_digest(mmr_root: ByteArray, proof: DigestProof) -> Digest
 MMR verification and header layout: see §7.1 (filled from polkadot-sdk
 sources).
 
-Digest log encoding (**TBD with node team**): proposed
-`DigestItem::Consensus(engine_id = "MNRW", payload = SCALE(epoch: u64, root: [u8; 32], min_key: Vec<u8>, max_key: Vec<u8>))`
-in the header of the first block of epoch `E + 1`. Any block below the
-bridge checkpoint is provable, so payouts may lag any number of epochs
-without losing provability; the contract still enforces strict `E + 1`
-succession.
+Digest log: `DigestItem::Consensus("MNRW", payload)` in the header of the
+first block of epoch `E + 1`, payload per §7.1 (`MNSV` is the existing
+Midnight engine id; `MNRW` is free). Any block below the bridge checkpoint
+is provable, so payouts may lag any number of epochs without losing
+provability; the contract still enforces strict `E + 1` succession.
 
 ### 7.1 Encodings (from polkadot-sdk master, 2026-09-03)
 
@@ -412,20 +419,22 @@ Reject `leaf_count` whose `mmr_size` is not a valid MMR size, and
 `leaf_index ≥ leaf_count`. The existing `bridge/merkle.calculate_mmr_root`
 is the lone-peak special case (`foldr` with `H(acc || item)`, correct only
 when `leaf_count` is odd, which holds for both golden vectors: 553 and 601).
-The bridge keeps that function; BEEFY mandatory commitments land on odd
-blocks under the current session length and offset. The rewards verifier
-is a new, positional function and must reproduce the bridge result for the
-odd case (regression vectors in `lib/bridge/merkle.ak` tests). If an
-even-block commitment ever has to be relayed, the bridge needs this
-verifier too — flagged for the bridge re-audit, not changed here.
+Midnight sessions have no fixed block parity (slot-based epochs, deferred
+rollovers, BEEFY `min_block_delta = 8`), so the bridge is expected to stall
+at the first even-numbered mandatory block. Decision: the rewards verifier
+(`lib/rewards/mmr.ak`) is positional and must reproduce the bridge result
+for the odd case; the bridge swaps to it, and binds
+`leaf.parent_number + 1 == commitment.block_number`, in its own reviewed
+change after phase 03, followed by re-audit. Rewards work does not edit
+bridge files.
 
 **BEEFY MMR leaf**: `version: u8` (major << 5 | minor), `parent_number_and_hash: (BlockNumber u32 LE, H256)`,
 `beefy_next_authority_set { id: u64, len: u32, keyset_commitment: H256 }`,
 `leaf_extra`. Already encoded by `bridge/codec.scale_encode_beefy_mmr_leaf`;
 `leaf_hash = keccak256(SCALE(leaf))`.
 
-**Header** (`sp_runtime::generic::Header`, hasher BlakeTwo256 — verify for
-midnight-node):
+**Header** (`sp_runtime::generic::Header<u32, BlakeTwo256>`, confirmed in
+`midnight-node/runtime/src/lib.rs:142,175`):
 
 ```
 parent_hash(32) || Compact(number) || state_root(32) || extrinsics_root(32) || Compact(n_logs) || log*
@@ -441,10 +450,14 @@ Compact<u32/u64>: low two bits of the first byte select 1/2/4-byte LE
 (first >> 2) + 4, LE). The parser needs only: skip 32, compact, skip 64,
 compact count, then walk logs skipping by tag until `log_index`.
 
-Rewards digest log: `Consensus("MNRW", SCALE(epoch: u64, root: [u8;32], min_key: Vec<u8>, max_key: Vec<u8>))`
-in the first block of epoch `E + 1` (decided). Payload field order and
-widths above are the proposal to the node team (**TBD** until they confirm).
-`Vec<u8>` = Compact(len) || bytes. `[u8;32]` raw.
+Rewards digest log: `Consensus("MNRW", payload)` in the first block of
+epoch `E + 1`, payload = SCALE of an enum variant (index 1), 105 bytes:
+
+```
+0x01 | epoch u64 LE @1 | leaf_count u64 LE @9 | root 32 @17 | min_key 28 @49 | max_key 28 @77
+```
+Fixed offsets; no compact parsing inside the payload. Pending node-team
+confirmation (question 1 in the brief).
 
 ---
 
@@ -574,10 +587,11 @@ Every governance-domain spend still needs the domain's `logic` and
 
 ## 12. Requirements on the rewards pallet (node team)
 
-1. Leaves per §2.3, sorted by `skh`, unique; tree per §6 (odd node
-   promoted); hash per `lib/rewards/hash.ak`.
-2. Digest `(epoch, root, min_key, max_key)` in a header digest log per §7,
-   empty-epoch form per §2.4, one digest per epoch, epochs consecutive.
+1. Leaves per §2.3 (45 bytes), sorted by `skh`, unique; tree per §6 (odd
+   node promoted, `binary_merkle_tree::merkle_root::<Keccak256>`).
+2. Digest `(epoch, leaf_count, root, min_key, max_key)` as a
+   `Consensus("MNRW")` log per §7.1, empty-epoch form per §2.4, one digest
+   per epoch, epochs consecutive. Details and questions: `node-team-brief.md`.
 3. Emit a leaf only for deposits observed funded (≥ floor) at least 12 h
    ago; emit `ack = 1` exactly once per observed `committed = Some(addr)`
    and drop the account afterwards.
@@ -623,5 +637,11 @@ rewards_digest_engine_id = "MNRW"
 | Uncompensated load/release | accepted; batchers use `LoadAndPay` |
 | Bridge MMR fold parity | bridge untouched; rewards use a positional verifier; flagged for bridge re-audit |
 | Mainnet reserve datum | unit constructor; first release migrates by field count |
+| Digest payload | enum variant 1, fixed 105 bytes with `leaf_count`; keys fixed 28; empty epoch = `leaf_count 0`, zero root |
+| Leaf amount | fixed `u128` big-endian, leaf 45 bytes; 1 unit = 1 cNIGHT token unit = 1 STAR |
+| Epoch counter | partner-chains sidechain epoch |
+| Credential kind | `Deposit.cred: Credential`; keys stay 28-byte hashes everywhere else |
+| Header | `Header<u32, BlakeTwo256>` confirmed in midnight-node |
+| Bridge fold parity | sessions have no fixed parity; bridge swaps to the positional verifier in its own change after phase 03, then re-audit |
 Test profiles (`local`, `devnet`) use short intervals (e.g. 60 s) and small
 amounts.
