@@ -7,8 +7,8 @@ and proof builder for tests (no TypeScript yet).
 
 ### 1. Verifier
 Copy the DFS structure of `lib/bridge/merkle.do_verify_merkle_multi_proof_get_leaves`
-(do not modify the bridge file) into `merkle_range.ak`, swapping keccak for
-`rewards/hash.{leaf_hash, node_hash}` and adding the contiguity state:
+(do not modify the bridge file) into `merkle_range.ak`, keeping
+`builtin.keccak_256` inline, and adding the contiguity state:
 
 ```aiken
 pub type Reveal { Before  Inside  After }

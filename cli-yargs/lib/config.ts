@@ -262,6 +262,18 @@ export function loadAikenConfig(environment: string): NetworkConfig {
     ),
     cnight_minting_one_shot_hash: getHash("cnight_minting_one_shot_hash"),
     cnight_minting_one_shot_index: getIndex("cnight_minting_one_shot_index"),
+    virtual_account_one_shot_hash: getHash("virtual_account_one_shot_hash"),
+    virtual_account_one_shot_index: getIndex("virtual_account_one_shot_index"),
+    rewards_batcher_one_shot_hash: getHash("rewards_batcher_one_shot_hash"),
+    rewards_batcher_one_shot_index: getIndex("rewards_batcher_one_shot_index"),
+    rewards_pool_one_shot_hash: getHash("rewards_pool_one_shot_hash"),
+    rewards_pool_one_shot_index: getIndex("rewards_pool_one_shot_index"),
+    rewards_pool_staging_one_shot_hash: getHash(
+      "rewards_pool_staging_one_shot_hash",
+    ),
+    rewards_pool_staging_one_shot_index: getIndex(
+      "rewards_pool_staging_one_shot_index",
+    ),
   };
 }
 

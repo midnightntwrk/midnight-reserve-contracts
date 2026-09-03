@@ -6,7 +6,7 @@ commit. No audited file is touched. No TypeScript until phase 06.
 
 | Phase | File | Delivers | Depends on |
 |---|---|---|---|
-| 00 | [00-foundations.md](00-foundations.md) | `lib/rewards/{types,hash,auth}.ak`, config keys in 8 profiles, build-engine registration, test fixture helpers | — |
+| 00 | [00-foundations.md](00-foundations.md) | `lib/rewards/{types,auth}.ak`, config keys in 8 profiles, build-engine registration, test fixture helpers | — |
 | 01 | [01-accounts.md](01-accounts.md) | `lib/rewards/linked_list.ak`, `lib/rewards/account.ak`, `validators/virtual_account.ak` + tests | 00 |
 | 02 | [02-merkle-range.md](02-merkle-range.md) | `lib/rewards/merkle_range.ak` + Aiken-side tree builder for tests | 00 |
 | 03 | [03-digest-proof.md](03-digest-proof.md) | `lib/rewards/digest.ak`: positional MMR verify, SCALE header parse, digest extraction + vectors | 00 |

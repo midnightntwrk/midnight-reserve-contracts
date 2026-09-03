@@ -16,13 +16,9 @@ last only inside a `SetDeregister` tx),
 Keep constructors ordered as listed in the spec; blueprint consumers rely on
 the indices.
 
-### 2. `lib/rewards/hash.ak`
-```aiken
-pub fn leaf_hash(leaf: ByteArray) -> ByteArray   // keccak_256
-pub fn node_hash(l: ByteArray, r: ByteArray) -> ByteArray
-```
-Decided: keccak-256. Kept as the single switch point anyway. Unit test with
-one known vector each.
+### 2. Hashing
+Decided: keccak-256 via `builtin.keccak_256` inline wherever a leaf or node
+is hashed; no wrapper module (dropped 2026-09-03).
 
 ### 3. `lib/rewards/auth.ak`
 `stake_auth(cred, extra_signatories, withdrawals)` per spec §2.1. Tests: key
@@ -36,6 +32,11 @@ index `0`/`1`). Numeric constants inline. For `local`/`devnet`:
 `release_*` values obviously placeholder (comment `# TBD`) on mainnet.
 
 ### 5. `cli-yargs/lib/build-engine.ts`
+Decided 2026-09-03: phase 00 only adds the one-shot keys to `NetworkConfig`
+and `loadAikenConfig`. The `updateHash` step throws on a validator title
+missing from the blueprint, so the mappings below land with their
+validators: `virtual_account_hash` in phase 01, the pool and batcher
+entries plus the dependency checks in phase 04.
 - Add `rewards_pool` to `TWO_STAGE_CORE` and `FOREVER_CORE` (titles
   `rewards_pool.rewards_pool_two_stage_upgrade.else`,
   `rewards_pool.rewards_pool_forever.else`; toml keys
