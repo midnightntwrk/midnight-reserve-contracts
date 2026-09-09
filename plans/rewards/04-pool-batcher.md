@@ -62,7 +62,11 @@ validator rewards_batcher {
     and unit-test it exhaustively — this is the core invariant);
   - for each paid leaf with its `PayPair`: `input = list.at(inputs, i)`,
     `output = list.at(outputs, o)`; input value carries
-    `(account_policy, deposit_name(key), 1)`; indices strictly increasing
+    `(account_policy, deposit_name(key), 1)` (the deposit's spend gate is
+    `Batcher`, satisfied by this withdrawal; the exit burn uses the mint
+    gate `Batcher`); count every input carrying an `account_policy` token
+    and require `== len(paid) + len(exits)`; a head input is accepted only
+    as an exit predecessor; indices strictly increasing
     across pairs; `ack == 0` → pay rule; `ack == 1` → exit rule with
     `ExitInfo` (predecessor in/out via `unlink`, refund output, burn present
     in `mint`);
