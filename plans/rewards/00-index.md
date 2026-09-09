@@ -8,7 +8,7 @@ commit. No audited file is touched. No TypeScript until phase 06.
 |---|---|---|---|
 | 00 ✅ | [00-foundations.md](00-foundations.md) | `lib/rewards/{types,auth,value,fold,test_fixtures}.ak`, config keys in 8 profiles, `NetworkConfig` keys | — |
 | 01 ✅ | [01-accounts.md](01-accounts.md) | `lib/rewards/linked_list.ak`, `lib/rewards/account.ak`, `validators/virtual_account.ak` + 87 tests, `virtual_account_hash` | 00 |
-| 02 | [02-merkle-range.md](02-merkle-range.md) | `lib/rewards/merkle_range.ak` + Aiken-side tree builder for tests | 00 |
+| 02 ✅ | [02-merkle-range.md](02-merkle-range.md) | `lib/rewards/merkle_range.ak`, `lib/rewards/merkle_range_builder.ak` (test-only) + 34 tests | 00 |
 | 03 | [03-digest-proof.md](03-digest-proof.md) | `lib/rewards/digest.ak`: positional MMR verify, SCALE header parse, digest extraction + vectors | 00 |
 | 04 | [04-pool-batcher.md](04-pool-batcher.md) | `validators/rewards_batcher.ak`, `validators/rewards_pool.ak`, `validators/staging_rewards_pool.ak`, `lib/rewards/batch.ak` + tests | 01, 02, 03 |
 | 05 | [05-reserve-release.md](05-reserve-release.md) | `lib/rewards/{schedule,release}.ak`, rewritten `validators/reserve_v2.ak` + tests | 04 (pool hash) |
