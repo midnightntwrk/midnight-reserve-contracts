@@ -46,15 +46,19 @@ own-policy mint must be exactly what the action needs (`claim` per NFT,
 `Minting` / `Spending` → `account_gate`; `Withdrawing(Script(h))` →
 `account_withdraw`; `Publishing RegisterCredential` → `True`.
 
-### Tests (`validators/virtual_account.test.ak`, 87)
+### Tests (`validators/virtual_account.test.ak`, 88)
 Init list; register (head anchor, middle, tail, order violations,
 duplicates, two anchors, auth variants, ADA bounds, NIGHT present,
 registration missing / wrong NFT / weight errors); withdraw; top up; set
 deregister (either order, already set, auth, value change, no burn, wrong
 registration); update registration (owner rotate, NFT dropped, moved,
-with burn, on a deposit); gates; mutual exclusion with batcher inputs.
-Not written: the random-order insertion property test (list order is
-covered by the insert tests).
+with burn, on a deposit); gates; mutual exclusion with batcher inputs;
+`register_random_order_yields_sorted_chain`: 12 blake2b-224 keys inserted
+in hash order through the validator against an off-chain model, walked
+from the head; chain equals the sorted keys.
+
+Run the module with `aiken check -m 'virtual_account.{..}'`; `aiken` prints
+diagnostics only on a TTY, a piped run exits 1 silently.
 
 ## Contract with phase 04 (batcher side)
 - Deposit spends and the deposit-NFT burn use gate redeemer `Batcher`; the
