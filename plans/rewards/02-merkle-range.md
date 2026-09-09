@@ -22,6 +22,12 @@ implement the state on the *left-to-right* sequence explicitly (either
 reverse the recursion order or run the state machine over the collected
 terminal list afterwards; the second is simpler and cheap).
 
+Terminal classification comes from the node shape, as in the bridge
+verifier: `[single]` is a leaf; `[bytes, bytes]` is two leaves; a `bytes`
+next to a `list` is a sibling hash. An unrevealed leaf sibling is therefore
+supplied as its hash in `[hash, [leaf]]` form. Cheap sanity check while
+folding: leaf items are 45 bytes, hash items 32.
+
 Post-checks: `hash == root`; ≥ 1 leaf; keys (`bytes 1..29`) strictly
 ascending.
 
