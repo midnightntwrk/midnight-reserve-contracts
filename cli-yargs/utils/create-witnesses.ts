@@ -1,6 +1,6 @@
 import { writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from "fs";
-import { signTransaction } from "./cli-yargs/lib/transaction.js";
-import { parsePrivateKeys } from "./cli-yargs/lib/signers.js";
+import { signTransaction } from "../lib/transaction.js";
+import { parsePrivateKeys } from "../lib/signers.js";
 
 const txHash = process.argv[2]!;
 const witnessDir = "./witnesses";
