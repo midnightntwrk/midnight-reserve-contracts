@@ -1,4 +1,6 @@
+use aiken/builtin
 use aiken/collection/list
+use aiken/crypto.{blake2b_224}
 use aiken/primitive/bytearray
 use cardano/address.{Address, Script, VerificationKey}
 use cardano/assets.{Value, add, from_asset, from_lovelace}
@@ -1284,4 +1286,105 @@ fn walk(
 test inserts_in_any_order_yield_ascending_chain() {
   let (head_next, nodes) = insert_all([k3, k1, k5, k2, k4], tail_key, [])
   walk(head_next, nodes, []) == [k1, k2, k3, k4, k5]
+}
+
+// -- list order property ---------------------------------------------------
+
+/// Off-chain model of the list: (key, next) per node, head key "".
+fn model_anchor(
+  model: List<Pair<ByteArray, ByteArray>>,
+  new_key: ByteArray,
+) -> Pair<ByteArray, ByteArray> {
+  expect Some(anchor) =
+    list.find(
+      model,
+      fn(n) {
+        and {
+          builtin.less_than_bytearray(n.1st, new_key),
+          builtin.less_than_bytearray(new_key, n.2nd),
+        }
+      },
+    )
+  anchor
+}
+
+fn model_output(key: ByteArray, next: ByteArray) -> Output {
+  if key == "" {
+    mk_head_output(next)
+  } else {
+    mk_deposit_output(key, ada, 0, next, None)
+  }
+}
+
+/// Register `new_key` through the validator and apply the same insert to the model.
+fn model_insert(
+  model: List<Pair<ByteArray, ByteArray>>,
+  new_key: ByteArray,
+) -> List<Pair<ByteArray, ByteArray>> {
+  let Pair(a_key, a_next) = model_anchor(model, new_key)
+  expect
+    register(
+      register_tx(
+        model_output(a_key, a_next),
+        model_output(a_key, new_key),
+        mk_deposit_output(new_key, ada, 0, a_next, None),
+        registration(new_key),
+        new_key,
+        [new_key],
+      ),
+    )
+  [
+    Pair(new_key, a_next),
+    ..list.map(
+      model,
+      fn(n) {
+        if n.1st == a_key {
+          Pair(a_key, new_key)
+        } else {
+          n
+        }
+      },
+    )
+  ]
+}
+
+/// Keys visited from the head, in link order.
+fn model_walk(
+  model: List<Pair<ByteArray, ByteArray>>,
+  key: ByteArray,
+  acc: List<ByteArray>,
+) -> List<ByteArray> {
+  if key == tail_key {
+    list.reverse(acc)
+  } else {
+    expect Some(node) = list.find(model, fn(n) { n.1st == key })
+    model_walk(model, node.2nd, [key, ..acc])
+  }
+}
+
+fn ascending(keys: List<ByteArray>) -> Bool {
+  when keys is {
+    [a, b, ..rest] ->
+      builtin.less_than_bytearray(a, b) && ascending([b, ..rest])
+    _ -> True
+  }
+}
+
+test register_random_order_yields_sorted_chain() {
+  let n = 12
+  // blake2b_224 of the index: 28-byte keys in an order unrelated to their value.
+  let keys =
+    list.map(
+      list.range(1, n),
+      fn(i) { blake2b_224(builtin.integer_to_bytearray(True, 1, i)) },
+    )
+  let model =
+    list.foldl(keys, [Pair("", tail_key)], fn(k, m) { model_insert(m, k) })
+  expect Some(head) = list.find(model, fn(n) { n.1st == "" })
+  let chain = model_walk(model, head.2nd, [])
+  and {
+    list.length(chain) == n,
+    chain == list.sort(keys, bytearray.compare),
+    ascending(chain),
+  }
 }
