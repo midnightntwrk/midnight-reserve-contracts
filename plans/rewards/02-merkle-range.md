@@ -1,62 +1,75 @@
-# Phase 02 — Sorted multiproof with contiguity
+# Phase 02 — Sorted multiproof with contiguity — DONE (commit `1189e28`)
 
-Goal: `lib/rewards/merkle_range.ak` per spec §6, plus an Aiken-side tree
-and proof builder for tests (no TypeScript yet).
+Delivered: `lib/rewards/merkle_range.ak`, `lib/rewards/merkle_range_builder.ak`
+(test-only), `lib/rewards/merkle_range.test.ak` (34 tests). Spec §2.3 and §6
+are the authoritative description; this page records how it was built and
+what phase 04 must honour.
 
-## Tasks
+## As built
 
-### 1. Verifier
-Copy the DFS structure of `lib/bridge/merkle.do_verify_merkle_multi_proof_get_leaves`
-(do not modify the bridge file) into `merkle_range.ak`, keeping
-`builtin.keccak_256` inline, and adding the contiguity state:
-
+### `lib/rewards/merkle_range.ak`
 ```aiken
-pub type Reveal { Before  Inside  After }
-pub fn verify_range(root: ByteArray, proof: ProofNodeRec) -> List<ByteArray>
-```
-Fold returns `(hash, leaves, state)`. Transitions on terminal items in DFS
-(left-to-right) order: leaf: `Before→Inside`, `Inside→Inside`,
-`After→fail`; hash: `Before→Before`, `Inside→After`, `After→After`.
-Because the existing DFS recurses right branch first and conses leaves,
-implement the state on the *left-to-right* sequence explicitly (either
-reverse the recursion order or run the state machine over the collected
-terminal list afterwards; the second is simpler and cheap).
-
-Terminal classification comes from the node shape, as in the bridge
-verifier: `[single]` is a leaf; `[bytes, bytes]` is two leaves; a `bytes`
-next to a `list` is a sibling hash. An unrevealed leaf sibling is therefore
-supplied as its hash in `[hash, [leaf]]` form. Cheap sanity check while
-folding: leaf items are 45 bytes, hash items 32.
-
-Post-checks: `hash == root`; ≥ 1 leaf; keys (`bytes 1..29`) strictly
-ascending.
-
-Parsing helper:
-```aiken
+pub type Reveal { Before  Inside(ByteArray)  After }
 pub type RewardLeaf { ack: Int, key: ByteArray, amount: Int }
-pub fn parse_leaf(leaf: ByteArray) -> RewardLeaf   // length == 45; ack @0, key @1..29, amount = u128 BE @29..45
+pub fn verify_range(root: ByteArray, proof: ProofNodeRec) -> List<ByteArray>
+pub fn parse_leaf(leaf: ByteArray) -> RewardLeaf
 ```
+- Same five node shapes and DFS as `lib/bridge/merkle.ak` (untouched),
+  `builtin.keccak_256` inline. `ProofNodeRec` is the bridge alias
+  (`List<Data>`) already used by `BatcherRedeemer`.
+- The contiguity fold runs inside the DFS in its natural right-to-left visit
+  order: `hash* leaf+ hash*` is its own reverse, so no second pass and no
+  reversed recursion. `Inside` carries the key of the leftmost leaf seen so
+  far; each new leaf must be strictly below it, which is the ascending-key
+  check in the same fold.
+- Terminal length checks: leaf items 45 bytes, hash items 32. A 32-byte hash
+  in a leaf position or a 45-byte leaf in a hash position is rejected before
+  the root comparison.
+- Post-checks: `hash == root`; state not `Before` (≥ 1 leaf).
+- `parse_leaf` trusts the 45-byte length `verify_range` established; it does
+  not re-check.
 
-### 2. Test-side builder `lib/rewards/merkle_range_builder.ak`
-Test-only module (not imported by validators):
-- `build_root(leaves: List<ByteArray>) -> ByteArray` with the promotion rule
-  (odd trailing node carried up unchanged).
-- `build_proof(leaves, from_index, to_index) -> ProofNodeRec` producing the
-  five-shape `List<Data>` format for a contiguous range; and
-  `build_proof_indices(leaves, indices)` for arbitrary (non-contiguous)
-  reveals to feed negative tests.
-Cross-check `build_root` against `lib/bridge/merkle.ak`'s golden test by
-temporarily substituting keccak in a test (the shape is identical).
+### `lib/rewards/merkle_range_builder.ak` (test-only)
+```aiken
+pub fn build_root(leaves: List<ByteArray>) -> ByteArray
+pub fn build_proof(leaves, from: Int, to: Int) -> ProofNodeRec       // inclusive
+pub fn build_proof_indices(leaves, indices: List<Int>) -> ProofNodeRec
+```
+Promotion rule: trailing odd node carried up unchanged. Encoding rule: a
+revealed leaf is raw bytes only next to another revealed leaf; next to a
+hash or a list it is wrapped as `[leaf]`. A fully hidden subtree collapses
+to its hash; a proof revealing nothing fails.
 
-### 3. Tests `lib/rewards/merkle_range.test.ak`
-For sizes 1, 2, 3, 4, 5, 7, 8, 9, 16, 17:
-- every contiguous range verifies and returns the same leaves in order;
-- every non-contiguous reveal (gap of one) fails;
-- wrong root fails; swapped sibling fails; single-leaf tree ok;
-- leaves out of order (build tree unsorted) → verifier rejects on the
-  ascending check.
-Budget: report `aiken check` mem/cpu for a 32-leaf range in a 50k-leaf
-tree (depth 16) — record in the test file header for phase 04 sizing.
+The plan's "golden test in `lib/bridge/merkle.ak`" does not exist (the
+bridge only has MMR peak vectors), so `build_root` is cross-checked by
+round trip through `verify_range` for every contiguous range of every size.
 
-## Done when
-- Tests green; documented budget numbers.
+### Tests (`lib/rewards/merkle_range.test.ak`, 34)
+Every contiguous range for sizes 1, 2, 3, 4, 5, 7, 8, 9, 16, 17 returns
+the expected slice; index-set proofs equal range proofs; single-leaf tree;
+`parse_leaf` fields and u128 max. Negatives (`fail` tests): 16 gap-of-one
+cases across the sizes, two separated blocks, wrong root, swapped
+siblings, swapped leaves, unsorted tree, duplicate key, short leaf, leaf
+in hash position, hash in leaf position, empty proof.
+
+Negative cases are enumerated, not exhaustive: Aiken cannot catch a
+failure inside a loop, and the fuzz library is not a dependency.
+
+Run with `aiken check -m 'rewards/merkle_range.{..}'` on a TTY.
+
+### Budget (32 revealed leaves at depth 16, 2026-09-09)
+| Test | mem | cpu |
+|---|---|---|
+| build + verify | 3.18 M | 1.64 B |
+| build only | 2.44 M | 1.23 B |
+| `verify_range` alone | 0.74 M | 0.41 B |
+
+About 5% of the 14 M mem / 10 B cpu tx limits per 32-leaf range.
+
+## Contract with phase 04 (batcher side)
+- Call `verify_range(digest.root, proof)` then `parse_leaf` per returned
+  leaf; leaves arrive left-to-right and strictly ascending by key.
+- Contiguity says nothing about the tree's ends: check the first key against
+  the cursor / `min_key` and the last against `max_key` in the batcher.
+- Proof for a batch: reveal the batch's leaf indices with `build_proof`
+  (inclusive range) against a tree from `build_root` of the sorted leaves.
