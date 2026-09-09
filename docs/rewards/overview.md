@@ -17,13 +17,16 @@ into per-stake-key **Midnight virtual accounts**. Four on-chain pieces:
 | **Reserve v2** | Existing reserve, new logic: timed release of NIGHT into the pool under a per-network emission schedule. Permissionless crank, catch-up on missed intervals. | Yes (Forever → Two-Stage → Logic) |
 | **Rewards pool** | Holds released NIGHT. Value only leaves via a batcher payout. | Yes (Forever → Two-Stage → Logic) |
 | **Batcher state** | One UTXO: current epoch, reward Merkle root, cursor over the sorted leaves. Withdraw-zero validator runs the batch logic once per tx. | No (fixed) |
-| **Virtual account** | Per stake key: a **deposit UTXO** (ADA for batcher fees + accrued NIGHT, node in a sorted linked list) and a **registration UTXO** (owner key, DUST address, SPO keys). | No (fixed) |
+| **Virtual account** | Per stake key: a **deposit UTXO** (ADA for batcher fees + accrued NIGHT, node in a sorted linked list) and a **registration UTXO** (owner credential, weighted destinations — DUST address / NIGHT address —, operator keys). User logic runs once per tx in a withdraw handler; mint and spend are gates. | No (fixed) |
 
 ## Why this shape
 
 - **Pay on Cardano.** NIGHT liquidity is on Cardano; users hold rewards where
-  they trade. DUST generation reads these UTXOs the same way it reads cNIGHT
-  holdings today.
+  they trade. The node reads the deposit and the registration's weighted
+  `destinations` (a kind byte per entry: DUST-generation address or NIGHT
+  address; weights sum to 1000) the same way it reads cNIGHT holdings
+  today. Kind semantics belong to the node; the contract only checks the
+  weights.
 - **Push, not pull.** A permissionless batcher walks the epoch's sorted
   reward leaves and pays every account. Users never race each other for a
   shared root. Users still withdraw NIGHT any time.

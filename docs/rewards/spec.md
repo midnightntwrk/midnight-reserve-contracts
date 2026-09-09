@@ -44,9 +44,12 @@ Libraries:
 
 | File | Content |
 |---|---|
-| `lib/rewards/types.ak` | every datum / redeemer below |
-| `lib/rewards/linked_list.ak` | head/insert/unlink primitives (hand-ported, §4.2) |
-| `lib/rewards/account.ak` | virtual account gates + withdraw logic |
+| `lib/rewards/types.ak` | every datum / redeemer below (built) |
+| `lib/rewards/linked_list.ak` | `key`, NFT names, `init_list` / `insert_ascending` / `unlink` (built, §4.2) |
+| `lib/rewards/account.ak` | virtual account gates + withdraw logic (built) |
+| `lib/rewards/value.ak` | `tokens_of`, `quantity`, `claim`, `split_ada`, `only_nft`: one walk over the value pairs, no stdlib lookups (built) |
+| `lib/rewards/fold.ak` | `foldl2`: two-accumulator left fold in CPS (built) |
+| `lib/rewards/test_fixtures.ak` | fixture builders for Aiken tests (built) |
 | `lib/rewards/merkle_range.ak` | sorted multiproof verifier with contiguity (§6) |
 | `lib/rewards/digest.ak` | MMR positional proof + SCALE header parse + digest extraction (§7) |
 | `lib/rewards/batch.ak` | batcher withdraw logic (§5) |
@@ -197,10 +200,11 @@ only gate on the authority named by their redeemer:
   removed_key`; `pred_out` identical except `next = removed_next`. The
   caller burns `0x00 ++ removed_key`. The tail node is never unlinked.
 
-### 4.3 Register (withdraw action `Register { cred: Credential }`)
+### 4.3 Register (withdraw action `Register`)
 
-`skh = key(cred)`. One tx, mint = `[(0x00++skh, 1), (0x01++skh, 1)]`:
-1. `stake_auth(cred, …)`; the new deposit datum stores this `cred`.
+The action carries no fields: `cred` is read from the new node output's
+datum, `skh = key(cred)`. Per anchor, mint = `[(0x00++skh, 1), (0x01++skh, 1)]`:
+1. `stake_auth(cred, …)` for the `cred` in the node datum.
 2. `insert_ascending(skh)`; the new deposit output has
    `deposit_min ≤ ADA ≤ deposit_cap` and NIGHT = 0.
 3. Exactly one registration output (§3) carrying the `0x01 ++ skh` NFT.
@@ -352,19 +356,21 @@ There is no standalone load: an epoch opens with its first batch, so
    `paid` non-empty.
 2. No paid leaf has `key == start_key` (only the first batch pays it, as
    `paid[0]`).
-5. Every paid leaf: find deposit input/output by `pairs[i]`; input value
+3. Every paid leaf: find deposit input/output by `pairs[i]`; input value
    holds `0x00 ++ key` under `account_policy`; apply §4.5 Pay or Exit.
    Indices in `pairs` strictly increase (no double satisfaction). Every
    input carrying an `account_policy` token is a paid deposit, an exit
    predecessor (head or deposit) from `exits`, or nothing else: the count
-   of such inputs equals `len(paid) + len(exits)`.
-6. Pool: all inputs at `Script(pool_forever)` are summed (none may carry the
+   of such inputs equals `len(paid) + len(exits)`. Deposit spends and the
+   exit burn use the account gate `Batcher` (§4.4); a head input is
+   accepted only as an exit predecessor; the tail is never an input.
+4. Pool: all inputs at `Script(pool_forever)` are summed (none may carry the
    pool forever NFT); exactly one output to that address with
    `NIGHT_out == NIGHT_in − Σ amount`, `ADA_out ≥ ADA_in`, value shape
    `[ada, night]`, inline datum. Pool logic is satisfied separately (§9).
-7. `cursor := key(last paid)`; `complete` per the redeemer's split and also
+5. `cursor := key(last paid)`; `complete` per the redeemer's split and also
    when `cursor == max_key && start_key == min_key`.
-8. `state_out` otherwise unchanged; NFT continues.
+6. `state_out` otherwise unchanged; NFT continues.
 
 ### 5.4 Costs
 
@@ -669,9 +675,15 @@ rewards_batcher_hash, virtual_account_hash                (derived by build)
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 batcher_skim_max_lovelace = 10_000                         (0.01 ADA; 5_000 is the alternative)
-release_t0_ms, release_interval_ms, release_initial_amount, release_decay_num, release_decay_den   (TBD values; interval = one Midnight epoch)
+release_t0_ms, release_interval_ms, release_initial_amount, release_decay_num, release_decay_den
 rewards_digest_engine_id = "MNRW"
 ```
+As built (phase 00): every profile carries all keys. Non-mainnet profiles
+use test values (`release_interval_ms = 60_000`, `release_initial_amount = 1_000_000`,
+decay `999/1000`, `t0 = 0`). `mainnet` carries `# TBD` placeholders
+(`interval 7_200_000`, `initial_amount 0` — a release of 0 until tokenomics
+lands). Derived hashes are written back by the build: `virtual_account_hash`
+now; `rewards_batcher_hash`, `rewards_pool_*_hash` from phase 04.
 
 ---
 
@@ -698,5 +710,19 @@ rewards_digest_engine_id = "MNRW"
 | Credential kind | `Deposit.cred: Credential`; keys stay 28-byte hashes everywhere else |
 | Header | `Header<u32, BlakeTwo256>` confirmed in midnight-node |
 | Bridge fold parity | sessions have no fixed parity; bridge swaps to the positional verifier in its own change after phase 03, then re-audit |
-Test profiles (`local`, `devnet`) use short intervals (e.g. 60 s) and small
-amounts.
+
+### Phase 00/01 review adjustments (2026-09-09, as built)
+
+| Change | Reason |
+|---|---|
+| Account user logic moved to the `virtual_account` withdraw handler; mint and spend are gates (`AccountGate { User, Batcher }`) | one validation per tx regardless of input count; same pattern as the batcher |
+| One `AccountAction { kind, offset }` per tx applied to every account-address input; outputs consumed from `offset` 1:1 in ledger order | no output search; deterministic cost |
+| `Register` and `SetDeregister` carry no fields: `cred` and refund `addr` come from the output datums | redundant redeemer data removed |
+| Tail sentinel node (`0x00 ++ 0xff×28`, datum `Tail`) minted with the head; `next: ByteArray` instead of `Option` | uniform `key < next` comparison, no `None` branch |
+| `Register` links one new key per anchor input; keys between the same adjacent pair need separate txs | simplicity; anchors that are distinct nodes still batch |
+| Registration datum = `{ owner, destinations: Pairs<kind ++ addr, weight>, operator_keys: Pairs<name, bytes> }`; weights `> 0`, sum `1000`; `skh` only in the NFT name | node routes rewards per weights; one schema for delegator, DUST-only, operator personas |
+| No standalone `LoadEpoch`; `BatcherRedeemer { Pay, LoadAndPay }`; `start_key`/`cursor` are plain bytes, valid only while `complete == False` | `complete` alone distinguishes between-epochs from mid-run |
+| `PoolRedeemer { Receive, Disburse }` | name clash with the batcher's `Pay` |
+| No `lib/rewards/hash.ak`; `builtin.keccak_256` inline | wrapper added nothing |
+| `lib/rewards/value.ak`, `lib/rewards/fold.ak` helpers | one walk over value pairs; CPS two-accumulator fold |
+| Build-engine `FIXED` table gets each hash with its validator (`virtual_account_hash` in 01; batcher and pool in 04) | `updateHash` throws on a missing blueprint title |
