@@ -726,3 +726,11 @@ now; `rewards_batcher_hash`, `rewards_pool_*_hash` from phase 04.
 | No `lib/rewards/hash.ak`; `builtin.keccak_256` inline | wrapper added nothing |
 | `lib/rewards/value.ak`, `lib/rewards/fold.ak` helpers | one walk over value pairs; CPS two-accumulator fold |
 | Build-engine `FIXED` table gets each hash with its validator (`virtual_account_hash` in 01; batcher and pool in 04) | `updateHash` throws on a missing blueprint title |
+
+### Phase 02 review adjustments (2026-09-09, as built)
+
+| Change | Reason |
+|---|---|
+| Contiguity fold runs inside the DFS in its right-to-left visit order; `Inside` carries the leftmost key seen so ascending keys are checked in the same fold | `hash* leaf+ hash*` is its own reverse; one pass |
+| Terminal items are length-checked (leaf 45, hash 32) as they are visited | rejects shape confusion before the root comparison |
+| `parse_leaf` does not re-check length | `verify_range` already did |
