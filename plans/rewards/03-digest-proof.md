@@ -1,86 +1,101 @@
-# Phase 03 — Digest proof from the bridge
+# Phase 03 — Digest proof from the bridge — DONE (commit `60ae6d1`)
 
-Goal: `lib/rewards/digest.ak` implementing spec §7 and §7.1:
-`verify_digest(mmr_root, proof) -> Digest`.
+Delivered: `lib/rewards/scale.ak`, `lib/rewards/mmr.ak`,
+`lib/rewards/digest.ak`, `lib/rewards/mmr.test.ak`,
+`lib/rewards/digest.test.ak` (43 tests). Spec §7 and §7.1 are the
+authoritative description; this page records how it was built and what
+phase 04 and the bridge swap must honour.
 
-## Tasks
+## As built
 
-### 1. SCALE compact decoder `lib/rewards/scale.ak`
+### `lib/rewards/scale.ak`
 ```aiken
-pub fn compact(bytes: ByteArray, at: Int) -> (Int, Int)   // (value, next_offset)
+pub fn compact(bytes: ByteArray, at: Int, callback: fn(Int, Int) -> r) -> r  // (value, next_offset)
+pub fn le(bytes: ByteArray, at: Int, len: Int) -> Int                        // little-endian
 ```
-Modes `00/01/10/11` per spec §7.1. Tests: 0, 1, 63, 64, 16383, 16384,
-2^30−1, 2^30, 2^32, 2^40 against known SCALE bytes.
+`bridge/codec.ak` has only a private compact *encoder*, so the tests use
+known SCALE bytes (0, 1, 63, 64, 16383, 16384, 2^30−1, 2^30, 2^32, 2^40)
+instead of an encode/decode round trip.
 
-Check `lib/bridge/codec.ak` first: if a compact *encoder* exists, add tests
-that decode(encode(x)) == x.
-
-### 2. Header parser
+### `lib/rewards/mmr.ak`
 ```aiken
-pub fn header_hash(header: ByteArray) -> ByteArray                 // blake2b_256
-pub fn header_digest_log(header: ByteArray, log_index: Int) -> (Int /*tag*/, ByteArray /*engine or ""*/, ByteArray /*payload*/)
+pub fn verify_leaf(root, leaf_hash, leaf_index: Int, leaf_count: Int, items: List<ByteArray>) -> Bool
+pub fn leaf_root(leaf_hash, leaf_index, leaf_count, items) -> ByteArray
 ```
-Walk: 32 + compact + 64 + compact(n) then `log_index` items skipping by tag
-(0: compact+len; 4/5/6: 4 + compact + len; 8: nothing; other tag → fail).
-Tests: the `sp_runtime` header test vector from spec §7.1 (single `Other`
-log); a synthetic header with `[PreRuntime, Consensus, Seal]` logs;
-`log_index` out of range fails.
+Matches `polkadot-ckb-merkle-mountain-range` 0.8.2 (the crate polkadot-sdk
+pins) for a single leaf, verified against its source:
+- items = one hash per peak left of the leaf's peak, climb siblings
+  bottom-up, then **one** item for all peaks to the right (the prover bags
+  them when there are two or more; a single right peak is its plain hash);
+- climb merges `H(left || right)`; peaks bag right-to-left as
+  `H(acc || next_left)`;
+- every item must be consumed; `leaf_index` must be in `0..leaf_count`.
 
-### 3. Digest extraction
+The walk is by leaf index, not node position: the binary digits of
+`leaf_count` give the peaks by descending height, and the bits of the
+leaf's offset inside its peak give left/right per level. The plan's
+positional form (`mmr_size`, `leaf_pos`, `pos_height`, `peaks`) was
+implemented too and compared; it lives in `mmr.test.ak` as the reference
+oracle. `mmr_size` validity is moot: `DigestProof` carries `leaf_count`,
+and `2n − popcount(n)` is always a valid size.
+
+Both forms agree on every leaf of every size 1..24 (builder proofs), on
+the two bridge golden vectors (553 and 601, odd, lone-peak leaf), and on
+six large synthetic trees. Cost on synthetic items (each test includes
+~20 keccaks of item construction):
+
+| leaf / count | items | positional | index walk |
+|---|---|---|---|
+| 552 / 553 | 3 | 278 K / 107 M | 224 K / 87 M |
+| 12345 / 50000 | 16 | 3.37 M / 1.19 B | 313 K / 194 M |
+| 49999 / 50000 | 9 | 1.85 M / 655 M | 473 K / 200 M |
+| 700000 / 1000000 | 20 | 8.76 M / 2.98 B | 427 K / 253 M |
+| 3 / 5000000 | 23 | 2.89 M / 1.07 B | 439 K / 275 M |
+
+Positional recurses through `pos_height` per climb step; at one million
+leaves it costs 63% of the tx memory limit. The index walk is flat.
+
+### `lib/rewards/digest.ak`
 ```aiken
+pub fn header_hash(header: ByteArray) -> ByteArray                       // blake2b_256
+pub fn header_number(header: ByteArray) -> Int                           // Compact at 32
+pub fn header_digest_log(header, log_index: Int, callback: fn(Int, ByteArray, ByteArray) -> r) -> r
 pub fn parse_rewards_digest(engine: ByteArray, payload: ByteArray) -> Digest
-```
-`engine == config.rewards_digest_engine_id`; payload is exactly 105 bytes:
-`0x01 | epoch u64 LE @1 | leaf_count u64 LE @9 | root @17 | min_key @49 | max_key @77`
-(spec §7.1). Engine id `MNRW`, carrier (first block of `E + 1`,
-`Consensus` item), and this layout are decided on our side; the node team
-confirms (brief question 1). Keep this function the only place that knows
-the layout.
-
-### 4. Positional MMR verifier `lib/rewards/mmr.ak`
-```aiken
-pub fn mmr_size(leaf_count: Int) -> Int
-pub fn leaf_pos(index: Int) -> Int
-pub fn pos_height(pos: Int) -> Int
-pub fn peaks(mmr_size: Int) -> List<Int>
-pub fn verify_leaf(root: ByteArray, leaf_hash: ByteArray, leaf_index: Int, leaf_count: Int, items: List<ByteArray>) -> Bool
-```
-Algorithm per spec §7.1 (climb with left/right by `pos_height(pos + 1) > h`,
-then bag right-to-left with `H(acc || left_peak)`), keccak-256 throughout.
-Validate `leaf_index < leaf_count` and that `mmr_size` is a valid MMR size
-(peak decomposition round-trips).
-
-Regression: for `leaf_index == leaf_count − 1` with odd `leaf_count` the
-result must equal `bridge/merkle.calculate_mmr_root` on the same items
-(import the bridge module in tests only; both golden vectors are odd: 553
-and 601). Add even-count tests here: the bridge will swap to this verifier
-in its own change after this phase (spec §7.1), so `verify_leaf` must be
-complete and vectored for both parities. Do not edit bridge files in this
-phase.
-
-Vectors: derive a small MMR (leaf_count 1..8) by hand in the test module
-with a builder `build_mmr(leaves) -> (root, fn(index) -> items)`; plus the
-two golden vectors already in `lib/bridge/merkle.ak`.
-
-### 5. `verify_digest`
-```aiken
 pub fn verify_digest(mmr_root: ByteArray, proof: DigestProof) -> Digest
 ```
-1. `leaf_hash = keccak256(scale_encode_beefy_mmr_leaf(proof.leaf))`
-   (`bridge/codec`).
-2. `verify_leaf(mmr_root, leaf_hash, proof.leaf_index, proof.leaf_count, proof.items)`.
-3. `header_hash(proof.header) == proof.leaf.parent_hash`; also
-   `proof.leaf.parent_number` equals the header's `number` (parse it, cheap).
-4. `(tag, engine, payload) = header_digest_log(proof.header, proof.log_index)`;
-   `tag == 4` (Consensus); `parse_rewards_digest(engine, payload)`.
+- Log walk skips by tag (`0` compact+len; `4/5/6` engine(4)+compact+len;
+  `8` nothing; any other tag fails, also while skipping). `log_index` must
+  be in `0..n_logs`.
+- `parse_rewards_digest` is the only place that knows the payload:
+  `engine == config.rewards_digest_engine_id` (`"MNRW"`), exactly 105
+  bytes, variant byte `1`, fixed offsets 1/9/17/49/77.
+- `verify_digest`: MMR proof, `header_hash == leaf.parent_hash`,
+  `header_number == leaf.parent_number`, log tag `4`, then parse. Budget
+  2.23 M mem / 0.69 B cpu for the synthetic end-to-end case.
 
-Tests: end-to-end synthetic (builder MMR + synthetic header + digest);
-mutated header byte fails; wrong `log_index` fails; leaf from another
-position fails; payload of 104 or 106 bytes fails; variant index ≠ 1 fails;
-`leaf_count == 0` returns a digest the batcher treats as complete.
+### Tests (43)
+`scale.ak` (5, inline), `mmr.test.ak` (18): reference helpers, every leaf
+of sizes 1..24 against builder and reference, single leaf, golden 553 and
+601, wrong index (same shape → `False`; different shape → abort), wrong
+hash, extra/missing item, out-of-range and negative index, large-tree
+agreement, three budgets. `digest.test.ak` (20): number small/large, five
+log kinds by index, log after a 200-byte `Other`, index out of range and
+negative, unknown tag (read and while skipping), hash, payload ok / empty
+epoch / wrong engine / 104 / 106 bytes / variant 0, end-to-end ok, wrong
+root, mutated header byte, wrong `log_index`, other position, parent
+number mismatch.
 
-## Done when
-- Tests green; budget for `verify_digest` recorded (it runs once per epoch,
-  so cost is not critical, but must fit one tx with a batch).
-- Node-team questions listed in `00-index.md` sent: hasher, engine id,
-  payload layout, which block carries the digest.
+No real header vector exists in the repo or upstream docs; the header
+tests are synthetic per the layout confirmed in
+`midnight-node/runtime/src/lib.rs`. A real header + `mmr_generateProof`
+vector from the node team (brief open questions) should be added to
+`digest.test.ak` when it arrives.
+
+## Contract with phase 04 and the bridge swap
+- `verify_digest(latest_mmr_root, proof)` returns the `Digest`; the batcher
+  checks `epoch == previous + 1` and treats `leaf_count == 0` as complete.
+- The bridge swap (separate reviewed change): replace
+  `merkle.calculate_mmr_root` with `mmr.verify_leaf` using
+  `leaf_index = parent_number`, `leaf_count = parent_number + 1`, and bind
+  `leaf.parent_number + 1 == commitment.block_number`. Item order from
+  `mmr_generateProof` is exactly what `leaf_root` consumes.

@@ -734,3 +734,13 @@ now; `rewards_batcher_hash`, `rewards_pool_*_hash` from phase 04.
 | Contiguity fold runs inside the DFS in its right-to-left visit order; `Inside` carries the leftmost key seen so ascending keys are checked in the same fold | `hash* leaf+ hash*` is its own reverse; one pass |
 | Terminal items are length-checked (leaf 45, hash 32) as they are visited | rejects shape confusion before the root comparison |
 | `parse_leaf` does not re-check length | `verify_range` already did |
+
+### Phase 03 review adjustments (2026-09-10, as built)
+
+| Change | Reason |
+|---|---|
+| MMR proof walked by leaf index (peaks from the binary digits of `leaf_count`, left/right from the bits of the leaf's offset) instead of node positions; positional form kept as the test oracle | same root on every case tested; positional cost 8.76 M mem at one million leaves, index walk 0.43 M |
+| Right peaks consume exactly one item (the prover bags two or more into one; a single right peak is its plain hash); every item must be consumed | matches `polkadot-ckb-merkle-mountain-range` 0.8.2 `gen_proof` / `calculate_peaks_hashes` |
+| No `mmr_size` validity check | `leaf_count` is the input; `2n − popcount(n)` is always a valid size |
+| `header_number` parsed and bound to `leaf.parent_number` | cheap; closes the header/leaf link both ways |
+| Unknown digest tags fail even while skipping | a parser that skips what it cannot measure would desynchronise |
