@@ -25,6 +25,16 @@ test commitment_order_matters() {
   )
 }
 
+// `id` is written raw, so its width is what keeps the encoding injective.
+
+test commitment_rejects_short_id() fail {
+  scale_encode_commitment(Commitment([Payload("m", root)], 185, 0)) != ""
+}
+
+test commitment_rejects_long_id() fail {
+  scale_encode_commitment(Commitment([Payload("mhx", root)], 185, 0)) != ""
+}
+
 test commitment_u32_max_block_and_wide_set_id() {
   scale_encode_commitment(
     Commitment([Payload("mh", "")], 4294967295, 1099511627777),

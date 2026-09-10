@@ -23,7 +23,8 @@ pub fn scale_encode_commitment(commitment: Commitment) -> ByteArray {
   bytearray.concat(payload_encoded, rest)
 }
 
-/// Payload bodies in order, prefixed by their compact count.
+/// Payload bodies in order, prefixed by their compact count. Ids are
+/// `BeefyPayloadId = [u8; 2]`; the width check keeps the encoding injective.
 fn encode_payloads(
   payloads: List<Payload>,
   count: Int,
@@ -31,12 +32,14 @@ fn encode_payloads(
 ) -> ByteArray {
   when payloads is {
     [] -> bytearray.concat(scale_encode_length(count), acc)
-    [Payload { id, data }, ..rest] ->
+    [Payload { id, data }, ..rest] -> {
+      expect builtin.length_of_bytearray(id) == 2
       encode_payloads(
         rest,
         count + 1,
         bytearray.concat(acc, bytearray.concat(id, scale_encode_bytes(data))),
       )
+    }
   }
 }
 
