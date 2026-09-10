@@ -22,7 +22,7 @@ Phases 01, 02, 03 are independent and can run in parallel after 00.
 |---|---|---|
 | Emission formula + per-network numbers | Jon / tokenomics | 05 final values (code uses config placeholders; interval = one Midnight epoch) |
 | Node-team confirmation of `docs/rewards/node-team-brief.md` (payload layout, epoch counter, tree builder, even-block vector) | node team | 03 vectors only; layout is pinned on our side |
-| Bridge swap to `lib/rewards/mmr.ak` + `parent_number` binding, then re-audit | separate change after 03 | not a rewards phase |
+| Bridge re-audit of the MMR fold fix (`6b5bf68a0b89`: `merkle.verify_mmr_leaf` with `leaf_count`, new `committee_bridge_logic` hash) and an even-count vector from the node team | auditors / node team | bridge redeploy; not a rewards phase |
 
 Decided in the follow-up interview (spec §14): keccak-256 leaves, skim
 `≤ min(ceil(fee / n_paid), 0.01 ADA)`, deregister = one atomic user tx,
