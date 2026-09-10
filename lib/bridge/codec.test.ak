@@ -72,6 +72,7 @@ test bytes_prefix_modes() {
     prefix(1) == #"04",
     prefix(63) == #"fc",
     prefix(64) == #"0101",
+    prefix(8192) == #"0180",
   }
 }
 
