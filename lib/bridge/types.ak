@@ -49,10 +49,10 @@ pub type AuthoritySetCommitment {
 /// `next_authority_set` drives authority rotations: a new leaf whose
 /// `next_authority_set.id` exceeds the current next set signals a
 /// rotation. `extra` is empty in leaf version 0.1 and is the extension
-/// point for per-block data. `version`, `parent_number`, and
-/// `parent_hash` are not consulted by on-chain validation but are part of
-/// the SCALE encoding whose keccak256 hash is the MMR leaf hash proven
-/// against the signed MMR root.
+/// point for per-block data. `parent_number` fixes the leaf's index
+/// (`parent_number`) and count (`parent_number + 1 == block_number`);
+/// `version` and `parent_hash` are only part of the SCALE encoding whose
+/// keccak256 hash is the MMR leaf hash proven against the signed MMR root.
 pub type BeefyMmrLeaf {
   version: Int,
   parent_number: Int,
@@ -67,8 +67,8 @@ pub type BeefyMmrLeaf {
 pub type ProofNodeRec =
   List<Data>
 
-/// An MMR peak hash used by `calculate_mmr_root` when folding the proof
-/// items onto the proven leaf hash.
+/// One MMR proof item (sibling or peak hash) in `mmr_generateProof` order,
+/// consumed by `bridge/merkle.verify_mmr_leaf`.
 pub type Peak =
   ByteArray
 

@@ -2,8 +2,9 @@ use aiken/builtin
 use bridge/codec.{scale_encode_commitment}
 use bridge/merkle.{verify_merkle_multi_proof_get_leaves, verify_mmr_leaf}
 use bridge/types.{
-  BeefyConsensusProof, BeefyConsensusState, BeefyThreshold, Commitment, Leaf,
-  Payload, RelayChainProof, SignedCommitment, Vote, mmr_root_payload_id,
+  BeefyConsensusProof, BeefyConsensusState, BeefyMmrLeaf, BeefyThreshold,
+  Commitment, Leaf, Payload, Peak, RelayChainProof, SignedCommitment, Vote,
+  mmr_root_payload_id,
 }
 use utils.{must_find}
 
@@ -48,7 +49,8 @@ pub fn verify_consensus(
 ///    `(denominator - 1)` bias in the inline `threshold_fn` implements
 ///    integer ceiling.
 /// 7. Prove `latest_mmr_leaf` against the signed MMR root via
-///    `verify_mmr_leaf`.
+///    `verify_latest_leaf`: the MMR has `block_number` leaves and the
+///    leaf must carry `parent_number == block_number - 1`.
 /// 8. If the incoming leaf advances the next-committee id, rotate: the
 ///    old next committee becomes current, and the leaf's
 ///    `next_authority_set` becomes the new next committee.
@@ -119,7 +121,8 @@ pub fn verify_mmr_update_proof(
 
   expect signed_seats >= validating_threshold
 
-  expect verify_mmr_leaf(latest_mmr_leaf, mmr_proof, mmr_root.data)
+  expect
+    verify_latest_leaf(latest_mmr_leaf, block_number, mmr_proof, mmr_root.data)
 
   let current_committee, next_committee <-
     fn(callback) {
@@ -137,6 +140,18 @@ pub fn verify_mmr_update_proof(
     current_committee,
     next_committee,
   }
+}
+
+/// The MMR has `block_number` leaves at the signed commitment; the newest
+/// is the BEEFY leaf whose parent is `block_number - 1`.
+pub fn verify_latest_leaf(
+  leaf: BeefyMmrLeaf,
+  block_number: Int,
+  mmr_proof: Data<List<Peak>>,
+  mmr_root: ByteArray,
+) -> Bool {
+  expect leaf.parent_number + 1 == block_number
+  verify_mmr_leaf(leaf, mmr_proof, mmr_root, block_number)
 }
 
 /// Walks the vote list in order, and for each vote:

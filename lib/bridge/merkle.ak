@@ -10,31 +10,71 @@ fn merge_nodes(a: ByteArray, b: ByteArray) -> ByteArray {
   bytearray.concat(a, b) |> builtin.keccak_256
 }
 
-/// Prove `latest_mmr_leaf` is bound into `mmr_root`. The leaf hash is
-/// `keccak256(scale_encode_beefy_mmr_leaf(leaf))`; the proof items are
-/// folded onto it right-to-left. Only the latest leaf is ever proven, so
-/// the fold needs no leaf-position bookkeeping.
+/// Prove `latest_mmr_leaf` is the newest of `leaf_count` leaves under
+/// `mmr_root`. The leaf hash is `keccak256(scale_encode_beefy_mmr_leaf(leaf))`.
+/// Items come in `mmr_generateProof` order: the peaks left of the leaf,
+/// then the climb siblings bottom-up. The newest leaf is a right child at
+/// every level it climbs, and there are `trailing_zeros(leaf_count)` such
+/// levels, so the last that many items hash sibling-first
+/// (`H(sibling || acc)`); the peaks before them bag from the nearest as
+/// `H(acc || peak)`. An odd `leaf_count` climbs nothing.
 pub fn verify_mmr_leaf(
   latest_mmr_leaf: BeefyMmrLeaf,
   mmr_proof: Data<List<Peak>>,
   mmr_root: ByteArray,
+  leaf_count: Int,
 ) {
   let hash = scale_encode_beefy_mmr_leaf(latest_mmr_leaf) |> builtin.keccak_256
 
-  mmr_root == calculate_mmr_root(mmr_proof, hash)
+  mmr_root == calculate_mmr_root(mmr_proof, hash, leaf_count)
 }
 
-fn calculate_mmr_root(mmr_proof: Data<List<Peak>>, leaf_hash: ByteArray) {
-  list.foldr(
+fn calculate_mmr_root(
+  mmr_proof: Data<List<Peak>>,
+  leaf_hash: ByteArray,
+  leaf_count: Int,
+) {
+  let count_bytes = builtin.integer_to_bytearray(True, 8, leaf_count)
+  bag_peaks(
     mmr_proof |> builtin.un_list_data,
+    builtin.count_set_bits(count_bytes) - 1,
+    builtin.find_first_set_bit(count_bytes),
     leaf_hash,
-    fn(peak, acc) {
-      peak
-        |> builtin.un_b_data
-        |> bytearray.concat(acc, _)
-        |> builtin.keccak_256
-    },
   )
+}
+
+/// Consume `left_peaks` items, then `climb` siblings, then nothing.
+/// Each peak wraps the hash of everything to its right: `H(acc || peak)`.
+fn bag_peaks(
+  items: List<Data>,
+  left_peaks: Int,
+  climb: Int,
+  leaf_hash: ByteArray,
+) -> ByteArray {
+  if left_peaks == 0 {
+    climb_siblings(items, climb, leaf_hash)
+  } else {
+    expect [peak, ..rest] = items
+    merge_nodes(
+      bag_peaks(rest, left_peaks - 1, climb, leaf_hash),
+      peak |> builtin.un_b_data,
+    )
+  }
+}
+
+/// The newest leaf is a right child at every level: `H(sibling || acc)`.
+fn climb_siblings(items: List<Data>, climb: Int, acc: ByteArray) -> ByteArray {
+  if climb == 0 {
+    expect [] = items
+    acc
+  } else {
+    expect [sibling, ..rest] = items
+    climb_siblings(
+      rest,
+      climb - 1,
+      merge_nodes(sibling |> builtin.un_b_data, acc),
+    )
+  }
 }
 
 test mmr_basic_proof_1() {

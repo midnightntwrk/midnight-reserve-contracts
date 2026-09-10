@@ -1,5 +1,4 @@
 use aiken/builtin
-use aiken/collection/list
 use aiken/primitive/bytearray
 use bridge/types.{AuthoritySetCommitment, BeefyMmrLeaf, Commitment, Payload}
 
@@ -13,23 +12,7 @@ use bridge/types.{AuthoritySetCommitment, BeefyMmrLeaf, Commitment, Payload}
 pub fn scale_encode_commitment(commitment: Commitment) -> ByteArray {
   let Commitment { payloads, block_number, validator_set_id } = commitment
 
-  let payload_bytes =
-    list.foldl(
-      payloads,
-      "",
-      fn(x: Payload, acc: ByteArray) -> ByteArray {
-        let Payload { id, data } = x
-
-        let scale_encode_payload =
-          bytearray.concat(id, scale_encode_bytes(data))
-
-        bytearray.concat(acc, scale_encode_payload)
-      },
-    )
-
-  let payload_encoded =
-    scale_encode_length(list.length(payloads))
-      |> bytearray.concat(payload_bytes)
+  let payload_encoded = encode_payloads(payloads, 0, "")
 
   let rest =
     builtin.integer_to_bytearray(False, 4, block_number)
@@ -38,6 +21,23 @@ pub fn scale_encode_commitment(commitment: Commitment) -> ByteArray {
         )
 
   bytearray.concat(payload_encoded, rest)
+}
+
+/// Payload bodies in order, prefixed by their compact count.
+fn encode_payloads(
+  payloads: List<Payload>,
+  count: Int,
+  acc: ByteArray,
+) -> ByteArray {
+  when payloads is {
+    [] -> bytearray.concat(scale_encode_length(count), acc)
+    [Payload { id, data }, ..rest] ->
+      encode_payloads(
+        rest,
+        count + 1,
+        bytearray.concat(acc, bytearray.concat(id, scale_encode_bytes(data))),
+      )
+  }
 }
 
 /// SCALE-encode a `BeefyMmrLeaf` into the byte sequence whose keccak256
