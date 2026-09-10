@@ -94,8 +94,13 @@ vector from the node team (brief open questions) should be added to
 ## Contract with phase 04 and the bridge swap
 - `verify_digest(latest_mmr_root, proof)` returns the `Digest`; the batcher
   checks `epoch == previous + 1` and treats `leaf_count == 0` as complete.
-- The bridge swap (separate reviewed change): replace
-  `merkle.calculate_mmr_root` with `mmr.verify_leaf` using
-  `leaf_index = parent_number`, `leaf_count = parent_number + 1`, and bind
-  `leaf.parent_number + 1 == commitment.block_number`. Item order from
-  `mmr_generateProof` is exactly what `leaf_root` consumes.
+- The bridge fix landed in `6b5bf68a0b89` and stays inside the bridge:
+  `merkle.verify_mmr_leaf` takes `leaf_count = block_number` and folds the
+  last `trailing_zeros(leaf_count)` items sibling-first before bagging the
+  peaks; `beefy.verify_latest_leaf` binds `parent_number + 1 ==
+  block_number`. It does not import `rewards/mmr`; `mmr.test.ak`
+  `golden_553`/`golden_601` show both verifiers agree on the odd case, and
+  `latest_leaf.test.ak` covers the even cases. `committee_bridge_logic`
+  has a new hash; the bridge needs re-audit and redeploy. An even-count
+  vector from the node team goes into `bridge/latest_leaf.test.ak` when it
+  arrives.

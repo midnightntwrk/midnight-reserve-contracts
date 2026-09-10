@@ -481,8 +481,15 @@ at the first even-numbered mandatory block. Decision: the rewards verifier
 (`lib/rewards/mmr.ak`) is positional and must reproduce the bridge result
 for the odd case; the bridge swaps to it, and binds
 `leaf.parent_number + 1 == commitment.block_number`, in its own reviewed
-change after phase 03, followed by re-audit. Rewards work does not edit
-bridge files.
+change after phase 03, followed by re-audit. Done in commit `6b5bf68a0b89`,
+self-contained in the bridge: `merkle.verify_mmr_leaf` takes
+`leaf_count = block_number` and walks the items by count: `popcount − 1`
+peaks bagged as before, then `trailing_zeros(leaf_count)` climb siblings
+folded `H(sibling || acc)`, then the list must be empty.
+`beefy.verify_latest_leaf` binds `parent_number + 1 == block_number`.
+Tests in `bridge/latest_leaf.test.ak`. `leaf_count = block_number`
+assumes the MMR starts at block 1; both golden vectors are consistent
+only with that offset (brief question 5).
 
 **BEEFY MMR leaf**: `version: u8` (major << 5 | minor), `parent_number_and_hash: (BlockNumber u32 LE, H256)`,
 `beefy_next_authority_set { id: u64, len: u32, keyset_commitment: H256 }`,
@@ -702,14 +709,14 @@ now; `rewards_batcher_hash`, `rewards_pool_*_hash` from phase 04.
 | SPO renewal field | out of scope now |
 | Multi-partner-chain | one deployment per chain |
 | Uncompensated load/release | accepted; batchers use `LoadAndPay` |
-| Bridge MMR fold parity | bridge untouched; rewards use a positional verifier; flagged for bridge re-audit |
+| Bridge MMR fold parity | rewards use a positional verifier; bridge fold fixed in `6b5bf68a0b89`; pending bridge re-audit |
 | Mainnet reserve datum | unit constructor; first release migrates by field count |
 | Digest payload | enum variant 1, fixed 105 bytes with `leaf_count`; keys fixed 28; empty epoch = `leaf_count 0`, zero root |
 | Leaf amount | fixed `u128` big-endian, leaf 45 bytes; 1 unit = 1 cNIGHT token unit = 1 STAR |
 | Epoch counter | partner-chains sidechain epoch |
 | Credential kind | `Deposit.cred: Credential`; keys stay 28-byte hashes everywhere else |
 | Header | `Header<u32, BlakeTwo256>` confirmed in midnight-node |
-| Bridge fold parity | sessions have no fixed parity; bridge swaps to the positional verifier in its own change after phase 03, then re-audit |
+| Bridge fold parity | sessions have no fixed parity; bridge fold fixed in `6b5bf68a0b89` after phase 03; re-audit pending |
 
 ### Phase 00/01 review adjustments (2026-09-09, as built)
 
