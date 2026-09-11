@@ -294,7 +294,7 @@ pub type BatcherState {
   min_key: ByteArray,
   max_key: ByteArray,
   start_key: ByteArray,           // first skh paid in the current epoch
-  cursor: ByteArray,              // last skh paid; both stale once complete
+  cursor: ByteArray,              // next skh to pay; both stale once complete
   complete: Bool,                 // init = True
 }
 ```
@@ -303,10 +303,10 @@ always opens through `LoadAndPay`, which overwrites both with its first
 batch. Init mint validates only shapes (28-byte hashes, `complete == True`).
 Deployer sets the hashes; governance owns deployment.
 
-`wrapped` is not stored: the jump `max_key → min_key` is allowed only when
-`cursor == max_key`, and after it the run can never reach `max_key`
-again without crossing `start_key`, which is rejected (§5.3). So one wrap per
-epoch is implied.
+`wrapped` is not stored: paying `max_key` sets `cursor := min_key`, and a
+run can never reach `max_key` again without crossing `start_key`, which is
+rejected (§5.3). So one wrap per epoch is implied. `complete` is
+`cursor == start_key` after a batch.
 
 ### 5.2 Spend / publish
 
@@ -321,8 +321,8 @@ pub type BatcherRedeemer {
   Pay { proof: ProofNodeRec, pairs: List<PayPair>, exits: List<ExitInfo> }
   LoadAndPay { digest_proof: DigestProof, proof: ProofNodeRec, pairs: List<PayPair>, exits: List<ExitInfo> }   // digest: §7
 }
-pub type PayPair { input_index: Int, output_index: Int }       // deposit in/out per paid leaf, in leaf order
-pub type ExitInfo { pred_input_index: Int, pred_output_index: Int, refund_output_index: Int }
+pub type PayPair { input_index: Int, output_index: Int }       // deposit in/out per paid leaf, in leaf order; for an exit the output is the refund
+pub type ExitInfo { pred_input_index: Int, pred_output_index: Int }   // one per exit leaf, in leaf order
 ```
 
 There is no standalone load: an epoch opens with its first batch, so
@@ -336,50 +336,49 @@ There is no standalone load: an epoch opens with its first batch, so
 3. `digest.epoch == state_in.epoch + 1` (strict succession).
 4. `loaded = state_in with { epoch, root, min_key, max_key }`.
 5. `leaf_count == 0`: `proof`, `pairs`, `exits` empty; `state_out = loaded`
-   (`complete` stays `True`); no pool or deposit inputs. Otherwise apply
-   the batch rules below to `loaded` with no anchor: `paid = leaves`,
-   `start_key := key(paid[0])`, `complete := cursor == max_key && start_key == min_key`.
+   (`complete` stays `True`); no pool or deposit inputs. Otherwise
+   `start_key := cursor := key(leaves[0])` and the run rules below apply.
 
 **Pay** (every later batch)
 1. `state_in.complete == False`.
-2. Split `leaves` into `(anchor, paid, boundary)`:
-   - `cursor == max_key` and `start_key != min_key`: no anchor;
-     `key(leaves[0]) == min_key` (wrap).
-   - otherwise: `key(leaves[0]) == cursor` and it is the anchor (already
-     paid, not paid again); `paid = leaves[1..]`.
-   - If the last leaf's key `== start_key` it is the boundary: not paid;
-     `complete := True`.
-3. Then the batch rules below.
+2. The run rules below.
 
-**Batch rules** (both redeemers)
+**Run rules** (both redeemers)
 1. `leaves = verify_range(root, proof)` (§6): ascending, contiguous;
-   `paid` non-empty.
-2. No paid leaf has `key == start_key` (only the first batch pays it, as
-   `paid[0]`).
-3. Every paid leaf: find deposit input/output by `pairs[i]`; input value
-   holds `0x00 ++ key` under `account_policy`; apply §4.5 Pay or Exit.
-   Indices in `pairs` strictly increase (no double satisfaction). Every
-   input carrying an `account_policy` token is a paid deposit, an exit
-   predecessor (head or deposit) from `exits`, or nothing else: the count
-   of such inputs equals `len(paid) + len(exits)`. Deposit spends and the
-   exit burn use the account gate `Batcher` (§4.4); a head input is
-   accepted only as an exit predecessor; the tail is never an input.
-4. Pool: all inputs at `Script(pool_forever)` are summed (none may carry the
-   pool forever NFT); exactly one output to that address with
+   `key(leaves[0]) == cursor`. The run is `[cursor, …, lookahead]`:
+   - the last leaf is the **lookahead**: not paid, `cursor := its key`;
+   - except a last leaf with `key == max_key`: paid, `cursor := min_key`;
+   - a lookahead with `key == start_key` closes the epoch
+     (`complete := cursor == start_key`). `start_key` anywhere else in the
+     run (a leaf that would be paid) fails.
+   So every batch pays at least one leaf and the epoch completes in the
+   batch that pays its last leaf; a batch cannot strand the epoch.
+2. Every paid leaf: find deposit input/output by `pairs[i]`; input value
+   holds `0x00 ++ key` under `account_policy`; apply §4.5 Pay or Exit (for
+   an exit the `PayPair` output is the refund and `exits[j]` names the
+   predecessor). Input and output indices in `pairs` strictly increase (no
+   double satisfaction). Every input carrying an `account_policy` token is
+   a paid deposit or an exit predecessor (head or deposit) from `exits`:
+   the count of such inputs equals `len(paid) + len(exits)`. Deposit
+   spends and the exit burn use the account gate `Batcher` (§4.4); a head
+   input is accepted only as an exit predecessor; the tail is never an
+   input. `pairs` and `exits` are consumed exactly.
+3. Pool: all inputs at `Script(pool_forever)` are summed (none may carry the
+   pool forever NFT); exactly one output to that credential with
    `NIGHT_out == NIGHT_in − Σ amount`, `ADA_out ≥ ADA_in`, value shape
    `[ada, night]`, inline datum. Pool logic is satisfied separately (§9).
-5. `cursor := key(last paid)`; `complete` per the redeemer's split and also
-   when `cursor == max_key && start_key == min_key`.
-6. `state_out` otherwise unchanged; NFT continues.
+4. `state_out == state_in with { cursor, complete }` (plus the digest fields
+   on `LoadAndPay`); NFT continues.
 
 ### 5.4 Costs
 
 Per deposit input the spend script runs a constant-size gate (withdrawal
-lookup). The withdraw script does one multiproof verification plus a linear
-pass over paid leaves and their `pairs`. Tx size bounds the batch: about
-300 bytes per deposit in/out pair plus ~64 bytes per proof node. Target
-K ≈ 25–40 accounts per batch on mainnet limits; tune with `aiken check`
-budgets in phase 04. The skim cap (§4.5) makes larger K the only way for a
+lookup, ~0.13 M mem). The withdraw script does one multiproof verification
+plus a linear pass over paid leaves and their `pairs`. Measured (phase 04,
+`budget_30_pairs` minus its fixture): 30 paid leaves from a 64-leaf tree
+cost ≈ 10.3 M mem / 3.7 G cpu in the batcher alone; with 30 gates the tx
+reaches the 14 M mem limit. Recommended K ≈ 20–25 accounts per batch on
+mainnet limits. The skim cap (§4.5) makes larger K the only way for a
 batcher to recover a large fee, so incentives point the same way.
 
 The reserve `Release` and an empty-epoch `LoadAndPay` are uncompensated; a
@@ -595,10 +594,13 @@ address hold `[ada, night]`.
 ```aiken
 pub type PoolRedeemer { Receive  Disburse }
 ```
-- `Receive`: merge semantics — sum of pool value inputs ≤ single pool value
-  output, NFT UTXO not consumed. Used by the reserve release tx.
+- `Receive`: merge semantics — sum of pool value inputs ≤ the first
+  `[ada, night]` output at the forever credential (inline datum), NFT UTXO
+  not consumed. Used by the reserve release tx. Main track: config hashes;
+  staging track: hashes from the logic's own `StagingState` NFT input
+  (one-shot `config.rewards_pool_logic_one_shot_*`), as `logic_merge_v2`.
 - `Disburse`: a withdrawal from `config.rewards_batcher_hash` exists. All value
-  checks live in the batcher (§5.3 step 6).
+  checks live in the batcher (§5.3 run rule 3).
 
 Staging forever variant (`rewards_pool_staging_forever`) mirrors
 `staging_reserve_ics.ak` so the release can be rehearsed on mainnet with
@@ -677,6 +679,7 @@ virtual_account_one_shot_{hash,index}
 rewards_batcher_one_shot_{hash,index}
 rewards_pool_one_shot_{hash,index}
 rewards_pool_staging_one_shot_{hash,index}
+rewards_pool_logic_one_shot_{hash,index}
 rewards_pool_two_stage_hash, rewards_pool_forever_hash   (derived by build)
 rewards_batcher_hash, virtual_account_hash                (derived by build)
 deposit_min_lovelace = 10_000_000
@@ -689,8 +692,9 @@ As built (phase 00): every profile carries all keys. Non-mainnet profiles
 use test values (`release_interval_ms = 60_000`, `release_initial_amount = 1_000_000`,
 decay `999/1000`, `t0 = 0`). `mainnet` carries `# TBD` placeholders
 (`interval 7_200_000`, `initial_amount 0` — a release of 0 until tokenomics
-lands). Derived hashes are written back by the build: `virtual_account_hash`
-now; `rewards_batcher_hash`, `rewards_pool_*_hash` from phase 04.
+lands). Derived hashes are written back by the build (phase 04): `rewards_pool_*`
+with the two-stage / forever phases, `rewards_batcher_hash` and
+`virtual_account_hash` after the threshold phase, before the final compile.
 
 ---
 
@@ -751,3 +755,13 @@ now; `rewards_batcher_hash`, `rewards_pool_*_hash` from phase 04.
 | No `mmr_size` validity check | `leaf_count` is the input; `2n − popcount(n)` is always a valid size |
 | `header_number` parsed and bound to `leaf.parent_number` | cheap; closes the header/leaf link both ways |
 | Unknown digest tags fail even while skipping | a parser that skips what it cannot measure would desynchronise |
+
+### Phase 04 review adjustments (2026-09-10, as built)
+
+| Change | Reason |
+|---|---|
+| `cursor` is the next key to pay; a run is `[cursor … lookahead]`, the lookahead is unpaid and becomes the cursor; a run ending at `max_key` pays it and wraps to `min_key`; a lookahead equal to `start_key` completes | with `cursor = last paid`, a batch that stopped one leaf short of `start_key` left only an empty batch, which rule 1 rejected: the epoch could never complete |
+| `ExitInfo { pred_input_index, pred_output_index }`; the exit's refund is the `PayPair` output | one strictly increasing output sequence covers deposits and refunds (no shared refund output) |
+| Pool logic `Receive` checks the first output at the forever credential and requires an inline datum | same as the batcher's pool rule; `logic_merge_v2` shape |
+| `rewards_pool_logic_one_shot_{hash,index}` config keys | the pool logic's staging `StagingState` NFT needs its own one-shot, as `reserve_logic_v2` has |
+| Build: `FIXED` hashes written after the threshold phase | `virtual_account` and `rewards_pool_logic` embed `rewards_batcher_hash`; the final compile must see it |
