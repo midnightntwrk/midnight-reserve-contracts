@@ -46,40 +46,48 @@ leaf = ack(1) || stake_key_hash(28) || amount(16, u128 big-endian)
 - Off-chain provers (batchers) build their own multiproofs; the pallet only
   needs to produce the root.
 
-## 4. Digest log
+## 4. Digest transaction
 
-Deposited once per epoch, in `on_initialize` of the **first block of epoch
-`E + 1`**, as a `DigestItem::Consensus`:
+Once per epoch the rewards pallet (`pallet_block_rewards`, replacing the
+old mNIGHT-payout pallet of the same name) submits a **bare inherent** in a
+Midnight block, at or after the first block of epoch `E + 1`:
 
 ```rust
-pub const REWARDS_ENGINE_ID: ConsensusEngineId = *b"MNRW";
-
-#[derive(Encode, Decode)]
-pub enum RewardsConsensusLog {
-    #[codec(index = 1)]
-    RewardsDigest {
-        epoch: u64,          // partner-chains sidechain epoch E (the epoch being paid)
+#[pallet::call]
+impl<T: Config> Pallet<T> {
+    #[pallet::call_index(0)]
+    pub fn submit_rewards_digest(
+        origin: OriginFor<T>,   // ensure_none
+        epoch: u64,             // partner-chains sidechain epoch E (the epoch being paid)
         leaf_count: u64,
         root: [u8; 32],
-        min_key: [u8; 28],   // key of the first leaf
-        max_key: [u8; 28],   // key of the last leaf
-    },
+        min_key: [u8; 28],      // key of the first leaf
+        max_key: [u8; 28],      // key of the last leaf
+    ) -> DispatchResult
 }
 ```
-SCALE bytes = `0x01 | epoch u64 LE | leaf_count u64 LE | root 32 | min 28 | max 28`
-= 105 bytes. Fixed offsets: epoch@1, leaf_count@9, root@17, min@49, max@77.
-Exactly one such log per epoch; epochs consecutive (an epoch with no funded
-accounts still emits a digest with `leaf_count = 0`).
+Produced through `ProvideInherent` like `pallet_cnight_observation`. On the
+wire (`UncheckedExtrinsic::new_bare`, format v5) the extrinsic is exactly
+109 bytes: `Compact(107) | 0x05 | pallet_index | 0 | epoch LE | leaf_count LE | root | min | max`.
+Exactly one such extrinsic per epoch; epochs consecutive (an epoch with no
+funded accounts still submits `leaf_count = 0`, zero root and keys). The
+contract accepts it from any block; the block need not be the epoch
+boundary.
 
 ## 5. How Cardano verifies it
 
 1. Reads `latest_mmr_root` from the committee bridge UTXO.
 2. Batcher supplies: the BEEFY MMR leaf for block `N + 1` (where `N` is the
-   digest block), a positional MMR proof (`LeafProof { leaf_indices: [i], leaf_count, items }`
-   from `mmr_generateProof`), and the raw SCALE header of block `N`.
+   block holding the digest extrinsic), a positional MMR proof
+   (`LeafProof { leaf_indices: [i], leaf_count, items }` from
+   `mmr_generateProof`), the raw SCALE header of block `N`, the extrinsic
+   index, the `extrinsics_root` trie nodes on the path (root first,
+   hash-referenced ones only) and the extrinsic bytes.
 3. Checks `keccak256(SCALE(leaf))` is in the root, `blake2b_256(header) == leaf.parent_hash`,
-   then parses the header (`parent_hash 32 | Compact(number) | state_root 32 | extrinsics_root 32 | Compact(n) | logs`)
-   to the `MNRW` `Consensus` item and reads the 105-byte payload.
+   reads `extrinsics_root` from the header, verifies the `sp_trie::LayoutV1`
+   (blake2b-256, `StateVersion::V1`) inclusion of the extrinsic bytes under
+   `Compact(index)`, and decodes the call (pallet index, call index 0, 104
+   bytes of arguments).
 
 So any block at or below the bridge checkpoint is provable; payouts lag at
 least one bridge checkpoint behind the digest.
@@ -109,8 +117,9 @@ operator_keys:  Pairs<ByteArray, ByteArray>   name -> key bytes
 
 ## 7. Questions for the node team
 
-1. Confirm the enum/index/field layout in §4 or propose the change; we pin
-   the on-chain parser to it.
+1. Confirm the call layout in §4 and give us the pallet index of
+   `pallet_block_rewards` in `construct_runtime!` (the contract pins
+   `rewards_pallet_index` / `rewards_call_index` in its config).
 2. Confirm the epoch counter: partner-chains sidechain epoch (`u64`). Which
    epoch number will the first digest carry on mainnet? (The batcher state
    is initialised with `epoch = first − 1`.)
@@ -124,9 +133,10 @@ operator_keys:  Pairs<ByteArray, ByteArray>   name -> key bytes
 5. `mmr_generateProof` leaf index for block `N + 1`: `N + 1 − 1 − activation_offset`?
    Confirm the offset (`beefy_activation_block` in the bridge datum is
    "reserved for off-chain consumers").
-6. Header logs order and typical size (BABE PreRuntime, `mcsh` PreRuntime,
-   `MNSV`, `BEEF` MmrRoot, seal, `MNRW`): our parser walks logs by index; a
-   ~400-byte header is fine, tell us if it can grow much larger.
+6. Confirm `system_version = 3` stays (`StateVersion::V1` for
+   `extrinsics_root`) and provide one real block: header bytes, the
+   extrinsic list and the digest extrinsic's index, so
+   `lib/rewards/digest.test.ak` gets a non-synthetic vector.
 7. Pending-balance policy for unregistered / underfunded recipients
    (retention, expiry) — pallet-side, not needed by the contract, but the
    ack leaf must include the pending amount.

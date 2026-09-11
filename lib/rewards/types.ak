@@ -86,17 +86,20 @@ pub type ExitInfo {
   pred_output_index: Int,
 }
 
-/// Positional MMR proof of a BEEFY leaf plus the SCALE header it commits to.
+/// Positional MMR proof of a BEEFY leaf, the SCALE header it commits to, and
+/// the `extrinsics_root` trie proof of the rewards extrinsic in that block.
 pub type DigestProof {
   leaf: BeefyMmrLeaf,
   leaf_index: Int,
   leaf_count: Int,
   items: List<ByteArray>,
   header: ByteArray,
-  log_index: Int,
+  extrinsic_index: Int,
+  trie_nodes: List<ByteArray>,
+  extrinsic: ByteArray,
 }
 
-/// Per-epoch rewards digest decoded from the `MNRW` consensus log.
+/// Per-epoch rewards digest decoded from the `submit_rewards_digest` extrinsic.
 pub type Digest {
   epoch: Int,
   leaf_count: Int,

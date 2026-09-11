@@ -2,6 +2,8 @@
 
 Delivered: `lib/rewards/batch.ak`, `lib/rewards/pool.ak`,
 `lib/rewards/digest_builder.ak` (test-only), `validators/rewards_batcher.ak`,
+(`lib/rewards/trie.ak` + `trie_builder.ak` added in the digest-carrier
+revision, see plan 03),
 `validators/rewards_pool.ak`, `validators/staging_rewards_pool.ak`,
 `validators/rewards_batcher.test.ak` (86 tests),
 `validators/rewards_pool.test.ak` (29 tests); `rewards_batcher_hash`,

@@ -43,7 +43,8 @@ into per-stake-key **Midnight virtual accounts**. Four on-chain pieces:
   Payout order does not follow the list; it follows the leaves.
 - **Two unlinked UTXOs per account.** Registration edits never contend with
   batcher payouts. Midnight pairs them by stake key hash.
-- **Root trust = BEEFY bridge.** The epoch's digest is proven from the
+- **Root trust = BEEFY bridge.** The epoch's digest is a transaction in a
+  Midnight block (`submit_rewards_digest` inherent), proven from the
   committee bridge's `latest_mmr_root` (already on chain) through the MMR
   leaf of the following block and that block's parent header. No batcher
   key is trusted.
@@ -78,7 +79,7 @@ sequenceDiagram
     participant B as Batcher
     U->>C: register (stake key sig): insert deposit node + registration, deposit ADA
     Note over C,M: >= 12 h observation lag
-    M->>M: epoch E ends: rewards -> sorted leaves -> digest in header
+    M->>M: epoch E ends: rewards -> sorted leaves -> digest inherent in a block
     B->>C: release reserve (permissionless, timed)
     B->>C: load epoch E (bridge proof of digest)
     loop until cursor returns to start

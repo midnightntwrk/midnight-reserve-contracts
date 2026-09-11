@@ -59,31 +59,39 @@ leaves it costs 63% of the tx memory limit. The index walk is flat.
 ```aiken
 pub fn header_hash(header: ByteArray) -> ByteArray                       // blake2b_256
 pub fn header_number(header: ByteArray) -> Int                           // Compact at 32
-pub fn header_digest_log(header, log_index: Int, callback: fn(Int, ByteArray, ByteArray) -> r) -> r
-pub fn parse_rewards_digest(engine: ByteArray, payload: ByteArray) -> Digest
+pub fn header_extrinsics_root(header: ByteArray) -> ByteArray            // 32 bytes after state_root
+pub fn parse_rewards_call(extrinsic: ByteArray) -> Digest
 pub fn verify_digest(mmr_root: ByteArray, proof: DigestProof) -> Digest
 ```
-- Log walk skips by tag (`0` compact+len; `4/5/6` engine(4)+compact+len;
-  `8` nothing; any other tag fails, also while skipping). `log_index` must
-  be in `0..n_logs`.
-- `parse_rewards_digest` is the only place that knows the payload:
-  `engine == config.rewards_digest_engine_id` (`"MNRW"`), exactly 105
-  bytes, variant byte `1`, fixed offsets 1/9/17/49/77.
-- `verify_digest`: MMR proof, `header_hash == leaf.parent_hash`,
-  `header_number == leaf.parent_number`, log tag `4`, then parse. Budget
-  2.23 M mem / 0.69 B cpu for the synthetic end-to-end case.
+- Revised 2026-09-11 (phase 04 review): the digest is a **transaction in a
+  Midnight block**, not a header log. `verify_digest`: MMR proof,
+  `header_hash == leaf.parent_hash`, `header_number == leaf.parent_number`,
+  `trie.verify(extrinsics_root, Compact(extrinsic_index), trie_nodes, extrinsic)`,
+  then `parse_rewards_call`.
+- `parse_rewards_call` is the only place that knows the call: 109 bytes,
+  `Compact(107)`, preamble `0x04 | 0x05`, `config.rewards_pallet_index`,
+  `config.rewards_call_index`, then `epoch u64 LE | leaf_count u64 LE |
+  root 32 | min 28 | max 28`.
+- `lib/rewards/trie.ak`: `verify(root, key, nodes, value)` walks the
+  `sp_trie::LayoutV1` node path (header kinds, odd partials, `u16` bitmap,
+  inline vs hashed children, inline vs hashed values). `trie_builder.ak`
+  (test-only) rebuilds the trie and proofs; both reproduce the `sp_trie`
+  golden vectors in `trie.test.ak` (1, 3, 5, 17, 70 extrinsics; generated
+  by a small Rust tool against polkadot-sdk `660acef`).
 
-### Tests (43)
+### Tests (43 at phase 03; digest tests rewritten 2026-09-11)
 `scale.ak` (5, inline), `mmr.test.ak` (18): reference helpers, every leaf
 of sizes 1..24 against builder and reference, single leaf, golden 553 and
 601, wrong index (same shape → `False`; different shape → abort), wrong
 hash, extra/missing item, out-of-range and negative index, large-tree
-agreement, three budgets. `digest.test.ak` (20): number small/large, five
-log kinds by index, log after a 200-byte `Other`, index out of range and
-negative, unknown tag (read and while skipping), hash, payload ok / empty
-epoch / wrong engine / 104 / 106 bytes / variant 0, end-to-end ok, wrong
-root, mutated header byte, wrong `log_index`, other position, parent
-number mismatch.
+agreement, three budgets. `digest.test.ak` (20): number small/large,
+`extrinsics_root` after every number width, call ok / legacy preamble /
+signed preamble / wrong pallet / wrong call / trailing byte / short body /
+other extrinsic, end-to-end ok, empty epoch, wrong root, mutated header,
+other position, parent number mismatch, other extrinsic index, index
+without matching proof, tampered extrinsic, foreign trie nodes, no trie
+nodes. `trie.test.ak` (16): golden vectors, builder roots and proofs,
+every index of the 70-extrinsic trie, and seven failure shapes.
 
 No real header vector exists in the repo or upstream docs; the header
 tests are synthetic per the layout confirmed in

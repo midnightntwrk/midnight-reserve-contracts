@@ -3,6 +3,7 @@
 //// LE (value = raw >> 2), `11` big-int with `(first >> 2) + 4` LE bytes.
 
 use aiken/builtin
+use aiken/collection/list
 
 /// Decode the compact integer at `at`; continues with `(value, next_offset)`.
 pub fn compact(bytes: ByteArray, at: Int, callback: fn(Int, Int) -> r) -> r {
@@ -15,6 +16,18 @@ pub fn compact(bytes: ByteArray, at: Int, callback: fn(Int, Int) -> r) -> r {
       let len = first / 4 + 4
       callback(le(bytes, at + 1, len), at + 1 + len)
     }
+  }
+}
+
+/// SCALE compact encoding of `n < 2^30`.
+pub fn compact_encode(n: Int) -> ByteArray {
+  if n < 64 {
+    builtin.integer_to_bytearray(False, 1, n * 4)
+  } else if n < 16384 {
+    builtin.integer_to_bytearray(False, 2, n * 4 + 1)
+  } else {
+    expect n < 1073741824
+    builtin.integer_to_bytearray(False, 4, n * 4 + 2)
   }
 }
 
@@ -62,4 +75,16 @@ test compact_big_int() {
 test compact_at_offset() {
   let value, next <- compact(#"ffff0101", 2)
   value == 64 && next == 4
+}
+
+test compact_encode_roundtrip() {
+  list.all(
+    [0, 1, 63, 64, 107, 16383, 16384, 1073741823],
+    fn(n) {
+      decode(compact_encode(n)) == (
+        n,
+        builtin.length_of_bytearray(compact_encode(n)),
+      )
+    },
+  )
 }
