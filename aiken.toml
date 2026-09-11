@@ -61,7 +61,8 @@ release_interval_ms = 60_000
 release_initial_amount = 1_000_000
 release_decay_num = 999
 release_decay_den = 1000
-rewards_digest_engine_id = "MNRW"
+rewards_pallet_index = 12 # TBD node team: pallet_block_rewards index in construct_runtime!
+rewards_call_index = 0
 
 [config.default.reserve_logic_v2_one_shot_hash]
 bytes = "0000000000000000000000000000000000000000000000000000000000000101"
@@ -308,11 +309,11 @@ bytes = "20b841d1d415e250b287cbb455b945769360f82439317e23b4e118ed"
 encoding = "hex"
 
 [config.default.rewards_batcher_hash]
-bytes = "efae2b9b9cc09888faaddf9bca9df168a14945169c818b00ea53c925"
+bytes = "66a98732ce0c41760c786e1eee9b1f175a73dd7dbb220ea705f35c60"
 encoding = "hex"
 
 [config.default.virtual_account_hash]
-bytes = "6ffcc786c62389e1f0041c579abaec3604e763e063ee80ddfcbb411e"
+bytes = "7e1db2475efe4f71ac19d48875cc8b6c5be0673a2efbb63a2cc4eab5"
 encoding = "hex"
 
 [config.preview]
@@ -360,7 +361,8 @@ release_interval_ms = 60_000
 release_initial_amount = 1_000_000
 release_decay_num = 999
 release_decay_den = 1000
-rewards_digest_engine_id = "MNRW"
+rewards_pallet_index = 12 # TBD node team: pallet_block_rewards index in construct_runtime!
+rewards_call_index = 0
 
 [config.preview.reserve_logic_v2_one_shot_hash]
 bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
@@ -659,7 +661,8 @@ release_interval_ms = 60_000
 release_initial_amount = 1_000_000
 release_decay_num = 999
 release_decay_den = 1000
-rewards_digest_engine_id = "MNRW"
+rewards_pallet_index = 12 # TBD node team: pallet_block_rewards index in construct_runtime!
+rewards_call_index = 0
 
 [config.qanet.reserve_logic_v2_one_shot_hash]
 bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
@@ -958,7 +961,8 @@ release_interval_ms = 60_000
 release_initial_amount = 1_000_000
 release_decay_num = 999
 release_decay_den = 1000
-rewards_digest_engine_id = "MNRW"
+rewards_pallet_index = 12 # TBD node team: pallet_block_rewards index in construct_runtime!
+rewards_call_index = 0
 
 [config.govnet.reserve_logic_v2_one_shot_hash]
 bytes = "121ac516fbea0a99f704bd4510d90ce5eaac4dc5ea9e895bd8865d15bfb53d09"
@@ -1257,7 +1261,8 @@ release_interval_ms = 60_000
 release_initial_amount = 1_000_000
 release_decay_num = 999
 release_decay_den = 1000
-rewards_digest_engine_id = "MNRW"
+rewards_pallet_index = 12 # TBD node team: pallet_block_rewards index in construct_runtime!
+rewards_call_index = 0
 
 [config.devnet.reserve_logic_v2_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
@@ -1557,7 +1562,8 @@ release_interval_ms = 7_200_000  # TBD
 release_initial_amount = 0  # TBD
 release_decay_num = 999  # TBD
 release_decay_den = 1000  # TBD
-rewards_digest_engine_id = "MNRW"
+rewards_pallet_index = 12 # TBD node team: pallet_block_rewards index in construct_runtime!
+rewards_call_index = 0
 
 [config.preprod.reserve_logic_v2_one_shot_hash]
 bytes = "3825fef10f3e5aaa2b65a657c7c6056cf61199a5ea7ead80654e63ab1ec4252b"
@@ -1857,7 +1863,8 @@ release_interval_ms = 7_200_000  # TBD
 release_initial_amount = 0  # TBD
 release_decay_num = 999  # TBD
 release_decay_den = 1000  # TBD
-rewards_digest_engine_id = "MNRW"
+rewards_pallet_index = 12 # TBD node team: pallet_block_rewards index in construct_runtime!
+rewards_call_index = 0
 
 [config.mainnet.reserve_logic_v2_one_shot_hash]
 bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
@@ -2156,7 +2163,8 @@ release_interval_ms = 60_000
 release_initial_amount = 1_000_000
 release_decay_num = 999
 release_decay_den = 1000
-rewards_digest_engine_id = "MNRW"
+rewards_pallet_index = 12 # TBD node team: pallet_block_rewards index in construct_runtime!
+rewards_call_index = 0
 
 [config.local.reserve_logic_v2_one_shot_hash]
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"

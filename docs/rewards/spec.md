@@ -103,12 +103,13 @@ leaf = ack(1) ++ skh(28) ++ amount(16, u128 big-endian)      // 45 bytes, fixed
 
 ### 2.4 Digest
 
-Per Midnight epoch `E` (partner-chains sidechain epoch), the pallet emits
-`Digest { epoch: E, leaf_count, root, min_key, max_key }` as a
-`Consensus("MNRW", …)` log in the header of the **first block of epoch
-`E + 1`**. `min_key`/`max_key` are the first and last leaf `skh`. Empty
-epoch: `leaf_count == 0`, `root` = 32 zero bytes, keys zero; the contract
-ignores `root` and keys when `leaf_count == 0`. Payload bytes in §7.1.
+Per Midnight epoch `E` (partner-chains sidechain epoch), the pallet submits
+`Digest { epoch: E, leaf_count, root, min_key, max_key }` as a bare
+inherent transaction (`pallet_block_rewards::submit_rewards_digest`) in a
+Midnight block at or after the first block of epoch `E + 1`.
+`min_key`/`max_key` are the first and last leaf `skh`. Empty epoch:
+`leaf_count == 0`, `root` = 32 zero bytes, keys zero; the contract ignores
+`root` and keys when `leaf_count == 0`. Extrinsic bytes in §7.1.
 Full node-side contract: [node-team-brief.md](node-team-brief.md).
 
 ---
@@ -418,15 +419,22 @@ need to know whether the block touches the tree's ends.
 Source of trust: `BeefyConsensusState.latest_mmr_root` (keccak MMR) on the
 committee bridge forever UTXO, read as a reference input.
 
-Chain of custody for epoch `E` whose digest is in the header of block `N`:
+The digest for epoch `E` is a **transaction in a Midnight block**: the bare
+inherent `pallet_block_rewards::submit_rewards_digest { epoch, leaf_count,
+root, min_key, max_key }`, committed by the block header's
+`extrinsics_root`. Chain of custody for a digest in block `N`:
 1. MMR leaf for block `N + 1` (`BeefyMmrLeaf`, SCALE via
    `bridge/codec.scale_encode_beefy_mmr_leaf`) carries
    `parent_number == N` and `parent_hash == blake2b_256(header_N)`.
-2. Positional MMR inclusion proof of that leaf against `latest_mmr_root`.
-   New code: the existing `verify_mmr_leaf` only handles the latest leaf.
-3. `header_N` supplied as raw SCALE bytes; `blake2b_256(header_N) == parent_hash`.
-4. Parse the header far enough to reach `digest.logs`, find the rewards
-   digest item, decode `Digest { epoch, root, min_key, max_key }`.
+2. Positional MMR inclusion proof of that leaf against `latest_mmr_root`
+   (`lib/rewards/mmr.ak`).
+3. `header_N` supplied as raw SCALE bytes; `blake2b_256(header_N) == parent_hash`,
+   `number == parent_number`; `extrinsics_root` read at a fixed offset.
+4. Trie inclusion proof (`lib/rewards/trie.ak`, Substrate `LayoutV1`,
+   blake2b-256) of the extrinsic bytes under key `Compact(extrinsic_index)`.
+5. Decode the extrinsic as the bare `submit_rewards_digest` call
+   (`config.rewards_pallet_index`, `config.rewards_call_index`); anything
+   else fails.
 
 ```aiken
 pub type DigestProof {
@@ -435,19 +443,20 @@ pub type DigestProof {
   leaf_count: Int,
   items: List<ByteArray>,         // MMR proof items (siblings + peaks) per sp_mmr_primitives::Proof
   header: ByteArray,              // SCALE header of block N
-  log_index: Int,                 // which digest log to read
+  extrinsic_index: Int,           // position of the rewards extrinsic in block N
+  trie_nodes: List<ByteArray>,    // hash-referenced trie nodes, root first
+  extrinsic: ByteArray,           // the extrinsic bytes as noted by frame_system
 }
 pub fn verify_digest(mmr_root: ByteArray, proof: DigestProof) -> Digest
 ```
 
-MMR verification and header layout: see §7.1 (filled from polkadot-sdk
-sources).
+MMR verification, header, trie and extrinsic layouts: see §7.1.
 
-Digest log: `DigestItem::Consensus("MNRW", payload)` in the header of the
-first block of epoch `E + 1`, payload per §7.1 (`MNSV` is the existing
-Midnight engine id; `MNRW` is free). Any block below the bridge checkpoint
-is provable, so payouts may lag any number of epochs without losing
-provability; the contract still enforces strict `E + 1` succession.
+Any block at or below the bridge checkpoint is provable and the contract
+does not bind the block to the epoch boundary: the first extrinsic that
+decodes to a digest with `epoch == state.epoch + 1` is accepted, so the
+node may emit the digest after any observation lag. Payouts may lag any
+number of epochs without losing provability.
 
 ### 7.1 Encodings (from polkadot-sdk master, 2026-09-03)
 
@@ -496,30 +505,48 @@ only with that offset (brief question 5).
 `leaf_hash = keccak256(SCALE(leaf))`.
 
 **Header** (`sp_runtime::generic::Header<u32, BlakeTwo256>`, confirmed in
-`midnight-node/runtime/src/lib.rs:142,175`):
+`midnight-node/runtime/src/lib.rs:138,1245`):
 
 ```
 parent_hash(32) || Compact(number) || state_root(32) || extrinsics_root(32) || Compact(n_logs) || log*
-log: 0x00 Compact(len) bytes                      Other
-     0x04 engine_id(4) Compact(len) bytes         Consensus
-     0x05 engine_id(4) Compact(len) bytes         Seal
-     0x06 engine_id(4) Compact(len) bytes         PreRuntime
-     0x08                                         RuntimeEnvironmentUpdated
 header_hash = blake2b_256(bytes)
 ```
 Compact<u32/u64>: low two bits of the first byte select 1/2/4-byte LE
 (`00/01/10`, value = raw >> 2) or big-int mode (`11`, byte count =
-(first >> 2) + 4, LE). The parser needs only: skip 32, compact, skip 64,
-compact count, then walk logs skipping by tag until `log_index`.
+(first >> 2) + 4, LE). The parser needs only: skip 32, compact, skip 32,
+read 32 (`extrinsics_root`). Logs are not read.
 
-Rewards digest log: `Consensus("MNRW", payload)` in the first block of
-epoch `E + 1`, payload = SCALE of an enum variant (index 1), 105 bytes:
+**Extrinsics trie** (`frame_system::finalize`: `BlakeTwo256::ordered_trie_root(xts, StateVersion::V1)`;
+`system_version = 3` in the runtime selects V1): keys `Compact(i)` for
+extrinsic `i`, values the bytes noted by `note_extrinsic` = `xt.encode()`
+**including** its `Compact(len)` prefix. `sp_trie::LayoutV1`, no extension
+nodes, blake2b-256, node layout:
 
 ```
-0x01 | epoch u64 LE @1 | leaf_count u64 LE @9 | root 32 @17 | min_key 28 @49 | max_key 28 @77
+header   01nnnnnn leaf, value inline          001nnnnn leaf, value hashed (value ≥ 33 bytes)
+         10nnnnnn branch without value        11nnnnnn / 0001nnnn branch with value (never: keys are prefix-free)
+         n = partial nibble count; n == max means a varint continues (never: keys ≤ 4 bytes)
+partial  ceil(n / 2) bytes; odd n → first byte is 0x0k (k = first nibble)
+leaf     Compact(len) || value            or   32-byte blake2b-256(value)
+branch   bitmap u16 LE (bit i = child i), then per present child Compact(len) || bytes;
+         len == 32 → hash reference, len < 32 → child node inline
+root     blake2b-256 of the root node bytes
 ```
-Fixed offsets; no compact parsing inside the payload. Pending node-team
-confirmation (question 1 in the brief).
+The proof is the list of hash-referenced nodes root first; inline children
+are embedded. Golden vectors from `sp_trie` (polkadot-sdk `660acef`) with
+1, 3, 5, 17 and 70 extrinsics live in `lib/rewards/trie.test.ak`.
+
+**Rewards extrinsic** (bare `UncheckedExtrinsic`; `new_bare` writes
+preamble `0x05`, the legacy `0x04` is also accepted):
+
+```
+Compact(107) | preamble 0x05 | pallet u8 | call u8 | epoch u64 LE | leaf_count u64 LE | root 32 | min_key 28 | max_key 28
+```
+= 109 bytes; `pallet == config.rewards_pallet_index`,
+`call == config.rewards_call_index` (both `# TBD` until the runtime pins
+the pallet index). Fixed offsets after the 2-byte length prefix:
+preamble@2, pallet@3, call@4, epoch@5, leaf_count@13, root@21, min@53,
+max@81. Any other length, preamble or index fails.
 
 ---
 
@@ -658,9 +685,10 @@ Every governance-domain spend still needs the domain's `logic` and
 
 1. Leaves per §2.3 (45 bytes), sorted by `skh`, unique; tree per §6 (odd
    node promoted, `binary_merkle_tree::merkle_root::<Keccak256>`).
-2. Digest `(epoch, leaf_count, root, min_key, max_key)` as a
-   `Consensus("MNRW")` log per §7.1, empty-epoch form per §2.4, one digest
-   per epoch, epochs consecutive. Details and questions: `node-team-brief.md`.
+2. Digest `(epoch, leaf_count, root, min_key, max_key)` as the bare
+   inherent `submit_rewards_digest` per §7.1, empty-epoch form per §2.4,
+   one digest per epoch, epochs consecutive. Details and questions:
+   `node-team-brief.md`.
 3. Emit a leaf only for deposits observed funded (≥ floor) at least 12 h
    ago; emit `ack = 1` exactly once per observed `committed = Some(addr)`
    and drop the account afterwards.
@@ -686,7 +714,7 @@ deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 batcher_skim_max_lovelace = 10_000                         (0.01 ADA; 5_000 is the alternative)
 release_t0_ms, release_interval_ms, release_initial_amount, release_decay_num, release_decay_den
-rewards_digest_engine_id = "MNRW"
+rewards_pallet_index, rewards_call_index                 (# TBD node team; pallet_block_rewards, submit_rewards_digest)
 ```
 As built (phase 00): every profile carries all keys. Non-mainnet profiles
 use test values (`release_interval_ms = 60_000`, `release_initial_amount = 1_000_000`,
@@ -703,7 +731,7 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 | Question | Decision |
 |---|---|
 | Leaf hash | keccak-256 everywhere |
-| Digest carrier | `Consensus("MNRW")` log, first block of `E + 1`; payload layout proposed, node team to confirm |
+| Digest carrier | bare inherent `pallet_block_rewards::submit_rewards_digest` in a Midnight block, proven through `extrinsics_root` (revised 2026-09-11; was a `Consensus("MNRW")` header log) |
 | Lifetime emission cap | none; balance and series bound it; interval = Midnight epoch |
 | Batcher compensation | `≤ min(ceil(fee / n_paid), 0.01 ADA)` per paid account; no margin; Midnight funded floor ~3 ADA |
 | Deposit sizes | min 10, cap 40 ADA |
@@ -715,7 +743,7 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 | Uncompensated load/release | accepted; batchers use `LoadAndPay` |
 | Bridge MMR fold parity | rewards use a positional verifier; bridge fold fixed in `6b5bf68a0b89`; pending bridge re-audit |
 | Mainnet reserve datum | unit constructor; first release migrates by field count |
-| Digest payload | enum variant 1, fixed 105 bytes with `leaf_count`; keys fixed 28; empty epoch = `leaf_count 0`, zero root |
+| Digest payload | call args `epoch u64, leaf_count u64, root [u8;32], min_key [u8;28], max_key [u8;28]` (104 bytes); empty epoch = `leaf_count 0`, zero root |
 | Leaf amount | fixed `u128` big-endian, leaf 45 bytes; 1 unit = 1 cNIGHT token unit = 1 STAR |
 | Epoch counter | partner-chains sidechain epoch |
 | Credential kind | `Deposit.cred: Credential`; keys stay 28-byte hashes everywhere else |
@@ -765,3 +793,13 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 | Pool logic `Receive` checks the first output at the forever credential and requires an inline datum | same as the batcher's pool rule; `logic_merge_v2` shape |
 | `rewards_pool_logic_one_shot_{hash,index}` config keys | the pool logic's staging `StagingState` NFT needs its own one-shot, as `reserve_logic_v2` has |
 | Build: `FIXED` hashes written after the threshold phase | `virtual_account` and `rewards_pool_logic` embed `rewards_batcher_hash`; the final compile must see it |
+
+### Digest carrier revision (2026-09-11)
+
+| Change | Reason |
+|---|---|
+| The digest is a transaction in a Midnight block (bare inherent of the new cNIGHT-only `pallet_block_rewards`), proven via `extrinsics_root` with a `LayoutV1` trie proof; the `MNRW` header log is gone | the rewards must be a ledger-visible transaction, not a consensus log; the old mNIGHT `pallet_block_rewards` is replaced under the same name |
+| `DigestProof { …, extrinsic_index, trie_nodes, extrinsic }` replaces `log_index` | trie proof + extrinsic bytes instead of a log index |
+| `config.rewards_pallet_index` / `rewards_call_index` replace `rewards_digest_engine_id` | the call is identified by pallet and call index |
+| No block-position rule: any block, first extrinsic that decodes to `epoch + 1` | the node may emit the digest after an observation lag |
+| `lib/rewards/trie.ak` + test-only `trie_builder.ak`, validated against `sp_trie` golden vectors | new verifier |
