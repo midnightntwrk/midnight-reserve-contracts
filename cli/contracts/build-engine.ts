@@ -105,6 +105,10 @@ const TWO_STAGE_EXTRA = [
     title: "committee_bridge.committee_bridge_two_stage_upgrade.else",
     tomlKey: "committee_bridge_two_stage_hash",
   },
+  {
+    title: "rewards_pool.rewards_pool_two_stage_upgrade.else",
+    tomlKey: "rewards_pool_two_stage_hash",
+  },
 ] as const satisfies readonly ValidatorMapping[];
 
 const FOREVER_CORE = [
@@ -145,6 +149,10 @@ const FOREVER_EXTRA = [
     title: "committee_bridge_pool.committee_bridge_pool.else",
     tomlKey: "committee_bridge_pool_hash",
   },
+  {
+    title: "rewards_pool.rewards_pool_forever.else",
+    tomlKey: "rewards_pool_forever_hash",
+  },
 ] as const satisfies readonly ValidatorMapping[];
 
 const THRESHOLDS = [
@@ -178,8 +186,12 @@ const THRESHOLDS = [
   },
 ] as const satisfies readonly ValidatorMapping[];
 
-/** Validators whose hash is only published to aiken.toml, never rebuilt against. */
+/** Validators whose hash is published to aiken.toml after the threshold phase; the account and pool logic embed the batcher's. */
 const FIXED = [
+  {
+    title: "rewards_batcher.rewards_batcher.else",
+    tomlKey: "rewards_batcher_hash",
+  },
   {
     title: "virtual_account.virtual_account.else",
     tomlKey: "virtual_account_hash",
@@ -783,6 +795,7 @@ const buildStandard = (
     yield* keepsPins(build.pins, thresholds);
     yield* output.log("Updating threshold validator hashes...");
     yield* updateHashes(build, thresholds, "build", VALIDATORS.thresholds);
+    yield* updateHashes(build, thresholds, "build", VALIDATORS.fixed);
 
     yield* output.log("Final compilation...");
     const attempts = yield* Ref.make(0);
