@@ -92,6 +92,7 @@ const ONE_SHOTS = [
   "rewards_batcher_one_shot",
   "rewards_pool_one_shot",
   "rewards_pool_staging_one_shot",
+  "rewards_pool_logic_one_shot",
 ] as const;
 
 type OneShot = (typeof ONE_SHOTS)[number];

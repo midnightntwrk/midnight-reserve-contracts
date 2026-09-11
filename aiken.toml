@@ -52,6 +52,7 @@ virtual_account_one_shot_index = 0
 rewards_batcher_one_shot_index = 0
 rewards_pool_one_shot_index = 0
 rewards_pool_staging_one_shot_index = 0
+rewards_pool_logic_one_shot_index = 0
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 batcher_skim_max_lovelace = 10_000
@@ -294,6 +295,10 @@ encoding = "hex"
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
+[config.default.rewards_pool_logic_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.default.rewards_pool_two_stage_hash]
 bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
@@ -346,6 +351,7 @@ virtual_account_one_shot_index = 0
 rewards_batcher_one_shot_index = 0
 rewards_pool_one_shot_index = 0
 rewards_pool_staging_one_shot_index = 0
+rewards_pool_logic_one_shot_index = 0
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 batcher_skim_max_lovelace = 10_000
@@ -588,6 +594,10 @@ encoding = "hex"
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
+[config.preview.rewards_pool_logic_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.preview.rewards_pool_two_stage_hash]
 bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
@@ -640,6 +650,7 @@ virtual_account_one_shot_index = 0
 rewards_batcher_one_shot_index = 0
 rewards_pool_one_shot_index = 0
 rewards_pool_staging_one_shot_index = 0
+rewards_pool_logic_one_shot_index = 0
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 batcher_skim_max_lovelace = 10_000
@@ -882,6 +893,10 @@ encoding = "hex"
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
+[config.qanet.rewards_pool_logic_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.qanet.rewards_pool_two_stage_hash]
 bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
@@ -934,6 +949,7 @@ virtual_account_one_shot_index = 0
 rewards_batcher_one_shot_index = 0
 rewards_pool_one_shot_index = 0
 rewards_pool_staging_one_shot_index = 0
+rewards_pool_logic_one_shot_index = 0
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 batcher_skim_max_lovelace = 10_000
@@ -1176,6 +1192,10 @@ encoding = "hex"
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
+[config.govnet.rewards_pool_logic_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.govnet.rewards_pool_two_stage_hash]
 bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
@@ -1228,6 +1248,7 @@ virtual_account_one_shot_index = 0
 rewards_batcher_one_shot_index = 0
 rewards_pool_one_shot_index = 0
 rewards_pool_staging_one_shot_index = 0
+rewards_pool_logic_one_shot_index = 0
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 batcher_skim_max_lovelace = 10_000
@@ -1470,6 +1491,10 @@ encoding = "hex"
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
+[config.devnet.rewards_pool_logic_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.devnet.rewards_pool_two_stage_hash]
 bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
@@ -1523,6 +1548,7 @@ virtual_account_one_shot_index = 0
 rewards_batcher_one_shot_index = 0
 rewards_pool_one_shot_index = 0
 rewards_pool_staging_one_shot_index = 0
+rewards_pool_logic_one_shot_index = 0
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 batcher_skim_max_lovelace = 10_000
@@ -1765,6 +1791,10 @@ encoding = "hex"
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
+[config.preprod.rewards_pool_logic_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.preprod.rewards_pool_two_stage_hash]
 bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
@@ -1818,6 +1848,7 @@ virtual_account_one_shot_index = 0
 rewards_batcher_one_shot_index = 0
 rewards_pool_one_shot_index = 0
 rewards_pool_staging_one_shot_index = 0
+rewards_pool_logic_one_shot_index = 0
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 batcher_skim_max_lovelace = 10_000
@@ -2060,6 +2091,10 @@ encoding = "hex"
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
+[config.mainnet.rewards_pool_logic_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
 [config.mainnet.rewards_pool_two_stage_hash]
 bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
@@ -2112,6 +2147,7 @@ virtual_account_one_shot_index = 0
 rewards_batcher_one_shot_index = 0
 rewards_pool_one_shot_index = 0
 rewards_pool_staging_one_shot_index = 0
+rewards_pool_logic_one_shot_index = 0
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 batcher_skim_max_lovelace = 10_000
@@ -2351,6 +2387,10 @@ bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.local.rewards_pool_staging_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.local.rewards_pool_logic_one_shot_hash]
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
