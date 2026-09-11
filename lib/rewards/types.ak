@@ -48,7 +48,9 @@ pub type ActionKind {
   UpdateRegistration
 }
 
-/// Inline datum on the batcher state NFT UTXO.
+/// Inline datum on the batcher state NFT UTXO. `cursor` is the next key to
+/// pay; `start_key` is the first key paid in the epoch. Both are read only
+/// while `complete == False`.
 pub type BatcherState {
   account_policy: PolicyId,
   pool_forever: ScriptHash,
@@ -72,17 +74,16 @@ pub type BatcherRedeemer {
   }
 }
 
-/// Deposit input/output indices for one paid leaf.
+/// Deposit input and output indices for one paid leaf; for an exit the output is the refund.
 pub type PayPair {
   input_index: Int,
   output_index: Int,
 }
 
-/// Predecessor and refund indices for one exiting leaf.
+/// Predecessor input and output indices for one exiting leaf.
 pub type ExitInfo {
   pred_input_index: Int,
   pred_output_index: Int,
-  refund_output_index: Int,
 }
 
 /// Positional MMR proof of a BEEFY leaf plus the SCALE header it commits to.
