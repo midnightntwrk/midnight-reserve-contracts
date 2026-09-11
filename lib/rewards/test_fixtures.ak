@@ -23,8 +23,7 @@ pub const batcher_hash =
 pub const pool_forever =
   #"cccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
 
-pub const bridge_forever =
-  #"dddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+pub const bridge_forever = config.committee_bridge_forever_hash
 
 pub const account_address = Address(Script(account_policy), None)
 
