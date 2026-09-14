@@ -117,15 +117,9 @@ export function loadContractModule(
       case "govnet":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require("../../contract_blueprint_govnet");
-      case "node-dev-01":
+      case "devnet":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        return require("../../contract_blueprint_node-dev-01");
-      case "node-dev-2":
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        return require("../../contract_blueprint_node-dev-2");
-      case "node-dev-3":
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        return require("../../contract_blueprint_node-dev-3");
+        return require("../../contract_blueprint_devnet");
       case "local":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require("../../contract_blueprint_local");
@@ -162,15 +156,9 @@ export function loadContractModule(
       case "govnet":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require("../../deployed-scripts/govnet/contract_blueprint");
-      case "node-dev-01":
+      case "devnet":
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        return require("../../deployed-scripts/node-dev-01/contract_blueprint");
-      case "node-dev-2":
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        return require("../../deployed-scripts/node-dev-2/contract_blueprint");
-      case "node-dev-3":
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        return require("../../deployed-scripts/node-dev-3/contract_blueprint");
+        return require("../../deployed-scripts/devnet/contract_blueprint");
       default:
         throw new Error(
           `Unknown environment '${env}' for deployed mode. ` +

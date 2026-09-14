@@ -1,6 +1,6 @@
 # Live Deployment Runbook
 
-Operational notes from live testing on node-dev-2. Apply to all non-emulator environments.
+Operational notes from live testing on devnet. Apply to all non-emulator environments.
 
 ## One-Shot UTxO Setup (three separate simple-tx runs required)
 

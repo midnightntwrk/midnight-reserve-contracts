@@ -996,8 +996,8 @@ encoding = "hex"
 bytes = "c3e7b0d1957d579d9fbf1aa65edbbe7902c3f0c884db1bf373eba314"
 encoding = "hex"
 
-[config.node-dev-01]
-candidate_nonce="node-dev-01"
+[config.devnet]
+candidate_nonce="devnet"
 cnight_name = "NIGHT"
 reserve_one_shot_index = 0
 council_one_shot_index = 1
@@ -1029,215 +1029,215 @@ federated_operators_staging_one_shot_index = 0
 terms_and_conditions_staging_one_shot_index = 0
 collateral_utxo_index = 15
 
-[config.node-dev-01.reserve_logic_v2_one_shot_hash]
+[config.devnet.reserve_logic_v2_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.ics_logic_v2_one_shot_hash]
+[config.devnet.ics_logic_v2_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.council_logic_v2_one_shot_hash]
+[config.devnet.council_logic_v2_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.technical_authority_logic_v2_one_shot_hash]
+[config.devnet.technical_authority_logic_v2_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.federated_operators_logic_v2_one_shot_hash]
+[config.devnet.federated_operators_logic_v2_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.terms_and_conditions_logic_v2_one_shot_hash]
+[config.devnet.terms_and_conditions_logic_v2_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.reserve_staging_one_shot_hash]
+[config.devnet.reserve_staging_one_shot_hash]
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
-[config.node-dev-01.council_staging_one_shot_hash]
+[config.devnet.council_staging_one_shot_hash]
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
-[config.node-dev-01.ics_staging_one_shot_hash]
+[config.devnet.ics_staging_one_shot_hash]
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
-[config.node-dev-01.technical_authority_staging_one_shot_hash]
+[config.devnet.technical_authority_staging_one_shot_hash]
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
-[config.node-dev-01.federated_operators_staging_one_shot_hash]
+[config.devnet.federated_operators_staging_one_shot_hash]
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
-[config.node-dev-01.terms_and_conditions_staging_one_shot_hash]
+[config.devnet.terms_and_conditions_staging_one_shot_hash]
 bytes = "0000000000000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
-[config.node-dev-01.reserve_one_shot_hash]
+[config.devnet.reserve_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.council_one_shot_hash]
+[config.devnet.council_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.ics_one_shot_hash]
+[config.devnet.ics_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.technical_authority_one_shot_hash]
+[config.devnet.technical_authority_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.federated_operators_one_shot_hash]
+[config.devnet.federated_operators_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.main_gov_one_shot_hash]
+[config.devnet.main_gov_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.staging_gov_one_shot_hash]
+[config.devnet.staging_gov_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.main_council_update_one_shot_hash]
+[config.devnet.main_council_update_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.main_tech_auth_update_one_shot_hash]
+[config.devnet.main_tech_auth_update_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.main_federated_ops_update_one_shot_hash]
+[config.devnet.main_federated_ops_update_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.committee_bridge_one_shot_hash]
+[config.devnet.committee_bridge_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.committee_threshold_one_shot_hash]
+[config.devnet.committee_threshold_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.terms_and_conditions_one_shot_hash]
+[config.devnet.terms_and_conditions_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.terms_and_conditions_threshold_one_shot_hash]
+[config.devnet.terms_and_conditions_threshold_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.collateral_utxo_hash]
+[config.devnet.collateral_utxo_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.cnight_minting_one_shot_hash]
+[config.devnet.cnight_minting_one_shot_hash]
 bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
 encoding = "hex"
 
-[config.node-dev-01.cnight_policy]
+[config.devnet.cnight_policy]
 bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
 encoding = "hex"
 
-[config.node-dev-01.reserve_two_stage_hash]
+[config.devnet.reserve_two_stage_hash]
 bytes = "e30a1debb9a2b77d0604fbda35d13971a448a6b498bd774387ad6243"
 encoding = "hex"
 
-[config.node-dev-01.reserve_forever_hash]
+[config.devnet.reserve_forever_hash]
 bytes = "d21c8cde6d77fce8950de031c91df516a7ae017eff053c1810ef224f"
 encoding = "hex"
 
-[config.node-dev-01.council_two_stage_hash]
+[config.devnet.council_two_stage_hash]
 bytes = "c66ee5d775157518e7cc15dd325870894b253a2acee7299430c639ec"
 encoding = "hex"
 
-[config.node-dev-01.council_forever_hash]
+[config.devnet.council_forever_hash]
 bytes = "5377eb670a044991e402e328bd1e80f78b3915d94e977f42285344ab"
 encoding = "hex"
 
-[config.node-dev-01.ics_two_stage_hash]
+[config.devnet.ics_two_stage_hash]
 bytes = "4ffc54f83cbf7a9159f409718b847715adf57dc00f0fd4a70ef49857"
 encoding = "hex"
 
-[config.node-dev-01.ics_forever_hash]
+[config.devnet.ics_forever_hash]
 bytes = "4bd555191490ebcd7aef96dca55534c00c345211134e4415e0e0adf8"
 encoding = "hex"
 
-[config.node-dev-01.technical_authority_two_stage_hash]
+[config.devnet.technical_authority_two_stage_hash]
 bytes = "ae4fb1d6b405dd9d7a484eec415898a4560ca6a284281649d10ceb90"
 encoding = "hex"
 
-[config.node-dev-01.technical_authority_forever_hash]
+[config.devnet.technical_authority_forever_hash]
 bytes = "f8728932f6b72f8c70f3dd4cf004728e8812a7b157e62199b225dc82"
 encoding = "hex"
 
-[config.node-dev-01.federated_operators_two_stage_hash]
+[config.devnet.federated_operators_two_stage_hash]
 bytes = "98c8c4f620d8d76909bfc94425d1926484e67f94e13bfa67c985348e"
 encoding = "hex"
 
-[config.node-dev-01.federated_operators_forever_hash]
+[config.devnet.federated_operators_forever_hash]
 bytes = "faf0b64110b3cfc265297ae2f5d4a11dc66c53b563e7c14d4701d45c"
 encoding = "hex"
 
-[config.node-dev-01.main_gov_threshold_hash]
+[config.devnet.main_gov_threshold_hash]
 bytes = "d26de51738fadbecaedb7600796867632c49b9085f2db659ba399586"
 encoding = "hex"
 
-[config.node-dev-01.staging_gov_threshold_hash]
+[config.devnet.staging_gov_threshold_hash]
 bytes = "a34e614e5af073e0673bb91daca6347614a557739b1d332e13dd9769"
 encoding = "hex"
 
-[config.node-dev-01.main_council_update_threshold_hash]
+[config.devnet.main_council_update_threshold_hash]
 bytes = "375c3fc096467bd28962802de6fd18db39a5f99a1f3737f83bb319ff"
 encoding = "hex"
 
-[config.node-dev-01.main_tech_auth_update_threshold_hash]
+[config.devnet.main_tech_auth_update_threshold_hash]
 bytes = "ccb330e5f9b3ea428da7d04e55c5d0a928f905ab26d8aef8a7b6d4dc"
 encoding = "hex"
 
-[config.node-dev-01.main_federated_ops_update_threshold_hash]
+[config.devnet.main_federated_ops_update_threshold_hash]
 bytes = "1005645925a7ad3790445efb590d10e960501e430123a944f2417050"
 encoding = "hex"
 
-[config.node-dev-01.beefy_signer_threshold_hash]
+[config.devnet.beefy_signer_threshold_hash]
 bytes = "89f05fa4438f09692d54a3c03cff0cf13f41fc16ee87ae37a9c02219"
 encoding = "hex"
 
-[config.node-dev-01.committee_bridge_two_stage_hash]
+[config.devnet.committee_bridge_two_stage_hash]
 bytes = "734a414629bde44805bcbdaa62bd0fae2259bf9187f7f8f9d85f89e9"
 encoding = "hex"
 
-[config.node-dev-01.committee_bridge_forever_hash]
+[config.devnet.committee_bridge_forever_hash]
 bytes = "fd815fcd7355202f327d2235c49f1f66b357eae1d59ff819efc16f06"
 encoding = "hex"
 
-[config.node-dev-01.bridge_signer_threshold_hash]
+[config.devnet.bridge_signer_threshold_hash]
 bytes = "d5c6115c022c25908bf15eafa8db5d96bc6f7975599bb369a78be6e8"
 encoding = "hex"
 
-[config.node-dev-01.terms_and_conditions_two_stage_hash]
+[config.devnet.terms_and_conditions_two_stage_hash]
 bytes = "a448d496e699022bbea5f154416e1ccb448761aef7f7afa3768f2b39"
 encoding = "hex"
 
-[config.node-dev-01.terms_and_conditions_forever_hash]
+[config.devnet.terms_and_conditions_forever_hash]
 bytes = "1590f41d2568f3781897a446e40f1147cc95a6c657d651745a11d7bd"
 encoding = "hex"
 
-[config.node-dev-01.terms_and_conditions_threshold_hash]
+[config.devnet.terms_and_conditions_threshold_hash]
 bytes = "db252702e27a2998771aebdd500759172883a6b6d8599fcf7be2003f"
 encoding = "hex"
 
-[config.node-dev-01.cnight_minting_two_stage_hash]
+[config.devnet.cnight_minting_two_stage_hash]
 bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
-[config.node-dev-01.cnight_minting_forever_hash]
+[config.devnet.cnight_minting_forever_hash]
 bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
@@ -1733,251 +1733,6 @@ encoding = "hex"
 bytes = "cfc7d1730dc062475ab8ec0c132e6dddadcbda5845166a003b31dfea"
 encoding = "hex"
 
-[config.node-dev-2]
-candidate_nonce="node-dev-2"
-cnight_name = "NIGHT"
-reserve_one_shot_index = 0
-council_one_shot_index = 1
-ics_one_shot_index = 2
-technical_authority_one_shot_index = 3
-federated_operators_one_shot_index = 4
-main_gov_one_shot_index = 5
-staging_gov_one_shot_index = 6
-main_council_update_one_shot_index = 7
-main_tech_auth_update_one_shot_index = 8
-main_federated_ops_update_one_shot_index = 9
-
-committee_bridge_one_shot_index = 10
-committee_threshold_one_shot_index = 11
-terms_and_conditions_one_shot_index = 12
-terms_and_conditions_threshold_one_shot_index = 13
-cnight_minting_one_shot_index = 14
-reserve_logic_v2_one_shot_index = 0
-ics_logic_v2_one_shot_index = 1
-council_logic_v2_one_shot_index = 2
-technical_authority_logic_v2_one_shot_index = 3
-federated_operators_logic_v2_one_shot_index = 4
-terms_and_conditions_logic_v2_one_shot_index = 5
-reserve_staging_one_shot_index = 0
-council_staging_one_shot_index = 1
-ics_staging_one_shot_index = 2
-technical_authority_staging_one_shot_index = 3
-federated_operators_staging_one_shot_index = 4
-terms_and_conditions_staging_one_shot_index = 5
-collateral_utxo_index = 14
-
-[config.node-dev-2.reserve_logic_v2_one_shot_hash]
-bytes = "a64353f970e87d1dc07d28dd4aeb4f036dfd95359aa42cc57c20304cdafa4eee"
-encoding = "hex"
-
-[config.node-dev-2.ics_logic_v2_one_shot_hash]
-bytes = "a64353f970e87d1dc07d28dd4aeb4f036dfd95359aa42cc57c20304cdafa4eee"
-encoding = "hex"
-
-[config.node-dev-2.council_logic_v2_one_shot_hash]
-bytes = "a64353f970e87d1dc07d28dd4aeb4f036dfd95359aa42cc57c20304cdafa4eee"
-encoding = "hex"
-
-[config.node-dev-2.technical_authority_logic_v2_one_shot_hash]
-bytes = "a64353f970e87d1dc07d28dd4aeb4f036dfd95359aa42cc57c20304cdafa4eee"
-encoding = "hex"
-
-[config.node-dev-2.federated_operators_logic_v2_one_shot_hash]
-bytes = "a64353f970e87d1dc07d28dd4aeb4f036dfd95359aa42cc57c20304cdafa4eee"
-encoding = "hex"
-
-[config.node-dev-2.terms_and_conditions_logic_v2_one_shot_hash]
-bytes = "a64353f970e87d1dc07d28dd4aeb4f036dfd95359aa42cc57c20304cdafa4eee"
-encoding = "hex"
-
-[config.node-dev-2.reserve_staging_one_shot_hash]
-bytes = "d969120b6920be8d57af0a52bf0889c1377bba2a30294a49c66a7f3d5ae67fbb"
-encoding = "hex"
-
-[config.node-dev-2.council_staging_one_shot_hash]
-bytes = "d969120b6920be8d57af0a52bf0889c1377bba2a30294a49c66a7f3d5ae67fbb"
-encoding = "hex"
-
-[config.node-dev-2.ics_staging_one_shot_hash]
-bytes = "d969120b6920be8d57af0a52bf0889c1377bba2a30294a49c66a7f3d5ae67fbb"
-encoding = "hex"
-
-[config.node-dev-2.technical_authority_staging_one_shot_hash]
-bytes = "d969120b6920be8d57af0a52bf0889c1377bba2a30294a49c66a7f3d5ae67fbb"
-encoding = "hex"
-
-[config.node-dev-2.federated_operators_staging_one_shot_hash]
-bytes = "d969120b6920be8d57af0a52bf0889c1377bba2a30294a49c66a7f3d5ae67fbb"
-encoding = "hex"
-
-[config.node-dev-2.terms_and_conditions_staging_one_shot_hash]
-bytes = "d969120b6920be8d57af0a52bf0889c1377bba2a30294a49c66a7f3d5ae67fbb"
-encoding = "hex"
-
-[config.node-dev-2.reserve_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.council_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.ics_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.technical_authority_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.federated_operators_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.main_gov_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.staging_gov_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.main_council_update_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.main_tech_auth_update_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.main_federated_ops_update_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.committee_bridge_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.committee_threshold_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.terms_and_conditions_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.terms_and_conditions_threshold_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.collateral_utxo_hash]
-bytes = "c9fd32c96dd2ca9008a875b5c76e9ade5a12b52038372eff6eed64928abc2136"
-encoding = "hex"
-
-[config.node-dev-2.cnight_minting_one_shot_hash]
-bytes = "b4861d2b02286f2159460887cd9dd1d4e99ae975415670997968ca05d525a174"
-encoding = "hex"
-
-[config.node-dev-2.cnight_policy]
-bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
-encoding = "hex"
-
-[config.node-dev-2.reserve_two_stage_hash]
-bytes = "8c80622ceaef40c693a6ab31d3456cb1cf406bc7f31b3b4a9d984d69"
-encoding = "hex"
-
-[config.node-dev-2.reserve_forever_hash]
-bytes = "e64b3323ef2e281714c5a62cff026d09c047dd05a296136efd4013b5"
-encoding = "hex"
-
-[config.node-dev-2.council_two_stage_hash]
-bytes = "6477cea08cbfa2cba45a907d3fe676c4dfade47375f6cb859d746400"
-encoding = "hex"
-
-[config.node-dev-2.council_forever_hash]
-bytes = "f7eb0acf9cc3d4eba85938618c9861e6c8680092d16644454422d88e"
-encoding = "hex"
-
-[config.node-dev-2.ics_two_stage_hash]
-bytes = "360b11aaab0b841ec9f6377960c108a8f4965a56591e8541bf80a2bd"
-encoding = "hex"
-
-[config.node-dev-2.ics_forever_hash]
-bytes = "8052a041c055c97b04cfe9c9330ca24ad773a363adff17bcb3ace29e"
-encoding = "hex"
-
-[config.node-dev-2.technical_authority_two_stage_hash]
-bytes = "ec71ad781a63d59f5b11c51d0bddaafb03021d8b93d4e88409a0608e"
-encoding = "hex"
-
-[config.node-dev-2.technical_authority_forever_hash]
-bytes = "0fbe7f34039da6180fdf66fffb54366c4ecb74c2ae69c1629847eaca"
-encoding = "hex"
-
-[config.node-dev-2.federated_operators_two_stage_hash]
-bytes = "e677093330e8fe1c83680630d02821744422acff321946c32ca8c179"
-encoding = "hex"
-
-[config.node-dev-2.federated_operators_forever_hash]
-bytes = "fbe760bb55bc3dc0b5dc5d687e3e925eca0e74994c60f17cfc3fcdc5"
-encoding = "hex"
-
-[config.node-dev-2.main_gov_threshold_hash]
-bytes = "853741c3211b17cdd5ca75cd9406e1d94b002034e41d16440b060c6e"
-encoding = "hex"
-
-[config.node-dev-2.staging_gov_threshold_hash]
-bytes = "1c9ae0e7d09dc374fa6ca87e9d6349520a007957dd6bebf0d5ee01a1"
-encoding = "hex"
-
-[config.node-dev-2.main_council_update_threshold_hash]
-bytes = "c6d2168134d86c5f0c9a0af8b089dd55a61def3b76c81629c1c148dc"
-encoding = "hex"
-
-[config.node-dev-2.main_tech_auth_update_threshold_hash]
-bytes = "17884913f9ac1b3c566be558ce9224b6d238c0383fa33fe8fb41b982"
-encoding = "hex"
-
-[config.node-dev-2.main_federated_ops_update_threshold_hash]
-bytes = "784ea2ed8dd7419b652d022b33fd52bb2cc157daa678b45f809beee1"
-encoding = "hex"
-
-[config.node-dev-2.beefy_signer_threshold_hash]
-bytes = "00000000000000000000000000000000000000000000000000000000"
-encoding = "hex"
-
-[config.node-dev-2.committee_bridge_two_stage_hash]
-bytes = "7331aabf0923d915fb5804b202ea132956a0d000950a0bb3755b802d"
-encoding = "hex"
-
-[config.node-dev-2.committee_bridge_forever_hash]
-bytes = "59c47062c3e3fd7deb6a1270d419552eca158c116a4ea533ba49fe95"
-encoding = "hex"
-
-[config.node-dev-2.bridge_signer_threshold_hash]
-bytes = "d1d792d05ca9ef3f759318911e6b781906b604ddd0e27bd5c0695c94"
-encoding = "hex"
-
-[config.node-dev-2.terms_and_conditions_two_stage_hash]
-bytes = "a246eb4c51b1ea8b1fe6a579f0086f12912514182ef25fb4d3d10561"
-encoding = "hex"
-
-[config.node-dev-2.terms_and_conditions_forever_hash]
-bytes = "e81f6500eb27f15ecb4ec1d6c7f55890fb24063e2ad86dfb2d62b30a"
-encoding = "hex"
-
-[config.node-dev-2.terms_and_conditions_threshold_hash]
-bytes = "d27e4d0fd0297cdbc57e1a1fbb74558786f0ca48de387c5220eb53d6"
-encoding = "hex"
-
-[config.node-dev-2.cnight_minting_two_stage_hash]
-bytes = "a59202083420bc3f2040232e49d9305f4d6c76f8b9ab1388df3800d0"
-encoding = "hex"
-
-[config.node-dev-2.cnight_minting_forever_hash]
-bytes = "149fb524a70a0b0936d69bfd475d2455dc228c6720fbafa436b77ee2"
-encoding = "hex"
-
 [config.local]
 candidate_nonce="local"
 cnight_name = "NIGHT"
@@ -2221,249 +1976,4 @@ encoding = "hex"
 
 [config.local.cnight_minting_forever_hash]
 bytes = "0000000000000000000000000000000000000000000000000000000000"
-encoding = "hex"
-
-[config.node-dev-3]
-candidate_nonce="node-dev-3"
-cnight_name = "NIGHT"
-reserve_one_shot_index = 0
-council_one_shot_index = 1
-ics_one_shot_index = 2
-technical_authority_one_shot_index = 3
-federated_operators_one_shot_index = 4
-main_gov_one_shot_index = 5
-staging_gov_one_shot_index = 6
-main_council_update_one_shot_index = 7
-main_tech_auth_update_one_shot_index = 8
-main_federated_ops_update_one_shot_index = 9
-
-committee_bridge_one_shot_index = 10
-committee_threshold_one_shot_index = 11
-terms_and_conditions_one_shot_index = 12
-terms_and_conditions_threshold_one_shot_index = 13
-cnight_minting_one_shot_index = 14
-reserve_logic_v2_one_shot_index = 0
-ics_logic_v2_one_shot_index = 1
-council_logic_v2_one_shot_index = 2
-technical_authority_logic_v2_one_shot_index = 3
-federated_operators_logic_v2_one_shot_index = 4
-terms_and_conditions_logic_v2_one_shot_index = 5
-reserve_staging_one_shot_index = 0
-council_staging_one_shot_index = 1
-ics_staging_one_shot_index = 2
-technical_authority_staging_one_shot_index = 3
-federated_operators_staging_one_shot_index = 4
-terms_and_conditions_staging_one_shot_index = 5
-collateral_utxo_index = 15
-
-[config.node-dev-3.reserve_logic_v2_one_shot_hash]
-bytes = "089e751a95b252437db543c4a6416e9d65674221f633e98991604915c98e186f"
-encoding = "hex"
-
-[config.node-dev-3.ics_logic_v2_one_shot_hash]
-bytes = "089e751a95b252437db543c4a6416e9d65674221f633e98991604915c98e186f"
-encoding = "hex"
-
-[config.node-dev-3.council_logic_v2_one_shot_hash]
-bytes = "089e751a95b252437db543c4a6416e9d65674221f633e98991604915c98e186f"
-encoding = "hex"
-
-[config.node-dev-3.technical_authority_logic_v2_one_shot_hash]
-bytes = "089e751a95b252437db543c4a6416e9d65674221f633e98991604915c98e186f"
-encoding = "hex"
-
-[config.node-dev-3.federated_operators_logic_v2_one_shot_hash]
-bytes = "089e751a95b252437db543c4a6416e9d65674221f633e98991604915c98e186f"
-encoding = "hex"
-
-[config.node-dev-3.terms_and_conditions_logic_v2_one_shot_hash]
-bytes = "089e751a95b252437db543c4a6416e9d65674221f633e98991604915c98e186f"
-encoding = "hex"
-
-[config.node-dev-3.reserve_staging_one_shot_hash]
-bytes = "d0fc8130565bcff8995d965e0471112a37df461cb39a3e7efdd7a3ced18586a5"
-encoding = "hex"
-
-[config.node-dev-3.council_staging_one_shot_hash]
-bytes = "d0fc8130565bcff8995d965e0471112a37df461cb39a3e7efdd7a3ced18586a5"
-encoding = "hex"
-
-[config.node-dev-3.ics_staging_one_shot_hash]
-bytes = "d0fc8130565bcff8995d965e0471112a37df461cb39a3e7efdd7a3ced18586a5"
-encoding = "hex"
-
-[config.node-dev-3.technical_authority_staging_one_shot_hash]
-bytes = "d0fc8130565bcff8995d965e0471112a37df461cb39a3e7efdd7a3ced18586a5"
-encoding = "hex"
-
-[config.node-dev-3.federated_operators_staging_one_shot_hash]
-bytes = "d0fc8130565bcff8995d965e0471112a37df461cb39a3e7efdd7a3ced18586a5"
-encoding = "hex"
-
-[config.node-dev-3.terms_and_conditions_staging_one_shot_hash]
-bytes = "d0fc8130565bcff8995d965e0471112a37df461cb39a3e7efdd7a3ced18586a5"
-encoding = "hex"
-
-[config.node-dev-3.reserve_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.council_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.ics_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.technical_authority_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.federated_operators_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.main_gov_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.staging_gov_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.main_council_update_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.main_tech_auth_update_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.main_federated_ops_update_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.committee_bridge_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.committee_threshold_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.terms_and_conditions_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.terms_and_conditions_threshold_one_shot_hash]
-bytes = "e2e1802181f68fbd435c56190c139ca6667a2bda286ddbfe83f17040b5709c49"
-encoding = "hex"
-
-[config.node-dev-3.collateral_utxo_hash]
-bytes = "ed5daa0151216b4bba6964613bef8778c0172e4959120c4b33059d0310defb66"
-encoding = "hex"
-
-[config.node-dev-3.cnight_minting_one_shot_hash]
-bytes = "ed5daa0151216b4bba6964613bef8778c0172e4959120c4b33059d0310defb66"
-encoding = "hex"
-
-[config.node-dev-3.cnight_policy]
-bytes = "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1"
-encoding = "hex"
-
-[config.node-dev-3.reserve_two_stage_hash]
-bytes = "c4855d21cf18028d497b691c56a2bdcea07462db43fd11077a067d0f"
-encoding = "hex"
-
-[config.node-dev-3.reserve_forever_hash]
-bytes = "3e2d145b45dde66c9dfbd2a6fd727491c2cd6f761704e71cec7a4975"
-encoding = "hex"
-
-[config.node-dev-3.council_two_stage_hash]
-bytes = "5fa960ba16d6f3d4af649786cd1df48d6a9addf4a2aca20ecbfa1743"
-encoding = "hex"
-
-[config.node-dev-3.council_forever_hash]
-bytes = "018dce422b9560ba7b902c2f241f020cdecae8b76407696a57b9ab23"
-encoding = "hex"
-
-[config.node-dev-3.ics_two_stage_hash]
-bytes = "f1d15b2414dc4ed42bb7ad51972a9a848b503041810eae1c93b33be4"
-encoding = "hex"
-
-[config.node-dev-3.ics_forever_hash]
-bytes = "23950b7cdc7eb3bbc43402eead83e4fa9d13844a6a51209216ba570e"
-encoding = "hex"
-
-[config.node-dev-3.technical_authority_two_stage_hash]
-bytes = "1cfefd232d76533723d5641ea607360d835456403788eccb60fbbbce"
-encoding = "hex"
-
-[config.node-dev-3.technical_authority_forever_hash]
-bytes = "43b995b0e93b1f4a9531f9feca7ad17e57ccc5ea220424eed1c53892"
-encoding = "hex"
-
-[config.node-dev-3.federated_operators_two_stage_hash]
-bytes = "c6639ed64ae81c48c4cec948d037b8c5f599ac96099672dbe9de0195"
-encoding = "hex"
-
-[config.node-dev-3.federated_operators_forever_hash]
-bytes = "32c7f04acf2f5f809c1dea5d2e0a9b04c05aef34c795c872beac1685"
-encoding = "hex"
-
-[config.node-dev-3.main_gov_threshold_hash]
-bytes = "04a4b79e4ce2268b91aabab350c351540918303460d711ce6676d275"
-encoding = "hex"
-
-[config.node-dev-3.staging_gov_threshold_hash]
-bytes = "8cb9b070a745d0d284c5ade5f222d327b376996aa8d0c770b17d233a"
-encoding = "hex"
-
-[config.node-dev-3.main_council_update_threshold_hash]
-bytes = "e62f17b479e4088376118bcd491726da5b80a6f7b81154743f4a7c07"
-encoding = "hex"
-
-[config.node-dev-3.main_tech_auth_update_threshold_hash]
-bytes = "92e61d0c057e5e20199a268a4de36e25847b8e2f8b1ad810b7888082"
-encoding = "hex"
-
-[config.node-dev-3.main_federated_ops_update_threshold_hash]
-bytes = "90d0af253184a8394507dbcbe1706f58866057cc10f4b109d2cd47ea"
-encoding = "hex"
-
-[config.node-dev-3.beefy_signer_threshold_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
-encoding = "hex"
-
-[config.node-dev-3.committee_bridge_two_stage_hash]
-bytes = "606bec3df24f4dad3f33a58d8d3d26a4ea5c43efc81e398b5e1f55b3"
-encoding = "hex"
-
-[config.node-dev-3.committee_bridge_forever_hash]
-bytes = "9790f74ac527f1d37069b38ac9d8409815a0b396f46957613df46335"
-encoding = "hex"
-
-[config.node-dev-3.bridge_signer_threshold_hash]
-bytes = "7de183e1f85f6ea874d4149680285a5e8622996cbb6ade1de4ed3c42"
-encoding = "hex"
-
-[config.node-dev-3.terms_and_conditions_two_stage_hash]
-bytes = "102260b04e0ccd8e7494f62e233de20dcf2272f21adc97ce71f73722"
-encoding = "hex"
-
-[config.node-dev-3.terms_and_conditions_forever_hash]
-bytes = "34ac9204cf96169d920f429ec84a880d4e56f94a26884685fff88506"
-encoding = "hex"
-
-[config.node-dev-3.terms_and_conditions_threshold_hash]
-bytes = "88bee628058813b1d14521ae9ce55b846662659a6d982530e0aff69d"
-encoding = "hex"
-
-[config.node-dev-3.cnight_minting_two_stage_hash]
-bytes = "67aaccd7be93b3da12cd7118050e6d7d46fdadc1a1a4b79709f55c3d"
-encoding = "hex"
-
-[config.node-dev-3.cnight_minting_forever_hash]
-bytes = "23a3dde3b1d4e881c53117efd56620ab72ea643eef55ea82d39b64b0"
 encoding = "hex"

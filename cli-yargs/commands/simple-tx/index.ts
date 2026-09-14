@@ -96,7 +96,6 @@ export async function handler(argv: SimpleTxOptions) {
     `  - Total sent: ${formatLovelaceToAda(amount * BigInt(count))} ADA`,
   );
   console.log(`\nTransaction written to ${outputPath}`);
-  process.exit(0);
 }
 
 const commandModule: CommandModule<GlobalOptions, SimpleTxOptions> = {

@@ -1,4 +1,5 @@
 use aiken/collection/dict.{to_pairs}
+use bridge/types.{BeefyThreshold} as bt
 use cardano/address.{Script}
 use cardano/assets.{to_dict}
 use cardano/script_context.{Minting, ScriptContext, Spending}
@@ -165,6 +166,17 @@ validator main_tech_auth_update_threshold {
   }
 }
 
+/// Validates that the datum is a well-formed MultisigThreshold with valid fractions:
+/// numerators must be non-negative and less than their corresponding denominators.
+fn beefy_validation(datum: Data) {
+  expect BeefyThreshold { numerator, denominator }: BeefyThreshold = datum
+
+  and {
+    numerator < denominator,
+    numerator > -1,
+  }
+}
+
 /// Threshold NFT for federated ops membership changes.
 validator main_federated_ops_update_threshold {
   else(ctx: ScriptContext) {
@@ -191,7 +203,7 @@ validator beefy_signer_threshold {
         config.committee_threshold_one_shot_index,
       )
 
-    threshold_validation(transaction, info, one_shot_ref, validation)
+    threshold_validation(transaction, info, one_shot_ref, beefy_validation)
   }
 }
 

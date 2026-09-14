@@ -11,7 +11,8 @@ import {
   PaymentAddress,
 } from "@blaze-cardano/core";
 import { resolve } from "path";
-import type { GlobalOptions } from "../../lib/global-options";
+import type { GlobalOptions, TxOptions } from "../../lib/global-options";
+import { addTxOptions } from "../../lib/global-options";
 import { getNetworkId } from "../../lib/types";
 import {
   validateTxHash,
@@ -42,7 +43,7 @@ import { createTxMetadata } from "../../lib/metadata";
 import { getDatumHandler } from "../../lib/datum-versions";
 import * as Contracts from "../../../contract_blueprint";
 
-interface ChangeTermsOptions extends GlobalOptions {
+interface ChangeTermsOptions extends GlobalOptions, TxOptions {
   "tx-hash": string;
   "tx-index": number;
   hash: string;
@@ -56,44 +57,46 @@ export const command = "change-terms";
 export const describe = "Change terms and conditions hash and URL";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("tx-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash for the fee-paying UTxO",
-    })
-    .option("tx-index", {
-      type: "number",
-      demandOption: true,
-      description: "Transaction index for the fee-paying UTxO",
-    })
-    .option("hash", {
-      type: "string",
-      demandOption: true,
-      description:
-        "New terms and conditions hash (64 hex chars, 32 bytes SHA-256)",
-    })
-    .option("url", {
-      type: "string",
-      demandOption: true,
-      description: "New terms and conditions URL (plain text)",
-    })
-    .option("sign", {
-      type: "boolean",
-      default: true,
-      description:
-        "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
-    })
-    .option("output-file", {
-      type: "string",
-      default: "change-terms-tx.json",
-      description: "Output file name for the transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use build output instead of deployed blueprint",
-    });
+  return addTxOptions(
+    yargs
+      .option("tx-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash for the fee-paying UTxO",
+      })
+      .option("tx-index", {
+        type: "number",
+        demandOption: true,
+        description: "Transaction index for the fee-paying UTxO",
+      })
+      .option("hash", {
+        type: "string",
+        demandOption: true,
+        description:
+          "New terms and conditions hash (64 hex chars, 32 bytes SHA-256)",
+      })
+      .option("url", {
+        type: "string",
+        demandOption: true,
+        description: "New terms and conditions URL (plain text)",
+      })
+      .option("sign", {
+        type: "boolean",
+        default: true,
+        description:
+          "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
+      })
+      .option("output-file", {
+        type: "string",
+        default: "change-terms-tx.json",
+        description: "Output file name for the transaction",
+      })
+      .option("use-build", {
+        type: "boolean",
+        default: false,
+        description: "Use build output instead of deployed blueprint",
+      }),
+  );
 }
 
 function validateHex(value: string, name: string, exactBytes?: number): void {
@@ -118,6 +121,7 @@ export async function handler(argv: ChangeTermsOptions) {
     "tx-index": txIndex,
     "output-file": outputFile,
     "use-build": useBuild,
+    "fee-padding": feePadding,
   } = argv;
 
   // Validate inputs before any processing
@@ -463,7 +467,7 @@ export async function handler(argv: ChangeTermsOptions) {
     .provideScript(logicScript)
     .setChangeAddress(changeAddress)
     .setMetadata(createTxMetadata("change-terms"))
-    .setFeePadding(50000n);
+    .setFeePadding(BigInt(feePadding));
 
   // Add mitigation logic withdrawal if present in UpgradeState
   if (mitigationLogicScript && mitigationLogicRewardAccount) {

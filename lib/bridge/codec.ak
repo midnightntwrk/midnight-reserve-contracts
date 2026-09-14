@@ -3,6 +3,13 @@ use aiken/collection/list
 use aiken/primitive/bytearray
 use bridge/types.{AuthoritySetCommitment, BeefyMmrLeaf, Commitment, Payload}
 
+/// SCALE-encode a BEEFY `Commitment` into the exact byte sequence that
+/// the relay chain signs. Layout:
+///   `scale_encode_length(len(payloads))` ||
+///     for each payload: `id || scale_encode_bytes(data)` ||
+///   little-endian u32 block_number ||
+///   little-endian u64 validator_set_id
+/// The keccak256 of this byte string is the message each validator signs.
 pub fn scale_encode_commitment(commitment: Commitment) -> ByteArray {
   let Commitment { payloads, block_number, validator_set_id } = commitment
 
@@ -33,6 +40,20 @@ pub fn scale_encode_commitment(commitment: Commitment) -> ByteArray {
   bytearray.concat(payload_encoded, rest)
 }
 
+/// SCALE-encode a `BeefyMmrLeaf` into the byte sequence whose keccak256
+/// hash equals the `"nc"` payload in the signed commitment. Layout:
+///   u8 version ||
+///   little-endian u32 parent_number ||
+///   parent_hash (32 bytes, enforced) ||
+///   little-endian u64 next_authority_set.id ||
+///   little-endian u32 next_authority_set.len ||
+///   next_authority_set.root (32 bytes, enforced) ||
+///   extra (or a single 0x00 byte when `extra` is empty)
+///
+/// The two 32-byte widths are load-bearing, not decorative: the fields are
+/// raw-concatenated with no delimiter or length prefix, so if either width
+/// floats then one byte string parses as many distinct leaves and a single
+/// relay-chain signature authorises all of them. Hence the guards below.
 pub fn scale_encode_beefy_mmr_leaf(leaf: BeefyMmrLeaf) -> ByteArray {
   let BeefyMmrLeaf {
     version,
@@ -40,8 +61,10 @@ pub fn scale_encode_beefy_mmr_leaf(leaf: BeefyMmrLeaf) -> ByteArray {
     parent_hash,
     next_authority_set,
     extra,
-    ..
   } = leaf
+
+  expect builtin.length_of_bytearray(parent_hash) == 32
+  expect builtin.length_of_bytearray(next_authority_set.root) == 32
 
   let first =
     builtin.integer_to_bytearray(False, 1, version)
@@ -69,8 +92,14 @@ pub fn scale_encode_beefy_mmr_leaf(leaf: BeefyMmrLeaf) -> ByteArray {
       )
 }
 
-pub const scale_mode = [#"00", #"01", #"02", #"03"]
-
+/// SCALE compact-integer length prefix. The two low bits of the first
+/// byte select one of four length modes (see Substrate SCALE compact
+/// integer encoding):
+///   `0x00` — single-byte compact; value in the upper 6 bits; values `<= 63`.
+///   `0x01` — two-byte compact; value in the upper 14 bits; values `<= 16383`.
+///   `0x02` — four-byte compact; value in the upper 30 bits; values `< 2^30`.
+///   `0x03` — big-integer compact; upper 6 bits of the prefix hold
+///            `length_of_value_bytes - 4`, followed by the raw bytes.
 fn scale_encode_length(length: Int) {
   let length_encoded =
     if length < 64 {
@@ -94,69 +123,13 @@ fn scale_encode_length(length: Int) {
   length_encoded
 }
 
+/// SCALE-encode a length-prefixed byte array: emits the compact length
+/// followed by the raw bytes.
 pub fn scale_encode_bytes(data: ByteArray) -> ByteArray {
   let length = builtin.length_of_bytearray(data)
 
   scale_encode_length(length) |> bytearray.concat(data)
 }
-
-// SignedCommitment {
-//     commitment: Commitment {
-//         payload: Payload(
-//             [
-//                 (
-//                     [
-//                         109,
-//                         104,
-//                     ],
-//                     [
-//                         53,
-//                         65,
-//                         254,
-//                         123,
-//                         27,
-//                         186,
-//                         127,
-//                         141,
-//                         229,
-//                         210,
-//                         46,
-//                         204,
-//                         239,
-//                         0,
-//                         80,
-//                         219,
-//                         105,
-//                         225,
-//                         203,
-//                         189,
-//                         175,
-//                         186,
-//                         97,
-//                         188,
-//                         180,
-//                         234,
-//                         162,
-//                         244,
-//                         237,
-//                         247,
-//                         111,
-//                         152,
-//                     ],
-//                 ),
-//             ],
-//         ),
-//         block_number: 665,
-//         validator_set_id: 0,
-//     },
-//     signatures: [
-//         Some(
-//             Signature(
-//                 a43cd5ab202cfb127d8cf74f68b05c0db0e9b030b1f1bb89a3c272e5c0762a1a7ac67e71538de8033ef8d566657f1f47c0456cf1371982ff08ced25f53eaf80000,
-//             ),
-//         ),
-//     ],
-// }
 
 const comm =
   Commitment(
@@ -203,10 +176,14 @@ const comm =
     0,
   )
 
+// Vector: single-payload commitment with id "mh" (the MMR-root tag),
+// block_number 185, validator_set_id 0.
 test scale_encode_commitment_1() {
   scale_encode_commitment(comm) == #"046d68804f2afb93828f662820ffbc4556691b657525f9d11e650e04e7bd7d054c40998ab90000000000000000000000"
 }
 
+// Vector: MMR leaf advancing parent_number=273 with a non-zero
+// next_authority_set and empty `extra` (encoded as a single 0x00 byte).
 test scale_encode_beefy_leaf_1() {
   let beefy_leaf =
     BeefyMmrLeaf {
@@ -219,11 +196,54 @@ test scale_encode_beefy_leaf_1() {
         #"ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d",
       ),
       extra: "",
-      k_index: 273,
-      leaf_index: 273,
     }
 
   let codec_leaf = scale_encode_beefy_mmr_leaf(beefy_leaf)
 
   codec_leaf == #"0011010000c773b67e92868f58aef6874146464646331be113fba51bd89a48d65b6d81bf3d010000000000000001000000ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d00"
+}
+
+// Encoding malleability. `parent_hash`, `next_authority_set.root` and `extra`
+// are plain `ByteArray`s concatenated with no delimiter or length prefix, so a
+// single signed byte string parses as many distinct leaves — 2145 of them for
+// the 82-byte vector above. `verify_mmr_update_proof` copies the *parsed*
+// `next_authority_set` and `extra` into the new trusted state, so re-partitioning
+// rewrites consensus state while preserving the keccak256 the relay chain signed:
+// a genuine justification authorises every reading. Only the field widths make
+// the encoding injective, and only these guards enforce them.
+//
+// Both leaves below encode to the exact byte string asserted in
+// `scale_encode_beefy_leaf_1`, so both must be rejected.
+
+// Root emptied; its 32 bytes plus the trailing 0x00 absorbed into `extra`,
+// yielding an unusable empty root and a ~2^264 next_stake_total.
+test leaf_encoding_rejects_empty_root() fail {
+  scale_encode_beefy_mmr_leaf(
+    BeefyMmrLeaf {
+      version: 0,
+      parent_number: 273,
+      parent_hash: #"c773b67e92868f58aef6874146464646331be113fba51bd89a48d65b6d81bf3d",
+      next_authority_set: AuthoritySetCommitment(1, 1, ""),
+      extra: #"ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d00",
+    },
+  ) != ""
+}
+
+// `parent_hash` one byte short, so the 12 fixed-width bytes after it slide
+// left: id 1 -> 317, len 1 -> 256, and a wholly different 32-byte root. The
+// root is still 32 bytes, so this case pins the `parent_hash` guard specifically.
+test leaf_encoding_rejects_short_parent_hash() fail {
+  scale_encode_beefy_mmr_leaf(
+    BeefyMmrLeaf {
+      version: 0,
+      parent_number: 273,
+      parent_hash: #"c773b67e92868f58aef6874146464646331be113fba51bd89a48d65b6d81bf",
+      next_authority_set: AuthoritySetCommitment(
+        317,
+        256,
+        #"00ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d6",
+      ),
+      extra: #"6d00",
+    },
+  ) != ""
 }

@@ -1,11 +1,12 @@
 import type { Argv, CommandModule } from "yargs";
 import type { GlobalOptions } from "../../lib/global-options";
+import { addTxOptions, type TxOptions } from "../../lib/global-options";
 import { parseUpgradeState } from "../../lib/governance-provider";
 import { getDatumHandler } from "../../lib/datum-versions";
 import { findUtxoWithMainAsset } from "../../lib/transaction";
 import { buildMultisigChangeTx } from "../../lib/change-multisig";
 
-interface ChangeTechAuthOptions extends GlobalOptions {
+interface ChangeTechAuthOptions extends GlobalOptions, TxOptions {
   "tx-hash": string;
   "tx-index": number;
   sign: boolean;
@@ -17,33 +18,35 @@ export const command = "change-tech-auth";
 export const describe = "Update tech auth multisig members";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("tx-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash for the fee-paying UTxO",
-    })
-    .option("tx-index", {
-      type: "number",
-      demandOption: true,
-      description: "Transaction index for the fee-paying UTxO",
-    })
-    .option("sign", {
-      type: "boolean",
-      default: true,
-      description:
-        "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
-    })
-    .option("output-file", {
-      type: "string",
-      default: "change-tech-auth-tx.json",
-      description: "Output file name for the transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use build output instead of deployed blueprint",
-    });
+  return addTxOptions(
+    yargs
+      .option("tx-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash for the fee-paying UTxO",
+      })
+      .option("tx-index", {
+        type: "number",
+        demandOption: true,
+        description: "Transaction index for the fee-paying UTxO",
+      })
+      .option("sign", {
+        type: "boolean",
+        default: true,
+        description:
+          "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
+      })
+      .option("output-file", {
+        type: "string",
+        default: "change-tech-auth-tx.json",
+        description: "Output file name for the transaction",
+      })
+      .option("use-build", {
+        type: "boolean",
+        default: false,
+        description: "Use build output instead of deployed blueprint",
+      }),
+  );
 }
 
 export async function handler(argv: ChangeTechAuthOptions) {

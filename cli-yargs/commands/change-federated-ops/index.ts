@@ -11,7 +11,8 @@ import {
   PaymentAddress,
 } from "@blaze-cardano/core";
 import { resolve } from "path";
-import type { GlobalOptions } from "../../lib/global-options";
+import type { GlobalOptions, TxOptions } from "../../lib/global-options";
+import { addTxOptions } from "../../lib/global-options";
 import { getNetworkId } from "../../lib/types";
 import {
   validateTxHash,
@@ -43,7 +44,7 @@ import { createTxMetadata } from "../../lib/metadata";
 import { getDatumHandler } from "../../lib/datum-versions";
 import * as Contracts from "../../../contract_blueprint";
 
-interface ChangeFederatedOpsOptions extends GlobalOptions {
+interface ChangeFederatedOpsOptions extends GlobalOptions, TxOptions {
   "tx-hash": string;
   "tx-index": number;
   sign: boolean;
@@ -55,33 +56,35 @@ export const command = "change-federated-ops";
 export const describe = "Update federated ops members";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("tx-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash for the fee-paying UTxO",
-    })
-    .option("tx-index", {
-      type: "number",
-      demandOption: true,
-      description: "Transaction index for the fee-paying UTxO",
-    })
-    .option("sign", {
-      type: "boolean",
-      default: true,
-      description:
-        "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
-    })
-    .option("output-file", {
-      type: "string",
-      default: "change-federated-ops-tx.json",
-      description: "Output file name for the transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use build output instead of deployed blueprint",
-    });
+  return addTxOptions(
+    yargs
+      .option("tx-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash for the fee-paying UTxO",
+      })
+      .option("tx-index", {
+        type: "number",
+        demandOption: true,
+        description: "Transaction index for the fee-paying UTxO",
+      })
+      .option("sign", {
+        type: "boolean",
+        default: true,
+        description:
+          "Sign the transaction (requires TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
+      })
+      .option("output-file", {
+        type: "string",
+        default: "change-federated-ops-tx.json",
+        description: "Output file name for the transaction",
+      })
+      .option("use-build", {
+        type: "boolean",
+        default: false,
+        description: "Use build output instead of deployed blueprint",
+      }),
+  );
 }
 
 export async function handler(argv: ChangeFederatedOpsOptions) {
@@ -93,6 +96,7 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
     "tx-index": txIndex,
     "output-file": outputFile,
     "use-build": useBuild,
+    "fee-padding": feePadding,
   } = argv;
 
   validateTxHash(txHash);
@@ -449,7 +453,7 @@ export async function handler(argv: ChangeFederatedOpsOptions) {
     .provideScript(logicScript)
     .setChangeAddress(changeAddress)
     .setMetadata(createTxMetadata("change-federated-ops"))
-    .setFeePadding(50000n);
+    .setFeePadding(BigInt(feePadding));
 
   // Add mitigation logic withdrawal if present in UpgradeState
   if (mitigationLogicScript && mitigationLogicRewardAccount) {

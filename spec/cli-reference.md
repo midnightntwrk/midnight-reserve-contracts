@@ -126,8 +126,7 @@ Source: `cli-yargs/lib/types.ts`
 | `preview` | `preview` | `preview` |
 | `qanet` | `preview` | `qanet` |
 | `govnet` | `preview` | `govnet` |
-| `devnet-*`, `devnet_*` | `preview` | fallback `preview` |
-| `node-dev-*`, `node_dev_*` | `preview` | exact match if configured, otherwise fallback `preview` |
+| `devnet` | `preview` | `devnet` |
 | `preprod` | `preprod` | `preprod` |
 | `mainnet` | `mainnet` | `mainnet` |
 | unknown | warn + emulator fallback | `default` |

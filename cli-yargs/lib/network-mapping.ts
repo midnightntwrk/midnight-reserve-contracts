@@ -13,7 +13,7 @@ interface EnvironmentResolution {
 
 /**
  * Single resolver mapping environment → {cardanoNetwork, networkId, aikenConfigSection}.
- * Supports pattern-based envs: devnet-*, node-dev-*, and underscore variants.
+ * Supports pattern-based envs: devnet, and underscore variants.
  */
 function resolveEnvironment(environment: string): EnvironmentResolution {
   const env = environment.toLowerCase();
@@ -49,23 +49,11 @@ function resolveEnvironment(environment: string): EnvironmentResolution {
         networkId: NetworkId.Testnet,
         aikenConfigSection: "govnet",
       };
-    case "node-dev-01":
+    case "devnet":
       return {
         cardanoNetwork: "preview",
         networkId: NetworkId.Testnet,
-        aikenConfigSection: "node-dev-01",
-      };
-    case "node-dev-2":
-      return {
-        cardanoNetwork: "preview",
-        networkId: NetworkId.Testnet,
-        aikenConfigSection: "node-dev-2",
-      };
-    case "node-dev-3":
-      return {
-        cardanoNetwork: "preview",
-        networkId: NetworkId.Testnet,
-        aikenConfigSection: "node-dev-3",
+        aikenConfigSection: "devnet",
       };
     case "local":
       return {
@@ -81,22 +69,9 @@ function resolveEnvironment(environment: string): EnvironmentResolution {
       };
     default:
       // Pattern-based environments on Cardano Preview
-      if (
-        env.startsWith("devnet-") ||
-        env.startsWith("devnet_") ||
-        env.startsWith("node-dev-") ||
-        env.startsWith("node_dev_")
-      ) {
-        return {
-          cardanoNetwork: "preview",
-          networkId: NetworkId.Testnet,
-          aikenConfigSection: "preview",
-        };
-      }
-
       throw new Error(
         `Unknown environment '${environment}'. ` +
-          `Known environments: local, emulator, preview, qanet, govnet, devnet-*, node-dev-*, preprod, mainnet`,
+          `Known environments: local, emulator, preview, qanet, govnet, devnet, preprod, mainnet`,
       );
   }
 }

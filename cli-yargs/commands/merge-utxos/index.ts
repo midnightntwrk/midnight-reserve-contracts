@@ -7,7 +7,8 @@ import {
   AssetId,
 } from "@blaze-cardano/core";
 import { resolve } from "path";
-import type { GlobalOptions } from "../../lib/global-options";
+import type { GlobalOptions, TxOptions } from "../../lib/global-options";
+import { addTxOptions } from "../../lib/global-options";
 import { getNetworkId } from "../../lib/types";
 import { validateTxHash, validateTxIndex } from "../../lib/validation";
 import { getDeployerAddress, loadAikenConfig } from "../../lib/config";
@@ -30,7 +31,7 @@ import { completeTx } from "../../lib/complete-tx";
 import { writeTransactionFile } from "../../lib/output";
 import { createTxMetadata } from "../../lib/metadata";
 
-interface MergeUtxosOptions extends GlobalOptions {
+interface MergeUtxosOptions extends GlobalOptions, TxOptions {
   validator: "reserve" | "ics";
   "utxo1-hash": string;
   "utxo1-index": number;
@@ -47,53 +48,55 @@ export const describe =
   "Merge two value-holding UTxOs at a forever validator into one";
 
 export function builder(yargs: Argv<GlobalOptions>) {
-  return yargs
-    .option("validator", {
-      type: "string",
-      demandOption: true,
-      choices: ["reserve", "ics"] as const,
-      description: "Forever validator family: reserve or ics",
-    })
-    .option("utxo1-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash of the first UTxO to merge",
-    })
-    .option("utxo1-index", {
-      type: "number",
-      demandOption: true,
-      description: "Output index of the first UTxO to merge",
-    })
-    .option("utxo2-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash of the second UTxO to merge",
-    })
-    .option("utxo2-index", {
-      type: "number",
-      demandOption: true,
-      description: "Output index of the second UTxO to merge",
-    })
-    .option("tx-hash", {
-      type: "string",
-      demandOption: true,
-      description: "Transaction hash for the fee-paying UTxO",
-    })
-    .option("tx-index", {
-      type: "number",
-      demandOption: true,
-      description: "Transaction index for the fee-paying UTxO",
-    })
-    .option("output-file", {
-      type: "string",
-      default: "merge-utxos-tx.json",
-      description: "Output file name for the transaction",
-    })
-    .option("use-build", {
-      type: "boolean",
-      default: false,
-      description: "Use build output instead of deployed blueprint",
-    });
+  return addTxOptions(
+    yargs
+      .option("validator", {
+        type: "string",
+        demandOption: true,
+        choices: ["reserve", "ics"] as const,
+        description: "Forever validator family: reserve or ics",
+      })
+      .option("utxo1-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash of the first UTxO to merge",
+      })
+      .option("utxo1-index", {
+        type: "number",
+        demandOption: true,
+        description: "Output index of the first UTxO to merge",
+      })
+      .option("utxo2-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash of the second UTxO to merge",
+      })
+      .option("utxo2-index", {
+        type: "number",
+        demandOption: true,
+        description: "Output index of the second UTxO to merge",
+      })
+      .option("tx-hash", {
+        type: "string",
+        demandOption: true,
+        description: "Transaction hash for the fee-paying UTxO",
+      })
+      .option("tx-index", {
+        type: "number",
+        demandOption: true,
+        description: "Transaction index for the fee-paying UTxO",
+      })
+      .option("output-file", {
+        type: "string",
+        default: "merge-utxos-tx.json",
+        description: "Output file name for the transaction",
+      })
+      .option("use-build", {
+        type: "boolean",
+        default: false,
+        description: "Use build output instead of deployed blueprint",
+      }),
+  );
 }
 
 /**
@@ -139,6 +142,7 @@ export async function handler(argv: MergeUtxosOptions) {
     "tx-index": txIndex,
     "output-file": outputFile,
     "use-build": useBuild,
+    "fee-padding": feePadding,
   } = argv;
 
   // Validate inputs
@@ -299,7 +303,7 @@ export async function handler(argv: MergeUtxosOptions) {
     .addOutput(mergedOutput)
     .setChangeAddress(changeAddress)
     .setMetadata(createTxMetadata("merge-utxos"))
-    .setFeePadding(50000n);
+    .setFeePadding(BigInt(feePadding));
 
   const { tx } = await completeTx(txBuilder, {
     commandName: "merge-utxos",

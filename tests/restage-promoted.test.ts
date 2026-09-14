@@ -6,7 +6,7 @@ import {
 
 describe("getPromotedValidatorHash", () => {
   test("returns null for non-existent validator name", () => {
-    const hash = getPromotedValidatorHash("node-dev-2", "no_such_validator");
+    const hash = getPromotedValidatorHash("devnet", "no_such_validator");
     expect(hash).toBeNull();
   });
 
@@ -18,7 +18,7 @@ describe("getPromotedValidatorHash", () => {
 
 describe("resolveValidatorNameByHash", () => {
   test("returns null for unknown hash", () => {
-    const name = resolveValidatorNameByHash("node-dev-2", "deadbeef");
+    const name = resolveValidatorNameByHash("devnet", "deadbeef");
     expect(name).toBeNull();
   });
 
@@ -32,7 +32,7 @@ describe("version-agnostic re-staging check", () => {
   test("unknown hash is NOT detected as re-stage", () => {
     const unknownHash =
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const resolvedName = resolveValidatorNameByHash("node-dev-2", unknownHash);
+    const resolvedName = resolveValidatorNameByHash("devnet", unknownHash);
 
     // Unknown hash resolves to null — not a re-stage
     expect(resolvedName).toBeNull();

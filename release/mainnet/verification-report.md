@@ -287,8 +287,8 @@ PASS
 ### [PASS] Utility script: cnight_generates_dust
 
 ```
-Hash: 333800a05610cfec4c8075fe3daa72ee5f19d83cc7574414cd91625f
-Compiled code: present (6358 chars)
+Hash: 73e4aea31b5b51d9b0ca386196fc6a4c422f74c5aea011e4b8bdf4e5
+Compiled code: present (6414 chars)
 Hash valid: yes (28 bytes)
 PASS
 ```
