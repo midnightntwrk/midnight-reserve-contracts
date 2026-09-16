@@ -14,8 +14,8 @@ and `validators/`; audited files stay untouched. NIGHT = `config.cnight_policy`
 ## 1. Components and hash dependencies
 
 ```
-rewards_batcher  (fixed)      no deps on new hashes; reads bridge via config.committee_bridge_forever_hash
-      ^                 ^
+rewards_batcher  (fixed)      no deps on new hashes; reads bridge via config.committee_bridge_forever_hash,
+      ^                 ^     fee schedule via config.rewards_fee_schedule_hash
       |                 |
 virtual_account (fixed) |     config.rewards_batcher_hash
                         |
@@ -36,6 +36,7 @@ Validators:
 |---|---|---|
 | `validators/virtual_account.ak` | `virtual_account` | mint, spend (gates), withdraw (user logic), publish |
 | `validators/rewards_batcher.ak` | `rewards_batcher` | mint (state NFT), spend (state UTXO), withdraw (batch logic), publish |
+| `validators/rewards_fee_schedule.ak` | `rewards_fee_schedule` | mint (schedule NFT), spend (replace datum under a bridge proof), publish. Fixed. (§4.6, not yet built) |
 | `validators/rewards_pool.ak` | `rewards_pool_forever`, `rewards_pool_two_stage_upgrade`, `rewards_pool_logic` | forever pattern |
 | `validators/staging_rewards_pool.ak` | `rewards_pool_staging_forever` | staging track |
 | `validators/reserve_v2.ak` | `reserve_logic_v2` (rewritten; the current file was a test stub, never promoted) | withdraw, mint (StagingState), publish |
@@ -53,6 +54,7 @@ Libraries:
 | `lib/rewards/merkle_range.ak` | sorted multiproof verifier with contiguity (§6) |
 | `lib/rewards/digest.ak` | MMR positional proof + SCALE header parse + digest extraction (§7) |
 | `lib/rewards/batch.ak` | batcher withdraw logic (§5) |
+| `lib/rewards/fee_schedule.ak` | `FeeSchedule` datum, `max_skim` lookup, schedule-update proof (§4.6; not yet built) |
 | `lib/rewards/schedule.ak` | emission math (§8) |
 | `lib/rewards/release.ak` | reserve v2 release + merge (§8) |
 | `lib/rewards/auth.ak` | `stake_auth(cred, extra_signatories, withdrawals)` |
@@ -104,12 +106,16 @@ leaf = ack(1) ++ skh(28) ++ amount(16, u128 big-endian)      // 45 bytes, fixed
 ### 2.4 Digest
 
 Per Midnight epoch `E` (partner-chains sidechain epoch), the pallet submits
-`Digest { epoch: E, leaf_count, root, min_key, max_key }` as a bare
-inherent transaction (`pallet_block_rewards::submit_rewards_digest`) in a
-Midnight block at or after the first block of epoch `E + 1`.
-`min_key`/`max_key` are the first and last leaf `skh`. Empty epoch:
-`leaf_count == 0`, `root` = 32 zero bytes, keys zero; the contract ignores
-`root` and keys when `leaf_count == 0`. Extrinsic bytes in §7.1.
+`Digest { epoch: E, leaf_count, root, min_key, max_key, treasury_total }`
+as a bare inherent transaction (`pallet_block_rewards::submit_rewards_digest`)
+in a Midnight block at or after the first block of epoch `E + 1`.
+`min_key`/`max_key` are the first and last leaf `skh`. `treasury_total`
+(u128, STAR) is the epoch's Treasury share, `Σ Nt` over its blocks; the
+batch that completes the fold pays it from the pool to the ICS (§5.3 run
+rule 3). Empty epoch: `leaf_count == 0`, `root` = 32 zero bytes, keys zero,
+`treasury_total` possibly non-zero; the contract ignores `root` and keys
+when `leaf_count == 0` and pays `treasury_total` in the `LoadAndPay`.
+Extrinsic bytes in §7.1.
 Full node-side contract: [node-team-brief.md](node-team-brief.md).
 
 ---
@@ -263,19 +269,57 @@ Withdrawal destination is unconstrained.
 
 ### 4.5 Batcher paths on a deposit (checked inside `rewards_batcher` withdraw, §5.4)
 
-- **Pay**: `ADA_out ≥ ADA_in − skim`; `NIGHT_out = NIGHT_in + amount`;
-  datum, address, NFT unchanged. `skim ≤ min(ceil(fee / n_paid), batcher_skim_max_lovelace)`
-  where `fee` is the tx fee and `n_paid` the number of leaves paid in this
-  tx (exits included). Cost recovery only, no margin; the per-account cap
-  stops a padded fee from draining deposits and rewards larger batches.
+Both paths read the fee schedule (§4.6) as a reference input. With
+`n_paid` the number of leaves paid in this tx (exits included):
+
+```
+skim ≤ max_skim[n_paid]                       // lovelace, per deposit
+fee  = if amount ≥ min_payout then dist_fee else 0   // NIGHT, per leaf
+```
+
+- **Pay**: `ADA_out ≥ ADA_in − skim`; `NIGHT_out = NIGHT_in + amount − fee`;
+  datum, address, NFT unchanged.
 - **Exit** (leaf `ack = 1`): requires `committed == Some(addr)`; no
   continuing deposit output; burn `0x00++skh`; `unlink(skh, next)`; an
-  output to `addr` with `ADA ≥ ADA_in − skim` and `NIGHT ≥ NIGHT_in + amount`.
-  The registration is already gone (burned in the `SetDeregister` tx).
+  output to `addr` with `ADA ≥ ADA_in − skim` and
+  `NIGHT ≥ NIGHT_in + amount − fee`. The registration is already gone
+  (burned in the `SetDeregister` tx).
+
+The skim is cost recovery: the batcher's own input/output pair (§5.3 run
+rule 2) may not gain ADA, so the tx fee is covered by the skims plus
+whatever the batcher pays itself. `max_skim` is set by Midnight to the
+real per-account fee share at the target batch size and below real cost
+for smaller batches, so a one- or two-account batch is buildable at the
+batcher's expense and a padded fee is bounded per deposit by the largest
+entry. There is no minimum batch size. The distribution fee is the
+batcher's upside: it stays in the batcher's pair, is charged only on
+leaves at or above `min_payout` (slack leaves and small exits pay
+nothing), and is linear in the leaves so charged.
 
 Head spend: only as the `Register` anchor (gate `User`) or as exit
 predecessor (gate `Batcher`). Tail: no action accepts it; the batcher never
 unlinks it.
+
+### 4.6 Fee schedule UTXO (`rewards_fee_schedule`, fixed; not yet built)
+
+One UTXO, NFT `("", 1)` under its own policy, minted one-shot from
+`config.rewards_fee_schedule_one_shot_{hash,index}`. Inline datum:
+
+```aiken
+pub type FeeSchedule {
+  max_skim: List<Int>,     // lovelace; index n − 1 is the cap for a batch paying n leaves; last entry applies beyond
+  dist_fee: Int,           // NIGHT base units per leaf at or above min_payout
+  min_payout: Int,         // NIGHT base units
+}
+```
+
+All three are Midnight runtime parameters. The datum is replaced only
+under a bridge proof of the pallet's `submit_fee_schedule` inherent
+(`config.fee_schedule_pallet_index` / `fee_schedule_call_index`, **TBD**
+node team), verified with the same `verify_digest` machinery as §7 but
+decoding a `FeeSchedule` payload; the NFT continues, value unchanged. Init
+mint validates shapes only. The batcher reads the UTXO as a reference
+input (`config.rewards_fee_schedule_hash`).
 
 ---
 
@@ -325,6 +369,9 @@ pub type BatcherRedeemer {
 pub type PayPair { input_index: Int, output_index: Int }       // deposit in/out per paid leaf, in leaf order; for an exit the output is the refund
 pub type ExitInfo { pred_input_index: Int, pred_output_index: Int }   // one per exit leaf, in leaf order
 ```
+Both redeemers also carry `batcher_pair: PayPair`, the batcher's own
+input and the output that collects the skims' change and the distribution
+fees.
 
 There is no standalone load: an epoch opens with its first batch, so
 `complete` alone distinguishes "between epochs" from "mid-run".
@@ -363,11 +410,20 @@ There is no standalone load: an epoch opens with its first batch, so
    the count of such inputs equals `len(paid) + len(exits)`. Deposit
    spends and the exit burn use the account gate `Batcher` (§4.4); a head
    input is accepted only as an exit predecessor; the tail is never an
-   input. `pairs` and `exits` are consumed exactly.
+   input. `pairs` and `exits` are consumed exactly. Every input pairs with
+   one output, the batcher's own (`batcher_pair`) included, and every pair
+   has `ADA_out ≤ ADA_in`: the batcher gains no ADA, and a deposit pair's
+   difference is the skim of §4.5.
 3. Pool: all inputs at `Script(pool_forever)` are summed (none may carry the
    pool forever NFT); exactly one output to that credential with
-   `NIGHT_out == NIGHT_in − Σ amount`, `ADA_out ≥ ADA_in`, value shape
-   `[ada, night]`, inline datum. Pool logic is satisfied separately (§9).
+   `NIGHT_out == NIGHT_in − Σ amount − treasury`, `ADA_out ≥ ADA_in`, value
+   shape `[ada, night]`, inline datum, where `treasury = treasury_total`
+   in the batch that sets `complete := True` (and in an empty-epoch
+   `LoadAndPay`) and `0` otherwise. In that batch one output at
+   `config.ics_forever_hash` carries NIGHT `≥ treasury_total` (datum shape
+   per the ICS merge rule, **TBD**). Σ fee (§4.5) is not checked against
+   the batcher pair; it is what the pool lost less what the deposits and
+   the ICS gained. Pool logic is satisfied separately (§9).
 4. `state_out == state_in with { cursor, complete }` (plus the digest fields
    on `LoadAndPay`); NFT continues.
 
@@ -379,11 +435,13 @@ plus a linear pass over paid leaves and their `pairs`. Measured (phase 04,
 `budget_30_pairs` minus its fixture): 30 paid leaves from a 64-leaf tree
 cost ≈ 10.3 M mem / 3.7 G cpu in the batcher alone; with 30 gates the tx
 reaches the 14 M mem limit. Recommended K ≈ 20–25 accounts per batch on
-mainnet limits. The skim cap (§4.5) makes larger K the only way for a
-batcher to recover a large fee, so incentives point the same way.
+mainnet limits. `max_skim` (§4.5) covers cost only at the target K, and
+the distribution fee is linear in leaves paid, so incentives point toward
+the largest batch that fits.
 
 The reserve `Release` and an empty-epoch `LoadAndPay` are uncompensated; a
-batcher recovers the digest-proof cost from the skims of the first batch.
+batcher recovers the digest-proof cost from the skims and fees of the
+first batch.
 
 Mid-fold contention from user withdrawals is accepted without a lock: each
 account can do it once per payout and the batcher retries.
@@ -421,7 +479,7 @@ committee bridge forever UTXO, read as a reference input.
 
 The digest for epoch `E` is a **transaction in a Midnight block**: the bare
 inherent `pallet_block_rewards::submit_rewards_digest { epoch, leaf_count,
-root, min_key, max_key }`, committed by the block header's
+root, min_key, max_key, treasury_total }`, committed by the block header's
 `extrinsics_root`. Chain of custody for a digest in block `N`:
 1. MMR leaf for block `N + 1` (`BeefyMmrLeaf`, SCALE via
    `bridge/codec.scale_encode_beefy_mmr_leaf`) carries
@@ -540,17 +598,19 @@ are embedded. Golden vectors from `sp_trie` (polkadot-sdk `660acef`) with
 preamble `0x05`, the legacy `0x04` is also accepted):
 
 ```
-Compact(107) | preamble 0x05 | pallet u8 | call u8 | epoch u64 LE | leaf_count u64 LE | root 32 | min_key 28 | max_key 28
+Compact(123) | preamble 0x05 | pallet u8 | call u8 | epoch u64 LE | leaf_count u64 LE | root 32 | min_key 28 | max_key 28 | treasury_total u128 LE
 ```
-= 109 bytes; `pallet == config.rewards_pallet_index`,
+= 125 bytes; `pallet == config.rewards_pallet_index`,
 `call == config.rewards_call_index` (both `# TBD` until the runtime pins
 the pallet index). Fixed offsets after the 2-byte length prefix:
 preamble@2, pallet@3, call@4, epoch@5, leaf_count@13, root@21, min@53,
-max@81. Any other length, preamble or index fails.
+max@81, treasury_total@109. Any other length, preamble or index fails.
+(As built through phase 04 the extrinsic is the 109-byte form without
+`treasury_total`; the change lands with the ICS output.)
 
 ---
 
-## 8. Reserve v2 timed release
+## 8. Reserve v2 release to the pool ceiling
 
 `reserve_logic_v2` is rewritten (the current file was a test stub). It keeps
 the v2 main/staging track switch (`logic_is_on_main`, `StagingState` NFT
@@ -563,7 +623,6 @@ pub type ReserveRedeemer { Merge  Release { intervals: Int } }
 
 pub type ReleaseState {              // inline datum on the reserve forever NFT UTXO
   last_release_time: Int,            // ms POSIX, start of the last released interval
-  next_amount: Int,                  // NIGHT base units for the next interval
 }
 
 pub type StagingStateV2 {            // lib/rewards/types.ak; replaces StagingState for this logic
@@ -573,13 +632,19 @@ pub type StagingStateV2 {            // lib/rewards/types.ak; replaces StagingSt
 }
 ```
 Config per network (`aiken.toml`): `release_t0_ms`, `release_interval_ms`,
-`release_initial_amount`, `release_decay_num`, `release_decay_den`.
-Interval is one Midnight epoch (1–2 h). No separate lifetime cap: the
-geometric series converges and every release is capped at the reserve
-balance, which is the block-rewards allocation.
+`release_factor_num`, `release_factor_den`. Interval is one Midnight epoch
+(six hours per the MIP). No lifetime cap: every release is capped at the
+reserve balance, which is the block-rewards allocation.
 
-**Emission formula is a placeholder (TBD, pending Jon / FinDaS alignment):**
-`amount_n = initial_amount × (decay_num / decay_den)^n`, floor at each step.
+**Pool ceiling.** The pallet applies the published per-block rate `R` to
+the undistributed allocation; the contract only guarantees the pool can
+cover an interval in which every slot produces. That worst case is
+`reserve × (1 − (1 − R)^N)` for `N` slots per interval, and it is the
+ceiling the pool is filled to. The factor is precomputed off-chain and
+rounded up, `release_factor_num / release_factor_den ≥ 1 − (1 − R)^N`
+(at `π = 3%`, `N = 3,600`, `den = 10^18`: `num = 57,532,591,972,042`).
+Because rewards decay, a ceiling computed from the live reserve is always
+at least the next interval's need.
 
 ### 8.2 Release rules
 
@@ -589,18 +654,21 @@ balance, which is the block-rewards allocation.
    is allowed (`intervals` may be less than elapsed); fully permissionless.
 3. First release: the mainnet reserve NFT UTXO datum is the unit
    constructor (`Constr 0 []`). If the datum's constructor has no fields,
-   treat it as `{ last_release_time: release_t0_ms, next_amount: release_initial_amount }`;
-   otherwise decode `ReleaseState` (`Constr 0 [Int, Int]`).
-4. `released = Σ_{i<intervals} next_amount × r^i` computed by a loop;
-   `next_amount' = next_amount × r^intervals` (same loop);
+   treat it as `{ last_release_time: release_t0_ms }`; otherwise decode
+   `ReleaseState` (`Constr 0 [Int]`).
+4. `ceiling` over `intervals` catch-up steps, each a ceiling division on
+   what the previous step left: `c := 0; repeat intervals: c += ((reserve − c) × num + den − 1) / den`.
    `last_release_time' = last_release_time + intervals × interval_ms`.
-5. `released = min(released, NIGHT in reserve value inputs)`.
+5. `released = min(reserve, max(0, ceiling − pool_in))` where `reserve` is
+   the NIGHT in the reserve value inputs and `pool_in` the NIGHT in the
+   pool value inputs of this tx (the pool is already an input for the
+   merge). A release of 0 still advances `last_release_time`.
 6. Inputs at the reserve forever address: the NFT UTXO (datum updated,
    value unchanged) and value UTXOs. Outputs: NFT UTXO with `ReleaseState'`;
    one value output with `[ada, night]`, `night_out == night_in − released`,
    `ada_out ≥ ada_in`; one output at the pool forever address whose NIGHT is
-   `≥ released` (the pool logic (§9) merges it with the existing pool UTXO in
-   the same tx).
+   `≥ pool_in + released` (the pool logic (§9) merges it with the existing
+   pool UTXO in the same tx).
 7. Track: on main use `config.cnight_policy` / `config.reserve_forever_hash`
    / `config.rewards_pool_forever_hash`; otherwise read `StagingStateV2` from
    the logic's own NFT input.
@@ -646,7 +714,8 @@ test tokens before promotion.
 | Update registration | registration | registration' | `virtual_account` withdraw + spend gate; owner auth |
 | Init batcher | one-shot ref | state UTXO | `rewards_batcher` mint |
 | Load and pay (first batch) | as Pay batch; ref: bridge NFT | as Pay batch | as Pay batch |
-| Pay batch | state, pool value, K deposits (+ predecessors for exits) | state', pool', K deposits' (or refunds), skim change | batcher withdraw; K account gates; pool forever spend + pool logic `Disburse` (+ mitigation) |
+| Pay batch | state, pool value, K deposits (+ predecessors for exits), batcher's own input; ref: fee schedule | state', pool', K deposits' (or refunds), batcher's own output (skim change + fees); ICS output in the completing batch | batcher withdraw; K account gates; pool forever spend + pool logic `Disburse` (+ mitigation) |
+| Fee schedule update | schedule UTXO; ref: bridge NFT | schedule UTXO' | `rewards_fee_schedule` spend with a bridge proof of `submit_fee_schedule` |
 | Release | reserve NFT, reserve value, pool value | reserve NFT', reserve value', pool' | reserve forever spends + `reserve_logic_v2` `Release` + mitigation; pool forever spend + pool logic `Receive` + mitigation |
 
 Every governance-domain spend still needs the domain's `logic` and
@@ -669,15 +738,21 @@ Every governance-domain spend still needs the domain's `logic` and
 - **Succession**: `epoch` increases by exactly 1 per load; load only when
   complete.
 - **Pool conservation**: pool NIGHT decreases only in `Disburse` by exactly the
-  sum of paid amounts; increases only via `Receive`.
+  sum of paid amounts plus `treasury_total` in the completing batch;
+  increases only via `Receive`.
 - **Deposit conservation**: ADA decreases only by `skim` per payout or at
-  exit; NIGHT decreases only by user `Withdraw` (to zero) or at exit.
-- **Reserve flow limit**: NIGHT leaving the reserve ≤ schedule cumulative at
-  `validity_range.lower_bound`.
+  exit; NIGHT decreases only by user `Withdraw` (to zero), by `dist_fee` on
+  a payout at or above `min_payout`, or at exit.
+- **No ADA to the batcher**: every input/output pair, the batcher's own
+  included, has `ADA_out ≤ ADA_in`.
+- **Pool ceiling**: after a release the pool holds at most
+  `ceiling(reserve, intervals)`; NIGHT leaving the reserve per release is
+  `ceiling − pool_in` at most.
 - **Registration**: identity is the `0x01 ++ skh` NFT; only `owner` can change or
   delete; a registration NFT exists iff its deposit exists with
   `committed == None`.
-- **Skim bound**: per paid account `≤ min(ceil(fee / n_paid), batcher_skim_max_lovelace)`.
+- **Skim bound**: per paid account `≤ max_skim[n_paid]` from the fee schedule.
+- **Fee bound**: per paid leaf exactly `dist_fee` if `amount ≥ min_payout`, else 0.
 
 ---
 
@@ -685,10 +760,13 @@ Every governance-domain spend still needs the domain's `logic` and
 
 1. Leaves per §2.3 (45 bytes), sorted by `skh`, unique; tree per §6 (odd
    node promoted, `binary_merkle_tree::merkle_root::<Keccak256>`).
-2. Digest `(epoch, leaf_count, root, min_key, max_key)` as the bare
-   inherent `submit_rewards_digest` per §7.1, empty-epoch form per §2.4,
-   one digest per epoch, epochs consecutive. Details and questions:
-   `node-team-brief.md`.
+2. Digest `(epoch, leaf_count, root, min_key, max_key, treasury_total)`
+   as the bare inherent `submit_rewards_digest` per §7.1, empty-epoch form
+   per §2.4, one digest per epoch, epochs consecutive. Details and
+   questions: `node-team-brief.md`.
+2a. Fee schedule `(max_skim, dist_fee, min_payout)` as a bare inherent
+   `submit_fee_schedule` whenever governance changes it (§4.6), with
+   `min_payout` the same value the tree selection uses.
 3. Emit a leaf only for deposits observed funded (≥ floor) at least 12 h
    ago; emit `ack = 1` exactly once per observed `committed = Some(addr)`
    and drop the account afterwards.
@@ -712,10 +790,15 @@ rewards_pool_two_stage_hash, rewards_pool_forever_hash   (derived by build)
 rewards_batcher_hash, virtual_account_hash                (derived by build)
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
-batcher_skim_max_lovelace = 10_000                         (0.01 ADA; 5_000 is the alternative)
-release_t0_ms, release_interval_ms, release_initial_amount, release_decay_num, release_decay_den
+rewards_fee_schedule_one_shot_{hash,index}, rewards_fee_schedule_hash   (not yet built; replaces batcher_skim_max_lovelace)
+release_t0_ms, release_interval_ms, release_factor_num, release_factor_den   (factor replaces initial_amount / decay_*; not yet built)
+ics_forever_hash                                          (Treasury output target; existing ICS deployment)
 rewards_pallet_index, rewards_call_index                 (# TBD node team; pallet_block_rewards, submit_rewards_digest)
+fee_schedule_pallet_index, fee_schedule_call_index       (# TBD node team; submit_fee_schedule)
 ```
+As built through phase 04 the profiles still carry `batcher_skim_max_lovelace`
+and `release_initial_amount` / `release_decay_*`; they go with the
+fee-schedule and ceiling phases.
 As built (phase 00): every profile carries all keys. Non-mainnet profiles
 use test values (`release_interval_ms = 60_000`, `release_initial_amount = 1_000_000`,
 decay `999/1000`, `t0 = 0`). `mainnet` carries `# TBD` placeholders
@@ -732,8 +815,8 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 |---|---|
 | Leaf hash | keccak-256 everywhere |
 | Digest carrier | bare inherent `pallet_block_rewards::submit_rewards_digest` in a Midnight block, proven through `extrinsics_root` (revised 2026-09-11; was a `Consensus("MNRW")` header log) |
-| Lifetime emission cap | none; balance and series bound it; interval = Midnight epoch |
-| Batcher compensation | `≤ min(ceil(fee / n_paid), 0.01 ADA)` per paid account; no margin; Midnight funded floor ~3 ADA |
+| Lifetime emission cap | none; the reserve balance and the pool ceiling bound it; interval = Midnight epoch (six hours) |
+| Batcher compensation | ADA: skim `≤ max_skim[n_paid]` from the fee schedule UTXO, batcher pair never gains ADA. NIGHT: `dist_fee` per leaf at or above `min_payout`, kept by the batcher (revised 2026-09-16; was `min(ceil(fee / n_paid), 0.01 ADA)`, no margin) |
 | Deposit sizes | min 10, cap 40 ADA |
 | Mid-fold lock | none; griefing bounded and cheap to retry |
 | Deregister | one user tx: flag deposit + burn registration (owner auth); no standalone registration delete |
@@ -743,7 +826,7 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 | Uncompensated load/release | accepted; batchers use `LoadAndPay` |
 | Bridge MMR fold parity | rewards use a positional verifier; bridge fold fixed in `6b5bf68a0b89`; pending bridge re-audit |
 | Mainnet reserve datum | unit constructor; first release migrates by field count |
-| Digest payload | call args `epoch u64, leaf_count u64, root [u8;32], min_key [u8;28], max_key [u8;28]` (104 bytes); empty epoch = `leaf_count 0`, zero root |
+| Digest payload | call args `epoch u64, leaf_count u64, root [u8;32], min_key [u8;28], max_key [u8;28], treasury_total u128` (120 bytes; was 104 before 2026-09-16); empty epoch = `leaf_count 0`, zero root |
 | Leaf amount | fixed `u128` big-endian, leaf 45 bytes; 1 unit = 1 cNIGHT token unit = 1 STAR |
 | Epoch counter | partner-chains sidechain epoch |
 | Credential kind | `Deposit.cred: Credential`; keys stay 28-byte hashes everywhere else |
@@ -803,3 +886,13 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 | `config.rewards_pallet_index` / `rewards_call_index` replace `rewards_digest_engine_id` | the call is identified by pallet and call index |
 | No block-position rule: any block, first extrinsic that decodes to `epoch + 1` | the node may emit the digest after an observation lag |
 | `lib/rewards/trie.ak` + test-only `trie_builder.ak`, validated against `sp_trie` golden vectors | new verifier |
+
+### MIP alignment (2026-09-16, not yet built)
+
+| Change | Reason |
+|---|---|
+| Skim cap is `max_skim[n_paid]` from a fee schedule UTXO (§4.6), no fee-share term; every input/output pair, the batcher's own included, has `ADA_out ≤ ADA_in` | the tx creator sets the fee; a per-size cap set by Midnight bounds drain per deposit, and the pair rule keeps the batcher from gaining ADA while letting it pay the shortfall of a small batch |
+| Distribution fee `dist_fee` deducted from a leaf's NIGHT when `amount ≥ min_payout`, left in the batcher's pair | cost recovery alone gave no reason to fold or to batch large; flat per leaf, checked on chain, no exchange rate |
+| Digest gains `treasury_total`; the completing batch pays it to the ICS | the Treasury share must leave the pool, and the digest has to commit it or a batch could omit the output |
+| Reserve release fills the pool to `reserve × (1 − (1 − R)^N)` (factor `num/den`, rounded up), net of the pool balance | the geometric placeholder is gone; the ceiling follows the published rate from the live reserve and holds exposure to one interval |
+| Interval six hours | per the committee bridge MIP's epoch length |
