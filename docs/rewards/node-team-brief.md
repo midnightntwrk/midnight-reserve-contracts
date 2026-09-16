@@ -63,12 +63,13 @@ impl<T: Config> Pallet<T> {
         root: [u8; 32],
         min_key: [u8; 28],      // key of the first leaf
         max_key: [u8; 28],      // key of the last leaf
+        treasury_total: u128,   // Σ Nt over the epoch's blocks, STAR; paid to the ICS by the completing batch
     ) -> DispatchResult
 }
 ```
 Produced through `ProvideInherent` like `pallet_cnight_observation`. On the
 wire (`UncheckedExtrinsic::new_bare`, format v5) the extrinsic is exactly
-109 bytes: `Compact(107) | 0x05 | pallet_index | 0 | epoch LE | leaf_count LE | root | min | max`.
+125 bytes: `Compact(123) | 0x05 | pallet_index | 0 | epoch LE | leaf_count LE | root | min | max | treasury_total LE`.
 Exactly one such extrinsic per epoch; epochs consecutive (an epoch with no
 funded accounts still submits `leaf_count = 0`, zero root and keys). The
 contract accepts it from any block; the block need not be the epoch
@@ -86,7 +87,7 @@ boundary.
 3. Checks `keccak256(SCALE(leaf))` is in the root, `blake2b_256(header) == leaf.parent_hash`,
    reads `extrinsics_root` from the header, verifies the `sp_trie::LayoutV1`
    (blake2b-256, `StateVersion::V1`) inclusion of the extrinsic bytes under
-   `Compact(index)`, and decodes the call (pallet index, call index 0, 104
+   `Compact(index)`, and decodes the call (pallet index, call index 0, 120
    bytes of arguments).
 
 So any block at or below the bridge checkpoint is provable; payouts lag at
