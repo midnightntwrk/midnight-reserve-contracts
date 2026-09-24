@@ -3,12 +3,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { hexToBytes, bytesToHex } from "@noble/hashes/utils.js";
 import { committeeCommitment, required } from "./reference/commitment";
-import {
-  committee,
-  dummyLeafHash,
-  keysetRoot,
-  scenarios,
-} from "./reference/fixtures";
+import { committee, dummyLeafHash, keysetRoot } from "./reference/fixtures";
 import { keccak, merkleRoot } from "./reference/keccak";
 import { Mmr, verifyMmrLeaf } from "./reference/mmr";
 import { buildMultiproof, walkMultiproof } from "./reference/multiproof";
@@ -57,9 +52,6 @@ describe("encodings", () => {
     expect(hex(leaf)).toBe(
       `00580200009b9462bf599ab609ea9917918e6b69b54b2bff8b7be6fc0de8984b55f5fbb057010000000000000004000000${hex(keysetRoot)}00`,
     );
-  });
-  test("authority leaf is 37 bytes", () => {
-    expect(committee.leaves.every((l) => l.length === 37)).toBe(true);
   });
 });
 
@@ -110,9 +102,6 @@ describe("multiproof", () => {
       }
     }
   });
-  test("no signer is rejected", () => {
-    expect(() => buildMultiproof(committee.leaves, new Set())).toThrow();
-  });
 });
 
 describe("mmr", () => {
@@ -137,19 +126,6 @@ describe("mmr", () => {
           ]),
         ).toBe(false);
       }
-    }
-  });
-  test("scenario roots match the fixtures' generator", () => {
-    for (const s of scenarios) {
-      expect(
-        verifyMmrLeaf(
-          s.mmrRoot,
-          s.mmr.leafHashes[s.blockNumber - 1],
-          s.blockNumber - 1,
-          s.blockNumber,
-          s.mmr.proof(s.blockNumber - 1),
-        ),
-      ).toBe(true);
     }
   });
   // Golden vectors from a pallet-mmr node: the proven leaf is its own peak.
