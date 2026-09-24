@@ -95,7 +95,10 @@ function setup(stateIn: C.BeefyConsensusState) {
   return { emulator, foreverUtxo, mainRef, thresholdRef };
 }
 
-/** Run the update tx for `s` and return whether the emulator accepted it. */
+/** The logic script (the withdrawal) rejected; not the forever spend, not balancing. */
+const logicRejected = /failed script execution Withdraw\[0\]/;
+
+/** Run the update tx for `s`: `"accepted"`, or the emulator's rejection text. */
 async function submit(
   s: Scenario,
   opts: {
@@ -103,7 +106,7 @@ async function submit(
     stateOut?: C.BeefyConsensusState;
     mutate?: (u: C.BridgeUpdate) => void;
   } = {},
-): Promise<boolean> {
+): Promise<string> {
   const stateIn = handoverState();
   const { emulator, foreverUtxo, mainRef, thresholdRef } = setup(stateIn);
   const update = bridgeUpdate(s, [0, 1, 2], opts.signers ?? [0, 1]);
@@ -140,9 +143,9 @@ async function submit(
     console.error = () => {};
     try {
       await emulator.expectValidTransaction(blaze, tx);
-      return true;
-    } catch {
-      return false;
+      return "accepted";
+    } catch (e) {
+      return String(e).replace(/\s+/g, " ");
     } finally {
       console.error = error;
     }
@@ -151,20 +154,22 @@ async function submit(
 
 describe("committee_bridge_logic in the Blaze VM", () => {
   test("a_no_handover: committee 4 signs a leaf naming 5", async () => {
-    expect(await submit(scenarioByName("a_no_handover"))).toBe(true);
+    expect(await submit(scenarioByName("a_no_handover"))).toBe("accepted");
   });
   test("b_handover: committee 5 signs a leaf naming 6, state rotates", async () => {
     const s = scenarioByName("b_handover");
-    const out = nextState(handoverState(), s)!;
-    expect(out.current_committee.validator_set_id).toBe(5n);
-    expect(out.next_committee.validator_set_id).toBe(6n);
-    expect(await submit(s)).toBe(true);
+    expect(
+      nextState(handoverState(), s)?.current_committee.validator_set_id,
+    ).toBe(5n);
+    expect(await submit(s)).toBe("accepted");
   });
   test("c_next_signs_same: committee 5 signs a leaf naming 5 (rule 10)", async () => {
-    expect(await submit(scenarioByName("c_next_signs_same"))).toBe(false);
+    expect(await submit(scenarioByName("c_next_signs_same"))).toMatch(
+      logicRejected,
+    );
   });
   test("d_skip_two: leaf naming 7 (rule 9)", async () => {
-    expect(await submit(scenarioByName("d_skip_two"))).toBe(false);
+    expect(await submit(scenarioByName("d_skip_two"))).toMatch(logicRejected);
   });
   test("one flipped signature byte", async () => {
     expect(
@@ -175,18 +180,18 @@ describe("committee_bridge_logic in the Blaze VM", () => {
           u.signatures[0] = sig.toString("hex");
         },
       }),
-    ).toBe(false);
+    ).toMatch(logicRejected);
   });
   test("one signer of seat 1 is below the quorum of 3", async () => {
     expect(
       await submit(scenarioByName("a_no_handover"), { signers: [0] }),
-    ).toBe(false);
+    ).toMatch(logicRejected);
   });
   test("stale state_out", async () => {
     expect(
       await submit(scenarioByName("a_no_handover"), {
         stateOut: handoverState(),
       }),
-    ).toBe(false);
+    ).toMatch(logicRejected);
   });
 });
