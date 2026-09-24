@@ -2,7 +2,7 @@ use aiken/builtin
 use bridge/beefy.{verify_update}
 use bridge/pool.{check_pool}
 use bridge/types.{BeefyConsensusState, BeefyThreshold, BridgeUpdate}
-use cardano/address.{Script}
+use cardano/address.{Address, Script}
 use cardano/assets.{lovelace_of}
 use cardano/certificate.{RegisterCredential}
 use cardano/script_context.{Publishing, ScriptContext, Withdrawing}
@@ -100,7 +100,7 @@ validator committee_bridge_logic {
           ..
         ] = outputs
 
-        expect out_address.payment_credential == Script(forever)
+        expect out_address == Address(Script(forever), None)
         expect is_singleton(value_out, forever, "")
         expect lovelace_of(value_out) >= lovelace_of(value_in)
         expect InlineDatum(state_out) = datum_out
@@ -112,7 +112,11 @@ validator committee_bridge_logic {
             config.beefy_signer_threshold_hash,
           )
 
-        let next_state, leaf_count <- verify_update(state_in, update, threshold)
+        let
+          next_state,
+          signers,
+          handover,
+        <- verify_update(state_in, update, threshold)
 
         expect state_out == next_state
 
@@ -120,8 +124,8 @@ validator committee_bridge_logic {
           transaction,
           config.committee_bridge_pool_hash,
           threshold,
-          state_in.next_committee.validator_set_id != state_out.next_committee.validator_set_id,
-          leaf_count,
+          handover,
+          signers,
         )
       }
 

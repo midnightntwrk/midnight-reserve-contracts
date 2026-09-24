@@ -6,15 +6,15 @@ use aiken/crypto.{ScriptHash}
 use bridge/types.{BeefyThreshold}
 use cardano/address.{Address, Script}
 use cardano/assets.{lovelace_of, without_lovelace, zero}
-use cardano/transaction.{Input, Transaction}
+use cardano/transaction.{Input, NoDatum, Transaction}
 
-/// MIP rules 12–17: with pool inputs present, output 1 is the lovelace-only pool output, and a positive debit only for a handover within `fee` and `cap`.
+/// MIP rules 12–17: with pool inputs present, output 1 is the bare lovelace-only pool output, and a positive debit only for a handover within `fee` and `cap = base + per_signer × signers`.
 pub fn check_pool(
   tx: Transaction,
   pool: ScriptHash,
   threshold: BeefyThreshold,
   handover: Bool,
-  leaf_count: Int,
+  signers: Int,
 ) -> Bool {
   let Transaction { inputs, outputs, fee, .. } = tx
   let credential = Script(pool)
@@ -38,6 +38,7 @@ pub fn check_pool(
     expect [_, pool_output, ..] = outputs
     expect pool_output.address == Address(credential, None)
     expect without_lovelace(pool_output.value) == zero
+    expect pool_output.datum == NoDatum
 
     let debit = pool_in - lovelace_of(pool_output.value)
 
@@ -46,7 +47,7 @@ pub fn check_pool(
       and {
         handover,
         debit <= fee,
-        debit <= threshold.base + threshold.per_signer * leaf_count,
+        debit <= threshold.base + threshold.per_signer * signers,
       },
     }
   }

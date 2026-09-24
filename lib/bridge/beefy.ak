@@ -13,12 +13,12 @@ pub fn required(seat_count: Int, numerator: Int, denominator: Int) -> Int {
   seat_count - ( seat_count - 1 ) * ( denominator - numerator ) / denominator
 }
 
-/// Apply MIP rules 1–10 to `update`; any failed rule aborts. Continues with the next state and the multiproof leaf count.
+/// Apply MIP rules 1–10 to `update`; any failed rule aborts. Continues with the next state, the signer count, and whether it is a handover.
 pub fn verify_update(
   state: BeefyConsensusState,
   update: BridgeUpdate,
   threshold: BeefyThreshold,
-  continue: fn(BeefyConsensusState, Int) -> r,
+  continue: fn(BeefyConsensusState, Int, Bool) -> r,
 ) -> r {
   let BeefyConsensusState {
     latest_height,
@@ -56,7 +56,7 @@ pub fn verify_update(
     scale_encode_commitment(mmr_root, block_number, validator_set_id)
       |> builtin.keccak_256
 
-  let seats, leaf_count <- sum_signed_seats(leaves, signatures, msg_hash)
+  let seats, signers <- sum_signed_seats(leaves, signatures, msg_hash)
 
   expect seats >= required(signing.seat_count, numerator, denominator)
 
@@ -77,8 +77,10 @@ pub fn verify_update(
   expect leaf_next_id == next_id || leaf_next_id == next_id + 1
   expect validator_set_id != next_id || leaf_next_id == next_id + 1
 
+  let handover = leaf_next_id == next_id + 1
+
   let next_state =
-    if leaf_next_id == next_id + 1 {
+    if handover {
       BeefyConsensusState {
         latest_mmr_root: mmr_root,
         latest_height: block_number,
@@ -94,10 +96,10 @@ pub fn verify_update(
       }
     }
 
-  continue(next_state, leaf_count)
+  continue(next_state, signers, handover)
 }
 
-/// Rule 5: one signature per multiproof leaf (`""` for a non-signer). Continues with the signed seats and the leaf count.
+/// Rule 5: one signature per multiproof leaf (`""` for a non-signer). Continues with the signed seats and the signer count.
 pub fn sum_signed_seats(
   leaves: List<Leaf>,
   signatures: List<ByteArray>,
@@ -115,11 +117,11 @@ pub fn sum_signed_seats(
 
       let
         seats,
-        count,
+        signers,
       <- sum_signed_seats(rest_leaves, rest_signatures, msg_hash)
 
       if signature == "" {
-        continue(seats, count + 1)
+        continue(seats, signers)
       } else {
         expect
           builtin.verify_ecdsa_secp256k1_signature(
@@ -133,7 +135,7 @@ pub fn sum_signed_seats(
             builtin.slice_bytearray(33, 4, leaf)
               |> builtin.bytearray_to_integer(False, _)
           ),
-          count + 1,
+          signers + 1,
         )
       }
     }
