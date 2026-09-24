@@ -49,3 +49,9 @@ write them in the current style and list them in phase 04 here.
   (via `runCommand`) and `tests/helpers/effect.ts`.
 - Errors carry data, not prose: `new UtxoNotFound({ address, asset })`, and
   the message is rendered once, in `Output`.
+- Tests exercise CLI library functions or Aiken, never the binary. Every
+  command that builds a transaction exposes its builder from
+  `cli-yargs/lib/` as `(resolved inputs, params) => TxBuilder`; the
+  emulator tests call that builder and let `expectValidTransaction` cover
+  the CLI function and the validator in one assertion. Hand-built
+  transactions in tests are replaced as each builder lands (phases 04–06).
