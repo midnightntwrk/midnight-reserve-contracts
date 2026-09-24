@@ -78,21 +78,45 @@ test mint_rejects_negative_numerator() {
   !mint(BeefyThreshold(-1, 3, 0, 0))
 }
 
+test mint_rejects_zero_denominator() {
+  !mint(BeefyThreshold(0, 0, 0, 0))
+}
+
+test mint_rejects_negative_denominator() {
+  !mint(BeefyThreshold(0, -1, 0, 0))
+}
+
 // Spend under Council + Tech Auth: each multisig is one signer at 1/1, and
 // the transaction mints under the native script rebuilt from each datum.
 
-fn multisig_of(pkh: ByteArray) -> Multisig {
-  Multisig { total_signers: 1, signers: [Pair(create_signer(pkh), #"")] }
+fn multisig_of(pkhs: List<ByteArray>) -> Multisig {
+  Multisig {
+    total_signers: list.length(pkhs),
+    signers: list.map(pkhs, fn(pkh) { Pair(create_signer(pkh), #"") }),
+  }
 }
 
+// Tech auth: 2 of 3. Council: 1 of 2. Distinct sets and fractions, so a swap inside
+// check_for_multisig changes a native script hash.
 const tech_auth =
-  multisig_of(#"22222222222222222222222222222222222222222222222222222222")
+  multisig_of(
+    [
+      #"22222222222222222222222222222222222222222222222222222222",
+      #"23232323232323232323232323232323232323232323232323232323",
+      #"24242424242424242424242424242424242424242424242424242424",
+    ],
+  )
 
 const council =
-  multisig_of(#"33333333333333333333333333333333333333333333333333333333")
+  multisig_of(
+    [
+      #"33333333333333333333333333333333333333333333333333333333",
+      #"34343434343434343434343434343434343434343434343434343434",
+    ],
+  )
 
-fn native_policy(ms: Multisig) -> ByteArray {
-  build_native_script(ms, 1, 1) |> builtin.blake2b_224
+fn native_policy(ms: Multisig, n: Int, d: Int) -> ByteArray {
+  build_native_script(ms, n, d) |> builtin.blake2b_224
 }
 
 fn gov_ref(hash: ByteArray, tag: Int, ms: Multisig) -> Input {
@@ -125,7 +149,7 @@ const gov_threshold_ref =
     Output(
       Address(Script(config.main_gov_threshold_hash), None),
       from_lovelace(2_000_000) |> add(config.main_gov_threshold_hash, "", 1),
-      InlineDatum(MultisigThreshold(1, 1, 1, 1)),
+      InlineDatum(MultisigThreshold(2, 3, 1, 2)),
       None,
     ),
   )
@@ -153,8 +177,8 @@ fn spend_with(mint: Value, new_datum: BeefyThreshold) -> Bool {
 }
 
 const both_mints =
-  from_asset(native_policy(tech_auth), "", 1)
-    |> add(native_policy(council), "", 1)
+  from_asset(native_policy(tech_auth, 2, 3), "", 1)
+    |> add(native_policy(council, 1, 2), "", 1)
 
 fn spend(new_datum: BeefyThreshold) -> Bool {
   spend_with(both_mints, new_datum)
@@ -172,20 +196,56 @@ test spend_rejects_negative_cap() {
   !spend(BeefyThreshold(2, 3, -1, 20_000))
 }
 
+test spend_rejects_negative_per_signer() {
+  !spend(BeefyThreshold(2, 3, 500_000, -1))
+}
+
+test spend_rejects_wrong_fraction_mints() fail {
+  spend_with(
+    from_asset(native_policy(tech_auth, 1, 2), "", 1)
+      |> add(native_policy(council, 2, 3), "", 1),
+    BeefyThreshold(2, 3, 1_000_000, 50_000),
+  )
+}
+
+test spend_rejects_wrong_shape_datum() fail {
+  let old = BeefyThreshold(2, 3, 500_000, 20_000)
+  let bad: Data = [2, 3, 500_000]
+  let tx =
+    Transaction {
+      ..placeholder,
+      mint: both_mints,
+      inputs: [Input(own_ref, threshold_output(old))],
+      reference_inputs: list.concat(gov_refs, [gov_threshold_ref]),
+      outputs: [
+        Output(
+          script_address,
+          from_lovelace(2_000_000) |> add(policy, "", 1),
+          InlineDatum(bad),
+          None,
+        ),
+      ],
+    }
+  let old: Data = old
+  thresholds.beefy_signer_threshold.else(
+    ScriptContext(tx, 0, Spending(own_ref, Some(old))),
+  )
+}
+
 test spend_rejects_bad_ratio() {
   !spend(BeefyThreshold(4, 3, 500_000, 20_000))
 }
 
 test spend_rejects_missing_council() fail {
   spend_with(
-    from_asset(native_policy(tech_auth), "", 1),
+    from_asset(native_policy(tech_auth, 2, 3), "", 1),
     BeefyThreshold(2, 3, 1_000_000, 50_000),
   )
 }
 
 test spend_rejects_missing_tech_auth() fail {
   spend_with(
-    from_asset(native_policy(council), "", 1),
+    from_asset(native_policy(council, 1, 2), "", 1),
     BeefyThreshold(2, 3, 1_000_000, 50_000),
   )
 }

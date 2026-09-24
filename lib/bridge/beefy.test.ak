@@ -22,7 +22,7 @@ fn verify_update(
   update: BridgeUpdate,
   threshold: BeefyThreshold,
 ) -> BeefyConsensusState {
-  let next, _ <- beefy.verify_update(st, update, threshold)
+  let next, _, _ <- beefy.verify_update(st, update, threshold)
   next
 }
 
@@ -34,17 +34,19 @@ fn advanced(st: BeefyConsensusState, s: fx.Scenario) -> BeefyConsensusState {
   }
 }
 
-test leaf_count_is_multiproof_size() {
+// The cap counts signers: a non-signer leaf (empty signature) adds nothing.
+test signers_counted_not_leaves() {
   let
     _,
-    n,
+    signers,
+    handover,
   <-
     beefy.verify_update(
       fx.state(4, 5, 6),
-      fx.update_with(fx.a_no_handover, [0, 1], [0, 1]),
+      fx.update_with(fx.a_no_handover, [0, 1, 2], [0, 1]),
       fx.threshold,
     )
-  n == 2
+  signers == 2 && !handover
 }
 
 // Boundary accept: block_number = latest_height + 1, seats = required, leaf names next.
@@ -56,15 +58,50 @@ test accept_no_handover() {
   )
 }
 
+// Signed by the next committee (id 5), leaf names 6: handover; the new next is the leaf's, not the state's.
 test accept_handover() {
-  let st = fx.state(4, 5, 7)
-  verify_update(st, fx.update(fx.b_handover), fx.threshold) == BeefyConsensusState {
-    latest_mmr_root: fx.b_handover.mmr_root,
-    latest_height: 8,
-    beefy_activation_block: 1,
-    current_committee: fx.committee(5),
-    next_committee: fx.committee(6),
+  let st = fx.state_next_signs(4, 5, 7)
+  let
+    next,
+    _,
+    handover,
+  <- beefy.verify_update(st, fx.update(fx.b_handover), fx.threshold)
+  and {
+    handover,
+    next == BeefyConsensusState {
+      latest_mmr_root: fx.b_handover.mmr_root,
+      latest_height: 8,
+      beefy_activation_block: 1,
+      current_committee: fx.committee(5),
+      next_committee: fx.leaf_next(6),
+    },
   }
+}
+
+// Signed by the current committee (id 4), leaf names 6: rule 10 allows it, still a handover.
+test accept_current_hands_over() {
+  let st = fx.state(4, 5, 8)
+  let
+    next,
+    _,
+    handover,
+  <- beefy.verify_update(st, fx.update(fx.f_current_hands_over), fx.threshold)
+  and {
+    handover,
+    next == BeefyConsensusState {
+      latest_mmr_root: fx.f_current_hands_over.mmr_root,
+      latest_height: 9,
+      beefy_activation_block: 1,
+      current_committee: fx.other_committee(5),
+      next_committee: fx.leaf_next(6),
+    },
+  }
+}
+
+// The next committee's keyset is not the signing one: a signature by "current" under the next id fails rule 3.
+test reject_signed_under_wrong_id() fail {
+  let update = BridgeUpdate { ..fx.update(fx.b_handover), validator_set_id: 5 }
+  verify_update(fx.state(4, 5, 7), update, fx.threshold) != fx.state(4, 5, 7)
 }
 
 test accept_block_one() {
@@ -227,8 +264,21 @@ test reject_skip_two() fail {
 // Rule 10: next committee signs a leaf that does not advance.
 test reject_next_signs_without_handover() fail {
   verify_update(
-    fx.state(4, 5, 7),
+    fx.state_next_signs(4, 5, 7),
     fx.update(fx.c_next_signs_same),
     fx.threshold,
-  ) != fx.state(4, 5, 7)
+  ) != fx.state_next_signs(4, 5, 7)
+}
+
+// A 64-byte inner-node preimage presented as a leaf: the root matches, the 37-byte guard rejects it.
+test reject_preimage_leaf() fail {
+  let s = fx.a_no_handover
+  expect [_, _, sig2] = s.sigs
+  let update =
+    BridgeUpdate {
+      ..fx.update(s),
+      signatures: ["", sig2],
+      multiproof: fx.multiproof_preimage_leaf(),
+    }
+  verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
 }

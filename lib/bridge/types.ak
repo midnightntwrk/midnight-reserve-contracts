@@ -27,7 +27,7 @@ pub type BeefyConsensusState {
   next_committee: AuthoritySetCommitment,
 }
 
-/// The threshold datum: the quorum ratio and the funded-update fee cap (`base + per_signer * signers`, lovelace).
+/// The threshold datum: the quorum ratio and the funded-update fee cap (`base + per_signer × signers`, lovelace).
 pub type BeefyThreshold {
   numerator: Int,
   denominator: Int,
