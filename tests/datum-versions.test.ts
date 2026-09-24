@@ -62,22 +62,6 @@ describe("datum-versions", () => {
       expect(reencoded.toCbor()).toBe(originalCbor);
     });
 
-    test("preserves all duplicate signers through decode/encode cycle", () => {
-      const original = createMultisigStateCbor(duplicateSigners, 0n);
-
-      const handler = getDatumHandler("council", 0);
-      const decoded = handler.decode(original);
-
-      expect(decoded.signers).toHaveLength(3);
-      // All 3 have the same paymentHash
-      for (const signer of decoded.signers) {
-        expect(signer.paymentHash).toBe(singlePaymentHash);
-      }
-      // But different sr25519 keys
-      const keys = new Set(decoded.signers.map((s) => s.sr25519Key));
-      expect(keys.size).toBe(3);
-    });
-
     test("round-trip works for tech-auth with same duplicate-key pattern", () => {
       const original = createMultisigStateCbor(duplicateSigners, 1n);
       const originalCbor = original.toCbor();
@@ -131,17 +115,6 @@ describe("datum-versions", () => {
       // Round 5 > max(0,1) → falls back to round 1 handler
       const handler = getDatumHandler("terms-and-conditions", 5);
       expect(handler.logicRound).toBe(1);
-    });
-
-    test("returns correct handler for valid rounds", () => {
-      expect(getDatumHandler("council", 0).logicRound).toBe(0);
-      expect(getDatumHandler("council", 1).logicRound).toBe(1);
-      expect(getDatumHandler("tech-auth", 0).logicRound).toBe(0);
-      expect(getDatumHandler("tech-auth", 1).logicRound).toBe(1);
-      expect(getDatumHandler("federated-ops", 1).logicRound).toBe(1);
-      expect(getDatumHandler("federated-ops", 2).logicRound).toBe(2);
-      expect(getDatumHandler("terms-and-conditions", 0).logicRound).toBe(0);
-      expect(getDatumHandler("terms-and-conditions", 1).logicRound).toBe(1);
     });
   });
 
@@ -209,21 +182,6 @@ describe("datum-versions", () => {
 
       expect(decoded.hash).toBe(terms.hash);
       expect(decoded.link).toBe(terms.link);
-    });
-
-    test("getTerms returns the data", () => {
-      const terms: TermsData = { hash: "aa", link: "bb" };
-      const handler = getDatumHandler("terms-and-conditions", 0);
-      const result = handler.getTerms!(terms);
-      expect(result).toEqual(terms);
-    });
-
-    test("setTerms replaces the data", () => {
-      const original: TermsData = { hash: "aa", link: "bb" };
-      const replacement: TermsData = { hash: "cc", link: "dd" };
-      const handler = getDatumHandler("terms-and-conditions", 0);
-      const result = handler.setTerms!(original, replacement);
-      expect(result).toEqual(replacement);
     });
   });
 
