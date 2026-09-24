@@ -1,6 +1,13 @@
 /** Emit the generated Aiken fixture modules in `aiken fmt` style. */
 import { committeeCommitment, required } from "./commitment";
-import { dummyLeafHash, keypairs, keysetRoot, scenarios } from "./fixtures";
+import {
+  dummyLeafHash,
+  highSTwin,
+  keypairs,
+  keysetRoot,
+  scenarioByName,
+  scenarios,
+} from "./fixtures";
 import { keccak } from "./keccak";
 import { Mmr } from "./mmr";
 import { buildMultiproof, type ProofNode } from "./multiproof";
@@ -31,6 +38,7 @@ export function vectorsAk(): string {
     "pub type Scenario {",
     "  set_id: Int,",
     "  block_number: Int,",
+    "  parent_number: Int,",
     "  next_id: Int,",
     "  parent_hash: ByteArray,",
     "  mmr_root: ByteArray,",
@@ -48,10 +56,15 @@ export function vectorsAk(): string {
   ];
   for (const s of scenarios) {
     out.push(
-      `pub const ${s.name} =\n  Scenario {\n    set_id: ${s.setId},\n    block_number: ${s.blockNumber},\n    next_id: ${s.nextId},\n    parent_hash: ${bytes(s.parentHash)},\n    mmr_root: ${bytes(s.mmrRoot)},\n    sigs: ${list(s.sigs.map(bytes), "    ")},\n  }\n`,
+      `pub const ${s.name} =\n  Scenario {\n    set_id: ${s.setId},\n    block_number: ${s.blockNumber},\n    parent_number: ${s.leaf.parentNumber},\n    next_id: ${s.nextId},\n    parent_hash: ${bytes(s.parentHash)},\n    mmr_root: ${bytes(s.mmrRoot)},\n    sigs: ${list(s.sigs.map(bytes), "    ")},\n  }\n`,
     );
   }
   out.push(
+    "/// `a_no_handover` signature 0 with `s' = n - s`: same `r`, high S.",
+    constant(
+      "a_high_s_sig0",
+      bytes(highSTwin(scenarioByName("a_no_handover").sigs[0])),
+    ),
     "// MIP §Test vectors, three peaks: leaf 5 of 7 under the middle peak.",
     "",
     constant("three_peaks_leaf_hash", bytes(three.leafHashes[5])),
