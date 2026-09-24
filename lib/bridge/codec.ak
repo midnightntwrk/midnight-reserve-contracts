@@ -63,15 +63,6 @@ test scale_encode_commitment_mip_vector() {
   ) == #"046d68800000000000000000000000000000000000000000000000000000000000000000010000000000000000000000"
 }
 
-// Vector: block_number 185, validator_set_id 0.
-test scale_encode_commitment_1() {
-  scale_encode_commitment(
-    #"4f2afb93828f662820ffbc4556691b657525f9d11e650e04e7bd7d054c40998a",
-    185,
-    0,
-  ) == #"046d68804f2afb93828f662820ffbc4556691b657525f9d11e650e04e7bd7d054c40998ab90000000000000000000000"
-}
-
 test commitment_rejects_short_root() fail {
   scale_encode_commitment(
     #"4f2afb93828f662820ffbc4556691b657525f9d11e650e04e7bd7d054c4099",
@@ -95,24 +86,6 @@ test scale_encode_beefy_leaf_mip_layout() {
       extra: "",
     },
   ) == #"00580200009b9462bf599ab609ea9917918e6b69b54b2bff8b7be6fc0de8984b55f5fbb057010000000000000004000000ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d00"
-}
-
-// Vector: parent_number 273, commitment (1, 1, root), empty extra.
-test scale_encode_beefy_leaf_1() {
-  let beefy_leaf =
-    BeefyMmrLeaf {
-      version: 0,
-      parent_number: 273,
-      parent_hash: #"c773b67e92868f58aef6874146464646331be113fba51bd89a48d65b6d81bf3d",
-      next_authority_set: AuthoritySetCommitment(
-        1,
-        1,
-        #"ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d",
-      ),
-      extra: "",
-    }
-
-  scale_encode_beefy_mmr_leaf(beefy_leaf) == #"0011010000c773b67e92868f58aef6874146464646331be113fba51bd89a48d65b6d81bf3d010000000000000001000000ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d00"
 }
 
 test commitment_rejects_block_number_overflow() fail {

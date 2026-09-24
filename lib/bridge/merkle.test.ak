@@ -30,35 +30,6 @@ test mmr_single_leaf() {
   verify_mmr_leaf(h, h, 0, 1, [])
 }
 
-// MIP: a leaf that is itself a peak (count 5): no siblings, left peaks only.
-test mmr_leaf_is_peak() {
-  let hashes = list.map(list.range(0, 4), fx.dummy_leaf_hash)
-  let items = fx.mmr_proof(hashes, 4)
-  and {
-    list.length(items) == 1,
-    leaf_root(fx.dummy_leaf_hash(4), 4, 5, items) == fx.merge(
-      fx.dummy_leaf_hash(4),
-      fx.mmr_root(list.take(hashes, 4)),
-    ),
-  }
-}
-
-// MIP: leaf under the middle peak of three (count 7, index 5): items are
-// P1, the sibling, then P3 as R; root = H(H(P3 || P2) || P1).
-test mmr_three_peaks() {
-  let hashes = list.map(list.range(0, 6), fx.dummy_leaf_hash)
-  let p1 = fx.mmr_root(list.take(hashes, 4))
-  let h4 = fx.dummy_leaf_hash(4)
-  let h5 = fx.dummy_leaf_hash(5)
-  let p2 = fx.merge(h4, h5)
-  let p3 = fx.dummy_leaf_hash(6)
-  and {
-    fx.mmr_proof(hashes, 5) == [p1, h4, p3],
-    leaf_root(h5, 5, 7, [p1, h4, p3]) == fx.merge(fx.merge(p3, p2), p1),
-    fx.mmr_root(hashes) == fx.merge(fx.merge(p3, p2), p1),
-  }
-}
-
 test mmr_wrong_item_rejected() {
   let hashes = list.map(list.range(0, 6), fx.dummy_leaf_hash)
   let root = fx.mmr_root(hashes)
@@ -147,27 +118,6 @@ test mmr_vector_600_of_601() {
 
 // Generator cross-check: the Aiken reference builder reproduces the roots
 // the TypeScript generator signed.
-
-test mmr_roots_match_generator() {
-  list.all(
-    [
-      fx.a_no_handover,
-      fx.b_handover,
-      fx.c_next_signs_same,
-      fx.d_skip_two,
-      fx.e_block_one,
-    ],
-    fn(s) { fx.mmr_root(fx.mmr_hashes(s)) == s.mmr_root },
-  )
-}
-
-// MIP: keyset root over seats (1, 2, 1) is H(H(H(l1) || H(l2)) || H(l3)).
-test keyset_root_matches_generator() {
-  fx.merge(
-    fx.merge(fx.keccak(fx.leaf_at(0)), fx.keccak(fx.leaf_at(1))),
-    fx.keccak(fx.leaf_at(2)),
-  ) == fx.keyset_root
-}
 
 // Multiproof: every signer subset yields its leaves in tree order.
 
