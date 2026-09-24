@@ -366,9 +366,7 @@ test spending_main_input_lacks_main_token() fail {
           Output(
             script_address,
             from_lovelace(10000000) |> add(policy, "staging", 1),
-            InlineDatum(
-              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
-            ),
+            InlineDatum(UpgradeState { ..staging_datum, logic_round: 3 }),
             None,
           ),
         ),
@@ -381,7 +379,7 @@ test spending_main_input_lacks_main_token() fail {
             UpgradeState {
               ..main_datum,
               logic: staging_datum.logic,
-              round: staging_datum.round + 2,
+              logic_round: 3,
             },
           ),
           None,
@@ -458,9 +456,7 @@ test spending_main_reference_input_missing_staging_token() fail {
           Output(
             script_address,
             from_lovelace(10000000),
-            InlineDatum(
-              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
-            ),
+            InlineDatum(UpgradeState { ..staging_datum, logic_round: 3 }),
             None,
           ),
         ),
@@ -473,7 +469,7 @@ test spending_main_reference_input_missing_staging_token() fail {
             UpgradeState {
               ..main_datum,
               logic: staging_datum.logic,
-              round: staging_datum.round + 2,
+              logic_round: 3,
             },
           ),
           None,
@@ -562,9 +558,7 @@ test spending_main_output_missing_token() fail {
           Output(
             script_address,
             from_lovelace(10000000) |> add(policy, "staging", 1),
-            InlineDatum(
-              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
-            ),
+            InlineDatum(UpgradeState { ..staging_datum, logic_round: 3 }),
             None,
           ),
         ),
@@ -577,7 +571,7 @@ test spending_main_output_missing_token() fail {
             UpgradeState {
               ..main_datum,
               logic: staging_datum.logic,
-              round: staging_datum.round + 2,
+              logic_round: 3,
             },
           ),
           None,
@@ -614,9 +608,7 @@ test spending_main_input_output_missing_token() fail {
           Output(
             script_address,
             from_lovelace(10000000) |> add(policy, "staging", 1),
-            InlineDatum(
-              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
-            ),
+            InlineDatum(UpgradeState { ..staging_datum, logic_round: 3 }),
             None,
           ),
         ),
@@ -629,7 +621,7 @@ test spending_main_input_output_missing_token() fail {
             UpgradeState {
               ..main_datum,
               logic: staging_datum.logic,
-              round: staging_datum.round + 2,
+              logic_round: 3,
             },
           ),
           None,
@@ -768,9 +760,7 @@ test spending_main_withdrawals_missing() fail {
           Output(
             script_address,
             from_lovelace(10000000) |> add(policy, "staging", 1),
-            InlineDatum(
-              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
-            ),
+            InlineDatum(UpgradeState { ..staging_datum, logic_round: 3 }),
             None,
           ),
         ),
@@ -783,7 +773,7 @@ test spending_main_withdrawals_missing() fail {
             UpgradeState {
               ..main_datum,
               logic: staging_datum.logic,
-              round: staging_datum.round + 2,
+              logic_round: 3,
             },
           ),
           None,
@@ -820,9 +810,7 @@ test spending_main_withdrawals_does_not_contain_main_auth() fail {
           Output(
             script_address,
             from_lovelace(10000000) |> add(policy, "staging", 1),
-            InlineDatum(
-              UpgradeState { ..staging_datum, round: staging_datum.round + 2 },
-            ),
+            InlineDatum(UpgradeState { ..staging_datum, logic_round: 3 }),
             None,
           ),
         ),
@@ -835,7 +823,7 @@ test spending_main_withdrawals_does_not_contain_main_auth() fail {
             UpgradeState {
               ..main_datum,
               logic: staging_datum.logic,
-              round: staging_datum.round + 2,
+              logic_round: 3,
             },
           ),
           None,
@@ -942,7 +930,7 @@ test spending_staging_input_lacks_staging_token() fail {
             UpgradeState {
               ..staging_datum,
               logic: #"51515151515151515151515151515151515151515151515151515151",
-              round: staging_datum.round + 1,
+              logic_round: staging_datum.logic_round + 1,
             },
           ),
           None,
@@ -1046,7 +1034,7 @@ test spending_staging_reference_input_missing_main_token() fail {
             UpgradeState {
               ..staging_datum,
               logic: #"51515151515151515151515151515151515151515151515151515151",
-              round: staging_datum.round + 1,
+              logic_round: staging_datum.logic_round + 1,
             },
           ),
           None,
@@ -1160,7 +1148,7 @@ test spending_staging_output_missing_token() fail {
             UpgradeState {
               ..staging_datum,
               logic: #"51515151515151515151515151515151515151515151515151515151",
-              round: staging_datum.round + 1,
+              logic_round: staging_datum.logic_round + 1,
             },
           ),
           None,
@@ -1217,7 +1205,7 @@ test spending_staging_input_output_missing_token() fail {
             UpgradeState {
               ..staging_datum,
               logic: #"51515151515151515151515151515151515151515151515151515151",
-              round: staging_datum.round + 1,
+              logic_round: staging_datum.logic_round + 1,
             },
           ),
           None,
@@ -1445,7 +1433,7 @@ test spending_staging_withdrawals_missing() fail {
             UpgradeState {
               ..staging_datum,
               logic: #"51515151515151515151515151515151515151515151515151515151",
-              round: staging_datum.round + 1,
+              logic_round: staging_datum.logic_round + 1,
             },
           ),
           None,
@@ -1502,7 +1490,7 @@ test spending_staging_withdrawals_does_not_contain_staging_auth() fail {
             UpgradeState {
               ..staging_datum,
               logic: #"51515151515151515151515151515151515151515151515151515151",
-              round: staging_datum.round + 1,
+              logic_round: staging_datum.logic_round + 1,
             },
           ),
           None,
@@ -1762,7 +1750,7 @@ test spending_staging_logic_change_missing_staging_mitigation() fail {
             UpgradeState {
               ..staging_datum,
               logic: #"51515151515151515151515151515151515151515151515151515152",
-              round: staging_datum.round + 1,
+              logic_round: staging_datum.logic_round + 1,
               mitigation_auth: #"72727272727272727272727272727272727272727272727272727272",
             },
           ),

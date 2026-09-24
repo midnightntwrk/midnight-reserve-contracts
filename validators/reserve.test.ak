@@ -96,7 +96,7 @@ test forever_mint_extra_tokens_fail() fail {
       outputs: [
         Output(
           script_address,
-          from_lovelace(10000000) |> add(policy, "", 2),
+          from_lovelace(10000000) |> add(policy, "", 1),
           InlineDatum(initial_datum),
           None,
         ),
@@ -118,7 +118,7 @@ test forever_mint_multiple_tokens_fail() fail {
       outputs: [
         Output(
           script_address,
-          from_lovelace(10000000) |> add(policy, "", 2),
+          from_lovelace(10000000) |> add(policy, "", 1),
           InlineDatum(initial_datum),
           None,
         ),
