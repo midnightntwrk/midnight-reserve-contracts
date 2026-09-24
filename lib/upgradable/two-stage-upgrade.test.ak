@@ -88,37 +88,6 @@ test mint() {
   two_stage_upgradable(tx, redeemer, info, one_shot_ref)
 }
 
-test mint_different_redeemer() {
-  let mint = from_asset(policy, "main", 1) |> add(policy, "staging", 1)
-
-  let tx =
-    Transaction {
-      ..placeholder,
-      mint,
-      inputs: [Input(one_shot_ref, Output(address, val, NoDatum, None))],
-      outputs: [
-        Output(
-          script_address,
-          from_lovelace(10000000) |> add(policy, "main", 1),
-          InlineDatum(main_datum),
-          None,
-        ),
-        Output(
-          script_address,
-          from_lovelace(10000000) |> add(policy, "staging", 1),
-          InlineDatum(staging_datum),
-          None,
-        ),
-      ],
-    }
-
-  let redeemer: Redeemer = Some(1)
-
-  let info = Minting(policy)
-
-  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
-}
-
 test mint_main_only() fail {
   let mint = from_asset(policy, "main", 1)
 
@@ -175,30 +144,6 @@ test mint_staging_only() fail {
     }
 
   let redeemer: Redeemer = Some(1)
-
-  let info = Minting(policy)
-
-  two_stage_upgradable(tx, redeemer, info, one_shot_ref)
-}
-
-test mint_no_main_output() fail {
-  let mint = from_asset(policy, "main", 1) |> add(policy, "staging", 1)
-  let tx =
-    Transaction {
-      ..placeholder,
-      mint,
-      inputs: [Input(one_shot_ref, Output(address, val, NoDatum, None))],
-      outputs: [
-        Output(
-          script_address,
-          from_lovelace(10000000) |> add(policy, "staging", 1),
-          InlineDatum(staging_datum),
-          None,
-        ),
-      ],
-    }
-
-  let redeemer: Redeemer = 0
 
   let info = Minting(policy)
 

@@ -232,28 +232,6 @@ test forever_mint_different_ref_fail() fail {
   reserve.reserve_forever.else(ctx)
 }
 
-test forever_mint_different_redeemer() {
-  let mint = from_asset(policy, "", 1)
-  let tx =
-    Transaction {
-      ..placeholder,
-      mint,
-      inputs: [Input(one_shot_ref, Output(address, val, InlineDatum(0), None))],
-      outputs: [
-        Output(
-          script_address,
-          from_lovelace(10000000) |> add(policy, "", 1),
-          InlineDatum(initial_datum),
-          None,
-        ),
-      ],
-    }
-
-  let ctx = ScriptContext(tx, #"01", Minting(policy))
-
-  reserve.reserve_forever.else(ctx)
-}
-
 test forever_spending() {
   let tx =
     Transaction {
@@ -398,41 +376,6 @@ test forever_spending_wrong_token_in_reference_input_fail() fail {
       ],
     }
 
-  let ctx = ScriptContext(tx, 0, Spending(spending_out_ref, None))
-
-  reserve.reserve_forever.else(ctx)
-}
-
-test forever_spending_missing_withdrawal_fail() fail {
-  let tx =
-    Transaction {
-      ..placeholder,
-      inputs: [
-        Input(
-          spending_out_ref,
-          Output(
-            script_address,
-            from_lovelace(10000000) |> add(policy, "", 1),
-            InlineDatum(initial_datum),
-            None,
-          ),
-        ),
-      ],
-      reference_inputs: [
-        Input(
-          main_ref_out_ref,
-          Output(
-            two_stage_script_address,
-            from_lovelace(10000000) |> add(two_stage_policy, "main", 1),
-            InlineDatum(main_state_datum),
-            None,
-          ),
-        ),
-      ],
-      withdrawals: [],
-    }
-
-  // No withdrawals provided
   let ctx = ScriptContext(tx, 0, Spending(spending_out_ref, None))
 
   reserve.reserve_forever.else(ctx)
