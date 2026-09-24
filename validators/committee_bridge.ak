@@ -1,5 +1,6 @@
 use aiken/builtin
 use bridge/beefy.{verify_update}
+use bridge/pool.{check_pool}
 use bridge/types.{BeefyConsensusState, BeefyThreshold, BridgeUpdate}
 use cardano/address.{Script}
 use cardano/assets.{lovelace_of}
@@ -64,7 +65,7 @@ validator committee_bridge_two_stage_upgrade {
   }
 }
 
-/// Light-client update: rule 0 here, rules 1–10 in `verify_update`.
+/// Light-client update: rule 0 here (the light client is output 0), rules 1–10 in `verify_update`, pool rules 12–17 in `check_pool`.
 validator committee_bridge_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { info, transaction, redeemer } = ctx
@@ -89,12 +90,17 @@ validator committee_bridge_logic {
         expect InlineDatum(state_in) = datum_in
         expect state_in: BeefyConsensusState = state_in
 
-        let Output { value: value_out, datum: datum_out, .. } =
-          must_find(
-            outputs,
-            fn(output) { output.address.payment_credential == Script(forever) },
-          )
+        expect [
+          Output {
+            address: out_address,
+            value: value_out,
+            datum: datum_out,
+            ..
+          },
+          ..
+        ] = outputs
 
+        expect out_address.payment_credential == Script(forever)
         expect is_singleton(value_out, forever, "")
         expect lovelace_of(value_out) >= lovelace_of(value_in)
         expect InlineDatum(state_out) = datum_out
@@ -106,7 +112,17 @@ validator committee_bridge_logic {
             config.beefy_signer_threshold_hash,
           )
 
-        state_out == verify_update(state_in, update, threshold)
+        let next_state, leaf_count <- verify_update(state_in, update, threshold)
+
+        expect state_out == next_state
+
+        check_pool(
+          transaction,
+          config.committee_bridge_pool_hash,
+          threshold,
+          state_in.next_committee.validator_set_id != state_out.next_committee.validator_set_id,
+          leaf_count,
+        )
       }
 
       Publishing { certificate: RegisterCredential { .. }, .. } -> True
