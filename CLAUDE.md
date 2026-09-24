@@ -49,4 +49,4 @@ Architecture patterns derived from:
 - [Code Conventions](.claude/docs/code-conventions.md)
 - [Testing](.claude/docs/testing.md)
 - [Live Deployment Runbook](.claude/docs/live-deployment.md)
-- [SPEC.md](SPEC.md) - detailed architecture context
+- [docs/governance/](docs/governance/) - validator constraints, transactions, upgrade flow
