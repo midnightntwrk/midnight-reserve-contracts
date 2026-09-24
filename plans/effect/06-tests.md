@@ -27,8 +27,20 @@ stays data.
 Tests that import only pure lib modules (`signers`, `candidates`,
 `validation`, `redeemer-mapping`, `config-parsing`, `datum-versions`,
 `versions`) change to `Either`/`Effect.runSync` in phase 02. Emulator
-tests move with their command in phases 03–05. `tests/bridge/**` is
-already independent of the CLI and does not change.
+tests move with their command in phases 03–05 and, in the same commit,
+stop hand-building the transaction: they resolve the snapshot or seeded
+UTxOs, call the command's `build<Name>Tx` from `cli-yargs/lib/`, and run
+`expectValidTransaction`. The assertion then covers the CLI builder and
+the validator together; shape asserts against the test's own inputs are
+not added back. `tests/bridge/**` is already independent of the CLI and
+does not change.
+
+Negative twins come with the builder: for each builder one test passes a
+wrong input (missing second-authority witness for council/tech-auth,
+stale staging round for promote, a merge output that drops cNIGHT) and
+pins the withdrawal or spend failure text. The emulator does not evaluate
+native-script signers, so witness tests assert the validator's rejection,
+not signature satisfiability.
 
 ### 5. Error assertions
 Replace `rejects.toThrow()` / message regexes with `expectFailure(eff,
