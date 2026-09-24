@@ -125,12 +125,16 @@ test accept_signers_only_multiproof() {
       fx.update_with(fx.a_no_handover, [1, 2], [1, 2]),
       fx.threshold,
     ) == advanced(st, fx.a_no_handover),
-    verify_update(
-      st,
-      fx.update_with(fx.a_no_handover, [0, 1, 2], [0, 1, 2]),
-      fx.threshold,
-    ) == advanced(st, fx.a_no_handover),
   }
+}
+
+// Rule 6, no surplus: seats (1, 2, 1) with all three signing; dropping a 1-seat key keeps the quorum.
+test reject_surplus_signer() fail {
+  verify_update(
+    fx.state(4, 5, 6),
+    fx.update_with(fx.a_no_handover, [0, 1, 2], [0, 1, 2]),
+    fx.threshold,
+  ) != fx.state(4, 5, 6)
 }
 
 // Rule 1.
