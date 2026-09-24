@@ -9,10 +9,7 @@ import type { PermissionedCandidate } from "../candidates";
  * That is the responsibility of governance-provider.ts.
  */
 export type DatumFamily =
-  | "council"
-  | "tech-auth"
-  | "federated-ops"
-  | "terms-and-conditions";
+  "council" | "tech-auth" | "federated-ops" | "terms-and-conditions";
 
 /**
  * Decoded Terms & Conditions data.

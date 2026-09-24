@@ -527,8 +527,7 @@ function verifyThresholdConfigEntry(
     parsed.config as Record<string, Record<string, unknown>>
   )?.[network];
   const entry = networkConfig?.[check.tomlKey] as
-    | { bytes?: string }
-    | undefined;
+    { bytes?: string } | undefined;
   const tomlHash = entry?.bytes;
 
   if (!tomlHash) {
