@@ -1,5 +1,5 @@
 use bridge/beefy.{verify_consensus}
-use bridge/types.{BeefyConsensusProof, BeefyConsensusState, BeefyThreshold}
+use bridge/types.{BeefyConsensusState, BeefyThreshold, BridgeUpdate}
 use cardano/certificate.{RegisterCredential, UnregisterCredential}
 use cardano/script_context.{Publishing, ScriptContext, Withdrawing}
 use cardano/transaction.{OutputReference, Transaction}
@@ -25,7 +25,7 @@ validator committee_bridge_forever {
         expect BeefyConsensusState { current_committee, next_committee, .. }: BeefyConsensusState =
           datum
 
-        current_committee.id < next_committee.id
+        current_committee.validator_set_id < next_committee.validator_set_id
       },
     )
   }
@@ -56,7 +56,7 @@ validator committee_bridge_logic {
       Publishing { certificate: UnregisterCredential { .. }, .. } -> {
         let Transaction { inputs, outputs, reference_inputs, .. } = transaction
 
-        expect proof: BeefyConsensusProof = redeemer
+        expect update: BridgeUpdate = redeemer
 
         let beefy_nft = config.committee_bridge_forever_hash
 
@@ -72,7 +72,7 @@ validator committee_bridge_logic {
             config.beefy_signer_threshold_hash,
           )
 
-        verify_consensus(trusted_state, proof, datum, out_trusted_state)
+        verify_consensus(trusted_state, update, datum, out_trusted_state)
       }
 
       Publishing { certificate: RegisterCredential { .. }, .. } -> True

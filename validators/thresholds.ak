@@ -169,7 +169,7 @@ validator main_tech_auth_update_threshold {
 /// Validates that the datum is a well-formed MultisigThreshold with valid fractions:
 /// numerators must be non-negative and less than their corresponding denominators.
 fn beefy_validation(datum: Data) {
-  expect BeefyThreshold { numerator, denominator }: BeefyThreshold = datum
+  expect BeefyThreshold { numerator, denominator, .. }: BeefyThreshold = datum
 
   and {
     numerator < denominator,
