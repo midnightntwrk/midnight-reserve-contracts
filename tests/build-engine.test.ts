@@ -128,10 +128,14 @@ describe("staleDependency", () => {
         "",
       ),
       validator("thresholds.main_gov_threshold.else", "dd", ""),
+      validator("thresholds.beefy_signer_threshold.else", "ee", ""),
+      validator("committee_bridge.committee_bridge_forever.else", "ff", ""),
+      validator("committee_bridge_pool.committee_bridge_pool.else", "11", ""),
       validator("permissioned.council_logic.else", "", "00aa00"),
       validator("permissioned.tech_auth_logic.else", "", "00bb00"),
       validator("permissioned.federated_ops_logic.else", "", "00cc00"),
       validator("gov_auth.main_gov_auth.else", "", "00dd00"),
+      validator("committee_bridge.committee_bridge_logic.else", "", "ee ff 11"),
     ],
   };
 
@@ -210,9 +214,9 @@ describe("pinnedMappings (build --from-deployed)", () => {
   const tomlKeys = (fresh: ReadonlySet<string>, deployed = plutus) =>
     pinnedMappings(deployed, fresh).map((m) => m.tomlKey);
 
-  test("pins the 18 core hashes a full snapshot has, with their deployed hashes", () => {
+  test("pins the 19 core hashes a full snapshot has, with their deployed hashes", () => {
     const pinned = pinnedMappings(plutus, new Set());
-    expect(pinned).toHaveLength(18);
+    expect(pinned).toHaveLength(19);
     const reserve = pinned.find((m) => m.tomlKey === "reserve_two_stage_hash");
     expect(reserve?.hash).toBe(
       plutus.validators.find(
@@ -222,21 +226,21 @@ describe("pinnedMappings (build --from-deployed)", () => {
   });
 
   test("a title the snapshot lacks is compiled from new", () => {
-    const withoutTermsThreshold = {
+    const withoutBeefy = {
       ...plutus,
       validators: plutus.validators.filter(
-        (v) => v.title !== "thresholds.terms_and_conditions_threshold.else",
+        (v) => v.title !== "thresholds.beefy_signer_threshold.else",
       ),
     };
-    expect(tomlKeys(new Set(), withoutTermsThreshold)).not.toContain(
-      "terms_and_conditions_threshold_hash",
+    expect(tomlKeys(new Set(), withoutBeefy)).not.toContain(
+      "beefy_signer_threshold_hash",
     );
-    expect(tomlKeys(new Set(), withoutTermsThreshold)).toHaveLength(17);
+    expect(tomlKeys(new Set(), withoutBeefy)).toHaveLength(18);
   });
 
   test("the validators of the named components are compiled from new", () => {
     const keys = tomlKeys(new Set(DEPLOY_COMPONENT_VALIDATORS.reserve));
-    expect(keys).toHaveLength(16);
+    expect(keys).toHaveLength(17);
     expect(keys).not.toContain("reserve_two_stage_hash");
     expect(keys).not.toContain("reserve_forever_hash");
   });

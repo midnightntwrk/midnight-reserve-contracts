@@ -226,7 +226,7 @@ bytes = "90b6e4315d8b72a5864f28344f7e4ebb0b6ee09148eb5d73bd9b6b2f"
 encoding = "hex"
 
 [config.default.beefy_signer_threshold_hash]
-bytes = "f6a94508bf423ac9189c3a1f0013d238c5f19964da1b30bc98ea0ea6f8b155bb"
+bytes = "67ea887cc9d6953db0d565b17104da46d3d7cbdbf0019919e342cab6"
 encoding = "hex"
 
 [config.default.committee_bridge_two_stage_hash]
@@ -234,11 +234,11 @@ bytes = "75eb34768bd743b490c493ee204573c00987e7ae0167fa0d451c8a29"
 encoding = "hex"
 
 [config.default.committee_bridge_forever_hash]
-bytes = "9ff400add9255383ecef6a907792ebba52160ea3689663c10c825ec1"
+bytes = "e775a64864e3c80bf63ee63069fb661e485dd3d7721937ff49d1bc2a"
 encoding = "hex"
 
 [config.default.committee_bridge_pool_hash]
-bytes = "dec048dbc7eadb3944f66b17d7ffd37afb6bac7f9673be25866bfef4"
+bytes = "4d9da411d4140699bf20eaef68e2018c3be8aa5a49d3bcd98deaf73e"
 encoding = "hex"
 
 [config.default.bridge_signer_threshold_hash]
