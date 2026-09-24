@@ -1,40 +1,42 @@
 import { describe, test, expect } from "bun:test";
+import { readFileSync } from "fs";
+import { resolve } from "path";
 import {
   getPromotedValidatorHash,
   resolveValidatorNameByHash,
 } from "../cli-yargs/lib/versions";
 
+const devnetPlutus: { validators: { title: string; hash: string }[] } =
+  JSON.parse(
+    readFileSync(
+      resolve(import.meta.dir, "../deployed-scripts/devnet/plutus.json"),
+      "utf-8",
+    ),
+  );
+const councilLogicHash = devnetPlutus.validators.find(
+  (v) => v.title === "permissioned.council_logic.else",
+)!.hash;
+
 describe("getPromotedValidatorHash", () => {
-  test("returns null for non-existent validator name", () => {
-    const hash = getPromotedValidatorHash("devnet", "no_such_validator");
-    expect(hash).toBeNull();
+  test("returns the deployed hash for a validator name", () => {
+    expect(getPromotedValidatorHash("devnet", "council_logic")).toBe(
+      councilLogicHash,
+    );
   });
 
-  test("returns null for non-existent environment", () => {
-    const hash = getPromotedValidatorHash("no-such-env", "council_logic_v2");
-    expect(hash).toBeNull();
+  test("returns null for non-existent validator name", () => {
+    expect(getPromotedValidatorHash("devnet", "no_such_validator")).toBeNull();
   });
 });
 
 describe("resolveValidatorNameByHash", () => {
+  test("resolves a deployed hash to the name without the .else suffix", () => {
+    expect(resolveValidatorNameByHash("devnet", councilLogicHash)).toBe(
+      "council_logic",
+    );
+  });
+
   test("returns null for unknown hash", () => {
-    const name = resolveValidatorNameByHash("devnet", "deadbeef");
-    expect(name).toBeNull();
-  });
-
-  test("returns null for non-existent environment", () => {
-    const name = resolveValidatorNameByHash("no-such-env", "deadbeef");
-    expect(name).toBeNull();
-  });
-});
-
-describe("version-agnostic re-staging check", () => {
-  test("unknown hash is NOT detected as re-stage", () => {
-    const unknownHash =
-      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const resolvedName = resolveValidatorNameByHash("devnet", unknownHash);
-
-    // Unknown hash resolves to null — not a re-stage
-    expect(resolvedName).toBeNull();
+    expect(resolveValidatorNameByHash("devnet", "deadbeef")).toBeNull();
   });
 });

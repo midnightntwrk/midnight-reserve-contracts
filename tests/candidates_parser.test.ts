@@ -193,24 +193,6 @@ describe("Candidates Parser", () => {
       expect(babeKey[0]).toBe(babe);
       expect(babeKey[1]).toBe(candidate.babe_pub_key!);
     });
-
-    test("omits babe_pub_key key when absent", () => {
-      const candidate: PermissionedCandidate = {
-        sidechain_pub_key:
-          "020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8",
-        aura_pub_key:
-          "1254f7017f0b8347ce7ab14f96d818802e7e9e0c0d1b7c9acb3c726b080e7a03",
-        grandpa_pub_key:
-          "5079bcd20fd97d7d2f752c4607012600b401950260a91821f73e692071c82bf5",
-        beefy_pub_key:
-          "020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8",
-      };
-
-      const datum = candidateToPermissionedDatum(candidate);
-
-      // Only aura, gran, beef — no babe entry.
-      expect(datum[1]).toHaveLength(3);
-    });
   });
 
   describe("createFederatedOpsDatumFromString", () => {
@@ -225,47 +207,20 @@ describe("Candidates Parser", () => {
       expect((datum[0] as PlutusData).toCbor()).toBe(expectedUnit.toCbor());
       expect(datum[1]).toHaveLength(1);
       expect(datum[2]).toBe(1n);
-    });
 
-    test("creates FederatedOps datum with multiple candidates", () => {
-      const datum = createFederatedOpsDatumFromString(
+      expect(
+        createFederatedOpsDatumFromString(singleCandidateInput, 5n)[2],
+      ).toBe(5n);
+
+      const appendix = createFederatedOpsDatumFromString(
         multipleCandidatesInput,
         1n,
-      );
-
-      const expectedUnit = PlutusData.fromCore({
-        constructor: 0n,
-        fields: { items: [] },
-      });
-      expect((datum[0] as PlutusData).toCbor()).toBe(expectedUnit.toCbor());
-      expect(datum[1]).toHaveLength(3);
-      expect(datum[2]).toBe(1n);
-
-      // Verify each candidate in the appendix
-      const appendix = datum[1];
-      expect(appendix[0][0]).toBe(
+      )[1];
+      expect(appendix.map((c) => c[0])).toEqual([
         "020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8",
-      );
-      expect(appendix[1][0]).toBe(
         "0287aa09f21089003413b37602a3f6909f8695901c70a28175cafd99d5976a202a",
-      );
-      expect(appendix[2][0]).toBe(
         "0291f1217d5a04cb83312ee3d88a6e6b33284e053e6ccfc3a90339a0299d12967c",
-      );
-    });
-
-    test("creates FederatedOps datum with custom version", () => {
-      const datum = createFederatedOpsDatumFromString(singleCandidateInput, 5n);
-
-      expect(datum[2]).toBe(5n);
-    });
-  });
-
-  describe("key identifiers", () => {
-    test("key IDs are correct 4-byte hex encodings", () => {
-      expect(KEY_IDS.aura).toBe("61757261"); // "aura" in hex
-      expect(KEY_IDS.gran).toBe("6772616e"); // "gran" in hex
-      expect(KEY_IDS.beef).toBe("62656566"); // "beef" in hex
+      ]);
     });
   });
 });

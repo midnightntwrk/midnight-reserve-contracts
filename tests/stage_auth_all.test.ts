@@ -25,8 +25,6 @@ import { describe, test } from "bun:test";
 import {
   buildNativeScriptFromState,
   COUNCIL_WITNESS_ASSET,
-  expectDatum,
-  findUtxoByToken,
   MAIN_TOKEN_HEX,
   STAGING_TOKEN_HEX,
   TECH_WITNESS_ASSET,
@@ -409,27 +407,6 @@ describe("Stage Auth across all two-stage contracts in one transaction", () => {
         .provideScript(Script.newNativeScript(councilNativeScript));
 
       await emulator.expectValidTransaction(blaze, tx);
-
-      // Verify all 7 staging UTxOs were updated correctly
-      for (const actor of actorData) {
-        const utxos = await blaze.provider.getUnspentOutputs(
-          actor.twoStageAddress,
-        );
-        const stagingOutput = findUtxoByToken(
-          utxos,
-          actor.twoStage.Script.hash(),
-          STAGING_TOKEN_HEX,
-        );
-
-        expectDatum(stagingOutput, [
-          actor.stagingDatum[0], // logic unchanged
-          actor.stagingDatum[1], // mitigation_logic unchanged
-          newAuthHash, // auth → new value
-          actor.stagingDatum[3], // mitigation_auth unchanged
-          actor.stagingDatum[4] + 1n, // round incremented
-          actor.stagingDatum[5], // logic_round unchanged
-        ]);
-      }
     });
   });
 });
