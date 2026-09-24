@@ -1,125 +1,136 @@
+//// Merkle verification for the bridge: the authority-set multiproof (five
+//// node shapes, leaves returned in tree order) and the single-leaf MMR
+//// inclusion proof matching `polkadot-ckb-merkle-mountain-range` 0.8.2 as
+//// pallet-mmr uses it: keccak-256, `H(left || right)` when climbing, peaks
+//// bagged right-to-left as `H(right || left)`. Proof items, in order: one
+//// hash per peak left of the leaf's peak, the climb siblings bottom-up, then
+//// one item for everything right of the leaf's peak when any right peak
+//// exists. The walk is by leaf index: the binary digits of `leaf_count` give
+//// the peaks by descending height, and the bits of the leaf's offset inside
+//// its peak give left/right at each level.
+
 use aiken/builtin
 use aiken/collection/list
-use aiken/primitive/bytearray
-use bridge/codec.{scale_encode_beefy_mmr_leaf}
-use bridge/types.{AuthoritySetCommitment, BeefyMmrLeaf, Leaf, ProofNodeRec}
+use bridge/types.{Leaf, ProofNodeRec}
 
 fn merge_nodes(a: ByteArray, b: ByteArray) -> ByteArray {
-  bytearray.concat(a, b) |> builtin.keccak_256
+  builtin.append_bytearray(a, b) |> builtin.keccak_256
 }
 
-/// Prove `latest_mmr_leaf` is bound into `mmr_root`. The leaf hash is
-/// `keccak256(scale_encode_beefy_mmr_leaf(leaf))`; the proof items are
-/// folded onto it right-to-left. Only the latest leaf is ever proven, so
-/// the fold needs no leaf-position bookkeeping.
+fn pow2(e: Int) -> Int {
+  if e == 0 {
+    1
+  } else {
+    2 * pow2(e - 1)
+  }
+}
+
+fn bit_length(n: Int) -> Int {
+  if n == 0 {
+    0
+  } else {
+    1 + bit_length(n / 2)
+  }
+}
+
+/// Check `items` prove `leaf_hash` at `leaf_index` of an MMR with `leaf_count` leaves and root `root`.
 pub fn verify_mmr_leaf(
-  latest_mmr_leaf: BeefyMmrLeaf,
-  mmr_proof: Data<List<ByteArray>>,
-  mmr_root: ByteArray,
-) {
-  let hash = scale_encode_beefy_mmr_leaf(latest_mmr_leaf) |> builtin.keccak_256
-
-  mmr_root == calculate_mmr_root(mmr_proof, hash)
-}
-
-fn calculate_mmr_root(mmr_proof: Data<List<ByteArray>>, leaf_hash: ByteArray) {
-  list.foldr(
-    mmr_proof |> builtin.un_list_data,
-    leaf_hash,
-    fn(peak, acc) {
-      peak
-        |> builtin.un_b_data
-        |> bytearray.concat(acc, _)
-        |> builtin.keccak_256
-    },
-  )
-}
-
-test mmr_basic_proof_1() {
-  let mmr_root =
-    #"184d38dc3f285e2fda58e07212aec48e479f5d33a491ff805231954bfc5b2af3"
-
-  let beefy_leaf =
-    BeefyMmrLeaf {
-      version: 0,
-      parent_number: 552,
-      parent_hash: #"c40e4fe32fa489a14783829c1e6eb264aec75b012ff58ad82b165386e24a3279",
-      next_authority_set: AuthoritySetCommitment(
-        1,
-        1,
-        #"ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d",
-      ),
-      extra: "",
-    }
-
-  let hashed_leaf =
-    scale_encode_beefy_mmr_leaf(beefy_leaf) |> builtin.keccak_256
-
-  let peaks =
-    [
-      #"48d47d5df4bf531f27083bfbff0f55713421f483106065d421cbc43eb6f2cf20",
-      #"9535761693a1e47e66817cdf25371c1d64ef318ee8c85ce67d3d88b12aaa1b83",
-      #"6403a4149a189e4f9ab21045adee353c5ba4d878600f8d23e6eaba76d0ac6269",
-    ]
-
-  mmr_root == list.foldr(
-    peaks,
-    hashed_leaf,
-    fn(peak, acc) {
-      bytearray.concat(acc, peak)
-        |> builtin.keccak_256
-    },
-  )
-}
-
-test mmr_basic_proof_2() {
-  let mmr_root =
-    #"023bf85dd76a4d6b9d5a5020c083a2a82719c049d4091325e735c5d0fe625c0e"
-
-  let beefy_leaf =
-    BeefyMmrLeaf {
-      version: 0,
-      parent_number: 600,
-      parent_hash: #"9b9462bf599ab609ea9917918e6b69b54b2bff8b7be6fc0de8984b55f5fbb057",
-      next_authority_set: AuthoritySetCommitment(
-        1,
-        1,
-        #"ea5e28e6e07cc0d6ea6978c5c161f0da9f05ad6d5c259bd98a38d5ed63c6d66d",
-      ),
-      extra: "",
-    }
-
-  let hashed_leaf =
-    scale_encode_beefy_mmr_leaf(beefy_leaf) |> builtin.keccak_256
-
-  let peaks =
-    [
-      #"48d47d5df4bf531f27083bfbff0f55713421f483106065d421cbc43eb6f2cf20",
-      #"1f86e403238b1ce4aa6cd5c665e09821eb5a77acc6558c3e5d0192ec66bc1dee",
-      #"d8f44f672c85e903549242cfcfd619432e692386a684d99fce21ca863bc10869",
-      #"54d7061256cecc20b599f9a3331b9298b607a7f95cf3ee40cd1a50ab66792ae3",
-    ]
-
-  mmr_root == list.foldr(
-    peaks,
-    hashed_leaf,
-    fn(peak, acc) {
-      bytearray.concat(acc, peak)
-        |> builtin.keccak_256
-    },
-  )
-}
-
-/// Verify the give multi member merkle proof while
-/// also extracting the leaves during traversal
-pub fn verify_merkle_multi_proof_get_leaves(
   root: ByteArray,
-  proof: ProofNodeRec,
-) -> List<Leaf> {
+  leaf_hash: ByteArray,
+  leaf_index: Int,
+  leaf_count: Int,
+  items: List<ByteArray>,
+) -> Bool {
+  root == leaf_root(leaf_hash, leaf_index, leaf_count, items)
+}
+
+/// Root implied by `items` for `leaf_hash` at `leaf_index` of `leaf_count`; every item must be consumed.
+pub fn leaf_root(
+  leaf_hash: ByteArray,
+  leaf_index: Int,
+  leaf_count: Int,
+  items: List<ByteArray>,
+) -> ByteArray {
+  expect leaf_index >= 0 && leaf_index < leaf_count
+  walk_peaks(
+    leaf_count,
+    bit_length(leaf_count) - 1,
+    leaf_index,
+    leaf_hash,
+    items,
+    [],
+  )
+    |> bag
+}
+
+/// Peaks by descending height; `index` is relative to the current block. Returns peak hashes rightmost-first.
+fn walk_peaks(
+  remaining: Int,
+  height: Int,
+  index: Int,
+  hash: ByteArray,
+  items: List<ByteArray>,
+  acc: List<ByteArray>,
+) -> List<ByteArray> {
+  let leaves = pow2(height)
+  if remaining < leaves {
+    walk_peaks(remaining, height - 1, index, hash, items, acc)
+  } else if index >= leaves {
+    expect [left_peak, ..items] = items
+    walk_peaks(
+      remaining - leaves,
+      height - 1,
+      index - leaves,
+      hash,
+      items,
+      [left_peak, ..acc],
+    )
+  } else {
+    let peak_hash, items <- climb(hash, index, height, items)
+    if remaining == leaves {
+      expect [] = items
+      [peak_hash, ..acc]
+    } else {
+      expect [rhs] = items
+      [rhs, peak_hash, ..acc]
+    }
+  }
+}
+
+/// Bit `i` of `offset` set means the node at level `i` is a right child.
+fn climb(
+  hash: ByteArray,
+  offset: Int,
+  levels: Int,
+  items: List<ByteArray>,
+  callback: fn(ByteArray, List<ByteArray>) -> r,
+) -> r {
+  if levels == 0 {
+    callback(hash, items)
+  } else {
+    expect [sibling, ..items] = items
+    let hash =
+      if offset % 2 == 1 {
+        merge_nodes(sibling, hash)
+      } else {
+        merge_nodes(hash, sibling)
+      }
+    climb(hash, offset / 2, levels - 1, items, callback)
+  }
+}
+
+/// `acc = H(acc || next_left)` from the rightmost peak.
+fn bag(rightmost_first: List<ByteArray>) -> ByteArray {
+  expect [right, ..lefts] = rightmost_first
+  list.foldl(lefts, right, fn(left, acc) { merge_nodes(acc, left) })
+}
+
+/// Walk a multiproof, check its root, and return its leaves in tree order.
+pub fn verify_multiproof(root: ByteArray, proof: Data) -> List<Leaf> {
   let
     calculated_hash,
     leaves,
-  <- do_verify_merkle_multi_proof_get_leaves(proof, [])
+  <- do_verify_merkle_multi_proof_get_leaves(proof |> builtin.un_list_data, [])
 
   expect calculated_hash == root
 
