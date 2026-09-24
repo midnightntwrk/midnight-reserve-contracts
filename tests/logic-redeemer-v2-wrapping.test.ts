@@ -383,7 +383,7 @@ describe("LogicRedeemer::Normal v2 wrapping", () => {
       await expect(
         submitChangeCouncil(createRedeemerMapCbor(SIGNERS)),
       ).rejects.toThrow(
-        "Withdraw[0] failed to deserialise PlutusData using UnConstrData",
+        "Trace expect logic_redeemer: LogicRedeemer = redeemer",
       );
     });
   });
@@ -650,7 +650,7 @@ describe("LogicRedeemer::Normal v2 wrapping", () => {
       await expect(
         submitChangeTechAuth(createRedeemerMapCbor(SIGNERS)),
       ).rejects.toThrow(
-        "Withdraw[0] failed to deserialise PlutusData using UnConstrData",
+        "Trace expect logic_redeemer: LogicRedeemer = redeemer",
       );
     });
   });
@@ -989,7 +989,7 @@ describe("LogicRedeemer::Normal v2 wrapping", () => {
       await expect(
         submitChangeFederatedOps(PlutusData.newInteger(0n)),
       ).rejects.toThrow(
-        "Withdraw[0] failed to deserialise PlutusData using UnConstrData",
+        "Trace expect logic_redeemer: LogicRedeemer = redeemer",
       );
     });
   });
@@ -1300,7 +1300,7 @@ describe("LogicRedeemer::Normal v2 wrapping", () => {
       await expect(
         submitChangeTerms(PlutusData.newInteger(0n)),
       ).rejects.toThrow(
-        "Withdraw[0] failed to deserialise PlutusData using UnConstrData",
+        "Trace expect logic_redeemer: LogicRedeemer = redeemer",
       );
     });
   });
