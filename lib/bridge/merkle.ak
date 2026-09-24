@@ -2,9 +2,7 @@ use aiken/builtin
 use aiken/collection/list
 use aiken/primitive/bytearray
 use bridge/codec.{scale_encode_beefy_mmr_leaf}
-use bridge/types.{
-  AuthoritySetCommitment, BeefyMmrLeaf, Leaf, Peak, ProofNodeRec,
-}
+use bridge/types.{AuthoritySetCommitment, BeefyMmrLeaf, Leaf, ProofNodeRec}
 
 fn merge_nodes(a: ByteArray, b: ByteArray) -> ByteArray {
   bytearray.concat(a, b) |> builtin.keccak_256
@@ -16,7 +14,7 @@ fn merge_nodes(a: ByteArray, b: ByteArray) -> ByteArray {
 /// the fold needs no leaf-position bookkeeping.
 pub fn verify_mmr_leaf(
   latest_mmr_leaf: BeefyMmrLeaf,
-  mmr_proof: Data<List<Peak>>,
+  mmr_proof: Data<List<ByteArray>>,
   mmr_root: ByteArray,
 ) {
   let hash = scale_encode_beefy_mmr_leaf(latest_mmr_leaf) |> builtin.keccak_256
@@ -24,7 +22,7 @@ pub fn verify_mmr_leaf(
   mmr_root == calculate_mmr_root(mmr_proof, hash)
 }
 
-fn calculate_mmr_root(mmr_proof: Data<List<Peak>>, leaf_hash: ByteArray) {
+fn calculate_mmr_root(mmr_proof: Data<List<ByteArray>>, leaf_hash: ByteArray) {
   list.foldr(
     mmr_proof |> builtin.un_list_data,
     leaf_hash,
