@@ -20,31 +20,59 @@ bun test
 ```
 ├── validators/       # On-chain validator entry points (Aiken)
 ├── lib/              # Shared Aiken helpers
-├── cli/              # TypeScript CLI for deployment and transactions
+├── cli-yargs/        # TypeScript CLI for deployment and transactions
 ├── tests/            # Blaze emulator integration tests
 ├── deployments/      # Network-specific deployment artifacts
-└── spec/             # Detailed constraint specifications
+├── docs/             # Specifications, one directory per domain
+└── plans/            # Implementation plans, one directory per domain
 ```
 
 ## Documentation
 
-- `SPEC.md` - Architecture overview and design patterns
-- `AGENTS.md` - Development guidelines and conventions
-- `spec/validators.md` - Detailed validator constraint tags
+- [`docs/governance/validators.md`](docs/governance/validators.md) - validator constraint tags (RF-1, FC-2, ...) for audit
+- [`docs/governance/transactions.md`](docs/governance/transactions.md) - transaction construction by operation
+- [`docs/governance/upgrade.md`](docs/governance/upgrade.md) - Forever/Two-Stage upgrade flow
+- [`docs/governance/transaction-identification.md`](docs/governance/transaction-identification.md) - CIP-20 metadata for governance transactions
+- [`docs/bridge/`](docs/bridge/) - BEEFY committee bridge (light client, funding pool); plan in [`plans/bridge/`](plans/bridge/)
+- [`CLAUDE.md`](CLAUDE.md) - development guidelines, audit boundaries, workspace docs under `.claude/docs/`
 
 ## CLI Commands
 
-The CLI provides tooling for contract deployment and governance operations:
+The CLI (`cli-yargs/`, Blaze Cardano SDK) builds unsigned transactions for
+offline signing. `bun run cli-yargs/index.ts <command> --help` lists flags.
+
+| Command | Description |
+|---|---|
+| `deploy` | Generate initial deployment transactions (one-shot, always uses build blueprint) |
+| `deploy-staging-track` | Deploy staging track forever validators |
+| `deploy-cnight-minting` | Deploy cNIGHT minting two-stage upgrade contracts |
+| `change-council` | Update council multisig state |
+| `change-tech-auth` | Update technical authority multisig state |
+| `change-federated-ops` | Update federated operators state |
+| `change-terms` | Update terms and conditions |
+| `migrate-federated-ops` | Migrate federated ops to new logic (always unsigned) |
+| `mint-staging-state` | Mint StagingState NFT for a v2 logic contract |
+| `mint-tcnight` | Mint or burn TCnight tokens (non-mainnet only) |
+| `stage-upgrade` | Stage a v2 logic upgrade |
+| `promote-upgrade` | Promote a staged upgrade to main track |
+| `register-gov-auth` | Register gov auth scripts as stake credentials |
+| `simple-tx` | Generate dust/funding transactions |
+| `info` | Display contract addresses and deployment info |
+| `verify` | Verify on-chain state against expected configuration |
+| `generate-key` | Generate a new signing key |
+| `sign-and-submit` | Sign and submit a transaction to the network (**submits for real**) |
+| `combine-signatures` | Combine multiple signatures into a signed transaction |
+| `build` | Build Aiken contracts |
+| `build-from-deployed` | Build contract blueprint from deployed scripts |
 
 ```bash
-bun run cli/index.ts deploy           # Deploy contracts
-bun run cli/index.ts info             # Query contract state
-bun run cli/index.ts change-council   # Propose council change
-bun run cli/index.ts stage-upgrade    # Stage contract upgrade
-bun run cli/index.ts promote-upgrade  # Promote staged upgrade
+bun run cli-yargs/index.ts deploy --network preview --output deploy-tx.cbor
+# Sign with wallet, then:
+bun run cli-yargs/index.ts sign-and-submit --tx deploy-tx.cbor --network preview
 ```
 
-See `bun run cli/index.ts --help` for all commands.
+Adding a command: create `cli-yargs/commands/<name>/index.ts` exporting
+`command`, `describe`, `builder`, `handler`; register it in `cli-yargs/index.ts`.
 
 ## Environment Configuration
 
@@ -105,7 +133,7 @@ deployments/
 
 Each directory contains transaction files and deployment metadata specific to that environment.
 
-See `cli/lib/network-mapping.ts` for the implementation details.
+See `cli-yargs/lib/network-mapping.ts` for the implementation details.
 
 ## Contributing
 
