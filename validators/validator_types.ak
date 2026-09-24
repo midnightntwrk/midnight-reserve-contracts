@@ -1,5 +1,6 @@
 use aiken/crypto.{VerificationKeyHash}
-use bridge/types.{BeefyConsensusState, BridgeUpdate} as bridge_types
+use bridge/types.{BeefyConsensusState,
+  BeefyThreshold, BridgeUpdate} as bridge_types
 use cnight_generates_dust.{DustAction, DustMappingDatum}
 use forever/types.{FederatedOps, TermsAndConditions, Versioned} as ft
 use multisig/types.{MultisigThreshold, Sr25519PubKey}
@@ -87,6 +88,16 @@ validator z_committee_bridge_types {
     _output,
     _tx,
   ) {
+    fail
+  }
+
+  else(_) {
+    fail
+  }
+}
+
+validator z_beefy_threshold_types {
+  spend(_datum: Option<BeefyThreshold>, _redeemer, _output, _tx) {
     fail
   }
 
