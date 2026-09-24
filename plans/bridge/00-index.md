@@ -16,6 +16,7 @@ exception); no other audited file is touched. No TypeScript until phase 05.
 | 05 | [05-ts-reference-vectors.md](05-ts-reference-vectors.md) | `tests/bridge/reference/*.ts` (`@noble/curves`, `@noble/hashes`); `tests/vectors/bridge/*.json`; Aiken fixtures mirror; VM round trip | 00, 01 |
 | 06 | [06-cli-emulator.md](06-cli-emulator.md) | `deploy` covers the bridge triple, threshold, pool; `bridge-topup`, `bridge-update`, `bridge-info`; emulator e2e | 03, 05 |
 | 07 | [07-private-network.md](07-private-network.md) | compact-end-2-end stack with `midnight-node` from `lglo/beefy-on-main`; `bridge-bootstrap` from RPC; datum recompute check | 06 (gated on the node branch) |
+| 08 | [08-dependencies.md](08-dependencies.md) | Bun dependency audit and update (patch/minor, Blaze majors, tooling majors); Aiken untouched | 05 (VM test as smoke) |
 
 Phases 02 and 05 can run in parallel with 01 after 00.
 
