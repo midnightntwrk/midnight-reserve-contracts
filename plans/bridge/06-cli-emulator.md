@@ -5,12 +5,25 @@ Blaze emulator; every MIP contract-test bullet reproduced (spec §9, §10).
 
 ## Tasks
 
-### 1. `deploy`
-Extend the deploy sequence: `beefy_signer_threshold` with
-`(2, 3, base, per_signer)`; `committee_bridge_two_stage_upgrade`;
+### 0. Prerequisites and style
+Runs after `plans/effect/` 01–07: every command here is an Effect
+`program(argv)` over a `cli-yargs/lib/bridge-tx.ts` builder
+(`buildBridgeDeployTxs`, `buildBridgeUpdateTx`, `buildBridgeTopupTx`,
+`buildBridgeThresholdTx`), typed errors from `lib/effect/errors.ts`, and
+the emulator tests call the builders (Effect plan phase 06 rule).
+Config keys to add to `NetworkConfig`/`loadAikenConfig`:
+`committee_bridge_one_shot_hash/index`, `committee_threshold_one_shot_hash/index`
+(already in every `aiken.toml` profile). `getContractInstances` and
+`info`'s `buildContractList` gain the bridge scripts.
+
+### 1. `bridge-deploy` (own command; `deploy` is not extended)
+`beefy_signer_threshold` with `(2, 3, base, per_signer)` — its own
+`BeefyThreshold` datum builder, never `MultisigThreshold` (same four-`Int`
+shape); `committee_bridge_two_stage_upgrade` main + staging;
 `committee_bridge_forever` with a bootstrap datum from `--bridge-bootstrap <json>`
-(fields of `BeefyConsensusState`); register `committee_bridge_logic`.
-Pool needs no deployment (script address only); `info` prints its address.
+(fields of `BeefyConsensusState`); register `committee_bridge_logic`;
+reference-script UTxOs for forever, logic and pool. Pool needs no
+deployment (script address only); `info` prints its address.
 
 ### 2. New commands (`cli-yargs/commands/bridge-*/`)
 - `bridge-info`: light-client datum, threshold datum, pool balance and UTxO
@@ -30,7 +43,9 @@ Using the phase 05 reference to produce every update:
 3. Three handovers, funded: the second changes membership. Pool balance
    decreases by ≤ cap each time.
 4. Consumer: a test script reads the datum by reference and verifies an
-   MMR proof of an earlier block; success.
+   MMR proof of an earlier block; success. This is a new Aiken test
+   validator (`validators/test_bridge_consumer.ak` or under `lib/bridge/`):
+   ask before writing it (Aiken guardrail).
 5. Rejections on chain: one tx per rule 0–10 and 12–17 fails at phase 2
    (or phase 1 for the value rules).
 6. Empty pool: a funded update fails; `bridge-topup`; the same update
