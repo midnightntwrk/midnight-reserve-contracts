@@ -194,4 +194,4 @@ bun run cli promote-upgrade \
 | TSG-* | Stage (staging spending) constraints |
 | RUN-* | Withdrawal credential requirements |
 
-See `spec/validators.md` for complete constraint definitions.
+See [validators.md](validators.md) for complete constraint definitions.
