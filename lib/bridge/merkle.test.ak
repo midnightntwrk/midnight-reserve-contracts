@@ -84,8 +84,9 @@ test mmr_missing_item_fails() fail {
   leaf_root(fx.dummy_leaf_hash(5), 5, 7, items) != ""
 }
 
+// Without the range guard a negative index walks no peak and returns the leaf.
 test mmr_index_out_of_range_fails() fail {
-  leaf_root(fx.dummy_leaf_hash(0), 1, 1, []) != ""
+  leaf_root(fx.dummy_leaf_hash(0), -1, 1, []) != ""
 }
 
 // Golden vectors from the previous right-fold verifier: the proven leaf is

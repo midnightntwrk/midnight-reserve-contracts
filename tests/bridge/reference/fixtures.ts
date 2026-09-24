@@ -61,15 +61,17 @@ export type Scenario = {
   sigs: Uint8Array[];
 };
 
+/** `parentNumber` defaults to `blockNumber - 1`; `g_wrong_parent` commits a leaf that breaks rule 7 only. */
 export function scenario(
   name: string,
   setId: bigint,
   blockNumber: number,
   nextId: bigint,
+  parentNumber = blockNumber - 1,
 ): Scenario {
   const ph = parentHash(blockNumber);
   const leaf: MmrLeaf = {
-    parentNumber: blockNumber - 1,
+    parentNumber,
     parentHash: ph,
     nextAuthoritySet: leafNext(nextId),
   };
@@ -101,7 +103,18 @@ export const scenarios: Scenario[] = [
   scenario("d_skip_two", 4n, 7, 7n),
   scenario("e_block_one", 4n, 1, 5n),
   scenario("f_current_hands_over", 4n, 9, 6n),
+  scenario("g_wrong_parent", 4n, 7, 5n, 7),
 ];
+
+/** `a_no_handover` signature 0 with `s' = n - s`: same `r`, rejected by the low-S builtin. */
+export function highSTwin(sig: Uint8Array): Uint8Array {
+  const n = BigInt(
+    "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+  );
+  const s = BigInt("0x" + Buffer.from(sig.subarray(32)).toString("hex"));
+  const high = (n - s).toString(16).padStart(64, "0");
+  return new Uint8Array([...sig.subarray(0, 32), ...Buffer.from(high, "hex")]);
+}
 
 export const scenarioByName = (name: string): Scenario => {
   const s = scenarios.find((x) => x.name === name);
