@@ -42,18 +42,18 @@
     "@blaze-cardano/vm": "^0.2.3",
     "@noble/curves": "^2.4.0",
     "@noble/hashes": "^2.4.0",
-    "@types/bun": "latest",
-    "@typescript-eslint/eslint-plugin": "^8.49.0",
-    "@typescript-eslint/parser": "^8.49.0",
-    "cbor": "^10.0.11",
-    "eslint": "^9.39.4",
-    "globals": "^17.0.0",
-    "prettier": "^3.4.2",
+    "@types/bun": "^1.4.2",
+    "@typescript-eslint/eslint-plugin": "^8.70.1",
+    "@typescript-eslint/parser": "^8.70.1",
+    "cbor": "^10.0.12",
+    "eslint": "^9.39.5",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.9",
     "typescript": "^5.7.2"
   },
   "dependencies": {
     "@types/yargs": "^17.0.35",
     "toml": "^5.0.0",
-    "yargs": "^18.0.0"
+    "yargs": "^18.2.0"
   }
 }
