@@ -33,9 +33,13 @@ a command's test moves in the same commit as the command.
 
 ## Sequencing with the bridge plans
 
-Bridge Plan 06 adds `bridge-*` commands. If Effect phase 01 has landed,
-write them in Effect from the start (they are new code, no port). If not,
-write them in the current style and list them in phase 04 here.
+Decision 2026-09-24: the whole Effect migration (01–07) lands before bridge
+Plan 06. The `bridge-*` commands are then written in Effect from the start
+and are not part of phase 04. The bridge deployment is its own
+`bridge-deploy` command (two-stage main + staging, forever with the
+bootstrap datum, `beefy_signer_threshold`, logic registration); the
+governance `deploy` handler is not extended. Bridge Plan 08 (dependency
+audit) runs first, as the dependency baseline.
 
 ## Guardrails for every phase
 
