@@ -154,8 +154,7 @@ function getV2LogicScript(
 
   for (const className of patterns) {
     const ContractClass = module[className] as
-      | (new () => { Script: Script })
-      | undefined;
+      (new () => { Script: Script }) | undefined;
     if (ContractClass) {
       return new ContractClass();
     }
