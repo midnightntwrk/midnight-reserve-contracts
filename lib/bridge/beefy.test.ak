@@ -1,162 +1,210 @@
-use aiken/builtin
 use aiken/collection/list
 use aiken/primitive/bytearray
-use bridge/beefy.{check_auth_sigs_and_sum_seats}
+use bridge/beefy.{required, verify_update}
+use bridge/test_fixtures as fx
+use bridge/types.{AuthoritySetCommitment, BeefyConsensusState, BridgeUpdate}
 
-const validator_set =
-  [
-    #"020a1091341fe5664bfa1782d5e04779689068c916b04cb365ec3153755684d9a1",
-    #"0390084fdbf27d2b79d26a4f13f0ccd982cb755a661969143c37cbc49ef5b91f27",
-    #"0389411795514af1627765eceffcbd002719f031604fadd7d188e2dc585b4e1afb",
-    #"03bc9d0ca094bd5b8b3225d7651eac5d18c1c04bf8ae8f8b263eebca4e1410ed0c",
-    #"031d10105e323c4afce225208f71a6441ee327a65b9e646e772500c74d31f669aa",
-    #"0291f1217d5a04cb83312ee3d88a6e6b33284e053e6ccfc3a90339a0299d12967c",
-    #"036c6ae73d36d0c02b54d7877a57b1734b8e096134bd2c1b829431aa38f18bcce1",
-    #"020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8",
-    #"03c766411432fae7483fe9f0c175985fbbc5ca108bffb5b94db7d52dafd6f98bea",
-    #"02b8beaa492309f2332dd5445e20b8f74e26336c226daecf63cc4cd95a1ef3b140",
-    #"0287aa09f21089003413b37602a3f6909f8695901c70a28175cafd99d5976a202a",
-    #"035d35454a9671ccf959def176822d38e9e9aa5bbcfe50a7cbe69834dde9147ce5",
-  ]
-
-/// One 37-byte authority leaf per key, 1000 seats each.
-const leaves =
-  list.map(
-    validator_set,
-    fn(x) {
-      bytearray.concat(x, 1000 |> builtin.integer_to_bytearray(False, 4, _))
-    },
-  )
-
-const msg =
-  #"046d688031a1569c05fd4d8e3988580b3ad2073d6a1efc12eabf9b1dd33861bf086ea635990100000000000000000000"
-
-const signatures =
-  [
-    None,
-    Some(
-      #"79475984d45695729e9a0347f7c8abb7498f5ffb48e667740a8b18e6c3644ad53dcd4ec826479de5d176f46a95c34dc423605c6b21939c006b09e10b7896ed8d00",
-    ),
-    Some(
-      #"d6280dd328f7595280b0f23bb5a007429694ef70e4e23cceb50a7c3befd3d920105b5d4aabace45022d88b114986cf8f84c8b9be70c7a4c0e05bfac2f44d414801",
-    ),
-    None,
-    Some(
-      #"3f6b97738f348874fe59fa46b0731dfcdbf0ff88efdd9d094448381aad317c7b5b2cb1c14a4920c69ede0d83347b899b00ca8705948660f04f74cb76147cfc3401",
-    ),
-    Some(
-      #"b8e5a339011b0ba26fc0ac965d7ab4d8bc394f359784df1bedad6a44952c1cff72fcd4cf76be13658e357c78e275632c2b3e0e060a1ddecf6d45b7aa968e7f3200",
-    ),
-    Some(
-      #"998f9f5e05fcc6b0f581eff6bba32b9928fc6bf3753b159e43f11469932905215314d3a0611da8c830bb6528ea3434ebcd2b1ff87de79eb32fbb3512814a892201",
-    ),
-    Some(
-      #"f678467dcddd6c154e0c1cf7719671a801b12e2e7d96d5df1aa0e357d25a8c837f87bfa8c21f36f4ff16253bd3fbe3ebd6fb526f3653b6cb1eca0ae28cf6da0401",
-    ),
-    Some(
-      #"9a609794b8743a7fe1ac5df9c0ca03b4037b07be4dcfe02b62837a9b17df2bd21361b2ff027339c6678e09bffd1f9aa1f8fec24f9567be638d8377b3b88564da00",
-    ),
-    Some(
-      #"fc182e0a7a405f19360cb3a1941cfef8b2dde3f3e4ec19dcaee0611efe3cca6535a2c771f765a70dee2e045f74f582ac16976671b9682dbdae998330d0c3d6f701",
-    ),
-    None,
-    Some(
-      #"76ebd8e01d70ff7a71b18949cfef4a7fd507a902b480f360c4b1b36f406c0d756f1c39d264f9cef8bb241738905341a8b4775eef6bab8ee44452e30783cf10ee01",
-    ),
-  ]
-
-/// One signature per leaf in tree order; `""` marks a non-signer.
-const all_sigs =
-  list.map(
-    signatures,
-    fn(sig) {
-      when sig is {
-        None -> ""
-        Some(sig) -> bytearray.take(sig, 64)
-      }
-    },
-  )
-
-const signer_leaves =
-  list.zip(leaves, all_sigs)
-    |> list.filter_map(
-        fn(x) {
-          if x.2nd == "" {
-            None
-          } else {
-            Some(x.1st)
-          }
-        },
-      )
-
-const signer_sigs = list.filter(all_sigs, fn(sig) { sig != "" })
-
-fn at(l: List<a>, index: Int) -> a {
-  expect [item, ..rest] = l
-
-  if index == 0 {
-    item
-  } else {
-    at(rest, index - 1)
+// MIP quorum table at (2, 3).
+test required_table() {
+  and {
+    required(10, 2, 3) == 7,
+    required(6, 2, 3) == 5,
+    required(3, 2, 3) == 3,
+    required(1, 2, 3) == 1,
+    required(4, 2, 3) == 3,
   }
 }
 
-test beefy_candidate_sig() {
-  let i =
-    check_auth_sigs_and_sum_seats(
-      signer_leaves,
-      signer_sigs,
-      msg |> builtin.keccak_256,
-    )
-
-  i == 9000
+fn advanced(st: BeefyConsensusState, s: fx.Scenario) -> BeefyConsensusState {
+  BeefyConsensusState {
+    ..st,
+    latest_mmr_root: s.mmr_root,
+    latest_height: s.block_number,
+  }
 }
 
-test beefy_candidate_sig_wrong_hash() fail {
-  let signed_seats =
-    check_auth_sigs_and_sum_seats(
-      signer_leaves,
-      signer_sigs,
-      #"01" |> builtin.keccak_256,
-    )
-
-  signed_seats >= 0
+// Boundary accept: block_number = latest_height + 1, seats = required, leaf names next.
+test accept_no_handover() {
+  let st = fx.state(4, 5, 6)
+  verify_update(st, fx.update(fx.a_no_handover), fx.threshold) == advanced(
+    st,
+    fx.a_no_handover,
+  )
 }
 
-test beefy_non_signer_leaves_skipped() {
-  check_auth_sigs_and_sum_seats(leaves, all_sigs, msg |> builtin.keccak_256) == 9000
+test accept_handover() {
+  let st = fx.state(4, 5, 7)
+  verify_update(st, fx.update(fx.b_handover), fx.threshold) == BeefyConsensusState {
+    latest_mmr_root: fx.b_handover.mmr_root,
+    latest_height: 8,
+    beefy_activation_block: 1,
+    current_committee: fx.committee(5),
+    next_committee: fx.committee(6),
+  }
 }
 
-test beefy_leaf_without_signature() fail {
-  check_auth_sigs_and_sum_seats(leaves, signer_sigs, msg |> builtin.keccak_256) >= 0
+test accept_block_one() {
+  let st = fx.state(4, 5, 0)
+  verify_update(st, fx.update(fx.e_block_one), fx.threshold) == advanced(
+    st,
+    fx.e_block_one,
+  )
 }
 
-test single_sig_check() {
-  expect Some(sig) = at(signatures, 1)
-  let sig = bytearray.take(sig, 64)
-
-  let msg_hash = msg |> builtin.keccak_256
-
-  builtin.verify_ecdsa_secp256k1_signature(at(validator_set, 1), msg_hash, sig)
+test accept_signers_only_multiproof() {
+  let st = fx.state(4, 5, 6)
+  and {
+    verify_update(
+      st,
+      fx.update_with(fx.a_no_handover, [0, 1], [0, 1]),
+      fx.threshold,
+    ) == advanced(st, fx.a_no_handover),
+    verify_update(
+      st,
+      fx.update_with(fx.a_no_handover, [1, 2], [1, 2]),
+      fx.threshold,
+    ) == advanced(st, fx.a_no_handover),
+    verify_update(
+      st,
+      fx.update_with(fx.a_no_handover, [0, 1, 2], [0, 1, 2]),
+      fx.threshold,
+    ) == advanced(st, fx.a_no_handover),
+  }
 }
 
-test other() {
-  let msg = #"0fde9e2d2862fe7c4a38d29f479dfb96c3e230893a23d8ccc2189d3169b47099"
-  let sig1 =
-    #"d31442fe8f856d2fde9367cfe45703b61a4046146d9a637a939dd6b99ba64753668ddc45f3fb4438388d27c0e226f0fc6897e79dac89eb2c58b9c4be5eb18a0b"
+// Rule 1.
+test reject_stale_height() fail {
+  let st = fx.state(4, 5, 7)
+  verify_update(st, fx.update(fx.a_no_handover), fx.threshold) != st
+}
 
-  let pubkey1 =
-    #"c12f0cb1ab46ee09fe775a082b4b69ab0e8e8eddd72b7ca8c7b40514f1811ca6"
+// Rule 2.
+test reject_unknown_set() fail {
+  let st = fx.state(6, 7, 6)
+  verify_update(st, fx.update(fx.a_no_handover), fx.threshold) != st
+}
 
-  let sig2 =
-    #"f9d65b7c723403d721f57ff6d9eec81aebece11a23eade69f5d2e0d9266c42705dd986680f41749932acdd4b19f6b50ce61b723ee03187ec270e3dce39a71e01"
+// Rule 3.
+test reject_wrong_keyset() fail {
+  let st = fx.state(4, 5, 6)
+  let st =
+    BeefyConsensusState {
+      ..st,
+      current_committee: AuthoritySetCommitment {
+        ..st.current_committee,
+        keyset_commitment: fx.keccak(fx.keyset_root),
+      },
+    }
+  verify_update(st, fx.update(fx.a_no_handover), fx.threshold) != st
+}
 
-  let pubkey2 =
-    #"d9ccaf846d3f2db7e95fdc1be44a82db5f0d116b999e7e5411f3c0bf07e186db"
+// Rule 5.
+test reject_bad_signature() fail {
+  let s = fx.a_no_handover
+  let update = fx.update(s)
+  expect [sig0, ..rest] = update.signatures
+  let flipped = bytearray.concat(#"00", bytearray.drop(sig0, 1))
+  let update = BridgeUpdate { ..update, signatures: [flipped, ..rest] }
+  verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
+}
 
-  let thing = builtin.verify_ed25519_signature(pubkey1, msg, sig1)
+// Same r, s' = n - s: valid under a malleable verifier, rejected by the builtin.
+test reject_high_s_signature() fail {
+  let update = fx.update(fx.a_no_handover)
+  expect [_, ..rest] = update.signatures
+  let high_s =
+    #"b6cda229807a87bb7c59c97b06cdb7e166599f551102bcb3f2a22def7b7714c9bf5c2ac2f16187c52456adc89e0c73508958ce7a9de5318e5483cd29f03c9be8"
+  let update = BridgeUpdate { ..update, signatures: [high_s, ..rest] }
+  verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
+}
 
-  let thing2 = builtin.verify_ed25519_signature(pubkey2, msg, sig2)
+test reject_swapped_signatures() fail {
+  let s = fx.a_no_handover
+  let update = fx.update(s)
+  expect [sig0, sig1, sig2] = update.signatures
+  let update = BridgeUpdate { ..update, signatures: [sig1, sig0, sig2] }
+  verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
+}
 
-  thing && thing2
+test reject_fewer_signatures() fail {
+  let update = fx.update(fx.a_no_handover)
+  let update =
+    BridgeUpdate { ..update, signatures: list.take(update.signatures, 2) }
+  verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
+}
+
+test reject_more_signatures() fail {
+  let update = fx.update(fx.a_no_handover)
+  let update =
+    BridgeUpdate { ..update, signatures: list.concat(update.signatures, [""]) }
+  verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
+}
+
+test reject_other_commitment_signature() fail {
+  let update = fx.update(fx.a_no_handover)
+  let update = BridgeUpdate { ..update, signatures: fx.d_skip_two.sigs }
+  verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
+}
+
+// Rule 6: seats (1, 2, 1), required 3.
+test reject_quorum_short() fail {
+  verify_update(
+    fx.state(4, 5, 6),
+    fx.update_with(fx.a_no_handover, [0, 1, 2], [0, 2]),
+    fx.threshold,
+  ) != fx.state(4, 5, 6)
+}
+
+test reject_single_signer() fail {
+  verify_update(
+    fx.state(4, 5, 6),
+    fx.update_with(fx.a_no_handover, [1], [1]),
+    fx.threshold,
+  ) != fx.state(4, 5, 6)
+}
+
+test reject_no_signers() fail {
+  verify_update(
+    fx.state(4, 5, 6),
+    fx.update_with(fx.a_no_handover, [0, 1, 2], []),
+    fx.threshold,
+  ) != fx.state(4, 5, 6)
+}
+
+// Rule 7.
+test reject_parent_number() fail {
+  let update = fx.update(fx.a_no_handover)
+  let leaf = update.leaf
+  let update =
+    BridgeUpdate {
+      ..update,
+      leaf: fx.leaf_with_parent(leaf, leaf.parent_number - 1),
+    }
+  verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
+}
+
+// Rule 8.
+test reject_mmr_proof() fail {
+  let update = fx.update(fx.a_no_handover)
+  expect [first, ..rest] = update.mmr_proof
+  let update = BridgeUpdate { ..update, mmr_proof: [fx.keccak(first), ..rest] }
+  verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
+}
+
+// Rule 9: leaf names next + 2.
+test reject_skip_two() fail {
+  verify_update(fx.state(4, 5, 6), fx.update(fx.d_skip_two), fx.threshold) != fx.state(
+    4,
+    5,
+    6,
+  )
+}
+
+// Rule 10: next committee signs a leaf that does not advance.
+test reject_next_signs_without_handover() fail {
+  verify_update(
+    fx.state(4, 5, 7),
+    fx.update(fx.c_next_signs_same),
+    fx.threshold,
+  ) != fx.state(4, 5, 7)
 }

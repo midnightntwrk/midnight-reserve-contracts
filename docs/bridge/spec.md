@@ -139,11 +139,12 @@ encoding is injective only because of them (see the malleability tests in
 
 Multiproof: MIP §Notation *multiproof*, exactly the five node shapes
 `lib/bridge/merkle.ak` walks today. Leaves are returned in tree order; since
-leaves are sorted by key, tree order is key order (rule 4 checks it).
+leaves are sorted by key, tree order is key order (not checked on chain, §15).
 
 MMR proof: `LeafProof.items` from `pallet-mmr`, verified as `mmr-lib` 0.8.2
-`calculate_root` for a single leaf: path siblings by leaf-index bits, then
-one bagged item for the right peaks, then the left peaks. Index and count
+`calculate_root` for a single leaf: one item per peak left of the leaf's
+peak, then the path siblings by leaf-index bits, then one bagged item for
+the right peaks (`gen_proof` walks the peaks left to right). Index and count
 are computed, not supplied: index `block_number − 1`, count `block_number`.
 The same walk exists as `lib/rewards/mmr.ak` `verify_leaf` on the rewards
 branch; phase 01 ports it into `lib/bridge/merkle.ak` and the rewards code
@@ -153,8 +154,11 @@ imports it from there after merge.
 
 ## 5. Light-client update (`committee_bridge_logic`, MIP rules 0–10)
 
-Trigger: `Withdrawing` (or `Publishing UnregisterCredential`) of the logic
-credential. `Publishing RegisterCredential` is always allowed. Inputs the
+Trigger: `Withdrawing` of the logic credential only. The audited
+validators also run their logic on `Publishing UnregisterCredential`; they
+are permissioned, the bridge is not, so that arm would let anyone with a
+valid update deregister the credential and block later updates until it is
+registered again. `Publishing RegisterCredential` is always allowed. Inputs the
 logic reads:
 
 - `state_in`: inline datum of the input whose value is exactly the forever
@@ -167,17 +171,17 @@ logic reads:
 
 | MIP rule | Check | Where |
 |---|---|---|
-| 0 | forever output exists, value is ADA + NFT only, `lovelace(out) ≥ lovelace(in)`, datum = computed state | logic; ADA check is new |
+| 0 | forever output exists, value is ADA + NFT only, `lovelace(out) ≥ lovelace(in)`, datum = computed state | `committee_bridge_logic` |
 | 1 | `block_number > latest_height` | `verify_update` |
 | 2 | `validator_set_id ∈ {current.validator_set_id, next.validator_set_id}` → `S` | `verify_update` |
 | 3 | multiproof root = `S.keyset_commitment` | `merkle.verify_multiproof` |
-| 4 | leaves strictly increasing by key | new, one pass over leaves |
-| 5 | `length(signatures) = length(leaves)`; `sig_i = ""` skips leaf `i`, else `verify_ecdsa_secp256k1_signature(key_i, keccak(commitment), sig_i)` | new zip, replaces `find_auth_in_leaves` |
+| 4 | leaves strictly increasing by key | not enforced, see §15 |
+| 5 | `length(signatures) = length(leaves)`; `sig_i = ""` skips leaf `i`, else `verify_ecdsa_secp256k1_signature(key_i, keccak(commitment), sig_i)` | `sum_signed_seats` |
 | 6 | `Σ seats ≥ required(S.seat_count, numerator, denominator)` | `verify_update` |
-| 7 | `leaf.parent_number = block_number − 1` | new |
+| 7 | `leaf.parent_number = block_number − 1` | `verify_update` |
 | 8 | MMR proof of `keccak(SCALE(leaf))` at index `block_number − 1`, count `block_number`, against `mmr_root` | `merkle.verify_mmr_leaf` (index walk) |
-| 9 | `leaf.next.validator_set_id ∈ {next.validator_set_id, next.validator_set_id + 1}` | replaces `>` |
-| 10 | not (`validator_set_id = next.validator_set_id` and `leaf.next.validator_set_id ≠ next.validator_set_id + 1`) | new |
+| 9 | `leaf.next.validator_set_id ∈ {next.validator_set_id, next.validator_set_id + 1}` | `verify_update` |
+| 10 | not (`validator_set_id = next.validator_set_id` and `leaf.next.validator_set_id ≠ next.validator_set_id + 1`) | `verify_update` |
 
 Next state: `latest_mmr_root ← mmr_root`, `latest_height ← block_number`;
 handover iff `leaf.next.validator_set_id = next.validator_set_id + 1`, then
@@ -186,7 +190,8 @@ handover iff `leaf.next.validator_set_id = next.validator_set_id + 1`, then
 
 Bootstrap (`committee_bridge_forever` mint): `input_linked_mint` plus
 `next.validator_set_id = current.validator_set_id + 1`,
-`latest_height = beefy_activation_block − 1`, both roots 32 bytes. Every
+`latest_height = beefy_activation_block − 1`, both `seat_count > 0`,
+`latest_mmr_root` and both `keyset_commitment` 32 bytes. Every
 value is recomputable from Midnight state at `beefy_activation_block`
 (MIP §Bootstrap).
 
@@ -272,7 +277,8 @@ state).
   `debit = cap = fee`).
 - MIP §Test vectors, all of them: commitment root with seats `(1, 2, 1)`
   and the same root from `[k2, k1, k2, k3]`; the 48 signed bytes; the 82
-  leaf bytes; quorum table; height boundary; three-peak MMR item order;
+  leaf bytes; quorum table; height boundary; three-peak MMR item order
+  (`[P1, siblings…, R]`, as `mmr-lib` `gen_proof` emits: left peaks first);
   MMR edges (`block_number = 1`, leaf that is a peak); bootstrap; handover
   table (`4/5`: leaf `5` by `4` no handover; leaf `6` by `5` handover; leaf
   `5` by `5` rejected; leaf `7` rejected).
@@ -365,6 +371,7 @@ index-and-count MMR walk as rule 8.
 | "the light client itself has the one redeemer" | logic script with one redeemer behind the forever/two-stage wrapper | script replacement needs Council + Tech Auth; consumers keep one NFT to follow |
 | pool rules stated on the pool spend | enforced by the bridge logic; pool spend = forever NFT is an input | pool cannot be spent without a valid update running |
 | rule 12: one output at the pool address | plus lovelace-only value, no datum | tighter; a tokened output would be unspendable garbage |
-| bootstrap prose | `next = current + 1`, `latest_height = activation − 1` checked at mint | tighter than `next.id > current.id` today |
+| bootstrap prose | `next = current + 1`, `latest_height = activation − 1`, both `seat_count > 0`, 32-byte roots checked at mint | tighter than `next.id > current.id` today; `required(0, n, d) = 0` would accept unsigned updates |
 | MMR proof "verified as `calculate_root` does" | index-walk form (equal results, flat cost) | proven equal on all leaves of sizes 1..24 and golden vectors on the rewards branch |
+| rule 4: leaves in strictly increasing key order | not checked | the multiproof root binds every leaf to the committed tree, so order adds nothing to the bridge; key order matters only to the rewards range proofs, which check it themselves |
 | rule 5: one signature per leaf | an empty signature marks a non-signer leaf, seats not counted | a leaf adds seats only with a valid signature; the relay may include non-signers at 1 byte each |
