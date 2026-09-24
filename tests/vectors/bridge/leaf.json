@@ -1,0 +1,13 @@
+{
+  "version": 0,
+  "parent_number": 600,
+  "parent_hash": "9b9462bf599ab609ea9917918e6b69b54b2bff8b7be6fc0de8984b55f5fbb057",
+  "next_authority_set": {
+    "validator_set_id": 1,
+    "seat_count": 4,
+    "keyset_commitment": "052f9919c3c309e60ca131820fde7ce63f1d1d7d3746f066f5263b285c787096"
+  },
+  "extra": "",
+  "bytes": "00580200009b9462bf599ab609ea9917918e6b69b54b2bff8b7be6fc0de8984b55f5fbb057010000000000000004000000052f9919c3c309e60ca131820fde7ce63f1d1d7d3746f066f5263b285c78709600",
+  "hash": "cb10d5c8106c0090a437b21d25003a90ceb0c6cb9131e0be27434b7496f5e4e1"
+}

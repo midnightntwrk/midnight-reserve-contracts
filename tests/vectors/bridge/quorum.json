@@ -1,0 +1,30 @@
+{
+  "numerator": 2,
+  "denominator": 3,
+  "cases": [
+    {
+      "seat_count": 10,
+      "required": 7,
+      "accepted": 7,
+      "rejected": 6
+    },
+    {
+      "seat_count": 6,
+      "required": 5,
+      "accepted": 5,
+      "rejected": 4
+    },
+    {
+      "seat_count": 3,
+      "required": 3,
+      "accepted": 3,
+      "rejected": 2
+    },
+    {
+      "seat_count": 1,
+      "required": 1,
+      "accepted": 1,
+      "rejected": null
+    }
+  ]
+}

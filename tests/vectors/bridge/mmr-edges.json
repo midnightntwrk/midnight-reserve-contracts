@@ -1,0 +1,41 @@
+[
+  {
+    "note": "one leaf: no items, root = leaf hash",
+    "leaf_count": 1,
+    "leaf_index": 0,
+    "leaf_hash": "e8e77626586f73b955364c7b4bbf0bb7f7685ebd40e852b164633a4acbd3244c",
+    "peaks": [
+      "e8e77626586f73b955364c7b4bbf0bb7f7685ebd40e852b164633a4acbd3244c"
+    ],
+    "items": [],
+    "root": "e8e77626586f73b955364c7b4bbf0bb7f7685ebd40e852b164633a4acbd3244c"
+  },
+  {
+    "note": "leaf is its own peak: left peaks only",
+    "leaf_count": 5,
+    "leaf_index": 4,
+    "leaf_hash": "989a7025bda9312b19569d9e84e33a624e7fc007e54db23b6758d5f819647071",
+    "peaks": [
+      "1d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af4907",
+      "989a7025bda9312b19569d9e84e33a624e7fc007e54db23b6758d5f819647071"
+    ],
+    "items": [
+      "1d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af4907"
+    ],
+    "root": "325e921f024441e901387c3942d8008467671e55070f869eb75b256733d76256"
+  },
+  {
+    "note": "leaf is its own peak: left peaks only",
+    "leaf_count": 9,
+    "leaf_index": 8,
+    "leaf_hash": "38e18ac9b4d78020e0f164d6da9ea61b962ab1975bcf6e8e80e9a9fc2ae509f8",
+    "peaks": [
+      "60d08524143a468298306250e9219a97584c9b0dc4dd0bd9c302e1a380bba744",
+      "38e18ac9b4d78020e0f164d6da9ea61b962ab1975bcf6e8e80e9a9fc2ae509f8"
+    ],
+    "items": [
+      "60d08524143a468298306250e9219a97584c9b0dc4dd0bd9c302e1a380bba744"
+    ],
+    "root": "e4a4ab9cc26b1d905408fb7a613436cd79904f4a040d98f239a54a80add5c710"
+  }
+]
