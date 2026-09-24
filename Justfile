@@ -12,7 +12,7 @@ aiken-check verbosity="verbose":
     aiken check -S -t {{verbosity}}
 
 
-check:
+check: aiken-check
     bun run check
 
 
