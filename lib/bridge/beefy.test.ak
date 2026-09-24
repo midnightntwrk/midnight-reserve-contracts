@@ -1,8 +1,10 @@
 use aiken/collection/list
 use aiken/primitive/bytearray
-use bridge/beefy.{required, verify_update}
+use bridge/beefy.{required}
 use bridge/test_fixtures as fx
-use bridge/types.{AuthoritySetCommitment, BeefyConsensusState, BridgeUpdate}
+use bridge/types.{
+  AuthoritySetCommitment, BeefyConsensusState, BeefyThreshold, BridgeUpdate,
+}
 
 // MIP quorum table at (2, 3).
 test required_table() {
@@ -15,12 +17,34 @@ test required_table() {
   }
 }
 
+fn verify_update(
+  st: BeefyConsensusState,
+  update: BridgeUpdate,
+  threshold: BeefyThreshold,
+) -> BeefyConsensusState {
+  let next, _ <- beefy.verify_update(st, update, threshold)
+  next
+}
+
 fn advanced(st: BeefyConsensusState, s: fx.Scenario) -> BeefyConsensusState {
   BeefyConsensusState {
     ..st,
     latest_mmr_root: s.mmr_root,
     latest_height: s.block_number,
   }
+}
+
+test leaf_count_is_multiproof_size() {
+  let
+    _,
+    n,
+  <-
+    beefy.verify_update(
+      fx.state(4, 5, 6),
+      fx.update_with(fx.a_no_handover, [0, 1], [0, 1]),
+      fx.threshold,
+    )
+  n == 2
 }
 
 // Boundary accept: block_number = latest_height + 1, seats = required, leaf names next.
