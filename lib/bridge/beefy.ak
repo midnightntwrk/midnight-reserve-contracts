@@ -1,6 +1,7 @@
 //// Light-client update: MIP rules 1–10 (spec §5) and the next state. Rule 0
-//// (the continuing output) lives in `validators/committee_bridge.ak`; rule 4
-//// (key order) is not enforced, the multiproof root already binds the leaves.
+//// (the continuing output) lives in `validators/committee_bridge.ak`, the
+//// pool rules in `bridge/pool.ak`; rule 4 (key order) is not enforced, the
+//// multiproof root already binds the leaves.
 
 use aiken/builtin
 use bridge/codec.{scale_encode_beefy_mmr_leaf, scale_encode_commitment}
@@ -12,12 +13,13 @@ pub fn required(seat_count: Int, numerator: Int, denominator: Int) -> Int {
   seat_count - ( seat_count - 1 ) * ( denominator - numerator ) / denominator
 }
 
-/// Apply MIP rules 1–10 to `update` and return the next state; any failed rule aborts.
+/// Apply MIP rules 1–10 to `update`; any failed rule aborts. Continues with the next state and the multiproof leaf count.
 pub fn verify_update(
   state: BeefyConsensusState,
   update: BridgeUpdate,
   threshold: BeefyThreshold,
-) -> BeefyConsensusState {
+  continue: fn(BeefyConsensusState, Int) -> r,
+) -> r {
   let BeefyConsensusState {
     latest_height,
     beefy_activation_block,
@@ -54,12 +56,9 @@ pub fn verify_update(
     scale_encode_commitment(mmr_root, block_number, validator_set_id)
       |> builtin.keccak_256
 
-  expect
-    sum_signed_seats(leaves, signatures, msg_hash) >= required(
-      signing.seat_count,
-      numerator,
-      denominator,
-    )
+  let seats, leaf_count <- sum_signed_seats(leaves, signatures, msg_hash)
+
+  expect seats >= required(signing.seat_count, numerator, denominator)
 
   expect leaf.parent_number == block_number - 1
 
@@ -78,51 +77,63 @@ pub fn verify_update(
   expect leaf_next_id == next_id || leaf_next_id == next_id + 1
   expect validator_set_id != next_id || leaf_next_id == next_id + 1
 
-  if leaf_next_id == next_id + 1 {
-    BeefyConsensusState {
-      latest_mmr_root: mmr_root,
-      latest_height: block_number,
-      beefy_activation_block,
-      current_committee: next_committee,
-      next_committee: leaf.next_authority_set,
+  let next_state =
+    if leaf_next_id == next_id + 1 {
+      BeefyConsensusState {
+        latest_mmr_root: mmr_root,
+        latest_height: block_number,
+        beefy_activation_block,
+        current_committee: next_committee,
+        next_committee: leaf.next_authority_set,
+      }
+    } else {
+      BeefyConsensusState {
+        ..state,
+        latest_mmr_root: mmr_root,
+        latest_height: block_number,
+      }
     }
-  } else {
-    BeefyConsensusState {
-      ..state,
-      latest_mmr_root: mmr_root,
-      latest_height: block_number,
-    }
-  }
+
+  continue(next_state, leaf_count)
 }
 
-/// Rule 5: one signature per multiproof leaf (`""` for a non-signer); signers' seats summed.
+/// Rule 5: one signature per multiproof leaf (`""` for a non-signer). Continues with the signed seats and the leaf count.
 pub fn sum_signed_seats(
   leaves: List<Leaf>,
   signatures: List<ByteArray>,
   msg_hash: ByteArray,
-) -> Int {
+  continue: fn(Int, Int) -> r,
+) -> r {
   when signatures is {
     [] -> {
       expect [] = leaves
-      0
+      continue(0, 0)
     }
     [signature, ..rest_signatures] -> {
       expect [leaf, ..rest_leaves] = leaves
       expect builtin.length_of_bytearray(leaf) == 37
 
-      let key = builtin.slice_bytearray(0, 33, leaf)
-
-      let rest = sum_signed_seats(rest_leaves, rest_signatures, msg_hash)
+      let
+        seats,
+        count,
+      <- sum_signed_seats(rest_leaves, rest_signatures, msg_hash)
 
       if signature == "" {
-        rest
+        continue(seats, count + 1)
       } else {
         expect
-          builtin.verify_ecdsa_secp256k1_signature(key, msg_hash, signature)
+          builtin.verify_ecdsa_secp256k1_signature(
+            builtin.slice_bytearray(0, 33, leaf),
+            msg_hash,
+            signature,
+          )
 
-        rest + (
-          builtin.slice_bytearray(33, 4, leaf)
-            |> builtin.bytearray_to_integer(False, _)
+        continue(
+          seats + (
+            builtin.slice_bytearray(33, 4, leaf)
+              |> builtin.bytearray_to_integer(False, _)
+          ),
+          count + 1,
         )
       }
     }

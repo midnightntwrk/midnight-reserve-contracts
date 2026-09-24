@@ -23,7 +23,7 @@ beefy_signer_threshold  (fixed; config.committee_threshold_one_shot_*)
 committee_bridge_{forever, two_stage_upgrade, logic}
       ^ input carrying the forever NFT
       |
-committee_bridge_pool   (fixed; depends on config.committee_bridge_forever_hash)
+committee_bridge_pool   (fixed; depends on config.committee_bridge_two_stage_hash)
 ```
 
 | File | Validator | Purposes |
@@ -32,14 +32,15 @@ committee_bridge_pool   (fixed; depends on config.committee_bridge_forever_hash)
 | `validators/committee_bridge.ak` | `committee_bridge_two_stage_upgrade` | mint, spend (stage / promote under `gov_auth`) |
 | `validators/committee_bridge.ak` | `committee_bridge_logic` | withdraw (the update, rules 0–10 and 12–17), publish |
 | `validators/thresholds.ak` | `beefy_signer_threshold` | mint, spend (`threshold_validation` under Council + Tech Auth) |
-| `validators/committee_bridge_pool.ak` | `committee_bridge_pool` | spend (gate: the forever NFT is an input of the same tx) |
+| `validators/committee_bridge_pool.ak` | `committee_bridge_pool` | spend (gate: the running logic, read from the two-stage `main` datum, withdraws in the same tx) |
 
 | File | Content |
 |---|---|
 | `lib/bridge/types.ak` | every datum and redeemer below |
 | `lib/bridge/codec.ak` | SCALE encoders: 48-byte commitment, 82-byte leaf |
 | `lib/bridge/merkle.ak` | five-shape multiproof walker (leaves in tree order), single-leaf MMR verify by index and count |
-| `lib/bridge/beefy.ak` | `verify_update`: rules 1–10, next state; `required`; pool rules 13–17 |
+| `lib/bridge/beefy.ak` | `verify_update`: rules 1–10, next state; `required` |
+| `lib/bridge/pool.ak` | `check_pool`: rules 12–17 |
 | `lib/bridge/test_fixtures.ak` | test-only builders: keys, commitments, MMRs, multiproofs (phase 01) |
 
 Config keys (all 8 profiles: `default`, `local`, `preview`, `qanet`,
@@ -163,15 +164,15 @@ logic reads:
 
 - `state_in`: inline datum of the input whose value is exactly the forever
   NFT (`get_input_state_by_policy(inputs, config.committee_bridge_forever_hash)`).
-- `state_out`: inline datum of the output at the forever credential
-  (`get_output_state_by_policy`), which also enforces value = ADA + NFT.
+- `state_out`: inline datum of output 0, which must sit at the forever
+  credential with value = ADA + NFT.
 - `threshold`: `BeefyThreshold` from the reference input carrying
   `config.beefy_signer_threshold_hash`.
 - `update: BridgeUpdate` = redeemer.
 
 | MIP rule | Check | Where |
 |---|---|---|
-| 0 | forever output exists, value is ADA + NFT only, `lovelace(out) ≥ lovelace(in)`, datum = computed state | `committee_bridge_logic` |
+| 0 | output 0 is at the forever credential, value is ADA + NFT only, `lovelace(out) ≥ lovelace(in)`, datum = computed state | `committee_bridge_logic` |
 | 1 | `block_number > latest_height` | `verify_update` |
 | 2 | `validator_set_id ∈ {current.validator_set_id, next.validator_set_id}` → `S` | `verify_update` |
 | 3 | multiproof root = `S.keyset_commitment` | `merkle.verify_multiproof` |
@@ -212,21 +213,23 @@ construction).
 
 ## 7. Funding pool (`committee_bridge_pool`, MIP rules 12–17)
 
-Pool script: spend-only. Rule: some input of the transaction carries the
-forever NFT (`config.committee_bridge_forever_hash`). Nothing else. The
-forever spend requires the logic withdrawal, and the logic enforces the
-pool rules below whenever any input sits at the pool credential. No datum,
+Pool script: spend-only. Rule: the running logic credential, read from the
+two-stage `main` reference input (`config.committee_bridge_two_stage_hash`)
+exactly as the forever spend reads it, is among the withdrawals. Nothing
+else. A withdrawal list is one or two entries, an input scan is not. The
+logic run then requires the forever NFT in and out and enforces the pool
+rules below whenever any input sits at the pool credential. No datum,
 no NFT, any number of pool UTxOs; a top-up is a plain payment to the pool
 address.
 
 Inside `committee_bridge_logic`, with `pool_in = Σ lovelace` of inputs at
-`Script(config.committee_bridge_pool_hash)` and `pool_out` the same over
-outputs, `debit = pool_in − pool_out`, `s = length(leaves)`,
+`Script(config.committee_bridge_pool_hash)` (any stake part, so a stray
+top-up with one can still be swept) and `pool_out` the same over outputs, `debit = pool_in − pool_out`, `s = length(leaves)`,
 `cap = base + per_signer × s`:
 
 | MIP rule | Check |
 |---|---|
-| 12 | exactly one output at the pool credential; its value is lovelace only; no datum required |
+| 12 | output 1 is at the pool address (`Script(pool)`, no stake part, so a submitter cannot redirect delegation rewards); its value is lovelace only; no datum required. Later outputs are not read: a further pool output is not subtracted, so it only raises the debit |
 | 13 | if `debit ≤ 0`: done (merge or top-up inside an update) |
 | 14 | the light-client update in this tx is valid (it is: same script run) |
 | 15 | the update is a handover: `state_in.next.validator_set_id ≠ state_out.next.validator_set_id` |
@@ -370,7 +373,7 @@ index-and-count MMR walk as rule 8.
 | `max_fee` in the light-client datum | in `BeefyThreshold` | still governance-only; an update cannot touch the threshold UTxO at all |
 | "the light client itself has the one redeemer" | logic script with one redeemer behind the forever/two-stage wrapper | script replacement needs Council + Tech Auth; consumers keep one NFT to follow |
 | pool rules stated on the pool spend | enforced by the bridge logic; pool spend = forever NFT is an input | pool cannot be spent without a valid update running |
-| rule 12: one output at the pool address | plus lovelace-only value, no datum | tighter; a tokened output would be unspendable garbage |
+| rule 12: exactly one output at the pool address | output 1 is the pool output, lovelace only; later outputs unread | positional, no output scan; an extra pool output is unsubtracted debit, so never a drain |
 | bootstrap prose | `next = current + 1`, `latest_height = activation − 1`, both `seat_count > 0`, 32-byte roots checked at mint | tighter than `next.id > current.id` today; `required(0, n, d) = 0` would accept unsigned updates |
 | MMR proof "verified as `calculate_root` does" | index-walk form (equal results, flat cost) | proven equal on all leaves of sizes 1..24 and golden vectors on the rewards branch |
 | rule 4: leaves in strictly increasing key order | not checked | the multiproof root binds every leaf to the committed tree, so order adds nothing to the bridge; key order matters only to the rewards range proofs, which check it themselves |

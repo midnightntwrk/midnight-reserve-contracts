@@ -1,6 +1,6 @@
 use bridge/test_fixtures as fx
-use bridge/types.{AuthoritySetCommitment, BeefyConsensusState}
-use cardano/address.{Address, Script, VerificationKey}
+use bridge/types.{AuthoritySetCommitment, BeefyConsensusState, BeefyThreshold}
+use cardano/address.{Address, Inline, Script, VerificationKey}
 use cardano/assets.{add, from_asset, from_lovelace}
 use cardano/certificate.{RegisterCredential}
 use cardano/script_context.{Minting, Publishing, ScriptContext, Withdrawing}
@@ -54,8 +54,8 @@ test logic_rejects_less_ada() fail {
   logic(update_tx(fx.forever_output(state_out, 4_999_999)))
 }
 
-test logic_rejects_wrong_datum() {
-  !logic(update_tx(fx.forever_output(state_in, 5_000_000)))
+test logic_rejects_wrong_datum() fail {
+  logic(update_tx(fx.forever_output(state_in, 5_000_000)))
 }
 
 test logic_rejects_missing_output() fail {
@@ -95,6 +95,202 @@ test logic_allows_register() {
           deposit: Never,
         },
       },
+    ),
+  )
+}
+
+// Funding pool, MIP rules 12–17. Cap for the three-leaf update: 1_000_000 + 3 × 100_000.
+
+const cap_threshold = BeefyThreshold(2, 3, 1_000_000, 100_000)
+
+const handover_in = fx.state(4, 5, 7)
+
+const handover_out =
+  BeefyConsensusState {
+    latest_mmr_root: fx.b_handover.mmr_root,
+    latest_height: 8,
+    beefy_activation_block: 1,
+    current_committee: fx.committee(5),
+    next_committee: fx.committee(6),
+  }
+
+fn pool_tx(
+  st_in: BeefyConsensusState,
+  st_out: BeefyConsensusState,
+  pool_inputs: List<Input>,
+  pool_outputs: List<Output>,
+  fee: Int,
+) -> Transaction {
+  Transaction {
+    ..placeholder,
+    fee,
+    inputs: [fx.forever_input(st_in, 5_000_000), ..pool_inputs],
+    reference_inputs: [fx.threshold_input_of(cap_threshold)],
+    outputs: [fx.forever_output(st_out, 5_000_000), ..pool_outputs],
+    withdrawals: [Pair(Script(logic_hash), 0)],
+  }
+}
+
+fn funded_handover(pool_in: Int, pool_out: Int, fee: Int) -> Bool {
+  committee_bridge.committee_bridge_logic.else(
+    ScriptContext(
+      pool_tx(
+        handover_in,
+        handover_out,
+        [fx.pool_input(0, pool_in)],
+        [fx.pool_output(pool_out)],
+        fee,
+      ),
+      fx.update(fx.b_handover),
+      Withdrawing(Script(logic_hash)),
+    ),
+  )
+}
+
+fn funded_no_handover(pool_in: Int, pool_out: Int, fee: Int) -> Bool {
+  committee_bridge.committee_bridge_logic.else(
+    ScriptContext(
+      pool_tx(
+        state_in,
+        state_out,
+        [fx.pool_input(0, pool_in)],
+        [fx.pool_output(pool_out)],
+        fee,
+      ),
+      fx.update(fx.a_no_handover),
+      Withdrawing(Script(logic_hash)),
+    ),
+  )
+}
+
+test pool_handover_debit_equals_cap_and_fee() {
+  funded_handover(10_000_000, 8_700_000, 1_300_000)
+}
+
+test pool_handover_debit_below_cap() {
+  funded_handover(10_000_000, 9_000_000, 1_000_000)
+}
+
+test pool_rejects_debit_above_cap() {
+  !funded_handover(10_000_000, 8_699_999, 2_000_000)
+}
+
+test pool_rejects_debit_above_fee() {
+  !funded_handover(10_000_000, 8_999_999, 1_000_000)
+}
+
+test pool_rejects_funded_non_handover() {
+  !funded_no_handover(10_000_000, 9_999_999, 2_000_000)
+}
+
+test pool_merge_inputs_no_debit() {
+  committee_bridge.committee_bridge_logic.else(
+    ScriptContext(
+      pool_tx(
+        state_in,
+        state_out,
+        [fx.pool_input(0, 4_000_000), fx.pool_input(1, 6_000_000)],
+        [fx.pool_output(10_000_000)],
+        200_000,
+      ),
+      fx.update(fx.a_no_handover),
+      Withdrawing(Script(logic_hash)),
+    ),
+  )
+}
+
+test pool_topup_inside_update() {
+  committee_bridge.committee_bridge_logic.else(
+    ScriptContext(
+      pool_tx(state_in, state_out, [], [fx.pool_output(3_000_000)], 200_000),
+      fx.update(fx.a_no_handover),
+      Withdrawing(Script(logic_hash)),
+    ),
+  )
+}
+
+test pool_topup_with_input() {
+  funded_no_handover(4_000_000, 7_000_000, 200_000)
+}
+
+// Only output 1 is the pool output; a later pool output is not summed, so it counts as debit.
+test pool_extra_output_counts_as_debit() {
+  !committee_bridge.committee_bridge_logic.else(
+    ScriptContext(
+      pool_tx(
+        handover_in,
+        handover_out,
+        [fx.pool_input(0, 10_000_000)],
+        [fx.pool_output(8_600_000), fx.pool_output(1_400_000)],
+        2_000_000,
+      ),
+      fx.update(fx.b_handover),
+      Withdrawing(Script(logic_hash)),
+    ),
+  )
+}
+
+test pool_rejects_no_output() fail {
+  committee_bridge.committee_bridge_logic.else(
+    ScriptContext(
+      pool_tx(
+        handover_in,
+        handover_out,
+        [fx.pool_input(0, 1_000_000)],
+        [],
+        1_000_000,
+      ),
+      fx.update(fx.b_handover),
+      Withdrawing(Script(logic_hash)),
+    ),
+  )
+}
+
+// Rule 12: the pool output must be at the pool address with no stake part.
+test pool_rejects_output_with_stake_key() fail {
+  let out = fx.pool_output(10_000_000)
+  committee_bridge.committee_bridge_logic.else(
+    ScriptContext(
+      pool_tx(
+        handover_in,
+        handover_out,
+        [fx.pool_input(0, 10_000_000)],
+        [
+          Output {
+            ..out,
+            address: Address(
+              Script(fx.pool),
+              Some(
+                Inline(
+                  VerificationKey(
+                    #"11111111111111111111111111111111111111111111111111111111",
+                  ),
+                ),
+              ),
+            ),
+          },
+        ],
+        200_000,
+      ),
+      fx.update(fx.b_handover),
+      Withdrawing(Script(logic_hash)),
+    ),
+  )
+}
+
+test pool_rejects_token_in_output() fail {
+  let out = fx.pool_output(10_000_000)
+  committee_bridge.committee_bridge_logic.else(
+    ScriptContext(
+      pool_tx(
+        handover_in,
+        handover_out,
+        [fx.pool_input(0, 10_000_000)],
+        [Output { ..out, value: out.value |> add(logic_hash, "FAKE", 1) }],
+        200_000,
+      ),
+      fx.update(fx.b_handover),
+      Withdrawing(Script(logic_hash)),
     ),
   )
 }

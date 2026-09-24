@@ -9,14 +9,15 @@ Goal: `committee_bridge_pool` script and MIP rules 12–17 enforced inside
 ```aiken
 validator committee_bridge_pool {
   spend(_datum, _redeemer, _own_ref, tx) {
-    list.any(tx.inputs, fn(i) { is_singleton(i.output.value, config.committee_bridge_forever_hash, "") })
+    // the running logic (two-stage `main` datum) withdraws in this tx
+    list.any(tx.withdrawals, fn(w) { w.1st == Script(logic_from_main_ref(tx.reference_inputs)) })
   }
   else(_) { fail }
 }
 ```
-`is_singleton` from `lib/utils.ak`. Any datum accepted (pool outputs carry
-none). Script hash depends on `config.committee_bridge_forever_hash` so it
-is built after the forever hash is known: add it to the build order in
+Any datum accepted (pool outputs carry none). Script hash depends on
+`config.committee_bridge_two_stage_hash` so it is built after the two-stage
+hash is known: add it to the build order in
 `build-engine.ts` (after `committee_bridge_forever`, before the logic).
 
 ### 2. `aiken.toml`
