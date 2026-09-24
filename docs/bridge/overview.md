@@ -88,8 +88,10 @@ against `latest_mmr_root` themselves.
 | Data pump: light-client module, oldest session first, funded by the pool | Data pump | relay logs proofs, no submission |
 | Six-hour epoch | Epoch length | 30 minutes |
 
-`signer_cap` is fixed by measurement in this repo (plan phase 04) and
-handed to the node team.
+`signer_cap` measured in this repo (plan phase 04, spec §11): a quorum
+update crosses `maxTxSize` at N ≈ 170; candidate **160** for the node team
+(relay submits at most `required` signers), with `max_fee` candidates
+`base = 650_000`, `per_signer = 13_000` lovelace.
 
 ## Decisions that refine the MIP text
 

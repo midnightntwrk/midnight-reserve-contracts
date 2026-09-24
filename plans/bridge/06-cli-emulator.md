@@ -46,3 +46,13 @@ README command table gains the `bridge-*` rows.
 - `bun test` green; commands run live against the emulator (not only
   type-checked).
 - Commit: `cli(bridge): deploy, top-up, update and emulator e2e`.
+
+## Review notes carried from phases 02–04
+- `BeefyThreshold` needs its own datum builder: `MultisigThreshold` has the
+  same four-`Int` shape and would decode as a valid threshold.
+- Deploy creates reference-script UTxOs for the forever, logic and pool
+  scripts; the relay must reference them (spec §11, §12). Record the trace
+  level of the deployed build; it doubles the reference-script fee.
+- Measure the real non-redeemer transaction bytes and the forever and pool
+  spend budgets at N = 160 in the emulator; replace the estimates in spec §11.
+- Test that the relay trims to `required` signers.

@@ -54,3 +54,9 @@ in `docs/bridge/overview.md` "What the node must emit".
 - `bridge-verify-bootstrap` passes on a fresh deployment; three handovers
   landed from real justifications.
 - Commit: `bridge: private BEEFY network, RPC bootstrap and justification fetch`.
+
+## Review note carried from phase 01
+- Rule 10 assumes the leaf appended in the first block of session N names
+  N+1: `pallet_session` must run before `pallet_mmr` in `on_initialize`
+  (Polkadot order). If the MMR runs first, every handover fails rule 10.
+  Confirm on the private network before the first handover test.

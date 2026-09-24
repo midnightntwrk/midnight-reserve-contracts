@@ -5,7 +5,8 @@ use cardano/assets.{add, from_asset, from_lovelace}
 use cardano/certificate.{RegisterCredential}
 use cardano/script_context.{Minting, Publishing, ScriptContext, Withdrawing}
 use cardano/transaction.{
-  InlineDatum, Input, Output, OutputReference, Transaction, placeholder,
+  DatumHash, InlineDatum, Input, NoDatum, Output, OutputReference, Transaction,
+  placeholder,
 }
 use committee_bridge
 use config
@@ -76,6 +77,37 @@ test logic_rejects_missing_output() fail {
   )
 }
 
+test logic_rejects_output_without_nft() fail {
+  let out = fx.forever_output(state_out, 5_000_000)
+  logic(update_tx(Output { ..out, value: from_lovelace(5_000_000) }))
+}
+
+test logic_rejects_output_with_stake_key() fail {
+  let out = fx.forever_output(state_out, 5_000_000)
+  logic(
+    update_tx(
+      Output {
+        ..out,
+        address: Address(
+          Script(fx.forever),
+          Some(
+            Inline(
+              VerificationKey(
+                #"1111111111111111111111111111111111111111111111111111111111111111",
+              ),
+            ),
+          ),
+        ),
+      },
+    ),
+  )
+}
+
+test logic_rejects_missing_input() fail {
+  let tx = update_tx(fx.forever_output(state_out, 5_000_000))
+  logic(Transaction { ..tx, inputs: [] })
+}
+
 test logic_rejects_extra_token() fail {
   let out = fx.forever_output(state_out, 5_000_000)
   logic(
@@ -99,11 +131,11 @@ test logic_allows_register() {
   )
 }
 
-// Funding pool, MIP rules 12–17. Cap for the three-leaf update: 1_000_000 + 3 × 100_000.
+// Funding pool, MIP rules 12–17. Cap for the two-signer update: 1_000_000 + 2 × 100_000.
 
 const cap_threshold = BeefyThreshold(2, 3, 1_000_000, 100_000)
 
-const handover_in = fx.state(4, 5, 7)
+const handover_in = fx.state_next_signs(4, 5, 7)
 
 const handover_out =
   BeefyConsensusState {
@@ -111,7 +143,7 @@ const handover_out =
     latest_height: 8,
     beefy_activation_block: 1,
     current_committee: fx.committee(5),
-    next_committee: fx.committee(6),
+    next_committee: fx.leaf_next(6),
   }
 
 fn pool_tx(
@@ -164,7 +196,7 @@ fn funded_no_handover(pool_in: Int, pool_out: Int, fee: Int) -> Bool {
 }
 
 test pool_handover_debit_equals_cap_and_fee() {
-  funded_handover(10_000_000, 8_700_000, 1_300_000)
+  funded_handover(10_000_000, 8_800_000, 1_200_000)
 }
 
 test pool_handover_debit_below_cap() {
@@ -172,7 +204,7 @@ test pool_handover_debit_below_cap() {
 }
 
 test pool_rejects_debit_above_cap() {
-  !funded_handover(10_000_000, 8_699_999, 2_000_000)
+  !funded_handover(10_000_000, 8_799_999, 2_000_000)
 }
 
 test pool_rejects_debit_above_fee() {
@@ -238,6 +270,81 @@ test pool_rejects_no_output() fail {
         handover_out,
         [fx.pool_input(0, 1_000_000)],
         [],
+        1_000_000,
+      ),
+      fx.update(fx.b_handover),
+      Withdrawing(Script(logic_hash)),
+    ),
+  )
+}
+
+fn funded_handover_with_output(out: Output) -> Bool {
+  committee_bridge.committee_bridge_logic.else(
+    ScriptContext(
+      pool_tx(
+        handover_in,
+        handover_out,
+        [fx.pool_input(0, 10_000_000)],
+        [out],
+        200_000,
+      ),
+      fx.update(fx.b_handover),
+      Withdrawing(Script(logic_hash)),
+    ),
+  )
+}
+
+// Rule 12: a datum hash would freeze the pool; any datum or script is rejected.
+test pool_rejects_datum_hash() fail {
+  let out = fx.pool_output(10_000_000)
+  funded_handover_with_output(
+    Output { ..out, datum: DatumHash(fx.keccak("frozen")) },
+  )
+}
+
+test pool_rejects_inline_datum() fail {
+  let out = fx.pool_output(10_000_000)
+  funded_handover_with_output(Output { ..out, datum: InlineDatum(0) })
+}
+
+// A pool input with a stake part is pool money: it counts toward the debit.
+test pool_staked_input_counted() {
+  !committee_bridge.committee_bridge_logic.else(
+    ScriptContext(
+      pool_tx(
+        handover_in,
+        handover_out,
+        [fx.pool_input(0, 5_000_000), fx.pool_input_staked(1, 5_000_000)],
+        [fx.pool_output(8_600_000)],
+        2_000_000,
+      ),
+      fx.update(fx.b_handover),
+      Withdrawing(Script(logic_hash)),
+    ),
+  )
+}
+
+// Output 1 must be the pool output; a change output there fails even with a pool output at 2.
+test pool_rejects_output_at_index_two() fail {
+  let change =
+    Output(
+      Address(
+        VerificationKey(
+          #"11111111111111111111111111111111111111111111111111111111",
+        ),
+        None,
+      ),
+      from_lovelace(1_000_000),
+      NoDatum,
+      None,
+    )
+  committee_bridge.committee_bridge_logic.else(
+    ScriptContext(
+      pool_tx(
+        handover_in,
+        handover_out,
+        [fx.pool_input(0, 10_000_000)],
+        [change, fx.pool_output(9_000_000)],
         1_000_000,
       ),
       fx.update(fx.b_handover),
