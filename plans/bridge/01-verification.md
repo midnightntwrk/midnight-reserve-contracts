@@ -29,7 +29,7 @@ pub fn verify_update(state: BeefyConsensusState, update: BridgeUpdate, threshold
 3. `leaves = verify_multiproof(S.keyset_commitment, update.multiproof)`
 4. keys strictly increasing: one pass, `expect bytearray.compare(prev, key) == Less`
 5. `sum_signed_seats(leaves, signatures, msg_hash)`: recurse both lists
-   together; `[] , []` → 0; length mismatch → fail;
+   together; `[] , []` → 0; length mismatch → fail; `sig == ""` → skip;
    `verify_ecdsa_secp256k1_signature(slice(leaf,0,33), msg_hash, sig)`;
    seats = `bytearray_to_integer(False, slice(leaf,33,4))`
    (`msg_hash = keccak_256(scale_encode_commitment(...))`).

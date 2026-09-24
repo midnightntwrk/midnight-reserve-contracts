@@ -109,7 +109,7 @@ pub type BridgeUpdate {                // committee_bridge_logic redeemer
   mmr_root: ByteArray,                 // 32, the signed root
   block_number: Int,
   validator_set_id: Int,
-  signatures: List<ByteArray>,         // 64 bytes each, one per multiproof leaf, tree order
+  signatures: List<ByteArray>,         // one per multiproof leaf, tree order; 64 bytes, or empty for a non-signer
   leaf: BeefyMmrLeaf,                  // the leaf of block_number
   mmr_proof: List<ByteArray>,          // LeafProof.items
   multiproof: Data,                    // five-shape tree, signers' leaves
@@ -172,7 +172,7 @@ logic reads:
 | 2 | `validator_set_id ∈ {current.validator_set_id, next.validator_set_id}` → `S` | `verify_update` |
 | 3 | multiproof root = `S.keyset_commitment` | `merkle.verify_multiproof` |
 | 4 | leaves strictly increasing by key | new, one pass over leaves |
-| 5 | `length(signatures) = length(leaves)`; `verify_ecdsa_secp256k1_signature(key_i, keccak(commitment), sig_i)` | new zip, replaces `find_auth_in_leaves` |
+| 5 | `length(signatures) = length(leaves)`; `sig_i = ""` skips leaf `i`, else `verify_ecdsa_secp256k1_signature(key_i, keccak(commitment), sig_i)` | new zip, replaces `find_auth_in_leaves` |
 | 6 | `Σ seats ≥ required(S.seat_count, numerator, denominator)` | `verify_update` |
 | 7 | `leaf.parent_number = block_number − 1` | new |
 | 8 | MMR proof of `keccak(SCALE(leaf))` at index `block_number − 1`, count `block_number`, against `mmr_root` | `merkle.verify_mmr_leaf` (index walk) |
@@ -276,7 +276,8 @@ state).
   MMR edges (`block_number = 1`, leaf that is a peak); bootstrap; handover
   table (`4/5`: leaf `5` by `4` no handover; leaf `6` by `5` handover; leaf
   `5` by `5` rejected; leaf `7` rejected).
-- Multiproof with a non-signer leaf: rejected by rule 5 length check.
+- Multiproof with a non-signer leaf and `""` signature: seats skipped.
+- Signature list shorter than the leaves: rejected by rule 5 length check.
 - Signatures out of tree order: rejected by rule 5.
 - High-S signature: rejected by the builtin.
 - `max_fee` and the threshold unchanged by any update (no path touches them).
@@ -308,8 +309,8 @@ here: tx size, mem, cpu, and the largest passing N. MIP estimate: ~10 KB at
 
 See [overview.md §What the node must emit](overview.md#what-the-node-must-emit-mip-driven).
 The relay's proof builder (`midnight-beefy-relay`) must emit `BridgeUpdate`
-in §3 order with 64-byte signatures sorted by signer key, and a multiproof
-over the signers' leaves only.
+in §3 order with signatures in leaf order (`""` for a non-signer leaf); a
+signers-only multiproof is the smallest.
 
 ---
 
@@ -366,3 +367,4 @@ index-and-count MMR walk as rule 8.
 | rule 12: one output at the pool address | plus lovelace-only value, no datum | tighter; a tokened output would be unspendable garbage |
 | bootstrap prose | `next = current + 1`, `latest_height = activation − 1` checked at mint | tighter than `next.id > current.id` today |
 | MMR proof "verified as `calculate_root` does" | index-walk form (equal results, flat cost) | proven equal on all leaves of sizes 1..24 and golden vectors on the rewards branch |
+| rule 5: one signature per leaf | an empty signature marks a non-signer leaf, seats not counted | a leaf adds seats only with a valid signature; the relay may include non-signers at 1 byte each |
