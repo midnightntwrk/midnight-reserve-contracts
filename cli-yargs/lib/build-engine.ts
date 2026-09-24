@@ -83,6 +83,10 @@ const TWO_STAGE_EXTRA = [
     title: "cnight_minting.cnight_mint_two_stage_upgrade.else",
     tomlKey: "cnight_minting_two_stage_hash",
   },
+  {
+    title: "committee_bridge.committee_bridge_two_stage_upgrade.else",
+    tomlKey: "committee_bridge_two_stage_hash",
+  },
 ] as const satisfies readonly ValidatorMapping[];
 
 const FOREVER_CORE = [
@@ -114,6 +118,15 @@ const FOREVER_EXTRA = [
     title: "cnight_minting.cnight_mint_forever.else",
     tomlKey: "cnight_minting_forever_hash",
   },
+  {
+    title: "committee_bridge.committee_bridge_forever.else",
+    tomlKey: "committee_bridge_forever_hash",
+  },
+  // Depends on the two-stage hash only; built in the forever phase.
+  {
+    title: "committee_bridge_pool.committee_bridge_pool.else",
+    tomlKey: "committee_bridge_pool_hash",
+  },
 ] as const satisfies readonly ValidatorMapping[];
 
 const THRESHOLDS = [
@@ -140,6 +153,10 @@ const THRESHOLDS = [
   {
     title: "thresholds.terms_and_conditions_threshold.else",
     tomlKey: "terms_and_conditions_threshold_hash",
+  },
+  {
+    title: "thresholds.beefy_signer_threshold.else",
+    tomlKey: "beefy_signer_threshold_hash",
   },
 ] as const satisfies readonly ValidatorMapping[];
 
@@ -171,6 +188,18 @@ const LOGIC_DEPENDENCIES: readonly LogicDependency[] = [
   {
     logicValidator: "gov_auth.main_gov_auth.else",
     dependencyValidator: "thresholds.main_gov_threshold.else",
+  },
+  {
+    logicValidator: "committee_bridge.committee_bridge_logic.else",
+    dependencyValidator: "thresholds.beefy_signer_threshold.else",
+  },
+  {
+    logicValidator: "committee_bridge.committee_bridge_logic.else",
+    dependencyValidator: "committee_bridge.committee_bridge_forever.else",
+  },
+  {
+    logicValidator: "committee_bridge.committee_bridge_logic.else",
+    dependencyValidator: "committee_bridge_pool.committee_bridge_pool.else",
   },
 ] as const;
 
