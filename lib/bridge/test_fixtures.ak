@@ -13,8 +13,9 @@ use bridge/types.{
 }
 use cardano/address.{Address, Script}
 use cardano/assets.{add, from_lovelace}
-use cardano/transaction.{InlineDatum, Input, Output, OutputReference}
+use cardano/transaction.{InlineDatum, Input, NoDatum, Output, OutputReference}
 use config
+use upgradable/types.{UpgradeState} as ut
 
 /// A signed commitment over an MMR whose last leaf names `next_id`; `sigs` are in key order.
 pub type Scenario {
@@ -364,7 +365,7 @@ pub fn forever_input(st: BeefyConsensusState, ada: Int) -> Input {
   )
 }
 
-pub const threshold_input =
+pub fn threshold_input_of(t: BeefyThreshold) -> Input {
   Input(
     OutputReference(
       #"9999999999999999999999999999999999999999999999999999999999999999",
@@ -372,8 +373,49 @@ pub const threshold_input =
     ),
     Output(
       Address(Script(config.beefy_signer_threshold_hash), None),
-      from_lovelace(2_000_000) |> add(config.beefy_signer_threshold_hash, "", 1),
-      InlineDatum(threshold),
+      from_lovelace(2_000_000)
+        |> add(config.beefy_signer_threshold_hash, "", 1),
+      InlineDatum(t),
       None,
     ),
   )
+}
+
+pub const threshold_input = threshold_input_of(threshold)
+
+// Funding pool pieces.
+
+pub const pool = config.committee_bridge_pool_hash
+
+pub const pool_address = Address(Script(pool), None)
+
+pub fn pool_output(ada: Int) -> Output {
+  Output(pool_address, from_lovelace(ada), NoDatum, None)
+}
+
+pub fn pool_input(tag: Int, ada: Int) -> Input {
+  Input(
+    OutputReference(
+      #"7777777777777777777777777777777777777777777777777777777777777777",
+      tag,
+    ),
+    pool_output(ada),
+  )
+}
+
+/// The two-stage `main` reference input naming `logic_hash` as the running logic.
+pub fn two_stage_main_ref(logic_hash: ByteArray) -> Input {
+  Input(
+    OutputReference(
+      #"8888888888888888888888888888888888888888888888888888888888888888",
+      0,
+    ),
+    Output(
+      Address(Script(config.committee_bridge_two_stage_hash), None),
+      from_lovelace(2_000_000)
+        |> add(config.committee_bridge_two_stage_hash, "main", 1),
+      InlineDatum(UpgradeState(logic_hash, "", "", "", 0, 0)),
+      None,
+    ),
+  )
+}

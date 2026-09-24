@@ -237,6 +237,10 @@ encoding = "hex"
 bytes = "9ff400add9255383ecef6a907792ebba52160ea3689663c10c825ec1"
 encoding = "hex"
 
+[config.default.committee_bridge_pool_hash]
+bytes = "dec048dbc7eadb3944f66b17d7ffd37afb6bac7f9673be25866bfef4"
+encoding = "hex"
+
 [config.default.bridge_signer_threshold_hash]
 bytes = "425dc256255516e5613780912963488de952d935670f38c74761c779"
 encoding = "hex"
@@ -480,6 +484,10 @@ encoding = "hex"
 
 [config.preview.committee_bridge_forever_hash]
 bytes = "0e4d64866dd1ff7ee21490ed6a15fdaf6f0919e39368af196896827b"
+encoding = "hex"
+
+[config.preview.committee_bridge_pool_hash]
+bytes = "8cf3c384ac8f8a5a4d07ba968d0a585c7e26fedad1b807c236a74bc0"
 encoding = "hex"
 
 [config.preview.bridge_signer_threshold_hash]
@@ -727,6 +735,10 @@ encoding = "hex"
 bytes = "21b773ee5505e67fd44a6323ae09bcbc4b6d7e4aeb78b39478e3e7dd"
 encoding = "hex"
 
+[config.qanet.committee_bridge_pool_hash]
+bytes = "8a3844cc9b569110abb823a4b4bf0b5f394992938fd9f37d18a1d8ba"
+encoding = "hex"
+
 [config.qanet.bridge_signer_threshold_hash]
 bytes = "f7406024c62b2ee0026ce74e002c7edad4608827f5c26656273db0b6"
 encoding = "hex"
@@ -972,6 +984,10 @@ encoding = "hex"
 bytes = "9411e48cebb31741ca52142047f585d025d4d1d07309a5ab0f867894"
 encoding = "hex"
 
+[config.govnet.committee_bridge_pool_hash]
+bytes = "b780205531c9c3cf336ae43a58a54f44de32be2086d2338f7a8b61e5"
+encoding = "hex"
+
 [config.govnet.bridge_signer_threshold_hash]
 bytes = "827d8fb145e6fceefdca40ecf9dda37a692b3bad6c8516df42dbf880"
 encoding = "hex"
@@ -1215,6 +1231,10 @@ encoding = "hex"
 
 [config.devnet.committee_bridge_forever_hash]
 bytes = "fd815fcd7355202f327d2235c49f1f66b357eae1d59ff819efc16f06"
+encoding = "hex"
+
+[config.devnet.committee_bridge_pool_hash]
+bytes = "a73371caee0d267265864769526b675019e7de05ce3362ec461cff8e"
 encoding = "hex"
 
 [config.devnet.bridge_signer_threshold_hash]
@@ -1463,6 +1483,10 @@ encoding = "hex"
 bytes = "a496f839a01804df75f4b108c5a6fa084f8ec01a052736c64c8940a4"
 encoding = "hex"
 
+[config.preprod.committee_bridge_pool_hash]
+bytes = "a421a5e31862a277adcede65caa476a4330867e87e6844949c645016"
+encoding = "hex"
+
 [config.preprod.bridge_signer_threshold_hash]
 bytes = "4cb605b2dc576093032e0a3373068777a0175b33220c44689dc0016e"
 encoding = "hex"
@@ -1709,6 +1733,10 @@ encoding = "hex"
 bytes = "bf093441b2954c82ecb835a9260c01997c1b514ee84b29d257e1f167"
 encoding = "hex"
 
+[config.mainnet.committee_bridge_pool_hash]
+bytes = "efb28acbac7781d5fb245251c4a8c45595fad9cb3108206e87f5c859"
+encoding = "hex"
+
 [config.mainnet.terms_and_conditions_two_stage_hash]
 bytes = "7240c79709cc225e621f8db67a86be9799015922f52b208a06aae48b"
 encoding = "hex"
@@ -1952,6 +1980,10 @@ encoding = "hex"
 
 [config.local.committee_bridge_forever_hash]
 bytes = "0000000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.local.committee_bridge_pool_hash]
+bytes = "21b77772e0fa630d0963c2c592e8ead952f00201824a1d9fb226db16"
 encoding = "hex"
 
 [config.local.bridge_signer_threshold_hash]
