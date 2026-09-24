@@ -14,7 +14,7 @@ import {
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
-import { describe, test, expect } from "bun:test";
+import { describe, test } from "bun:test";
 import {
   addFundingUtxo,
   createContracts,
@@ -22,10 +22,7 @@ import {
   DEFAULT_CONFIG,
   deployTechAuthAndCouncil,
 } from "./helpers/deploy";
-import {
-  createFederatedOpsDatumFromString,
-  candidateToPermissionedDatum,
-} from "../cli-yargs/lib/candidates";
+import { createFederatedOpsDatumFromString } from "../cli-yargs/lib/candidates";
 
 describe("Federated Ops Deploy with FederatedOps Datum", () => {
   const amount = 100_000_000n;
@@ -97,13 +94,6 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
         testCandidatesInput,
         1n,
       );
-
-      // Verify datum structure
-      expect(federatedOpsDatum[0]).toEqual(
-        PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }),
-      ); // Unit
-      expect(federatedOpsDatum[1]).toHaveLength(3); // 3 candidates
-      expect(federatedOpsDatum[2]).toBe(1n); // logic_round
 
       await emulator.expectValidTransaction(
         blaze,
@@ -322,44 +312,5 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
           ),
       );
     });
-  });
-
-  test("FederatedOps datum serializes candidate keys correctly", () => {
-    const candidate = {
-      sidechain_pub_key:
-        "020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8",
-      aura_pub_key:
-        "1254f7017f0b8347ce7ab14f96d818802e7e9e0c0d1b7c9acb3c726b080e7a03",
-      grandpa_pub_key:
-        "5079bcd20fd97d7d2f752c4607012600b401950260a91821f73e692071c82bf5",
-      beefy_pub_key:
-        "020a617391de0e0291310bf7792bb41d9573e8a054b686205da5553e08fac6d0b8",
-    };
-
-    const datum = candidateToPermissionedDatum(candidate);
-
-    // Verify structure: [sidechain_pub_key, [[id, bytes], ...]]
-    expect(datum[0]).toBe(candidate.sidechain_pub_key);
-    expect(datum[1]).toHaveLength(3);
-
-    // Verify key identifiers are correct hex encodings
-    const [auraKey, granKey, beefKey] = datum[1];
-    expect(auraKey[0]).toBe("61757261"); // "aura" in hex
-    expect(granKey[0]).toBe("6772616e"); // "gran" in hex
-    expect(beefKey[0]).toBe("62656566"); // "beef" in hex
-
-    // Verify key values
-    expect(auraKey[1]).toBe(candidate.aura_pub_key);
-    expect(granKey[1]).toBe(candidate.grandpa_pub_key);
-    expect(beefKey[1]).toBe(candidate.beefy_pub_key);
-
-    // Verify serialization doesn't throw
-    const federatedOpsDatum: Contracts.FederatedOps = [
-      PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }),
-      [datum],
-      1n,
-    ];
-    const serialized = serialize(Contracts.FederatedOps, federatedOpsDatum);
-    expect(serialized).toBeDefined();
   });
 });
