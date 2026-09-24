@@ -27,7 +27,7 @@ pub fn verify_update(state: BeefyConsensusState, update: BridgeUpdate, threshold
 1. `expect update.block_number > state.latest_height`
 2. select `S` by `validator_set_id`, else fail
 3. `leaves = verify_multiproof(S.keyset_commitment, update.multiproof)`
-4. keys strictly increasing: one pass, `expect bytearray.compare(prev, key) == Less`
+4. not enforced (spec §15): the multiproof root binds the leaves
 5. `sum_signed_seats(leaves, signatures, msg_hash)`: recurse both lists
    together; `[] , []` → 0; length mismatch → fail; `sig == ""` → skip;
    `verify_ecdsa_secp256k1_signature(slice(leaf,0,33), msg_hash, sig)`;
@@ -75,7 +75,8 @@ Delete `check_auth_sigs_and_sum_seats`, `find_auth_in_leaves`,
 - Non-signer leaf in multiproof → length mismatch fail. Signatures swapped
   → fail. High-S signature → fail (builtin).
 - MMR edges: `block_number = 1` (root = leaf hash, no items); leaf that is a
-  peak; three-peak item order `[siblings…, P3, P1]`.
+  peak; three-peak item order `[P1, siblings…, P3]` (left peaks first, as
+  `mmr-lib` `gen_proof` emits; the MIP vector text has them last).
 - Bootstrap mint: `next ≠ current + 1` fail; `latest_height ≠ activation − 1` fail.
 
 ## Acceptance

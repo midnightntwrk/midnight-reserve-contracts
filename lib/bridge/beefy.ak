@@ -1,21 +1,20 @@
+//// Light-client update: MIP rules 1–10 (spec §5) and the next state. Rule 0
+//// (the continuing output) lives in `validators/committee_bridge.ak`; rule 4
+//// (key order) is not enforced, the multiproof root already binds the leaves.
+
 use aiken/builtin
-use bridge/codec.{scale_encode_commitment}
-use bridge/merkle.{verify_merkle_multi_proof_get_leaves, verify_mmr_leaf}
+use bridge/codec.{scale_encode_beefy_mmr_leaf, scale_encode_commitment}
+use bridge/merkle.{verify_mmr_leaf, verify_multiproof}
 use bridge/types.{BeefyConsensusState, BeefyThreshold, BridgeUpdate, Leaf}
 
-/// Verify `update` against `trusted_state` and require the derived state to equal `out_state`.
-pub fn verify_consensus(
-  trusted_state: BeefyConsensusState,
-  update: BridgeUpdate,
-  threshold: BeefyThreshold,
-  out_state: BeefyConsensusState,
-) -> Bool {
-  verify_mmr_update_proof(trusted_state, update, threshold) == out_state
+/// Seats a quorum needs: `seat_count − ⌊(seat_count − 1)(d − n) / d⌋`.
+pub fn required(seat_count: Int, numerator: Int, denominator: Int) -> Int {
+  seat_count - ( seat_count - 1 ) * ( denominator - numerator ) / denominator
 }
 
-/// Derive the next `BeefyConsensusState` from `update`; any failed check aborts the script.
-pub fn verify_mmr_update_proof(
-  trusted_state: BeefyConsensusState,
+/// Apply MIP rules 1–10 to `update` and return the next state; any failed rule aborts.
+pub fn verify_update(
+  state: BeefyConsensusState,
   update: BridgeUpdate,
   threshold: BeefyThreshold,
 ) -> BeefyConsensusState {
@@ -25,7 +24,7 @@ pub fn verify_mmr_update_proof(
     current_committee,
     next_committee,
     ..
-  } = trusted_state
+  } = state
 
   let BridgeUpdate {
     mmr_root,
@@ -39,65 +38,65 @@ pub fn verify_mmr_update_proof(
 
   let BeefyThreshold { numerator, denominator, .. } = threshold
 
-  let threshold_fn =
-    fn(seats) { ( seats * numerator + denominator - 1 ) / denominator }
+  expect block_number > latest_height
 
-  expect latest_height < block_number
-
-  let validating_root, validating_threshold <-
-    fn(callback) {
-      if validator_set_id == current_committee.validator_set_id {
-        callback(
-          current_committee.keyset_commitment,
-          threshold_fn(current_committee.seat_count),
-        )
-      } else {
-        expect validator_set_id == next_committee.validator_set_id
-        callback(
-          next_committee.keyset_commitment,
-          threshold_fn(next_committee.seat_count),
-        )
-      }
+  let signing =
+    if validator_set_id == current_committee.validator_set_id {
+      current_committee
+    } else {
+      expect validator_set_id == next_committee.validator_set_id
+      next_committee
     }
 
-  let leaves =
-    verify_merkle_multi_proof_get_leaves(
-      validating_root,
-      multiproof |> builtin.un_list_data,
+  let leaves = verify_multiproof(signing.keyset_commitment, multiproof)
+
+  let msg_hash =
+    scale_encode_commitment(mmr_root, block_number, validator_set_id)
+      |> builtin.keccak_256
+
+  expect
+    sum_signed_seats(leaves, signatures, msg_hash) >= required(
+      signing.seat_count,
+      numerator,
+      denominator,
     )
 
-  let signed_seats =
-    check_auth_sigs_and_sum_seats(
-      leaves,
-      signatures,
-      scale_encode_commitment(mmr_root, block_number, validator_set_id)
-        |> builtin.keccak_256,
+  expect leaf.parent_number == block_number - 1
+
+  expect
+    verify_mmr_leaf(
+      mmr_root,
+      scale_encode_beefy_mmr_leaf(leaf) |> builtin.keccak_256,
+      block_number - 1,
+      block_number,
+      mmr_proof,
     )
 
-  expect signed_seats >= validating_threshold
+  let next_id = next_committee.validator_set_id
+  let leaf_next_id = leaf.next_authority_set.validator_set_id
 
-  expect verify_mmr_leaf(leaf, mmr_proof, mmr_root)
+  expect leaf_next_id == next_id || leaf_next_id == next_id + 1
+  expect validator_set_id != next_id || leaf_next_id == next_id + 1
 
-  let current_committee, next_committee <-
-    fn(callback) {
-      if leaf.next_authority_set.validator_set_id > next_committee.validator_set_id {
-        callback(next_committee, leaf.next_authority_set)
-      } else {
-        callback(current_committee, next_committee)
-      }
+  if leaf_next_id == next_id + 1 {
+    BeefyConsensusState {
+      latest_mmr_root: mmr_root,
+      latest_height: block_number,
+      beefy_activation_block,
+      current_committee: next_committee,
+      next_committee: leaf.next_authority_set,
     }
-
-  BeefyConsensusState {
-    latest_mmr_root: mmr_root,
-    latest_height: block_number,
-    beefy_activation_block,
-    current_committee,
-    next_committee,
+  } else {
+    BeefyConsensusState {
+      ..state,
+      latest_mmr_root: mmr_root,
+      latest_height: block_number,
+    }
   }
 }
 
-/// Verify signature `i` under the key of leaf `i` and sum the signers' seats; an empty signature marks a non-signer leaf.
-pub fn check_auth_sigs_and_sum_seats(
+/// Rule 5: one signature per multiproof leaf (`""` for a non-signer); signers' seats summed.
+pub fn sum_signed_seats(
   leaves: List<Leaf>,
   signatures: List<ByteArray>,
   msg_hash: ByteArray,
@@ -111,18 +110,15 @@ pub fn check_auth_sigs_and_sum_seats(
       expect [leaf, ..rest_leaves] = leaves
       expect builtin.length_of_bytearray(leaf) == 37
 
-      let rest =
-        check_auth_sigs_and_sum_seats(rest_leaves, rest_signatures, msg_hash)
+      let key = builtin.slice_bytearray(0, 33, leaf)
+
+      let rest = sum_signed_seats(rest_leaves, rest_signatures, msg_hash)
 
       if signature == "" {
         rest
       } else {
         expect
-          builtin.verify_ecdsa_secp256k1_signature(
-            builtin.slice_bytearray(0, 33, leaf),
-            msg_hash,
-            signature,
-          )
+          builtin.verify_ecdsa_secp256k1_signature(key, msg_hash, signature)
 
         rest + (
           builtin.slice_bytearray(33, 4, leaf)
