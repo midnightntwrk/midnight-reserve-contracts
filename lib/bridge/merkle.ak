@@ -137,23 +137,7 @@ pub fn verify_multiproof(root: ByteArray, proof: Data) -> List<Leaf> {
   leaves
 }
 
-/// See merkle_multi_member.md for the expected
-/// shape of the tree and proof
-/// while this function looks complicated
-/// it only has 5 max cases to handle
-/// [single_item] -> must be a leaf so we add it to leaves_found and return the leaf_hash
-/// untouched
-///
-/// [list1, list2] -> recurse list2 then list1 and merge(list1, list2) and return the combined leaves_found from each
-///
-/// [bytearray, list] -> recurse list and merge(bytearray, list) and return leaves_found in list
-///
-/// [list, bytearray] -> same as above, but merge(list, bytearray)
-///
-/// [bytearray1, bytearray2] -> we have found the only other case where we can have a leaf
-///                             so merge(bytearray1, bytearray2) and [bytearray1, bytearray2, ..leaves_found]
-/// The simplicity is that there is no intermediary list required to hold branch_hashes, leaves can only be found in 2 cases
-/// a simple depth first search algorithm is used to get the root hash along with the list of all leaves in the proof
+/// Depth-first walk of the five node shapes (MIP §Notation): `[leaf]`, `[leaf, leaf]`, `[hash, tree]`, `[tree, hash]`, `[tree, tree]`.
 fn do_verify_merkle_multi_proof_get_leaves(
   proof: ProofNodeRec,
   leaves_found: List<Leaf>,
