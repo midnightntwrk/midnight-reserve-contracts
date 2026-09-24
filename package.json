@@ -21,6 +21,8 @@
     "@blaze-cardano/tx": "^0.15.4",
     "@blaze-cardano/uplc": "^0.5.4",
     "@blaze-cardano/vm": "^0.3.3",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
     "@types/bun": "^1.4.2",
     "@typescript-eslint/eslint-plugin": "^8.70.1",
     "@typescript-eslint/parser": "^8.70.1",

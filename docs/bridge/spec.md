@@ -310,6 +310,33 @@ state).
 
 ---
 
+## 10a. Reference implementation and vectors
+
+`tests/bridge/reference/` is an independent TypeScript implementation of
+every encoding and proof the contract verifies (`@noble/curves`,
+`@noble/hashes`): SCALE bytes (`scale.ts`), `merkle_root` layering
+(`keccak.ts`), the five-shape multiproof (`multiproof.ts`), the `mmr-lib`
+0.8.2 MMR with `gen_proof` item order and the index-walk verifier
+(`mmr.ts`), the deduplicated committee commitment and `required`
+(`commitment.ts`), low-S signing (`sign.ts`), and `BridgeUpdate` /
+`BeefyConsensusState` as blueprint types (`update.ts`).
+
+`bun tests/bridge/generate.ts` writes the MIP §Test vectors to
+`tests/vectors/bridge/*.json` (commitment, signed bytes, leaf, quorum,
+height, three-peak MMR, MMR edges, bootstrap datum with CBOR, handover
+cases with redeemer CBOR, the signed scenarios) and the Aiken fixtures
+`lib/bridge/vectors.ak`; `--signer-cap` regenerates
+`lib/bridge/signer_cap_vectors.ak` (slow). `tests/bridge/reference.test.ts`
+fails when the committed files drift from the generator and checks the
+properties (every multiproof subset hashes to `merkle_root`, every MMR
+leaf of sizes 1–20 verifies, the two node golden vectors).
+`tests/bridge/bridge-vm.test.ts` runs the compiled `committee_bridge_logic`
+in the Blaze emulator: scenarios a and b accepted, c and d rejected, a
+flipped signature byte, an under-quorum signer and a stale `state_out`
+rejected.
+
+---
+
 ## 11. Costs and `signer_cap`
 
 `signer_cap` is the largest committee of distinct single-seat members whose

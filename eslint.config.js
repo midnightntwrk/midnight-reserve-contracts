@@ -224,6 +224,7 @@ export default [
   {
     // Tests: no try/catch (expectFailure returns the tagged error) and one runtime helper.
     files: ["tests/**/*.ts"],
+    ignores: ["tests/bridge/**"],
     rules: {
       "no-restricted-syntax": [
         "error",
