@@ -1,7 +1,8 @@
 //// Light-client update: MIP rules 1–10 (spec §5) and the next state. Rule 0
 //// (the continuing output) lives in `validators/committee_bridge.ak`, the
 //// pool rules in `bridge/pool.ak`; rule 4 (key order) is not enforced, the
-//// multiproof root already binds the leaves.
+//// multiproof root already binds the leaves. Rule 6 also rejects a surplus
+//// signer: dropping the weakest signer must break the quorum.
 
 use aiken/builtin
 use bridge/codec.{scale_encode_beefy_mmr_leaf, scale_encode_commitment}
@@ -56,9 +57,16 @@ pub fn verify_update(
     scale_encode_commitment(mmr_root, block_number, validator_set_id)
       |> builtin.keccak_256
 
-  let seats, signers <- sum_signed_seats(leaves, signatures, msg_hash)
+  let quorum = required(signing.seat_count, numerator, denominator)
 
-  expect seats >= required(signing.seat_count, numerator, denominator)
+  let
+    remaining,
+    min_seats,
+    signers,
+  <- sum_signed_seats(leaves, signatures, msg_hash, quorum, quorum, 0)
+
+  expect remaining <= 0
+  expect remaining + min_seats > 0
 
   expect leaf.parent_number == block_number - 1
 
@@ -99,29 +107,35 @@ pub fn verify_update(
   continue(next_state, signers, handover)
 }
 
-/// Rule 5: one signature per multiproof leaf (`""` for a non-signer). Continues with the signed seats and the signer count.
+/// Rule 5, one pass: signature `i` verifies under leaf `i` (`""` for a non-signer).
 pub fn sum_signed_seats(
   leaves: List<Leaf>,
   signatures: List<ByteArray>,
   msg_hash: ByteArray,
-  continue: fn(Int, Int) -> r,
+  remaining: Int,
+  min_seats: Int,
+  signers: Int,
+  continue: fn(Int, Int, Int) -> r,
 ) -> r {
   when signatures is {
     [] -> {
       expect [] = leaves
-      continue(0, 0)
+      continue(remaining, min_seats, signers)
     }
     [signature, ..rest_signatures] -> {
       expect [leaf, ..rest_leaves] = leaves
       expect builtin.length_of_bytearray(leaf) == 37
 
-      let
-        seats,
-        signers,
-      <- sum_signed_seats(rest_leaves, rest_signatures, msg_hash)
-
       if signature == "" {
-        continue(seats, signers)
+        sum_signed_seats(
+          rest_leaves,
+          rest_signatures,
+          msg_hash,
+          remaining,
+          min_seats,
+          signers,
+          continue,
+        )
       } else {
         expect
           builtin.verify_ecdsa_secp256k1_signature(
@@ -130,12 +144,22 @@ pub fn sum_signed_seats(
             signature,
           )
 
-        continue(
-          seats + (
-            builtin.slice_bytearray(33, 4, leaf)
-              |> builtin.bytearray_to_integer(False, _)
-          ),
+        let seats =
+          builtin.slice_bytearray(33, 4, leaf)
+            |> builtin.bytearray_to_integer(False, _)
+
+        sum_signed_seats(
+          rest_leaves,
+          rest_signatures,
+          msg_hash,
+          remaining - seats,
+          if seats < min_seats {
+            seats
+          } else {
+            min_seats
+          },
           signers + 1,
+          continue,
         )
       }
     }
