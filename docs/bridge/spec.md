@@ -179,7 +179,7 @@ logic reads:
 | 3 | multiproof root = `S.keyset_commitment` | `merkle.verify_multiproof` |
 | 4 | leaves strictly increasing by key | not enforced, see §15 |
 | 5 | `length(signatures) = length(leaves)`; `sig_i = ""` skips leaf `i`, else `verify_ecdsa_secp256k1_signature(key_i, keccak(commitment), sig_i)` | `sum_signed_seats` |
-| 6 | `Σ seats ≥ required(S.seat_count, numerator, denominator)` | `verify_update` |
+| 6 | `Σ seats ≥ required(S.seat_count, numerator, denominator)`, and no surplus signer: `Σ seats − min(signer seats) < required` | `verify_update`, accumulators in `sum_signed_seats` |
 | 7 | `leaf.parent_number = block_number − 1` | `verify_update` |
 | 8 | MMR proof of `keccak(SCALE(leaf))` at index `block_number − 1`, count `block_number`, against `mmr_root` | `merkle.verify_mmr_leaf` (index walk) |
 | 9 | `leaf.next.validator_set_id ∈ {next.validator_set_id, next.validator_set_id + 1}` | `verify_update` |
@@ -354,9 +354,10 @@ crosses 16,384 at N ≈ 170 unfunded, N ≈ 169 funded.
 bound: ~800 bytes of headroom for a funded handover at depth 20, ~700 at
 depth 23, with the conservative overhead. `serialise_data` writes
 indefinite-length lists; a definite-length encoder saves ~200 bytes more.
-The claim assumes the relay submits at most `required` signers (§12): all
-160 signing is 17,932 bytes and cannot be submitted, a liveness failure
-the relay avoids by trimming.
+The contract rejects a surplus signer (rule 6, §15), so a quorum
+submission of a single-seat committee has exactly `required` signers and
+the claim needs no relay promise; a relay that does not trim gets its
+update rejected and resubmits.
 
 `max_fee` from the same points, mainnet fee parameters (`minFeeA` 44,
 `minFeeB` 155,381, mem 0.0577, cpu 0.0000721 lovelace per unit, reference
@@ -384,9 +385,9 @@ See [overview.md §What the node must emit](overview.md#what-the-node-must-emit-
 The relay's proof builder (`midnight-beefy-relay`) must emit `BridgeUpdate`
 in §3 order with signatures in leaf order (`""` for a non-signer leaf); a
 signers-only multiproof is the smallest. The `signer_cap` claim (§11)
-covers a `required`-quorum submission: the relay must submit at most
-`required` signers, or trim to that, since every extra signature costs
-64 bytes and the contract sets no upper bound on the multiproof. The
+covers a `required`-quorum submission: the relay must trim to a minimal
+cover (drop any signer whose removal keeps the quorum), since the contract
+rejects a surplus signer. The
 forever, logic and pool scripts MUST be supplied through reference-script
 UTxOs, never in the witness set (§11); the deployment (phase 06) creates
 those UTxOs and the relay references them.
@@ -444,6 +445,7 @@ index-and-count MMR walk as rule 8.
 | "the light client itself has the one redeemer" | logic script with one redeemer behind the forever/two-stage wrapper | script replacement needs Council + Tech Auth; consumers keep one NFT to follow |
 | pool rules stated on the pool spend | enforced by the bridge logic; the pool spend requires the running logic (two-stage `main` datum) to withdraw, as the forever spend does | pool cannot be spent without a valid update running |
 | rule 17: `s` = multiproof leaves | `s` = signers (non-empty signatures) | a non-signer leaf costs the pool nothing, so padding cannot raise the cap; the relay pays its own bytes |
+| rule 6: quorum only | plus no surplus signer: dropping the weakest signer must break the quorum | every counted signer did necessary work, so neither the cap nor the transaction size can be padded with signatures; the relay trims to a minimal cover, which for single-seat committees is exactly `required` signers |
 | rule 12: exactly one output at the pool address | output 1 is the pool output, lovelace only; later outputs unread | positional, no output scan; an extra pool output is unsubtracted debit, so never a drain |
 | bootstrap prose | `next = current + 1`, `latest_height = activation − 1`, both `seat_count > 0`, 32-byte roots checked at mint | tighter than `next.id > current.id` today; `required(0, n, d) = 1` (Aiken `/` floors), a zero-seat committee would need one signed seat from nowhere |
 | MMR proof items "path siblings, then P3, then P1" (MIP §Test vectors) | left peaks, siblings, then one bagged right item | `mmr-lib` 0.8.2 `gen_proof` / `calculate_root` order, checked against the crate source and by a symbolic port on sizes 1..69 |
