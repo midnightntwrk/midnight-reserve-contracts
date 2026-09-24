@@ -125,7 +125,7 @@ pub fn leaf_next(id: Int) -> AuthoritySetCommitment {
 pub fn leaf(s: Scenario) -> BeefyMmrLeaf {
   BeefyMmrLeaf {
     version: 0,
-    parent_number: s.block_number - 1,
+    parent_number: s.parent_number,
     parent_hash: s.parent_hash,
     next_authority_set: leaf_next(s.next_id),
     extra: "",
@@ -246,23 +246,9 @@ fn hashed(i: Int) -> Data {
   raw(keccak(leaf_at(i)))
 }
 
-pub fn leaf_with_parent(l: BeefyMmrLeaf, parent_number: Int) -> BeefyMmrLeaf {
-  BeefyMmrLeaf { ..l, parent_number }
-}
-
 pub fn leaf_at(i: Int) -> ByteArray {
   expect Some(l) = list.at(leaves, i)
   l
-}
-
-/// A 64-byte inner-node preimage presented as a leaf: the root matches, the 37-byte guard must reject it.
-pub fn multiproof_preimage_leaf() -> Data {
-  node(
-    [
-      node([raw(bytearray.concat(keccak(leaf_at(0)), keccak(leaf_at(1))))]),
-      lone(2),
-    ],
-  )
 }
 
 pub fn multiproof(signers: List<Int>) -> Data {

@@ -7,6 +7,7 @@
 pub type Scenario {
   set_id: Int,
   block_number: Int,
+  parent_number: Int,
   next_id: Int,
   parent_hash: ByteArray,
   mmr_root: ByteArray,
@@ -27,6 +28,7 @@ pub const a_no_handover =
   Scenario {
     set_id: 4,
     block_number: 7,
+    parent_number: 6,
     next_id: 5,
     parent_hash: #"965fc89e6c02b012ddbdb7c3ac087e74e2dfc6cd8dcdc2efa28ddea9798fa4aa",
     mmr_root: #"ab4eac1bdc5cd05fa0f638c295f42ad024b1dff4d5f2436aa001e3294d9422db",
@@ -41,6 +43,7 @@ pub const b_handover =
   Scenario {
     set_id: 5,
     block_number: 8,
+    parent_number: 7,
     next_id: 6,
     parent_hash: #"dac94472f7237cad8d6a810bbd1e431c9347ca475a545c4cde5a73ced01c9046",
     mmr_root: #"350501af9cf6627e4642f864de66d37b8f6e8097edea3662bc93d51450997de3",
@@ -55,6 +58,7 @@ pub const c_next_signs_same =
   Scenario {
     set_id: 5,
     block_number: 8,
+    parent_number: 7,
     next_id: 5,
     parent_hash: #"dac94472f7237cad8d6a810bbd1e431c9347ca475a545c4cde5a73ced01c9046",
     mmr_root: #"09a9b9a4849407362b300c11edfcd6c374e0fc97adfa07be1f3918c141fd4222",
@@ -69,6 +73,7 @@ pub const d_skip_two =
   Scenario {
     set_id: 4,
     block_number: 7,
+    parent_number: 6,
     next_id: 7,
     parent_hash: #"965fc89e6c02b012ddbdb7c3ac087e74e2dfc6cd8dcdc2efa28ddea9798fa4aa",
     mmr_root: #"ef52bd6c94015877ebf8ceda4e16c5cf2d817212950545538f7e81aed9d0959f",
@@ -83,6 +88,7 @@ pub const e_block_one =
   Scenario {
     set_id: 4,
     block_number: 1,
+    parent_number: 0,
     next_id: 5,
     parent_hash: #"e6a3bb74bc473a3946957387c05bbc678ae73ee52c5f286e2c171e29853869f4",
     mmr_root: #"7f72af147167b4357ed7d5e4e46af13377da2bfec51758d5a1db116db213da56",
@@ -97,6 +103,7 @@ pub const f_current_hands_over =
   Scenario {
     set_id: 4,
     block_number: 9,
+    parent_number: 8,
     next_id: 6,
     parent_hash: #"49864eae586f19ef7d817e5deca567bc44dc855c2399268cf9d522e0e1ae24d1",
     mmr_root: #"6c736878fde7da35a4a531008f147383b9068ed44aaf09c38dc66bb4d065080d",
@@ -106,6 +113,25 @@ pub const f_current_hands_over =
       #"f247e2c7f2e69c57c99f9be2d22a8d0270008fa5d46e56cf4b256b4133429ee944e694cea4a970f9db4f9b65cb6c06b9a0ceedccf1c4b8da68ee4a3923d724b0",
     ],
   }
+
+pub const g_wrong_parent =
+  Scenario {
+    set_id: 4,
+    block_number: 7,
+    parent_number: 7,
+    next_id: 5,
+    parent_hash: #"965fc89e6c02b012ddbdb7c3ac087e74e2dfc6cd8dcdc2efa28ddea9798fa4aa",
+    mmr_root: #"a8db0ddeccafed7424c0d5829efac21f6e402d1e197c881d2c054e25bc54d3e5",
+    sigs: [
+      #"27dfc9bd7db3cf153da73df519c80c5d6459e81999c49277ed453b12acfea1a50a76d416aba53aad175469e8eac453822b1925d80f5390a0332862e3434e9f37",
+      #"292bd7e94e7ce9bd6730c7387c2d9f37456ad596e09b4d66e7b40af3e3f6815023a24f6e8c7e1c1e7fc08b0b53a62b487ebf9d906966490e8e2a65a417673fd5",
+      #"f1bfb176438b98ebd650e24ddf2527f352c72468938901eb8d1f6f153f17145f0d0376e5dff0d933c6d3c96abf78c065f27e3b90cf371c1ab2cfd1a51975b5c5",
+    ],
+  }
+
+/// `a_no_handover` signature 0 with `s' = n - s`: same `r`, high S.
+pub const a_high_s_sig0 =
+  #"f1c0b4022c7273144299b89415517f38c81f606568ff0885ece7421658fc777bd147cd5051a8a071a643ed1f8263b5ed192a810fe178c4598c66fc3b00c4bc74"
 
 // MIP §Test vectors, three peaks: leaf 5 of 7 under the middle peak.
 

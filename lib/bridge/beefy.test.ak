@@ -1,10 +1,11 @@
 use aiken/collection/list
 use aiken/primitive/bytearray
-use bridge/beefy.{required}
+use bridge/beefy.{required, sum_signed_seats}
 use bridge/test_fixtures as fx
 use bridge/types.{
   AuthoritySetCommitment, BeefyConsensusState, BeefyThreshold, BridgeUpdate,
 }
+use bridge/vectors
 
 // MIP quorum table at (2, 3).
 test required_table() {
@@ -173,13 +174,12 @@ test reject_bad_signature() fail {
   verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
 }
 
-// Same r, s' = n - s: valid under a malleable verifier, rejected by the builtin.
+// Same r, s' = n - s (generated): valid under a malleable verifier, rejected by the builtin.
 test reject_high_s_signature() fail {
   let update = fx.update(fx.a_no_handover)
   expect [_, ..rest] = update.signatures
-  let high_s =
-    #"b6cda229807a87bb7c59c97b06cdb7e166599f551102bcb3f2a22def7b7714c9bf5c2ac2f16187c52456adc89e0c73508958ce7a9de5318e5483cd29f03c9be8"
-  let update = BridgeUpdate { ..update, signatures: [high_s, ..rest] }
+  let update =
+    BridgeUpdate { ..update, signatures: [vectors.a_high_s_sig0, ..rest] }
   verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
 }
 
@@ -236,16 +236,14 @@ test reject_no_signers() fail {
   ) != fx.state(4, 5, 6)
 }
 
-// Rule 7.
+// Rule 7: the MMR commits a leaf whose parent_number is the block itself, so
+// the proof and the signatures hold and only rule 7 rejects.
 test reject_parent_number() fail {
-  let update = fx.update(fx.a_no_handover)
-  let leaf = update.leaf
-  let update =
-    BridgeUpdate {
-      ..update,
-      leaf: fx.leaf_with_parent(leaf, leaf.parent_number - 1),
-    }
-  verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
+  verify_update(
+    fx.state(4, 5, 6),
+    fx.update(vectors.g_wrong_parent),
+    fx.threshold,
+  ) != fx.state(4, 5, 6)
 }
 
 // Rule 8.
@@ -274,15 +272,18 @@ test reject_next_signs_without_handover() fail {
   ) != fx.state_next_signs(4, 5, 7)
 }
 
-// A 64-byte inner-node preimage presented as a leaf: the root matches, the 37-byte guard rejects it.
+// A 64-byte inner-node preimage presented as a non-signer leaf: with quorum
+// already met, only the 37-byte guard can reject.
 test reject_preimage_leaf() fail {
-  let s = fx.a_no_handover
-  expect [_, _, sig2] = s.sigs
-  let update =
-    BridgeUpdate {
-      ..fx.update(s),
-      signatures: ["", sig2],
-      multiproof: fx.multiproof_preimage_leaf(),
-    }
-  verify_update(fx.state(4, 5, 6), update, fx.threshold) != fx.state(4, 5, 6)
+  let preimage =
+    bytearray.concat(fx.keccak(fx.leaf_at(0)), fx.keccak(fx.leaf_at(1)))
+  sum_signed_seats(
+    [preimage],
+    [""],
+    fx.keccak(""),
+    0,
+    0,
+    0,
+    fn(_, _, _) { True },
+  )
 }
