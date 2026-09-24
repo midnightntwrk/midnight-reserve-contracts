@@ -37,6 +37,7 @@ just test-preview
 - [`docs/governance/upgrade.md`](docs/governance/upgrade.md) - Forever/Two-Stage upgrade flow
 - [`docs/governance/transaction-identification.md`](docs/governance/transaction-identification.md) - CIP-20 metadata for governance transactions
 - [`docs/governance/live-deployment.md`](docs/governance/live-deployment.md) - live deployment runbook: command order, signing, multi-party witnesses
+- [`docs/bridge/`](docs/bridge/) - BEEFY committee bridge (light client, funding pool); plan in [`plans/bridge/`](plans/bridge/)
 - [`CLAUDE.md`](CLAUDE.md) - development guidelines and audit boundaries
 
 ## CLI Commands
