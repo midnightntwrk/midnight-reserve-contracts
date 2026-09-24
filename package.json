@@ -40,6 +40,8 @@
     "@blaze-cardano/sdk": "^0.2.47",
     "@blaze-cardano/uplc": "^0.4.3",
     "@blaze-cardano/vm": "^0.2.3",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
     "@types/bun": "latest",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
