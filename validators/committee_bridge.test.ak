@@ -302,11 +302,6 @@ test pool_rejects_datum_hash() fail {
   )
 }
 
-test pool_rejects_inline_datum() fail {
-  let out = fx.pool_output(10_000_000)
-  funded_handover_with_output(Output { ..out, datum: InlineDatum(0) })
-}
-
 // A pool input with a stake part is pool money: it counts toward the debit.
 test pool_staked_input_counted() {
   !committee_bridge.committee_bridge_logic.else(

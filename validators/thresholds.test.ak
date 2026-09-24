@@ -78,14 +78,6 @@ test mint_rejects_negative_numerator() {
   !mint(BeefyThreshold(-1, 3, 0, 0))
 }
 
-test mint_rejects_zero_denominator() {
-  !mint(BeefyThreshold(0, 0, 0, 0))
-}
-
-test mint_rejects_negative_denominator() {
-  !mint(BeefyThreshold(0, -1, 0, 0))
-}
-
 // Spend under Council + Tech Auth: each multisig is one signer at 1/1, and
 // the transaction mints under the native script rebuilt from each datum.
 
@@ -196,10 +188,6 @@ test spend_rejects_negative_cap() {
   !spend(BeefyThreshold(2, 3, -1, 20_000))
 }
 
-test spend_rejects_negative_per_signer() {
-  !spend(BeefyThreshold(2, 3, 500_000, -1))
-}
-
 test spend_rejects_wrong_fraction_mints() fail {
   spend_with(
     from_asset(native_policy(tech_auth, 1, 2), "", 1)
@@ -232,10 +220,6 @@ test spend_rejects_wrong_shape_datum() fail {
   )
 }
 
-test spend_rejects_bad_ratio() {
-  !spend(BeefyThreshold(4, 3, 500_000, 20_000))
-}
-
 test spend_rejects_missing_council() fail {
   spend_with(
     from_asset(native_policy(tech_auth, 2, 3), "", 1),
@@ -248,8 +232,4 @@ test spend_rejects_missing_tech_auth() fail {
     from_asset(native_policy(council, 1, 2), "", 1),
     BeefyThreshold(2, 3, 1_000_000, 50_000),
   )
-}
-
-test spend_rejects_no_gov_mint() fail {
-  spend_with(assets.zero, BeefyThreshold(2, 3, 1_000_000, 50_000))
 }

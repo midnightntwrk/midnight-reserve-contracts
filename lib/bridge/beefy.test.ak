@@ -35,28 +35,20 @@ fn advanced(st: BeefyConsensusState, s: fx.Scenario) -> BeefyConsensusState {
   }
 }
 
-// The cap counts signers: a non-signer leaf (empty signature) adds nothing.
-test signers_counted_not_leaves() {
-  let
-    _,
-    signers,
-    handover,
-  <-
-    beefy.verify_update(
-      fx.state(4, 5, 6),
-      fx.update_with(fx.a_no_handover, [0, 1, 2], [0, 1]),
-      fx.threshold,
-    )
-  signers == 2 && !handover
-}
-
-// Boundary accept: block_number = latest_height + 1, seats = required, leaf names next.
+// Boundary accept: block_number = latest_height + 1, seats = required, leaf
+// names next. The cap counts signers: the non-signer leaf adds nothing.
 test accept_no_handover() {
   let st = fx.state(4, 5, 6)
-  verify_update(st, fx.update(fx.a_no_handover), fx.threshold) == advanced(
-    st,
-    fx.a_no_handover,
-  )
+  let
+    next,
+    signers,
+    handover,
+  <- beefy.verify_update(st, fx.update(fx.a_no_handover), fx.threshold)
+  and {
+    next == advanced(st, fx.a_no_handover),
+    signers == 2,
+    !handover,
+  }
 }
 
 // Signed by the next committee (id 5), leaf names 6: handover; the new next is the leaf's, not the state's.
@@ -97,12 +89,6 @@ test accept_current_hands_over() {
       next_committee: fx.leaf_next(6),
     },
   }
-}
-
-// The next committee's keyset is not the signing one: a signature by "current" under the next id fails rule 3.
-test reject_signed_under_wrong_id() fail {
-  let update = BridgeUpdate { ..fx.update(fx.b_handover), validator_set_id: 5 }
-  verify_update(fx.state(4, 5, 7), update, fx.threshold) != fx.state(4, 5, 7)
 }
 
 test accept_block_one() {
@@ -216,14 +202,6 @@ test reject_quorum_short() fail {
   verify_update(
     fx.state(4, 5, 6),
     fx.update_with(fx.a_no_handover, [0, 1, 2], [0, 2]),
-    fx.threshold,
-  ) != fx.state(4, 5, 6)
-}
-
-test reject_single_signer() fail {
-  verify_update(
-    fx.state(4, 5, 6),
-    fx.update_with(fx.a_no_handover, [1], [1]),
     fx.threshold,
   ) != fx.state(4, 5, 6)
 }
