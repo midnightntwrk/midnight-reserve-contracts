@@ -1,0 +1,43 @@
+===========================================
+Generating deployment transactions for preview
+===========================================
+UTxO Amount: 20000000 lovelace
+Min UTxO: calculated dynamically from protocol parameters
+
+Total tech auth signers: 1
+Number of tech auth signer pairs: 1
+Total council signers: 1
+Number of council signer pairs: 1
+
+Using collateral UTxO: 2075919b9398543b46b4955fc85cc234ec3f58b6e31a0a850b46b9f5fc05c592#15 with 19787771 lovelace
+Collateral validation passed: 19787771 lovelace >= 7500000 lovelace required
+ℹ️  Targeting single transaction: technical-authority-deployment
+ℹ️  Replaced transaction technical-authority-deployment in existing deployment file (12 total)
+===========================================
+✅ Generated 1 deployment transactions
+
+Output file: <repo>/deployments/preview/deployment-transactions.json
+===========================================
+
+Transaction Summary:
+1. technical-authority-deployment
+   Hash: 61e4d39caefb83cc2971aeb0a7716066a11769652066dec87299eed6e8535271
+
+
+Script Outputs:
+===========================================
+
+technical-authority-deployment:
+  Address: addr_test1wpt064dv674gu83atfcsxag9dfp0mwdav74qy7tustw8y3sdpl9vn
+  Policy ID: 56fd55acd7aa8e1e3d5a710375056a42fdb9bd67aa02797c82dc7246
+  Asset Name: main
+
+  Address: addr_test1wpt064dv674gu83atfcsxag9dfp0mwdav74qy7tustw8y3sdpl9vn
+  Policy ID: 56fd55acd7aa8e1e3d5a710375056a42fdb9bd67aa02797c82dc7246
+  Asset Name: staging
+
+  Address: addr_test1wqm059kaussd5nx0fg25wlh33y8tvj4nl9dqjxw6qzdya6c09fgta
+  Policy ID: 36fa16dde420da4ccf4a15477ef1890eb64ab3f95a0919da009a4eeb
+  Asset Name: (empty)
+
+

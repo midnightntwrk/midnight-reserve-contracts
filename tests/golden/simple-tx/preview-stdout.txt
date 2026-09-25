@@ -1,0 +1,13 @@
+
+Generating simple transaction on preview network
+Creating 15 outputs of 20000000 lovelace each
+Recipient: addr_test1vps65u0vnrd7vyflazh3vcyl2t894arpxa3sj5a3n5jezdsgpggk5
+✅ Transaction built: 2075919b9398543b46b4955fc85cc234ec3f58b6e31a0a850b46b9f5fc05c592
+
+
+Transaction details:
+  - Outputs: 15
+  - Amount per output: 20.000000 ADA
+  - Total sent: 300.000000 ADA
+
+Transaction written to <scratch>/simple-preview/preview/simple-tx.json

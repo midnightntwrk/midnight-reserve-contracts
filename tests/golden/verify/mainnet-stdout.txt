@@ -1,0 +1,44 @@
+Verifying mainnet deployment (52 validators, 12 transactions)...
+
+Check 1: Forever script -> Two-stage embedding...
+  PASS: Embedding: tech_auth_forever contains tech_auth_two_stage_upgrade hash
+  PASS: Embedding: council_forever contains council_two_stage_upgrade hash
+  PASS: Embedding: reserve_forever contains reserve_two_stage_upgrade hash
+  PASS: Embedding: ics_forever contains ics_two_stage_upgrade hash
+  PASS: Embedding: federated_ops_forever contains federated_ops_two_stage_upgrade hash
+  PASS: Embedding: terms_and_conditions_forever contains terms_and_conditions_two_stage_upgrade hash
+
+Check 2: On-chain script hash verification...
+  PASS: Deployment transactions: expected descriptions
+  PASS: On-chain: technical-authority-deployment
+  PASS: On-chain: tech-auth-update-threshold-deployment
+  PASS: On-chain: council-deployment
+  PASS: On-chain: council-update-threshold-deployment
+  PASS: On-chain: reserve-deployment
+  PASS: On-chain: ics-deployment
+  PASS: On-chain: main-gov-threshold-deployment
+  PASS: On-chain: staging-gov-threshold-deployment
+  PASS: On-chain: federated-ops-deployment
+  PASS: On-chain: federated-ops-update-threshold-deployment
+  PASS: On-chain: terms-and-conditions-deployment
+  PASS: On-chain: terms-and-conditions-threshold-deployment
+
+Check 3: UpgradeState datum verification (main outputs)...
+  PASS: UpgradeState (main): technical-authority-deployment
+  PASS: UpgradeState (main): council-deployment
+  PASS: UpgradeState (main): reserve-deployment
+  PASS: UpgradeState (main): ics-deployment
+  PASS: UpgradeState (main): federated-ops-deployment
+  PASS: UpgradeState (main): terms-and-conditions-deployment
+
+Check 4: UpgradeState datum verification (staging outputs)...
+  PASS: UpgradeState (staging): technical-authority-deployment
+  PASS: UpgradeState (staging): council-deployment
+  PASS: UpgradeState (staging): reserve-deployment
+  PASS: UpgradeState (staging): ics-deployment
+  PASS: UpgradeState (staging): federated-ops-deployment
+  PASS: UpgradeState (staging): terms-and-conditions-deployment
+
+Report saved to <repo>/release/mainnet/verification-report.md
+
+VERIFICATION PASSED: All checks passed.

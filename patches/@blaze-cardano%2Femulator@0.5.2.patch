@@ -1,3 +1,9 @@
+diff --git a/node_modules/@blaze-cardano/emulator/.bun-tag-2d167376db3f4759 b/.bun-tag-2d167376db3f4759
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/@blaze-cardano/emulator/.bun-tag-7763147180407b88 b/.bun-tag-7763147180407b88
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/dist/emulator-Cyvpkx5Z.mjs b/dist/emulator-Cyvpkx5Z.mjs
 index ad7fcc3f4173e42a8d00857828c5d410c0d10533..b6a84bb36a913bf42010bad55288befea73ad11a 100644
 --- a/dist/emulator-Cyvpkx5Z.mjs
@@ -10,4 +16,17 @@ index ad7fcc3f4173e42a8d00857828c5d410c0d10533..b6a84bb36a913bf42010bad55288befe
 +			if ((isCertType(core, StakeCredentialCertificateTypes) || isCertType(core, VoteDelegationCredentialCertificateTypes)) && certType !== CertificateType.StakeRegistration) {
  				const stakeCred = core.stakeCredential;
  				if (stakeCred) consumeCred(stakeCred, RedeemerTag.Cert, BigInt(index));
+ 			}
+diff --git a/dist/emulator-D_QI3kpk.cjs b/dist/emulator-D_QI3kpk.cjs
+index c0cd72217179d6b931a09e69629e673d28712446..dfc39c50f3c1e7c630f4242987e07dbb0a4e8c09 100644
+--- a/dist/emulator-D_QI3kpk.cjs
++++ b/dist/emulator-D_QI3kpk.cjs
+@@ -852,7 +852,7 @@ var Emulator = class {
+ 				const deposit = isLegacyStakeCertificate(core) ? BigInt(this.params.stakeKeyDeposit) : certificateDeposit(core);
+ 				netValue = _blaze_cardano_tx.Value.merge(netValue, new _blaze_cardano_core.Value(deposit));
+ 			}
+-			if (((0, _blaze_cardano_core.isCertType)(core, _blaze_cardano_core.StakeCredentialCertificateTypes) || (0, _blaze_cardano_core.isCertType)(core, _blaze_cardano_core.VoteDelegationCredentialCertificateTypes)) && certType !== _blaze_cardano_core.CertificateType.StakeRegistration && certType !== _blaze_cardano_core.CertificateType.Registration) {
++			if (((0, _blaze_cardano_core.isCertType)(core, _blaze_cardano_core.StakeCredentialCertificateTypes) || (0, _blaze_cardano_core.isCertType)(core, _blaze_cardano_core.VoteDelegationCredentialCertificateTypes)) && certType !== _blaze_cardano_core.CertificateType.StakeRegistration) {
+ 				const stakeCred = core.stakeCredential;
+ 				if (stakeCred) consumeCred(stakeCred, _blaze_cardano_core.RedeemerTag.Cert, BigInt(index));
  			}
