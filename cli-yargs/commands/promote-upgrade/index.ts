@@ -4,8 +4,6 @@ import {
   Address,
   AssetId,
   AssetName,
-  Credential,
-  CredentialType,
   PaymentAddress,
   PolicyId,
   Script,
@@ -22,6 +20,7 @@ import {
   getContractInstances,
   getContractAddress,
   getTwoStageContracts,
+  findScriptByHash,
 } from "../../lib/contracts";
 import { extractSignersFromCbor, parsePrivateKeys } from "../../lib/signers";
 import {
@@ -42,6 +41,7 @@ import {
   attachWitnesses,
   findUtxoByTxRef,
   parseInlineDatum,
+  registerScriptStake,
 } from "../../lib/transaction";
 import { writeTransactionFile, printSuccess } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
@@ -402,12 +402,17 @@ export async function handler(argv: PromoteUpgradeOptions) {
   // Register the promoted logic hash as a stake credential so subsequent
   // governance commands can use it as a withdrawal (reward account).
   if (!promotedLogicAlreadyRegistered) {
-    txBuilder.addRegisterStake(
-      Credential.fromCore({
-        hash: stagedLogicHash,
-        type: CredentialType.ScriptHash,
-      }),
+    const stagedLogicScript = findScriptByHash(
+      stagedLogicHash,
+      network,
+      useBuild,
     );
+    if (!stagedLogicScript) {
+      throw new Error(
+        `Staged logic script ${stagedLogicHash} not found in the blueprint`,
+      );
+    }
+    registerScriptStake(txBuilder, stagedLogicScript);
   }
 
   const { tx } = await completeTx(txBuilder, {
