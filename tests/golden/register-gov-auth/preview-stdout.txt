@@ -1,8 +1,0 @@
-
-Registering Gov Auth scripts on preview network
-
-Main Gov Auth script hash: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449
-Staging Gov Auth script hash: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00
-✅ Transaction built: 1fce2dee48096e1b5ac2f5afc3b9e3329ce40335dcce5217c8acd9e5c9f94b6d
-
-Transaction ID: 1fce2dee48096e1b5ac2f5afc3b9e3329ce40335dcce5217c8acd9e5c9f94b6d

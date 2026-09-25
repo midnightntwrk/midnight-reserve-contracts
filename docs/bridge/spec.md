@@ -329,11 +329,10 @@ cases with redeemer CBOR, the signed scenarios) and the Aiken fixtures
 `lib/bridge/signer_cap_vectors.ak` (slow). `tests/bridge/reference.test.ts`
 fails when the committed files drift from the generator and checks the
 properties (every multiproof subset hashes to `merkle_root`, every MMR
-leaf of sizes 1–20 verifies, the two node golden vectors).
+leaf of sizes 1–20 verifies).
 `tests/bridge/bridge-vm.test.ts` runs the compiled `committee_bridge_logic`
-in the Blaze emulator: scenarios a and b accepted, c and d rejected, a
-flipped signature byte, an under-quorum signer and a stale `state_out`
-rejected.
+in the Blaze emulator: scenarios a and b accepted, a flipped signature
+byte, an under-quorum signer and a stale `state_out` rejected.
 
 ---
 

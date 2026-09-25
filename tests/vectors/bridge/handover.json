@@ -19,10 +19,7 @@
       "scenario": "a_no_handover",
       "signed_by": 4,
       "leaf_next_id": 5,
-      "signers": [
-        0,
-        1
-      ],
+      "signers": [0, 1],
       "expect": "accepted",
       "handover": false,
       "update": {
@@ -80,10 +77,7 @@
       "scenario": "b_handover",
       "signed_by": 5,
       "leaf_next_id": 6,
-      "signers": [
-        0,
-        1
-      ],
+      "signers": [0, 1],
       "expect": "accepted",
       "handover": true,
       "update": {
@@ -142,10 +136,7 @@
       "scenario": "c_next_signs_same",
       "signed_by": 5,
       "leaf_next_id": 5,
-      "signers": [
-        0,
-        1
-      ],
+      "signers": [0, 1],
       "expect": "rejected",
       "handover": null,
       "update": {
@@ -190,10 +181,7 @@
       "scenario": "d_skip_two",
       "signed_by": 4,
       "leaf_next_id": 7,
-      "signers": [
-        0,
-        1
-      ],
+      "signers": [0, 1],
       "expect": "rejected",
       "handover": null,
       "update": {

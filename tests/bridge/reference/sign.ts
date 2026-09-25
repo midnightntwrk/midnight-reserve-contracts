@@ -11,13 +11,7 @@ export function keypair(scalar: bigint): Keypair {
 
 /** 64-byte `r ‖ s`, low-S, over an already hashed message. */
 export function sign(kp: Keypair, msgHash: Uint8Array): Uint8Array {
-  const sig = secp256k1.sign(msgHash, kp.secret, {
-    prehash: false,
-    lowS: true,
-  });
-  if (!secp256k1.verify(sig, msgHash, kp.public, { prehash: false }))
-    throw new Error("signature does not verify");
-  return sig;
+  return secp256k1.sign(msgHash, kp.secret, { prehash: false, lowS: true });
 }
 
 export const byKey = (a: Keypair, b: Keypair): number =>

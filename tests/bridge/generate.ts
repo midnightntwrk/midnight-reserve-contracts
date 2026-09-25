@@ -14,7 +14,7 @@ export const VECTORS_AK = resolve(
   import.meta.dir,
   "../../lib/bridge/vectors.ak",
 );
-export const SIGNER_CAP_AK = resolve(
+const SIGNER_CAP_AK = resolve(
   import.meta.dir,
   "../../lib/bridge/signer_cap_vectors.ak",
 );

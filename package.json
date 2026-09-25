@@ -3,37 +3,17 @@
   "version": "0.0.1",
   "type": "module",
   "license": "MIT",
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/esm/index.js",
-  "types": "./dist/types/index.d.ts",
-  "exports": {
-    ".": {
-      "require": "./dist/cjs/index.js",
-      "import": "./dist/esm/index.js",
-      "types": "./dist/types/index.d.ts"
-    }
-  },
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
-    "clean": "rm -rf ./dist",
-    "check": "tsc --noEmit",
-    "lint": "eslint 'cli-yargs/**/*.ts' 'tests/**/*.ts' --ignore-pattern '**/dist/**'",
+    "check": "tsc --noEmit && bun run lint",
+    "lint": "eslint 'cli/**/*.ts' 'tests/**/*.ts'",
     "lint:fix": "bun lint --fix",
-    "fmt": "prettier --write 'cli-yargs/**/*.ts' 'tests/**/*.ts'",
-    "fmt:check": "prettier --check 'cli-yargs/**/*.ts' 'tests/**/*.ts'",
-    "cli": "bun run cli-yargs/index.ts",
-    "cli:deploy": "bun run cli-yargs/index.ts deploy",
-    "cli:deploy:local": "bun run cli-yargs/index.ts deploy -n local",
-    "cli:deploy:preview": "bun run cli-yargs/index.ts deploy -n preview",
-    "cli:deploy:preprod": "bun run cli-yargs/index.ts deploy -n preprod",
-    "cli:info": "bun run cli-yargs/index.ts info",
-    "cli:info:preview": "bun run cli-yargs/index.ts info -n preview",
-    "cli:simple-tx": "bun run cli-yargs/index.ts simple-tx"
+    "fmt": "prettier --write 'cli/**/*.ts' 'tests/**/*.ts'",
+    "fmt:check": "prettier --check 'cli/**/*.ts' 'tests/**/*.ts'",
+    "cli": "bun run cli/index.ts"
   },
   "devDependencies": {
     "@blaze-cardano/blueprint": "^0.9.0",
+    "@blaze-cardano/core": "^0.9.1",
     "@blaze-cardano/data": "^0.6.8",
     "@blaze-cardano/emulator": "^0.5.2",
     "@blaze-cardano/query": "^0.6.2",
@@ -46,16 +26,15 @@
     "@types/bun": "^1.4.2",
     "@typescript-eslint/eslint-plugin": "^8.70.1",
     "@typescript-eslint/parser": "^8.70.1",
-    "cbor": "^10.0.12",
     "eslint": "^10.11.0",
-    "globals": "^17.12.0",
     "prettier": "^3.9.9",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@types/yargs": "^17.0.35",
-    "toml": "^5.0.0",
-    "yargs": "^18.2.0"
+    "@effect/cli": "^0.77.2",
+    "@effect/platform": "^0.97.2",
+    "@effect/platform-bun": "^0.91.2",
+    "effect": "^3.22.2"
   },
   "overrides": {
     "lodash": "^4.18.1",
@@ -63,6 +42,7 @@
     "@humanfs/node": "^0.16.8"
   },
   "patchedDependencies": {
-    "@blaze-cardano/emulator@0.5.2": "patches/@blaze-cardano%2Femulator@0.5.2.patch"
+    "@blaze-cardano/emulator@0.5.2": "patches/@blaze-cardano%2Femulator@0.5.2.patch",
+    "@blaze-cardano/query@0.6.2": "patches/@blaze-cardano%2Fquery@0.6.2.patch"
   }
 }
