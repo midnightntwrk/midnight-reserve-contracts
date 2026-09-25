@@ -75,7 +75,7 @@ export function createNativeMultisigScript(
   );
 }
 
-/** Register a script's stake credential; Dijkstra needs the script as witness and a cert redeemer. */
+/** Register a script's stake credential; the Conway reg_cert needs the script witness and a cert redeemer. */
 export function registerScriptStake(
   txBuilder: TxBuilder,
   script: Script,

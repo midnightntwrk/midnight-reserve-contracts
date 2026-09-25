@@ -2,8 +2,6 @@ import {
   addressFromValidator,
   AssetId,
   AssetName,
-  Credential,
-  CredentialType,
   NetworkId,
   PaymentAddress,
   PlutusData,
@@ -23,6 +21,7 @@ import {
   deployTechAuthAndCouncil,
 } from "./helpers/deploy";
 import { createFederatedOpsDatumFromString } from "../cli-yargs/lib/candidates";
+import { registerScriptStake } from "../cli-yargs/lib/transaction";
 
 describe("Federated Ops Deploy with FederatedOps Datum", () => {
   const amount = 100_000_000n;
@@ -97,89 +96,84 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
 
       await emulator.expectValidTransaction(
         blaze,
-        blaze
-          .newTransaction()
-          .addInput(federatedOpsOneShotUtxo)
-          .addMint(
-            PolicyId(contracts.federatedOpsForever.Script.hash()),
-            new Map([[AssetName(""), 1n]]),
-            PlutusData.newInteger(0n),
-          )
-          .addMint(
-            PolicyId(contracts.federatedOpsTwoStage.Script.hash()),
-            new Map([
-              [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
-              [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
-            ]),
-            PlutusData.newInteger(0n),
-          )
-          .provideScript(contracts.federatedOpsForever.Script)
-          .provideScript(contracts.federatedOpsTwoStage.Script)
-          .addOutput(
-            TransactionOutput.fromCore({
-              address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
-              value: {
-                coins: 2_000_000n,
-                assets: new Map([
-                  [
-                    AssetId(
-                      contracts.federatedOpsTwoStage.Script.hash() +
-                        toHex(new TextEncoder().encode("main")),
-                    ),
-                    1n,
-                  ],
-                ]),
-              },
-              datum: serialize(
-                Contracts.UpgradeState,
-                federatedOpsUpgradeState,
-              ).toCore(),
-            }),
-          )
-          .addOutput(
-            TransactionOutput.fromCore({
-              address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
-              value: {
-                coins: 2_000_000n,
-                assets: new Map([
-                  [
-                    AssetId(
-                      contracts.federatedOpsTwoStage.Script.hash() +
-                        toHex(new TextEncoder().encode("staging")),
-                    ),
-                    1n,
-                  ],
-                ]),
-              },
-              datum: serialize(
-                Contracts.UpgradeState,
-                federatedOpsUpgradeState,
-              ).toCore(),
-            }),
-          )
-          .addOutput(
-            TransactionOutput.fromCore({
-              address: PaymentAddress(federatedOpsForeverAddress.toBech32()),
-              value: {
-                coins: 2_000_000n,
-                assets: new Map([
-                  [AssetId(contracts.federatedOpsForever.Script.hash()), 1n],
-                ]),
-              },
-              datum: serialize(
-                Contracts.FederatedOps,
-                federatedOpsDatum,
-              ).toCore(),
-            }),
-          )
-          .provideScript(contracts.federatedOpsLogic.Script)
-          .addRegisterStake(
-            Credential.fromCore({
-              hash: contracts.federatedOpsLogic.Script.hash(),
-              type: CredentialType.ScriptHash,
-            }),
-            PlutusData.newInteger(0n),
-          ),
+        registerScriptStake(
+          blaze
+            .newTransaction()
+            .addInput(federatedOpsOneShotUtxo)
+            .addMint(
+              PolicyId(contracts.federatedOpsForever.Script.hash()),
+              new Map([[AssetName(""), 1n]]),
+              PlutusData.newInteger(0n),
+            )
+            .addMint(
+              PolicyId(contracts.federatedOpsTwoStage.Script.hash()),
+              new Map([
+                [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
+                [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
+              ]),
+              PlutusData.newInteger(0n),
+            )
+            .provideScript(contracts.federatedOpsForever.Script)
+            .provideScript(contracts.federatedOpsTwoStage.Script)
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [
+                      AssetId(
+                        contracts.federatedOpsTwoStage.Script.hash() +
+                          toHex(new TextEncoder().encode("main")),
+                      ),
+                      1n,
+                    ],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.UpgradeState,
+                  federatedOpsUpgradeState,
+                ).toCore(),
+              }),
+            )
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [
+                      AssetId(
+                        contracts.federatedOpsTwoStage.Script.hash() +
+                          toHex(new TextEncoder().encode("staging")),
+                      ),
+                      1n,
+                    ],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.UpgradeState,
+                  federatedOpsUpgradeState,
+                ).toCore(),
+              }),
+            )
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(federatedOpsForeverAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [AssetId(contracts.federatedOpsForever.Script.hash()), 1n],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.FederatedOps,
+                  federatedOpsDatum,
+                ).toCore(),
+              }),
+            ),
+          contracts.federatedOpsLogic.Script,
+        ),
       );
     });
   });
@@ -231,89 +225,84 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
 
       await emulator.expectValidTransaction(
         blaze,
-        blaze
-          .newTransaction()
-          .addInput(federatedOpsOneShotUtxo)
-          .addMint(
-            PolicyId(contracts.federatedOpsForever.Script.hash()),
-            new Map([[AssetName(""), 1n]]),
-            PlutusData.newInteger(0n),
-          )
-          .addMint(
-            PolicyId(contracts.federatedOpsTwoStage.Script.hash()),
-            new Map([
-              [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
-              [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
-            ]),
-            PlutusData.newInteger(0n),
-          )
-          .provideScript(contracts.federatedOpsForever.Script)
-          .provideScript(contracts.federatedOpsTwoStage.Script)
-          .addOutput(
-            TransactionOutput.fromCore({
-              address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
-              value: {
-                coins: 2_000_000n,
-                assets: new Map([
-                  [
-                    AssetId(
-                      contracts.federatedOpsTwoStage.Script.hash() +
-                        toHex(new TextEncoder().encode("main")),
-                    ),
-                    1n,
-                  ],
-                ]),
-              },
-              datum: serialize(
-                Contracts.UpgradeState,
-                federatedOpsUpgradeState,
-              ).toCore(),
-            }),
-          )
-          .addOutput(
-            TransactionOutput.fromCore({
-              address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
-              value: {
-                coins: 2_000_000n,
-                assets: new Map([
-                  [
-                    AssetId(
-                      contracts.federatedOpsTwoStage.Script.hash() +
-                        toHex(new TextEncoder().encode("staging")),
-                    ),
-                    1n,
-                  ],
-                ]),
-              },
-              datum: serialize(
-                Contracts.UpgradeState,
-                federatedOpsUpgradeState,
-              ).toCore(),
-            }),
-          )
-          .addOutput(
-            TransactionOutput.fromCore({
-              address: PaymentAddress(federatedOpsForeverAddress.toBech32()),
-              value: {
-                coins: 2_000_000n,
-                assets: new Map([
-                  [AssetId(contracts.federatedOpsForever.Script.hash()), 1n],
-                ]),
-              },
-              datum: serialize(
-                Contracts.FederatedOps,
-                emptyFederatedOpsDatum,
-              ).toCore(),
-            }),
-          )
-          .provideScript(contracts.federatedOpsLogic.Script)
-          .addRegisterStake(
-            Credential.fromCore({
-              hash: contracts.federatedOpsLogic.Script.hash(),
-              type: CredentialType.ScriptHash,
-            }),
-            PlutusData.newInteger(0n),
-          ),
+        registerScriptStake(
+          blaze
+            .newTransaction()
+            .addInput(federatedOpsOneShotUtxo)
+            .addMint(
+              PolicyId(contracts.federatedOpsForever.Script.hash()),
+              new Map([[AssetName(""), 1n]]),
+              PlutusData.newInteger(0n),
+            )
+            .addMint(
+              PolicyId(contracts.federatedOpsTwoStage.Script.hash()),
+              new Map([
+                [AssetName(toHex(new TextEncoder().encode("main"))), 1n],
+                [AssetName(toHex(new TextEncoder().encode("staging"))), 1n],
+              ]),
+              PlutusData.newInteger(0n),
+            )
+            .provideScript(contracts.federatedOpsForever.Script)
+            .provideScript(contracts.federatedOpsTwoStage.Script)
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [
+                      AssetId(
+                        contracts.federatedOpsTwoStage.Script.hash() +
+                          toHex(new TextEncoder().encode("main")),
+                      ),
+                      1n,
+                    ],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.UpgradeState,
+                  federatedOpsUpgradeState,
+                ).toCore(),
+              }),
+            )
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(federatedOpsTwoStageAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [
+                      AssetId(
+                        contracts.federatedOpsTwoStage.Script.hash() +
+                          toHex(new TextEncoder().encode("staging")),
+                      ),
+                      1n,
+                    ],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.UpgradeState,
+                  federatedOpsUpgradeState,
+                ).toCore(),
+              }),
+            )
+            .addOutput(
+              TransactionOutput.fromCore({
+                address: PaymentAddress(federatedOpsForeverAddress.toBech32()),
+                value: {
+                  coins: 2_000_000n,
+                  assets: new Map([
+                    [AssetId(contracts.federatedOpsForever.Script.hash()), 1n],
+                  ]),
+                },
+                datum: serialize(
+                  Contracts.FederatedOps,
+                  emptyFederatedOpsDatum,
+                ).toCore(),
+              }),
+            ),
+          contracts.federatedOpsLogic.Script,
+        ),
       );
     });
   });
