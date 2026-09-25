@@ -1,5 +1,5 @@
 import type { Argv, CommandModule } from "yargs";
-import { Address, Credential, CredentialType } from "@blaze-cardano/core";
+import { Address } from "@blaze-cardano/core";
 import { resolve } from "path";
 
 import type { GlobalOptions, TxOptions } from "../../lib/global-options";
@@ -9,7 +9,7 @@ import { getDeployerAddress } from "../../lib/config";
 import { validateTxHash, validateTxIndex } from "../../lib/validation";
 import { createBlaze } from "../../lib/provider";
 import { getContractInstances } from "../../lib/contracts";
-import { findUtxoByTxRef } from "../../lib/transaction";
+import { findUtxoByTxRef, registerScriptStake } from "../../lib/transaction";
 import { ensureDirectory, writeTransactionFile } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
 
@@ -94,16 +94,10 @@ export async function handler(argv: RegisterCnightMintLogicOptions) {
     throw new Error(`User UTXO not found: ${txHash}#${txIndex}`);
   }
 
-  const txBuilder = blaze
-    .newTransaction()
-    .addInput(userUtxo)
-    .provideScript(contracts.cnightMintLogic.Script)
-    .addRegisterStake(
-      Credential.fromCore({
-        hash: cnightMintLogicHash,
-        type: CredentialType.ScriptHash,
-      }),
-    )
+  const txBuilder = registerScriptStake(
+    blaze.newTransaction().addInput(userUtxo),
+    contracts.cnightMintLogic.Script,
+  )
     .setChangeAddress(changeAddress)
     .setFeePadding(BigInt(feePadding));
 
