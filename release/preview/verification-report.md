@@ -1,7 +1,7 @@
 # Deployment Verification Report
 
 **Network:** preview
-**Date:** 2026-03-12T17:42:32.487Z
+**Date:** 2026-09-25T00:15:33.142Z
 **Result:** ALL CHECKS PASSED
 **Summary:** 31 passed, 0 failed, 31 total
 
@@ -12,37 +12,37 @@
 ### [PASS] Embedding: tech_auth_forever contains tech_auth_two_stage_upgrade hash
 
 ```
-PASS: tech_auth_forever compiledCode contains two-stage hash f63a7e9a8cf9b3fd33c28205037697a909fa7472f4c47be972845547
+PASS: tech_auth_forever compiledCode contains two-stage hash 56fd55acd7aa8e1e3d5a710375056a42fdb9bd67aa02797c82dc7246
 ```
 
 ### [PASS] Embedding: council_forever contains council_two_stage_upgrade hash
 
 ```
-PASS: council_forever compiledCode contains two-stage hash 2e74df06296a880f611ee6586388a0b2b49bf798cf9d78022960ba31
+PASS: council_forever compiledCode contains two-stage hash b7ba80b5ef66c9371d095715d0269e8e853cfd5bf430648aad0c5307
 ```
 
 ### [PASS] Embedding: reserve_forever contains reserve_two_stage_upgrade hash
 
 ```
-PASS: reserve_forever compiledCode contains two-stage hash 305f6cb93fbe7093478d2d58a893db87eb6b6dbbfe42015129527803
+PASS: reserve_forever compiledCode contains two-stage hash 74f126f93dc650a08cf357e03bb82ea67fdece36b6bcdb66acd71ec5
 ```
 
 ### [PASS] Embedding: ics_forever contains ics_two_stage_upgrade hash
 
 ```
-PASS: ics_forever compiledCode contains two-stage hash 83d827e59b1a0820855ba157849b8952f1ed8a65f7c16162b0ca8636
+PASS: ics_forever compiledCode contains two-stage hash 3d1951c6f403f21c19cb99db56efdbdb41fdb9f33fd9a169b384458a
 ```
 
 ### [PASS] Embedding: federated_ops_forever contains federated_ops_two_stage_upgrade hash
 
 ```
-PASS: federated_ops_forever compiledCode contains two-stage hash 81691008ed3d4e2abd4feec1b3c11e52bd506acc58b82140436e4bfd
+PASS: federated_ops_forever compiledCode contains two-stage hash ef47c29414317d7e7b7ce19091687eecd7ee6c301ae4f6cdcad30ad0
 ```
 
 ### [PASS] Embedding: terms_and_conditions_forever contains terms_and_conditions_two_stage_upgrade hash
 
 ```
-PASS: terms_and_conditions_forever compiledCode contains two-stage hash c25fd4c000ff173d71964b387057d1723ec157173ab2aed419a30023
+PASS: terms_and_conditions_forever compiledCode contains two-stage hash 1f709a8a24c5e6372ef0182b8cde6af4a322896f4f7c086a6170548f
 ```
 
 ## Check 2: On-Chain Script Hash Verification
@@ -56,120 +56,120 @@ PASS: All 12 expected deployment descriptions present, no unexpected ones.
 ### [PASS] On-chain: technical-authority-deployment
 
 ```
-Tx: c8bc37ba15c96e698b59b31fdb01f631dfef256dcb32df0aeccaf600028f7fde
-Expected policy IDs (from NFTs): [57827ae51eed76cef38c99bd2f97cdf0055ef714d6c9bdf3078a1b9f, f63a7e9a8cf9b3fd33c28205037697a909fa7472f4c47be972845547]
-Actual on-chain policy IDs:      [57827ae51eed76cef38c99bd2f97cdf0055ef714d6c9bdf3078a1b9f, f63a7e9a8cf9b3fd33c28205037697a909fa7472f4c47be972845547]
+Tx: 61e4d39caefb83cc2971aeb0a7716066a11769652066dec87299eed6e8535271
+Expected policy IDs (from NFTs): [36fa16dde420da4ccf4a15477ef1890eb64ab3f95a0919da009a4eeb, 56fd55acd7aa8e1e3d5a710375056a42fdb9bd67aa02797c82dc7246]
+Actual on-chain policy IDs:      [36fa16dde420da4ccf4a15477ef1890eb64ab3f95a0919da009a4eeb, 56fd55acd7aa8e1e3d5a710375056a42fdb9bd67aa02797c82dc7246]
 PASS
 
-Logic script(s) verified via UpgradeState datum: [tech_auth_logic=a01b29b7b648247aeb4891ad59a1dd481b866ff67caac70d37931cfd]
+Logic script(s) verified via UpgradeState datum: [tech_auth_logic=438831ffaf34df793035d293f6c93d40fd3a9bbe4ada168079cfd2b5]
 ```
 
 ### [PASS] On-chain: tech-auth-update-threshold-deployment
 
 ```
-Tx: 4b15bd7964c0f7f079a040818b61515ce168eac59f9ec8b6bba99723879534ad
-Expected policy IDs (from NFTs): [8cbe93dfaa3e24cffe254e54d15593885219280f3c34d2e44a446b58]
-Actual on-chain policy IDs:      [8cbe93dfaa3e24cffe254e54d15593885219280f3c34d2e44a446b58]
+Tx: 89002674b7c39e35f1b33f5ee71f9240da34631dd38ae6170c39fff0f1a344d7
+Expected policy IDs (from NFTs): [c74f962ed9615546ace0f9ca80f224c1da661ce2b7a8b898153b2197]
+Actual on-chain policy IDs:      [c74f962ed9615546ace0f9ca80f224c1da661ce2b7a8b898153b2197]
 PASS
 ```
 
 ### [PASS] On-chain: council-deployment
 
 ```
-Tx: 7fdd3056ababd8a752e685ef5e50dde30295e69df5ff171b75958c15e68b98b6
-Expected policy IDs (from NFTs): [2e74df06296a880f611ee6586388a0b2b49bf798cf9d78022960ba31, 895f09b002941417f53e28c7a4f1a7e4d90ac2afa1da0ba5c66f8ccb]
-Actual on-chain policy IDs:      [2e74df06296a880f611ee6586388a0b2b49bf798cf9d78022960ba31, 895f09b002941417f53e28c7a4f1a7e4d90ac2afa1da0ba5c66f8ccb]
+Tx: f3e45a19e0f14871c7b8d211af6bc438fd79a1893438b5a71c8c0903f0eba155
+Expected policy IDs (from NFTs): [b7ba80b5ef66c9371d095715d0269e8e853cfd5bf430648aad0c5307, d9a6750d8e5929157913ffd67362ef94556fdf73798b9fa5097b7af7]
+Actual on-chain policy IDs:      [b7ba80b5ef66c9371d095715d0269e8e853cfd5bf430648aad0c5307, d9a6750d8e5929157913ffd67362ef94556fdf73798b9fa5097b7af7]
 PASS
 
-Logic script(s) verified via UpgradeState datum: [council_logic=fe47746010d11f30f8bda8aa96b33d70253bf0045cae6829fff83a0a]
+Logic script(s) verified via UpgradeState datum: [council_logic=4bd59f22fc24efd4187b6d6de07df852eb295cecc31a921636d09e6c]
 ```
 
 ### [PASS] On-chain: council-update-threshold-deployment
 
 ```
-Tx: d0d5ed3e9164f340087d04f9a549f73d966c4e6c19e66b4ea1a100c0955d6e92
-Expected policy IDs (from NFTs): [4ae0cec1a8bdaba1cde596d2f179c135ea31b759e587a40097173e9e]
-Actual on-chain policy IDs:      [4ae0cec1a8bdaba1cde596d2f179c135ea31b759e587a40097173e9e]
+Tx: f52caa69afed5ebd3479a4f86aa90bdc79d0625af032807e0617cc625e4b79a8
+Expected policy IDs (from NFTs): [91abe46fb535c3ae2fef4e69ee263d8de7947092c473742dee5218ae]
+Actual on-chain policy IDs:      [91abe46fb535c3ae2fef4e69ee263d8de7947092c473742dee5218ae]
 PASS
 ```
 
 ### [PASS] On-chain: reserve-deployment
 
 ```
-Tx: a539270887861da9890042aa07248786dae7df904f1b4d30e6bb217d3b8cf149
-Expected policy IDs (from NFTs): [305f6cb93fbe7093478d2d58a893db87eb6b6dbbfe42015129527803, 9a16849963cf308e36590856c2ccba98575a2c0dfbb6ead6d3c1b92d]
-Actual on-chain policy IDs:      [305f6cb93fbe7093478d2d58a893db87eb6b6dbbfe42015129527803, 9a16849963cf308e36590856c2ccba98575a2c0dfbb6ead6d3c1b92d]
+Tx: c708807c72084d833c5a5dad49fd0d6a2b7ea3f4c36843ebb0d3a0f8eb902c55
+Expected policy IDs (from NFTs): [74f126f93dc650a08cf357e03bb82ea67fdece36b6bcdb66acd71ec5, 7c339fbf3a73d1217aea49f519c83498a08f3269b6d5ba88c1c44b63]
+Actual on-chain policy IDs:      [74f126f93dc650a08cf357e03bb82ea67fdece36b6bcdb66acd71ec5, 7c339fbf3a73d1217aea49f519c83498a08f3269b6d5ba88c1c44b63]
 PASS
 
-Logic script(s) verified via UpgradeState datum: [reserve_logic=385c55bd0e88b22de6bbe340cb0e2b6fab2f1d34cba64d5f17853258]
+Logic script(s) verified via UpgradeState datum: [reserve_logic=4e6fa75343b4360794920efdb2e1c67812c0c587913e94316bda59d9]
 ```
 
 ### [PASS] On-chain: ics-deployment
 
 ```
-Tx: 3724b9fd138acd7c2bf089a35e7955c0e28fc506be285ca1cc00fcd2faf2cce6
-Expected policy IDs (from NFTs): [83d827e59b1a0820855ba157849b8952f1ed8a65f7c16162b0ca8636, 91d2a2ab768ab725819126463482605344bf273b3579f0b9b94086cc]
-Actual on-chain policy IDs:      [83d827e59b1a0820855ba157849b8952f1ed8a65f7c16162b0ca8636, 91d2a2ab768ab725819126463482605344bf273b3579f0b9b94086cc]
+Tx: a69082580f3dfc1a5a1357d19fb879f17d78b5c12eb4275bbd891ee838c0e8f4
+Expected policy IDs (from NFTs): [3d1951c6f403f21c19cb99db56efdbdb41fdb9f33fd9a169b384458a, 565d7f9bfeff1f278e3456fa45cd792514ef55fcb6e6b9a1212d1e10]
+Actual on-chain policy IDs:      [3d1951c6f403f21c19cb99db56efdbdb41fdb9f33fd9a169b384458a, 565d7f9bfeff1f278e3456fa45cd792514ef55fcb6e6b9a1212d1e10]
 PASS
 
-Logic script(s) verified via UpgradeState datum: [ics_logic=1dab820f5dd22d8ec2961a1345981144f169ea9ecb9624f8d928ff80]
+Logic script(s) verified via UpgradeState datum: [ics_logic=0498bb4473cef9c7e2a45181142d3a2ec84d1c52f1b7a58efbdc3d44]
 ```
 
 ### [PASS] On-chain: main-gov-threshold-deployment
 
 ```
-Tx: 046e99c7ac08954d2cec8904ff0a8ad2c310c8faa2085dd4bdd7b2251fe7c883
-Expected policy IDs (from NFTs): [6e58113aef37cf01071621236b1c59b886c5da0b4d46872861a88c1b]
-Actual on-chain policy IDs:      [6e58113aef37cf01071621236b1c59b886c5da0b4d46872861a88c1b]
+Tx: deb4cb2e6f8eaac66725aa7ef57d0776aedec505eb52011a0a1c1b55acaedbe5
+Expected policy IDs (from NFTs): [e963daa2bcd6ea22186a2989d604d60154e86354e92613590f22df31]
+Actual on-chain policy IDs:      [e963daa2bcd6ea22186a2989d604d60154e86354e92613590f22df31]
 PASS
 ```
 
 ### [PASS] On-chain: staging-gov-threshold-deployment
 
 ```
-Tx: d7569face5281ceedcc227d462f1af4c6f03841909fffdbd155c1b5ac1d5fb59
-Expected policy IDs (from NFTs): [7df61de1971db6911c45b06c380d1be4df92c6cfdd27756cb5d30bdf]
-Actual on-chain policy IDs:      [7df61de1971db6911c45b06c380d1be4df92c6cfdd27756cb5d30bdf]
+Tx: 333d9c1994e0f70ad21d7eba4e4c2d4b5c251d7968214e8642ad22b56b081f76
+Expected policy IDs (from NFTs): [5d78ab54039f323353cec57eee255cc60094693099af74cccce66e17]
+Actual on-chain policy IDs:      [5d78ab54039f323353cec57eee255cc60094693099af74cccce66e17]
 PASS
 ```
 
 ### [PASS] On-chain: federated-ops-deployment
 
 ```
-Tx: 6aecb0ed06cd76c7533d731766316492850f1ec3c17663a7cc6f8acc31109cee
-Expected policy IDs (from NFTs): [24dccfce2576ae6fa7149bc485850656ae6faf9f4158891316773a78, 81691008ed3d4e2abd4feec1b3c11e52bd506acc58b82140436e4bfd]
-Actual on-chain policy IDs:      [24dccfce2576ae6fa7149bc485850656ae6faf9f4158891316773a78, 81691008ed3d4e2abd4feec1b3c11e52bd506acc58b82140436e4bfd]
+Tx: a3df72ca2146e9d5e7ab74bf5de7b93cb5b75352c12d09b9dee01ac6ccc0866e
+Expected policy IDs (from NFTs): [d9ca80815c85747710ea53e6bbf0df9de9bef10a7dfb9255ed78fdb5, ef47c29414317d7e7b7ce19091687eecd7ee6c301ae4f6cdcad30ad0]
+Actual on-chain policy IDs:      [d9ca80815c85747710ea53e6bbf0df9de9bef10a7dfb9255ed78fdb5, ef47c29414317d7e7b7ce19091687eecd7ee6c301ae4f6cdcad30ad0]
 PASS
 
-Logic script(s) verified via UpgradeState datum: [federated_ops_logic=d505d291ae55e8bbbff2f839dc1b937936da94e5a9262393b4dea75f]
+Logic script(s) verified via UpgradeState datum: [federated_ops_logic=11cbe0307d5e8a112d6813cc0741a374f9e2d8ebabdabf6702b11c38]
 ```
 
 ### [PASS] On-chain: federated-ops-update-threshold-deployment
 
 ```
-Tx: 651598dff15eee5578031a5557689895509343386a145899b8c11f3d0d15e3dc
-Expected policy IDs (from NFTs): [a6afbeac04881e5e0db294ccc5f9543025feabc6e08aa7cdd4ac097b]
-Actual on-chain policy IDs:      [a6afbeac04881e5e0db294ccc5f9543025feabc6e08aa7cdd4ac097b]
+Tx: 605469414f3b50102b178f65d9edd511d0b1a7a55b4d5ac9bf226002763ab198
+Expected policy IDs (from NFTs): [d6285e93df1f3639f28f9fd6e1a75e5bf901784a11d968cdb65f6c4e]
+Actual on-chain policy IDs:      [d6285e93df1f3639f28f9fd6e1a75e5bf901784a11d968cdb65f6c4e]
 PASS
 ```
 
 ### [PASS] On-chain: terms-and-conditions-deployment
 
 ```
-Tx: 39d2d371ed5e53f49fae2a5cdd50a7ef5c688e41903d8b2197d5e464199ca540
-Expected policy IDs (from NFTs): [0fd566187324138d7c2c3db04e80c1da38a158c22e7af069f796439c, c25fd4c000ff173d71964b387057d1723ec157173ab2aed419a30023]
-Actual on-chain policy IDs:      [0fd566187324138d7c2c3db04e80c1da38a158c22e7af069f796439c, c25fd4c000ff173d71964b387057d1723ec157173ab2aed419a30023]
+Tx: d739dadcd0500fcde587f5b01726868ad6384eb3504447cb294ef886f8506e6b
+Expected policy IDs (from NFTs): [1f709a8a24c5e6372ef0182b8cde6af4a322896f4f7c086a6170548f, b8216d5b16b644aad180e761d3ac7f8d470e8a79c5f81a4c5e1fc8e0]
+Actual on-chain policy IDs:      [1f709a8a24c5e6372ef0182b8cde6af4a322896f4f7c086a6170548f, b8216d5b16b644aad180e761d3ac7f8d470e8a79c5f81a4c5e1fc8e0]
 PASS
 
-Logic script(s) verified via UpgradeState datum: [terms_and_conditions_logic=0851dd89293fbacd0ac670c79f4dde9519242421e828e19bbf0b1a0c]
+Logic script(s) verified via UpgradeState datum: [terms_and_conditions_logic=9f103dcc4840ce0633d7b29c464f6716a72dfb410060d7a4f28e26fc]
 ```
 
 ### [PASS] On-chain: terms-and-conditions-threshold-deployment
 
 ```
-Tx: 6080346657b721faa8868849d35a4dfd13171866446e10f3bd2f047e484927af
-Expected policy IDs (from NFTs): [f115c735779880fcf295868ace8ee59c11cb64994a19ca2f77f89bba]
-Actual on-chain policy IDs:      [f115c735779880fcf295868ace8ee59c11cb64994a19ca2f77f89bba]
+Tx: 8b5e4897b4d959804936ccad77d62dcd5bdfa473c627a9973115774eeba5fde4
+Expected policy IDs (from NFTs): [88453fdda48e072cb0f864431d15d0e7c6343db6e016b1603a6f5772]
+Actual on-chain policy IDs:      [88453fdda48e072cb0f864431d15d0e7c6343db6e016b1603a6f5772]
 PASS
 ```
 
@@ -178,49 +178,49 @@ PASS
 ### [PASS] UpgradeState (main): technical-authority-deployment
 
 ```
-Tx: c8bc37ba15c96e698b59b31fdb01f631dfef256dcb32df0aeccaf600028f7fde
-Logic hash - expected: a01b29b7b648247aeb4891ad59a1dd481b866ff67caac70d37931cfd, actual: a01b29b7b648247aeb4891ad59a1dd481b866ff67caac70d37931cfd PASS
-Auth hash (main_gov_auth) - expected: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b, actual: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b PASS
+Tx: 61e4d39caefb83cc2971aeb0a7716066a11769652066dec87299eed6e8535271
+Logic hash - expected: 438831ffaf34df793035d293f6c93d40fd3a9bbe4ada168079cfd2b5, actual: 438831ffaf34df793035d293f6c93d40fd3a9bbe4ada168079cfd2b5 PASS
+Auth hash (main_gov_auth) - expected: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449, actual: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449 PASS
 ```
 
 ### [PASS] UpgradeState (main): council-deployment
 
 ```
-Tx: 7fdd3056ababd8a752e685ef5e50dde30295e69df5ff171b75958c15e68b98b6
-Logic hash - expected: fe47746010d11f30f8bda8aa96b33d70253bf0045cae6829fff83a0a, actual: fe47746010d11f30f8bda8aa96b33d70253bf0045cae6829fff83a0a PASS
-Auth hash (main_gov_auth) - expected: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b, actual: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b PASS
+Tx: f3e45a19e0f14871c7b8d211af6bc438fd79a1893438b5a71c8c0903f0eba155
+Logic hash - expected: 4bd59f22fc24efd4187b6d6de07df852eb295cecc31a921636d09e6c, actual: 4bd59f22fc24efd4187b6d6de07df852eb295cecc31a921636d09e6c PASS
+Auth hash (main_gov_auth) - expected: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449, actual: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449 PASS
 ```
 
 ### [PASS] UpgradeState (main): reserve-deployment
 
 ```
-Tx: a539270887861da9890042aa07248786dae7df904f1b4d30e6bb217d3b8cf149
-Logic hash - expected: 385c55bd0e88b22de6bbe340cb0e2b6fab2f1d34cba64d5f17853258, actual: 385c55bd0e88b22de6bbe340cb0e2b6fab2f1d34cba64d5f17853258 PASS
-Auth hash (main_gov_auth) - expected: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b, actual: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b PASS
+Tx: c708807c72084d833c5a5dad49fd0d6a2b7ea3f4c36843ebb0d3a0f8eb902c55
+Logic hash - expected: 4e6fa75343b4360794920efdb2e1c67812c0c587913e94316bda59d9, actual: 4e6fa75343b4360794920efdb2e1c67812c0c587913e94316bda59d9 PASS
+Auth hash (main_gov_auth) - expected: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449, actual: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449 PASS
 ```
 
 ### [PASS] UpgradeState (main): ics-deployment
 
 ```
-Tx: 3724b9fd138acd7c2bf089a35e7955c0e28fc506be285ca1cc00fcd2faf2cce6
-Logic hash - expected: 1dab820f5dd22d8ec2961a1345981144f169ea9ecb9624f8d928ff80, actual: 1dab820f5dd22d8ec2961a1345981144f169ea9ecb9624f8d928ff80 PASS
-Auth hash (main_gov_auth) - expected: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b, actual: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b PASS
+Tx: a69082580f3dfc1a5a1357d19fb879f17d78b5c12eb4275bbd891ee838c0e8f4
+Logic hash - expected: 0498bb4473cef9c7e2a45181142d3a2ec84d1c52f1b7a58efbdc3d44, actual: 0498bb4473cef9c7e2a45181142d3a2ec84d1c52f1b7a58efbdc3d44 PASS
+Auth hash (main_gov_auth) - expected: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449, actual: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449 PASS
 ```
 
 ### [PASS] UpgradeState (main): federated-ops-deployment
 
 ```
-Tx: 6aecb0ed06cd76c7533d731766316492850f1ec3c17663a7cc6f8acc31109cee
-Logic hash - expected: d505d291ae55e8bbbff2f839dc1b937936da94e5a9262393b4dea75f, actual: d505d291ae55e8bbbff2f839dc1b937936da94e5a9262393b4dea75f PASS
-Auth hash (main_gov_auth) - expected: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b, actual: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b PASS
+Tx: a3df72ca2146e9d5e7ab74bf5de7b93cb5b75352c12d09b9dee01ac6ccc0866e
+Logic hash - expected: 11cbe0307d5e8a112d6813cc0741a374f9e2d8ebabdabf6702b11c38, actual: 11cbe0307d5e8a112d6813cc0741a374f9e2d8ebabdabf6702b11c38 PASS
+Auth hash (main_gov_auth) - expected: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449, actual: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449 PASS
 ```
 
 ### [PASS] UpgradeState (main): terms-and-conditions-deployment
 
 ```
-Tx: 39d2d371ed5e53f49fae2a5cdd50a7ef5c688e41903d8b2197d5e464199ca540
-Logic hash - expected: 0851dd89293fbacd0ac670c79f4dde9519242421e828e19bbf0b1a0c, actual: 0851dd89293fbacd0ac670c79f4dde9519242421e828e19bbf0b1a0c PASS
-Auth hash (main_gov_auth) - expected: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b, actual: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f5c70d70081236b PASS
+Tx: d739dadcd0500fcde587f5b01726868ad6384eb3504447cb294ef886f8506e6b
+Logic hash - expected: 9f103dcc4840ce0633d7b29c464f6716a72dfb410060d7a4f28e26fc, actual: 9f103dcc4840ce0633d7b29c464f6716a72dfb410060d7a4f28e26fc PASS
+Auth hash (main_gov_auth) - expected: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449, actual: eaf2717db852150f3babc59adf39411c2f471762857642f2423f7449 PASS
 ```
 
 ## Check 4: UpgradeState Datum Verification (Staging Outputs)
@@ -228,47 +228,47 @@ Auth hash (main_gov_auth) - expected: bd114cbcd86f12a142ea2504d570c17e6cc7782c6f
 ### [PASS] UpgradeState (staging): technical-authority-deployment
 
 ```
-Tx: c8bc37ba15c96e698b59b31fdb01f631dfef256dcb32df0aeccaf600028f7fde
-Logic hash - expected: a01b29b7b648247aeb4891ad59a1dd481b866ff67caac70d37931cfd, actual: a01b29b7b648247aeb4891ad59a1dd481b866ff67caac70d37931cfd PASS
-Auth hash (staging_gov_auth) - expected: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6, actual: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6 PASS
+Tx: 61e4d39caefb83cc2971aeb0a7716066a11769652066dec87299eed6e8535271
+Logic hash - expected: 438831ffaf34df793035d293f6c93d40fd3a9bbe4ada168079cfd2b5, actual: 438831ffaf34df793035d293f6c93d40fd3a9bbe4ada168079cfd2b5 PASS
+Auth hash (staging_gov_auth) - expected: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00, actual: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00 PASS
 ```
 
 ### [PASS] UpgradeState (staging): council-deployment
 
 ```
-Tx: 7fdd3056ababd8a752e685ef5e50dde30295e69df5ff171b75958c15e68b98b6
-Logic hash - expected: fe47746010d11f30f8bda8aa96b33d70253bf0045cae6829fff83a0a, actual: fe47746010d11f30f8bda8aa96b33d70253bf0045cae6829fff83a0a PASS
-Auth hash (staging_gov_auth) - expected: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6, actual: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6 PASS
+Tx: f3e45a19e0f14871c7b8d211af6bc438fd79a1893438b5a71c8c0903f0eba155
+Logic hash - expected: 4bd59f22fc24efd4187b6d6de07df852eb295cecc31a921636d09e6c, actual: 4bd59f22fc24efd4187b6d6de07df852eb295cecc31a921636d09e6c PASS
+Auth hash (staging_gov_auth) - expected: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00, actual: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00 PASS
 ```
 
 ### [PASS] UpgradeState (staging): reserve-deployment
 
 ```
-Tx: a539270887861da9890042aa07248786dae7df904f1b4d30e6bb217d3b8cf149
-Logic hash - expected: 385c55bd0e88b22de6bbe340cb0e2b6fab2f1d34cba64d5f17853258, actual: 385c55bd0e88b22de6bbe340cb0e2b6fab2f1d34cba64d5f17853258 PASS
-Auth hash (staging_gov_auth) - expected: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6, actual: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6 PASS
+Tx: c708807c72084d833c5a5dad49fd0d6a2b7ea3f4c36843ebb0d3a0f8eb902c55
+Logic hash - expected: 4e6fa75343b4360794920efdb2e1c67812c0c587913e94316bda59d9, actual: 4e6fa75343b4360794920efdb2e1c67812c0c587913e94316bda59d9 PASS
+Auth hash (staging_gov_auth) - expected: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00, actual: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00 PASS
 ```
 
 ### [PASS] UpgradeState (staging): ics-deployment
 
 ```
-Tx: 3724b9fd138acd7c2bf089a35e7955c0e28fc506be285ca1cc00fcd2faf2cce6
-Logic hash - expected: 1dab820f5dd22d8ec2961a1345981144f169ea9ecb9624f8d928ff80, actual: 1dab820f5dd22d8ec2961a1345981144f169ea9ecb9624f8d928ff80 PASS
-Auth hash (staging_gov_auth) - expected: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6, actual: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6 PASS
+Tx: a69082580f3dfc1a5a1357d19fb879f17d78b5c12eb4275bbd891ee838c0e8f4
+Logic hash - expected: 0498bb4473cef9c7e2a45181142d3a2ec84d1c52f1b7a58efbdc3d44, actual: 0498bb4473cef9c7e2a45181142d3a2ec84d1c52f1b7a58efbdc3d44 PASS
+Auth hash (staging_gov_auth) - expected: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00, actual: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00 PASS
 ```
 
 ### [PASS] UpgradeState (staging): federated-ops-deployment
 
 ```
-Tx: 6aecb0ed06cd76c7533d731766316492850f1ec3c17663a7cc6f8acc31109cee
-Logic hash - expected: d505d291ae55e8bbbff2f839dc1b937936da94e5a9262393b4dea75f, actual: d505d291ae55e8bbbff2f839dc1b937936da94e5a9262393b4dea75f PASS
-Auth hash (staging_gov_auth) - expected: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6, actual: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6 PASS
+Tx: a3df72ca2146e9d5e7ab74bf5de7b93cb5b75352c12d09b9dee01ac6ccc0866e
+Logic hash - expected: 11cbe0307d5e8a112d6813cc0741a374f9e2d8ebabdabf6702b11c38, actual: 11cbe0307d5e8a112d6813cc0741a374f9e2d8ebabdabf6702b11c38 PASS
+Auth hash (staging_gov_auth) - expected: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00, actual: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00 PASS
 ```
 
 ### [PASS] UpgradeState (staging): terms-and-conditions-deployment
 
 ```
-Tx: 39d2d371ed5e53f49fae2a5cdd50a7ef5c688e41903d8b2197d5e464199ca540
-Logic hash - expected: 0851dd89293fbacd0ac670c79f4dde9519242421e828e19bbf0b1a0c, actual: 0851dd89293fbacd0ac670c79f4dde9519242421e828e19bbf0b1a0c PASS
-Auth hash (staging_gov_auth) - expected: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6, actual: d0f5808d3a9ce17e72a69985aa37ba87b2479ccf72c5a1186b5f9bf6 PASS
+Tx: d739dadcd0500fcde587f5b01726868ad6384eb3504447cb294ef886f8506e6b
+Logic hash - expected: 9f103dcc4840ce0633d7b29c464f6716a72dfb410060d7a4f28e26fc, actual: 9f103dcc4840ce0633d7b29c464f6716a72dfb410060d7a4f28e26fc PASS
+Auth hash (staging_gov_auth) - expected: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00, actual: eaccc0787bc90a50cbddb2b1cdfa46208460993b26e17e2257d9ee00 PASS
 ```
