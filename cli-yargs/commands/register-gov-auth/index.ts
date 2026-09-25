@@ -1,5 +1,4 @@
 import type { Argv, CommandModule } from "yargs";
-import { Credential, CredentialType } from "@blaze-cardano/core";
 import { resolve } from "path";
 
 import type { GlobalOptions } from "../../lib/global-options";
@@ -8,6 +7,7 @@ import { createBlaze } from "../../lib/provider";
 import { getContractInstances } from "../../lib/contracts";
 import { ensureDirectory, writeTransactionFile } from "../../lib/output";
 import { completeTx } from "../../lib/complete-tx";
+import { registerScriptStake } from "../../lib/transaction";
 
 interface RegisterGovAuthOptions extends GlobalOptions {
   "output-file": string;
@@ -52,22 +52,10 @@ export async function handler(argv: RegisterGovAuthOptions) {
   const { blaze, provider } = await createBlaze(network, providerType);
   const networkId = getNetworkId(network);
 
-  const txBuilder = blaze
-    .newTransaction()
-    .provideScript(contracts.govAuth.Script)
-    .provideScript(contracts.stagingGovAuth.Script)
-    .addRegisterStake(
-      Credential.fromCore({
-        hash: mainGovAuthHash,
-        type: CredentialType.ScriptHash,
-      }),
-    )
-    .addRegisterStake(
-      Credential.fromCore({
-        hash: stagingGovAuthHash,
-        type: CredentialType.ScriptHash,
-      }),
-    );
+  const txBuilder = registerScriptStake(
+    registerScriptStake(blaze.newTransaction(), contracts.govAuth.Script),
+    contracts.stagingGovAuth.Script,
+  );
 
   const { tx } = await completeTx(txBuilder, {
     commandName: "register-gov-auth",

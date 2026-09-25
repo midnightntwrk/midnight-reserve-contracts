@@ -61,5 +61,8 @@
     "lodash": "^4.18.1",
     "picomatch": "^4.0.7",
     "@humanfs/node": "^0.16.8"
+  },
+  "patchedDependencies": {
+    "@blaze-cardano/emulator@0.5.2": "patches/@blaze-cardano%2Femulator@0.5.2.patch"
   }
 }

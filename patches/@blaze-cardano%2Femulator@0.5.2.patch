@@ -1,0 +1,13 @@
+diff --git a/dist/emulator-Cyvpkx5Z.mjs b/dist/emulator-Cyvpkx5Z.mjs
+index ad7fcc3f4173e42a8d00857828c5d410c0d10533..b6a84bb36a913bf42010bad55288befea73ad11a 100644
+--- a/dist/emulator-Cyvpkx5Z.mjs
++++ b/dist/emulator-Cyvpkx5Z.mjs
+@@ -852,7 +852,7 @@ var Emulator = class {
+ 				const deposit = isLegacyStakeCertificate(core) ? BigInt(this.params.stakeKeyDeposit) : certificateDeposit(core);
+ 				netValue = Value$1.merge(netValue, new Value(deposit));
+ 			}
+-			if ((isCertType(core, StakeCredentialCertificateTypes) || isCertType(core, VoteDelegationCredentialCertificateTypes)) && certType !== CertificateType.StakeRegistration && certType !== CertificateType.Registration) {
++			if ((isCertType(core, StakeCredentialCertificateTypes) || isCertType(core, VoteDelegationCredentialCertificateTypes)) && certType !== CertificateType.StakeRegistration) {
+ 				const stakeCred = core.stakeCredential;
+ 				if (stakeCred) consumeCred(stakeCred, RedeemerTag.Cert, BigInt(index));
+ 			}

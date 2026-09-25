@@ -172,11 +172,13 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
               ).toCore(),
             }),
           )
+          .provideScript(contracts.federatedOpsLogic.Script)
           .addRegisterStake(
             Credential.fromCore({
               hash: contracts.federatedOpsLogic.Script.hash(),
               type: CredentialType.ScriptHash,
             }),
+            PlutusData.newInteger(0n),
           ),
       );
     });
@@ -304,11 +306,13 @@ describe("Federated Ops Deploy with FederatedOps Datum", () => {
               ).toCore(),
             }),
           )
+          .provideScript(contracts.federatedOpsLogic.Script)
           .addRegisterStake(
             Credential.fromCore({
               hash: contracts.federatedOpsLogic.Script.hash(),
               type: CredentialType.ScriptHash,
             }),
+            PlutusData.newInteger(0n),
           ),
       );
     });

@@ -3,8 +3,6 @@ import {
   addressFromValidator,
   AssetId,
   AssetName,
-  Credential,
-  CredentialType,
   PaymentAddress,
   PlutusData,
   PolicyId,
@@ -55,7 +53,11 @@ import {
   ensureDirectory,
   TX_TYPE_CONWAY,
 } from "../../lib/output";
-import { createOneShotUtxo, createUpgradeState } from "../../lib/transaction";
+import {
+  createOneShotUtxo,
+  createUpgradeState,
+  registerScriptStake,
+} from "../../lib/transaction";
 import * as Contracts from "../../../contract_blueprint";
 
 interface MultisigDeployParams {
@@ -369,13 +371,8 @@ export async function handler(argv: DeployOptions) {
       .provideScript(params.foreverContract.Script)
       .addOutput(twoStageMainOutput)
       .addOutput(twoStageStagingOutput)
-      .addOutput(foreverOutput)
-      .addRegisterStake(
-        Credential.fromCore({
-          hash: params.logicContract.Script.hash(),
-          type: CredentialType.ScriptHash,
-        }),
-      );
+      .addOutput(foreverOutput);
+    txBuilder = registerScriptStake(txBuilder, params.logicContract.Script);
 
     if (collateralUtxo) {
       txBuilder = txBuilder.provideCollateral([collateralUtxo]);
@@ -650,13 +647,8 @@ export async function handler(argv: DeployOptions) {
       .provideScript(params.foreverContract.Script)
       .addOutput(twoStageMainOutput)
       .addOutput(twoStageStagingOutput)
-      .addOutput(foreverOutput)
-      .addRegisterStake(
-        Credential.fromCore({
-          hash: params.logicContract.Script.hash(),
-          type: CredentialType.ScriptHash,
-        }),
-      );
+      .addOutput(foreverOutput);
+    txBuilder = registerScriptStake(txBuilder, params.logicContract.Script);
 
     if (collateralUtxo) {
       txBuilder = txBuilder.provideCollateral([collateralUtxo]);
@@ -942,13 +934,11 @@ export async function handler(argv: DeployOptions) {
           .provideScript(contracts.termsAndConditionsTwoStage.Script)
           .addOutput(twoStageMainOutput)
           .addOutput(twoStageStagingOutput)
-          .addOutput(foreverOutput)
-          .addRegisterStake(
-            Credential.fromCore({
-              hash: contracts.termsAndConditionsLogic.Script.hash(),
-              type: CredentialType.ScriptHash,
-            }),
-          );
+          .addOutput(foreverOutput);
+        txBuilder = registerScriptStake(
+          txBuilder,
+          contracts.termsAndConditionsLogic.Script,
+        );
 
         if (collateralUtxo) {
           txBuilder = txBuilder.provideCollateral([collateralUtxo]);
