@@ -14,5 +14,16 @@ tested lib beneath them.
 ## Acceptance
 - `tests/basic_deploy.test.ts`, `federated_ops_deploy`, `deploy_thresholds`,
   `cnight-minting`, `mainnet_*` green.
-- `bun cli-yargs/index.ts deploy -n local --dry-run` output identical to
-  the pre-migration golden.
+- `deploy -n preview` output identical to `tests/golden/deploy/` (deploy
+  has no `--dry-run`; the golden is the ordinary build run).
+
+## Carried from the 2026-09-24 preview redeployment
+
+- `saveVersionSnapshot` (`cli-yargs/lib/versions.ts`) lists every
+  validator in `plutus.json` as `promoted` on an initial deployment and
+  keeps stale titles from a previous deployment on a redeploy. When
+  `deploy` is ported: `promoted` = validators with a confirmed
+  deployment transaction; a fresh deployment replaces the snapshot.
+- Preview's six `*_logic_v2_one_shot_hash` entries still reference the
+  spent `b585c885…#0..5`; the v2 phase needs its own `simple-tx` and a
+  preview rebuild before `mint-staging-state` / `stage-upgrade` run there.
