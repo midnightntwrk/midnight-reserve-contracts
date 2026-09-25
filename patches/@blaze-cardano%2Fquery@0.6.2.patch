@@ -1,0 +1,44 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index b6886f16945d616906f409b525de0a7ab2926b84..4d36a508adc394c91af5d1c0d4c02a796938a6fe 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -582,7 +582,7 @@ var Blockfrost = class extends Provider {
+ 		});
+ 		if (!response.ok) {
+ 			const error = await response.text();
+-			throw new Error(`postTransactionToChain: failed to submit transaction to Blockfrost endpoint.\nError ${error}`);
++			throw Object.assign(new Error(`postTransactionToChain: failed to submit transaction to Blockfrost endpoint.\nError ${error}`), { status: response.status });
+ 		}
+ 		return (0, _blaze_cardano_core.TransactionId)(await response.json());
+ 	}
+@@ -1048,7 +1048,7 @@ var Kupmios = class Kupmios extends Provider {
+ 		const startTime = Date.now();
+ 		const checkConfirmation = async () => {
+ 			const response = await fetch(`${this.kupoUrl}/matches/0@${txId}`);
+-			if (response.ok && (await response.json().then((res) => res.length), (_res) => false)) return true;
++			if (response.ok && (await response.json()).length > 0) return true;
+ 			else if (Date.now() - startTime < timeout) {
+ 				await new Promise((resolve) => setTimeout(resolve, Kupmios.confirmationTimeout));
+ 				return checkConfirmation();
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 2c017413f4f6f6e775243730607d71486a074d06..f08b4f901fa3432610b741ecb335d1c46075994a 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -558,7 +558,7 @@ var Blockfrost = class extends Provider {
+ 		});
+ 		if (!response.ok) {
+ 			const error = await response.text();
+-			throw new Error(`postTransactionToChain: failed to submit transaction to Blockfrost endpoint.\nError ${error}`);
++			throw Object.assign(new Error(`postTransactionToChain: failed to submit transaction to Blockfrost endpoint.\nError ${error}`), { status: response.status });
+ 		}
+ 		return TransactionId(await response.json());
+ 	}
+@@ -1024,7 +1024,7 @@ var Kupmios = class Kupmios extends Provider {
+ 		const startTime = Date.now();
+ 		const checkConfirmation = async () => {
+ 			const response = await fetch(`${this.kupoUrl}/matches/0@${txId}`);
+-			if (response.ok && (await response.json().then((res) => res.length), (_res) => false)) return true;
++			if (response.ok && (await response.json()).length > 0) return true;
+ 			else if (Date.now() - startTime < timeout) {
+ 				await new Promise((resolve) => setTimeout(resolve, Kupmios.confirmationTimeout));
+ 				return checkConfirmation();

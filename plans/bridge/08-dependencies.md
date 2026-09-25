@@ -29,7 +29,7 @@ as one set; they share `@blaze-cardano/core`. Then:
   `deployed-scripts/*/contract_blueprint.ts` is regenerated in this commit
   (the `Justfile` pins `@0.8.2` in `use-env`: bump it).
 - `makeUplcEvaluator` signature and `Emulator` constructor options are
-  the known breaking surfaces (`cli-yargs/lib/complete-tx.ts`,
+  the known breaking surfaces (`cli/chain/complete-tx.ts`,
   `tests/**`).
 - The bridge VM test (`tests/bridge/*.test.ts`) is the smoke test for the
   evaluator.
@@ -39,7 +39,7 @@ as one set; they share `@blaze-cardano/core`. Then:
   peer range first.
 - `typescript` 7: run `bun run check`; if the Go compiler rejects the
   repo's `tsconfig.json` options, stay on 5.9 and note it.
-- `toml` 5: `cli-yargs/lib/build-engine.ts` and `config.ts` parse
+- `toml` 5: `cli/contracts/build-engine.ts` and `cli/config/config.ts` parse
   `aiken.toml`; compare parsed output before and after on all 8 profiles.
 
 ### 5. Not touched

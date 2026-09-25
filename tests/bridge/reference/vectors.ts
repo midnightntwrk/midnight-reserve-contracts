@@ -23,12 +23,12 @@ import { buildMultiproof, toJson } from "./multiproof";
 import { encodeCommitment, encodeLeaf, type MmrLeaf } from "./scale";
 import { bridgeUpdate, hex, nextState, toCommitment } from "./update";
 
-export const MIP_PARENT_HASH = hexToBytes(
+const MIP_PARENT_HASH = hexToBytes(
   "9b9462bf599ab609ea9917918e6b69b54b2bff8b7be6fc0de8984b55f5fbb057",
 );
 
 /** Bootstrap state: activation 1000, committee 4 (the fixture keys) current, 5 next. */
-export function bootstrapState(): State {
+function bootstrapState(): State {
   return {
     latest_mmr_root: hex(
       keccak(new TextEncoder().encode("digest of block 999")),
