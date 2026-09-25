@@ -879,7 +879,7 @@ When these tags appear in domain-specific sections below, they refer to these sa
 
 ## BEEFY-Backed Committee Bridge Validators
 
-These validators maintain the BEEFY-backed committee bridge state used for committee-data updates. They follow the Forever/Two-Stage/Logic pattern, with `BeefyConsensusState` recording the trusted current and next authority sets, their stake totals, and the latest accepted height. This section documents only that committee-state verification path; it does not claim generic block validation or generic cross-chain message passing.
+These validators maintain the BEEFY-backed committee bridge state used for committee-data updates. They follow the Forever/Two-Stage/Logic pattern, with `BeefyConsensusState` recording the latest quorum-verified MMR root, the trusted current and next committee commitments (each carrying its total seat count as the quorum denominator), and the latest accepted height. This section documents only that committee-state verification path; it does not claim generic block validation or generic cross-chain message passing.
 
 - `committee_bridge_forever`
   Minting / setup constraints:
@@ -893,7 +893,7 @@ These validators maintain the BEEFY-backed committee bridge state used for commi
   - ILM-3: minted assets under that policy must be exactly one committee-bridge forever NFT (asset name "").
   - ILM-4: outputs must deliver that NFT to the committee-bridge script address with an inline datum.
   - BCS-1: datum must decode to `BeefyConsensusState`.
-  - BCS-2: `next_authority_set.id` must be strictly greater than `current_authority_set.id`.
+  - BCS-2: `next_committee.id` must be strictly greater than `current_committee.id`.
   Operational constraints:
   - FC-4: reference inputs must include the committee-bridge two-stage main NFT (`config.committee_bridge_two_stage_hash`, name "main").
   - FC-5: referenced upgrade datum must be inline.
@@ -973,14 +973,15 @@ These validators maintain the BEEFY-backed committee bridge state used for commi
   - BCP-6: reference inputs must expose the beefy signer threshold (`config.beefy_signer_threshold_hash`) with inline datum.
   - BCP-7: threshold datum must decode to `BeefyThreshold`.
   - BCP-8: proof's signed commitment block number must exceed trusted state's `latest_height`.
-  - BCP-9: proof's validator set ID must match either `current_authority_set.id` or `next_authority_set.id`.
-  - BCP-10: required signed stake must meet or exceed the validating threshold computed from the authority-set stake total selected by `validator_set_id` and the referenced `BeefyThreshold` datum.
-  - BCP-11: the signed commitment must carry the next-committee payload, and that payload must equal `keccak256(scale_encode_beefy_mmr_leaf(latest_mmr_leaf))`.
-  - BCP-12: output state must equal the derived post-verification `BeefyConsensusState`.
+  - BCP-9: proof's validator set ID must match either `current_committee.id` or `next_committee.id`.
+  - BCP-10: signed seat count (summed from the voters' authority leaves) must meet or exceed the validating threshold computed from the signing committee's total seat count (`len`) and the referenced `BeefyThreshold` datum.
+  - BCP-11: the signed commitment must carry the MMR-root payload (`"mh"`), and `latest_mmr_leaf` must prove into that root via the supplied `mmr_proof` (leaf hash is `keccak256(scale_encode_beefy_mmr_leaf(latest_mmr_leaf))`).
+  - BCP-12: output state must equal the derived post-verification `BeefyConsensusState`, including the signed MMR root recorded as `latest_mmr_root`.
   Implementation notes:
-  - `verify_consensus` in `lib/bridge/beefy` verifies the BEEFY proof components used here: the signed commitment, the latest MMR leaf, and the proof data, then accepts only when the derived state equals the explicit output state.
+  - `verify_consensus` in `lib/bridge/beefy` verifies the BEEFY proof components used here: the signed commitment, the latest MMR leaf, the MMR proof, and the authority multi-proof, then accepts only when the derived state equals the explicit output state.
   - The current signature verification path is ECDSA/secp256k1 via `builtin.verify_ecdsa_secp256k1_signature`.
-  - Authority set rotation occurs only when `latest_mmr_leaf.next_authority_set.id > trusted_state.next_authority_set.id`; otherwise the verifier keeps the previous authority-set pair and updates only the accepted height.
+  - Authority leaves are `33-byte compressed pubkey || u64 little-endian seat count`, proven against the signing committee's `keyset_commitment`.
+  - Committee rotation occurs only when `latest_mmr_leaf.next_authority_set.id > trusted_state.next_committee.id`; otherwise the verifier keeps the previous committee pair and updates only the accepted height and MMR root.
 
 ---
 
