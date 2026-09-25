@@ -299,7 +299,18 @@ export async function handler(argv: PromoteUpgradeOptions) {
     promotedLogicRewardAccount,
     network,
   );
+  const stagedLogicScript = promotedLogicAlreadyRegistered
+    ? null
+    : findScriptByHash(stagedLogicHash, network, useBuild);
   if (!promotedLogicAlreadyRegistered) {
+    if (!stagedLogicScript) {
+      throw new Error(
+        `Staged logic script ${stagedLogicHash} not found in the ${useBuild ? "build" : "deployed"} blueprint` +
+          (useBuild
+            ? ""
+            : "; pass --use-build if it was staged from the build output"),
+      );
+    }
     console.log(
       `\n  Promoted logic hash not yet registered as stake credential.`,
     );
@@ -401,17 +412,7 @@ export async function handler(argv: PromoteUpgradeOptions) {
 
   // Register the promoted logic hash as a stake credential so subsequent
   // governance commands can use it as a withdrawal (reward account).
-  if (!promotedLogicAlreadyRegistered) {
-    const stagedLogicScript = findScriptByHash(
-      stagedLogicHash,
-      network,
-      useBuild,
-    );
-    if (!stagedLogicScript) {
-      throw new Error(
-        `Staged logic script ${stagedLogicHash} not found in the blueprint`,
-      );
-    }
+  if (stagedLogicScript) {
     registerScriptStake(txBuilder, stagedLogicScript);
   }
 
