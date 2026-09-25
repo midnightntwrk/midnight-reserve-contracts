@@ -3,8 +3,6 @@ import {
   addressFromValidator,
   AssetId,
   AssetName,
-  Credential,
-  CredentialType,
   PaymentAddress,
   PlutusData,
   PolicyId,
@@ -40,7 +38,11 @@ import {
   ensureDirectory,
   TX_TYPE_CONWAY,
 } from "../../lib/output";
-import { createOneShotUtxo, createUpgradeState } from "../../lib/transaction";
+import {
+  createOneShotUtxo,
+  createUpgradeState,
+  registerScriptStake,
+} from "../../lib/transaction";
 import { saveVersionSnapshot, type ChangeRecord } from "../../lib/versions";
 import * as Contracts from "../../../contract_blueprint";
 
@@ -211,13 +213,11 @@ export async function handler(argv: DeployCnightMintingOptions) {
     )
     .provideScript(contracts.cnightMintTwoStage.Script)
     .addOutput(twoStageMainOutput)
-    .addOutput(twoStageStagingOutput)
-    .addRegisterStake(
-      Credential.fromCore({
-        hash: contracts.cnightMintForever.Script.hash(),
-        type: CredentialType.ScriptHash,
-      }),
-    );
+    .addOutput(twoStageStagingOutput);
+  txBuilder = registerScriptStake(
+    txBuilder,
+    contracts.cnightMintForever.Script,
+  );
 
   if (collateralUtxo) {
     txBuilder = txBuilder.provideCollateral([collateralUtxo]);
