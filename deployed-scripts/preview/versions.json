@@ -1,6 +1,10 @@
 {
   "promoted": [
     "cnight_generates_dust",
+    "cnight_mint_forever",
+    "cnight_mint_logic",
+    "cnight_mint_two_stage_upgrade",
+    "committee_bridge_pool",
     "main_gov_auth",
     "staging_gov_auth",
     "ics_forever",
@@ -22,6 +26,7 @@
     "terms_and_conditions_forever",
     "terms_and_conditions_logic",
     "terms_and_conditions_two_stage_upgrade",
+    "test_cnight_minting_proxy",
     "tcnight_mint_infinite",
     "main_council_update_threshold",
     "main_federated_ops_update_threshold",
@@ -29,6 +34,7 @@
     "main_tech_auth_update_threshold",
     "staging_gov_threshold",
     "terms_and_conditions_threshold",
+    "z_beefy_threshold_types",
     "z_committee_bridge_types",
     "z_federated_ops_types",
     "z_generates_dust",
@@ -36,7 +42,7 @@
     "z_terms_and_cond_types",
     "z_threshold_types",
     "z_two_stage_upgrade_types",
-    "federated_ops_logic_v2"
+    "z_federated_ops_v2_types"
   ],
   "staged": []
 }
