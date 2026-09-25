@@ -45,8 +45,5 @@ Architecture patterns derived from:
 
 ## Additional Docs
 
-- [Architecture & Workspace Structure](.claude/docs/architecture.md)
-- [Code Conventions](.claude/docs/code-conventions.md)
-- [Testing](.claude/docs/testing.md)
-- [Live Deployment Runbook](.claude/docs/live-deployment.md)
+- [Live Deployment Runbook](docs/governance/live-deployment.md)
 - [docs/governance/](docs/governance/) - validator constraints, transactions, upgrade flow

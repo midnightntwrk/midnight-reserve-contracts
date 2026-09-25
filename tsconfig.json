@@ -15,7 +15,6 @@
   },
   "include": [
     "cli/**/*.ts",
-    "cli-yargs/**/*.ts",
     "tests/**/*.ts"
   ],
   "exclude": [

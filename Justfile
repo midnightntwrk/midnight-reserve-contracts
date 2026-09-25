@@ -4,7 +4,7 @@ validator_json_indices env="default":
 
 
 build env="default" verbosity="verbose":
-    bun cli-yargs/index.ts build -n {{env}} --trace {{verbosity}}
+    bun cli/index.ts build -n {{env}} --trace {{verbosity}}
 
 
 aiken-check verbosity="verbose":
@@ -14,6 +14,11 @@ aiken-check verbosity="verbose":
 
 check: aiken-check
     bun run check
+
+
+# The test suite plus the chain-facing tests against preview (reads only; needs .env)
+test-preview:
+    TEST_NETWORK=preview bun test
 
 
 lint:
@@ -40,11 +45,7 @@ use-env env:
     fi
     if [ ! -f "contract_blueprint_{{env}}.ts" ]; then
         echo "Generating contract_blueprint_{{env}}.ts from plutus-{{env}}.json..."
-        bunx @blaze-cardano/blueprint@0.9.0 plutus-{{env}}.json -o contract_blueprint_{{env}}.ts
+        bun node_modules/.bin/blueprint plutus-{{env}}.json -o contract_blueprint_{{env}}.ts
     fi
     cp contract_blueprint_{{env}}.ts contract_blueprint.ts
     echo "Activated environment: {{env}}"
-
-
-cli *args:
-    bun cli-yargs/index.ts {{args}}

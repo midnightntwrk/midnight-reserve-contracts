@@ -1,27 +1,24 @@
 import {
-  Address,
+  type Address,
   AssetId,
-  Credential,
-  CredentialType,
   NetworkId,
-  PlutusData,
-  RewardAccount,
-  TransactionOutput,
-  Value,
-  type TransactionUnspentOutput,
   type Script,
+  type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import { Emulator } from "@blaze-cardano/emulator";
-import type { TxBuilder } from "@blaze-cardano/tx";
-import { describe, test } from "bun:test";
+import type { Blaze, Provider, Wallet } from "@blaze-cardano/sdk";
+import { describe, expect, test } from "bun:test";
+import { Either } from "effect";
+import { buildMergeTx } from "../cli/governance/merge-utxos";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import {
   cnightAssetId,
   liveUpgradeStates,
   mainnetSnapshotUtxos,
-  makeFundingUtxo,
   makeImaginaryForeverUtxo,
 } from "./helpers/mainnet-snapshot";
+import { registerRewardAccount, asFunded } from "./helpers/fixtures";
+import { leftOf } from "./helpers/effect";
 
 const reserveForever = new Contracts.ReserveReserveForeverElse();
 const reserveLogic = new Contracts.ReserveReserveLogicElse();
@@ -32,163 +29,138 @@ const randomAssetId = AssetId(
   "1234567890abcdef1234567890abcdef1234567890abcdef12345678" + "cafe",
 );
 
-function rewardAccount(scriptHash: string) {
-  return RewardAccount.fromCredential(
-    Credential.fromCore({
-      hash: scriptHash,
-      type: CredentialType.ScriptHash,
-    }).toCore(),
-    NetworkId.Testnet,
-  );
+interface Family {
+  readonly forever: Script;
+  readonly logic: Script;
+  readonly twoStageMain: TransactionUnspentOutput;
+  readonly mainState: Contracts.UpgradeState;
 }
+const reserve: Family = {
+  forever: reserveForever.Script,
+  logic: reserveLogic.Script,
+  twoStageMain: mainnetSnapshotUtxos.reserveMain,
+  mainState: liveUpgradeStates.reserve.main,
+};
+const ics: Family = {
+  forever: icsForever.Script,
+  logic: icsLogic.Script,
+  twoStageMain: mainnetSnapshotUtxos.icsMain,
+  mainState: liveUpgradeStates.ics.main,
+};
 
-function mergeValue(
-  utxo1: TransactionUnspentOutput,
-  utxo2: TransactionUnspentOutput,
-) {
-  const amount1 = utxo1.output().amount();
-  const amount2 = utxo2.output().amount();
-  return new Value(
-    amount1.coin() + amount2.coin(),
-    new Map([
-      [
-        cnightAssetId,
-        (amount1.multiasset()?.get(cnightAssetId) ?? 0n) +
-          (amount2.multiasset()?.get(cnightAssetId) ?? 0n),
-      ],
-    ]),
+/** Two imaginary forever UTxOs with ADA, cNIGHT and a stray asset; the fee UTxO pays. */
+const seed = (
+  emulator: Emulator,
+  fundingUtxo: TransactionUnspentOutput,
+  family: Family,
+  cnight: readonly [bigint, bigint] = [1n, 2n],
+) => {
+  const utxo1 = makeImaginaryForeverUtxo({
+    script: family.forever,
+    txHash: "e1".repeat(32),
+    txIndex: 0,
+    coins: 5_000_000n,
+    cnightAmount: cnight[0],
+    randomAssetId,
+    randomAmount: 7n,
+  });
+  const utxo2 = makeImaginaryForeverUtxo({
+    script: family.forever,
+    txHash: "e2".repeat(32),
+    txIndex: 1,
+    coins: 7_000_000n,
+    cnightAmount: cnight[1],
+    randomAssetId,
+    randomAmount: 11n,
+  });
+  for (const utxo of [family.twoStageMain, utxo1, utxo2])
+    emulator.addUtxo(utxo);
+  registerRewardAccount(emulator, family.mainState[0]);
+  return { fundingUtxo, utxo1, utxo2 };
+};
+
+const merge = (
+  blaze: Blaze<Provider, Wallet>,
+  addr: Address,
+  family: Family,
+  utxos: ReturnType<typeof seed>,
+  logicScript: Script = family.logic,
+  asset: AssetId = cnightAssetId,
+) =>
+  buildMergeTx(
+    blaze,
+    {
+      forever: family.forever,
+      utxo1: utxos.utxo1,
+      utxo2: utxos.utxo2,
+      twoStageMainUtxo: family.twoStageMain,
+      userUtxo: utxos.fundingUtxo,
+      logicScript,
+      logicRound: Number(family.mainState[5]),
+    },
+    {
+      cnightAssetId: asset,
+      networkId: NetworkId.Testnet,
+      changeAddress: addr,
+      feePadding: 0n,
+    },
   );
-}
 
-function buildMergeTx(args: {
-  blaze: { newTransaction(): TxBuilder };
-  walletAddress: string;
-  foreverScript: Script;
-  logicScript: Script;
-  logicHash: string;
-  twoStageMain: TransactionUnspentOutput;
-  utxo1: TransactionUnspentOutput;
-  utxo2: TransactionUnspentOutput;
-  fundingUtxo: TransactionUnspentOutput;
-}) {
-  const mergedOutput = new TransactionOutput(
-    args.utxo1.output().address(),
-    mergeValue(args.utxo1, args.utxo2),
-  );
-  const utxo1Datum = args.utxo1.output().datum();
-  if (!utxo1Datum) {
-    throw new Error("Imaginary merge UTxO is missing datum");
-  }
-  mergedOutput.setDatum(utxo1Datum);
-
-  return args.blaze
-    .newTransaction()
-    .addInput(args.utxo1, PlutusData.newInteger(0n))
-    .addInput(args.utxo2, PlutusData.newInteger(0n))
-    .addInput(args.fundingUtxo)
-    .addReferenceInput(args.twoStageMain)
-    .addWithdrawal(rewardAccount(args.logicHash), 0n, PlutusData.newInteger(0n))
-    .provideScript(args.foreverScript)
-    .provideScript(args.logicScript)
-    .addOutput(mergedOutput)
-    .setChangeAddress(Address.fromBech32(args.walletAddress))
-    .setFeePadding(50_000n);
-}
-
+// The CLI builder against mainnet snapshot two-stage states, validated by the deployed scripts in the emulator.
 describe("Mainnet snapshot merge transactions", () => {
-  test("reserve merge that keeps only ADA+cNIGHT in the contract output validates", async () => {
-    const emulator = new Emulator([]);
-    await emulator.as("deployer", async (blaze, addr) => {
-      const fundingUtxo = makeFundingUtxo(addr, "e0".repeat(32));
-      const reserveInput1 = makeImaginaryForeverUtxo({
-        script: reserveForever.Script,
-        txHash: "e1".repeat(32),
-        txIndex: 0,
-        coins: 5_000_000n,
-        cnightAmount: 1n,
-        randomAssetId,
-        randomAmount: 7n,
-      });
-      const reserveInput2 = makeImaginaryForeverUtxo({
-        script: reserveForever.Script,
-        txHash: "e2".repeat(32),
-        txIndex: 1,
-        coins: 7_000_000n,
-        cnightAmount: 2n,
-        randomAssetId,
-        randomAmount: 11n,
-      });
-
-      emulator.addUtxo(fundingUtxo);
-      emulator.addUtxo(mainnetSnapshotUtxos.reserveMain);
-      emulator.addUtxo(reserveInput1);
-      emulator.addUtxo(reserveInput2);
-      emulator.accounts.set(rewardAccount(liveUpgradeStates.reserve.main[0]), {
-        balance: 0n,
-      });
-
-      await emulator.expectValidTransaction(
-        blaze,
-        buildMergeTx({
+  test.each([
+    ["reserve", reserve],
+    ["ICS", ics],
+  ] as const)(
+    "%s merge that keeps only ADA+cNIGHT in the contract output validates",
+    async (_, family) => {
+      await asFunded(async (emulator, blaze, addr, fee) => {
+        const utxos = seed(emulator, fee, family);
+        await emulator.expectValidTransaction(
           blaze,
-          walletAddress: addr.toBech32(),
-          foreverScript: reserveForever.Script,
-          logicScript: reserveLogic.Script,
-          logicHash: liveUpgradeStates.reserve.main[0],
-          twoStageMain: mainnetSnapshotUtxos.reserveMain,
-          utxo1: reserveInput1,
-          utxo2: reserveInput2,
-          fundingUtxo,
-        }),
+          Either.getOrThrow(merge(blaze, addr, family, utxos)),
+        );
+        const merged = emulator
+          .utxos()
+          .find(
+            (u) => u.output().amount().multiasset()?.get(cnightAssetId) === 3n,
+          );
+        expect(merged?.output().amount().coin()).toBe(12_000_000n);
+      });
+    },
+  );
+
+  test("a withdrawal through the wrong logic is rejected", async () => {
+    await asFunded(async (emulator, blaze, addr, fee) => {
+      const utxos = seed(emulator, fee, reserve);
+      registerRewardAccount(emulator, icsLogic.Script.hash());
+      await emulator.expectScriptFailure(
+        Either.getOrThrow(merge(blaze, addr, reserve, utxos, icsLogic.Script)),
+        /Spend\[\d+\]|Withdraw\[0\]/,
       );
     });
   });
 
-  test("ICS merge that keeps only ADA+cNIGHT in the contract output validates", async () => {
-    const emulator = new Emulator([]);
-    await emulator.as("deployer", async (blaze, addr) => {
-      const fundingUtxo = makeFundingUtxo(addr, "e3".repeat(32));
-      const icsInput1 = makeImaginaryForeverUtxo({
-        script: icsForever.Script,
-        txHash: "e4".repeat(32),
-        txIndex: 0,
-        coins: 4_000_000n,
-        cnightAmount: 1n,
-        randomAssetId,
-        randomAmount: 7n,
-      });
-      const icsInput2 = makeImaginaryForeverUtxo({
-        script: icsForever.Script,
-        txHash: "e5".repeat(32),
-        txIndex: 1,
-        coins: 9_000_000n,
-        cnightAmount: 2n,
-        randomAssetId,
-        randomAmount: 11n,
-      });
-
-      emulator.addUtxo(fundingUtxo);
-      emulator.addUtxo(mainnetSnapshotUtxos.icsMain);
-      emulator.addUtxo(icsInput1);
-      emulator.addUtxo(icsInput2);
-      emulator.accounts.set(rewardAccount(liveUpgradeStates.ics.main[0]), {
-        balance: 0n,
-      });
-
-      await emulator.expectValidTransaction(
-        blaze,
-        buildMergeTx({
-          blaze,
-          walletAddress: addr.toBech32(),
-          foreverScript: icsForever.Script,
-          logicScript: icsLogic.Script,
-          logicHash: liveUpgradeStates.ics.main[0],
-          twoStageMain: mainnetSnapshotUtxos.icsMain,
-          utxo1: icsInput1,
-          utxo2: icsInput2,
-          fundingUtxo,
-        }),
+  test("a merge output that drops cNIGHT for another asset is rejected", async () => {
+    await asFunded(async (emulator, blaze, addr, fee) => {
+      const utxos = seed(emulator, fee, reserve);
+      await emulator.expectScriptFailure(
+        Either.getOrThrow(
+          merge(blaze, addr, reserve, utxos, reserve.logic, randomAssetId),
+        ),
+        /Spend\[\d+\]|Withdraw\[0\]/,
       );
+    });
+  });
+
+  test("two UTxOs without cNIGHT cannot be merged", async () => {
+    await asFunded(async (emulator, blaze, addr, fee) => {
+      const utxos = seed(emulator, fee, reserve, [0n, 0n]);
+      const result = merge(blaze, addr, reserve, utxos);
+      expect(leftOf(result)).toMatchObject({
+        _tag: "PreconditionFailed",
+        refusal: { _tag: "NoCnight" },
+      });
     });
   });
 });
