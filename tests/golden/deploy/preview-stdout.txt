@@ -1,0 +1,193 @@
+===========================================
+Generating deployment transactions for preview
+===========================================
+UTxO Amount: 20000000 lovelace
+Min UTxO: calculated dynamically from protocol parameters
+
+Total tech auth signers: 1
+Number of tech auth signer pairs: 1
+Total council signers: 1
+Number of council signer pairs: 1
+
+Using collateral UTxO: 2075919b9398543b46b4955fc85cc234ec3f58b6e31a0a850b46b9f5fc05c592#15 with 19787771 lovelace
+Collateral validation passed: 19787771 lovelace >= 7500000 lovelace required
+✅ Deployment scripts saved to deployed-scripts/preview/
+
+===========================================
+✅ Generated 12 deployment transactions
+
+Output file: <repo>/deployments/preview/deployment-transactions.json
+===========================================
+
+Transaction Summary:
+1. technical-authority-deployment
+   Hash: 697edf7b84840ed09ca3c06894bfac22460a0e1b4589685db69efa0a2b2bfeba
+
+2. tech-auth-update-threshold-deployment
+   Hash: 89002674b7c39e35f1b33f5ee71f9240da34631dd38ae6170c39fff0f1a344d7
+
+3. council-deployment
+   Hash: fad20c2f77d81373f2c2ef55ab39a2e3b1940dd42637af06a344ccfe0ac76ccf
+
+4. council-update-threshold-deployment
+   Hash: f52caa69afed5ebd3479a4f86aa90bdc79d0625af032807e0617cc625e4b79a8
+
+5. reserve-deployment
+   Hash: c708807c72084d833c5a5dad49fd0d6a2b7ea3f4c36843ebb0d3a0f8eb902c55
+
+6. ics-deployment
+   Hash: a69082580f3dfc1a5a1357d19fb879f17d78b5c12eb4275bbd891ee838c0e8f4
+
+7. main-gov-threshold-deployment
+   Hash: deb4cb2e6f8eaac66725aa7ef57d0776aedec505eb52011a0a1c1b55acaedbe5
+
+8. staging-gov-threshold-deployment
+   Hash: 333d9c1994e0f70ad21d7eba4e4c2d4b5c251d7968214e8642ad22b56b081f76
+
+9. federated-ops-deployment
+   Hash: 0c308575a745153a41e30a8009cbff07d76cde7c49c40c3c7789312383a2812e
+
+10. federated-ops-update-threshold-deployment
+   Hash: 605469414f3b50102b178f65d9edd511d0b1a7a55b4d5ac9bf226002763ab198
+
+11. terms-and-conditions-deployment
+   Hash: b8f26aa41dcd8805eebe76369e7792b408b5d4f6edcbb3c1a4f6122db15d7546
+
+12. terms-and-conditions-threshold-deployment
+   Hash: 8b5e4897b4d959804936ccad77d62dcd5bdfa473c627a9973115774eeba5fde4
+
+
+Script Outputs:
+===========================================
+
+technical-authority-deployment:
+  Address: addr_test1wpt064dv674gu83atfcsxag9dfp0mwdav74qy7tustw8y3sdpl9vn
+  Policy ID: 56fd55acd7aa8e1e3d5a710375056a42fdb9bd67aa02797c82dc7246
+  Asset Name: main
+
+  Address: addr_test1wpt064dv674gu83atfcsxag9dfp0mwdav74qy7tustw8y3sdpl9vn
+  Policy ID: 56fd55acd7aa8e1e3d5a710375056a42fdb9bd67aa02797c82dc7246
+  Asset Name: staging
+
+  Address: addr_test1wqm059kaussd5nx0fg25wlh33y8tvj4nl9dqjxw6qzdya6c09fgta
+  Policy ID: 36fa16dde420da4ccf4a15477ef1890eb64ab3f95a0919da009a4eeb
+  Asset Name: (empty)
+
+
+
+tech-auth-update-threshold-deployment:
+  Address: addr_test1wrr5l93wm9s4234vuruu4q8jynqa5esuu2m63wycz5ajr9cd5u6lm
+  Policy ID: c74f962ed9615546ace0f9ca80f224c1da661ce2b7a8b898153b2197
+  Asset Name: (empty)
+
+
+
+council-deployment:
+  Address: addr_test1wzmm4q94aanvjdcap9t3t5pxn68g208at06rqey245x9xpctp925k
+  Policy ID: b7ba80b5ef66c9371d095715d0269e8e853cfd5bf430648aad0c5307
+  Asset Name: main
+
+  Address: addr_test1wzmm4q94aanvjdcap9t3t5pxn68g208at06rqey245x9xpctp925k
+  Policy ID: b7ba80b5ef66c9371d095715d0269e8e853cfd5bf430648aad0c5307
+  Asset Name: staging
+
+  Address: addr_test1wrv6vagd3evjj9tez0lavumza7292m7lwduch8a9p9ah4ace8yckk
+  Policy ID: d9a6750d8e5929157913ffd67362ef94556fdf73798b9fa5097b7af7
+  Asset Name: (empty)
+
+
+
+council-update-threshold-deployment:
+  Address: addr_test1wzg6her0k56u8t30aa8xnm3x8kx709rsjtz8xapdaefp3tsulvf29
+  Policy ID: 91abe46fb535c3ae2fef4e69ee263d8de7947092c473742dee5218ae
+  Asset Name: (empty)
+
+
+
+reserve-deployment:
+  Address: addr_test1wp60zfhe8hr9pgyv7dt7qwac96n8lhkwx6mtekmx4nt3a3g00cjmd
+  Policy ID: 74f126f93dc650a08cf357e03bb82ea67fdece36b6bcdb66acd71ec5
+  Asset Name: main
+
+  Address: addr_test1wp60zfhe8hr9pgyv7dt7qwac96n8lhkwx6mtekmx4nt3a3g00cjmd
+  Policy ID: 74f126f93dc650a08cf357e03bb82ea67fdece36b6bcdb66acd71ec5
+  Asset Name: staging
+
+  Address: addr_test1wp7r88al8feazgt6afyl2xwgxjv2prejdxmdtw5gc8zykcclkdk86
+  Policy ID: 7c339fbf3a73d1217aea49f519c83498a08f3269b6d5ba88c1c44b63
+  Asset Name: (empty)
+
+
+
+ics-deployment:
+  Address: addr_test1wq73j5wx7sply8qeewvak4h0m0d5rlde7vlangtfkwzytzs3n2ec8
+  Policy ID: 3d1951c6f403f21c19cb99db56efdbdb41fdb9f33fd9a169b384458a
+  Asset Name: main
+
+  Address: addr_test1wq73j5wx7sply8qeewvak4h0m0d5rlde7vlangtfkwzytzs3n2ec8
+  Policy ID: 3d1951c6f403f21c19cb99db56efdbdb41fdb9f33fd9a169b384458a
+  Asset Name: staging
+
+  Address: addr_test1wpt96lumlml37fuwx3t053wd0yj3fm64ljmwdwdpyyk3uyq6qlp9t
+  Policy ID: 565d7f9bfeff1f278e3456fa45cd792514ef55fcb6e6b9a1212d1e10
+  Asset Name: (empty)
+
+
+
+main-gov-threshold-deployment:
+  Address: addr_test1wr5k8k4zhntw5gscdg5cn4sy6cq4f6rr2n5jvy6epu3d7vg3h7mhg
+  Policy ID: e963daa2bcd6ea22186a2989d604d60154e86354e92613590f22df31
+  Asset Name: (empty)
+
+
+
+staging-gov-threshold-deployment:
+  Address: addr_test1wpwh3265qw0nyv6nemzham39tnrqp9rfxzv67axvennxu9cmrja70
+  Policy ID: 5d78ab54039f323353cec57eee255cc60094693099af74cccce66e17
+  Asset Name: (empty)
+
+
+
+federated-ops-deployment:
+  Address: addr_test1wrh50s55zsch6lnm0nsepytg0mkd0mnvxqdwfakdetfs45qdu70d6
+  Policy ID: ef47c29414317d7e7b7ce19091687eecd7ee6c301ae4f6cdcad30ad0
+  Asset Name: main
+
+  Address: addr_test1wrh50s55zsch6lnm0nsepytg0mkd0mnvxqdwfakdetfs45qdu70d6
+  Policy ID: ef47c29414317d7e7b7ce19091687eecd7ee6c301ae4f6cdcad30ad0
+  Asset Name: staging
+
+  Address: addr_test1wrvu4qyptjzhgacsaff7dwlsm7w7n0h3pf7lhyj4a4u0mdgpleezs
+  Policy ID: d9ca80815c85747710ea53e6bbf0df9de9bef10a7dfb9255ed78fdb5
+  Asset Name: (empty)
+
+
+
+federated-ops-update-threshold-deployment:
+  Address: addr_test1wrtzsh5nmu0nvw0j370adcd8tedljqtcfggaj6xdke0kcnsyyr5te
+  Policy ID: d6285e93df1f3639f28f9fd6e1a75e5bf901784a11d968cdb65f6c4e
+  Asset Name: (empty)
+
+
+
+terms-and-conditions-deployment:
+  Address: addr_test1wq0hpx52ynz7vdew7qvzhrx7dt62xg5fda8hczr2v9c9frcwzxlml
+  Policy ID: 1f709a8a24c5e6372ef0182b8cde6af4a322896f4f7c086a6170548f
+  Asset Name: main
+
+  Address: addr_test1wq0hpx52ynz7vdew7qvzhrx7dt62xg5fda8hczr2v9c9frcwzxlml
+  Policy ID: 1f709a8a24c5e6372ef0182b8cde6af4a322896f4f7c086a6170548f
+  Asset Name: staging
+
+  Address: addr_test1wzuzzm2mz6myf2k3srnkr5av07x5wr5208zlsxjvtc0u3cqkxx8jv
+  Policy ID: b8216d5b16b644aad180e761d3ac7f8d470e8a79c5f81a4c5e1fc8e0
+  Asset Name: (empty)
+
+
+
+terms-and-conditions-threshold-deployment:
+  Address: addr_test1wzyy207a5j8qwt9slpjyx8g46rnuvdpakmspdvtq8fh4wusgns7mg
+  Policy ID: 88453fdda48e072cb0f864431d15d0e7c6343db6e016b1603a6f5772
+  Asset Name: (empty)
+
+

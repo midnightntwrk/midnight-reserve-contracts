@@ -1,0 +1,43 @@
+===========================================
+Generating deployment transactions for preview
+===========================================
+UTxO Amount: 20000000 lovelace
+Min UTxO: calculated dynamically from protocol parameters
+
+Total tech auth signers: 1
+Number of tech auth signer pairs: 1
+Total council signers: 1
+Number of council signer pairs: 1
+
+Using collateral UTxO: 2075919b9398543b46b4955fc85cc234ec3f58b6e31a0a850b46b9f5fc05c592#15 with 19787771 lovelace
+Collateral validation passed: 19787771 lovelace >= 7500000 lovelace required
+ℹ️  Targeting single transaction: federated-ops-deployment
+ℹ️  Replaced transaction federated-ops-deployment in existing deployment file (12 total)
+===========================================
+✅ Generated 1 deployment transactions
+
+Output file: <repo>/deployments/preview/deployment-transactions.json
+===========================================
+
+Transaction Summary:
+1. federated-ops-deployment
+   Hash: a3df72ca2146e9d5e7ab74bf5de7b93cb5b75352c12d09b9dee01ac6ccc0866e
+
+
+Script Outputs:
+===========================================
+
+federated-ops-deployment:
+  Address: addr_test1wrh50s55zsch6lnm0nsepytg0mkd0mnvxqdwfakdetfs45qdu70d6
+  Policy ID: ef47c29414317d7e7b7ce19091687eecd7ee6c301ae4f6cdcad30ad0
+  Asset Name: main
+
+  Address: addr_test1wrh50s55zsch6lnm0nsepytg0mkd0mnvxqdwfakdetfs45qdu70d6
+  Policy ID: ef47c29414317d7e7b7ce19091687eecd7ee6c301ae4f6cdcad30ad0
+  Asset Name: staging
+
+  Address: addr_test1wrvu4qyptjzhgacsaff7dwlsm7w7n0h3pf7lhyj4a4u0mdgpleezs
+  Policy ID: d9ca80815c85747710ea53e6bbf0df9de9bef10a7dfb9255ed78fdb5
+  Asset Name: (empty)
+
+
