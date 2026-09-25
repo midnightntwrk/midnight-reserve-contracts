@@ -9,7 +9,7 @@
 import { merge } from "./keccak";
 
 /** Peak sizes by descending height: the set bits of `count`. */
-export function peakSizes(count: number): number[] {
+function peakSizes(count: number): number[] {
   const sizes: number[] = [];
   for (let size = 1 << 30; size >= 1; size >>= 1)
     if (count & size) sizes.push(size);
@@ -34,7 +34,7 @@ function siblings(hashes: readonly Uint8Array[], offset: number): Uint8Array[] {
 }
 
 /** `acc = H(acc ‖ next_left)` from the rightmost peak. */
-export function bag(peaksLeftToRight: readonly Uint8Array[]): Uint8Array {
+function bag(peaksLeftToRight: readonly Uint8Array[]): Uint8Array {
   if (peaksLeftToRight.length === 0) throw new Error("bag of no peaks");
   const [right, ...lefts] = [...peaksLeftToRight].reverse();
   return lefts.reduce((acc, left) => merge(acc, left), right);
@@ -85,7 +85,7 @@ export class Mmr {
 }
 
 /** Index-walk verifier, the `lib/bridge/merkle.ak` algorithm; every item must be consumed. */
-export function leafRoot(
+function leafRoot(
   leafHash: Uint8Array,
   index: number,
   count: number,

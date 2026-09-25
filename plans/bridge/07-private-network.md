@@ -29,7 +29,9 @@ Reads: `beefy_getFinalizedHead`; `mmr_root` at block `activation − 1`
 and `BeefyMmrLeaf` next authorities via `state_call`; committee keys with
 seats from the session committee (`SessionCommitteeManagement` /
 Ariadne output). Computes the deduplicated commitment with the phase 05
-reference and prints the bootstrap JSON for `deploy`.
+reference and prints the bootstrap state for `deploy`'s env (phase 06
+task 1: `deploy --components committee-bridge` reads it through
+`Settings`).
 
 ### 3. `bridge-verify-bootstrap`
 Recomputes the datum from RPC and diffs it against the deployed datum

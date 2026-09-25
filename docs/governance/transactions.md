@@ -557,8 +557,11 @@ Mints or burns TCnight (test NIGHT) tokens on non-mainnet networks. Uses the `tc
 #### CLI Command
 
 ```
-bun cli mint-tcnight --amount <amount> --user-address <addr> --network <env>
+bun cli mint-tcnight --amount <amount> --user-address <addr> --network <env> [--destination <addr>]
+bun cli mint-tcnight --amount <amount> --user-address <addr> --network <env> --burn
 ```
+
+A mint pays `--destination` (default: `--user-address`). A burn returns the remainder to `--user-address`, so `--burn` with `--destination` is refused.
 
 #### Validators Fired
 

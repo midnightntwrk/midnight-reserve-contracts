@@ -11,7 +11,7 @@ import { keccak, merge } from "./keccak";
 
 export type ProofNode = Uint8Array | ProofNode[];
 
-export type ProofNodeJson = string | ProofNodeJson[];
+type ProofNodeJson = string | ProofNodeJson[];
 
 type Built = {
   node: ProofNode;

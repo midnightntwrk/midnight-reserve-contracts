@@ -19,7 +19,7 @@ export type MmrLeaf = {
 };
 
 /** SCALE payload list prefix: one payload, id `"mh"`, compact length 32. */
-export const COMMITMENT_PREFIX = hexToBytes("046d6880");
+const COMMITMENT_PREFIX = hexToBytes("046d6880");
 
 export function hash32(b: Uint8Array): Uint8Array {
   if (b.length !== 32) throw new Error(`expected 32 bytes, got ${b.length}`);
@@ -34,7 +34,7 @@ export function u32le(n: number): Uint8Array {
   return b;
 }
 
-export function u64le(n: bigint): Uint8Array {
+function u64le(n: bigint): Uint8Array {
   if (n < 0n || n > 0xffff_ffff_ffff_ffffn) throw new Error(`not a u64: ${n}`);
   const b = new Uint8Array(8);
   new DataView(b.buffer).setBigUint64(0, n, true);
