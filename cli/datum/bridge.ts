@@ -1,13 +1,14 @@
 /**
- * The committee bridge's deploy values: the bootstrap BeefyConsensusState
- * from its four .env values, checked by the rules the forever mint runs
- * (`validators/committee_bridge.ak`), and the fee cap of the BEEFY
- * threshold.
+ * The committee bridge's datums: the bootstrap BeefyConsensusState from its
+ * four .env values, checked by the rules the forever mint runs
+ * (`validators/committee_bridge.ak`), the state an update moves it to, and
+ * the fee cap of the BEEFY threshold.
  */
 import { Either } from "effect";
 import type {
   AuthoritySetCommitment,
   BeefyConsensusState,
+  BridgeUpdate,
 } from "../../contract_blueprint";
 import { type Hash32, parseHash32 } from "../input";
 
@@ -69,6 +70,25 @@ export const bootstrapState = (
         current_committee: values.current,
         next_committee: values.next,
       });
+
+/** The state after `update` (spec §5): the signed root and height; a handover (the leaf names next + 1) makes the next committee current and the leaf's the next. */
+export const nextBridgeState = (
+  state: BeefyConsensusState,
+  update: BridgeUpdate,
+): BeefyConsensusState => {
+  const named = update.leaf.next_authority_set;
+  const handover =
+    named.validator_set_id === state.next_committee.validator_set_id + 1n;
+  return {
+    ...state,
+    latest_mmr_root: update.mmr_root,
+    latest_height: update.block_number,
+    current_committee: handover
+      ? state.next_committee
+      : state.current_committee,
+    next_committee: handover ? named : state.next_committee,
+  };
+};
 
 /** The fee cap of the BEEFY threshold: `base + per_signer × signers`, in lovelace. */
 export interface BridgeMaxFee {
