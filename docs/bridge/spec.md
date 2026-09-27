@@ -443,7 +443,13 @@ in §3 order with signatures in leaf order (`""` for a non-signer leaf); a
 signers-only multiproof is the smallest. The `signer_cap` claim (§11)
 covers a `required`-quorum submission: the relay must trim to a minimal
 cover (drop any signer whose removal keeps the quorum), since the contract
-rejects a surplus signer. The
+rejects a surplus signer. `bridge-fetch-justification`
+(`cli/bridge/fetch-justification.ts`) is that proof builder in TypeScript,
+for the node team to port: it decodes the compact `VersionedFinalityProof`
+under engine `BEEF`, maps the signature slots to the validator set at the
+block, sums seats per key, drops the recovery byte, trims the signers to a
+minimal cover (most seats first), and takes the leaf and the proof items
+from `mmr_generateProof([b], b)`. The
 forever, logic and pool scripts MUST be supplied through reference-script
 UTxOs, never in the witness set (§11); the deployment (phase 06,
 `committee-bridge-scripts`) creates those UTxOs at the deployer address,
