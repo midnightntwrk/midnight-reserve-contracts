@@ -40,8 +40,29 @@ import {
   thresholdUtxo,
   upgradeState,
 } from "../helpers/fixtures";
-import { scenarioByName, type Scenario } from "./reference/fixtures";
-import { bridgeUpdate } from "./reference/update";
+import { concatBytes, hexToBytes } from "@noble/hashes/utils.js";
+import { Either } from "effect";
+import { updateFromJustification } from "../../cli/bridge/fetch-justification";
+import { keccak } from "../../cli/bridge/keccak";
+import {
+  decodeAuthoritySet,
+  decodeFinalityProof,
+  decodeLeafProof,
+  decodeSingleLeaf,
+  decodeValidatorSet,
+} from "../../cli/bridge/scale";
+import nodeHandover from "../vectors/bridge/node-handover.json";
+import {
+  dummyLeafHash,
+  parentHash,
+  scenarioByName,
+  type Scenario,
+} from "./reference/fixtures";
+import { Mmr } from "./reference/mmr";
+import { encodeCommitment, encodeLeaf } from "./reference/scale";
+import { committeeOf, renumbered } from "./reference/session";
+import { sign } from "./reference/sign";
+import { bridgeUpdate, toCommitment } from "./reference/update";
 import { handoverState } from "./reference/vectors";
 
 const forever = new C.CommitteeBridgeCommitteeBridgeForeverElse();
@@ -264,6 +285,126 @@ describe("buildBridgeThresholdTx", () => {
             feePadding: 0n,
             txType: "bridge-set-fee",
           },
+        ),
+      );
+    });
+  });
+});
+
+const bytes = (hex: string) => hexToBytes(hex.replace(/^0x/, ""));
+
+/** The light client over `current` and `next`, just before block `block`. */
+const stateBefore = (
+  block: number,
+  current: C.AuthoritySetCommitment,
+  next: C.AuthoritySetCommitment,
+): C.BeefyConsensusState => ({
+  latest_mmr_root: "00".repeat(32),
+  latest_height: BigInt(block - 1),
+  beefy_activation_block: 100n,
+  current_committee: current,
+  next_committee: next,
+});
+
+describe("updateFromJustification in the Blaze VM", () => {
+  test("a dev node's first block of a session is a funded handover", async () => {
+    const v = nodeHandover;
+    const { update } = Either.getOrThrow(
+      updateFromJustification(
+        v.block,
+        Either.getOrThrow(decodeFinalityProof(bytes(v.justification))),
+        Either.getOrThrow(decodeValidatorSet(bytes(v.validator_set))),
+        Either.getOrThrow(decodeSingleLeaf(bytes(v.mmr_leaves))),
+        Either.getOrThrow(decodeLeafProof(bytes(v.mmr_proof))),
+        FEE_CAP,
+      ),
+    );
+    const stateIn = stateBefore(
+      v.block,
+      Either.getOrThrow(decodeAuthoritySet(bytes(v.authority_set_before))),
+      Either.getOrThrow(decodeAuthoritySet(bytes(v.next_authority_set_before))),
+    );
+    const stateOut = nextBridgeState(stateIn, update);
+    expect(stateOut.current_committee).toEqual(stateIn.next_committee);
+    await asFunded(async (emulator, blaze) => {
+      const inputs = seed(emulator, stateIn, true);
+      const utxo = poolUtxo(20_000_000n);
+      emulator.addUtxo(utxo);
+      await emulator.expectValidTransaction(
+        blaze,
+        buildBridgeUpdateTx(
+          blaze,
+          inputs,
+          update,
+          stateOut,
+          Option.some({ poolUtxos: [utxo], debit: 650_000n }),
+          NetworkId.Testnet,
+        ),
+      );
+    });
+  });
+
+  test("every seat of three keys signs; the update keeps a minimal cover the logic accepts", async () => {
+    const block = 9;
+    const committee = committeeOf(4n, [1n, 2n, 3n], [1, 2, 1]);
+    const next = renumbered(committee, 5n);
+    const leaf = {
+      parentNumber: block - 1,
+      parentHash: parentHash(block),
+      nextAuthoritySet: next.commitment,
+    };
+    const mmr = new Mmr([
+      ...Array.from({ length: block - 1 }, (_, i) => dummyLeafHash(i)),
+      keccak(encodeLeaf(leaf)),
+    ]);
+    const message = keccak(encodeCommitment(mmr.root(), block, 4n));
+    // One slot per seat, in reverse key order.
+    const seats = committee.members
+      .flatMap((m) => Array.from({ length: m.seats }, () => m.kp))
+      .reverse();
+    const { update, signers } = Either.getOrThrow(
+      updateFromJustification(
+        block,
+        {
+          payload: [{ id: "mh", data: mmr.root() }],
+          blockNumber: block,
+          validatorSetId: 4n,
+          signatures: seats.map((kp) =>
+            concatBytes(sign(kp, message), new Uint8Array([1])),
+          ),
+        },
+        { keys: seats.map((kp) => kp.public), id: 4n },
+        {
+          version: 0,
+          parentNumber: leaf.parentNumber,
+          parentHash: leaf.parentHash,
+          nextAuthoritySet: toCommitment(next.commitment),
+          extra: new Uint8Array(),
+        },
+        {
+          leafIndices: [BigInt(block - 1)],
+          leafCount: BigInt(block),
+          items: mmr.proof(block - 1),
+        },
+        FEE_CAP,
+      ),
+    );
+    expect(signers).toBe(2);
+    const stateIn = stateBefore(
+      block,
+      toCommitment(committee.commitment),
+      toCommitment(next.commitment),
+    );
+    await asFunded(async (emulator, blaze) => {
+      await emulator.expectValidTransaction(
+        blaze,
+        buildBridgeUpdateTx(
+          blaze,
+          seed(emulator, stateIn, false),
+          update,
+          nextBridgeState(stateIn, update),
+          Option.none(),
+          NetworkId.Testnet,
         ),
       );
     });
