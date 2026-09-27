@@ -227,7 +227,8 @@ else. A withdrawal list is one or two entries, an input scan is not. The
 logic run then requires the forever NFT in and out and enforces the pool
 rules below whenever any input sits at the pool credential. No datum,
 no NFT, any number of pool UTxOs; a top-up is a plain payment to the pool
-address.
+address. A payment with a datum hash cannot be spent without its preimage;
+`bridge-update --funded` leaves it out.
 
 Inside `committee_bridge_logic`, with `pool_in = Σ lovelace` of inputs at
 `Script(config.committee_bridge_pool_hash)` (any stake part, so a stray

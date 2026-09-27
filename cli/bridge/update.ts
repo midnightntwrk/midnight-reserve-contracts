@@ -2,10 +2,10 @@
  * bridge-update: a light-client update from a BridgeUpdate JSON file (the
  * --update schema in `cli/datum/bridge.ts`), built (never submitted) and
  * written unsigned for the deployer, who submits it and pays the fee. With
- * --funded, a handover spends every pool UTxO and the pool pays the fee up
- * to the cap, keeping its minimum output: a first build with no debit
- * measures the fee, the second debits that and keeps the fee at least the
- * debit (rule 16).
+ * --funded, a handover spends every pool UTxO (`bridgeUtxos`: none with a
+ * datum hash) and the pool pays the fee up to the cap, keeping its minimum
+ * output: a first build with no debit measures the fee, the second debits
+ * that and keeps the fee at least the debit (rule 16).
  */
 import {
   addressFromValidator,

@@ -44,7 +44,7 @@ export const bridgeScripts = Effect.gen(function* () {
   return scripts;
 });
 
-/** The light client, the two-stage main and the BEEFY threshold UTxOs, and every pool UTxO. */
+/** The light client, the two-stage main and the BEEFY threshold UTxOs, and the pool UTxOs: those at the pool address with no datum hash, which no spend can witness. */
 export const bridgeUtxos = (scripts: BridgeScripts, networkId: NetworkId) =>
   Effect.gen(function* () {
     const found = yield* contractUtxos(
@@ -60,7 +60,9 @@ export const bridgeUtxos = (scripts: BridgeScripts, networkId: NetworkId) =>
       lightClient: yield* found.nft("forever"),
       main: yield* found.main("twoStage"),
       threshold: yield* found.nft("threshold"),
-      pool: found.at("pool"),
+      pool: found
+        .at("pool")
+        .filter((utxo) => utxo.output().datum()?.asDataHash() === undefined),
     };
   });
 
