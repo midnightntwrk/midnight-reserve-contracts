@@ -20,13 +20,12 @@ import {
 import {
   Blaze,
   type Provider as BlazeProvider,
-  ColdWallet,
   type Wallet,
 } from "@blaze-cardano/sdk";
 import { calculateMinAda, type TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
 import { buildTx } from "../chain/complete-tx";
-import { Provider } from "../chain/provider";
+import { Provider, ReferenceSafeWallet } from "../chain/provider";
 import { transactionFile } from "../chain/tx-file";
 import { environmentOf, type TestEnvironment } from "../config/network-mapping";
 import { Blueprint } from "../contracts/contracts";
@@ -256,7 +255,7 @@ export const mintTcnightProgram = (input: MintTcnightInput) =>
 
     const { networkId } = environmentOf(network);
     const blaze = yield* provider.use("Blaze.from", (p) =>
-      Blaze.from(p, new ColdWallet(user, networkId, p)),
+      Blaze.from(p, new ReferenceSafeWallet(user, networkId, p)),
     );
     const protocolParams = yield* provider.use("getParameters", (p) =>
       p.getParameters(),
