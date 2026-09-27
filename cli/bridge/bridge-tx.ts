@@ -154,10 +154,11 @@ export const buildBridgeTopupTx = (
     }),
   );
 
-/** What a threshold edit spends and references: the BEEFY threshold, main_gov_threshold (the fractions both authorities sign under) and both authorities' forever UTxOs. */
+/** What a threshold edit spends and references: the BEEFY threshold and the deployer's fee UTxO; main_gov_threshold (the fractions both authorities sign under) and both authorities' forever UTxOs. */
 export interface BridgeThresholdInputs {
   readonly threshold: Script;
   readonly thresholdUtxo: TransactionUnspentOutput;
+  readonly userUtxo: TransactionUnspentOutput;
   readonly mainGovThresholdUtxo: TransactionUnspentOutput;
   readonly councilForeverUtxo: TransactionUnspentOutput;
   readonly techAuthForeverUtxo: TransactionUnspentOutput;
@@ -186,6 +187,7 @@ export const buildBridgeThresholdTx = (
   return mintWitnesses(
     blaze
       .newTransaction()
+      .addInput(inputs.userUtxo)
       .addInput(inputs.thresholdUtxo, PlutusData.newInteger(0n))
       .addReferenceInput(inputs.mainGovThresholdUtxo)
       .addReferenceInput(inputs.councilForeverUtxo)

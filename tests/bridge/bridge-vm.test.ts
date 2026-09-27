@@ -227,7 +227,7 @@ describe("buildBridgeTopupTx", () => {
 
 describe("buildBridgeThresholdTx", () => {
   test("moves the BEEFY threshold NFT to a new fee cap under both authorities' witnesses", async () => {
-    await asFunded(async (emulator, blaze, addr) => {
+    await asFunded(async (emulator, blaze, addr, userUtxo) => {
       const seeded = {
         thresholdUtxo: scriptUtxo(
           "cc".repeat(32),
@@ -252,6 +252,7 @@ describe("buildBridgeThresholdTx", () => {
           {
             threshold: threshold.Script,
             ...seeded,
+            userUtxo,
             councilSigners,
             techAuthSigners,
             requirements: requirementsOf({ councilSigners, techAuthSigners }),
