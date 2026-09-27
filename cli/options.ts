@@ -9,6 +9,7 @@ import { ENVIRONMENTS, PROFILES, PROVIDERS } from "./config/network-mapping";
 import {
   FORMATS,
   parseNonNegativeInteger,
+  parseRpcUrl,
   parseTxHash,
   parseTxIndex,
 } from "./input";
@@ -81,6 +82,13 @@ export const useBuild = Options.boolean("use-build").pipe(
 export const format = Options.choice("format", FORMATS).pipe(
   Options.withDescription("Output format (default: table)"),
   Options.withDefault("table"),
+);
+
+/** --rpc: a Midnight node's JSON-RPC over HTTP. */
+export const rpc = parsedText("rpc", parseRpcUrl).pipe(
+  Options.withDescription(
+    "A Midnight node's JSON-RPC endpoint, e.g. http://localhost:9944",
+  ),
 );
 
 /** --output, -o: the directory the environment's files go under. */

@@ -194,6 +194,26 @@ export type Refusal =
       readonly next: bigint;
     }
   | {
+      readonly _tag: "MidnightBlockMissing";
+      readonly block: number;
+      readonly rpc: string;
+    }
+  | { readonly _tag: "NoBeefyJustification"; readonly block: number }
+  | {
+      readonly _tag: "ActivationNotFinal";
+      readonly activation: number;
+      readonly finalized: number;
+    }
+  | { readonly _tag: "MidnightNotMip"; readonly detail: string }
+  | {
+      readonly _tag: "BelowThreshold";
+      readonly signedSeats: number;
+      readonly seatCount: number;
+      readonly required: number;
+      readonly numerator: bigint;
+      readonly denominator: bigint;
+    }
+  | {
       readonly _tag: "AlreadyRegistered";
       readonly environment: string;
       readonly scripts: readonly {
@@ -301,6 +321,16 @@ const renderRefusal = (refusal: Refusal): string => {
       return `the bridge pool at ${refusal.address} holds ${refusal.lovelace} lovelace, no more than its minimum output of ${refusal.minimum}; top it up first (bridge-topup), or build the update without --funded`;
     case "FundedNotHandover":
       return `a funded update must be a handover (MIP rule 15): the leaf names set ${refusal.leafNext}, and the light client's next set is ${refusal.next}; build it without --funded`;
+    case "MidnightBlockMissing":
+      return `block ${refusal.block} is not on the chain of ${refusal.rpc}`;
+    case "NoBeefyJustification":
+      return `block ${refusal.block} has no BEEFY justification; BEEFY finalizes some blocks only, the first block of each session among them`;
+    case "ActivationNotFinal":
+      return `block ${refusal.activation} is not final yet (the finalized head is ${refusal.finalized}); the bootstrap reads final state only`;
+    case "MidnightNotMip":
+      return `the node's BEEFY data does not follow the MIP: ${refusal.detail}`;
+    case "BelowThreshold":
+      return `the justification's signers hold ${refusal.signedSeats} of ${refusal.seatCount} seats; the BEEFY threshold ${refusal.numerator}/${refusal.denominator} needs ${refusal.required}`;
     case "AlreadyRegistered":
       return `already registered on ${refusal.environment}: ${refusal.scripts
         .map(({ label, scriptHash }) => `${label} ${scriptHash}`)

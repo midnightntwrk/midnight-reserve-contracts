@@ -48,6 +48,13 @@ export const parseCommittee = (
       });
 };
 
+/** A committee as parseCommittee reads it: `<validator_set_id>:<seat_count>:<keyset_commitment>`. */
+export const committeeEnv = (committee: AuthoritySetCommitment): string =>
+  `${committee.validator_set_id}:${committee.seat_count}:${committee.keyset_commitment}`;
+
+/** A Midnight block number: a u32 from 1. */
+export const parseBlockNumber = integerIn(1n, U32_MAX);
+
 /** The four bootstrap values, each parsed. */
 export interface BootstrapValues {
   readonly activationBlock: bigint;

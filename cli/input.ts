@@ -63,6 +63,12 @@ export const parseScriptHash = (
 ): Either.Either<ScriptHash, string> =>
   Either.map(hexOfLength(56)(value), Brand.nominal<ScriptHash>());
 
+/** A Midnight node's JSON-RPC endpoint: an http or https URL; Left is the reason. */
+export const parseRpcUrl = (value: string): Either.Either<string, string> =>
+  /^https?:\/\/[^\s/]+/.test(value)
+    ? Either.right(value)
+    : Either.left(`'${value}' must be an http:// or https:// URL`);
+
 /** A command's environment. */
 export interface NetworkInput {
   readonly network: Environment;
