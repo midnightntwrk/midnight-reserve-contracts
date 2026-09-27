@@ -2,7 +2,11 @@
  * Chain providers: Blockfrost, Kupmios or an emulator, and a Blaze instance
  * over one.
  */
-import { Address, type TransactionUnspentOutput } from "@blaze-cardano/core";
+import {
+  Address,
+  type NetworkId,
+  type TransactionUnspentOutput,
+} from "@blaze-cardano/core";
 import {
   Blaze,
   ColdWallet,
@@ -29,9 +33,10 @@ import {
   environmentOf,
   publicNetworkOf,
 } from "../config/network-mapping";
-import { Settings } from "../config/settings";
+import { reservedRefs, Settings } from "../config/settings";
 import { BlockfrostUnavailable, ConfigError, ProviderError } from "../errors";
 import { BLOCKFROST_NETWORK, retryableStatus, retryRead } from "./blockfrost";
+import { refOf } from "./transaction";
 
 /** What a provider connects to: its type, and for Blockfrost the Cardano network, checked where the layer is built. */
 type Connection =
@@ -98,17 +103,28 @@ const connect = (
   }
 };
 
-/** A cold wallet whose coin selection never sees a UTxO that carries a reference script, so the bridge reference scripts at the deployer address stay unspent. */
-export class ReferenceSafeWallet extends ColdWallet {
+/** A cold wallet whose coin selection never sees a UTxO that carries a reference script (the bridge's at the deployer address) or that the profile reserves (reservedRefs: one-shots and collateral). */
+export class GuardedWallet extends ColdWallet {
+  constructor(
+    address: Address,
+    networkId: NetworkId,
+    provider: BlazeProvider,
+    private readonly reserved: ReadonlySet<string>,
+  ) {
+    super(address, networkId, provider);
+  }
+
   override async getUnspentOutputs(): Promise<TransactionUnspentOutput[]> {
     return (await super.getUnspentOutputs()).filter(
-      (utxo) => utxo.output().scriptRef() === undefined,
+      (utxo) =>
+        utxo.output().scriptRef() === undefined &&
+        !this.reserved.has(refOf(utxo.input())),
     );
   }
 }
 
 /** A Blaze instance over the provider with the deployer's cold wallet. */
-type DeployerBlaze = Blaze<BlazeProvider, ReferenceSafeWallet>;
+type DeployerBlaze = Blaze<BlazeProvider, GuardedWallet>;
 
 /** A chain provider; every call is an Effect failing with ProviderError. */
 export class Provider extends Context.Tag("cli/Provider")<
@@ -225,10 +241,11 @@ const providerService = (
         const config = yield* Settings;
         const deployerAddress = yield* config.deployerAddress;
         const { networkId } = environmentOf(environment);
-        const wallet = new ReferenceSafeWallet(
+        const wallet = new GuardedWallet(
           deployerAddress,
           networkId,
           provider,
+          reservedRefs(yield* config.profile),
         );
         return yield* providerCall("Blaze.from", () =>
           Blaze.from(provider, wallet),
