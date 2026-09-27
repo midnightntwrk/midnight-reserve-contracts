@@ -56,6 +56,9 @@ Flags that differ from what you might expect:
 | `register-gov-auth`, `register-cnight-mint-logic`, `stage-upgrade`, `promote-upgrade` | — | Check stake registration through Blockfrost whatever `--provider` is, so `BLOCKFROST_<NETWORK>_API_KEY` must be set. The register commands refuse a credential that is already registered. |
 | `bridge-update` | `--update <file>`, `--funded` | The file is a `BridgeUpdate` in JSON: the blueprint field names, integers as numbers, lower-case hex, the multiproof as the CBOR hex of its Data. `--funded` spends every pool UTxO with no datum hash and debits min(fee, cap, pool − its minimum output); a funded update that is no handover, or over a pool at or below its minimum output, is refused before any build. The deployer submits and pays the rest of the fee. |
 | `bridge-topup` | `--lovelace` | Pays the pool; unsigned, for `sign-and-submit`. |
+| `bridge-bootstrap` | `--rpc`, `--activation` | Reads the MIP bootstrap from a Midnight node's HTTP JSON-RPC (`http://host:9944`): the MMR root in the digest of block `activation − 1` and the committees `pallet-beefy-mmr` holds at `activation`. Prints the four `BRIDGE_*` bootstrap lines for `.env`. The activation block must be final. Needs no Cardano network. |
+| `bridge-verify-bootstrap` | `--rpc` | Diffs the deployed light client against its bootstrap recomputed from the node, and checks that the leaf of the activation block `b` is index `b − 1` of `b` (`mmr_generateProof`). Fails on any mismatch; true on a fresh deployment only, since each update moves the root and the height. |
+| `bridge-fetch-justification` | `--rpc`, `--block` | Writes the `BridgeUpdate` of block `--block`'s BEEFY justification to `<--output>/<env>/bridge-justification.json`, for `bridge-update --update`. Reads the threshold UTxO and keeps a minimal cover of its fraction (rule 6 rejects a surplus signer). A handover is the first block of a session; a block with no BEEFY justification is refused. |
 | `bridge-set-fee`, `bridge-set-threshold` | `--base`, `--per-signer` / `--threshold`, `--tx-hash`, `--tx-index`, `--no-sign` | Spend the BEEFY threshold under Council + Tech Auth, as the `change-*` commands do: the new fee cap keeps the fraction, the new fraction keeps the fee cap. |
 | `combine-signatures` | `--tx`, positional `<witness-file>...` | `--tx` holds exactly one transaction (for a deployment file use `sign-and-submit`); one or more witness files follow the options (a shell glob such as `<witness-dir>/*.json` works). Without `--no-sign-deployer` it also signs with `SIGNING_PRIVATE_KEY`. Submits. |
 
@@ -136,9 +139,11 @@ bun run cli change-terms --network <env> --tx-hash <h> --tx-index <i> --hash <do
 bun run cli sign-and-submit deployments/<env>/change-terms-tx.json --network <env>
 
 # === Phase 1b: Committee bridge (after the base; its own --components run) ===
-# Set BRIDGE_ACTIVATION_BLOCK, BRIDGE_MMR_ROOT, BRIDGE_CURRENT_COMMITTEE,
-# BRIDGE_NEXT_COMMITTEE, BRIDGE_MAX_FEE_BASE and BRIDGE_MAX_FEE_PER_SIGNER
-# (and BRIDGE_THRESHOLD, else 2/3) in .env; see .env.example.
+# Print the bootstrap lines from a Midnight node, then set BRIDGE_ACTIVATION_BLOCK,
+# BRIDGE_MMR_ROOT, BRIDGE_CURRENT_COMMITTEE, BRIDGE_NEXT_COMMITTEE,
+# BRIDGE_MAX_FEE_BASE and BRIDGE_MAX_FEE_PER_SIGNER (and BRIDGE_THRESHOLD, else 2/3)
+# in .env; see .env.example.
+bun run cli bridge-bootstrap --rpc http://<node>:9944 --activation <block>
 bun run cli simple-tx --network <env>
 bun run cli sign-and-submit deployments/<env>/simple-tx.json --network <env>
 # Update committee_bridge_one_shot_* and committee_threshold_one_shot_* in aiken.toml, then:
@@ -146,6 +151,13 @@ just build <env>
 bun run cli deploy --network <env> --components committee-bridge,committee-bridge-threshold,committee-bridge-scripts
 bun run cli sign-and-submit deployments/<env>/deployment-transactions.json --network <env>
 bun run cli bridge-info --network <env>
+bun run cli bridge-verify-bootstrap --network <env> --rpc http://<node>:9944
+bun run cli bridge-topup --network <env> --lovelace <amount>
+bun run cli sign-and-submit deployments/<env>/bridge-topup.json --network <env>
+# Each handover (the first block of each session, oldest first):
+bun run cli bridge-fetch-justification --network <env> --rpc http://<node>:9944 --block <block>
+bun run cli bridge-update --network <env> --funded --update deployments/<env>/bridge-justification.json
+bun run cli sign-and-submit deployments/<env>/bridge-update.json --network <env>
 
 # Test environments only (mint-tcnight refuses mainnet):
 bun run cli mint-tcnight --amount <amount> --user-address <addr> --network <env>
