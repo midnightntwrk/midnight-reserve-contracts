@@ -28,14 +28,22 @@ and six nodes built from `kc-beefy-mip-alignment` (`earthly +node-image`,
 preset mocks the main-chain follower). It needed two fixes, now two commits
 on `kc-beefy-mip-alignment` (`tytqkpmx`, `pzwqzunn`): the contract-compiler
 image's `libssl-dev` pin and postgres `max_connections` (120 against six
-nodes' pools of up to 37). Preview light client `2d0acfc0` (one-shot tx `31726abb`),
-bootstrapped at block 38: `bridge-verify-bootstrap` passed, then 27 funded
-handovers (sets 8–34) from real justifications, across a `change-federated-ops`
-removal of one candidate (set 31: four keys, one with two seats). An earlier
-light client on a `dev` node (`14fe24a5`, blocks 290 and 590) took two.
-Findings: overview.md "What the node must emit". Seen once: the deploy's
-coin selection spent the bridge one-shots (the third transaction failed;
-`--components committee-bridge-scripts` again).
+nodes' pools of up to 37).
+
+Final run, on the stack `just private-net-up` started: preview light client
+`5a6a581f` (one-shot tx `ce471313`), bootstrapped at block 560 (sets 112 and
+113); `bridge-verify-bootstrap` passed; 28 funded handovers (sets 113–140)
+from real justifications, across a `change-federated-ops` removal of one
+candidate on the devnet (`76e08ca4`): set 137 has four keys, one with two
+seats, and its own justification (3 of 4 keys, 4 of 5 seats) was accepted.
+Earlier runs: light client `2d0acfc0` (`31726abb`) on the same stack started
+by hand, 27 handovers (sets 8–34) across the same change at set 31; and
+`14fe24a5` on a `dev` node (mocked follower), two handovers.
+Findings: overview.md "What the node must emit". On both local-env deploys
+the third transaction (`committee-bridge-scripts`) failed: its coin selection
+took the two one-shots and the collateral of the `simple-tx` the runbook
+makes (`ce471313#0`, `#1`, `#2`), which the first two transactions spend;
+`deploy --components committee-bridge-scripts` again landed it.
 
 ## Tasks
 

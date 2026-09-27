@@ -96,17 +96,18 @@ Phase 07 soak (2026-09-27): the node repo's `local-environment` `local-env`
 stack (local Cardano devnet, db-sync, six nodes built from
 `kc-beefy-mip-alignment`, nothing mocked), sessions of 30 s (`slotsPerEpoch`
 5, set by its setup), D-parameter (5, 0) over five permissioned candidates.
-A preview light client bootstrapped from it at block 38 (sets 7 and 8) took
-27 funded handovers from real justifications (sets 8 to 34). A
-`change-federated-ops` transaction on the devnet removed one candidate: set 31
+A preview light client bootstrapped from it at block 560 (sets 112 and 113)
+took 28 funded handovers from real justifications (sets 113 to 140). A
+`change-federated-ops` transaction on the devnet removed one candidate: set 137
 has four keys, one of them with two seats, and the bridge handed over to it
-and accepted its signatures. What the node emitted, against the MIP:
+and accepted its signatures. An earlier light client on the same stack took
+27 handovers across the same change. What the node emitted, against the MIP:
 - Justifications carry one 65-byte recoverable signature per seat (a key with
   two seats signs twice, the same bytes); `bridge-fetch-justification` sums the
   seats per key and drops the recovery byte.
 - Most sessions' justifications held 4 of 5 seats, so the update reveals only
-  the signers' leaves; at set 33 all five seats signed, and the update kept a
-  minimal cover of four (the 2-seat key and two others).
+  the signers' leaves; in the earlier run all five seats signed set 33, and
+  the update kept a minimal cover of four (the 2-seat key and two others).
 - The leaf of block `b` is index `b − 1` of `b` in `mmr_generateProof`, and
   the leaf of a session's first block names the next set.
 - The local-env stack of `lglo/beefy-on-main` does not run as checked in:
