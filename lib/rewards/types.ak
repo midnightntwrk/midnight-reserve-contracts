@@ -86,12 +86,12 @@ pub type ExitInfo {
   pred_output_index: Int,
 }
 
-/// Positional MMR proof of a BEEFY leaf, the SCALE header it commits to, and
-/// the `extrinsics_root` trie proof of the rewards extrinsic in that block.
+/// MMR proof of a BEEFY leaf, the SCALE header it commits to, and the
+/// `extrinsics_root` trie proof of the rewards extrinsic in that block. The
+/// leaf index is the leaf's `parent_number`; the leaf count is the bridge's
+/// `latest_height` (bridge spec §13).
 pub type DigestProof {
   leaf: BeefyMmrLeaf,
-  leaf_index: Int,
-  leaf_count: Int,
   items: List<ByteArray>,
   header: ByteArray,
   extrinsic_index: Int,

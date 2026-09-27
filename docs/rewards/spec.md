@@ -484,8 +484,9 @@ root, min_key, max_key, treasury_total }`, committed by the block header's
 1. MMR leaf for block `N + 1` (`BeefyMmrLeaf`, SCALE via
    `bridge/codec.scale_encode_beefy_mmr_leaf`) carries
    `parent_number == N` and `parent_hash == blake2b_256(header_N)`.
-2. Positional MMR inclusion proof of that leaf against `latest_mmr_root`
-   (`lib/rewards/mmr.ak`).
+2. MMR inclusion proof of that leaf at index `parent_number` against
+   `latest_mmr_root` with leaf count `latest_height`, both read from the
+   bridge datum (`bridge/merkle.verify_mmr_leaf`, bridge spec §13).
 3. `header_N` supplied as raw SCALE bytes; `blake2b_256(header_N) == parent_hash`,
    `number == parent_number`; `extrinsics_root` read at a fixed offset.
 4. Trie inclusion proof (`lib/rewards/trie.ak`, Substrate `LayoutV1`,
@@ -496,16 +497,14 @@ root, min_key, max_key, treasury_total }`, committed by the block header's
 
 ```aiken
 pub type DigestProof {
-  leaf: BeefyMmrLeaf,
-  leaf_index: Int,
-  leaf_count: Int,
+  leaf: BeefyMmrLeaf,             // index = parent_number; count = the bridge's latest_height
   items: List<ByteArray>,         // MMR proof items (siblings + peaks) per sp_mmr_primitives::Proof
   header: ByteArray,              // SCALE header of block N
   extrinsic_index: Int,           // position of the rewards extrinsic in block N
   trie_nodes: List<ByteArray>,    // hash-referenced trie nodes, root first
   extrinsic: ByteArray,           // the extrinsic bytes as noted by frame_system
 }
-pub fn verify_digest(mmr_root: ByteArray, proof: DigestProof) -> Digest
+pub fn verify_digest(mmr_root: ByteArray, latest_height: Int, proof: DigestProof) -> Digest
 ```
 
 MMR verification, header, trie and extrinsic layouts: see §7.1.
@@ -537,25 +536,18 @@ peaks(mmr_size)          : left-to-right positions from the binary decomposition
 remaining items          = hashes of the other peaks, left-to-right, our climbed hash in its slot
 bag right-to-left        : acc = rightmost; acc = H(acc || next_left_peak) ...; root = acc
 ```
-Reject `leaf_count` whose `mmr_size` is not a valid MMR size, and
-`leaf_index ≥ leaf_count`. The existing `bridge/merkle.calculate_mmr_root`
-is the lone-peak special case (`foldr` with `H(acc || item)`, correct only
-when `leaf_count` is odd, which holds for both golden vectors: 553 and 601).
-Midnight sessions have no fixed block parity (slot-based epochs, deferred
-rollovers, BEEFY `min_block_delta = 8`), so the bridge is expected to stall
-at the first even-numbered mandatory block. Decision: the rewards verifier
-(`lib/rewards/mmr.ak`) is positional and must reproduce the bridge result
-for the odd case; the bridge swaps to it, and binds
-`leaf.parent_number + 1 == commitment.block_number`, in its own reviewed
-change after phase 03, followed by re-audit. Done in commit `6b5bf68a0b89`,
-self-contained in the bridge: `merkle.verify_mmr_leaf` takes
-`leaf_count = block_number` and walks the items by count: `popcount − 1`
-peaks bagged as before, then `trailing_zeros(leaf_count)` climb siblings
-folded `H(sibling || acc)`, then the list must be empty.
-`beefy.verify_latest_leaf` binds `parent_number + 1 == block_number`.
-Tests in `bridge/latest_leaf.test.ak`. `leaf_count = block_number`
-assumes the MMR starts at block 1; both golden vectors are consistent
-only with that offset (brief question 5).
+The count is the bridge datum's `latest_height` and the index is the
+leaf's `parent_number`; the redeemer supplies neither. A count from the
+redeemer is unsafe: two counts that put the leaf under the same peak with
+the same peaks to its right give the same root (leaf 99 verifies with
+count 336 against the root of 335 leaves). The walk is the MIP bridge's
+`bridge/merkle.verify_mmr_leaf` (the index-and-count walk of bridge rule
+8), which rejects `leaf_index ≥ leaf_count` and requires every item to be
+consumed. The MMR starts at block 1: block `b` adds leaf `b − 1`, and the
+root at `latest_height` has `latest_height` leaves. Checked on a
+local-env node: 20 `mmr_generateProof` proofs at six heights (one peak,
+many peaks, the latest leaf) verify against `mmr_root` and the `mh`
+payload of the BEEFY justification.
 
 **BEEFY MMR leaf**: `version: u8` (major << 5 | minor), `parent_number_and_hash: (BlockNumber u32 LE, H256)`,
 `beefy_next_authority_set { id: u64, len: u32, keyset_commitment: H256 }`,
@@ -824,7 +816,7 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 | SPO renewal field | out of scope now |
 | Multi-partner-chain | one deployment per chain |
 | Uncompensated load/release | accepted; batchers use `LoadAndPay` |
-| Bridge MMR fold parity | rewards use a positional verifier; bridge fold fixed in `6b5bf68a0b89`; pending bridge re-audit |
+| Bridge MMR walk | the digest proof uses the MIP bridge's `merkle.verify_mmr_leaf`, count `latest_height`, index `parent_number`; the rewards copy of the walk is gone |
 | Mainnet reserve datum | unit constructor; first release migrates by field count |
 | Digest payload | call args `epoch u64, leaf_count u64, root [u8;32], min_key [u8;28], max_key [u8;28], treasury_total u128` (120 bytes; was 104 before 2026-09-16); empty epoch = `leaf_count 0`, zero root |
 | Leaf amount | fixed `u128` big-endian, leaf 45 bytes; 1 unit = 1 cNIGHT token unit = 1 STAR |
@@ -863,7 +855,7 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 |---|---|
 | MMR proof walked by leaf index (peaks from the binary digits of `leaf_count`, left/right from the bits of the leaf's offset) instead of node positions; positional form kept as the test oracle | same root on every case tested; positional cost 8.76 M mem at one million leaves, index walk 0.43 M |
 | Right peaks consume exactly one item (the prover bags two or more into one; a single right peak is its plain hash); every item must be consumed | matches `polkadot-ckb-merkle-mountain-range` 0.8.2 `gen_proof` / `calculate_peaks_hashes` |
-| No `mmr_size` validity check | `leaf_count` is the input; `2n − popcount(n)` is always a valid size |
+| No `mmr_size` validity check | the count is the bridge's `latest_height`; `2n − popcount(n)` is always a valid size |
 | `header_number` parsed and bound to `leaf.parent_number` | cheap; closes the header/leaf link both ways |
 | Unknown digest tags fail even while skipping | a parser that skips what it cannot measure would desynchronise |
 

@@ -15,7 +15,10 @@ use rewards/types.{Digest, DigestProof}
 
 pub const rewards_index = 1
 
-/// `(mmr_root, proof)` such that `verify_digest(mmr_root, proof) == digest`.
+/// The bridge's `latest_height` for `digest_proof`: its MMR has six leaves.
+pub const latest_height = 6
+
+/// `(mmr_root, proof)` such that `verify_digest(mmr_root, latest_height, proof) == digest`.
 pub fn digest_proof(digest: Digest) -> (ByteArray, DigestProof) {
   let n = 4
   let extrinsics = block_extrinsics(digest)
@@ -47,8 +50,6 @@ pub fn digest_proof(digest: Digest) -> (ByteArray, DigestProof) {
     mmr_root,
     DigestProof {
       leaf,
-      leaf_index: 4,
-      leaf_count: 6,
       items: [n6, other(5)],
       header: h,
       extrinsic_index: rewards_index,

@@ -1,5 +1,6 @@
-//// Rewards digest proof from the bridge (spec §7, §7.1): a positional MMR
-//// proof of the BEEFY leaf for block `N + 1`, the SCALE header of block
+//// Rewards digest proof from the bridge (spec §7, §7.1; bridge spec §13):
+//// an MMR proof of the BEEFY leaf for block `N + 1` (leaf index `N`) under
+//// the bridge's root of `latest_height` leaves, the SCALE header of block
 //// `N`, and the `extrinsics_root` trie proof of the `submit_rewards_digest`
 //// extrinsic in block `N`.
 ////
@@ -12,8 +13,8 @@
 
 use aiken/builtin
 use bridge/codec.{scale_encode_beefy_mmr_leaf}
+use bridge/merkle.{verify_mmr_leaf}
 use config
-use rewards/mmr.{verify_leaf}
 use rewards/scale.{compact, compact_encode, le}
 use rewards/trie
 use rewards/types.{Digest, DigestProof}
@@ -56,13 +57,14 @@ pub fn parse_rewards_call(extrinsic: ByteArray) -> Digest {
   }
 }
 
-/// Prove the leaf against `mmr_root`, bind the header to the leaf, prove
-/// the extrinsic under `extrinsics_root`, and decode the rewards digest.
-pub fn verify_digest(mmr_root: ByteArray, proof: DigestProof) -> Digest {
+/// Prove the leaf at index `parent_number` under the bridge's root of `latest_height` leaves, bind the header to it, prove the extrinsic, and decode the digest.
+pub fn verify_digest(
+  mmr_root: ByteArray,
+  latest_height: Int,
+  proof: DigestProof,
+) -> Digest {
   let DigestProof {
     leaf,
-    leaf_index,
-    leaf_count,
     items,
     header,
     extrinsic_index,
@@ -70,7 +72,14 @@ pub fn verify_digest(mmr_root: ByteArray, proof: DigestProof) -> Digest {
     extrinsic,
   } = proof
   let leaf_hash = scale_encode_beefy_mmr_leaf(leaf) |> builtin.keccak_256
-  expect verify_leaf(mmr_root, leaf_hash, leaf_index, leaf_count, items)
+  expect
+    verify_mmr_leaf(
+      mmr_root,
+      leaf_hash,
+      leaf.parent_number,
+      latest_height,
+      items,
+    )
   expect header_hash(header) == leaf.parent_hash
   expect header_number(header) == leaf.parent_number
   expect
