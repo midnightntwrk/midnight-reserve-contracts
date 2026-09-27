@@ -1,9 +1,10 @@
 /**
  * SCALE encodings the bridge verifies: the 48-byte signed commitment, the
- * 82-byte MMR leaf and the 37-byte authority leaf. Fixed-width fields
+ * 82-byte MMR leaf. Fixed-width fields
  * concatenated without delimiters; the 32/33-byte checks make them injective.
  */
 import { concatBytes, hexToBytes } from "@noble/hashes/utils.js";
+import { u32le } from "../../../cli/bridge/scale";
 
 export type Commitment = {
   validatorSetId: bigint;
@@ -23,14 +24,6 @@ const COMMITMENT_PREFIX = hexToBytes("046d6880");
 
 export function hash32(b: Uint8Array): Uint8Array {
   if (b.length !== 32) throw new Error(`expected 32 bytes, got ${b.length}`);
-  return b;
-}
-
-export function u32le(n: number): Uint8Array {
-  if (!Number.isInteger(n) || n < 0 || n > 0xffff_ffff)
-    throw new Error(`not a u32: ${n}`);
-  const b = new Uint8Array(4);
-  new DataView(b.buffer).setUint32(0, n, true);
   return b;
 }
 
@@ -67,11 +60,4 @@ export function encodeLeaf(leaf: MmrLeaf): Uint8Array {
     hash32(keysetCommitment),
     new Uint8Array([0]),
   );
-}
-
-/** `key (33) ‖ seats (u32 LE)`. */
-export function authorityLeaf(key: Uint8Array, seats: number): Uint8Array {
-  if (key.length !== 33)
-    throw new Error(`expected a 33-byte key, got ${key.length}`);
-  return concatBytes(key, u32le(seats));
 }

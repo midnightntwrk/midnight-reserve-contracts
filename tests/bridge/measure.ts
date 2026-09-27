@@ -34,7 +34,7 @@ import {
   scriptUtxo,
   upgradeState,
 } from "../helpers/fixtures";
-import { required } from "./reference/commitment";
+import { required } from "../../cli/bridge/authority-set";
 import {
   bootstrapOf,
   committeeOf,

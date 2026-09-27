@@ -8,11 +8,15 @@ import type {
   BridgeUpdate,
   BeefyConsensusState,
 } from "../../../contract_blueprint";
-import { committeeCommitment, required } from "./commitment";
+import {
+  buildMultiproof,
+  required,
+  toPlutusData,
+} from "../../../cli/bridge/authority-set";
+import { keccak } from "../../../cli/bridge/keccak";
+import { committeeCommitment } from "./commitment";
 import { dummyLeafHash, parentHash } from "./fixtures";
-import { keccak } from "./keccak";
 import { Mmr } from "./mmr";
-import { buildMultiproof, toPlutusData } from "./multiproof";
 import {
   type Commitment,
   encodeCommitment,

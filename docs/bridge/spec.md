@@ -324,11 +324,13 @@ state).
 `tests/bridge/reference/` is an independent TypeScript implementation of
 every encoding and proof the contract verifies (`@noble/curves`,
 `@noble/hashes`): SCALE bytes (`scale.ts`), `merkle_root` layering
-(`keccak.ts`), the five-shape multiproof (`multiproof.ts`), the `mmr-lib`
+(`keccak.ts`), the multiproof walk (`multiproof.ts`), the `mmr-lib`
 0.8.2 MMR with `gen_proof` item order and the index-walk verifier
-(`mmr.ts`), the deduplicated committee commitment and `required`
-(`commitment.ts`), low-S signing (`sign.ts`), and `BridgeUpdate` /
-`BeefyConsensusState` as blueprint types (`update.ts`).
+(`mmr.ts`), the deduplicated committee commitment (`commitment.ts`),
+low-S signing (`sign.ts`), and `BridgeUpdate` / `BeefyConsensusState` as
+blueprint types (`update.ts`). The parts the CLI also uses live in
+`cli/bridge/`: Keccak-256 (`keccak.ts`), and the authority leaf,
+`required` and the five-shape multiproof builder (`authority-set.ts`).
 
 `bun tests/bridge/generate.ts` writes the MIP §Test vectors to
 `tests/vectors/bridge/*.json` (commitment, signed bytes, leaf, quorum,

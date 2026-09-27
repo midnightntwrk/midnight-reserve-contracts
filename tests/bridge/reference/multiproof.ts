@@ -1,62 +1,9 @@
-/**
- * Authority-set multiproof: the five node shapes `lib/bridge/merkle.ak`
- * walks (`[leaf]`, `[leaf, leaf]`, `[hash, tree]`, `[tree, hash]`,
- * `[tree, tree]`). A signer's leaf appears raw, everything else as a hash.
- * The tree is split at the largest power of two below the size, which is the
- * shape `binary_merkle_tree::merkle_root` produces.
- */
-import { PlutusData, PlutusList } from "@blaze-cardano/core";
+/** The Aiken multiproof walk ported to TypeScript, and the multiproof as JSON. */
 import { bytesToHex } from "@noble/hashes/utils.js";
-import { keccak, merge } from "./keccak";
-
-export type ProofNode = Uint8Array | ProofNode[];
+import type { ProofNode } from "../../../cli/bridge/authority-set";
+import { keccak, merge } from "../../../cli/bridge/keccak";
 
 type ProofNodeJson = string | ProofNodeJson[];
-
-type Built = {
-  node: ProofNode;
-  hash: Uint8Array;
-  kind: "hashed" | "leaf" | "tree";
-};
-
-function pow2Below(n: number): number {
-  let a = 1;
-  while (a * 2 < n) a *= 2;
-  return a;
-}
-
-function build(
-  leaves: readonly Uint8Array[],
-  signers: ReadonlySet<number>,
-  offset: number,
-): Built {
-  if (leaves.length === 1) {
-    const leaf = leaves[0];
-    const hash = keccak(leaf);
-    return signers.has(offset)
-      ? { node: leaf, hash, kind: "leaf" }
-      : { node: hash, hash, kind: "hashed" };
-  }
-  const k = pow2Below(leaves.length);
-  const left = build(leaves.slice(0, k), signers, offset);
-  const right = build(leaves.slice(k), signers, offset + k);
-  const hash = merge(left.hash, right.hash);
-  if (left.kind === "hashed" && right.kind === "hashed")
-    return { node: hash, hash, kind: "hashed" };
-  const wrap = (b: Built, other: Built): ProofNode =>
-    b.kind === "leaf" && other.kind !== "leaf" ? [b.node] : b.node;
-  return { node: [wrap(left, right), wrap(right, left)], hash, kind: "tree" };
-}
-
-/** Multiproof over `leaves` (tree order) revealing the leaves at `signers`; at least one signer. */
-export function buildMultiproof(
-  leaves: readonly Uint8Array[],
-  signers: ReadonlySet<number>,
-): ProofNode {
-  if (signers.size === 0) throw new Error("a multiproof needs a signer");
-  const root = build(leaves, signers, 0);
-  return root.kind === "leaf" ? [root.node] : root.node;
-}
 
 /** Port of the Aiken walk: root hash and revealed leaves in tree order. */
 export function walkMultiproof(node: ProofNode): {
@@ -85,13 +32,6 @@ export function walkMultiproof(node: ProofNode): {
     return merge(keccak(a), keccak(b));
   };
   return { root: go(node), leaves };
-}
-
-export function toPlutusData(node: ProofNode): PlutusData {
-  if (!Array.isArray(node)) return PlutusData.newBytes(node);
-  const list = new PlutusList();
-  for (const child of node) list.add(toPlutusData(child));
-  return PlutusData.newList(list);
 }
 
 export function toJson(node: ProofNode): ProofNodeJson {

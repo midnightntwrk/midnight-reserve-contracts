@@ -6,7 +6,10 @@ import type {
   BridgeUpdate,
 } from "../../../contract_blueprint";
 import { committee, type Scenario } from "./fixtures";
-import { buildMultiproof, toPlutusData } from "./multiproof";
+import {
+  buildMultiproof,
+  toPlutusData,
+} from "../../../cli/bridge/authority-set";
 import type { Commitment } from "./scale";
 
 export const hex = bytesToHex;

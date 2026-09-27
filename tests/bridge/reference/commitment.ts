@@ -1,6 +1,8 @@
-/** Committee commitment (MIP): deduplicated, key-sorted authority leaves; `required` quorum. */
-import { keccak, merkleRoot } from "./keccak";
-import { authorityLeaf, type Commitment } from "./scale";
+/** Committee commitment (MIP): deduplicated, key-sorted authority leaves. */
+import { authorityLeaf } from "../../../cli/bridge/authority-set";
+import { keccak } from "../../../cli/bridge/keccak";
+import { merkleRoot } from "./keccak";
+import type { Commitment } from "./scale";
 
 export type Member = { key: Uint8Array; seats: number };
 
@@ -28,16 +30,4 @@ export function committeeCommitment(
     },
     leaves,
   };
-}
-
-/** Seats a quorum needs: `seat_count − ⌊(seat_count − 1)(d − n) / d⌋`. */
-export function required(
-  seatCount: number,
-  numerator: number,
-  denominator: number,
-): number {
-  return (
-    seatCount -
-    Math.floor(((seatCount - 1) * (denominator - numerator)) / denominator)
-  );
 }

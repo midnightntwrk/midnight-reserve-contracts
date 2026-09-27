@@ -1,11 +1,5 @@
-/** Keccak-256 helpers and the `binary_merkle_tree::merkle_root` layering. */
-import { keccak_256 } from "@noble/hashes/sha3.js";
-import { concatBytes } from "@noble/hashes/utils.js";
-
-export const keccak = (b: Uint8Array): Uint8Array => keccak_256(b);
-
-export const merge = (l: Uint8Array, r: Uint8Array): Uint8Array =>
-  keccak(concatBytes(l, r));
+/** The `binary_merkle_tree::merkle_root` layering. */
+import { merge } from "../../../cli/bridge/keccak";
 
 /** Pair each layer left to right; an unpaired last node is promoted unchanged. */
 export function merkleRoot(hashes: readonly Uint8Array[]): Uint8Array {

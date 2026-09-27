@@ -6,12 +6,12 @@
  */
 import { concatBytes } from "@noble/hashes/utils.js";
 import { committeeCommitment, type Member } from "./commitment";
-import { keccak } from "./keccak";
+import { keccak } from "../../../cli/bridge/keccak";
+import { u32le } from "../../../cli/bridge/scale";
 import { Mmr } from "./mmr";
 import {
   encodeCommitment,
   encodeLeaf,
-  u32le,
   type Commitment,
   type MmrLeaf,
 } from "./scale";

@@ -6,7 +6,7 @@
  * leaf's peak, the climb siblings bottom-up, then one bagged item for the
  * right peaks when any exist.
  */
-import { merge } from "./keccak";
+import { merge } from "../../../cli/bridge/keccak";
 
 /** Peak sizes by descending height: the set bits of `count`. */
 function peakSizes(count: number): number[] {
