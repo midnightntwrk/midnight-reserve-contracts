@@ -3,8 +3,9 @@
  * --update schema in `cli/datum/bridge.ts`), built (never submitted) and
  * written unsigned for the deployer, who submits it and pays the fee. With
  * --funded, a handover spends every pool UTxO and the pool pays the fee up
- * to the cap: a first build with no debit measures the fee, the second
- * debits min(fee, cap) and keeps the fee at least that (rule 16).
+ * to the cap, keeping its minimum output: a first build with no debit
+ * measures the fee, the second debits that and keeps the fee at least the
+ * debit (rule 16).
  */
 import {
   addressFromValidator,
@@ -32,6 +33,8 @@ import {
   type BridgeUpdateInputs,
   buildBridgeUpdateTx,
   type PoolFunding,
+  poolDebit,
+  poolMinimum,
 } from "./bridge-tx";
 
 /** The update file, whether the pool pays, and where the transaction goes. */
@@ -88,12 +91,22 @@ export const bridgeUpdateProgram = (input: BridgeUpdateInput) =>
         },
       });
     }
-    if (funded && utxos.pool.length === 0) {
+    const { coinsPerUtxoByte } = yield* Effect.flatMap(Provider, (p) =>
+      p.use("getParameters", (params) => params.getParameters()),
+    );
+    const poolIn = utxos.pool.reduce(
+      (sum, utxo) => sum + utxo.output().amount().coin(),
+      0n,
+    );
+    const minimum = poolMinimum(scripts.pool, networkId, coinsPerUtxoByte);
+    if (funded && poolIn <= minimum) {
       return yield* new PreconditionFailed({
         command: "bridge-update",
         refusal: {
           _tag: "PoolEmpty",
           address: addressFromValidator(networkId, scripts.pool).toBech32(),
+          lovelace: poolIn,
+          minimum,
         },
       });
     }
@@ -151,9 +164,9 @@ export const bridgeUpdateProgram = (input: BridgeUpdateInput) =>
           const threshold = yield* beefyThresholdAt(utxos.threshold);
           const fee = measured.body().fee();
           const cap = threshold.base + threshold.per_signer * BigInt(signers);
-          const debit = fee < cap ? fee : cap;
+          const debit = poolDebit(fee, cap, poolIn, minimum);
           yield* out.log(
-            `Pool: pays ${debit} lovelace (measured fee ${fee}, cap ${cap}) from ${utxos.pool.length} UTxO(s)`,
+            `Pool: pays ${debit} lovelace (measured fee ${fee}, cap ${cap}, ${poolIn} lovelace in ${utxos.pool.length} UTxO(s), minimum output ${minimum})`,
           );
           // The local UPLC phase evaluates a draft at fee 0, below the debit: rule 16 fails it.
           return yield* build(Option.some({ poolUtxos: utxos.pool, debit }));
