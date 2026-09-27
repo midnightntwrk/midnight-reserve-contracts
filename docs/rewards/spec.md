@@ -55,8 +55,7 @@ Libraries:
 | `lib/rewards/digest.ak` | MMR positional proof + SCALE header parse + digest extraction (§7) |
 | `lib/rewards/batch.ak` | batcher withdraw logic (§5) |
 | `lib/rewards/fee_schedule.ak` | `FeeSchedule` datum, `max_skim` lookup, schedule-update proof (§4.6; not yet built) |
-| `lib/rewards/schedule.ak` | emission math (§8) |
-| `lib/rewards/release.ak` | reserve v2 release + merge (§8) |
+| `lib/rewards/release.ak` | reserve v2 merge, release and pool ceiling (§8) |
 | `lib/rewards/auth.ak` | `stake_auth(cred, extra_signatories, withdrawals)` |
 
 ---
@@ -609,9 +608,10 @@ max@81, treasury_total@109. Any other length, preamble or index fails.
 
 ## 8. Reserve v2 release to the pool ceiling
 
-`reserve_logic_v2` is rewritten (the current file was a test stub). It keeps
-the v2 main/staging track switch (`logic_is_on_main`, `StagingState` NFT
-one-shot mint) and adds the release path.
+`reserve_logic_v2` (`validators/reserve_v2.ak`, logic in
+`lib/rewards/release.ak`) replaces the always-true stub. It keeps the v2
+main/staging track switch (`logic_is_on_main`, staging-state NFT one-shot
+mint) and adds the release path.
 
 ### 8.1 Redeemer and datum
 
@@ -622,7 +622,8 @@ pub type ReleaseState {              // inline datum on the reserve forever NFT 
   last_release_time: Int,            // ms POSIX, start of the last released interval
 }
 
-pub type StagingStateV2 {            // lib/rewards/types.ak; replaces StagingState for this logic
+@list
+pub type StagingStateV2 {            // lib/rewards/types.ak; replaces StagingState for this logic; mint-staging-state writes it
   cnight_test_policy: PolicyId,
   forever_script_hash: PolicyId,     // staging reserve forever
   pool_forever_hash: PolicyId,       // staging pool forever
@@ -649,10 +650,11 @@ at least the next interval's need.
 2. `now = validity_range.lower_bound` (finite, inclusive). `intervals ≥ 1`
    and `last_release_time + intervals × interval_ms ≤ now`. Partial catch-up
    is allowed (`intervals` may be less than elapsed); fully permissionless.
-3. First release: the mainnet reserve NFT UTXO datum is the unit
-   constructor (`Constr 0 []`). If the datum's constructor has no fields,
-   treat it as `{ last_release_time: release_t0_ms }`; otherwise decode
-   `ReleaseState` (`Constr 0 [Int]`).
+3. First release: deploy puts `Constr 0 [0, 0]` on the reserve NFT
+   (`ZERO_FOREVER_DATUM`; mainnet `reserve-deployment` holds `d8799f0000ff`).
+   Two fields mean no release yet: `last_release_time = release_t0_ms`. One
+   field is `ReleaseState`. Anything else fails. Midnight's
+   reserve observation reads only amounts, so the datum change is safe.
 4. `ceiling` over `intervals` catch-up steps, each a ceiling division on
    what the previous step left: `c := 0; repeat intervals: c += ((reserve − c) × num + den − 1) / den`.
    `last_release_time' = last_release_time + intervals × interval_ms`.
@@ -788,19 +790,17 @@ rewards_batcher_hash, virtual_account_hash                (derived by build)
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 rewards_fee_schedule_one_shot_{hash,index}, rewards_fee_schedule_hash   (not yet built; replaces batcher_skim_max_lovelace)
-release_t0_ms, release_interval_ms, release_factor_num, release_factor_den   (factor replaces initial_amount / decay_*; not yet built)
+release_t0_ms, release_interval_ms, release_factor_num, release_factor_den
 ics_forever_hash                                          (Treasury output target; existing ICS deployment)
 rewards_pallet_index, rewards_call_index                 (# TBD node team; pallet_block_rewards, submit_rewards_digest)
 fee_schedule_pallet_index, fee_schedule_call_index       (# TBD node team; submit_fee_schedule)
 ```
-As built through phase 04 the profiles still carry `batcher_skim_max_lovelace`
-and `release_initial_amount` / `release_decay_*`; they go with the
-fee-schedule and ceiling phases.
-As built (phase 00): every profile carries all keys. Non-mainnet profiles
-use test values (`release_interval_ms = 60_000`, `release_initial_amount = 1_000_000`,
-decay `999/1000`, `t0 = 0`). `mainnet` carries `# TBD` placeholders
-(`interval 7_200_000`, `initial_amount 0` — a release of 0 until tokenomics
-lands). Derived hashes are written back by the build (phase 04): `rewards_pool_*`
+The profiles still carry `batcher_skim_max_lovelace`; it goes with the
+fee-schedule phase. Test profiles use `release_interval_ms = 60_000` with
+the factor for ten 6-second slots (`159_817_340_105 / 10^18`, the §8.1
+rate); `preprod` and `mainnet` carry the §8.1 six-hour vector, `# TBD`.
+Every profile carries all keys; `release_t0_ms = 0` until a deployment
+sets it. Derived hashes are written back by the build (phase 04): `rewards_pool_*`
 with the two-stage / forever phases, `rewards_batcher_hash` and
 `virtual_account_hash` after the threshold phase, before the final compile.
 
@@ -891,5 +891,5 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 | Skim cap is `max_skim[n_paid]` from a fee schedule UTXO (§4.6), no fee-share term; every input/output pair, the batcher's own included, has `ADA_out ≤ ADA_in` | the tx creator sets the fee; a per-size cap set by Midnight bounds drain per deposit, and the pair rule keeps the batcher from gaining ADA while letting it pay the shortfall of a small batch |
 | Distribution fee `dist_fee` deducted from a leaf's NIGHT when `amount ≥ min_payout`, left in the batcher's pair | cost recovery alone gave no reason to fold or to batch large; flat per leaf, checked on chain, no exchange rate |
 | Digest gains `treasury_total`; the completing batch pays it to the ICS (built 2026-09-27: 125-byte extrinsic, `BatcherState.treasury_total`, ICS output check) | the Treasury share must leave the pool, and the digest has to commit it or a batch could omit the output |
-| Reserve release fills the pool to `reserve × (1 − (1 − R)^N)` (factor `num/den`, rounded up), net of the pool balance | the geometric placeholder is gone; the ceiling follows the published rate from the live reserve and holds exposure to one interval |
+| Reserve release fills the pool to `reserve × (1 − (1 − R)^N)` (factor `num/den`, rounded up), net of the pool balance (built 2026-09-27 in `reserve_logic_v2`) | the geometric placeholder is gone; the ceiling follows the published rate from the live reserve and holds exposure to one interval |
 | Interval six hours | per the committee bridge MIP's epoch length |
