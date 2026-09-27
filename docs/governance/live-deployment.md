@@ -18,8 +18,10 @@ Of the 15 main keys, `deploy` reads 12: `technical_authority`, `main_tech_auth_u
 `council`, `main_council_update`, `reserve`, `ics`, `main_gov`, `staging_gov`,
 `federated_operators`, `main_federated_ops_update`, `terms_and_conditions` and
 `terms_and_conditions_threshold` (each `<name>_one_shot_hash` / `_index`). No command reads
-`cnight_minting_one_shot_*` (`deploy-cnight-minting` was deleted). The future bridge components
-of `deploy` read `committee_bridge_one_shot_*` and `committee_threshold_one_shot_*`.
+`cnight_minting_one_shot_*` (`deploy-cnight-minting` was deleted). The bridge components
+of `deploy` read `committee_bridge_one_shot_*` (`committee-bridge`) and
+`committee_threshold_one_shot_*` (`committee-bridge-threshold`); `committee-bridge-scripts`
+spends no one-shot.
 
 `deploy-staging-track` reads only the six `*_staging_one_shot_*` keys
 (`cli/deploy/staging-track.ts`). The `*_logic_v2_one_shot_*` keys belong to the 3rd run:
@@ -47,11 +49,14 @@ Flags that differ from what you might expect:
 | `change-terms` | `--hash`, `--url` | `--hash` is the T&C document hash (64 hex chars); `--url` is plain text (auto-converted to hex for on-chain storage) |
 | `mint-staging-state`, `stage-upgrade`, `promote-upgrade` | `--validator <name>` | Required. E.g. `--validator council`, `--validator federated-ops` |
 | `stage-upgrade`, `promote-upgrade`, `migrate-federated-ops`, `merge-utxos`, `register-cnight-mint-logic` | `--tx-hash`, `--tx-index` | Required: fee UTxO to spend (same as change-* commands) |
-| `deploy` | `--components` | Deploy sets up contracts that are not live yet; a change to a live contract is an upgrade (`stage-upgrade`, `promote-upgrade`), never a deploy. With no `--components`, a full run builds every component. `--components <list>` (comma-separated, at least one name) builds only the transactions of those components, and `deployment-transactions.json` then holds only them, so `sign-and-submit` sends only them. Each component is one transaction that creates all of its validators (see [deploy --components](#deploy---components)). |
+| `deploy` | `--components` | Deploy sets up contracts that are not live yet; a change to a live contract is an upgrade (`stage-upgrade`, `promote-upgrade`), never a deploy. With no `--components`, a full run builds the twelve governance components (the bridge components only when named). `--components <list>` (comma-separated, at least one name) builds only the transactions of those components, and `deployment-transactions.json` then holds only them, so `sign-and-submit` sends only them. Each component is one transaction that creates all of its validators (see [deploy --components](#deploy---components)). |
 | `deploy` | — | Each run writes the snapshot `deployed-scripts/<env>/` when it builds the transactions, before they are submitted. A full run on a test environment starts it again: `plutus.json` and the blueprint from the build, `versions.json` promoted = the validators this deploy creates, staged = []. A `--components` run, and every run on `preprod` and `mainnet`, extends it: the build must match the live snapshot (every promoted or staged validator the run does not create, and the gov auths its datums install, has the same hash in the build), else the run is refused before any chain call and names `bun cli build -n <env> --from-deployed --components <the same list>`, which pins the deployed two-stage, forever and threshold hashes except those of the named components and compiles those from new; the snapshot then takes the build's entries and keeps a title only it has, and promoted gains the created validators and the installed gov auths. On `preprod` and `mainnet` the whole run is refused before it builds anything if one selected validator is already promoted in `versions.json` (promotion is permanent). The snapshot is written before `deployment-transactions.json`, so a snapshot that cannot be written fails the command and leaves no file to sign. An extend appends its entries, each with its own `timestamp`, to `changelog.json`, and keeps the file's first `timestamp` and its `gitCommit`. |
 | `deploy-staging-track` | `--components` | Builds the six staging forever transactions that start the upgrade flow (Phase 2). `--components` takes its own six names (`council`, `tech-auth`, `federated-ops`, `reserve`, `ics`, `terms-and-conditions`), and the file holds only their transactions. It extends `deployed-scripts/<env>/` with the staging forevers it creates, as a `deploy --components` run does: the build must match the live snapshot, else the run is refused before any chain call and names `bun cli build -n <env> --from-deployed`; `plutus.json` takes the build's entries, `versions.json` promotes the created staging forevers, and `changelog.json` gains them. On `preprod` and `mainnet` a selected staging forever that `versions.json` already promotes is refused. The snapshot is written before `staging-track-deployment-transactions.json`. |
 | `stage-upgrade`, `promote-upgrade` | — | Building the tx updates the staged/promoted lists in `deployed-scripts/<env>/versions.json`, before it is submitted. `stage-upgrade` finds `--new-logic-hash` in `deployed-scripts/<env>/plutus.json`, else in the build output `plutus-<profile>.json`, and then copies that one validator into `deployed-scripts/<env>/plutus.json`; a hash in neither is refused before any chain call. A copy overwrites a staged, unpromoted entry of that name; a build logic whose name `versions.json` promotes is refused (a promoted validator keeps its hash). |
 | `register-gov-auth`, `register-cnight-mint-logic`, `stage-upgrade`, `promote-upgrade` | — | Check stake registration through Blockfrost whatever `--provider` is, so `BLOCKFROST_<NETWORK>_API_KEY` must be set. The register commands refuse a credential that is already registered. |
+| `bridge-update` | `--update <file>`, `--funded` | The file is a `BridgeUpdate` in JSON: the blueprint field names, integers as numbers, lower-case hex, the multiproof as the CBOR hex of its Data. `--funded` spends every pool UTxO and debits min(fee, cap, pool − its minimum output); a funded update that is no handover, or over a pool at or below its minimum output, is refused before any build. The deployer submits and pays the rest of the fee. |
+| `bridge-topup` | `--lovelace` | Pays the pool; unsigned, for `sign-and-submit`. |
+| `bridge-set-fee`, `bridge-set-threshold` | `--base`, `--per-signer` / `--threshold`, `--tx-hash`, `--tx-index`, `--no-sign` | Spend the BEEFY threshold under Council + Tech Auth, as the `change-*` commands do: the new fee cap keeps the fraction, the new fraction keeps the fee cap. |
 | `combine-signatures` | `--tx`, positional `<witness-file>...` | `--tx` holds exactly one transaction (for a deployment file use `sign-and-submit`); one or more witness files follow the options (a shell glob such as `<witness-dir>/*.json` works). Without `--no-sign-deployer` it also signs with `SIGNING_PRIVATE_KEY`. Submits. |
 
 ## deploy --components
@@ -63,6 +68,11 @@ Each component is one deploy transaction, and that transaction creates all of th
 | `tech-auth`, `council`, `reserve`, `ics`, `federated-ops`, `terms-and-conditions` | `<name>_two_stage_upgrade`, `<name>_forever`, `<name>_logic` |
 | `tech-auth-threshold`, `council-threshold`, `federated-ops-threshold` | `main_<name>_update_threshold` |
 | `main-gov`, `staging-gov`, `terms-and-conditions-threshold` | `main_gov_threshold`, `staging_gov_threshold`, `terms_and_conditions_threshold` |
+| `committee-bridge` | `committee_bridge_two_stage_upgrade`, `committee_bridge_forever`, `committee_bridge_logic`, `committee_bridge_pool` (the forever holds the bootstrap state from the `BRIDGE_*` env values) |
+| `committee-bridge-threshold` | `beefy_signer_threshold` (`--bridge-threshold` / `BRIDGE_THRESHOLD`, then `BRIDGE_MAX_FEE_BASE`, `BRIDGE_MAX_FEE_PER_SIGNER`); the transaction also registers `committee_bridge_logic` |
+| `committee-bridge-scripts` | none: reference-script UTxOs of the bridge forever, logic and pool at the deployer address, which the CLI's coin selection never spends |
+
+The three bridge components are outside the default set: a run without `--components` builds the twelve governance transactions, and the bridge is built only when named. The bridge triple does not fit one transaction with the logic registration (17,156 script bytes at the verbose trace), so the registration rides on the threshold transaction.
 
 Set up an environment in two parts (each run writes the file again with only its transactions, so submit it before the next run; the snapshot keeps both parts):
 
@@ -124,6 +134,18 @@ bun run cli change-federated-ops --network <env> --tx-hash <h> --tx-index <i>
 bun run cli sign-and-submit deployments/<env>/change-federated-ops-tx.json --network <env>
 bun run cli change-terms --network <env> --tx-hash <h> --tx-index <i> --hash <doc-hash> --url <url>
 bun run cli sign-and-submit deployments/<env>/change-terms-tx.json --network <env>
+
+# === Phase 1b: Committee bridge (after the base; its own --components run) ===
+# Set BRIDGE_ACTIVATION_BLOCK, BRIDGE_MMR_ROOT, BRIDGE_CURRENT_COMMITTEE,
+# BRIDGE_NEXT_COMMITTEE, BRIDGE_MAX_FEE_BASE and BRIDGE_MAX_FEE_PER_SIGNER
+# (and BRIDGE_THRESHOLD, else 2/3) in .env; see .env.example.
+bun run cli simple-tx --network <env>
+bun run cli sign-and-submit deployments/<env>/simple-tx.json --network <env>
+# Update committee_bridge_one_shot_* and committee_threshold_one_shot_* in aiken.toml, then:
+just build <env>
+bun run cli deploy --network <env> --components committee-bridge,committee-bridge-threshold,committee-bridge-scripts
+bun run cli sign-and-submit deployments/<env>/deployment-transactions.json --network <env>
+bun run cli bridge-info --network <env>
 
 # Test environments only (mint-tcnight refuses mainnet):
 bun run cli mint-tcnight --amount <amount> --user-address <addr> --network <env>

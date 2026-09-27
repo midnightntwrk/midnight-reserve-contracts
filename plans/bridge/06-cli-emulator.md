@@ -3,6 +3,11 @@
 Goal: deploy, operate and exercise the bridge from the CLI against the
 Blaze emulator; every MIP contract-test bullet reproduced (spec §9, §10).
 
+Done 2026-09-26 (`ukmqnlvt..qqypkmqw` and the docs commit after them), one
+commit per step. Open items: the consumer test validator (task 3 step 4,
+deferred), the trace-level record (review notes) and a live deploy on a
+test network (task 1, needs phase 07's bootstrap values).
+
 ## Tasks
 
 ### 0. Prerequisites and style
@@ -21,6 +26,11 @@ Config keys to add to `NetworkConfig`/`parseNetworkConfig`
 scripts.
 
 ### 1. Deploy through `deploy --components` (one deploy command)
+Done: `vwwwuspl` (config), `mkwuloqk` (Settings), `zmuvsvwt` and
+`tmvslvsq` (the three steps; the deployer wallet skips reference scripts).
+A build of the three transactions against preview (not submitted) came to
+11,215, 10,779 and 9,809 bytes.
+
 User decision 2026-09-25: there is one deploy command. User decision
 2026-09-26: the bridge is three new `deploy` components, each one
 `DEPLOY_STEPS` entry and one atomic transaction (`cli/deploy/deploy.ts`).
@@ -79,6 +89,12 @@ transaction:
   builds its own bootstrap state from the phase 05 reference.
 
 ### 2. New commands (`cli/commands/bridge-*.ts`)
+Done: `wkxrqupo`, `nxxxsrnz`, `nwzktnqx`, `tnlypzqt`; the programs live in
+`cli/bridge/`. Each ran live in an emulator harness that deploys through
+`deployProgram`, submits with `signAndSubmitOne` and runs the programs
+(the emulator counts no native-script signature, so the threshold edits
+ran with `--no-sign` there; the preview QA covered that signing path).
+
 - `bridge-info`: light-client datum, threshold datum, pool balance and UTxO
   count.
 - `bridge-topup --lovelace N`: pay to the pool address.
@@ -135,6 +151,11 @@ Using the phase 05 reference to produce every update:
    consumer tx fails phase 1.
 
 ### 4. Docs
+Done: spec §6, §9 (the deploy split into three rows, the reference
+scripts), §10a, §11 (the measured N = 160 row, the size crossing at
+N = 175 funded / 176 unfunded, the fee margins) and §12; the README rows;
+the runbook's components, flags and a Phase 1b; `.env.example`.
+
 `docs/bridge/spec.md` §9 transaction table verified against the built txs;
 README command table gains the `bridge-*` rows.
 `docs/governance/live-deployment.md`: the `deploy --components` table
@@ -147,14 +168,23 @@ variables.
 ## Acceptance
 - `bun test` green; commands run live against the emulator (not only
   type-checked).
-- Commit: `cli(bridge): deploy, top-up, update and emulator e2e`.
+- Commit: `cli(bridge): deploy, top-up, update and emulator e2e`. Recorded
+  difference: one commit per step (user rule), `bridge(06) ...`.
 
 ## Review notes carried from phases 02–04
 - `BeefyThreshold` needs its own datum builder: `MultisigThreshold` has the
-  same four-`Int` shape and would decode as a valid threshold.
+  same four-`Int` shape and would decode as a valid threshold. Done:
+  `buildBeefyThresholdDeploymentTx`, and the deploy test reads the datum
+  back as a `BeefyThreshold`.
 - Deploy creates reference-script UTxOs for the forever, logic and pool
-  scripts; the relay must reference them (spec §11, §12). Record the trace
-  level of the deployed build; it doubles the reference-script fee.
+  scripts; the relay must reference them (spec §11, §12). Done:
+  `committee-bridge-scripts`. Record the trace level of the deployed build;
+  it doubles the reference-script fee. Open: the record keeps no trace
+  level (the build's `--trace`, verbose by default); adding it changes the
+  `deployed-scripts/` format, the user's decision.
 - Measure the real non-redeemer transaction bytes and the forever and pool
-  spend budgets at N = 160 in the emulator; replace the estimates in spec §11.
-- Test that the relay trims to `required` signers.
+  spend budgets at N = 160 in the emulator; replace the estimates in spec
+  §11. Done: `tests/bridge/measure.ts`, spec §11.
+- Test that the relay trims to `required` signers. Done as the contract
+  side: the e2e's surplus-signer rejection (rule 6); the relay is not in
+  this repo.
