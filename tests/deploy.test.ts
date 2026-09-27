@@ -7,7 +7,6 @@ import {
   TxCBOR,
 } from "@blaze-cardano/core";
 import { parse } from "@blaze-cardano/data";
-import type { Emulator } from "@blaze-cardano/emulator";
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { readFileSync } from "fs";
 import { Effect, Either, Layer, Option } from "effect";
@@ -36,6 +35,12 @@ import { completeBuilder, sizeAtSubmit } from "../cli/chain/complete-tx";
 import { attachWitnesses, signTransaction } from "../cli/chain/transaction";
 import { parsePrivateKey } from "../cli/datum/signers";
 import { validatorLabels } from "../cli/chain/validator-labels";
+import { Provider } from "../cli/chain/provider";
+import { refOf } from "../cli/chain/transaction";
+import { reservedRefs, Settings } from "../cli/config/settings";
+import { buildSimpleTx } from "../cli/wallet/simple-tx";
+import { Blaze, ColdWallet } from "@blaze-cardano/sdk";
+import { Emulator, EmulatorProvider } from "@blaze-cardano/emulator";
 import {
   addCollateral,
   asFunded,
@@ -52,6 +57,8 @@ import {
 } from "./helpers/fixtures";
 import {
   buildInstances,
+  captureOutput,
+  EmulatorLive,
   emulatorProfile,
   emulatorProgram,
   expectFailure,
@@ -455,5 +462,44 @@ describe("resolveCollateral", () => {
   test("a missing collateral is UtxoNotFound", async () => {
     const { layer, resolve } = await collateralOf(Option.none());
     await expectFailure(layer, resolve, "UtxoNotFound");
+  });
+});
+
+describe("the deployer wallet", () => {
+  test("coin selection never spends a one-shot or the collateral the profile names; a plain cold wallet over the same UTxOs does", async () => {
+    const emulator = new Emulator([]);
+    const layer = EmulatorLive(emulator, captureOutput(), "emulator");
+    const deployer = await runTest(
+      layer,
+      Effect.flatMap(Settings, (s) => s.deployerAddress),
+    );
+    const reserved = reservedRefs(profile);
+    for (const ref of reserved) {
+      const [hash, index] = ref.split("#");
+      emulator.addUtxo(feeUtxo(deployer, hash, Number(index), 20_000_000n));
+    }
+    emulator.addUtxo(feeUtxo(deployer, FEE_TX, 0, 15_000_000n));
+    const spent = async (
+      blaze: Parameters<typeof buildSimpleTx>[0],
+    ): Promise<string[]> => {
+      const tx = await buildSimpleTx(blaze, {
+        recipient: deployer,
+        count: 1,
+        amount: 5_000_000n,
+      }).complete();
+      return [...tx.body().inputs().values()].map(refOf);
+    };
+
+    const guarded = await runTest(
+      layer,
+      Effect.flatMap(Provider, (p) => p.blaze),
+    );
+    expect(await spent(guarded)).toEqual([`${FEE_TX}#0`]);
+    const provider = new EmulatorProvider(emulator);
+    const plain = await Blaze.from(
+      provider,
+      new ColdWallet(deployer, NetworkId.Testnet, provider),
+    );
+    expect((await spent(plain)).some((ref) => reserved.has(ref))).toBe(true);
   });
 });

@@ -92,6 +92,15 @@ export type NetworkConfig = {
   readonly cnight_name: string;
 };
 
+/** Every UTxO the profile names, its one-shots and its collateral, as `txId#index`: coin selection never spends them. */
+export const reservedRefs = (config: NetworkConfig): ReadonlySet<string> =>
+  new Set(
+    ONE_SHOTS.map(
+      (name) =>
+        `${config[`${name}_hash` as `${OneShot}_hash`]}#${config[`${name}_index` as `${OneShot}_index`]}`,
+    ),
+  );
+
 /** The governance key groups and their private-key variables. */
 const KEY_GROUPS = {
   techAuth: "TECH_AUTH_PRIVATE_KEYS",
