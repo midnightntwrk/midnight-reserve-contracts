@@ -25,7 +25,7 @@ import type {
   Provider as BlazeProvider,
   Wallet,
 } from "@blaze-cardano/sdk";
-import type { TxBuilder } from "@blaze-cardano/tx";
+import { calculateMinAda, type TxBuilder } from "@blaze-cardano/tx";
 import { Option } from "effect";
 import * as Contracts from "../../contract_blueprint";
 import {
@@ -48,6 +48,28 @@ export interface BridgeUpdateInputs {
   /** The UTxOs carrying the forever and logic scripts, and the pool script when the update is funded. */
   readonly scriptRefs: readonly TransactionUnspentOutput[];
 }
+
+/** The least lovelace the pool output may hold: the min ADA of a lovelace-only output at the pool address, at the widest coin encoding. */
+export const poolMinimum = (
+  pool: Script,
+  networkId: NetworkId,
+  coinsPerUtxoByte: number,
+): bigint =>
+  calculateMinAda(
+    TransactionOutput.fromCore({
+      address: PaymentAddress(addressFromValidator(networkId, pool).toBech32()),
+      value: { coins: 45_000_000_000_000_000n },
+    }),
+    coinsPerUtxoByte,
+  );
+
+/** What a pool holding more than `minimum` pays toward `fee`: no more than the cap (rule 17), and never so much that its output falls below the minimum; the submitter pays the rest. */
+export const poolDebit = (
+  fee: bigint,
+  cap: bigint,
+  poolIn: bigint,
+  minimum: bigint,
+): bigint => [fee, cap, poolIn - minimum].reduce((a, b) => (a < b ? a : b));
 
 /** A funded update: the pool UTxOs it spends and what the pool pays; the fee is at least the debit (rule 16). */
 export interface PoolFunding {
