@@ -53,6 +53,42 @@ describe("env values through SettingsLive", () => {
   });
 });
 
+describe("the bridge bootstrap state", () => {
+  const keyset = "ab".repeat(32);
+  const bootstrap = (current: string, next: string) =>
+    SettingsWith("emulator", {
+      BRIDGE_ACTIVATION_BLOCK: "1200",
+      BRIDGE_MMR_ROOT: "cd".repeat(32),
+      BRIDGE_CURRENT_COMMITTEE: current,
+      BRIDGE_NEXT_COMMITTEE: next,
+    });
+
+  test.each([
+    [
+      "a next committee that does not follow the current one",
+      `4:5:${keyset}`,
+      `6:5:${keyset}`,
+      "BRIDGE_NEXT_COMMITTEE",
+    ],
+    [
+      "a committee with no seats",
+      `4:0:${keyset}`,
+      `5:5:${keyset}`,
+      "BRIDGE_CURRENT_COMMITTEE",
+    ],
+  ])(
+    "%s is a ConfigError naming its variable, as the forever mint would refuse it",
+    async (_name, current, next, key) => {
+      const error = await expectFailure(
+        bootstrap(current, next),
+        Effect.flatMap(Settings, (s) => s.bridgeBootstrap),
+        "ConfigError",
+      );
+      expect(error.key).toBe(key);
+    },
+  );
+});
+
 describe("DEPLOYER_ADDRESS", () => {
   const mainnet = "addr1v9uumy8pse90t4juh8hvx3y0xzn439na3hxadq55luydtgqg8mh8a";
   const deployerAddress = Effect.flatMap(Settings, (s) => s.deployerAddress);
