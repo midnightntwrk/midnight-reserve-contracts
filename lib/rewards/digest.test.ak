@@ -19,6 +19,7 @@ fn digest(epoch: Int, leaf_count: Int) -> Digest {
     root: fill(#"aa", 32),
     min_key: fill(#"01", 28),
     max_key: fill(#"fe", 28),
+    treasury_total: 123_456_789_012_345_678_901,
   }
 }
 
@@ -94,7 +95,7 @@ test parse_rewards_call_trailing_byte() fail {
 }
 
 test parse_rewards_call_short_body() fail {
-  let body = builtin.slice_bytearray(2, 106, rewards_extrinsic(digest(3, 7)))
+  let body = builtin.slice_bytearray(2, 122, rewards_extrinsic(digest(3, 7)))
   parse_rewards_call(extrinsic(body)) == digest(3, 7)
 }
 

@@ -1,11 +1,11 @@
 use aiken/builtin
 use aiken/collection/list
-use cardano/address.{Address, Script, VerificationKey}
+use cardano/address.{Address, Inline, Script, VerificationKey}
 use cardano/assets.{Value, add, from_asset, from_lovelace, zero}
 use cardano/certificate.{RegisterCredential}
 use cardano/script_context.{Publishing, ScriptContext, Spending}
 use cardano/transaction.{
-  Input, NoDatum, Output, OutputReference, Transaction, placeholder,
+  DatumHash, Input, NoDatum, Output, OutputReference, Transaction, placeholder,
 }
 use config
 use rewards/batch.{split_run}
@@ -96,6 +96,7 @@ fn st(
     root,
     min_key: k(1),
     max_key: k(7),
+    treasury_total: 0,
     start_key: start,
     cursor,
     complete,
@@ -110,13 +111,21 @@ const init_state =
     root: zero32,
     min_key: zero28,
     max_key: zero28,
+    treasury_total: 0,
     start_key: zero28,
     cursor: zero28,
     complete: True,
   }
 
 const digest5 =
-  Digest { epoch: 5, leaf_count: 7, root: root7, min_key: k(1), max_key: k(7) }
+  Digest {
+    epoch: 5,
+    leaf_count: 7,
+    root: root7,
+    min_key: k(1),
+    max_key: k(7),
+    treasury_total: 0,
+  }
 
 fn next_of(i: Int) -> ByteArray {
   if i == 7 {
@@ -421,6 +430,7 @@ const empty_digest =
     root: zero32,
     min_key: zero28,
     max_key: zero28,
+    treasury_total: 0,
   }
 
 fn empty_tx(state_out: BatcherState) -> Transaction {
@@ -1322,4 +1332,163 @@ test budget_30_pairs_fixture_only() {
 
 test budget_30_pairs() {
   run(budget_tx(), budget_redeemer())
+}
+
+// -- treasury ----------------------------------------------------------------------
+
+const treasury = 40_000
+
+const ics = Address(Script(config.ics_forever_hash), None)
+
+fn ics_output(night: Int) -> Output {
+  Output(
+    ics,
+    from_lovelace(2_000_000)
+      |> add(config.cnight_policy, config.cnight_name, night),
+    NoDatum,
+    None,
+  )
+}
+
+fn with_treasury(state: BatcherState) -> BatcherState {
+  BatcherState { ..state, treasury_total: treasury }
+}
+
+/// The last batch of the k4 fold, with the pool paying `pool_paid` beyond the leaves and `extra` outputs appended.
+fn completing(pool_paid: Int, extra: List<Output>) -> Bool {
+  let tx =
+    batch_tx(
+      with_treasury(st(root7, k(4), k(2), False)),
+      with_treasury(st(root7, k(4), k(4), True)),
+      pool_night - sum_amounts([2, 3]) - pool_paid,
+      [dep_in(2), dep_in(3)],
+      [dep_out(2, 0), dep_out(3, 0)],
+      zero,
+    )
+  run(
+    Transaction { ..tx, outputs: list.concat(tx.outputs, extra) },
+    Pay { proof: proof(leaves7, 2, 4), pairs: pairs_for(2), exits: [] },
+  )
+}
+
+test treasury_paid_by_completing_batch() {
+  completing(treasury, [ics_output(treasury)])
+}
+
+test treasury_missing_ics_output() fail {
+  completing(treasury, [])
+}
+
+test treasury_ics_underpaid() fail {
+  completing(treasury, [ics_output(treasury - 1)])
+}
+
+test treasury_left_in_pool() fail {
+  completing(0, [ics_output(treasury)])
+}
+
+test treasury_ics_output_with_datum_hash() fail {
+  completing(
+    treasury,
+    [Output { ..ics_output(treasury), datum: DatumHash(zero32) }],
+  )
+}
+
+test treasury_ics_output_extra_asset() fail {
+  let out = ics_output(treasury)
+  completing(
+    treasury,
+    [Output { ..out, value: out.value |> add(batcher_hash, "x", 1) }],
+  )
+}
+
+test treasury_ics_output_with_stake_part() fail {
+  let staked =
+    Address(
+      Script(config.ics_forever_hash),
+      Some(Inline(VerificationKey(zero28))),
+    )
+  completing(treasury, [Output { ..ics_output(treasury), address: staked }])
+}
+
+test treasury_not_paid_mid_fold() fail {
+  let tx =
+    batch_tx(
+      with_treasury(st(root7, k(4), k(6), False)),
+      with_treasury(st(root7, k(4), k(1), False)),
+      pool_night - two_total - treasury,
+      [dep_in(6), dep_in(7)],
+      [dep_out(6, 0), dep_out(7, 0)],
+      zero,
+    )
+  run(
+    Transaction {
+      ..tx,
+      outputs: list.concat(tx.outputs, [ics_output(treasury)]),
+    },
+    Pay { proof: proof(leaves7, 6, 7), pairs: pairs_for(2), exits: [] },
+  )
+}
+
+test treasury_paid_by_load_that_completes() {
+  let all = [1, 2, 3, 4, 5, 6, 7]
+  let (mmr_root, dp) =
+    digest_proof(Digest { ..digest5, treasury_total: treasury })
+  let tx =
+    batch_tx(
+      init_state,
+      with_treasury(st(root7, k(1), k(1), True)),
+      pool_night - sum_amounts(all) - treasury,
+      list.map(all, dep_in),
+      list.map(all, fn(i) { dep_out(i, 0) }),
+      zero,
+    )
+      |> with_bridge(mmr_root)
+  run(
+    Transaction {
+      ..tx,
+      outputs: list.concat(tx.outputs, [ics_output(treasury)]),
+    },
+    LoadAndPay {
+      digest_proof: dp,
+      proof: proof(leaves7, 1, 7),
+      pairs: pairs_for(7),
+      exits: [],
+    },
+  )
+}
+
+/// An empty-epoch load whose digest carries a Treasury share; the pool pays `pool_paid`.
+fn empty_treasury(pool_paid: Int, extra: List<Output>) -> Bool {
+  let (mmr_root, dp) =
+    digest_proof(Digest { ..empty_digest, treasury_total: treasury })
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        mk_input(mk_outref(1), mk_state_output(init_state)),
+        mk_input(mk_outref(2), mk_pool_output(pool_ada, pool_night)),
+      ],
+      outputs: [
+        mk_state_output(with_treasury(BatcherState { ..init_state, epoch: 5 })),
+        mk_pool_output(pool_ada, pool_night - pool_paid),
+        ..extra
+      ],
+      fee,
+      withdrawals: [withdrawal_of(batcher_hash)],
+    }
+      |> with_bridge(mmr_root)
+  run(tx, LoadAndPay { digest_proof: dp, proof: [], pairs: [], exits: [] })
+}
+
+test treasury_paid_by_empty_epoch_load() {
+  empty_treasury(treasury, [ics_output(treasury)])
+}
+
+test treasury_empty_epoch_without_ics_output() fail {
+  empty_treasury(treasury, [])
+}
+
+test treasury_empty_epoch_left_in_pool() fail {
+  empty_treasury(0, [ics_output(treasury)])
 }

@@ -338,6 +338,7 @@ pub type BatcherState {
   root: ByteArray,                // 32
   min_key: ByteArray,
   max_key: ByteArray,
+  treasury_total: Int,            // loaded epoch's Treasury share, paid by the completing batch
   start_key: ByteArray,           // first skh paid in the current epoch
   cursor: ByteArray,              // next skh to pay; both stale once complete
   complete: Bool,                 // init = True
@@ -382,9 +383,11 @@ There is no standalone load: an epoch opens with its first batch, so
    where `bridge_state` is the inline datum of the reference input holding
    the `config.committee_bridge_forever_hash` singleton NFT.
 3. `digest.epoch == state_in.epoch + 1` (strict succession).
-4. `loaded = state_in with { epoch, root, min_key, max_key }`.
+4. `loaded = state_in with { epoch, root, min_key, max_key, treasury_total }`.
 5. `leaf_count == 0`: `proof`, `pairs`, `exits` empty; `state_out = loaded`
-   (`complete` stays `True`); no pool or deposit inputs. Otherwise
+   (`complete` stays `True`); no deposit inputs. With `treasury_total == 0`
+   no pool inputs either; otherwise the pool pays `treasury_total` to the
+   ICS as in run rule 3. Otherwise
    `start_key := cursor := key(leaves[0])` and the run rules below apply.
 
 **Pay** (every later batch)
@@ -417,11 +420,12 @@ There is no standalone load: an epoch opens with its first batch, so
 3. Pool: all inputs at `Script(pool_forever)` are summed (none may carry the
    pool forever NFT); exactly one output to that credential with
    `NIGHT_out == NIGHT_in − Σ amount − treasury`, `ADA_out ≥ ADA_in`, value
-   shape `[ada, night]`, inline datum, where `treasury = treasury_total`
+   shape `[ada, night]`, inline datum, where `treasury = state.treasury_total`
    in the batch that sets `complete := True` (and in an empty-epoch
-   `LoadAndPay`) and `0` otherwise. In that batch one output at
-   `config.ics_forever_hash` carries NIGHT `≥ treasury_total` (datum shape
-   per the ICS merge rule, **TBD**). Σ fee (§4.5) is not checked against
+   `LoadAndPay`) and `0` otherwise. In that batch, when `treasury > 0`,
+   one output at `Address(Script(config.ics_forever_hash), None)` holds
+   `[ada, night]` with NIGHT `≥ treasury` and no datum hash: the shape the
+   ICS `logic_merge` accepts. Σ fee (§4.5) is not checked against
    the batcher pair; it is what the pool lost less what the deposits and
    the ICS gained. Pool logic is satisfied separately (§9).
 4. `state_out == state_in with { cursor, complete }` (plus the digest fields
@@ -597,8 +601,6 @@ Compact(123) | preamble 0x05 | pallet u8 | call u8 | epoch u64 LE | leaf_count u
 the pallet index). Fixed offsets after the 2-byte length prefix:
 preamble@2, pallet@3, call@4, epoch@5, leaf_count@13, root@21, min@53,
 max@81, treasury_total@109. Any other length, preamble or index fails.
-(As built through phase 04 the extrinsic is the 109-byte form without
-`treasury_total`; the change lands with the ICS output.)
 
 ---
 
@@ -885,6 +887,6 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 |---|---|
 | Skim cap is `max_skim[n_paid]` from a fee schedule UTXO (§4.6), no fee-share term; every input/output pair, the batcher's own included, has `ADA_out ≤ ADA_in` | the tx creator sets the fee; a per-size cap set by Midnight bounds drain per deposit, and the pair rule keeps the batcher from gaining ADA while letting it pay the shortfall of a small batch |
 | Distribution fee `dist_fee` deducted from a leaf's NIGHT when `amount ≥ min_payout`, left in the batcher's pair | cost recovery alone gave no reason to fold or to batch large; flat per leaf, checked on chain, no exchange rate |
-| Digest gains `treasury_total`; the completing batch pays it to the ICS | the Treasury share must leave the pool, and the digest has to commit it or a batch could omit the output |
+| Digest gains `treasury_total`; the completing batch pays it to the ICS (built 2026-09-27: 125-byte extrinsic, `BatcherState.treasury_total`, ICS output check) | the Treasury share must leave the pool, and the digest has to commit it or a batch could omit the output |
 | Reserve release fills the pool to `reserve × (1 − (1 − R)^N)` (factor `num/den`, rounded up), net of the pool balance | the geometric placeholder is gone; the ceiling follows the published rate from the live reserve and holds exposure to one interval |
 | Interval six hours | per the committee bridge MIP's epoch length |
