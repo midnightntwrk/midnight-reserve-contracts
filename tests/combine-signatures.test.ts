@@ -179,7 +179,8 @@ describe("readSingleTransaction", () => {
   });
 
   test("refuses a deployment file of several transactions", async () => {
-    const path = "deployments/preview/deployment-transactions.json";
+    const path =
+      "tests/golden/deploy/preview-bridge-deployment-transactions.json";
     expect(
       (await runTest(layer, readTransactionFile(path))).length,
     ).toBeGreaterThan(1);
