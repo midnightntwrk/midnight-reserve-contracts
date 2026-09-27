@@ -51,9 +51,9 @@ use-env env:
     echo "Activated environment: {{env}}"
 
 
-# The node repo's local-env stack (local Cardano devnet, db-sync, six nodes) on a node ref; RPC http://localhost:9945
-private-net-up node="../midnight-node" ref="kc-beefy-mip-alignment":
-    tests/private-net/local-env.sh up {{node}} {{ref}}
+# The node repo's local-env stack (local Cardano devnet, db-sync, six nodes) on a node ref, sessions of `session_slots` 6 s slots, a Cardano epoch of `mc_epoch` s (a multiple of the session); RPC http://localhost:9945
+private-net-up node="../midnight-node" ref="kc-beefy-mip-alignment" session_slots="10" mc_epoch="60":
+    tests/private-net/local-env.sh up {{node}} {{ref}} {{session_slots}} {{mc_epoch}}
 
 
 private-net-down node="../midnight-node" ref="kc-beefy-mip-alignment":
