@@ -120,6 +120,7 @@ const OPTIONAL = {
   icsStagingForever: "StagingReserveIcsIcsStagingForeverElse",
   termsAndConditionsStagingForever:
     "StagingTandcTermsAndConditionsStagingForeverElse",
+  rewardsPoolStagingForever: "StagingRewardsPoolRewardsPoolStagingForeverElse",
   tcnightMintInfinite: "TestCnightNoAuditTcnightMintInfiniteElse",
   cnightMintTwoStage: "CnightMintingCnightMintTwoStageUpgradeElse",
   cnightMintForever: "CnightMintingCnightMintForeverElse",

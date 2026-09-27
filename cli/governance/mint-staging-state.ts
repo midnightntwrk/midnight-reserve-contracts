@@ -3,10 +3,10 @@
  * spending its one-shot UTxO. The program finds the one-shot and the
  * profile's collateral among the deployer's unspent outputs (resolveUnspent,
  * resolveCollateral, which also checks the collateral's size), the v2 logic
- * script and the staging forever hash through the build blueprint;
- * buildMintStagingStateTx is pure
- * over the resolved inputs. The datum is the StagingState list
- * [cnight_test_policy, forever_script_hash].
+ * script and the staging forever hashes through the build blueprint;
+ * buildMintStagingStateTx is pure over the resolved inputs. The datum is
+ * the StagingState list [cnight_test_policy, forever_script_hash]; the
+ * reserve's StagingStateV2 adds the staging rewards pool forever hash.
  */
 import {
   Address,
@@ -61,12 +61,12 @@ export interface MintStagingStateInput
   readonly sign: boolean;
 }
 
-/** Where a validator's v2 track lives: its one-shot, staging forever instance and v2 logic class names. */
+/** Where a validator's v2 track lives: its one-shot, the staging forever instances its state names, and v2 logic class names. */
 interface V2Track {
   readonly oneShot: (config: NetworkConfig) => UtxoRef;
-  readonly stagingForever: (
+  readonly stagingForevers: (
     contracts: ContractInstances,
-  ) => ContractClass | undefined;
+  ) => readonly (ContractClass | undefined)[];
   readonly v2LogicClasses: readonly string[];
 }
 
@@ -76,7 +76,7 @@ const V2_TRACKS: Record<V2TrackValidator, V2Track> = {
       c.technical_authority_logic_v2_one_shot_hash,
       c.technical_authority_logic_v2_one_shot_index,
     ],
-    stagingForever: (c) => c.techAuthStagingForever,
+    stagingForevers: (c) => [c.techAuthStagingForever],
     v2LogicClasses: [
       "PermissionedV2TechAuthLogicV2Else",
       "PermissionedTechAuthLogicV2Else",
@@ -87,7 +87,7 @@ const V2_TRACKS: Record<V2TrackValidator, V2Track> = {
       c.council_logic_v2_one_shot_hash,
       c.council_logic_v2_one_shot_index,
     ],
-    stagingForever: (c) => c.councilStagingForever,
+    stagingForevers: (c) => [c.councilStagingForever],
     v2LogicClasses: [
       "PermissionedV2CouncilLogicV2Else",
       "PermissionedCouncilLogicV2Else",
@@ -98,7 +98,10 @@ const V2_TRACKS: Record<V2TrackValidator, V2Track> = {
       c.reserve_logic_v2_one_shot_hash,
       c.reserve_logic_v2_one_shot_index,
     ],
-    stagingForever: (c) => c.reserveStagingForever,
+    stagingForevers: (c) => [
+      c.reserveStagingForever,
+      c.rewardsPoolStagingForever,
+    ],
     v2LogicClasses: [
       "ReserveV2ReserveLogicV2Else",
       "ReserveReserveLogicV2Else",
@@ -109,7 +112,7 @@ const V2_TRACKS: Record<V2TrackValidator, V2Track> = {
       c.ics_logic_v2_one_shot_hash,
       c.ics_logic_v2_one_shot_index,
     ],
-    stagingForever: (c) => c.icsStagingForever,
+    stagingForevers: (c) => [c.icsStagingForever],
     v2LogicClasses: [
       "IlliquidCirculationSupplyV2IcsLogicV2Else",
       "IlliquidCirculationSupplyIcsLogicV2Else",
@@ -120,7 +123,7 @@ const V2_TRACKS: Record<V2TrackValidator, V2Track> = {
       c.federated_operators_logic_v2_one_shot_hash,
       c.federated_operators_logic_v2_one_shot_index,
     ],
-    stagingForever: (c) => c.federatedOpsStagingForever,
+    stagingForevers: (c) => [c.federatedOpsStagingForever],
     v2LogicClasses: [
       "PermissionedV2FederatedOpsLogicV2Else",
       "PermissionedFederatedOpsLogicV2Else",
@@ -131,7 +134,7 @@ const V2_TRACKS: Record<V2TrackValidator, V2Track> = {
       c.terms_and_conditions_logic_v2_one_shot_hash,
       c.terms_and_conditions_logic_v2_one_shot_index,
     ],
-    stagingForever: (c) => c.termsAndConditionsStagingForever,
+    stagingForevers: (c) => [c.termsAndConditionsStagingForever],
     v2LogicClasses: [
       "TermsAndConditionsV2TermsAndConditionsLogicV2Else",
       "TermsAndConditionsTermsAndConditionsLogicV2Else",
@@ -144,7 +147,7 @@ export interface MintStagingStateInputs {
   readonly oneShotUtxo: TransactionUnspentOutput;
   /** The v2 logic script: the NFT's minting policy and the output's address. */
   readonly v2LogicScript: Script;
-  readonly stagingForeverHash: string;
+  readonly stagingForeverHashes: readonly string[];
   readonly cnightPolicy: string;
   readonly collateralUtxo: TransactionUnspentOutput;
   readonly protocolParams: ProtocolParameters;
@@ -156,16 +159,15 @@ export interface MintStagingStateParams {
   readonly feePadding: bigint;
 }
 
-/** StagingState datum: the @list [cnight_test_policy, forever_script_hash]. */
+/** StagingState datum: the @list [cnight_test_policy, ...staging forever hashes]. */
 const stagingStateDatum = (
   cnightPolicy: string,
-  stagingForeverHash: string,
+  stagingForeverHashes: readonly string[],
 ): PlutusData =>
   PlutusData.fromCore({
-    items: [
-      PlutusData.newBytes(Buffer.from(cnightPolicy, "hex")).toCore(),
-      PlutusData.newBytes(Buffer.from(stagingForeverHash, "hex")).toCore(),
-    ],
+    items: [cnightPolicy, ...stagingForeverHashes].map((hash) =>
+      PlutusData.newBytes(Buffer.from(hash, "hex")).toCore(),
+    ),
   });
 
 /** The NFT output at the v2 logic address with the StagingState datum and its min UTxO. */
@@ -183,7 +185,7 @@ const stagingStateOutput = (
     },
     datum: stagingStateDatum(
       inputs.cnightPolicy,
-      inputs.stagingForeverHash,
+      inputs.stagingForeverHashes,
     ).toCore(),
   });
   output
@@ -240,16 +242,24 @@ export const mintStagingStateProgram = (input: MintStagingStateInput) =>
     const oneShotRef = track.oneShot(config);
     yield* out.log(`One-shot UTxO: ${oneShotRef[0]}#${oneShotRef[1]}`);
 
-    const stagingForever = track.stagingForever(contracts);
-    if (!stagingForever) {
+    const stagingForevers = track.stagingForevers(contracts);
+    if (
+      !stagingForevers.every(
+        (contract): contract is ContractClass => contract !== undefined,
+      )
+    ) {
       return yield* new BlueprintError({
         environment: network,
         source: "build",
         reason: `Staging forever contract not found for ${validator}. Ensure the blueprint includes staging forever validators.`,
       });
     }
-    const stagingForeverHash = stagingForever.Script.hash();
-    yield* out.log(`Staging forever hash: ${stagingForeverHash}`);
+    const stagingForeverHashes = stagingForevers.map((contract) =>
+      contract.Script.hash(),
+    );
+    yield* out.log(
+      `Staging forever hashes: ${stagingForeverHashes.join(", ")}`,
+    );
     const cnightPolicy = config.cnight_policy;
     yield* out.log(`CNIGHT test policy: ${cnightPolicy}`);
 
@@ -271,7 +281,7 @@ export const mintStagingStateProgram = (input: MintStagingStateInput) =>
     const inputs: MintStagingStateInputs = {
       oneShotUtxo,
       v2LogicScript,
-      stagingForeverHash,
+      stagingForeverHashes,
       cnightPolicy,
       collateralUtxo,
       protocolParams,
@@ -305,6 +315,8 @@ export const mintStagingStateProgram = (input: MintStagingStateInput) =>
     );
     yield* out.log(`  Datum: StagingState`);
     yield* out.log(`    cnight_test_policy: ${cnightPolicy}`);
-    yield* out.log(`    forever_script_hash: ${stagingForeverHash}`);
+    yield* out.log(
+      `    staging forever hashes: ${stagingForeverHashes.join(", ")}`,
+    );
     return tx;
   });

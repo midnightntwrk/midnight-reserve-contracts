@@ -131,11 +131,13 @@ describe("staleDependency", () => {
       validator("thresholds.beefy_signer_threshold.else", "ee", ""),
       validator("committee_bridge.committee_bridge_forever.else", "ff", ""),
       validator("committee_bridge_pool.committee_bridge_pool.else", "11", ""),
+      validator("rewards_pool.rewards_pool_forever.else", "22", ""),
       validator("permissioned.council_logic.else", "", "00aa00"),
       validator("permissioned.tech_auth_logic.else", "", "00bb00"),
       validator("permissioned.federated_ops_logic.else", "", "00cc00"),
       validator("gov_auth.main_gov_auth.else", "", "00dd00"),
       validator("committee_bridge.committee_bridge_logic.else", "", "ee ff 11"),
+      validator("reserve_v2.reserve_logic_v2.else", "", "002200"),
     ],
   };
 

@@ -229,6 +229,10 @@ const LOGIC_DEPENDENCIES: readonly LogicDependency[] = [
     dependencyValidator: "thresholds.beefy_signer_threshold.else",
   },
   {
+    logicValidator: "reserve_v2.reserve_logic_v2.else",
+    dependencyValidator: "rewards_pool.rewards_pool_forever.else",
+  },
+  {
     logicValidator: "committee_bridge.committee_bridge_logic.else",
     dependencyValidator: "committee_bridge.committee_bridge_forever.else",
   },
