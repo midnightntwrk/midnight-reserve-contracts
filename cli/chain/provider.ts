@@ -98,8 +98,17 @@ const connect = (
   }
 };
 
+/** The deployer's cold wallet; coin selection never sees a UTxO that carries a reference script, so the bridge reference scripts at the deployer address stay unspent. */
+class DeployerWallet extends ColdWallet {
+  override async getUnspentOutputs(): Promise<TransactionUnspentOutput[]> {
+    return (await super.getUnspentOutputs()).filter(
+      (utxo) => utxo.output().scriptRef() === undefined,
+    );
+  }
+}
+
 /** A Blaze instance over the provider with the deployer's cold wallet. */
-type DeployerBlaze = Blaze<BlazeProvider, ColdWallet>;
+type DeployerBlaze = Blaze<BlazeProvider, DeployerWallet>;
 
 /** A chain provider; every call is an Effect failing with ProviderError. */
 export class Provider extends Context.Tag("cli/Provider")<
@@ -216,7 +225,7 @@ const providerService = (
         const config = yield* Settings;
         const deployerAddress = yield* config.deployerAddress;
         const { networkId } = environmentOf(environment);
-        const wallet = new ColdWallet(deployerAddress, networkId, provider);
+        const wallet = new DeployerWallet(deployerAddress, networkId, provider);
         return yield* providerCall("Blaze.from", () =>
           Blaze.from(provider, wallet),
         );
