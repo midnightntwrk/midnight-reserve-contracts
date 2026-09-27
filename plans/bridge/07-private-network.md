@@ -46,7 +46,11 @@ local-env, no stack copied here): `just private-net-up [node] [ref]` and
 node and toolkit images of the ref when missing, exports the ref and the
 contracts commit it pins to `.private-net/`, and runs `run:local-env` there.
 Membership changes are real `change-federated-ops` transactions on the
-devnet. The original plan follows.
+devnet. Run end to end (up, down, up) on `kc-beefy-mip-alignment`
+(`3.0.0-c2f414778991-arm64`): a block every slot, no `PoolTimedOut`, 136 of
+400 postgres connections in use, sessions every 5 blocks with 4 of 5 seats
+signing; `bridge-bootstrap` and `bridge-fetch-justification` against it. The
+original plan follows.
 
 Copy the compact-end-2-end pattern (`infra/docker-compose.yml`,
 `infra/earthly-builder.Dockerfile`, `infra/stack.ts`): the
