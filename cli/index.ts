@@ -70,6 +70,16 @@ const cli = Command.run(root, {
   version: packageJson.version,
 });
 
+/* eslint-disable no-console -- Blaze writes this warning straight to console.warn. */
+// Blaze warns whenever a transaction sets a fee floor or padding; --fee-padding and a funded bridge update set them on purpose.
+const BLAZE_FEE_WARNING = "A transaction was built using fee padding.";
+const warn = console.warn.bind(console);
+console.warn = (...args: unknown[]) => {
+  if (!(typeof args[0] === "string" && args[0].startsWith(BLAZE_FEE_WARNING)))
+    warn(...args);
+};
+/* eslint-enable no-console */
+
 // runMain interrupts on SIGINT and SIGTERM only.
 process.once("SIGHUP", () => process.kill(process.pid, "SIGTERM"));
 
