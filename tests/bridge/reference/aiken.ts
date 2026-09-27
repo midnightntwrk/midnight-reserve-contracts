@@ -1,5 +1,12 @@
 /** Emit the generated Aiken fixture modules in `aiken fmt` style. */
-import { committeeCommitment, required } from "./commitment";
+import {
+  buildMultiproof,
+  type ProofNode,
+  required,
+} from "../../../cli/bridge/authority-set";
+import { keccak } from "../../../cli/bridge/keccak";
+import { u32le } from "../../../cli/bridge/scale";
+import { committeeCommitment } from "./commitment";
 import {
   dummyLeafHash,
   highSTwin,
@@ -8,10 +15,8 @@ import {
   scenarioByName,
   scenarios,
 } from "./fixtures";
-import { keccak } from "./keccak";
 import { Mmr } from "./mmr";
-import { buildMultiproof, type ProofNode } from "./multiproof";
-import { encodeCommitment, encodeLeaf, u32le, type MmrLeaf } from "./scale";
+import { encodeCommitment, encodeLeaf, type MmrLeaf } from "./scale";
 import { byKey, keypair, sign } from "./sign";
 import { hex } from "./update";
 

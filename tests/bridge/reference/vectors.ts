@@ -6,7 +6,9 @@ import {
   BridgeUpdate,
   type BeefyConsensusState as State,
 } from "../../../contract_blueprint";
-import { committeeCommitment, required } from "./commitment";
+import { buildMultiproof, required } from "../../../cli/bridge/authority-set";
+import { keccak } from "../../../cli/bridge/keccak";
+import { committeeCommitment } from "./commitment";
 import {
   committee,
   dummyLeafHash,
@@ -17,9 +19,8 @@ import {
   scenarios,
   seats,
 } from "./fixtures";
-import { keccak } from "./keccak";
 import { Mmr } from "./mmr";
-import { buildMultiproof, toJson } from "./multiproof";
+import { toJson } from "./multiproof";
 import { encodeCommitment, encodeLeaf, type MmrLeaf } from "./scale";
 import { bridgeUpdate, hex, nextState, toCommitment } from "./update";
 
