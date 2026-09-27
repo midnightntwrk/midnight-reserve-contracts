@@ -3,9 +3,9 @@
  * its one-shot UTxO and mints the NFT(s) that one-shot parameterises:
  * a two-stage deployment mints the forever NFT and the two-stage main and
  * staging NFTs (and registers the logic as a stake credential where the
- * deployment asks for it), a threshold deployment mints the threshold NFT,
- * a staging-forever deployment mints the staging forever NFT. Every output
- * holds its min ADA.
+ * deployment asks for it), a threshold deployment mints the threshold NFT
+ * (the BEEFY one also registers the bridge logic), a staging-forever
+ * deployment mints the staging forever NFT. Every output holds its min ADA.
  */
 import {
   addressFromValidator,
@@ -69,6 +69,14 @@ export interface ThresholdDeployment {
   readonly oneShotUtxo: TransactionUnspentOutput;
   readonly threshold: Script;
   readonly datum: Contracts.MultisigThreshold;
+}
+
+/** The BEEFY threshold's deployment: its script, its datum, and the bridge logic whose stake credential it registers. */
+export interface BeefyThresholdDeployment {
+  readonly oneShotUtxo: TransactionUnspentOutput;
+  readonly threshold: Script;
+  readonly datum: Contracts.BeefyThreshold;
+  readonly bridgeLogic: Script;
 }
 
 /** A staging forever validator's deployment: its script, its datum and its mint redeemer. */
@@ -156,30 +164,59 @@ export const buildTwoStageDeploymentTx = (
   );
 };
 
-/** Spend the one-shot, mint the threshold NFT and lock it at the threshold with its datum. */
+/** Spend the one-shot, mint a threshold NFT and lock it at the threshold with its datum. */
+const mintThreshold = (
+  blaze: Blaze<BlazeProvider, Wallet>,
+  oneShotUtxo: TransactionUnspentOutput,
+  threshold: Script,
+  datum: PlutusData,
+  params: DeployParams,
+): TxBuilder =>
+  blaze
+    .newTransaction()
+    .addInput(oneShotUtxo)
+    .addMint(
+      PolicyId(threshold.hash()),
+      new Map([[AssetName(""), 1n]]),
+      PlutusData.newInteger(0n),
+    )
+    .provideScript(threshold)
+    .addOutput(nftOutput(threshold, "", datum, params));
+
+/** Spend the one-shot, mint the threshold NFT and lock it at the threshold with its MultisigThreshold datum. */
 export const buildThresholdDeploymentTx = (
   blaze: Blaze<BlazeProvider, Wallet>,
   inputs: ThresholdDeployment,
   params: DeployParams,
 ): TxBuilder =>
   withCollateral(
-    blaze
-      .newTransaction()
-      .addInput(inputs.oneShotUtxo)
-      .addMint(
-        PolicyId(inputs.threshold.hash()),
-        new Map([[AssetName(""), 1n]]),
-        PlutusData.newInteger(0n),
-      )
-      .provideScript(inputs.threshold)
-      .addOutput(
-        nftOutput(
-          inputs.threshold,
-          "",
-          serialize(Contracts.MultisigThreshold, inputs.datum),
-          params,
-        ),
+    mintThreshold(
+      blaze,
+      inputs.oneShotUtxo,
+      inputs.threshold,
+      serialize(Contracts.MultisigThreshold, inputs.datum),
+      params,
+    ),
+    params,
+  );
+
+/** Mint the BEEFY threshold NFT with its BeefyThreshold datum (never MultisigThreshold, the same four-Int shape) and register the bridge logic, which the bridge NFT transaction has no room for. */
+export const buildBeefyThresholdDeploymentTx = (
+  blaze: Blaze<BlazeProvider, Wallet>,
+  inputs: BeefyThresholdDeployment,
+  params: DeployParams,
+): TxBuilder =>
+  withCollateral(
+    registerScriptStake(
+      mintThreshold(
+        blaze,
+        inputs.oneShotUtxo,
+        inputs.threshold,
+        serialize(Contracts.BeefyThreshold, inputs.datum),
+        params,
       ),
+      inputs.bridgeLogic,
+    ),
     params,
   );
 
