@@ -182,6 +182,12 @@ export type Refusal =
   | { readonly _tag: "DatumAlreadyMigrated" }
   | { readonly _tag: "NoCnight"; readonly asset: string }
   | { readonly _tag: "MitigationActive"; readonly mitigationLogicHash: string }
+  | { readonly _tag: "PoolEmpty"; readonly address: string }
+  | {
+      readonly _tag: "FundedNotHandover";
+      readonly leafNext: bigint;
+      readonly next: bigint;
+    }
   | {
       readonly _tag: "AlreadyRegistered";
       readonly environment: string;
@@ -286,6 +292,10 @@ const renderRefusal = (refusal: Refusal): string => {
         `merge-utxos does not support mitigation logic — the forever contract ` +
         `requires both logic and mitigation_logic withdrawals when mitigation is set.`
       );
+    case "PoolEmpty":
+      return `the bridge pool at ${refusal.address} holds no UTxO; top it up first (bridge-topup), or build the update without --funded`;
+    case "FundedNotHandover":
+      return `a funded update must be a handover (MIP rule 15): the leaf names set ${refusal.leafNext}, and the light client's next set is ${refusal.next}; build it without --funded`;
     case "AlreadyRegistered":
       return `already registered on ${refusal.environment}: ${refusal.scripts
         .map(({ label, scriptHash }) => `${label} ${scriptHash}`)

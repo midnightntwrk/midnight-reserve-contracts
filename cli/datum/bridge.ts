@@ -4,7 +4,8 @@
  * (`validators/committee_bridge.ak`), the state an update moves it to, and
  * the fee cap of the BEEFY threshold.
  */
-import { Either } from "effect";
+import { HexBlob, PlutusData } from "@blaze-cardano/core";
+import { Either, ParseResult, Schema } from "effect";
 import type {
   AuthoritySetCommitment,
   BeefyConsensusState,
@@ -70,6 +71,59 @@ export const bootstrapState = (
         current_committee: values.current,
         next_committee: values.next,
       });
+
+/** `bytes` bytes of lower-case hex. */
+const hexBytes = (bytes: number) =>
+  Schema.String.pipe(
+    Schema.pattern(new RegExp(`^(?:[0-9a-f]{2}){${bytes}}$`), {
+      message: () => `expected ${bytes} bytes of lower-case hex`,
+    }),
+  );
+
+const natural = Schema.BigIntFromNumber.pipe(Schema.nonNegativeBigInt());
+
+const PlutusDataSelf = Schema.declare(
+  (value: unknown): value is PlutusData => value instanceof PlutusData,
+);
+
+/** A PlutusData from its CBOR hex. */
+const PlutusDataFromCbor = Schema.transformOrFail(
+  Schema.String,
+  PlutusDataSelf,
+  {
+    strict: true,
+    decode: (cbor, _, ast) =>
+      Either.try({
+        try: () => PlutusData.fromCbor(HexBlob(cbor)),
+        catch: () =>
+          new ParseResult.Type(ast, cbor, "expected the CBOR hex of a Data"),
+      }),
+    encode: (data) => ParseResult.succeed(data.toCbor()),
+  },
+);
+
+/** The --update file: a BridgeUpdate with the blueprint's field names, integers as JSON numbers, byte strings as lower-case hex (a non-signer's signature empty) and the multiproof as the CBOR hex of its Data. */
+export const BridgeUpdateJson = Schema.Struct({
+  mmr_root: hexBytes(32),
+  block_number: natural,
+  validator_set_id: natural,
+  signatures: Schema.mutable(
+    Schema.Array(Schema.Union(hexBytes(64), Schema.Literal(""))),
+  ),
+  leaf: Schema.Struct({
+    version: natural,
+    parent_number: natural,
+    parent_hash: hexBytes(32),
+    next_authority_set: Schema.Struct({
+      validator_set_id: natural,
+      seat_count: natural,
+      keyset_commitment: hexBytes(32),
+    }),
+    extra: Schema.Literal(""),
+  }),
+  mmr_proof: Schema.mutable(Schema.Array(hexBytes(32))),
+  multiproof: PlutusDataFromCbor,
+});
 
 /** The state after `update` (spec §5): the signed root and height; a handover (the leaf names next + 1) makes the next committee current and the leaf's the next. */
 export const nextBridgeState = (
