@@ -4,12 +4,18 @@
 # (archive). It runs from an export of the ref in .private-net/, since its
 # setup rewrites res/ in place, with the contracts commit the ref pins.
 # Earthly builds the node repo's working copy, so a missing image needs the
-# repo at the ref with no changes.
-# Usage: local-env.sh up|down [node repo] [ref]
+# repo at the ref with no changes. `up` sets the Midnight session to
+# `session slots` 6 s slots (default 10: 1 min) and the devnet's Cardano
+# epoch to `mc epoch` seconds (default 60), a whole multiple of the session
+# (the node refuses anything else). A Cardano change reaches the committee
+# from two Cardano epochs later, at a session start: about 2–3 min.
+# Usage: local-env.sh up|down [node repo] [ref] [session slots] [mc epoch]
 set -euo pipefail
 action=$1
 node=$(cd "${2:-../midnight-node}" && pwd)
 ref=${3:-kc-beefy-mip-alignment}
+session_slots=${4:-10}
+mc_epoch=${5:-60}
 work=$PWD/.private-net
 tree=$(git -C "$node" rev-parse "$ref^{tree}")
 version=$(sed -n 's/^version = "\(.*\)"$/\1/p' "$node/node/Cargo.toml" | head -1)
@@ -29,6 +35,12 @@ build() {
   (cd "$node" && earthly "+$2")
 }
 
+# Replace `from` with `to` in `file`; the text must be there.
+set_text() {
+  grep -qF -- "$2" "$1" || { echo "$1 no longer holds: $2" >&2; exit 1; }
+  sed "s|$2|$3|" "$1" > "$1.tmp" && mv "$1.tmp" "$1"
+}
+
 case $action in
   up)
     if docker ps --format '{{.Names}}' | grep -qx midnight-node-1; then
@@ -41,6 +53,9 @@ case $action in
     mkdir -p "$work/node" "$work/contracts"
     git -C "$node" archive "$ref" | tar -x -C "$work/node"
     git archive "$(git -C "$node" rev-parse "$ref:midnight-reserve-contracts")" | tar -x -C "$work/contracts"
+    config=$work/node/local-environment/src/networks/local-env/configurations
+    set_text "$config/midnight-setup/entrypoint.sh" "sidechain.slotsPerEpoch = 5" "sidechain.slotsPerEpoch = $session_slots"
+    set_text "$config/genesis/shelley/genesis.json" '"epochLength": 60' "\"epochLength\": $mc_epoch"
     cd "$work/node/local-environment"
     npm ci
     npm run run:local-env
@@ -50,7 +65,7 @@ case $action in
     npm run stop:local-env
     ;;
   *)
-    echo "usage: local-env.sh up|down [node repo] [ref]" >&2
+    echo "usage: local-env.sh up|down [node repo] [ref] [session slots] [mc epoch]" >&2
     exit 1
     ;;
 esac

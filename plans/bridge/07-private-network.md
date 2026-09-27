@@ -51,8 +51,12 @@ to coin selection (`GuardedWallet`, `reservedRefs`).
 
 ### 1. Stack
 Done (user decision 2026-09-27: a `just` recipe over the node repo's
-local-env, no stack copied here): `just private-net-up [node] [ref]` and
-`just private-net-down` run `tests/private-net/local-env.sh`. It builds the
+local-env, no stack copied here): `just private-net-up [node] [ref]
+[session_slots] [mc_epoch]` and `just private-net-down` run
+`tests/private-net/local-env.sh`. Demo timing (user decision 2026-09-27):
+1-minute sessions (10 slots) over a 60 s devnet epoch; the node refuses a
+Cardano epoch that is not a whole multiple of the session. A
+`change-federated-ops` reached the committee 3 min 36 s after it confirmed. It builds the
 node and toolkit images of the ref when missing, exports the ref and the
 contracts commit it pins to `.private-net/`, and runs `run:local-env` there.
 Membership changes are real `change-federated-ops` transactions on the
