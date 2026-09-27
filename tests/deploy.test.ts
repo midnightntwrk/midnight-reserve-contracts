@@ -28,6 +28,7 @@ import {
   Blueprint,
   BlueprintLive,
   type ContractClass,
+  type UpgradableValidator,
 } from "../cli/contracts/contracts";
 import type { PlutusJson } from "../cli/contracts/plutus-json";
 import { validatorName } from "../cli/contracts/versions";
@@ -100,6 +101,7 @@ const deployInput: DeployInput = {
   councilThreshold: { numerator: 1n, denominator: 5n },
   techAuthStagingThreshold: { numerator: 5n, denominator: 7n },
   councilStagingThreshold: { numerator: 2n, denominator: 9n },
+  bridgeThreshold: { numerator: 3n, denominator: 5n },
   components: Option.none(),
 };
 
@@ -279,15 +281,17 @@ const TWO_STAGE_COMPONENTS: readonly DeployComponent[] = [
   "ics",
   "federated-ops",
   "terms-and-conditions",
+  "committee-bridge",
 ];
 
-/** The components whose deployment registers its logic's stake credential. */
-const REGISTERS_LOGIC: readonly DeployComponent[] = [
-  "tech-auth",
-  "council",
-  "federated-ops",
-  "terms-and-conditions",
-];
+/** The components whose deployment registers a logic's stake credential, and whose logic; the bridge's registration rides on its threshold's transaction. */
+const REGISTERS_LOGIC: Partial<Record<DeployComponent, UpgradableValidator>> = {
+  "tech-auth": "tech-auth",
+  council: "council",
+  "federated-ops": "federated-ops",
+  "terms-and-conditions": "terms-and-conditions",
+  "committee-bridge-threshold": "committee-bridge",
+};
 
 /** The datum of the draft's output that holds one. */
 const datumOf = (builder: TxBuilder) =>
@@ -334,10 +338,18 @@ describe("the deploy steps", () => {
   ])(
     "the %s step mints from its one-shot, registering the logic where it should",
     async (_name, component, settings) => {
-      const [, , logic] = await runTest(
-        blueprint,
-        DEPLOY_STEPS[component].validators,
-      );
+      const registers = REGISTERS_LOGIC[component];
+      const logic =
+        registers === undefined
+          ? []
+          : [
+              (
+                await runTest(
+                  blueprint,
+                  Effect.flatMap(Blueprint, (b) => b.twoStage(registers)),
+                )
+              ).logic.Script.hash(),
+            ];
       await asFunded(async (emulator, blaze, addr) => {
         const builder = await stepBuilder(
           component,
@@ -346,13 +358,28 @@ describe("the deploy steps", () => {
           addr,
           settings,
         );
-        expect(registeredStake(builder)).toEqual(
-          REGISTERS_LOGIC.includes(component) ? [logic.Script.hash()] : [],
-        );
+        expect(registeredStake(builder)).toEqual(logic);
         await emulator.expectValidTransaction(blaze, builder);
       });
     },
   );
+
+  test("the committee-bridge-threshold datum is a BeefyThreshold: the bridge fraction, then the fee cap", async () => {
+    await asFunded(async (emulator, blaze, addr) => {
+      const builder = await stepBuilder(
+        "committee-bridge-threshold",
+        emulator,
+        blaze,
+        addr,
+      );
+      expect(parse(Contracts.BeefyThreshold, datumOf(builder))).toEqual({
+        numerator: 3n,
+        denominator: 5n,
+        base: BigInt(testEnv("BRIDGE_MAX_FEE_BASE")),
+        per_signer: BigInt(testEnv("BRIDGE_MAX_FEE_PER_SIGNER")),
+      });
+    });
+  });
 
   test.each([
     ["main-gov", [3n, 4n, 1n, 5n]],

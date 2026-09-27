@@ -44,6 +44,10 @@ export class Blueprint extends Context.Tag("cli/Blueprint")<
     readonly twoStage: (
       validator: UpgradableValidator,
     ) => Effect.Effect<TwoStageContracts, BlueprintError>;
+    /** An instance a blueprint may lack; BlueprintError naming its class when this one does. */
+    readonly optional: (
+      instance: OptionalInstance,
+    ) => Effect.Effect<ContractClass, BlueprintError>;
     /** The script with this hash; `reason` is the BlueprintError when the blueprint lacks it. */
     readonly scriptByHash: (
       hash: string,
@@ -127,10 +131,13 @@ const OPTIONAL = {
   beefySignerThreshold: "ThresholdsBeefySignerThresholdElse",
 } as const;
 
+/** An instance a blueprint may lack. */
+export type OptionalInstance = keyof typeof OPTIONAL;
+
 /** Every contract instance of a blueprint. */
 export type ContractInstances = {
   readonly [K in keyof typeof REQUIRED]: ContractClass;
-} & { readonly [K in keyof typeof OPTIONAL]?: ContractClass };
+} & { readonly [K in OptionalInstance]?: ContractClass };
 
 type ModuleLoader = () => Record<string, unknown>;
 
@@ -360,6 +367,17 @@ export const BlueprintLive = (
         twoStage: (validator: UpgradableValidator) =>
           Effect.flatMap(instances, (all) =>
             twoStageContracts(validator, all, environment, source),
+          ),
+        optional: (instance: OptionalInstance) =>
+          Effect.flatMap(instances, (all) =>
+            Either.fromNullable(all[instance], () =>
+              blueprintError(
+                environment,
+                source,
+              )(
+                `contract class '${OPTIONAL[instance]}' not found in blueprint`,
+              ),
+            ),
           ),
         scriptByHash: (hash: string, reason: string) =>
           Effect.flatMap(contracts, (all) =>

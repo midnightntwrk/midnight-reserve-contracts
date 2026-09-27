@@ -3,7 +3,9 @@
  * contracts, each spending its one-shot UTxO from the aiken.toml profile,
  * built (never submitted) over the build blueprint and written to
  * <output>/<env>/deployment-transactions.json; --components builds only
- * the transactions of those components, and the file holds only them.
+ * the transactions of those components, and the file holds only them. The
+ * committee bridge components are outside the default set: a run builds
+ * them only when --components names them.
  *
  * Deploy creates contracts that are not live; a change to a live contract
  * is an upgrade (stage-upgrade, promote-upgrade). The deployed-scripts
@@ -26,6 +28,7 @@ import {
   Blueprint,
   type ContractClass,
   type ContractInstances,
+  type OptionalInstance,
   type UpgradableValidator,
 } from "../contracts/contracts";
 import {
@@ -42,6 +45,7 @@ import { parseThreshold, type Threshold } from "../governance/threshold";
 import type { NetworkInput } from "../input";
 import { Output } from "../output";
 import {
+  buildBeefyThresholdDeploymentTx,
   buildThresholdDeploymentTx,
   buildTwoStageDeploymentTx,
   ZERO_FOREVER_DATUM,
@@ -66,8 +70,8 @@ import {
 } from "./deployment";
 import { DEPLOYER_ONLY } from "../chain/transaction";
 
-/** The components --components selects, one per deployment transaction, in build order. */
-export const DEPLOY_COMPONENTS = [
+/** The governance components: a run without --components builds these. */
+export const DEFAULT_DEPLOY_COMPONENTS = [
   "tech-auth",
   "tech-auth-threshold",
   "council",
@@ -80,6 +84,13 @@ export const DEPLOY_COMPONENTS = [
   "federated-ops-threshold",
   "terms-and-conditions",
   "terms-and-conditions-threshold",
+] as const;
+
+/** The components --components selects, one per deployment transaction, in build order. */
+export const DEPLOY_COMPONENTS = [
+  ...DEFAULT_DEPLOY_COMPONENTS,
+  "committee-bridge",
+  "committee-bridge-threshold",
 ] as const;
 
 export type DeployComponent = (typeof DEPLOY_COMPONENTS)[number];
@@ -107,6 +118,11 @@ export const DEPLOY_COMPONENT_VALIDATORS: Record<
   "federated-ops-threshold": ["main_federated_ops_update_threshold"],
   "terms-and-conditions": twoStageNames("terms_and_conditions"),
   "terms-and-conditions-threshold": ["terms_and_conditions_threshold"],
+  "committee-bridge": [
+    ...twoStageNames("committee_bridge"),
+    "committee_bridge_pool",
+  ],
+  "committee-bridge-threshold": ["beefy_signer_threshold"],
 };
 
 /** A deploy threshold: its option, what it governs, its env variable and the fraction when both are unset. */
@@ -143,19 +159,26 @@ export const DEPLOY_THRESHOLDS = {
     variable: "TECH_AUTH_STAGING_THRESHOLD",
     fallback: { numerator: 1n, denominator: 2n },
   },
+  bridgeThreshold: {
+    option: "bridge-threshold",
+    what: "Committee bridge signer",
+    variable: "BRIDGE_THRESHOLD",
+    fallback: { numerator: 2n, denominator: 3n },
+  },
 } as const satisfies Record<string, ThresholdSetting>;
 
 /** A threshold's env value as a Config, for its option's fallback. */
 export const thresholdConfig = (setting: ThresholdSetting) =>
   envFallback(setting.variable, parseThreshold, setting.fallback);
 
-/** A deployment: where the file goes, the four thresholds, and which components (None: every one). */
+/** A deployment: where the file goes, the five thresholds, and which components (None: the governance ones). */
 export interface DeployInput extends NetworkInput {
   readonly outputDir: string;
   readonly techAuthThreshold: Threshold;
   readonly councilThreshold: Threshold;
   readonly councilStagingThreshold: Threshold;
   readonly techAuthStagingThreshold: Threshold;
+  readonly bridgeThreshold: Threshold;
   readonly components: Option.Option<readonly DeployComponent[]>;
 }
 
@@ -276,6 +299,70 @@ const termsAndConditionsForever = () =>
         serialize(Contracts.VersionedTermsAndConditions, [[hash, link], 0n]),
       ),
   );
+
+/** The bootstrap BeefyConsensusState from Settings, minted with redeemer 0. */
+const bridgeForever = () =>
+  Effect.map(
+    Effect.flatMap(Settings, (s) => s.bridgeBootstrap),
+    (state) => zeroRedeemer(serialize(Contracts.BeefyConsensusState, state)),
+  );
+
+const bridgeInstance = (instance: OptionalInstance) =>
+  Effect.flatMap(Blueprint, (b) => b.optional(instance));
+
+/** The committee bridge triple over the bootstrap state, with no registration (the triple fills the transaction); its validators include the pool, whose hash the logic compiles in. */
+const committeeBridge = (): StepBody => {
+  const step = twoStage(
+    "committee-bridge",
+    (c) => [
+      c.committee_bridge_one_shot_hash,
+      c.committee_bridge_one_shot_index,
+    ],
+    bridgeForever,
+    false,
+  );
+  return {
+    ...step,
+    validators: Effect.map(
+      Effect.all([step.validators, bridgeInstance("committeeBridgePool")]),
+      ([triple, pool]) => [...triple, pool],
+    ),
+  };
+};
+
+/** The BEEFY threshold over --bridge-threshold and the fee cap from Settings; its transaction registers the bridge logic. */
+const beefyThreshold: StepBody = {
+  validators: Effect.map(bridgeInstance("beefySignerThreshold"), (t) => [t]),
+  installs: Effect.succeed([]),
+  oneShotOf: (c) => [
+    c.committee_threshold_one_shot_hash,
+    c.committee_threshold_one_shot_index,
+  ],
+  build: (ctx, oneShotUtxo) =>
+    Effect.gen(function* () {
+      const threshold = yield* bridgeInstance("beefySignerThreshold");
+      const { logic } = yield* Effect.flatMap(Blueprint, (b) =>
+        b.twoStage("committee-bridge"),
+      );
+      const fee = yield* Effect.flatMap(Settings, (s) => s.bridgeMaxFee);
+      const { numerator, denominator } = ctx.input.bridgeThreshold;
+      return buildBeefyThresholdDeploymentTx(
+        ctx.blaze,
+        {
+          oneShotUtxo,
+          threshold: threshold.Script,
+          datum: {
+            numerator,
+            denominator,
+            base: fee.base,
+            per_signer: fee.perSigner,
+          },
+          bridgeLogic: logic.Script,
+        },
+        ctx.params,
+      );
+    }),
+};
 
 /** Each component's deployment transaction: its name in the deployment file, the validators it creates and how it is built. */
 export const DEPLOY_STEPS: Record<
@@ -409,6 +496,14 @@ export const DEPLOY_STEPS: Record<
       mainFractions,
     ),
   },
+  "committee-bridge": {
+    name: "committee-bridge-deployment",
+    ...committeeBridge(),
+  },
+  "committee-bridge-threshold": {
+    name: "committee-bridge-threshold-deployment",
+    ...beefyThreshold,
+  },
 };
 
 /** A full run on a test snapshot starts it again; a --components run, or any run on a production one, extends it. */
@@ -430,9 +525,11 @@ export const deployProgram = (input: DeployInput) =>
     );
     yield* out.log("Min UTxO: calculated dynamically from protocol parameters");
 
-    const steps = selectComponents(DEPLOY_COMPONENTS, input.components).map(
-      (component) => DEPLOY_STEPS[component],
-    );
+    const steps = selectComponents(
+      DEPLOY_COMPONENTS,
+      input.components,
+      DEFAULT_DEPLOY_COMPONENTS,
+    ).map((component) => DEPLOY_STEPS[component]);
     const hashesOf = (pick: (step: StepBody) => Validators) =>
       Effect.map(
         Effect.forEach(steps, pick),

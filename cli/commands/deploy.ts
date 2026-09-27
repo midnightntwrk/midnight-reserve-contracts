@@ -4,6 +4,7 @@ import { withServices } from "../run";
 import { parseNameList } from "../input";
 import { parseThreshold } from "../governance/threshold";
 import {
+  DEFAULT_DEPLOY_COMPONENTS,
   DEPLOY_COMPONENTS,
   DEPLOY_THRESHOLDS,
   deployProgram,
@@ -24,7 +25,7 @@ const components = parsedText(
   parseNameList(DEPLOY_COMPONENTS),
 ).pipe(
   Options.withDescription(
-    `Comma-separated components to deploy: ${DEPLOY_COMPONENTS.join(", ")} (default: every one; a full run)`,
+    `Comma-separated components to deploy: ${DEPLOY_COMPONENTS.join(", ")} (default: the governance ones, ${DEFAULT_DEPLOY_COMPONENTS.join(", ")}; a full run)`,
   ),
   Options.optional,
 );
@@ -44,6 +45,7 @@ export const deploy = Command.make(
     techAuthStagingThreshold: threshold(
       DEPLOY_THRESHOLDS.techAuthStagingThreshold,
     ),
+    bridgeThreshold: threshold(DEPLOY_THRESHOLDS.bridgeThreshold),
     components,
   },
   deployProgram,
