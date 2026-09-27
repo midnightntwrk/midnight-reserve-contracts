@@ -15,10 +15,10 @@ use aiken/collection/list
 use aiken/crypto.{ScriptHash}
 use aiken/math
 use bridge/types.{BeefyConsensusState, ProofNodeRec} as bridge_types
-use cardano/address.{Credential, Script}
+use cardano/address.{Address, Credential, Script}
 use cardano/assets.{PolicyId, Value, add, from_asset}
 use cardano/transaction.{
-  InlineDatum, Input, Output, OutputReference, Transaction,
+  DatumHash, InlineDatum, Input, Output, OutputReference, Transaction,
 }
 use config
 use rewards/digest.{verify_digest}
@@ -71,13 +71,34 @@ pub fn validate(tx: Transaction, own_hash: ScriptHash, redeemer: Data) -> Bool {
     }
     LoadAndPay { digest_proof, proof, pairs, exits } -> {
       expect state_in.complete
-      let Digest { epoch, leaf_count, root, min_key, max_key } =
+      let Digest { epoch, leaf_count, root, min_key, max_key, treasury_total } =
         load(state_in, digest_proof, tx.reference_inputs)
-      let loaded = BatcherState { ..state_in, epoch, root, min_key, max_key }
+      let loaded =
+        BatcherState {
+          ..state_in,
+          epoch,
+          root,
+          min_key,
+          max_key,
+          treasury_total,
+        }
       if leaf_count == 0 {
         expect proof == [] && pairs == [] && exits == []
         expect account_inputs(tx.inputs, state_in.account_policy) == 0
-        expect pool_inputs(tx.inputs, state_in.pool_forever) == assets.zero
+        expect
+          if treasury_total == 0 {
+            pool_inputs(tx.inputs, state_in.pool_forever) == assets.zero
+          } else {
+            and {
+              pool_ok(
+                tx.inputs,
+                tx.outputs,
+                state_in.pool_forever,
+                treasury_total,
+              ),
+              ics_paid(tx.outputs, treasury_total),
+            }
+          }
         loaded == state_out
       } else {
         let leaves = leaves(root, proof)
@@ -135,8 +156,16 @@ pub fn pay(
   let total = pay_each(paid, pairs, exits, -1, -1, 0, env)
   expect
     account_inputs(inputs, state.account_policy) == n_paid + list.length(exits)
-  expect pool_ok(inputs, outputs, state.pool_forever, total)
-  BatcherState { ..state, cursor, complete: cursor == state.start_key }
+  let complete = cursor == state.start_key
+  let treasury =
+    if complete {
+      state.treasury_total
+    } else {
+      0
+    }
+  expect pool_ok(inputs, outputs, state.pool_forever, total + treasury)
+  expect treasury == 0 || ics_paid(outputs, treasury)
+  BatcherState { ..state, cursor, complete }
 }
 
 /// Split an ascending run starting at `state.cursor` into the paid leaves and the next cursor.
@@ -265,6 +294,27 @@ fn pool_ok(
     ada_out >= assets.lovelace_of(pool_in),
     out_assets == night_assets(night_of(pool_in) - total),
   }
+}
+
+/// An output at the ICS forever address holds `[ada, night]` with at least `amount` NIGHT and no datum hash, so the ICS logic can merge it.
+fn ics_paid(outputs: List<Output>, amount: Int) -> Bool {
+  let ics = Address(Script(config.ics_forever_hash), None)
+  list.any(
+    outputs,
+    fn(o) {
+      let night = night_of(o.value)
+      let _, out_assets <- split_ada(o.value)
+      and {
+        o.address == ics,
+        night >= amount,
+        out_assets == night_assets(night),
+        when o.datum is {
+          DatumHash(_) -> False
+          _ -> True
+        },
+      }
+    },
+  )
 }
 
 /// Sum of the inputs at the pool address; fails if any carries the forever NFT.

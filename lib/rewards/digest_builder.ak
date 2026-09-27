@@ -81,6 +81,7 @@ pub fn rewards_extrinsic(digest: Digest) -> ByteArray {
         digest.root,
         digest.min_key,
         digest.max_key,
+        builtin.integer_to_bytearray(False, 16, digest.treasury_total),
       ],
     ),
   )

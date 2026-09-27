@@ -50,7 +50,8 @@ pub type ActionKind {
 
 /// Inline datum on the batcher state NFT UTXO. `cursor` is the next key to
 /// pay; `start_key` is the first key paid in the epoch. Both are read only
-/// while `complete == False`.
+/// while `complete == False`. `treasury_total` is the loaded epoch's
+/// Treasury share, paid to the ICS by the batch that completes the fold.
 pub type BatcherState {
   account_policy: PolicyId,
   pool_forever: ScriptHash,
@@ -58,6 +59,7 @@ pub type BatcherState {
   root: ByteArray,
   min_key: ByteArray,
   max_key: ByteArray,
+  treasury_total: Int,
   start_key: ByteArray,
   cursor: ByteArray,
   complete: Bool,
@@ -106,6 +108,7 @@ pub type Digest {
   root: ByteArray,
   min_key: ByteArray,
   max_key: ByteArray,
+  treasury_total: Int,
 }
 
 pub type ReserveRedeemer {

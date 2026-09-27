@@ -8,8 +8,9 @@
 //// `parent_hash(32) || Compact(number) || state_root(32) ||
 //// extrinsics_root(32) || Compact(n_logs) || log*`, hashed with
 //// blake2b-256. Extrinsic layout (bare `UncheckedExtrinsic`):
-//// `Compact(107) || 0x04 | 0x05 || pallet || call || epoch u64 LE ||
-//// leaf_count u64 LE || root 32 || min_key 28 || max_key 28`.
+//// `Compact(123) || 0x04 | 0x05 || pallet || call || epoch u64 LE ||
+//// leaf_count u64 LE || root 32 || min_key 28 || max_key 28 ||
+//// treasury_total u128 LE`.
 
 use aiken/builtin
 use bridge/codec.{scale_encode_beefy_mmr_leaf}
@@ -19,7 +20,7 @@ use rewards/scale.{compact, compact_encode, le}
 use rewards/trie
 use rewards/types.{Digest, DigestProof}
 
-const call_length = 107
+const call_length = 123
 
 pub fn header_hash(header: ByteArray) -> ByteArray {
   builtin.blake2b_256(header)
@@ -54,6 +55,7 @@ pub fn parse_rewards_call(extrinsic: ByteArray) -> Digest {
     root: builtin.slice_bytearray(at + 16, 32, extrinsic),
     min_key: builtin.slice_bytearray(at + 48, 28, extrinsic),
     max_key: builtin.slice_bytearray(at + 76, 28, extrinsic),
+    treasury_total: le(extrinsic, at + 104, 16),
   }
 }
 
