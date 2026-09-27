@@ -38,6 +38,7 @@ import {
 import {
   ConfigError,
   DatumParseError,
+  InputParseError,
   type ProviderError,
   StakeNotRegistered,
   UtxoNotFound,
@@ -84,13 +85,13 @@ export const contractUtxos = <K extends string>(
     );
   });
 
-/** The deployer's address (Settings) and its UTxO with this reference. */
+/** The deployer's address (Settings) and its UTxO with this reference, which carries no reference script. */
 export const deployerUtxo = (
   txHash: TxHash,
   txIndex: TxIndex,
 ): Effect.Effect<
   { readonly address: Address; readonly utxo: TransactionUnspentOutput },
-  ConfigError | ProviderError | UtxoNotFound,
+  ConfigError | ProviderError | UtxoNotFound | InputParseError,
   Settings | Provider
 > =>
   Effect.gen(function* () {
@@ -105,6 +106,15 @@ export const deployerUtxo = (
       findUtxoByTxRef(utxos, txHash, txIndex),
       () => UtxoNotFound.byRef(`${txHash}#${txIndex}`, address.toBech32()),
     );
+    const script = utxo.output().scriptRef();
+    if (script !== undefined) {
+      return yield* new InputParseError({
+        source: "--tx-hash/--tx-index",
+        issues: [
+          `${txHash}#${txIndex} carries reference script ${script.hash()}; the CLI never spends a reference script, so pick another fee UTxO`,
+        ],
+      });
+    }
     return { address, utxo };
   });
 
