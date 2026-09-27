@@ -8,6 +8,31 @@ commit per step. Open items: the consumer test validator (task 3 step 4,
 deferred), the trace-level record (review notes) and a live deploy on a
 test network (task 1, needs phase 07's bootstrap values).
 
+Opus review of the range (2026-09-26), no bug, seven risks. Fixed: a
+`--tx-hash`/`--tx-index` fee UTxO that carries a reference script is
+refused (`deployerUtxo`), and `mint-tcnight` coin-selects through the same
+`ReferenceSafeWallet` as the deployer. Declined (user decision): reserving
+the aiken.toml one-shots and collateral from coin selection. Recorded for
+later (user decision): after a bridge logic upgrade no CLI path locks the
+new logic as a reference script, so `bridge-update` fails with
+`UtxoNotFound` until one exists; the upgrade flow must add it. Open, with
+the user:
+- `bridge-update --funded` spends every UTxO at the pool address
+  (`update.ts`, `utxos.pool`); the builder adds each one, Blaze does not
+  choose them. A UTxO with a datum hash whose preimage nobody knows, or
+  enough dust UTxOs, makes every funded build fail.
+- The funded fee is measured with the local UPLC evaluator (ex-units ×
+  1.2, `complete-tx.ts`) and the final build uses the provider's exact
+  units; `setMinimumFee(debit)` then holds the fee at the measured value,
+  so the pool pays ~9 % over the needed fee (~150,000 lovelace at N = 160).
+- `buildBridgeUpdateTx` gives a mitigation logic withdrawal the full
+  `BridgeUpdate` redeemer (the governance `withdrawThroughLogic` pattern);
+  a mitigation logic does not take it, so the withdrawal needs its own
+  redeemer and its script by reference.
+- The stale-datum e2e can fail its consumer on a double spend of the fee
+  UTxO the update also selects, not on the spent light-client reference;
+  fund the consumer from another wallet and match the error.
+
 ## Tasks
 
 ### 0. Prerequisites and style
