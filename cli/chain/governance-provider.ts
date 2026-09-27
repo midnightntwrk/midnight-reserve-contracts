@@ -55,6 +55,10 @@ export interface ContractUtxos<K extends string> {
   readonly main: (
     name: K,
   ) => Either.Either<TransactionUnspentOutput, UtxoNotFound>;
+  /** The UTxO holding the contract's own NFT (its hash, the empty name); anyone can pay other UTxOs to its address. */
+  readonly nft: (
+    name: K,
+  ) => Either.Either<TransactionUnspentOutput, UtxoNotFound>;
 }
 
 /** UTxOs at every contract address, by name, queried in parallel. */
@@ -75,6 +79,7 @@ export const contractUtxos = <K extends string>(
         at: (name) => utxos[name],
         first: (name) => firstUtxo(utxos[name], contracts[name], networkId),
         main: (name) => mainUtxo(utxos[name], contracts[name], networkId),
+        nft: (name) => nftUtxo(utxos[name], contracts[name], networkId),
       }),
     );
   });
@@ -139,6 +144,21 @@ const mainUtxo = (
       addressFromValidator(networkId, twoStage).toBech32(),
       `${twoStage.hash()}.main`,
     ),
+  );
+
+/** The UTxO holding the script's own NFT, or UtxoNotFound at its address. */
+const nftUtxo = (
+  utxos: readonly TransactionUnspentOutput[],
+  script: Script,
+  networkId: NetworkId,
+) =>
+  Either.fromNullable(
+    utxos.find((u) => holdsOne(u, AssetId(script.hash()))),
+    () =>
+      UtxoNotFound.holding(
+        addressFromValidator(networkId, script).toBech32(),
+        script.hash(),
+      ),
   );
 
 /** The logic and mitigation logic scripts an UpgradeState names; `expected` describes the logic the unknown-logic error asks for. */
