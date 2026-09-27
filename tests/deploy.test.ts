@@ -67,9 +67,17 @@ const contracts = await buildInstances();
 const profile = await emulatorProfile();
 const blueprint = BlueprintLive("emulator", "build");
 
-/** The deployer-held one-shot UTxO of a deploy component. */
-const oneShotOf = (addr: Address, component: DeployComponent) =>
-  feeUtxo(addr, ...DEPLOY_STEPS[component].oneShotOf(profile));
+/** The deployer-held one-shot UTxOs of a deploy component. */
+const oneShotsOf = (addr: Address, component: DeployComponent) =>
+  DEPLOY_STEPS[component]
+    .oneShots(profile)
+    .map(([hash, index]) => feeUtxo(addr, hash, index));
+
+/** The one one-shot of a component that spends one. */
+const oneShotOf = (addr: Address, component: DeployComponent) => {
+  const [oneShot] = oneShotsOf(addr, component);
+  return oneShot;
+};
 
 const params = (emulator: Emulator, addr: Address): DeployParams => ({
   networkId: NetworkId.Testnet,
@@ -105,7 +113,7 @@ const deployInput: DeployInput = {
   components: Option.none(),
 };
 
-/** The component's step built over its one-shot, as deploy builds it, with Settings over `settings`. */
+/** The component's step built over its one-shots, as deploy builds it, with Settings over `settings`. */
 const stepBuilder = (
   component: DeployComponent,
   emulator: Emulator,
@@ -113,8 +121,8 @@ const stepBuilder = (
   addr: Address,
   settings = SettingsOver("emulator"),
 ) => {
-  const oneShotUtxo = oneShotOf(addr, component);
-  emulator.addUtxo(oneShotUtxo);
+  const oneShots = oneShotsOf(addr, component);
+  for (const oneShot of oneShots) emulator.addUtxo(oneShot);
   return runTest(
     Layer.merge(blueprint, settings),
     DEPLOY_STEPS[component].build(
@@ -129,7 +137,7 @@ const stepBuilder = (
         params: params(emulator, addr),
         maxTxSize: emulator.params.maxTxSize,
       },
-      oneShotUtxo,
+      oneShots,
     ),
   );
 };
@@ -336,7 +344,7 @@ describe("the deploy steps", () => {
       SettingsWith("emulator", { PERMISSIONED_CANDIDATES: "[]" }),
     ] as const,
   ])(
-    "the %s step mints from its one-shot, registering the logic where it should",
+    "the %s step builds a valid transaction, registering the logic where it should",
     async (_name, component, settings) => {
       const registers = REGISTERS_LOGIC[component];
       const logic =
@@ -363,6 +371,34 @@ describe("the deploy steps", () => {
       });
     },
   );
+
+  test("the committee-bridge-scripts step locks the forever, logic and pool scripts as reference scripts at the deployer address", async () => {
+    await asFunded(async (emulator, blaze, addr) => {
+      const builder = await stepBuilder(
+        "committee-bridge-scripts",
+        emulator,
+        blaze,
+        addr,
+      );
+      const references = Transaction.fromCbor(TxCBOR(builder.toCbor()))
+        .body()
+        .outputs()
+        .flatMap((output) => {
+          const script = output.scriptRef();
+          return script === undefined
+            ? []
+            : [[output.address().toBech32(), script.hash()]];
+        });
+      expect(references).toEqual(
+        [
+          contracts.committeeBridgeForever,
+          contracts.committeeBridgeLogic,
+          contracts.committeeBridgePool,
+        ].map((c) => [addr.toBech32(), c?.Script.hash()]),
+      );
+      await emulator.expectValidTransaction(blaze, builder);
+    });
+  });
 
   test("the committee-bridge-threshold datum is a BeefyThreshold: the bridge fraction, then the fee cap", async () => {
     await asFunded(async (emulator, blaze, addr) => {

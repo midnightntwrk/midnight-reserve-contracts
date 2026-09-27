@@ -54,21 +54,25 @@ export type UtxoRef = readonly [TxHash, TxIndex];
 
 const refKey = ([hash, index]: UtxoRef) => `${hash}#${index}`;
 
-/** The deployer's UTxOs at these references, in order (only the deployer signs a deploy); one that is not among its unspent outputs is UtxoNotFound naming it. */
-export const resolveUnspent = (refs: readonly UtxoRef[]) =>
-  Effect.gen(function* () {
-    const address = yield* Effect.flatMap(Settings, (s) => s.deployerAddress);
-    const unspent = new Map(
-      (yield* Effect.flatMap(Provider, (p) => p.unspentOutputs(address))).map(
-        (utxo) => [refOf(utxo.input()), utxo],
-      ),
-    );
-    return yield* Effect.forEach(refs, (ref) =>
+/** The deployer's unspent outputs, read once, as a lookup: the UTxOs at these references in order (only the deployer signs a deploy), UtxoNotFound naming one that is not among them. */
+export const deployerUnspent = Effect.gen(function* () {
+  const address = yield* Effect.flatMap(Settings, (s) => s.deployerAddress);
+  const unspent = new Map(
+    (yield* Effect.flatMap(Provider, (p) => p.unspentOutputs(address))).map(
+      (utxo) => [refOf(utxo.input()), utxo],
+    ),
+  );
+  return (refs: readonly UtxoRef[]) =>
+    Effect.forEach(refs, (ref) =>
       Either.fromNullable(unspent.get(refKey(ref)), () =>
         UtxoNotFound.byRef(refKey(ref), address.toBech32()),
       ),
     );
-  });
+});
+
+/** The deployer's UTxOs at these references, in order; one that is not among its unspent outputs is UtxoNotFound naming it. */
+export const resolveUnspent = (refs: readonly UtxoRef[]) =>
+  Effect.flatMap(deployerUnspent, (at) => at(refs));
 
 /** The profile's collateral UTxO from the chain, unspent, checked against the protocol's collateral percentage. */
 export const resolveCollateral = (
@@ -204,13 +208,14 @@ export const selectComponents = <Component extends string>(
     onSome: (selected) => all.filter((c) => selected.includes(c)),
   });
 
-/** An output a deployment reports: at a script, or holding a token (the first one shown). */
+/** An output a deployment reports: at a script, holding a token (the first one shown), or carrying a reference script (its hash shown). */
 export interface ScriptOutput {
   readonly address: string;
   readonly token: Option.Option<{
     readonly policyId: string;
     readonly assetName: string;
   }>;
+  readonly referenceScript: Option.Option<string>;
 }
 
 const PRINTABLE = /^[\x20-\x7E]*$/;
@@ -222,17 +227,23 @@ const displayAssetName = (hex: string): string => {
   return PRINTABLE.test(text) ? text : hex;
 };
 
-/** The outputs of a transaction at a script address or holding a token. */
+/** The outputs of a transaction at a script address, holding a token or carrying a reference script. */
 const scriptOutputsOf = (tx: Transaction): ScriptOutput[] =>
   tx
     .body()
     .outputs()
     .flatMap((output) => {
       const multiasset = output.amount().multiasset();
+      const referenceScript = Option.map(
+        Option.fromNullable(output.scriptRef()),
+        (script) => script.hash(),
+      );
       const atScript =
         output.address().getProps().paymentPart?.type ===
         CredentialType.ScriptHash;
-      if (!atScript && !multiasset) return [];
+      if (!atScript && !multiasset && Option.isNone(referenceScript)) {
+        return [];
+      }
       const [assetId] = multiasset?.keys() ?? [];
       return [
         {
@@ -241,6 +252,7 @@ const scriptOutputsOf = (tx: Transaction): ScriptOutput[] =>
             policyId: assetId.slice(0, 56),
             assetName: displayAssetName(assetId.slice(56)),
           })),
+          referenceScript,
         },
       ];
     });
@@ -293,6 +305,9 @@ export const reportDeployment = (
         if (Option.isSome(output.token)) {
           yield* out.log(`  Policy ID: ${output.token.value.policyId}`);
           yield* out.log(`  Asset Name: ${output.token.value.assetName}`);
+        }
+        if (Option.isSome(output.referenceScript)) {
+          yield* out.log(`  Reference Script: ${output.referenceScript.value}`);
         }
         yield* out.log("");
       }
