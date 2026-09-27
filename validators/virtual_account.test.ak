@@ -18,7 +18,8 @@ use rewards/test_fixtures.{
 }
 use rewards/types.{
   AccountAction, AccountDatum, ActionKind, Batcher, InitList, Register,
-  SetDeregister, TopUp, UpdateRegistration, User, Withdraw, tail_key,
+  Registration, SetDeregister, TopUp, UpdateRegistration, User, Withdraw,
+  tail_key,
 }
 use virtual_account
 
@@ -441,6 +442,26 @@ test register_zero_weight() fail {
   )
 }
 
+fn with_threshold(reg: Output, payout_threshold: Int) -> Output {
+  expect InlineDatum(datum) = reg.datum
+  expect Registration { owner, destinations, operator_keys, .. }: AccountDatum =
+    datum
+  Output {
+    ..reg,
+    datum: InlineDatum(
+      Registration { owner, destinations, operator_keys, payout_threshold },
+    ),
+  }
+}
+
+test register_payout_threshold_ok() {
+  register_with(with_threshold(registration(k1), 5_000_000))
+}
+
+test register_negative_payout_threshold() fail {
+  register_with(with_threshold(registration(k1), -1))
+}
+
 test register_no_destinations() fail {
   register_with(mk_registration_output(k1, owner, [], []))
 }
@@ -794,6 +815,26 @@ test registration_update_bad_weights() fail {
     spend_tx(
       input,
       mk_registration_output(k1, owner, [Pair(dust_dest, 1001)], []),
+      [owner_key],
+    )
+  run(tx, UpdateRegistration)
+}
+
+test registration_update_payout_threshold_ok() {
+  let tx =
+    spend_tx(
+      registration_input(),
+      with_threshold(registration(k1), 1),
+      [owner_key],
+    )
+  run(tx, UpdateRegistration)
+}
+
+test registration_update_negative_payout_threshold() fail {
+  let tx =
+    spend_tx(
+      registration_input(),
+      with_threshold(registration(k1), -1),
       [owner_key],
     )
   run(tx, UpdateRegistration)

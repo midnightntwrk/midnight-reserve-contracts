@@ -15,6 +15,7 @@ pub const tail_key = #"ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 
 /// One datum per list NFT: head `""`, deposit `0x00 ++ skh`, registration `0x01 ++ skh`, tail `0x00 ++ tail_key`.
 /// `destinations`: `kind_byte ++ address -> weight`; weights > 0 and sum to 1000. `operator_keys`: opaque, node-owned.
+/// `payout_threshold`: STAR above the distribution fee at which Midnight puts the account in a tree; ≥ 0.
 pub type AccountDatum {
   Head { next: ByteArray }
   Deposit { cred: Credential, next: ByteArray, committed: Option<Address> }
@@ -22,6 +23,7 @@ pub type AccountDatum {
     owner: Credential,
     destinations: Pairs<ByteArray, Int>,
     operator_keys: Pairs<ByteArray, ByteArray>,
+    payout_threshold: Int,
   }
   Tail
 }

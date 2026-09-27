@@ -287,11 +287,15 @@ fn each_deposit(
   )
 }
 
-/// Destination weights are all positive and sum to 1000.
+/// Destination weights are all positive and sum to 1000; the payout threshold is not negative.
 fn registration_ok(out: Output) -> Bool {
   expect InlineDatum(datum) = out.datum
-  expect Registration { destinations, .. }: AccountDatum = datum
-  weight_sum(destinations, 0) == 1000
+  expect Registration { destinations, payout_threshold, .. }: AccountDatum =
+    datum
+  and {
+    weight_sum(destinations, 0) == 1000,
+    payout_threshold >= 0,
+  }
 }
 
 fn weight_sum(destinations: Pairs<ByteArray, Int>, acc: Int) -> Int {
