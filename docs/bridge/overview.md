@@ -92,6 +92,28 @@ against `latest_mmr_root` themselves.
 `kc-beefy-mip-alignment` is four local commits on `lglo/beefy-on-main`, for a
 PR to that branch; a local dev node against the base confirmed each "done" row.
 
+Phase 07 soak (2026-09-27): the node repo's `local-environment` `local-env`
+stack (local Cardano devnet, db-sync, six nodes built from
+`kc-beefy-mip-alignment`, nothing mocked), sessions of 30 s (`slotsPerEpoch`
+5, set by its setup), D-parameter (5, 0) over five permissioned candidates.
+A preview light client bootstrapped from it at block 38 (sets 7 and 8) took
+27 funded handovers from real justifications (sets 8 to 34). A
+`change-federated-ops` transaction on the devnet removed one candidate: set 31
+has four keys, one of them with two seats, and the bridge handed over to it
+and accepted its signatures. What the node emitted, against the MIP:
+- Justifications carry one 65-byte recoverable signature per seat (a key with
+  two seats signs twice, the same bytes); `bridge-fetch-justification` sums the
+  seats per key and drops the recovery byte.
+- Most sessions' justifications held 4 of 5 seats, so the update reveals only
+  the signers' leaves; at set 33 all five seats signed, and the update kept a
+  minimal cover of four (the 2-seat key and two others).
+- The leaf of block `b` is index `b − 1` of `b` in `mmr_generateProof`, and
+  the leaf of a session's first block names the next set.
+- The local-env stack as checked in needs two local fixes to run on arm64:
+  the contract-compiler image pins `libssl-dev=3.0.20-1~deb12u2`, which no
+  longer installs, and postgres allows 120 connections while six nodes open
+  up to 37 each, so authoring stalls on `PoolTimedOut`.
+
 `signer_cap` measured in this repo (plan phase 04, spec §11): a quorum
 update crosses `maxTxSize` at N ≈ 170; candidate **160** for the node team
 (relay submits at most `required` signers), with `max_fee` candidates
