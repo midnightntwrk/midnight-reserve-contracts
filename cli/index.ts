@@ -27,6 +27,7 @@ import { mergeUtxos } from "./commands/merge-utxos";
 import { build } from "./commands/build";
 import { bridgeInfo } from "./commands/bridge-info";
 import { bridgeTopup } from "./commands/bridge-topup";
+import { bridgeUpdate } from "./commands/bridge-update";
 import { BaseLive, EnvLive, reportFailure, teardown } from "./run";
 import packageJson from "../package.json";
 
@@ -56,6 +57,7 @@ const root = Command.make("midnight-reserve").pipe(
     build,
     bridgeInfo,
     bridgeTopup,
+    bridgeUpdate,
   ]),
 );
 
