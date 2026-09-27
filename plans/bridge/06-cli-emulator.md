@@ -12,7 +12,10 @@ Opus review of the range (2026-09-26), no bug, seven risks. Fixed: a
 `--tx-hash`/`--tx-index` fee UTxO that carries a reference script is
 refused (`deployerUtxo`), and `mint-tcnight` coin-selects through the same
 `ReferenceSafeWallet` as the deployer. Declined (user decision): reserving
-the aiken.toml one-shots and collateral from coin selection. Recorded for
+the aiken.toml one-shots and collateral from coin selection; reversed
+2026-09-27 (user decision) after both phase 07 deploys lost their
+`committee-bridge-scripts` transaction to it: `GuardedWallet` (renamed from
+`ReferenceSafeWallet`) also skips every UTxO the profile names. Recorded for
 later (user decision): after a bridge logic upgrade no CLI path locks the
 new logic as a reference script, so `bridge-update` fails with
 `UtxoNotFound` until one exists; the upgrade flow must add it. The four

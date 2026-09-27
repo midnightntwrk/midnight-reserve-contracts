@@ -44,6 +44,7 @@ Flags that differ from what you might expect:
 | `dust-participants` | `--provider` | Reads the UTxOs at `cnight_generates_dust` through the chain provider (default: the environment's), as `verify` does; `local` and `emulator` are refused. |
 | `sign-and-submit` | positional `<json-file>` | The path of the tx file, e.g. `deployments/<env>/change-council-tx.json` |
 | every tx-building command | `--output`, `--output-file` | The file lands at `<--output, default ./deployments>/<env>/<--output-file>`. `deploy` and `deploy-staging-track` write the fixed names `deployment-transactions.json` and `staging-track-deployment-transactions.json`. |
+| every tx-building command | — | Coin selection never spends a deployer UTxO that the environment's aiken.toml profile names (the one-shots and `collateral_utxo`) or one that carries a reference script, so the transactions of one `deploy` run never share an input. |
 | `change-council`, `change-tech-auth`, `change-federated-ops`, `change-terms` | `--tx-hash`, `--tx-index` | Required: fee UTxO to spend. Query Blockfrost for a suitable UTxO before each call. |
 | `change-*`, `stage-upgrade`, `promote-upgrade`, `mint-staging-state` | `--no-sign` | Without it the command signs with `TECH_AUTH_PRIVATE_KEYS` and `COUNCIL_PRIVATE_KEYS` (`mint-staging-state`: `TECH_AUTH_PRIVATE_KEYS` only). `--no-sign` writes an unsigned tx for external signers (Phase 5). |
 | `change-terms` | `--hash`, `--url` | `--hash` is the T&C document hash (64 hex chars); `--url` is plain text (auto-converted to hex for on-chain storage) |

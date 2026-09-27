@@ -43,7 +43,9 @@ Findings: overview.md "What the node must emit". On both local-env deploys
 the third transaction (`committee-bridge-scripts`) failed: its coin selection
 took the two one-shots and the collateral of the `simple-tx` the runbook
 makes (`ce471313#0`, `#1`, `#2`), which the first two transactions spend;
-`deploy --components committee-bridge-scripts` again landed it.
+`deploy --components committee-bridge-scripts` again landed it. Fixed after
+the run: the deployer wallet never offers a profile's one-shots or collateral
+to coin selection (`GuardedWallet`, `reservedRefs`).
 
 ## Tasks
 
