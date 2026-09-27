@@ -15,23 +15,22 @@ refused (`deployerUtxo`), and `mint-tcnight` coin-selects through the same
 the aiken.toml one-shots and collateral from coin selection. Recorded for
 later (user decision): after a bridge logic upgrade no CLI path locks the
 new logic as a reference script, so `bridge-update` fails with
-`UtxoNotFound` until one exists; the upgrade flow must add it. Open, with
-the user:
-- `bridge-update --funded` spends every UTxO at the pool address
-  (`update.ts`, `utxos.pool`); the builder adds each one, Blaze does not
-  choose them. A UTxO with a datum hash whose preimage nobody knows, or
-  enough dust UTxOs, makes every funded build fail.
-- The funded fee is measured with the local UPLC evaluator (ex-units ×
-  1.2, `complete-tx.ts`) and the final build uses the provider's exact
-  units; `setMinimumFee(debit)` then holds the fee at the measured value,
-  so the pool pays ~9 % over the needed fee (~150,000 lovelace at N = 160).
-- `buildBridgeUpdateTx` gives a mitigation logic withdrawal the full
-  `BridgeUpdate` redeemer (the governance `withdrawThroughLogic` pattern);
-  a mitigation logic does not take it, so the withdrawal needs its own
-  redeemer and its script by reference.
-- The stale-datum e2e can fail its consumer on a double spend of the fee
-  UTxO the update also selects, not on the spent light-client reference;
-  fund the consumer from another wallet and match the error.
+`UtxoNotFound` until one exists; the upgrade flow must add it. The four
+risks left with the user, decided 2026-09-26:
+- Fixed (`nyvoyrrk`): `bridgeUtxos` leaves out a UTxO with a datum hash at
+  the pool address, so `bridge-update --funded` no longer fails on one; the
+  e2e and the QA harness hold one there. Dust UTxOs stay a size risk (user
+  decision: no selection).
+- Deferred: the funded fee is measured with the local UPLC evaluator
+  (ex-units × 1.2, `complete-tx.ts`) and the final build uses the provider's
+  exact units, so the pool pays ~9 % over the needed fee at the verbose
+  trace. The deploy build will be silent, which changes the fee; measure it
+  then.
+- Ignored (not a concern for many months): `buildBridgeUpdateTx` gives a
+  mitigation logic withdrawal the full `BridgeUpdate` redeemer and its
+  script inline.
+- Left as is: the stale-datum e2e matches no error, so its consumer can
+  fail on a double spend of a fee UTxO the update also selects.
 
 ## Tasks
 
