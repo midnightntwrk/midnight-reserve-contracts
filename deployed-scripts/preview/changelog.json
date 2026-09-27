@@ -66,6 +66,36 @@
       "validator": "beefy_signer_threshold",
       "description": "Initial deployment",
       "timestamp": "2026-09-27T18:46:21.555Z"
+    },
+    {
+      "type": "initial",
+      "validator": "committee_bridge_forever",
+      "description": "Initial deployment",
+      "timestamp": "2026-09-27T20:49:39.542Z"
+    },
+    {
+      "type": "initial",
+      "validator": "committee_bridge_logic",
+      "description": "Initial deployment",
+      "timestamp": "2026-09-27T20:49:39.542Z"
+    },
+    {
+      "type": "initial",
+      "validator": "committee_bridge_two_stage_upgrade",
+      "description": "Initial deployment",
+      "timestamp": "2026-09-27T20:49:39.542Z"
+    },
+    {
+      "type": "initial",
+      "validator": "committee_bridge_pool",
+      "description": "Initial deployment",
+      "timestamp": "2026-09-27T20:49:39.542Z"
+    },
+    {
+      "type": "initial",
+      "validator": "beefy_signer_threshold",
+      "description": "Initial deployment",
+      "timestamp": "2026-09-27T20:49:39.542Z"
     }
   ]
 }
