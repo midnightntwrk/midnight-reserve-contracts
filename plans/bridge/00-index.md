@@ -14,7 +14,7 @@ exception); no other audited file is touched. No TypeScript until phase 05.
 | 03 | [03-funding-pool.md](03-funding-pool.md) | `validators/committee_bridge_pool.ak`; rules 12–17 in the logic; `committee_bridge_pool_hash` in 8 profiles | 01, 02 | done (`uqzkznyz`) |
 | 04 | [04-signer-cap.md](04-signer-cap.md) | test-only builder at N = 50/100/150/200; `signer_cap` table in spec §11 | 03 | done (`nzzulqos`; review `rtsrwmpy`) |
 | 05 | [05-ts-reference-vectors.md](05-ts-reference-vectors.md) | `tests/bridge/reference/*.ts` (`@noble/curves`, `@noble/hashes`); `tests/vectors/bridge/*.json`; Aiken fixtures mirror; VM round trip | 00, 01 | done (`usswrvpp`) |
-| 06 | [06-cli-emulator.md](06-cli-emulator.md) | `deploy --components committee-bridge,committee-bridge-threshold` (triple, threshold, registration; one deploy command), `bridge-info`, `bridge-topup`, `bridge-update`, `bridge-set-fee`, `bridge-set-threshold`; emulator e2e; written in Effect | 03, 05, 08, `plans/effect/` 01–07 | next |
+| 06 | [06-cli-emulator.md](06-cli-emulator.md) | `deploy --components committee-bridge,committee-bridge-threshold,committee-bridge-scripts` (triple; threshold and logic registration; reference scripts; one deploy command), `bridge-info`, `bridge-topup`, `bridge-update`, `bridge-set-fee`, `bridge-set-threshold`; emulator e2e; written in Effect | 03, 05, 08, `plans/effect/` 01–07 | in progress (2026-09-26) |
 | 07 | [07-private-network.md](07-private-network.md) | compact-end-2-end stack with `midnight-node` from `lglo/beefy-on-main`; `bridge-bootstrap` from RPC; datum recompute check | 06 (gated on the node branch) | gated on the node branch |
 | 08 | [08-dependencies.md](08-dependencies.md) | Bun dependency audit and update (patch/minor, Blaze majors, tooling majors); Aiken untouched | 05 (VM test as smoke) | done (`xunmytsy::msvmzmsy`) |
 
@@ -31,6 +31,7 @@ Phases 02 and 05 can run in parallel with 01 after 00.
 | Six-hour epoch runtime upgrade | node team | 07 soak only |
 | Re-audit of `lib/bridge/*`, `committee_bridge.ak`, `beefy_signer_threshold`, `committee_bridge_pool.ak` | auditors | deployment |
 | `max_fee` base and per-signer amounts | measured in 04, set at deploy | 06 deploy config |
+| On-chain consumer test validator (06 task 3 step 4, deferred 2026-09-26) | user decides when | the consumer e2e |
 
 ## Guardrails for every phase
 
