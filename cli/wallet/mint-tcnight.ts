@@ -25,9 +25,10 @@ import {
 import { calculateMinAda, type TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
 import { buildTx } from "../chain/complete-tx";
-import { Provider, ReferenceSafeWallet } from "../chain/provider";
+import { GuardedWallet, Provider } from "../chain/provider";
 import { transactionFile } from "../chain/tx-file";
 import { environmentOf, type TestEnvironment } from "../config/network-mapping";
+import { reservedRefs, Settings } from "../config/settings";
 import { Blueprint } from "../contracts/contracts";
 import {
   BlueprintError,
@@ -254,8 +255,11 @@ export const mintTcnightProgram = (input: MintTcnightInput) =>
     yield* out.log(`\nTCnight Policy ID: ${policyId}`);
 
     const { networkId } = environmentOf(network);
+    const reserved = reservedRefs(
+      yield* Effect.flatMap(Settings, (s) => s.profile),
+    );
     const blaze = yield* provider.use("Blaze.from", (p) =>
-      Blaze.from(p, new ReferenceSafeWallet(user, networkId, p)),
+      Blaze.from(p, new GuardedWallet(user, networkId, p, reserved)),
     );
     const protocolParams = yield* provider.use("getParameters", (p) =>
       p.getParameters(),
