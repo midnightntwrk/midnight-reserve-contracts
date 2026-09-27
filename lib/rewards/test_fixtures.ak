@@ -112,7 +112,9 @@ pub fn mk_registration_output(
   Output(
     account_address,
     from_lovelace(2_000_000) |> add(account_policy, registration_name(skh), 1),
-    InlineDatum(Registration { owner, destinations, operator_keys }),
+    InlineDatum(
+      Registration { owner, destinations, operator_keys, payout_threshold: 0 },
+    ),
     None,
   )
 }

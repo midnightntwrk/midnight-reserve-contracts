@@ -130,6 +130,7 @@ AccountDatum::Registration {                  // skh lives only in the NFT name
   owner: Credential,                          // edit/delete authority after creation
   destinations: Pairs<ByteArray, Int>,        // kind_byte ++ address -> weight
   operator_keys: Pairs<ByteArray, ByteArray>, // "beefy" | "babe" | "aura" | "sidechain" | "spo" | … -> key bytes
+  payout_threshold: Int,                      // STAR above dist_fee; the account enters a tree at dist_fee + payout_threshold (MIP Tree selection)
 }
 ```
 `destinations` routes the account's rewards: key = one kind byte (`0x00`
@@ -137,13 +138,15 @@ dust address, `0x01` stake / NIGHT address; further kinds are the node's)
 followed by the address bytes; value = weight. The contract checks every
 weight `> 0` and the weights sum to exactly `1000`; address formats and
 kind semantics are the node's. `operator_keys` is opaque to the contract;
-an empty list means "not an operator".
+an empty list means "not an operator". `payout_threshold` is the owner's
+choice with no protocol default; the contract checks only `≥ 0`, on create
+and on every update.
 Value: ADA + `0x01 ++ skh` NFT, nothing else.
 
 | Action | Redeemer | Rule |
 |---|---|---|
-| create | only inside `Register` (§4.3) | minted together with the deposit node; stake auth |
-| update | `UpdateRegistration` | `owner` auth; NFT continues to the same address; destination weights valid |
+| create | only inside `Register` (§4.3) | minted together with the deposit node; stake auth; destination weights valid; `payout_threshold ≥ 0` |
+| update | `UpdateRegistration` | `owner` auth; NFT continues to the same address; destination weights valid; `payout_threshold ≥ 0` |
 | delete | only inside `SetDeregister` (§4.4) | `owner` auth; mint = −1 of `0x01 ++ skh`; the deposit with the same `skh` flips `committed` in the same tx |
 
 No standalone delete: deregistration is one atomic user tx that burns the
