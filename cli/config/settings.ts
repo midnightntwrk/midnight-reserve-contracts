@@ -40,6 +40,14 @@ import {
   type PermissionedCandidate,
 } from "../datum/federated-ops";
 import {
+  bootstrapState,
+  type BridgeMaxFee,
+  parseActivationBlock,
+  parseCommittee,
+  parseLovelace,
+} from "../datum/bridge";
+import type { BeefyConsensusState } from "../../contract_blueprint";
+import {
   type Hash32,
   parseAddressOn,
   parseHash32,
@@ -145,6 +153,10 @@ export class Settings extends Context.Tag("cli/Settings")<
       { readonly hash: Hash32; readonly link: string },
       ConfigError
     >;
+    /** The committee bridge's bootstrap state from BRIDGE_ACTIVATION_BLOCK, BRIDGE_MMR_ROOT, BRIDGE_CURRENT_COMMITTEE and BRIDGE_NEXT_COMMITTEE, checked by the forever mint's rules. */
+    readonly bridgeBootstrap: Effect.Effect<BeefyConsensusState, ConfigError>;
+    /** BRIDGE_MAX_FEE_BASE and BRIDGE_MAX_FEE_PER_SIGNER, in lovelace. */
+    readonly bridgeMaxFee: Effect.Effect<BridgeMaxFee, ConfigError>;
   }
 >() {}
 
@@ -388,6 +400,15 @@ const privateKeys = (name: string) =>
     ),
   );
 
+/** A required value through its parser; the error names the variable. */
+const parsed = <A>(
+  name: string,
+  parse: (text: string) => Either.Either<A, string>,
+) =>
+  Effect.flatMap(requiredString(name), (text) =>
+    Either.mapLeft(parse(text.trim()), (reason) => envError(name, reason)),
+  );
+
 /** A required secret holding one private key, checked. */
 const privateKey = (name: string) =>
   Effect.flatMap(requiredSecret(name), (secret) =>
@@ -441,6 +462,25 @@ export const SettingsLive = (
               onSome: (text) => Buffer.from(text).toString("hex"),
             }),
           ),
+        }),
+        bridgeBootstrap: Effect.flatMap(
+          Effect.all({
+            activationBlock: parsed(
+              "BRIDGE_ACTIVATION_BLOCK",
+              parseActivationBlock,
+            ),
+            mmrRoot: parsed("BRIDGE_MMR_ROOT", parseHash32),
+            current: parsed("BRIDGE_CURRENT_COMMITTEE", parseCommittee),
+            next: parsed("BRIDGE_NEXT_COMMITTEE", parseCommittee),
+          }),
+          (values) =>
+            Either.mapLeft(bootstrapState(values), (reason) =>
+              envError("BRIDGE_NEXT_COMMITTEE", reason),
+            ),
+        ),
+        bridgeMaxFee: Effect.all({
+          base: parsed("BRIDGE_MAX_FEE_BASE", parseLovelace),
+          perSigner: parsed("BRIDGE_MAX_FEE_PER_SIGNER", parseLovelace),
         }),
       };
     }),
