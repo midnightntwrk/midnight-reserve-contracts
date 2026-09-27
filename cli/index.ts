@@ -25,7 +25,10 @@ import { changeTerms } from "./commands/change-terms";
 import { dustParticipants } from "./commands/dust-participants";
 import { mergeUtxos } from "./commands/merge-utxos";
 import { build } from "./commands/build";
+import { bridgeBootstrap } from "./commands/bridge-bootstrap";
+import { bridgeFetchJustification } from "./commands/bridge-fetch-justification";
 import { bridgeInfo } from "./commands/bridge-info";
+import { bridgeVerifyBootstrap } from "./commands/bridge-verify-bootstrap";
 import { bridgeTopup } from "./commands/bridge-topup";
 import { bridgeUpdate } from "./commands/bridge-update";
 import { bridgeSetFee } from "./commands/bridge-set-fee";
@@ -62,6 +65,9 @@ const root = Command.make("midnight-reserve").pipe(
     bridgeUpdate,
     bridgeSetFee,
     bridgeSetThreshold,
+    bridgeBootstrap,
+    bridgeVerifyBootstrap,
+    bridgeFetchJustification,
   ]),
 );
 

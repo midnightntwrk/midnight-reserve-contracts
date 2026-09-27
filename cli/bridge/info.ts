@@ -26,7 +26,8 @@ import {
 const refText = (utxo: TransactionUnspentOutput) =>
   `${utxo.input().transactionId()}#${utxo.input().index()}`;
 
-const committeeText = (committee: AuthoritySetCommitment) =>
+/** A committee for display. */
+export const committeeText = (committee: AuthoritySetCommitment) =>
   `set ${committee.validator_set_id}, ${committee.seat_count} seats, keyset ${committee.keyset_commitment}`;
 
 /** Print the bridge's on-chain state. */
