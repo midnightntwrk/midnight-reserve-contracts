@@ -1,10 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { TransactionId } from "@blaze-cardano/core";
+import {
+  PaymentAddress,
+  TransactionId,
+  TransactionUnspentOutput,
+} from "@blaze-cardano/core";
 import { EmulatorProvider } from "@blaze-cardano/emulator";
 import { Effect, Layer, Option } from "effect";
 import { confirm, signAndSubmitOne } from "../cli/chain/sign-and-submit";
 import { awaitConfirmation } from "../cli/chain/submit";
 import {
+  buildInstances,
   LoggerCaptured,
   OutputCaptured,
   onPreview,
@@ -19,7 +24,7 @@ import {
   unsignedSimpleTx,
 } from "./helpers/effect";
 import { Provider, ProviderLive } from "../cli/chain/provider";
-import { PREVIEW_DEPLOYMENT_TX } from "./helpers/fixtures";
+import { feeUtxo, PREVIEW_DEPLOYMENT_TX, randomHash } from "./helpers/fixtures";
 
 describe("signAndSubmitOne on the emulator", () => {
   test("signs the entry with the deployer key and submits it; the confirmation follows", async () => {
@@ -38,6 +43,34 @@ describe("signAndSubmitOne on the emulator", () => {
       deployer,
     );
     expect(after.some((u) => u.input().transactionId() === txId)).toBe(true);
+  });
+});
+
+describe("the deployer wallet", () => {
+  test("coin selection never spends a UTxO that carries a reference script", async () => {
+    const { emulator, layer, deployer, fee } = await emulatorProgram();
+    const { govAuth } = await buildInstances();
+    emulator.removeUtxo(fee.input());
+    const reference = TransactionUnspentOutput.fromCore([
+      { index: 0, txId: TransactionId(randomHash(32)) },
+      {
+        address: PaymentAddress(deployer.toBech32()),
+        value: { coins: 1_000_000_000n },
+        scriptReference: govAuth.Script.toCore(),
+      },
+    ]);
+    emulator.addUtxo(reference);
+    await expectFailure(layer, unsignedSimpleTx, "TxBuildError");
+
+    emulator.addUtxo(feeUtxo(deployer, randomHash(32)));
+    const tx = await runTest(layer, unsignedSimpleTx);
+    expect(
+      tx
+        .body()
+        .inputs()
+        .values()
+        .map((input) => input.transactionId()),
+    ).not.toContain(reference.input().transactionId());
   });
 });
 
