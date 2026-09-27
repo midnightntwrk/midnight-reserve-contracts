@@ -5,8 +5,8 @@ Blaze emulator; every MIP contract-test bullet reproduced (spec §9, §10).
 
 Done 2026-09-26 (`ukmqnlvt..qqypkmqw` and the docs commit after them), one
 commit per step. Open items: the consumer test validator (task 3 step 4,
-deferred), the trace-level record (review notes) and a live deploy on a
-test network (task 1, needs phase 07's bootstrap values).
+deferred) and a live deploy on a test network (task 1, needs phase 07's
+bootstrap values).
 
 Opus review of the range (2026-09-26), no bug, seven risks. Fixed: a
 `--tx-hash`/`--tx-index` fee UTxO that carries a reference script is
@@ -203,9 +203,8 @@ variables.
 - Deploy creates reference-script UTxOs for the forever, logic and pool
   scripts; the relay must reference them (spec §11, §12). Done:
   `committee-bridge-scripts`. Record the trace level of the deployed build;
-  it doubles the reference-script fee. Open: the record keeps no trace
-  level (the build's `--trace`, verbose by default); adding it changes the
-  `deployed-scripts/` format, the user's decision.
+  it doubles the reference-script fee. Closed (user decision 2026-09-26):
+  the deploy build is silent, so the record needs no trace level.
 - Measure the real non-redeemer transaction bytes and the forever and pool
   spend budgets at N = 160 in the emulator; replace the estimates in spec
   §11. Done: `tests/bridge/measure.ts`, spec §11.
