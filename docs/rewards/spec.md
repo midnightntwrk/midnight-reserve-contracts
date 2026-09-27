@@ -651,10 +651,9 @@ at least the next interval's need.
    and `last_release_time + intervals × interval_ms ≤ now`. Partial catch-up
    is allowed (`intervals` may be less than elapsed); fully permissionless.
 3. First release: deploy puts `Constr 0 [0, 0]` on the reserve NFT
-   (`ZERO_FOREVER_DATUM`; mainnet `reserve-deployment` holds `d8799f0000ff`).
-   Two fields mean no release yet: `last_release_time = release_t0_ms`. One
-   field is `ReleaseState`. Anything else fails. Midnight's
-   reserve observation reads only amounts, so the datum change is safe.
+   (`ZERO_FOREVER_DATUM`). Two fields mean no release yet:
+   `last_release_time = release_t0_ms`. One field is `ReleaseState`.
+   Anything else fails.
 4. `ceiling` over `intervals` catch-up steps, each a ceiling division on
    what the previous step left: `c := 0; repeat intervals: c += ((reserve − c) × num + den − 1) / den`.
    `last_release_time' = last_release_time + intervals × interval_ms`.

@@ -27,8 +27,6 @@ Phases 01, 02, 03 are independent and can run in parallel after 00.
 
 Decided in the follow-up interview (spec §14): keccak-256 leaves, skim
 `≤ min(ceil(fee / n_paid), 0.01 ADA)`, deregister = one atomic user tx.
-The mainnet reserve datum is the deploy datum `Constr 0 [0, 0]`, not the
-unit constructor the interview assumed (spec §8.2 rule 3).
 
 ## Guardrails for every phase
 
