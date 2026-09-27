@@ -205,12 +205,14 @@ Datum `BeefyThreshold` (§3). `beefy_validation`: `0 ≤ numerator < denominator
 `base ≥ 0`, `per_signer ≥ 0`. No quorum floor on chain: `numerator = 0`
 makes one seat a quorum; the ratio is a governance trust assumption, like
 the logic script itself. `MultisigThreshold` has the same four-`Int`
-shape, so the deploy code must build this datum with its own builder
-(phase 06). Spend rules unchanged: `threshold_validation`
-(Council + Tech Auth multisig per `main_gov_threshold`, same NFT out, new
-datum validated). Initial value `(2, 3, base, per_signer)` with both fee
-amounts measured before deployment (MIP §Why a fee cap calculated in
-advance). An update never touches this UTxO, so `max_fee` cannot be raised
+shape, so the deploy code builds this datum with its own builder
+(`buildBeefyThresholdDeploymentTx`). Spend rules unchanged:
+`threshold_validation` (Council + Tech Auth multisig per
+`main_gov_threshold`, same NFT out, new datum validated; `bridge-set-fee`
+and `bridge-set-threshold`). Initial value `(2, 3, base, per_signer)`
+(`BRIDGE_THRESHOLD`, `BRIDGE_MAX_FEE_BASE`, `BRIDGE_MAX_FEE_PER_SIGNER`)
+with both fee amounts measured before deployment (MIP §Why a fee cap
+calculated in advance). An update never touches this UTxO, so `max_fee` cannot be raised
 by a submitter (MIP: "`max_fee` unchanged by an update" holds by
 construction).
 
@@ -269,14 +271,20 @@ part of the upgrade path.
 
 ## 9. Transactions
 
-| Tx | Inputs | Reference inputs | Outputs | Withdrawals / mints |
+Each row is a builder in `cli/bridge/bridge-tx.ts` or a deploy step in
+`cli/deploy/deploy.ts`, built and submitted in the emulator
+(`tests/bridge/bridge-e2e.test.ts`, `bridge-vm.test.ts`).
+
+| Tx | Inputs | Reference inputs | Outputs | Withdrawals / mints / certificates |
 |---|---|---|---|---|
-| Deploy | one-shots | — | forever NFT + bootstrap datum; two-stage main + staging; threshold NFT + `(2, 3, base, per_signer)` | mints |
-| Update (unfunded) | light client, submitter ADA | two-stage main, threshold | light client (same NFT, ADA ≥ in, new datum) | logic + mitigation logic |
-| Handover (funded) | light client, ≥1 pool UTxO | two-stage main, threshold | light client; exactly one pool output | logic + mitigation logic |
+| Deploy `committee-bridge` | `committee_bridge` one-shot | — | two-stage main + staging; forever NFT + bootstrap datum | forever and two-stage mints |
+| Deploy `committee-bridge-threshold` | `committee_threshold` one-shot | — | threshold NFT + `(numerator, denominator, base, per_signer)` | threshold mint; logic registration |
+| Deploy `committee-bridge-scripts` | deployer ADA | — | forever, logic and pool reference scripts at the deployer address | — |
+| Update (unfunded) | light client, submitter ADA | two-stage main, threshold, forever and logic reference scripts | light client (same NFT, ADA ≥ in, new datum) | logic + mitigation logic |
+| Handover (funded) | light client, ≥1 pool UTxO, submitter ADA | two-stage main, threshold, forever, logic and pool reference scripts | light client; exactly one pool output (output 1) | logic + mitigation logic |
 | Top-up | funder ADA | — | pool | — |
 | Consumer read | consumer's own | light client | consumer's own | consumer's own |
-| Threshold edit | threshold NFT | `main_gov_threshold`, council + tech auth forever | threshold NFT + new datum | council + tech auth witness mints |
+| Threshold edit | threshold NFT, deployer ADA | `main_gov_threshold`, council + tech auth forever | threshold NFT + new datum | council + tech auth witness mints |
 
 An update spends the light client, so a consumer transaction built against
 the replaced datum fails phase-1 validation at no cost (MIP §Light-client
@@ -330,9 +338,16 @@ cases with redeemer CBOR, the signed scenarios) and the Aiken fixtures
 fails when the committed files drift from the generator and checks the
 properties (every multiproof subset hashes to `merkle_root`, every MMR
 leaf of sizes 1–20 verifies).
-`tests/bridge/bridge-vm.test.ts` runs the compiled `committee_bridge_logic`
-in the Blaze emulator: scenarios a and b accepted, a flipped signature
-byte, an under-quorum signer and a stale `state_out` rejected.
+`tests/bridge/bridge-vm.test.ts` runs the compiled bridge in the Blaze
+emulator through the `cli/bridge/bridge-tx.ts` builders: scenarios a and b
+accepted, b also funded; a flipped signature byte, an under-quorum signer,
+a stale `state_out` and a funded non-handover rejected; a top-up and a
+threshold edit. `tests/bridge/bridge-e2e.test.ts` deploys the bridge
+through the deploy steps and chains sessions (`reference/session.ts`): the
+activation-block justification, one rejection per rule an update's inputs
+can break (each pinned to its guard's trace), three funded handovers (the
+second changes membership) and a stale datum. `bun
+tests/bridge/measure.ts [N]` measures a quorum update (§11).
 
 ---
 
@@ -357,28 +372,37 @@ of a baseline test that builds the same transaction. Limits: `maxTxSize`
 | 170 | 114 | 15,138 | 4.31 M | 7.01 G |
 | 200 | 134 | 17,658 | 4.96 M | 8.20 G |
 
-Bytes outside the redeemer, estimated until the phase 06 emulator
-measures them: forever input, submitter input, collateral input with
-return and total, TTL, four reference inputs (two-stage `main`, threshold,
-and the reference-script UTxOs of the forever and logic scripts; a fifth
-for the pool script), light-client output with its datum (two 32-byte
-roots, two committees), change output, withdrawal, redeemer framing with
-execution units, script data hash, one key witness: ~900 bytes by a
-Conway breakdown, ~1,000 funded; the table below keeps 1,200 / 1,300 as
-the conservative figure. Scripts MUST come from reference-script UTxOs
-(§12): in the witness set they cost 4,637 bytes (silent build) to 9,404
-(verbose build) and no useful N fits.
+The whole transaction, measured in the emulator by
+`tests/bridge/measure.ts` (phase 06): the same committee pattern and
+depth, the update built by `buildBridgeUpdateTx` over the reference
+scripts and signed by the submitter's one key, the verbose build, mainnet
+fee parameters. The bytes outside the redeemer are the forever and
+submitter inputs, the reference inputs (two-stage `main`, threshold, the
+forever and logic reference scripts, and the pool's when funded), the
+light-client output with its datum, the change output, the withdrawal, the
+redeemer framing, the script data hash and one key witness; funded, also
+the pool input and output.
+
+| N = 160, 107 signers | transaction | redeemer | the rest | fee | logic | forever spend | pool spend |
+|---|---|---|---|---|---|---|---|
+| unfunded update | 15,109 | 14,275 | 834 | 1,686,611 | 4.32 M / 6.66 G | 43,854 / 15.5 M | — |
+| funded handover | 15,131 | 14,275 | 856 | 1,710,092 | 4.39 M / 6.68 G | 43,854 / 15.5 M | 34,185 / 13.8 M |
+
+Scripts MUST come from reference-script UTxOs (§12): in the witness set
+they cost 4,637 bytes (silent build) to 9,404 (verbose build) and no
+useful N fits.
 
 Size binds first; budget alone would allow N ≈ 240. At a fixed quorum
 pattern the redeemer grows 84 bytes per committee member (125 per signer);
 turning an abstainer into a signer costs 69 bytes. Each doubling of the
 Midnight chain height adds 34 bytes to the MMR proof (depth 20 in the
 table is already behind: at 6-second blocks the chain passes 2^21 after
-~146 days; depth 23 holds to block 16.7 M, ~3 years). The quorum update
-crosses 16,384 at N ≈ 170 unfunded, N ≈ 169 funded.
+~146 days; depth 23 holds to block 16.7 M, ~3 years). Measured, the
+quorum update fits at N = 175 unfunded (16,371 bytes) and is 9 bytes over
+funded (16,393); N = 176 is over unfunded (16,476).
 **`signer_cap = 160`** is the candidate for the node's `update_d_parameter`
-bound: ~800 bytes of headroom for a funded handover at depth 20, ~700 at
-depth 23, with the conservative overhead. `serialise_data` writes
+bound: 1,253 bytes of headroom for a funded handover at depth 20
+(measured), ~1,150 at depth 23. `serialise_data` writes
 indefinite-length lists; a definite-length encoder saves ~200 bytes more.
 The contract rejects a surplus signer (rule 6, §15), so a quorum
 submission of a single-seat committee has exactly `required` signers and
@@ -389,19 +413,22 @@ update rejected and resubmits.
 `minFeeB` 155,381, mem 0.0577, cpu 0.0000721 lovelace per unit, reference
 scripts 15 lovelace per byte): unfunded fee ≈ 424,000 + 11,600 × signers
 lovelace with the verbose-trace build sizes in `plutus-default.json`
-(forever 2,094 + logic 6,696 = 8,790 bytes, 131,850 lovelace; a silent
-build is 4,291 bytes, 64,365 lovelace: deploy decides the trace level). A
-funded handover adds the pool rules (0.25 M mem, 88 M cpu over an unfunded
-update, ~21,000 lovelace), the pool input and output (~9,000), the pool
-script's reference bytes, and the forever and pool spend runs, unmeasured
-until phase 06 (estimate ≤ 0.5 M mem, 0.2 G cpu, ~43,000). Margin over
-the funded fit at N = 160 single-seat keys: ~19 % at `base = 600_000`,
-`per_signer = 13_000`; the thin case is a multi-seat committee where a
-few keys hold the seats and many single-seat abstainers sit between them
-(~3 % in the conservative model). Candidates: `base = 650_000`,
-`per_signer = 13_000`. `cap` applies to signers, so a padded multiproof
-raises the relay's bytes and nothing the pool pays; a fee above `cap`
-still succeeds, the submitter covers the difference.
+(forever 2,094 + logic 6,788 = 8,882 bytes, 133,230 lovelace; a silent
+build is about half: deploy decides the trace level); at 107 signers the
+model gives 1,665,200, and the emulator measures 1,686,611. A funded
+handover adds the pool rules, the pool input and output, the pool
+script's reference bytes and the pool spend run: measured, 23,481 lovelace
+over the unfunded update at N = 160 (1,710,092). The cap at N = 160 is
+1,991,000 at `base = 600_000`, `per_signer = 13_000` (16.4 % over the
+measured funded fee) and 2,041,000 at `base = 650_000` (19.4 %); the thin
+case is a multi-seat committee where a few keys hold the seats and many
+single-seat abstainers sit between them (~3 % in the conservative model).
+Candidates: `base = 650_000`, `per_signer = 13_000`. `cap` applies to
+signers, so a padded multiproof raises the relay's bytes and nothing the
+pool pays; a fee above `cap` still succeeds, the submitter covers the
+difference. `bridge-update --funded` debits min(fee, cap, pool − its
+minimum output), so a pool near empty pays what it holds above that and
+the submitter the rest.
 
 ---
 
@@ -415,8 +442,10 @@ covers a `required`-quorum submission: the relay must trim to a minimal
 cover (drop any signer whose removal keeps the quorum), since the contract
 rejects a surplus signer. The
 forever, logic and pool scripts MUST be supplied through reference-script
-UTxOs, never in the witness set (§11); the deployment (phase 06) creates
-those UTxOs and the relay references them.
+UTxOs, never in the witness set (§11); the deployment (phase 06,
+`committee-bridge-scripts`) creates those UTxOs at the deployer address,
+the CLI's coin selection never spends a UTxO that carries a reference
+script, and the relay references them (`bridge-info` lists them).
 
 ---
 

@@ -49,7 +49,7 @@ by default; `--no-sign` writes an unsigned transaction for offline signing.
 
 | Command | Description |
 |---|---|
-| `deploy` | Generate initial deployment transactions (one-shot, always uses build blueprint) |
+| `deploy` | Generate initial deployment transactions (one-shot, always uses build blueprint); the committee bridge components only when `--components` names them |
 | `deploy-staging-track` | Deploy staging track forever validators |
 | `change-council` | Update council multisig state |
 | `change-tech-auth` | Update technical authority multisig state |
@@ -71,6 +71,11 @@ by default; `--no-sign` writes an unsigned transaction for offline signing.
 | `sign-and-submit` | Sign and submit a transaction to the network (**submits for real**) |
 | `combine-signatures` | Merge external witnesses into one transaction and submit it (**submits for real**) |
 | `build` | Build Aiken contracts; `--from-deployed [--components <list>]` compiles against the deployed hashes |
+| `bridge-info` | Show the committee bridge: light-client state, running logic, threshold and fee cap, pool, reference scripts |
+| `bridge-topup` | Pay `--lovelace` to the committee bridge pool |
+| `bridge-update` | Build a light-client update from a `BridgeUpdate` JSON file; `--funded`: the pool pays a handover's fee up to the cap |
+| `bridge-set-fee` | Change the committee bridge fee cap under Council + Tech Auth |
+| `bridge-set-threshold` | Change the committee bridge signer threshold under Council + Tech Auth |
 
 ```bash
 bun run cli/index.ts deploy --network preview
