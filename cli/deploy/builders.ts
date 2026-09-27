@@ -5,7 +5,9 @@
  * staging NFTs (and registers the logic as a stake credential where the
  * deployment asks for it), a threshold deployment mints the threshold NFT
  * (the BEEFY one also registers the bridge logic), a staging-forever
- * deployment mints the staging forever NFT. Every output holds its min ADA.
+ * deployment mints the staging forever NFT. The reference-scripts
+ * transaction spends no one-shot and locks scripts for later transactions to
+ * reference. Every output holds its min ADA.
  */
 import {
   addressFromValidator,
@@ -218,6 +220,34 @@ export const buildBeefyThresholdDeploymentTx = (
       inputs.bridgeLogic,
     ),
     params,
+  );
+
+/** An output at `address` carrying `script` as its reference script, at its min ADA. */
+const referenceScriptOutput = (
+  script: Script,
+  address: string,
+  params: DeployParams,
+): TransactionOutput => {
+  const output = TransactionOutput.fromCore({
+    address: PaymentAddress(address),
+    value: { coins: 0n },
+  });
+  output.setScriptRef(script);
+  output.amount().setCoin(calculateMinAda(output, params.coinsPerUtxoByte));
+  return output;
+};
+
+/** Lock each script as a reference script in its own output at `address`, in order; no script runs. */
+export const buildReferenceScriptsTx = (
+  blaze: Blaze<BlazeProvider, Wallet>,
+  scripts: readonly Script[],
+  address: string,
+  params: DeployParams,
+): TxBuilder =>
+  scripts.reduce(
+    (txBuilder, script) =>
+      txBuilder.addOutput(referenceScriptOutput(script, address, params)),
+    blaze.newTransaction(),
   );
 
 /** Spend the one-shot, mint the staging forever NFT and lock it at the staging forever with its datum. */

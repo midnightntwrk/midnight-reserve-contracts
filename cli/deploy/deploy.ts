@@ -46,6 +46,7 @@ import type { NetworkInput } from "../input";
 import { Output } from "../output";
 import {
   buildBeefyThresholdDeploymentTx,
+  buildReferenceScriptsTx,
   buildThresholdDeploymentTx,
   buildTwoStageDeploymentTx,
   ZERO_FOREVER_DATUM,
@@ -61,7 +62,7 @@ import {
   multisigForever,
   refusePromoted,
   reportDeployment,
-  resolveUnspent,
+  deployerUnspent,
   selectComponents,
   type SnapshotKind,
   snapshotKindOf,
@@ -91,6 +92,7 @@ export const DEPLOY_COMPONENTS = [
   ...DEFAULT_DEPLOY_COMPONENTS,
   "committee-bridge",
   "committee-bridge-threshold",
+  "committee-bridge-scripts",
 ] as const;
 
 export type DeployComponent = (typeof DEPLOY_COMPONENTS)[number];
@@ -123,6 +125,7 @@ export const DEPLOY_COMPONENT_VALIDATORS: Record<
     "committee_bridge_pool",
   ],
   "committee-bridge-threshold": ["beefy_signer_threshold"],
+  "committee-bridge-scripts": [],
 };
 
 /** A deploy threshold: its option, what it governs, its env variable and the fraction when both are unset. */
@@ -197,14 +200,14 @@ type Validators = Effect.Effect<
 
 type OneShotOf = (config: NetworkConfig) => UtxoRef;
 
-/** A deployment step: its one-shot, the validators it creates, the ones its datums install (not created, but fixed by the deploy), and how its transaction is built over the resolved one-shot. */
+/** A deployment step: its one-shots (one, or none for the reference scripts), the validators it creates, the ones its datums install (not created, but fixed by the deploy), and how its transaction is built over the resolved one-shots. */
 interface StepBody {
-  readonly oneShotOf: OneShotOf;
+  readonly oneShots: (config: NetworkConfig) => readonly UtxoRef[];
   readonly validators: Validators;
   readonly installs: Validators;
   readonly build: (
     ctx: DeployContext,
-    oneShotUtxo: TransactionUnspentOutput,
+    oneShots: readonly TransactionUnspentOutput[],
   ) => Effect.Effect<TxBuilder, DeployBuildError, Settings | Blueprint>;
 }
 
@@ -235,8 +238,8 @@ const twoStage = (
       Effect.flatMap(Blueprint, (b) => b.instances),
       (c) => [c.govAuth, c.stagingGovAuth],
     ),
-    oneShotOf,
-    build: (ctx, oneShotUtxo) =>
+    oneShots: (config) => [oneShotOf(config)],
+    build: (ctx, [oneShotUtxo]) =>
       Effect.gen(function* () {
         const { twoStage, forever, logic } = yield* triple;
         const { datum, redeemer } = yield* foreverOf(ctx);
@@ -270,8 +273,8 @@ const threshold = (
     (c) => [script(c)],
   ),
   installs: Effect.succeed([]),
-  oneShotOf,
-  build: (ctx, oneShotUtxo) =>
+  oneShots: (config) => [oneShotOf(config)],
+  build: (ctx, [oneShotUtxo]) =>
     Effect.succeed(
       buildThresholdDeploymentTx(
         ctx.blaze,
@@ -334,11 +337,10 @@ const committeeBridge = (): StepBody => {
 const beefyThreshold: StepBody = {
   validators: Effect.map(bridgeInstance("beefySignerThreshold"), (t) => [t]),
   installs: Effect.succeed([]),
-  oneShotOf: (c) => [
-    c.committee_threshold_one_shot_hash,
-    c.committee_threshold_one_shot_index,
+  oneShots: (c) => [
+    [c.committee_threshold_one_shot_hash, c.committee_threshold_one_shot_index],
   ],
-  build: (ctx, oneShotUtxo) =>
+  build: (ctx, [oneShotUtxo]) =>
     Effect.gen(function* () {
       const threshold = yield* bridgeInstance("beefySignerThreshold");
       const { logic } = yield* Effect.flatMap(Blueprint, (b) =>
@@ -359,6 +361,26 @@ const beefyThreshold: StepBody = {
           },
           bridgeLogic: logic.Script,
         },
+        ctx.params,
+      );
+    }),
+};
+
+/** The reference scripts a bridge update spends through: the forever, logic and pool scripts at the deployer address, where the deployer's wallet keeps them out of coin selection; no one-shot, and no validator created. */
+const bridgeScripts: StepBody = {
+  validators: Effect.succeed([]),
+  installs: Effect.succeed([]),
+  oneShots: () => [],
+  build: (ctx) =>
+    Effect.gen(function* () {
+      const { forever, logic } = yield* Effect.flatMap(Blueprint, (b) =>
+        b.twoStage("committee-bridge"),
+      );
+      const pool = yield* bridgeInstance("committeeBridgePool");
+      return buildReferenceScriptsTx(
+        ctx.blaze,
+        [forever.Script, logic.Script, pool.Script],
+        ctx.deployer,
         ctx.params,
       );
     }),
@@ -504,6 +526,10 @@ export const DEPLOY_STEPS: Record<
     name: "committee-bridge-threshold-deployment",
     ...beefyThreshold,
   },
+  "committee-bridge-scripts": {
+    name: "committee-bridge-scripts-deployment",
+    ...bridgeScripts,
+  },
 };
 
 /** A full run on a test snapshot starts it again; a --components run, or any run on a production one, extends it. */
@@ -560,8 +586,9 @@ export const deployProgram = (input: DeployInput) =>
       input,
       ...(yield* deploymentSetup("deploy", network)),
     };
-    const oneShots = yield* resolveUnspent(
-      steps.map((step) => step.oneShotOf(ctx.config)),
+    const unspentAt = yield* deployerUnspent;
+    const oneShots = yield* Effect.forEach(steps, (step) =>
+      unspentAt(step.oneShots(ctx.config)),
     );
     const built = yield* Effect.forEach(steps, (step, i) =>
       Effect.flatMap(step.build(ctx, oneShots[i]), (txBuilder) =>
