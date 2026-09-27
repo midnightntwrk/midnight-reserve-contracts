@@ -34,10 +34,11 @@ export class ProviderError extends Data.TaggedError("ProviderError")<{
     | "Timeout";
 }> {}
 
-/** How a UTxO was looked up: any at an address, one holding an asset there, or one by reference (optionally at an address). */
+/** How a UTxO was looked up: any at an address, one holding an asset there, one carrying a reference script there, or one by reference (optionally at an address). */
 type UtxoLookup =
   | { readonly by: "address"; readonly address: string }
   | { readonly by: "asset"; readonly address: string; readonly asset: string }
+  | { readonly by: "script"; readonly address: string; readonly script: string }
   | { readonly by: "ref"; readonly ref: string; readonly address?: string };
 
 /** The lookup found no UTxO. */
@@ -49,6 +50,9 @@ export class UtxoNotFound extends Data.TaggedError("UtxoNotFound")<{
   }
   static holding(address: string, asset: string): UtxoNotFound {
     return new UtxoNotFound({ lookup: { by: "asset", address, asset } });
+  }
+  static carrying(address: string, script: string): UtxoNotFound {
+    return new UtxoNotFound({ lookup: { by: "script", address, script } });
   }
   static byRef(ref: string, address?: string): UtxoNotFound {
     return new UtxoNotFound({ lookup: { by: "ref", ref, address } });
@@ -243,6 +247,8 @@ const renderLookup = (lookup: UtxoLookup): string => {
       return `No UTxO at ${lookup.address}`;
     case "asset":
       return `No UTxO holding ${lookup.asset} at ${lookup.address}`;
+    case "script":
+      return `No UTxO carrying reference script ${lookup.script} at ${lookup.address}`;
     case "ref":
       return `UTxO ${lookup.ref} not found${lookup.address ? ` at ${lookup.address}` : ""}`;
   }
