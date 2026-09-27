@@ -9,9 +9,10 @@ commit. No audited file is touched. No TypeScript until phase 06.
 | 00 ✅ | [00-foundations.md](00-foundations.md) | `lib/rewards/{types,auth,value,fold,test_fixtures}.ak`, config keys in 8 profiles, `NetworkConfig` keys | — |
 | 01 ✅ | [01-accounts.md](01-accounts.md) | `lib/rewards/linked_list.ak`, `lib/rewards/account.ak`, `validators/virtual_account.ak` + 87 tests, `virtual_account_hash` | 00 |
 | 02 ✅ | [02-merkle-range.md](02-merkle-range.md) | `lib/rewards/merkle_range.ak`, `lib/rewards/merkle_range_builder.ak` (test-only) + 34 tests | 00 |
-| 03 ✅ | [03-digest-proof.md](03-digest-proof.md) | `lib/rewards/{scale,mmr,trie,digest}.ak`: compact codec, single-leaf MMR verify, header parse, `extrinsics_root` trie proof, digest extrinsic decode + tests | 00 |
+| 03 ✅ | [03-digest-proof.md](03-digest-proof.md) | `lib/rewards/{scale,trie,digest}.ak`: compact codec, header parse, `extrinsics_root` trie proof, digest extrinsic decode + tests; the MMR walk is the MIP bridge's `merkle.verify_mmr_leaf` | 00 |
 | 04 ✅ | [04-pool-batcher.md](04-pool-batcher.md) | `validators/rewards_batcher.ak`, `validators/rewards_pool.ak`, `validators/staging_rewards_pool.ak`, `lib/rewards/{batch,pool}.ak` + 115 tests, batcher and pool hashes in the default profile | 01, 02, 03 |
-| 05 | [05-reserve-release.md](05-reserve-release.md) | `lib/rewards/{schedule,release}.ak`, rewritten `validators/reserve_v2.ak` + tests | 04 (pool hash) |
+| 05 ✅ | [05-reserve-release.md](05-reserve-release.md) | `lib/rewards/release.ak`, `reserve_logic_v2` with `Release` to the pool ceiling + 22 tests | 04 (pool hash) |
+| MIP (demo path) ✅ | — | 125-byte digest with `treasury_total` paid to the ICS by the completing batch; `payout_threshold` in the registration. The fee schedule (skim cap, `dist_fee`) stays open (spec §4.6) | 03, 04 |
 | 06 | [06-typescript.md](06-typescript.md) | CLI commands, prover, reference batcher, emulator e2e | 01–05 |
 
 Phases 01, 02, 03 are independent and can run in parallel after 00.
@@ -25,8 +26,9 @@ Phases 01, 02, 03 are independent and can run in parallel after 00.
 | Bridge re-audit after the MIP alignment (its `merkle.verify_mmr_leaf` is the walk the digest proof uses) | auditors | bridge redeploy; not a rewards phase |
 
 Decided in the follow-up interview (spec §14): keccak-256 leaves, skim
-`≤ min(ceil(fee / n_paid), 0.01 ADA)`, deregister = one atomic user tx,
-mainnet reserve datum is the unit constructor.
+`≤ min(ceil(fee / n_paid), 0.01 ADA)`, deregister = one atomic user tx.
+The mainnet reserve datum is the deploy datum `Constr 0 [0, 0]`, not the
+unit constructor the interview assumed (spec §8.2 rule 3).
 
 ## Guardrails for every phase
 
