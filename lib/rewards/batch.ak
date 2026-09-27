@@ -96,12 +96,12 @@ pub fn load(
   digest_proof: DigestProof,
   reference_inputs: List<Input>,
 ) -> Digest {
-  expect BeefyConsensusState { latest_mmr_root, .. }: BeefyConsensusState =
+  expect BeefyConsensusState { latest_mmr_root, latest_height, .. }: BeefyConsensusState =
     get_input_state_by_policy(
       reference_inputs,
       config.committee_bridge_forever_hash,
     )
-  let digest = verify_digest(latest_mmr_root, digest_proof)
+  let digest = verify_digest(latest_mmr_root, latest_height, digest_proof)
   expect digest.epoch == state.epoch + 1
   digest
 }

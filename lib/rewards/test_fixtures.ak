@@ -10,6 +10,7 @@ use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
 }
 use config
+use rewards/digest_builder
 use rewards/types.{
   AccountDatum, BatcherState, Deposit, Head, Registration, Tail,
 }
@@ -152,11 +153,15 @@ pub fn withdrawal_of(hash: ByteArray) -> Pair<Credential, Int> {
 
 pub fn ref_input_bridge(root: ByteArray) -> Input {
   let committee =
-    AuthoritySetCommitment { validator_set_id: 0, seat_count: 0, keyset_commitment: "" }
+    AuthoritySetCommitment {
+      validator_set_id: 0,
+      seat_count: 0,
+      keyset_commitment: "",
+    }
   let state =
     BeefyConsensusState {
       latest_mmr_root: root,
-      latest_height: 0,
+      latest_height: digest_builder.latest_height,
       beefy_activation_block: 0,
       current_committee: committee,
       next_committee: committee,

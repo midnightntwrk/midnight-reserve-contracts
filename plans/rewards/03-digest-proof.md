@@ -18,6 +18,10 @@ known SCALE bytes (0, 1, 63, 64, 16383, 16384, 2^30−1, 2^30, 2^32, 2^40)
 instead of an encode/decode round trip.
 
 ### `lib/rewards/mmr.ak`
+
+Superseded on the rebase onto the MIP bridge: the digest proof calls
+`bridge/merkle.verify_mmr_leaf` with index `parent_number` and count
+`latest_height`, and `mmr.ak` / `mmr.test.ak` are gone.
 ```aiken
 pub fn verify_leaf(root, leaf_hash, leaf_index: Int, leaf_count: Int, items: List<ByteArray>) -> Bool
 pub fn leaf_root(leaf_hash, leaf_index, leaf_count, items) -> ByteArray

@@ -6,8 +6,8 @@ use rewards/digest.{
   header_extrinsics_root, header_number, parse_rewards_call, verify_digest,
 }
 use rewards/digest_builder.{
-  block_extrinsics, digest_proof, extrinsic, fill, header, rewards_extrinsic,
-  rewards_index,
+  block_extrinsics, digest_proof, extrinsic, fill, header, latest_height,
+  rewards_extrinsic, rewards_index,
 }
 use rewards/trie_builder.{build}
 use rewards/types.{Digest, DigestProof}
@@ -107,35 +107,46 @@ test parse_rewards_call_other_extrinsic() fail {
 
 test verify_digest_ok() {
   let (root, proof) = digest_proof(digest(3, 7))
-  verify_digest(root, proof) == digest(3, 7)
+  verify_digest(root, latest_height, proof) == digest(3, 7)
 }
 
 test verify_digest_empty_epoch_ok() {
   let d = Digest { ..digest(9, 0), root: fill(#"00", 32) }
   let (root, proof) = digest_proof(d)
-  verify_digest(root, proof) == d
+  verify_digest(root, latest_height, proof) == d
 }
 
 test verify_digest_wrong_root() fail {
   let (_, proof) = digest_proof(digest(3, 7))
-  verify_digest(fill(#"00", 32), proof) == digest(3, 7)
+  verify_digest(fill(#"00", 32), latest_height, proof) == digest(3, 7)
 }
 
 test verify_digest_mutated_header() fail {
   let (root, proof) = digest_proof(digest(3, 7))
   let h = with_byte(proof.header, 40, #"ff")
-  verify_digest(root, DigestProof { ..proof, header: h }) == digest(3, 7)
+  verify_digest(root, latest_height, DigestProof { ..proof, header: h }) == digest(
+    3,
+    7,
+  )
 }
 
-test verify_digest_other_position() fail {
+test verify_digest_other_count() fail {
   let (root, proof) = digest_proof(digest(3, 7))
-  verify_digest(root, DigestProof { ..proof, leaf_index: 3 }) == digest(3, 7)
+  verify_digest(root, latest_height - 1, proof) == digest(3, 7)
+}
+
+test verify_digest_leaf_past_latest_height() fail {
+  let (root, proof) = digest_proof(digest(3, 7))
+  verify_digest(root, 4, proof) == digest(3, 7)
 }
 
 test verify_digest_parent_number_mismatch() fail {
   let (root, proof) = digest_proof(digest(3, 7))
   let leaf = BeefyMmrLeaf { ..proof.leaf, parent_number: 5 }
-  verify_digest(root, DigestProof { ..proof, leaf }) == digest(3, 7)
+  verify_digest(root, latest_height, DigestProof { ..proof, leaf }) == digest(
+    3,
+    7,
+  )
 }
 
 test verify_digest_other_extrinsic_index() fail {
@@ -145,6 +156,7 @@ test verify_digest_other_extrinsic_index() fail {
   expect Some(other) = list.at(xts, 0)
   verify_digest(
     root,
+    latest_height,
     DigestProof {
       ..proof,
       extrinsic_index: 0,
@@ -156,16 +168,17 @@ test verify_digest_other_extrinsic_index() fail {
 
 test verify_digest_index_without_matching_proof() fail {
   let (root, proof) = digest_proof(digest(3, 7))
-  verify_digest(root, DigestProof { ..proof, extrinsic_index: 2 }) == digest(
-    3,
-    7,
-  )
+  verify_digest(
+    root,
+    latest_height,
+    DigestProof { ..proof, extrinsic_index: 2 },
+  ) == digest(3, 7)
 }
 
 test verify_digest_tampered_extrinsic() fail {
   let (root, proof) = digest_proof(digest(3, 7))
   let forged = rewards_extrinsic(digest(4, 7))
-  verify_digest(root, DigestProof { ..proof, extrinsic: forged }) == digest(
+  verify_digest(root, latest_height, DigestProof { ..proof, extrinsic: forged }) == digest(
     4,
     7,
   )
@@ -176,6 +189,7 @@ test verify_digest_foreign_trie_nodes() fail {
   let other_trie = build(block_extrinsics(digest(4, 7)))
   verify_digest(
     root,
+    latest_height,
     DigestProof {
       ..proof,
       trie_nodes: trie_builder.proof(other_trie, rewards_index),
@@ -185,5 +199,8 @@ test verify_digest_foreign_trie_nodes() fail {
 
 test verify_digest_without_trie_nodes() fail {
   let (root, proof) = digest_proof(digest(3, 7))
-  verify_digest(root, DigestProof { ..proof, trie_nodes: [] }) == digest(3, 7)
+  verify_digest(root, latest_height, DigestProof { ..proof, trie_nodes: [] }) == digest(
+    3,
+    7,
+  )
 }
