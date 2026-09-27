@@ -4,7 +4,8 @@
  * with updates the TS reference signs. Committee c holds four keys with
  * seats (1, 2, 1, 1); c + 1 (the same keys) is next at bootstrap. The tests
  * run in order on one chain: the deploy, the activation-block justification,
- * two small top-ups, the rejections (each a valid update with one field
+ * two small top-ups, a UTxO with a datum hash at the pool address (never a
+ * pool input), the rejections (each a valid update with one field
  * broken, pinned to its guard's trace), three funded handovers (the second
  * changes membership; by the third the pool holds less than the fee above
  * its minimum, so it pays that and the submitter the rest) and a stale
@@ -15,6 +16,8 @@
  */
 import { describe, expect, test } from "bun:test";
 import {
+  addressFromValidator,
+  Hash32ByteBase16,
   NetworkId,
   PaymentAddress,
   TransactionOutput,
@@ -290,6 +293,22 @@ describe("the committee bridge in the Blaze emulator", () => {
   test("two top-ups land at the pool address", async () => {
     await topup(1_200_000n);
     await topup(900_000n);
+    expect(lovelaceOf((await chain()).pool)).toBe(2_100_000n);
+  });
+
+  test("a UTxO with a datum hash at the pool address is no pool input: every funded handover below builds past it", async () => {
+    await emulator.expectValidTransaction(
+      blaze,
+      blaze.newTransaction().addOutput(
+        TransactionOutput.fromCore({
+          address: PaymentAddress(
+            addressFromValidator(networkId, scripts.pool).toBech32(),
+          ),
+          value: { coins: 5_000_000n },
+          datumHash: Hash32ByteBase16("00".repeat(32)),
+        }),
+      ),
+    );
     expect(lovelaceOf((await chain()).pool)).toBe(2_100_000n);
   });
 
