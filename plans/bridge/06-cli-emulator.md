@@ -83,8 +83,12 @@ transaction:
   count.
 - `bridge-topup --lovelace N`: pay to the pool address.
 - `bridge-update --update <json>`: build the update tx from a `BridgeUpdate`
-  JSON (the phase 05 `update.ts` shape); `--funded` adds pool inputs and
-  sets the debit to the fee; otherwise the submitter pays.
+  JSON (the phase 05 `update.ts` shape: the blueprint field names, integers
+  as numbers, lower-case hex, the multiproof as CBOR hex); `--funded` adds
+  every pool UTxO and sets the debit to min(fee, cap, pool − minimum
+  output), measured by a first build with no debit; otherwise the
+  submitter pays. A funded update that is no handover (rule 15), or over a
+  pool at or below its minimum output, is refused before any build.
 - `bridge-set-fee --base --per-signer` and `bridge-set-threshold`:
   threshold spend under Council + Tech Auth. No governance command spends
   a threshold UTxO, so there is no change-threshold path to reuse; the
@@ -92,7 +96,28 @@ transaction:
   requirements of the governance commands, with `main_gov_threshold` and
   both authorities' forever UTxOs as reference inputs.
 
-### 3. Emulator test (`tests/bridge_e2e.test.ts`)
+### 3. Emulator test (`tests/bridge/bridge-e2e.test.ts`)
+Done 2026-09-26, with the other bridge tests in `tests/bridge/`; the
+sessions come from `tests/bridge/reference/session.ts`. Recorded
+differences from the steps below:
+- Step 5: each rejection is a valid update with one field broken, pinned to
+  its guard's verbose trace (rules 0 datum, 1, 2, 3, 5 twice, 6 twice, 7,
+  8, 9, 10; rules 15 and 17 return false). Rule 0's address and value, rule
+  12 and rule 16 cannot be built through `buildBridgeUpdateTx` (correct by
+  construction; the fee is at least the debit); the Aiken tests in
+  `validators/committee_bridge.test.ak` cover them.
+- Step 6: the Blaze emulator does not check the min UTxO, so an empty pool
+  is not a chain failure there. It is bridge-update's `PoolEmpty` refusal
+  (a pool at or below its minimum output), run live in the QA harness. The
+  e2e shows the rule the refusal guards instead: the pool pays
+  `poolDebit` = min(fee, cap, pool − minimum output), so by the third
+  handover it pays less than the fee, keeps its minimum, and the submitter
+  pays the rest.
+- Step 7: the transaction built against the datum references the light
+  client with no consumer script (step 4 is deferred).
+- The logic registration in the `committee-bridge-threshold` transaction
+  is what the updates withdraw through; no test registers it by hand.
+
 Using the phase 05 reference to produce every update:
 1. Deploy with committee `c` (4 keys, seats `(1,2,1,1)`), `next = c + 1`.
 2. Activation-block justification: accepted, unfunded (pool untouched).
