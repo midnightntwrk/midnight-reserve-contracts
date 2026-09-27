@@ -1,0 +1,27 @@
+{
+  "mmr_root": "6baee01e3a0ba788649755d51371cb1f971e47c9fc763cdef00438aac3b60132",
+  "block_number": 590,
+  "validator_set_id": 2,
+  "signatures": [
+    "b8cdc462cac63c64610ae4456f717d40f4e450125e4b88ee058dd6c69f4ae2d56934f059780fec8fd292ee1417f5dd44073c6bb6dc6327d08b12f3fb360f5ccc"
+  ],
+  "leaf": {
+    "version": 0,
+    "parent_number": 589,
+    "parent_hash": "5bf44c12094e8f5e94493644d0fff1fa540d968819cb226fb12fc80ad1bf945f",
+    "next_authority_set": {
+      "validator_set_id": 3,
+      "seat_count": 10,
+      "keyset_commitment": "75c1cdf7f98d2eaf0f0929d88d6c6fb4db0dad53b8f1f71783aca2a607247349"
+    },
+    "extra": ""
+  },
+  "mmr_proof": [
+    "ebdc3bebf186c2cf3684681c167e7fa4dcb530bfee5d59e749024f96abb26d60",
+    "64239cef9f3879fbb9b016daeb04675c3fe7ab57de74902659df344dc3e9f333",
+    "39a48eb0b8abf11bafb0b8a062d4e4c19b8dc65d60d6872b0c4a73fee85ac619",
+    "89977beab2ae70c38e9808bfcd08f6219b51c9d402a0fff1e8d068a304fc5399",
+    "5f8191914c733e5bda5cd367ea1faaa492d89ee42130b231800acf695c6f4e3a"
+  ],
+  "multiproof": "9f5825020a1091341fe5664bfa1782d5e04779689068c916b04cb365ec3153755684d9a10a000000ff"
+}

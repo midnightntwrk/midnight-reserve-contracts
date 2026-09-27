@@ -42,7 +42,11 @@
     "z_terms_and_cond_types",
     "z_threshold_types",
     "z_two_stage_upgrade_types",
-    "z_federated_ops_v2_types"
+    "z_federated_ops_v2_types",
+    "committee_bridge_forever",
+    "committee_bridge_logic",
+    "committee_bridge_two_stage_upgrade",
+    "beefy_signer_threshold"
   ],
   "staged": []
 }
