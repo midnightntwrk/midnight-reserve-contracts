@@ -8,7 +8,6 @@ import { Effect } from "effect";
 import {
   credentialAddress,
   type ContractInstances,
-  type RequiredInstance,
   Blueprint,
 } from "../contracts/contracts";
 import { environmentOf } from "../config/network-mapping";
@@ -69,6 +68,8 @@ export const INFO_COMPONENT_CHOICES = [
   "federated-ops-threshold",
   "terms-and-conditions",
   "terms-and-conditions-threshold",
+  "committee-bridge",
+  "committee-bridge-threshold",
 ] as const;
 
 type InfoComponent = (typeof INFO_COMPONENT_CHOICES)[number];
@@ -92,6 +93,7 @@ const MAIN_TRACK_COMPONENTS = [
   "gov",
   "registered-candidate",
   "cnight-generates-dust",
+  "committee-bridge",
 ] as const satisfies readonly ContractComponent[];
 
 type MainTrackComponent = (typeof MAIN_TRACK_COMPONENTS)[number];
@@ -111,11 +113,11 @@ const SUMMARY_ONLY_COMPONENT_SET: ReadonlySet<ContractComponent> = new Set(
   SUMMARY_ONLY_COMPONENTS,
 );
 
-/** Every contract info shows, in display order: its name, component and blueprint instance. */
+/** Every contract info shows, in display order: its name, component and blueprint instance; a blueprint without the committee bridge (mainnet) lists none of its rows. */
 const CONTRACTS: readonly (readonly [
   string,
   ContractComponent,
-  RequiredInstance,
+  keyof ContractInstances,
 ])[] = [
   ["Tech Auth Forever", "tech-auth", "techAuthForever"],
   ["Tech Auth Two Stage", "tech-auth", "techAuthTwoStage"],
@@ -172,6 +174,15 @@ const CONTRACTS: readonly (readonly [
     "termsAndConditionsThreshold",
   ],
   ["cNIGHT Generates Dust", "cnight-generates-dust", "cnightGeneratesDust"],
+  ["Committee Bridge Forever", "committee-bridge", "committeeBridgeForever"],
+  ["Committee Bridge Two Stage", "committee-bridge", "committeeBridgeTwoStage"],
+  ["Committee Bridge Logic", "committee-bridge", "committeeBridgeLogic"],
+  ["Committee Bridge Pool", "committee-bridge", "committeeBridgePool"],
+  [
+    "Beefy Signer Threshold",
+    "committee-bridge-threshold",
+    "beefySignerThreshold",
+  ],
 ];
 
 const TWO_STAGE_NAMES = new Set(
@@ -325,10 +336,12 @@ const contractList = (
   networkId: NetworkId,
   contracts: ContractInstances,
 ): ContractInfo[] =>
-  CONTRACTS.map(([name, component, key]) => {
-    const scriptHash = contracts[key].Script.hash();
+  CONTRACTS.flatMap(([name, component, key]) => {
+    const contract = contracts[key];
+    if (contract === undefined) return [];
+    const scriptHash = contract.Script.hash();
     const address = credentialAddress(networkId, scriptHash).toBech32();
-    return { name, component, scriptHash, address };
+    return [{ name, component, scriptHash, address }];
   });
 
 /** List the contracts of the blueprint; with --save, read their UTxOs and write info.json and the markdown report. */

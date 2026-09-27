@@ -24,6 +24,7 @@ export const UPGRADABLE_VALIDATORS = [
   "federated-ops",
   "terms-and-conditions",
   "cnight-minting",
+  "committee-bridge",
 ] as const;
 
 export type UpgradableValidator = (typeof UPGRADABLE_VALIDATORS)[number];
@@ -119,14 +120,16 @@ const OPTIONAL = {
   cnightMintTwoStage: "CnightMintingCnightMintTwoStageUpgradeElse",
   cnightMintForever: "CnightMintingCnightMintForeverElse",
   cnightMintLogic: "CnightMintingCnightMintLogicElse",
+  committeeBridgeTwoStage: "CommitteeBridgeCommitteeBridgeTwoStageUpgradeElse",
+  committeeBridgeForever: "CommitteeBridgeCommitteeBridgeForeverElse",
+  committeeBridgeLogic: "CommitteeBridgeCommitteeBridgeLogicElse",
+  committeeBridgePool: "CommitteeBridgePoolCommitteeBridgePoolElse",
+  beefySignerThreshold: "ThresholdsBeefySignerThresholdElse",
 } as const;
-
-/** The instances every blueprint has. */
-export type RequiredInstance = keyof typeof REQUIRED;
 
 /** Every contract instance of a blueprint. */
 export type ContractInstances = {
-  readonly [K in RequiredInstance]: ContractClass;
+  readonly [K in keyof typeof REQUIRED]: ContractClass;
 } & { readonly [K in keyof typeof OPTIONAL]?: ContractClass };
 
 type ModuleLoader = () => Record<string, unknown>;
@@ -293,9 +296,10 @@ const TRIPLE_PREFIX = {
   "federated-ops": "federatedOps",
   "terms-and-conditions": "termsAndConditions",
   "cnight-minting": "cnightMint",
+  "committee-bridge": "committeeBridge",
 } as const satisfies Record<UpgradableValidator, string>;
 
-/** The two-stage triple of a validator; only the cNIGHT minting one is optional. */
+/** The two-stage triple of a validator; only the cNIGHT minting and committee bridge ones are optional. */
 const twoStageContracts = (
   validator: UpgradableValidator,
   contracts: ContractInstances,
@@ -312,7 +316,7 @@ const twoStageContracts = (
         blueprintError(
           environment,
           source,
-        )("cNIGHT minting contracts not found in the blueprint"),
+        )(`${validator} contracts not found in the blueprint`),
       );
 };
 
