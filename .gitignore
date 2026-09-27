@@ -29,3 +29,6 @@ get_reserve_v2_hash.sh
 
 __pycache__/
 *.pyc
+
+# just private-net-up: the exported node tree and contracts
+/.private-net/

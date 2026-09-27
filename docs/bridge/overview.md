@@ -109,10 +109,11 @@ and accepted its signatures. What the node emitted, against the MIP:
   minimal cover of four (the 2-seat key and two others).
 - The leaf of block `b` is index `b − 1` of `b` in `mmr_generateProof`, and
   the leaf of a session's first block names the next set.
-- The local-env stack as checked in needs two local fixes to run on arm64:
+- The local-env stack of `lglo/beefy-on-main` does not run as checked in:
   the contract-compiler image pins `libssl-dev=3.0.20-1~deb12u2`, which no
   longer installs, and postgres allows 120 connections while six nodes open
-  up to 37 each, so authoring stalls on `PoolTimedOut`.
+  up to 37 each, so authoring stalls on `PoolTimedOut`. Two commits on
+  `kc-beefy-mip-alignment` fix both; `just private-net-up` runs the stack.
 
 `signer_cap` measured in this repo (plan phase 04, spec §11): a quorum
 update crosses `maxTxSize` at N ≈ 170; candidate **160** for the node team

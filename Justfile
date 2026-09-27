@@ -49,3 +49,12 @@ use-env env:
     fi
     cp contract_blueprint_{{env}}.ts contract_blueprint.ts
     echo "Activated environment: {{env}}"
+
+
+# The node repo's local-env stack (local Cardano devnet, db-sync, six nodes) on a node ref; RPC http://localhost:9945
+private-net-up node="../midnight-node" ref="kc-beefy-mip-alignment":
+    tests/private-net/local-env.sh up {{node}} {{ref}}
+
+
+private-net-down node="../midnight-node" ref="kc-beefy-mip-alignment":
+    tests/private-net/local-env.sh down {{node}} {{ref}}
