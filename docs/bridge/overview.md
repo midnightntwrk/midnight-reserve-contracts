@@ -78,15 +78,19 @@ against `latest_mmr_root` themselves.
 
 ## What the node must emit (MIP-driven)
 
-| Requirement | MIP section | Node today (2026-09-22) |
+| Requirement | MIP section | Node (2026-09-27) |
 |---|---|---|
-| `key ‖ seats (u32 LE)` leaves, deduplicated, sorted; `len` = total seats | Committee commitment | `u64`, seats hard-coded 1, no dedup |
-| BEEFY payload = MMR root only (`mh`) | Signed commitments | five payload entries |
-| 64-byte low-S signatures (recovery byte dropped by the submitter) | Notation | 65-byte recoverable |
+| `key ‖ seats (u32 LE)` leaves, deduplicated, sorted; `len` = total seats | Committee commitment | done on `kc-beefy-mip-alignment`; `lglo/beefy-on-main`: 33-byte key leaves, one per seat |
+| BEEFY payload = MMR root only (`mh`) | Signed commitments | done on `kc-beefy-mip-alignment`; five entries on `lglo/beefy-on-main` |
+| Leaf of a session's first block names the next set (Session hooks before Mmr) | rule 10 | done on `kc-beefy-mip-alignment`; `lglo/beefy-on-main` and `main` name the current set |
+| 64-byte low-S signatures (recovery byte dropped by the submitter) | Notation | 65-byte recoverable, low-S |
 | `beef` session key, no cross-chain fallback | Keys | fallback on `lglo/beefy-on-main` |
 | `update_d_parameter` rejects seat totals above `signer_cap` | Committee size, rule 11 | absent |
-| Data pump: light-client module, oldest session first, funded by the pool | Data pump | relay logs proofs, no submission |
+| Data pump: light-client module, oldest session first, funded by the pool | Data pump | relay logs proofs (over the seat leaves on `kc-beefy-mip-alignment`), no submission |
 | Six-hour epoch | Epoch length | 30 minutes |
+
+`kc-beefy-mip-alignment` is four local commits on `lglo/beefy-on-main`, for a
+PR to that branch; a local dev node against the base confirmed each "done" row.
 
 `signer_cap` measured in this repo (plan phase 04, spec §11): a quorum
 update crosses `maxTxSize` at N ≈ 170; candidate **160** for the node team

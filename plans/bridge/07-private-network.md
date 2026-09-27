@@ -5,10 +5,21 @@ bootstrapped from its RPC, and a datum recompute check (MIP §Bootstrap,
 §Acceptance criteria).
 
 Gate: `midnight-node` on a branch with the deduplicated `u32` commitment
-and the root-only payload (today `lglo/beefy-on-main` has the `beef` key;
-the commitment and payload changes are node-team work). Until then this
-phase runs against whatever the branch emits and records the diff in the
-open-items table.
+and the root-only payload. `kc-beefy-mip-alignment` (four local commits on
+`lglo/beefy-on-main`, for a PR to that branch, 2026-09-27) has them, plus
+Session hooks before Mmr (rule 10) and `beef` keys for the mock candidates.
+A local dev node checked each against the base: payload `mh` only (48-byte
+commitment), `BeefyMmrApi_authority_set_proof` the seat commitment (dev
+Alice holds 10 seats: one leaf, `len` 10), the leaf added by a session's
+first block names the next set, and the committee is selected (the base
+fails with "Failed to select validators"). Still node-side: the `beef` key
+fallback, rule 11, the six-hour epoch and the data pump.
+
+Dev node notes: `CFG_PRESET=dev` with `APPEND_ARGS='--enable-offchain-indexing
+true'` (and `--rpc-port`/`--port`/`--prometheus-port` for a second node);
+epochs are 30 minutes aligned to the wall clock; `mmr_generateProof` takes
+block numbers, and the leaf for block `b` is the one block `b` adds
+(parent `b − 1`).
 
 ## Tasks
 
@@ -60,5 +71,9 @@ in `docs/bridge/overview.md` "What the node must emit".
 ## Review note carried from phase 01
 - Rule 10 assumes the leaf appended in the first block of session N names
   N+1: `pallet_session` must run before `pallet_mmr` in `on_initialize`
-  (Polkadot order). If the MMR runs first, every handover fails rule 10.
-  Confirm on the private network before the first handover test.
+  (Polkadot order). Confirmed on a local dev node (2026-09-27):
+  `#[frame_support::runtime]` runs hooks in index order, and on
+  `lglo/beefy-on-main` Mmr (22) runs before Session (30), so that leaf names
+  N, the BEEFY mandatory block fails rule 10, and a session with only its
+  mandatory justification stops the bridge (polkadot-fellows/runtimes#160).
+  `kc-beefy-mip-alignment` moves Beefy, Mmr and BeefyMmrLeaf to 34–36.

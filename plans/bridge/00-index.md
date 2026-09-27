@@ -15,7 +15,7 @@ exception); no other audited file is touched. No TypeScript until phase 05.
 | 04 | [04-signer-cap.md](04-signer-cap.md) | test-only builder at N = 50/100/150/200; `signer_cap` table in spec §11 | 03 | done (`nzzulqos`; review `rtsrwmpy`) |
 | 05 | [05-ts-reference-vectors.md](05-ts-reference-vectors.md) | `tests/bridge/reference/*.ts` (`@noble/curves`, `@noble/hashes`); `tests/vectors/bridge/*.json`; Aiken fixtures mirror; VM round trip | 00, 01 | done (`usswrvpp`) |
 | 06 | [06-cli-emulator.md](06-cli-emulator.md) | `deploy --components committee-bridge,committee-bridge-threshold,committee-bridge-scripts` (triple; threshold and logic registration; reference scripts; one deploy command), `bridge-info`, `bridge-topup`, `bridge-update`, `bridge-set-fee`, `bridge-set-threshold`; emulator e2e; written in Effect | 03, 05, 08, `plans/effect/` 01–07 | done (2026-09-26; open: consumer validator, live deploy after 07) |
-| 07 | [07-private-network.md](07-private-network.md) | compact-end-2-end stack with `midnight-node` from `lglo/beefy-on-main`; `bridge-bootstrap` from RPC; datum recompute check | 06 (gated on the node branch) | gated on the node branch |
+| 07 | [07-private-network.md](07-private-network.md) | compact-end-2-end stack with `midnight-node` from `lglo/beefy-on-main`; `bridge-bootstrap` from RPC; datum recompute check | 06 (gated on the node branch) | gated on the node PR (`kc-beefy-mip-alignment`, 2026-09-27) |
 | 08 | [08-dependencies.md](08-dependencies.md) | Bun dependency audit and update (patch/minor, Blaze majors, tooling majors); Aiken untouched | 05 (VM test as smoke) | done (`xunmytsy::msvmzmsy`) |
 
 Phases 02 and 05 can run in parallel with 01 after 00.
@@ -24,7 +24,7 @@ Phases 02 and 05 can run in parallel with 01 after 00.
 
 | Item | Owner | Blocks |
 |---|---|---|
-| Node: `u32` deduplicated commitment, root-only payload, `beef` key without fallback, rule 11 | node team | 07; vectors from a real node |
+| Node: `beef` key without fallback, rule 11 (commitment, root-only payload, hook order: `kc-beefy-mip-alignment`, PR to `lglo/beefy-on-main`) | node team | 07; vectors from a real node |
 | `signer_cap` value | phase 04 here, then node team sets the D-parameter bound | MIP §Committee size |
 | Collateral without a fee-paying wallet | node team / MIP open question | data pump, not a contract phase |
 | On-chain misbehavior response | future MIP | nothing here |
