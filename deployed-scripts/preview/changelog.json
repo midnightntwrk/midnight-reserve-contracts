@@ -6,6 +6,36 @@
       "type": "initial",
       "validator": "all",
       "description": "Initial deployment"
+    },
+    {
+      "type": "initial",
+      "validator": "committee_bridge_forever",
+      "description": "Initial deployment",
+      "timestamp": "2026-09-27T16:07:17.701Z"
+    },
+    {
+      "type": "initial",
+      "validator": "committee_bridge_logic",
+      "description": "Initial deployment",
+      "timestamp": "2026-09-27T16:07:17.701Z"
+    },
+    {
+      "type": "initial",
+      "validator": "committee_bridge_two_stage_upgrade",
+      "description": "Initial deployment",
+      "timestamp": "2026-09-27T16:07:17.701Z"
+    },
+    {
+      "type": "initial",
+      "validator": "committee_bridge_pool",
+      "description": "Initial deployment",
+      "timestamp": "2026-09-27T16:07:17.701Z"
+    },
+    {
+      "type": "initial",
+      "validator": "beefy_signer_threshold",
+      "description": "Initial deployment",
+      "timestamp": "2026-09-27T16:07:17.701Z"
     }
   ]
 }
