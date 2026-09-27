@@ -21,25 +21,33 @@ epochs are 30 minutes aligned to the wall clock; `mmr_generateProof` takes
 block numbers, and the leaf for block `b` is the one block `b` adds
 (parent `b − 1`).
 
-Status (2026-09-27): tasks 2–5 done; task 1 open. The soak ran on the node
-repo's `local-environment` `local-env` stack, not a stack in this repo: a
-local Cardano devnet with db-sync and six nodes built from
-`kc-beefy-mip-alignment` (`earthly +node-image`, `+toolkit-image`); nothing is
-mocked (user decision: no mock data; the `dev` preset mocks the main-chain
-follower). It needed two local fixes: the contract-compiler image's
-`libssl-dev` pin and postgres `max_connections` (120 against six nodes' pools
-of up to 37). Preview light client `2d0acfc0` (one-shot tx `31726abb`),
+Status (2026-09-27): done. The soak ran on the node repo's
+`local-environment` `local-env` stack: a local Cardano devnet with db-sync
+and six nodes built from `kc-beefy-mip-alignment` (`earthly +node-image`,
+`+toolkit-image`); nothing is mocked (user decision: no mock data; the `dev`
+preset mocks the main-chain follower). It needed two fixes, now two commits
+on `kc-beefy-mip-alignment` (`tytqkpmx`, `pzwqzunn`): the contract-compiler
+image's `libssl-dev` pin and postgres `max_connections` (120 against six
+nodes' pools of up to 37). Preview light client `2d0acfc0` (one-shot tx `31726abb`),
 bootstrapped at block 38: `bridge-verify-bootstrap` passed, then 27 funded
 handovers (sets 8–34) from real justifications, across a `change-federated-ops`
 removal of one candidate (set 31: four keys, one with two seats). An earlier
 light client on a `dev` node (`14fe24a5`, blocks 290 and 590) took two.
-Findings: overview.md "What the node must emit". Open: task 1 (a stack in
-this repo), and the deploy's coin selection spent the bridge one-shots once
-(the third transaction failed; `--components committee-bridge-scripts` again).
+Findings: overview.md "What the node must emit". Seen once: the deploy's
+coin selection spent the bridge one-shots (the third transaction failed;
+`--components committee-bridge-scripts` again).
 
 ## Tasks
 
 ### 1. Stack
+Done (user decision 2026-09-27: a `just` recipe over the node repo's
+local-env, no stack copied here): `just private-net-up [node] [ref]` and
+`just private-net-down` run `tests/private-net/local-env.sh`. It builds the
+node and toolkit images of the ref when missing, exports the ref and the
+contracts commit it pins to `.private-net/`, and runs `run:local-env` there.
+Membership changes are real `change-federated-ops` transactions on the
+devnet. The original plan follows.
+
 Copy the compact-end-2-end pattern (`infra/docker-compose.yml`,
 `infra/earthly-builder.Dockerfile`, `infra/stack.ts`): the
 `midnight-node-image` service runs the `node-image` Earthfile target from
