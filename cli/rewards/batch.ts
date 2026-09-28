@@ -1,0 +1,335 @@
+/**
+ * The rewards batcher's transactions (docs/rewards/spec.md §5.3): a
+ * LoadAndPay that opens an epoch with its digest proof and first batch, and
+ * a Pay that continues it. A batch reveals one contiguous run of the
+ * epoch's sorted leaves, `[cursor, …, lookahead]`, pays every leaf but the
+ * lookahead into its deposit, takes the total (and, in the batch that
+ * completes the fold, the epoch's Treasury share for the ICS) from the
+ * pool, and moves the state's cursor, as lib/rewards/batch.ak checks.
+ *
+ * The contract pairs each paid leaf with its deposit input and output, both
+ * indices strictly increasing in leaf order, and the ledger orders inputs
+ * by transaction id then index. So a run extends only while the next
+ * deposit's input sorts after the previous one; the batch fixes its input
+ * set (an explicit fee input from the deployer) so that order is the order
+ * the ledger will see. Exits (ack leaves) are not built yet.
+ */
+import {
+  addressFromValidator,
+  AssetId,
+  type NetworkId,
+  PaymentAddress,
+  PlutusData,
+  type Script,
+  TransactionOutput,
+  type TransactionUnspentOutput,
+} from "@blaze-cardano/core";
+import { serialize } from "@blaze-cardano/data";
+import type {
+  Blaze,
+  Provider as BlazeProvider,
+  Wallet,
+} from "@blaze-cardano/sdk";
+import type { TxBuilder } from "@blaze-cardano/tx";
+import { bytesToHex } from "@noble/hashes/utils.js";
+import { Either, Option } from "effect";
+import * as Contracts from "../../contract_blueprint";
+import { buildMultiproof, toPlutusData } from "../bridge/authority-set";
+import { createRewardAccount, refOf } from "../chain/transaction";
+
+/** A decoded 45-byte reward leaf: ack ‖ skh ‖ amount (u128 BE). */
+export interface RewardLeaf {
+  readonly bytes: Uint8Array;
+  readonly ack: number;
+  readonly key: string;
+  readonly amount: bigint;
+}
+
+/** Decode a 45-byte leaf. */
+export const rewardLeaf = (bytes: Uint8Array): RewardLeaf => ({
+  bytes,
+  ack: bytes[0],
+  key: bytesToHex(bytes.slice(1, 29)),
+  amount: BigInt(`0x${bytesToHex(bytes.slice(29, 45))}`),
+});
+
+/** One batch over the epoch's leaves: the leaves it pays and the one it reveals after them, and the state it leaves. */
+export interface BatchPlan {
+  readonly paid: readonly number[];
+  readonly lookahead: Option.Option<number>;
+  readonly cursor: string;
+  readonly complete: boolean;
+}
+
+/** Ledger order of transaction inputs: transaction id, then index. */
+export const byLedgerOrder = (
+  a: TransactionUnspentOutput,
+  b: TransactionUnspentOutput,
+): number => {
+  const [ia, ib] = [a.input(), b.input()];
+  return ia.transactionId() === ib.transactionId()
+    ? Number(ia.index() - ib.index())
+    : ia.transactionId() < ib.transactionId()
+      ? -1
+      : 1;
+};
+
+/**
+ * The run from leaf `from` of an epoch that started at leaf `start`: at
+ * most `limit` paid leaves, stopping before `start`, after max_key (the
+ * cursor wraps to min_key), or where the next deposit's input would not
+ * sort after the previous one (`sortsAfter`). max_key is never a
+ * lookahead, so a run that reaches the leaf before it pays it too; with
+ * the epoch started at max_key (loadStart) that never happens, and a
+ * one-leaf batch always fits. Left names a run that cannot be built.
+ */
+export const planBatch = (
+  leaves: readonly RewardLeaf[],
+  from: number,
+  start: number,
+  limit: number,
+  sortsAfter: (earlier: number, later: number) => boolean,
+): Either.Either<BatchPlan, string> => {
+  const last = leaves.length - 1;
+  const paid = [from];
+  for (;;) {
+    const at = paid[paid.length - 1];
+    const next = at + 1;
+    if (at === last || next === start) break;
+    const forced = next === last;
+    if (!forced && paid.length >= limit) break;
+    if (!sortsAfter(at, next)) {
+      if (forced)
+        return Either.left(
+          `leaf ${at} must be paid with max_key, whose deposit input sorts before it`,
+        );
+      break;
+    }
+    paid.push(next);
+  }
+  const end = paid[paid.length - 1];
+  const cursor = end === last ? leaves[0].key : leaves[end + 1].key;
+  return Either.right({
+    paid,
+    lookahead: end === last ? Option.none() : Option.some(end + 1),
+    cursor,
+    complete: cursor === leaves[start].key,
+  });
+};
+
+/** Where an epoch's first batch starts: max_key, so it pays that leaf alone and every later run ends with a lookahead. */
+export const loadStart = (leaves: readonly RewardLeaf[]): number =>
+  leaves.length - 1;
+
+/** What every batch spends and references, resolved from the chain. */
+export interface BatchChain {
+  readonly batcher: Script;
+  readonly account: Script;
+  readonly poolForever: Script;
+  readonly poolLogic: Script;
+  readonly poolMitigation: Option.Option<Script>;
+  readonly icsForever: Script;
+  readonly scriptRefs: readonly TransactionUnspentOutput[];
+  readonly poolMain: TransactionUnspentOutput;
+  readonly stateUtxo: TransactionUnspentOutput;
+  readonly poolUtxos: readonly TransactionUnspentOutput[];
+  readonly feeUtxo: TransactionUnspentOutput;
+  readonly collateral: TransactionUnspentOutput;
+  readonly night: AssetId;
+}
+
+/** A batch: its redeemer body, the leaves, the plan, each paid leaf's deposit, the state out and the Treasury share it pays. */
+export interface Batch {
+  readonly load: Option.Option<{
+    readonly digestProof: Contracts.DigestProof;
+    readonly bridge: TransactionUnspentOutput;
+  }>;
+  readonly leaves: readonly RewardLeaf[];
+  readonly plan: Option.Option<BatchPlan>;
+  readonly deposits: readonly TransactionUnspentOutput[];
+  readonly stateOut: Contracts.BatcherState;
+  readonly treasury: bigint;
+}
+
+const UNIT = PlutusData.fromCore({ constructor: 0n, fields: { items: [] } });
+
+const nightOf = (utxo: TransactionUnspentOutput, night: AssetId) =>
+  utxo.output().amount().multiasset()?.get(night) ?? 0n;
+
+const scriptAddress = (script: Script, networkId: NetworkId) =>
+  PaymentAddress(addressFromValidator(networkId, script).toBech32());
+
+/** The deposit after its payout: same address and datum, the same ADA (no skim), NIGHT up by the leaf's amount. */
+const paidDeposit = (
+  deposit: TransactionUnspentOutput,
+  amount: bigint,
+  night: AssetId,
+) => {
+  const core = deposit.output().toCore();
+  const assets = new Map(core.value.assets ?? []);
+  assets.set(night, (assets.get(night) ?? 0n) + amount);
+  return TransactionOutput.fromCore({
+    ...core,
+    value: { coins: core.value.coins, assets },
+  });
+};
+
+/** Whether a transaction spends exactly `expected` (in ledger order), so coin selection added nothing and the pair indices hold; the body may list them in any order, the ledger sorts them for the scripts. */
+export const inputsHold = (
+  inputs: readonly {
+    readonly transactionId: () => string;
+    readonly index: () => bigint;
+  }[],
+  expected: readonly string[],
+): boolean => {
+  const sorted = [...inputs]
+    .sort((a, b) =>
+      a.transactionId() === b.transactionId()
+        ? Number(a.index() - b.index())
+        : a.transactionId() < b.transactionId()
+          ? -1
+          : 1,
+    )
+    .map((input) => `${input.transactionId()}#${input.index()}`);
+  return (
+    sorted.length === expected.length &&
+    sorted.every((ref, i) => ref === expected[i])
+  );
+};
+
+/**
+ * The batch transaction and its redeemer. Outputs: 0 the state, 1 the
+ * pool, then one deposit per paid leaf in leaf order, then the ICS output
+ * when the batch pays a Treasury share; the change goes last. Inputs: the
+ * state, the pool's value UTxOs, the paid deposits and the fee input.
+ */
+export const buildBatchTx = (
+  blaze: Blaze<BlazeProvider, Wallet>,
+  chain: BatchChain,
+  batch: Batch,
+  networkId: NetworkId,
+): { readonly builder: TxBuilder; readonly inputs: readonly string[] } => {
+  const inputs = [
+    chain.stateUtxo,
+    ...chain.poolUtxos,
+    ...batch.deposits,
+    chain.feeUtxo,
+  ].sort(byLedgerOrder);
+  const inputIndex = (utxo: TransactionUnspentOutput) =>
+    inputs.findIndex((u) => refOf(u.input()) === refOf(utxo.input()));
+  const paid = Option.match(batch.plan, {
+    onNone: () => [] as number[],
+    onSome: (p) => [...p.paid],
+  });
+  const total = paid.reduce((sum, i) => sum + batch.leaves[i].amount, 0n);
+  const pairs = paid.map((_, j) => ({
+    input_index: BigInt(inputIndex(batch.deposits[j])),
+    output_index: BigInt(2 + j),
+  }));
+  const proof: PlutusData[] = Option.match(batch.plan, {
+    onNone: () => [],
+    onSome: (p) => {
+      const root = toPlutusData(
+        buildMultiproof(
+          batch.leaves.map((l) => l.bytes),
+          new Set([...p.paid, ...Option.toArray(p.lookahead)]),
+        ),
+      ).asList()!;
+      return Array.from({ length: root.getLength() }, (_, i) => root.get(i));
+    },
+  });
+  const body = { proof, pairs, exits: [] };
+  const redeemer = serialize(
+    Contracts.BatcherRedeemer,
+    Option.match(batch.load, {
+      onNone: (): Contracts.BatcherRedeemer => ({ Pay: body }),
+      onSome: ({ digestProof }): Contracts.BatcherRedeemer => ({
+        LoadAndPay: { digest_proof: digestProof, ...body },
+      }),
+    }),
+  );
+  const unread = PlutusData.newInteger(0n);
+  const batcherGate = serialize(Contracts.AccountGate, "Batcher");
+  const poolIn = chain.poolUtxos;
+  const poolLovelace = poolIn.reduce(
+    (s, u) => s + u.output().amount().coin(),
+    0n,
+  );
+  const poolNight = poolIn.reduce((s, u) => s + nightOf(u, chain.night), 0n);
+
+  let tx = chain.scriptRefs.reduce(
+    (t, ref) => t.addReferenceInput(ref),
+    blaze.newTransaction().addReferenceInput(chain.poolMain),
+  );
+  tx = Option.match(batch.load, {
+    onNone: () => tx,
+    onSome: ({ bridge }) => tx.addReferenceInput(bridge),
+  });
+  tx = tx
+    .addInput(chain.stateUtxo, unread)
+    .addInput(chain.feeUtxo)
+    .addOutput(
+      TransactionOutput.fromCore({
+        ...chain.stateUtxo.output().toCore(),
+        datum: serialize(Contracts.BatcherState, batch.stateOut).toCore(),
+      }),
+    );
+  if (poolIn.length > 0) {
+    tx = poolIn
+      .reduce((t, u) => t.addInput(u, unread), tx)
+      .addOutput(
+        TransactionOutput.fromCore({
+          address: scriptAddress(chain.poolForever, networkId),
+          value: {
+            coins: poolLovelace,
+            assets: new Map([
+              [chain.night, poolNight - total - batch.treasury],
+            ]),
+          },
+          datum: UNIT.toCore(),
+        }),
+      );
+  }
+  tx = batch.deposits.reduce(
+    (t, deposit, j) =>
+      t
+        .addInput(deposit, batcherGate)
+        .addOutput(
+          paidDeposit(deposit, batch.leaves[paid[j]].amount, chain.night),
+        ),
+    tx,
+  );
+  if (batch.treasury > 0n) {
+    tx = tx.addOutput(
+      TransactionOutput.fromCore({
+        address: scriptAddress(chain.icsForever, networkId),
+        value: {
+          coins: 2_000_000n,
+          assets: new Map([[chain.night, batch.treasury]]),
+        },
+        datum: UNIT.toCore(),
+      }),
+    );
+  }
+  tx = tx.addWithdrawal(
+    createRewardAccount(chain.batcher.hash(), networkId),
+    0n,
+    redeemer,
+  );
+  if (poolIn.length > 0) {
+    const disburse = serialize(Contracts.PoolRedeemer, "Disburse");
+    tx = [chain.poolLogic, ...Option.toArray(chain.poolMitigation)].reduce(
+      (t, script) =>
+        t.addWithdrawal(
+          createRewardAccount(script.hash(), networkId),
+          0n,
+          disburse,
+        ),
+      tx,
+    );
+  }
+  return {
+    builder: tx.provideCollateral([chain.collateral]),
+    inputs: inputs.map((u) => refOf(u.input())),
+  };
+};
