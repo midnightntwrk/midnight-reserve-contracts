@@ -73,17 +73,17 @@ export const releaseCeiling = (
   return ceiling;
 };
 
-/** last_release_time of the reserve NFT's ReleaseState, t0 at the earliest; the deploy datum Constr 0 [0, 0] is the state before any release. */
+/** last_release_time of the reserve NFT's Releasing state; the deploy datum Constr 0 [0, 0] means the reserve has not started releasing. */
 export const lastReleaseTime = (
   datum: PlutusData,
-  schedule: ReleaseSchedule,
 ): Either.Either<bigint, string> => {
-  const fields = datum.asConstrPlutusData()?.getData();
-  const time =
-    fields?.getLength() === 2 ? fields.get(0).asInteger() : undefined;
-  return time === undefined
-    ? Either.left(`${datum.toCbor()} is not a ReleaseState`)
-    : Either.right(time > schedule.t0Ms ? time : schedule.t0Ms);
+  const constr = datum.asConstrPlutusData();
+  const fields = constr?.getData();
+  return constr?.getAlternative() === 1n && fields?.getLength() === 2
+    ? Either.right(fields.get(0).asInteger()!)
+    : Either.left(
+        `${datum.toCbor()} is not a Releasing state: the reserve has not started releasing`,
+      );
 };
 
 /** The release due at `now` from `reserve` into `pool` NIGHT, or none before a whole interval has passed. */
@@ -200,8 +200,10 @@ export const buildReleaseTx = (
       TransactionOutput.fromCore({
         ...nft.toCore(),
         datum: serialize(Contracts.ReleaseState, {
-          last_release_time: plan.next,
-          reserve_floor: nightIn(inputs.reserveUtxos, night) - plan.released,
+          Releasing: {
+            last_release_time: plan.next,
+            reserve_floor: nightIn(inputs.reserveUtxos, night) - plan.released,
+          },
         }).toCore(),
       }),
     )
@@ -296,7 +298,7 @@ export const releaseTx = (network: Environment) =>
     const last = yield* Either.mapLeft(
       nftDatum === undefined
         ? Either.left("the reserve NFT has no inline datum")
-        : lastReleaseTime(nftDatum, config.release),
+        : lastReleaseTime(nftDatum),
       (reason) =>
         new DatumParseError({
           what: "reserve release state",
