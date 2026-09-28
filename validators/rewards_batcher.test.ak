@@ -868,6 +868,11 @@ test skim_above_config_max_with_padded_fee() fail {
   two_paid(skim_tx(config.batcher_skim_max_lovelace + 1, 5_000_000))
 }
 
+/// A batch that adds ADA to a deposit, for example the batcher's own.
+test deposit_ada_raised() fail {
+  two_paid(skim_tx(-1, 6_000))
+}
+
 // -- exits -----------------------------------------------------------------------------
 
 const exit_tree = tree(3)
@@ -951,6 +956,18 @@ test exit_refund_short_ada() fail {
       exit_burn,
     )
   run_exit(Transaction { ..tx, fee: 5_000_000 })
+}
+
+test exit_refund_ada_raised() fail {
+  run_exit(
+    exit_tx(
+      mk_deposit_output(k(2), dep_ada, 0, k(3), None),
+      mk_deposit_output(k(2), dep_ada, 0, k(4), None),
+      committed_dep(3, exit_night_in),
+      refund_out(dep_ada + 1, exit_night_in + amount(3)),
+      exit_burn,
+    ),
+  )
 }
 
 test exit_refund_short_night() fail {
