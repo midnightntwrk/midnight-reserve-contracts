@@ -5,9 +5,11 @@
 # reserve_logic_v2, and one virtual account per permissioned candidate, registered
 # with its sidechain key and a new stake key; then pool1's operator account (its reward
 # key) and a delegator: the Lace wallet of LACE_PHRASE, funded, delegated to pool1 and
-# registered. The CLI runs from .private-net/demo, a copy of the contract compiler's
-# workspace: the pinned contracts with the deployed local profile and the local-env
-# keys. Afterwards `just private-net-pump` runs the pump there.
+# registered. Each account routes all its rewards to one DUST address (kind 0x00): an
+# operator's from its sidechain secret, pool1's from its reward key, and the Lace
+# wallet's from its phrase, the address Lace shows. The CLI runs from .private-net/demo,
+# a copy of the contract compiler's workspace: the pinned contracts with the deployed
+# local profile and the local-env keys. Afterwards `just private-net-pump` runs the pump there.
 # Usage: rewards-deploy.sh
 set -euo pipefail
 repo=$PWD
@@ -97,6 +99,15 @@ delegate_to_pool1() {
       --signing-key-file payment.xsk --signing-key-file stake.xsk --out-file tx.signed")"
 }
 
+# The DUST public key bytes (a designation's dust_address) of a Midnight wallet seed,
+# hex or a BIP39 phrase, derived as Lace derives its first account.
+dust_bytes() {
+  local image
+  image=$(docker inspect midnight-node-1 --format '{{.Config.Image}}')
+  docker run --rm "${image/midnight-node:/midnight-node-toolkit:}" \
+    show-address --network local --seed "$1" --dust-public
+}
+
 # Each permissioned candidate's sidechain secret: every seed local-env gives its nodes
 # (keystore SURIs, seed files, the dev names), derived and matched to the chain spec.
 operator_secrets() {
@@ -163,24 +174,25 @@ submit deployments/local/promote-upgrade-tx.json
 register_stake reserve_v2.reserve_logic_v2.else
 
 echo "=== Virtual accounts, one per permissioned candidate"
-destination=01$(bun -e "import { Address } from '@blaze-cardano/core';
-  console.log(Address.fromBech32('$deployer').toBytes())")
 echo "# rewards-deploy: each operator's sidechain secret and stake key" >> .env
 i=0
 for secret in $(operator_secrets); do
   i=$((i + 1))
   stake=$(cli generate-key -n local | sed -n 's/^SIGNING_PRIVATE_KEY=//p')
+  dust=$(dust_bytes "$secret")
   printf 'SIDECHAIN_KEY_%s=%s\nREWARDS_STAKE_KEY_%s=%s\n' $i "$secret" $i "$stake" >> .env
   cli rewards-register -p kupmios --use-build --stake-key REWARDS_STAKE_KEY_$i --sidechain-key SIDECHAIN_KEY_$i \
-    --destinations "$destination:1000" --payout-threshold 0
+    --destinations "00$dust:1000" --payout-threshold 0
   submit deployments/local/rewards-register.json
 done
 [ "$i" -gt 0 ] || { echo "no sidechain secret matches a permissioned candidate" >&2; exit 1; }
 
 echo "=== pool1's operator account, at its reward key"
-printf '# rewards-deploy: pool1 reward key\nPOOL1_REWARD_KEY=%s\n' "$(jq -r '.cborHex[4:]' "$configurations/cardano/keys/reward.skey")" >> .env
+pool1_key=$(jq -r '.cborHex[4:]' "$configurations/cardano/keys/reward.skey")
+dust=$(dust_bytes "$pool1_key")
+printf '# rewards-deploy: pool1 reward key\nPOOL1_REWARD_KEY=%s\n' "$pool1_key" >> .env
 cli rewards-register -p kupmios --use-build --stake-key POOL1_REWARD_KEY \
-  --destinations "$destination:1000" --payout-threshold 0
+  --destinations "00$dust:1000" --payout-threshold 0
 submit deployments/local/rewards-register.json
 
 echo "=== The Lace delegator: funded, delegated to pool1, registered"
@@ -190,9 +202,9 @@ lace_address=$(sed -n 's/^LACE_ADDRESS=//p' .env)
 cli simple-tx -p kupmios --to "$lace_address" --amount 1000000000000 --count 1
 submit deployments/local/simple-tx.json
 delegate_to_pool1
+dust=$(dust_bytes "$LACE_PHRASE")
 cli rewards-register -p kupmios --use-build --stake-key LACE_STAKE_KEY \
-  --destinations "01$(bun -e "import { Address } from '@blaze-cardano/core';
-    console.log(Address.fromBech32('$lace_address').toBytes())"):1000" --payout-threshold 0
+  --destinations "00$dust:1000" --payout-threshold 0
 submit deployments/local/rewards-register.json
 
 echo "=== Deployed: $i operator accounts, pool1's operator and the Lace delegator"
