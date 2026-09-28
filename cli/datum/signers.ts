@@ -7,6 +7,7 @@ import {
   CborReader,
   CborReaderState,
   CborWriter,
+  Ed25519PrivateExtendedKeyHex,
   Ed25519PrivateNormalKeyHex,
   fromHex,
   type HexBlob,
@@ -83,20 +84,23 @@ export const parseSigners = (
   );
 };
 
-/** An Ed25519 private key: 64 hex characters, checked once where it is read. */
-export type PrivateKey = Ed25519PrivateNormalKeyHex;
+/** An Ed25519 private key, checked once where it is read: 64 hex characters, or 128 for a BIP32-Ed25519 extended key (kL ‖ kR) that a wallet derives from its recovery phrase. */
+export type PrivateKey =
+  Ed25519PrivateNormalKeyHex | Ed25519PrivateExtendedKeyHex;
 
-const PRIVATE_KEY_RE = /^[0-9a-fA-F]{64}$/;
-
-/** One private key; the reason for anything but 64 hex characters never quotes the key. */
+/** One private key; the reason for anything else never quotes the key. */
 export const parsePrivateKey = (
   text: string,
 ): Either.Either<PrivateKey, string> =>
-  text.length !== 64
-    ? Either.left(`a private key must be 64 hex characters, not ${text.length}`)
-    : PRIVATE_KEY_RE.test(text)
+  !HEX_RE.test(text)
+    ? Either.left("a private key must be hex")
+    : text.length === 64
       ? Either.right(Ed25519PrivateNormalKeyHex(text))
-      : Either.left("a private key must be hex");
+      : text.length === 128
+        ? Either.right(Ed25519PrivateExtendedKeyHex(text))
+        : Either.left(
+            `a private key must be 64 or 128 hex characters, not ${text.length}`,
+          );
 
 /** The comma-separated private keys of a secret, blanks dropped; at least one, each checked. */
 export const parsePrivateKeys = (

@@ -1,5 +1,15 @@
 import { describe, expect, test } from "bun:test";
+import {
+  Bip32PrivateKey,
+  Ed25519PrivateExtendedKeyHex,
+  Ed25519Signature,
+  HexBlob,
+  initCrypto,
+  mnemonicToEntropy,
+  wordlist,
+} from "@blaze-cardano/core";
 import { Array as Arr, Either, Redacted } from "effect";
+import { signTransaction } from "../cli/chain/transaction";
 import {
   decodeSigners,
   encodeMultisigState,
@@ -101,11 +111,34 @@ describe("parsePrivateKeys", () => {
     [
       "a short key",
       `${KEY_A},abcd`,
-      "a private key must be 64 hex characters, not 4",
+      "a private key must be 64 or 128 hex characters, not 4",
     ],
     ["a non-hex key", "z".repeat(64), "a private key must be hex"],
     ["no key", " , ", "resolved to zero keys"],
   ])("refuses %s", (_name, text, reason) => {
     expect(parse(text)).toEqual(Either.left(reason));
+  });
+});
+
+describe("signTransaction with a wallet key", () => {
+  const PHRASE = `${"abandon ".repeat(23)}art`;
+  const hard = (index: number) => index + 0x80000000;
+
+  test("a stake key derived from a recovery phrase signs as the wallet's public key", async () => {
+    await initCrypto();
+    const account = Bip32PrivateKey.fromBip39Entropy(
+      Buffer.from(mnemonicToEntropy(PHRASE, wordlist)),
+      "",
+    ).derive([hard(1852), hard(1815), hard(0)]);
+    const stake = account.derive([2, 0]).toRawKey();
+    const expected = account.toPublic().derive([2, 0]).toRawKey();
+    const txId = "ab".repeat(32);
+    const [[publicKey, signature]] = signTransaction(txId, [
+      Ed25519PrivateExtendedKeyHex(stake.hex()),
+    ]);
+    expect(publicKey).toBe(expected.hex());
+    expect(
+      expected.verify(Ed25519Signature.fromHex(signature), HexBlob(txId)),
+    ).toBe(true);
   });
 });
