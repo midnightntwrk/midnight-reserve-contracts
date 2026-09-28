@@ -5,6 +5,7 @@
 
 use aiken/builtin
 use aiken/collection/list
+use aiken/math
 use cardano/address.{Address, Credential, Inline, Pointer, Script}
 use cardano/assets.{PolicyId}
 use cardano/transaction.{
@@ -154,7 +155,13 @@ pub fn account_withdraw(
             expect auth(cred)
             expect [out, ..rest] = remaining
             expect out.address == input.output.address
-            expect out.value == input.output.value
+            let ada_in, assets_in <- split_ada(input.output.value)
+            let ada_out, assets_out <- split_ada(out.value)
+            expect and {
+                assets_out == assets_in,
+                ada_out >= math.max(ada_in, config.deposit_min_lovelace),
+                ada_out <= math.max(ada_in, config.deposit_cap_lovelace),
+              }
             expect InlineDatum(out_datum) = out.datum
             expect Deposit {
               cred: out_cred,
