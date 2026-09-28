@@ -494,6 +494,39 @@ test withdraw_ok() {
   run(spend_tx(input, mk_deposit_output(k1, ada, 0, k2, None), [k1]), Withdraw)
 }
 
+/// k1's deposit after SetDeregister: `committed = Some(refund)`.
+fn committed_input(night: Int) -> Input {
+  Input(mk_outref(3), mk_deposit_output(k1, ada, night, k2, Some(refund)))
+}
+
+test withdraw_committed() fail {
+  run(
+    spend_tx(
+      committed_input(500),
+      mk_deposit_output(k1, ada, 0, k2, Some(refund)),
+      [k1],
+    ),
+    Withdraw,
+  )
+}
+
+test top_up_committed() fail {
+  run(
+    spend_tx(
+      committed_input(500),
+      mk_deposit_output(
+        k1,
+        ada + config.deposit_min_lovelace,
+        500,
+        k2,
+        Some(refund),
+      ),
+      [k1],
+    ),
+    TopUp,
+  )
+}
+
 test withdraw_partial() fail {
   let input = deposit_input(500)
   run(spend_tx(input, mk_deposit_output(k1, ada, 1, k2, None), [k1]), Withdraw)

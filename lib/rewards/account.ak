@@ -268,7 +268,7 @@ fn each_own(
   True
 }
 
-/// `each_own` for deposit inputs: NFT first, then the datum.
+/// `each_own` for uncommitted deposit inputs: NFT first, then the datum; a committed deposit waits for its exit.
 fn each_deposit(
   inputs: List<Input>,
   outs: List<Output>,
@@ -283,7 +283,7 @@ fn each_deposit(
       expect [Pair(name, 1)] = tokens_of(input.output.value, own_hash)
       expect builtin.index_bytearray(name, 0) == 0
       expect InlineDatum(datum) = input.output.datum
-      expect Deposit { cred, .. }: AccountDatum = datum
+      expect Deposit { cred, committed: None, .. }: AccountDatum = datum
       expect name == deposit_name(key(cred))
       expect out.address == input.output.address
       check(input, cred, name, out)

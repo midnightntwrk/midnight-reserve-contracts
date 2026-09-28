@@ -312,7 +312,7 @@ bytes = "eb575f236720adf1d10ffaf68e3c61137648f58d4ac1db766648a846"
 encoding = "hex"
 
 [config.default.virtual_account_hash]
-bytes = "adde8a4e369969f1f65954dd6992de55baab6de826490331c12d319d"
+bytes = "ce552db9e5acaa65fc54067d8f8daa431498769dda88636c6f99999f"
 encoding = "hex"
 
 [config.preview]
