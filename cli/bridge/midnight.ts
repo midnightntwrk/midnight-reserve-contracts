@@ -224,6 +224,26 @@ export const validatorSetAt = (rpc: string, at: string) =>
     decoded("BeefyApi_validator_set", decodeValidatorSet(bytes)),
   );
 
+const BlockBody = Schema.Struct({
+  block: Schema.Struct({
+    header: Schema.Struct({
+      parentHash: HexBytes,
+      number: HexNumber,
+      stateRoot: HexBytes,
+      extrinsicsRoot: HexBytes,
+      digest: Schema.Struct({ logs: Schema.Array(HexBytes) }),
+    }),
+    extrinsics: Schema.Array(HexBytes),
+  }),
+});
+
+/** The header and the extrinsics of the block with hash `hash`. */
+export const blockAt = (rpc: string, hash: string) =>
+  Effect.map(
+    midnightCall(rpc, "chain_getBlock", [hash], BlockBody),
+    ({ block }) => block,
+  );
+
 const Block = Schema.Struct({
   justifications: Schema.NullOr(
     Schema.Array(
@@ -261,8 +281,17 @@ const MmrProof = Schema.Struct({ leaves: HexBytes, proof: HexBytes });
 
 /** The leaf block `block` adds and its proof in the MMR of `block` leaves' block (`mmr_generateProof([block], block)`). */
 export const leafProofAt = (rpc: string, block: number, at: string) =>
+  leafProofIn(rpc, block, block, at);
+
+/** The leaf block `block` adds and its proof in the MMR of `count` leaves, block `count` with hash `at` (`mmr_generateProof([block], count)`). */
+export const leafProofIn = (
+  rpc: string,
+  block: number,
+  count: number,
+  at: string,
+) =>
   Effect.flatMap(
-    midnightCall(rpc, "mmr_generateProof", [[block], block, at], MmrProof),
+    midnightCall(rpc, "mmr_generateProof", [[block], count, at], MmrProof),
     ({ leaves, proof }) =>
       Effect.all({
         leaf: decoded("mmr_generateProof leaves", decodeSingleLeaf(leaves)),

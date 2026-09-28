@@ -115,6 +115,8 @@ export type NetworkConfig = {
   readonly cnight_policy: string;
   readonly cnight_name: string;
   readonly release: ReleaseSchedule;
+  readonly rewards_pallet_index: number;
+  readonly rewards_call_index: number;
 };
 
 /** Every UTxO the profile names, its one-shots and its collateral, as `txId#index`: coin selection never spends them. */
@@ -306,6 +308,16 @@ export const parseNetworkConfig = (
           yield* integerField(profile, "release_factor_den", path),
         ),
       },
+      rewards_pallet_index: yield* integerField(
+        profile,
+        "rewards_pallet_index",
+        path,
+      ),
+      rewards_call_index: yield* integerField(
+        profile,
+        "rewards_call_index",
+        path,
+      ),
     } as NetworkConfig;
   });
 
