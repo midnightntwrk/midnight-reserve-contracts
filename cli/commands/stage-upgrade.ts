@@ -1,6 +1,11 @@
 import { Command, Options } from "@effect/cli";
-import { governanceTxOptions, outputDir, parsedText } from "../options";
-import { withServices } from "../run";
+import {
+  governanceTxOptions,
+  outputDir,
+  parsedText,
+  useBuild,
+} from "../options";
+import { withServicesUseBuild } from "../run";
 import { parseScriptHash } from "../input";
 import { UPGRADABLE_VALIDATORS } from "../contracts/contracts";
 import { stageUpgradeProgram } from "../governance/two-stage-upgrade";
@@ -19,6 +24,7 @@ const newLogicHash = parsedText("new-logic-hash", parseScriptHash).pipe(
 export const stageUpgrade = Command.make(
   "stage-upgrade",
   governanceTxOptions("stage-upgrade", {
+    useBuild,
     outputDir,
     validator,
     newLogicHash,
@@ -28,5 +34,5 @@ export const stageUpgrade = Command.make(
   Command.withDescription(
     "Stage a new logic hash for a two-stage upgrade validator",
   ),
-  withServices("deployed"),
+  withServicesUseBuild,
 );
