@@ -1091,6 +1091,81 @@ test exit_predecessor_is_head_ok() {
   run(tx, Pay { proof: proof(t, 1, 2) })
 }
 
+/// Run [k2, k3 (exit)], lookahead k4: k2 is paid and is k3's predecessor.
+fn paid_pred_tx(k2_out: Output) -> Transaction {
+  batch_tx(
+    st(exit_root, k(2), False),
+    st(exit_root, k(4), False),
+    pool_night - amount(2) - amount(3),
+    [dep_in(2), committed_dep(3, exit_night_in)],
+    [k2_out, refund_out(dep_ada, exit_night_in + amount(3))],
+    exit_burn,
+  )
+}
+
+test exit_after_paid_predecessor_ok() {
+  run(
+    paid_pred_tx(mk_deposit_output(k(2), dep_ada, amount(2), k(4), None)),
+    Pay { proof: proof(exit_tree, 2, 4) },
+  )
+}
+
+test exit_after_paid_predecessor_not_relinked() fail {
+  run(paid_pred_tx(dep_out(2, 0)), Pay { proof: proof(exit_tree, 2, 4) })
+}
+
+test exit_at_max_key_after_paid_predecessor_ok() {
+  let t = tree(7)
+  let r = build_root(t)
+  let tx =
+    batch_tx(
+      st(r, k(6), False),
+      st(r, k(6), True),
+      pool_night - amount(6) - amount(7),
+      [dep_in(6), committed_dep(7, 0)],
+      [
+        mk_deposit_output(k(6), dep_ada, amount(6), tail_key, None),
+        refund_out(dep_ada, amount(7)),
+      ],
+      from_asset(account_policy, builtin.append_bytearray(#"00", k(7)), -1),
+    )
+  run(tx, Pay { proof: proof(t, 6, 7) })
+}
+
+test two_exits_in_a_row_ok() {
+  let t =
+    list.map(
+      list.range(1, 7),
+      fn(i) {
+        if i == 3 || i == 4 {
+          leaf_bytes(1, i)
+        } else {
+          leaf_bytes(0, i)
+        }
+      },
+    )
+  let r = build_root(t)
+  let tx =
+    batch_tx(
+      st(r, k(3), False),
+      st(r, k(5), False),
+      pool_night - amount(3) - amount(4),
+      [
+        mk_deposit_output(k(2), dep_ada, 0, k(3), None),
+        committed_dep(3, 0),
+        committed_dep(4, 0),
+      ],
+      [
+        mk_deposit_output(k(2), dep_ada, 0, k(5), None),
+        refund_out(dep_ada, amount(3)),
+        refund_out(dep_ada, amount(4)),
+      ],
+      from_asset(account_policy, builtin.append_bytearray(#"00", k(3)), -1)
+        |> add(account_policy, builtin.append_bytearray(#"00", k(4)), -1),
+    )
+  run(tx, Pay { proof: proof(t, 3, 5) })
+}
+
 // -- budget ------------------------------------------------------------------------------
 
 const big_n = 64
