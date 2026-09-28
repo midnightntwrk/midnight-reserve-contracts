@@ -98,10 +98,12 @@ pub type ReserveRedeemer {
   Release { intervals: Int }
 }
 
-/// Inline datum on the reserve forever NFT UTXO after the first release; before it the NFT holds the deploy datum `Constr 0 [0, 0]`.
+/// The reserve forever NFT's datum. `NotStarted` is the deploy datum
+/// `Constr 0 [0, 0]` of a reserve whose releases have not started; a release
+/// needs `Releasing`, written at deploy and moved by every release.
 pub type ReleaseState {
-  last_release_time: Int,
-  reserve_floor: Int,
+  NotStarted { zero_a: Int, zero_b: Int }
+  Releasing { last_release_time: Int, reserve_floor: Int }
 }
 
 /// Staging-track hashes read from the reserve logic v2 NFT input: `StagingState` plus the staging pool forever.

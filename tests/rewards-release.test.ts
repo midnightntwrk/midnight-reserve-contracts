@@ -53,7 +53,6 @@ import {
 } from "./helpers/fixtures";
 
 const schedule: ReleaseSchedule = {
-  t0Ms: 0n,
   intervalMs: 60_000n,
   factorNum: 159_817_340_105n,
   factorDen: 10n ** 18n,
@@ -108,35 +107,26 @@ describe("releasePlan", () => {
 });
 
 describe("lastReleaseTime", () => {
-  const constr = (fields: bigint[]) =>
+  const constr = (alternative: bigint, fields: bigint[]) =>
     PlutusData.fromCore({
-      constructor: 0n,
+      constructor: alternative,
       fields: {
         items: fields.map((f) => PlutusData.newInteger(f).toCore()),
       },
     });
 
-  test("the deploy datum Constr 0 [0, 0] means t0", () => {
-    expect(
-      lastReleaseTime(constr([0n, 0n]), { ...schedule, t0Ms: 7n }),
-    ).toEqual(Either.right(7n));
-  });
-
-  test("a ReleaseState gives its time", () => {
-    expect(lastReleaseTime(constr([180_000n, 5n]), schedule)).toEqual(
+  test("a Releasing state gives its time", () => {
+    expect(lastReleaseTime(constr(1n, [180_000n, 5n]))).toEqual(
       Either.right(180_000n),
     );
   });
 
-  test("a time before t0 gives t0", () => {
-    expect(
-      lastReleaseTime(constr([3n, 5n]), { ...schedule, t0Ms: 7n }),
-    ).toEqual(Either.right(7n));
+  test("the deploy datum Constr 0 [0, 0] has not started releasing", () => {
+    expect(Either.isLeft(lastReleaseTime(constr(0n, [0n, 0n])))).toBe(true);
   });
 
   test("anything else is refused", () => {
-    expect(Either.isLeft(lastReleaseTime(constr([]), schedule))).toBe(true);
-    expect(Either.isLeft(lastReleaseTime(constr([1n]), schedule))).toBe(true);
+    expect(Either.isLeft(lastReleaseTime(constr(1n, [1n])))).toBe(true);
   });
 });
 
@@ -195,8 +185,7 @@ describe("rewards-release in the emulator", async () => {
         govAuth: contracts.govAuth.Script,
         stagingGovAuth: contracts.stagingGovAuth.Script,
         foreverDatum: serialize(Contracts.ReleaseState, {
-          last_release_time: last,
-          reserve_floor: 0n,
+          Releasing: { last_release_time: last, reserve_floor: 0n },
         }),
         foreverRedeemer: PlutusData.newInteger(0n),
         registerLogic: false,
@@ -303,8 +292,10 @@ describe("rewards-release in the emulator", async () => {
       );
     expect(nft?.output().datum()?.asInlineData()?.toCbor()).toBe(
       serialize(Contracts.ReleaseState, {
-        last_release_time: last + 2n * interval,
-        reserve_floor: RESERVE - 319_636n,
+        Releasing: {
+          last_release_time: last + 2n * interval,
+          reserve_floor: RESERVE - 319_636n,
+        },
       }).toCbor(),
     );
   });

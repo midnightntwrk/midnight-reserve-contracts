@@ -36,7 +36,7 @@ import { completeBuilder, sizeAtSubmit } from "../cli/chain/complete-tx";
 import { attachWitnesses, signTransaction } from "../cli/chain/transaction";
 import { parsePrivateKey } from "../cli/datum/signers";
 import { validatorLabels } from "../cli/chain/validator-labels";
-import { Provider } from "../cli/chain/provider";
+import { Provider, ProviderOver } from "../cli/chain/provider";
 import { refOf } from "../cli/chain/transaction";
 import { reservedRefs, Settings } from "../cli/config/settings";
 import { buildSimpleTx } from "../cli/wallet/simple-tx";
@@ -132,7 +132,11 @@ const stepBuilder = (
   const oneShots = oneShotsOf(addr, component);
   for (const oneShot of oneShots) emulator.addUtxo(oneShot);
   return runTest(
-    Layer.merge(blueprint, settings),
+    Layer.mergeAll(
+      blueprint,
+      settings,
+      ProviderOver(new EmulatorProvider(emulator)),
+    ),
     DEPLOY_STEPS[component].build(
       {
         input: deployInput,

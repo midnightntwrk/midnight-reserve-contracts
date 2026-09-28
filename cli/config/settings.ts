@@ -98,9 +98,8 @@ const ONE_SHOTS = [
 
 type OneShot = (typeof ONE_SHOTS)[number];
 
-/** The reserve release schedule of a profile (docs/rewards/spec.md §8): the first interval's start and the interval in ms, and the pool ceiling factor. */
+/** The reserve release schedule of a profile (docs/rewards/spec.md §8): the interval in ms and the pool ceiling factor. */
 export interface ReleaseSchedule {
-  readonly t0Ms: bigint;
   readonly intervalMs: bigint;
   readonly factorNum: bigint;
   readonly factorDen: bigint;
@@ -301,7 +300,6 @@ export const parseNetworkConfig = (
       cnight_policy: yield* bytesField(profile, "cnight_policy", path),
       cnight_name: yield* stringField(profile, "cnight_name", path),
       release: {
-        t0Ms: BigInt(yield* integerField(profile, "release_t0_ms", path)),
         intervalMs: BigInt(
           yield* integerField(profile, "release_interval_ms", path),
         ),

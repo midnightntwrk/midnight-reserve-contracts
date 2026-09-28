@@ -613,8 +613,11 @@ mint) and adds the release path.
 pub type ReserveRedeemer { Merge  Release { intervals: Int } }
 
 pub type ReleaseState {              // inline datum on the reserve forever NFT UTXO
-  last_release_time: Int,            // ms POSIX, start of the last released interval
-  reserve_floor: Int,                // NIGHT the reserve kept after the last release
+  NotStarted { zero_a: Int, zero_b: Int }   // the deploy datum Constr 0 [0, 0]: releases not started
+  Releasing {
+    last_release_time: Int,          // ms POSIX, start of the last released interval
+    reserve_floor: Int,              // NIGHT the reserve kept after the last release
+  }
 }
 
 @list
@@ -624,8 +627,9 @@ pub type StagingStateV2 {            // lib/rewards/types.ak; replaces StagingSt
   pool_forever_hash: PolicyId,       // staging pool forever
 }
 ```
-Config per network (`aiken.toml`): `release_t0_ms`, `release_interval_ms`,
-`release_factor_num`, `release_factor_den`. Interval is one Midnight epoch
+Config per network (`aiken.toml`): `release_interval_ms`,
+`release_factor_num`, `release_factor_den`. The start time is not config:
+it is the `last_release_time` written at deploy. Interval is one Midnight epoch
 (six hours per the MIP). No lifetime cap: every release is capped at the
 reserve balance, which is the block-rewards allocation.
 
@@ -647,17 +651,17 @@ at least the next interval's need.
 2. `now = validity_range.lower_bound` (finite, inclusive). `intervals ≥ 1`
    and `last_release_time + intervals × interval_ms ≤ now`. Partial catch-up
    is allowed (`intervals` may be less than elapsed); fully permissionless.
-3. State: `ReleaseState { last_release_time, reserve_floor }`. Deploy puts
-   `Constr 0 [0, 0]` on the reserve NFT (`ZERO_FOREVER_DATUM`), which is the
-   state before any release. The clock is `max(last_release_time,
-   release_t0_ms)`. The reserve value inputs must hold at least
-   `reserve_floor` NIGHT, so a release cannot size its ceiling on a small
-   UTxO; the output state records what the reserve keeps
-   (`reserve − released`) as the next floor. The first release (floor 0)
-   records the value it spends.
+3. State: a release needs `Releasing { last_release_time, reserve_floor }`.
+   The reserve deploy writes it: `last_release_time` is the deploy time and
+   `reserve_floor` the NIGHT already at the reserve address. A reserve that
+   still holds the deploy datum `Constr 0 [0, 0]` (`NotStarted`) cannot
+   release; a governance path that writes its first state comes later. The
+   reserve value inputs must hold at least `reserve_floor` NIGHT, so a
+   release cannot size its ceiling on a small UTxO; the output state
+   records what the reserve keeps (`reserve − released`) as the next floor.
 4. `ceiling` over `intervals` catch-up steps, each a ceiling division on
    what the previous step left: `c := 0; repeat intervals: c += ((reserve − c) × num + den − 1) / den`.
-   `last_release_time' = max(last_release_time, release_t0_ms) + intervals × interval_ms`.
+   `last_release_time' = last_release_time + intervals × interval_ms`.
 5. `released = min(reserve, max(0, ceiling − pool_in))` where `reserve` is
    the NIGHT in the reserve value inputs and `pool_in` the NIGHT in the
    pool value inputs of this tx (the pool is already an input for the
@@ -798,7 +802,7 @@ rewards_batcher_hash, virtual_account_hash                (derived by build)
 deposit_min_lovelace = 10_000_000
 deposit_cap_lovelace = 40_000_000
 rewards_fee_schedule_one_shot_{hash,index}, rewards_fee_schedule_hash   (not yet built; replaces batcher_skim_max_lovelace)
-release_t0_ms, release_interval_ms, release_factor_num, release_factor_den
+release_interval_ms, release_factor_num, release_factor_den
 ics_forever_hash                                          (Treasury output target; existing ICS deployment)
 rewards_pallet_index, rewards_call_index                 (# TBD node team; pallet_block_rewards, submit_rewards_digest)
 fee_schedule_pallet_index, fee_schedule_call_index       (# TBD node team; submit_fee_schedule)
@@ -807,8 +811,7 @@ The profiles still carry `batcher_skim_max_lovelace`; it goes with the
 fee-schedule phase. Test profiles use `release_interval_ms = 60_000` with
 the factor for ten 6-second slots (`159_817_340_105 / 10^18`, the §8.1
 rate); `preprod` and `mainnet` carry the §8.1 six-hour vector, `# TBD`.
-Every profile carries all keys; `release_t0_ms = 0` until a deployment
-sets it. Derived hashes are written back by the build (phase 04): `rewards_pool_*`
+Every profile carries all keys. Derived hashes are written back by the build (phase 04): `rewards_pool_*`
 with the two-stage / forever phases, `rewards_batcher_hash` and
 `virtual_account_hash` after the threshold phase, before the final compile.
 

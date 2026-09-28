@@ -17,12 +17,18 @@
  * cannot be saved fails the command and leaves no file to sign.
  */
 import { serialize } from "@blaze-cardano/data";
-import type { TransactionUnspentOutput } from "@blaze-cardano/core";
+import {
+  addressFromValidator,
+  AssetId,
+  type Script,
+  type TransactionUnspentOutput,
+} from "@blaze-cardano/core";
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Clock, Effect, Option } from "effect";
 import { relative, resolve } from "path";
 import * as Contracts from "../../contract_blueprint";
 import { completeBuilder } from "../chain/complete-tx";
+import { Provider } from "../chain/provider";
 import { envFallback, type NetworkConfig, Settings } from "../config/settings";
 import {
   Blueprint,
@@ -40,6 +46,7 @@ import {
   type BlueprintError,
   type ConfigError,
   type InputParseError,
+  type ProviderError,
 } from "../errors";
 import { parseThreshold, type Threshold } from "../governance/threshold";
 import type { NetworkInput } from "../input";
@@ -206,7 +213,8 @@ interface DeployContext extends DeploymentSetup {
   readonly input: DeployInput;
 }
 
-type DeployBuildError = ConfigError | InputParseError | BlueprintError;
+type DeployBuildError =
+  ConfigError | InputParseError | BlueprintError | ProviderError;
 
 type Validators = Effect.Effect<
   readonly ContractClass[],
@@ -224,7 +232,11 @@ interface StepBody {
   readonly build: (
     ctx: DeployContext,
     oneShots: readonly TransactionUnspentOutput[],
-  ) => Effect.Effect<TxBuilder, DeployBuildError, Settings | Blueprint>;
+  ) => Effect.Effect<
+    TxBuilder,
+    DeployBuildError,
+    Settings | Blueprint | Provider
+  >;
 }
 
 /** The main-gov datum shape of a threshold: the tech-auth then the council fraction. */
@@ -244,7 +256,8 @@ const twoStage = (
   oneShotOf: OneShotOf,
   foreverOf: (
     ctx: DeployContext,
-  ) => Effect.Effect<ForeverMint, DeployBuildError, Settings>,
+    forever: Script,
+  ) => Effect.Effect<ForeverMint, DeployBuildError, Settings | Provider>,
   registerLogic: boolean,
 ): StepBody => {
   const triple = Effect.flatMap(Blueprint, (b) => b.twoStage(validator));
@@ -258,7 +271,7 @@ const twoStage = (
     build: (ctx, [oneShotUtxo]) =>
       Effect.gen(function* () {
         const { twoStage, forever, logic } = yield* triple;
-        const { datum, redeemer } = yield* foreverOf(ctx);
+        const { datum, redeemer } = yield* foreverOf(ctx, forever.Script);
         return buildTwoStageDeploymentTx(
           ctx.blaze,
           {
@@ -308,6 +321,31 @@ const mainFractions = (input: DeployInput) =>
   [input.techAuthThreshold, input.councilThreshold] as const;
 
 const zeroForever = () => Effect.succeed(zeroRedeemer(ZERO_FOREVER_DATUM));
+
+/** The reserve's release state at deploy: releases start now, and the floor is the NIGHT already at the reserve address. */
+const reserveForever = (ctx: DeployContext, forever: Script) =>
+  Effect.gen(function* () {
+    const provider = yield* Provider;
+    const night = AssetId(
+      ctx.config.cnight_policy +
+        Buffer.from(ctx.config.cnight_name).toString("hex"),
+    );
+    const utxos = yield* provider.unspentOutputs(
+      addressFromValidator(ctx.params.networkId, forever),
+    );
+    const floor = utxos.reduce(
+      (sum, u) => sum + (u.output().amount().multiasset()?.get(night) ?? 0n),
+      0n,
+    );
+    return zeroRedeemer(
+      serialize(Contracts.ReleaseState, {
+        Releasing: {
+          last_release_time: BigInt(yield* Clock.currentTimeMillis),
+          reserve_floor: floor,
+        },
+      }),
+    );
+  });
 
 /** VersionedTermsAndConditions [[initial hash, initial link], 0], minted with redeemer 0. */
 const termsAndConditionsForever = () =>
@@ -539,7 +577,7 @@ export const DEPLOY_STEPS: Record<
     ...twoStage(
       "reserve",
       (c) => [c.reserve_one_shot_hash, c.reserve_one_shot_index],
-      zeroForever,
+      reserveForever,
       false,
     ),
   },
