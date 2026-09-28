@@ -214,6 +214,12 @@ export type Refusal =
       readonly denominator: bigint;
     }
   | { readonly _tag: "AccountExists"; readonly skh: string }
+  | { readonly _tag: "NothingToBatch"; readonly reason: string }
+  | {
+      readonly _tag: "BatchInputsChanged";
+      readonly expected: readonly string[];
+      readonly actual: readonly string[];
+    }
   | {
       readonly _tag: "ReserveNotOnRelease";
       readonly logicHash: string;
@@ -343,6 +349,10 @@ const renderRefusal = (refusal: Refusal): string => {
       return `the node's BEEFY data does not follow the MIP: ${refusal.detail}`;
     case "BelowThreshold":
       return `the justification's signers hold ${refusal.signedSeats} of ${refusal.seatCount} seats; the BEEFY threshold ${refusal.numerator}/${refusal.denominator} needs ${refusal.required}`;
+    case "NothingToBatch":
+      return `no batch to build: ${refusal.reason}`;
+    case "BatchInputsChanged":
+      return `coin selection changed the batch's inputs, so its pair indices no longer hold: planned ${refusal.expected.join(", ")}, built ${refusal.actual.join(", ")}`;
     case "AccountExists":
       return `the virtual account list already holds a deposit for stake key hash ${refusal.skh}`;
     case "ReserveNotOnRelease":

@@ -181,6 +181,17 @@ export const beefyFinalizedNumber = (rpc: string) =>
     (hash) => Effect.map(header(rpc, hash), (h) => h.number),
   );
 
+/** The hash of the node's BEEFY-finalized head. */
+export const beefyFinalizedHash = (rpc: string) =>
+  midnightCall(rpc, "beefy_getFinalizedHead", [], Schema.String);
+
+/** The storage value under `key` at block `at`; None when there is none. */
+export const storageAt = (rpc: string, key: string, at: string) =>
+  Effect.map(
+    midnightCall(rpc, "state_getStorage", [key, at], Schema.NullOr(HexBytes)),
+    Option.fromNullable,
+  );
+
 /** The first block of BEEFY validator set `setId`, once the BEEFY-finalized head has reached it. */
 export const sessionStart = (rpc: string, setId: bigint) =>
   Effect.gen(function* () {

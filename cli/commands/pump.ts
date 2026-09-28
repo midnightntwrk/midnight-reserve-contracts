@@ -3,6 +3,7 @@ import { Duration } from "effect";
 import { deployerSigning, network, provider, rpc, useBuild } from "../options";
 import { withServicesUseBuild } from "../run";
 import { pumpProgram } from "../bridge/pump";
+import { limit } from "./rewards-batch";
 
 const poll = Options.integer("poll").pipe(
   Options.withDescription(
@@ -21,11 +22,12 @@ export const pump = Command.make(
     rpc,
     signingKey: deployerSigning.signingKey,
     poll,
+    limit,
   },
   pumpProgram,
 ).pipe(
   Command.withDescription(
-    "Run the data pump: land each committee bridge handover, oldest first, signed with the deployer key",
+    "Run the data pump: each round lands the committee bridge handover, the reserve release and the rewards batch that are due, signed with the deployer key",
   ),
   withServicesUseBuild,
 );
