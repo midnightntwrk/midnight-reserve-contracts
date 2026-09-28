@@ -51,10 +51,12 @@ use-env env:
     echo "Activated environment: {{env}}"
 
 
-# The node repo's local-env stack (local Cardano devnet, db-sync, six nodes) on a node ref, sessions of `session_slots` 6 s slots, a Cardano epoch of `mc_epoch` s (a multiple of the session); RPC http://localhost:9945
+# The node repo's local-env stack (local Cardano devnet, db-sync, six nodes) on a node ref, sessions of `session_slots` 6 s slots, a Cardano epoch of `mc_epoch` s (a multiple of the session); RPC http://localhost:9945; then the Lace wallet's backend (Blockfrost RYO and the shim, BLOCKFROST_PROXY_URL=http://localhost:3001)
 private-net-up node="../midnight-node" ref="kc-beefy-mip-alignment" session_slots="10" mc_epoch="60":
     tests/private-net/local-env.sh up {{node}} {{ref}} {{session_slots}} {{mc_epoch}}
+    tests/private-net/lace-backend.sh up
 
 
 private-net-down node="../midnight-node" ref="kc-beefy-mip-alignment":
+    tests/private-net/lace-backend.sh down
     tests/private-net/local-env.sh down {{node}} {{ref}}
