@@ -3,17 +3,22 @@
 # the committee bridge (bootstrapped at BEEFY's finalized block, pool funded), the
 # rewards contracts (first epoch two after the current one), the reserve moved to
 # reserve_logic_v2, and one virtual account per permissioned candidate, registered
-# with its sidechain key and a new stake key. The CLI runs from .private-net/demo, a
-# copy of the contract compiler's workspace: the pinned contracts with the deployed
-# local profile and the local-env keys. Afterwards `just private-net-pump` runs the
-# pump there. Usage: rewards-deploy.sh
+# with its sidechain key and a new stake key; then pool1's operator account (its reward
+# key) and a delegator: the Lace wallet of LACE_PHRASE, funded, delegated to pool1 and
+# registered. The CLI runs from .private-net/demo, a copy of the contract compiler's
+# workspace: the pinned contracts with the deployed local profile and the local-env
+# keys. Afterwards `just private-net-pump` runs the pump there.
+# Usage: rewards-deploy.sh
 set -euo pipefail
 repo=$PWD
 demo=$repo/.private-net/demo
-nodes=$repo/.private-net/node/local-environment/src/networks/local-env/configurations/midnight-nodes
+configurations=$repo/.private-net/node/local-environment/src/networks/local-env/configurations
+nodes=$configurations/midnight-nodes
 candidates=$repo/.private-net/node/res/local/permissioned-candidates-config.json
 rpc=http://127.0.0.1:9945
 export KUPO_URL=http://127.0.0.1:1442 OGMIOS_URL=ws://127.0.0.1:1337
+# The demo delegator's wallet; devnet only. Lace restores it from this phrase.
+LACE_PHRASE="flip album cattle distance master jacket horror drink they frequent rough rapid ramp celery deputy all subject rate they ignore bird plastic future switch"
 
 cli() { bun cli/index.ts "$@"; }
 # Kupo lags a confirmed transaction; the next build waits for it.
@@ -30,36 +35,66 @@ fee_utxo() {
     | "\(.transaction_id) \(.output_index)"'
 }
 
-# Register a script's stake credential with cardano-cli. The CLI cannot see stake
-# registrations on local (Ogmios lists only delegated reward accounts), so promote-upgrade
-# does not register the promoted logic here.
+# Run a cardano-cli transaction script in cardano-node-1 over the files in $1 (moved
+# there); the script sees $magic and $deposit and writes tx.signed. Prints the
+# transaction id once Kupo has it.
+cardano_tx() {
+  local txid
+  docker exec cardano-node-1 rm -rf /tmp/rewards-deploy
+  docker cp "$1" cardano-node-1:/tmp/rewards-deploy >/dev/null
+  rm -rf "$1"
+  txid=$(docker exec -w /tmp/rewards-deploy cardano-node-1 sh -ec "
+    magic=\$(jq .networkMagic /shared/shelley/genesis.json)
+    deposit=\$(cardano-cli conway query protocol-parameters --testnet-magic \$magic | jq .stakeAddressDeposit)
+    $2
+    cardano-cli conway transaction submit --testnet-magic \$magic --tx-file tx.signed >/dev/null
+    cardano-cli conway transaction txid --tx-file tx.signed | jq -r .txhash")
+  until curl -s "$KUPO_URL/matches/*@$txid" | jq -e 'length > 0' >/dev/null; do sleep 2; done
+  sleep 8
+  echo "$txid"
+}
+# A cardano-cli signing key file of type $1 and CBOR $2.
+key_file() { printf '{"type":"%s","description":"","cborHex":"%s"}' "$1" "$2"; }
+
+# Register a script's stake credential. The CLI cannot see stake registrations on
+# local (Ogmios lists only delegated reward accounts), so promote-upgrade does not
+# register the promoted logic here.
 register_stake() {
   local work
   work=$(mktemp -d)
   jq --arg t "$1" '{type: "PlutusScriptV3", description: "",
     cborHex: (.validators[] | select(.title == $t) | .compiledCode)}' plutus-local.json > "$work/logic.plutus"
-  printf '{"type":"PaymentSigningKeyShelley_ed25519","description":"","cborHex":"5820%s"}' \
-    "$(sed -n 's/^SIGNING_PRIVATE_KEY=//p' .env)" > "$work/deployer.skey"
+  key_file PaymentSigningKeyShelley_ed25519 "5820$(sed -n 's/^SIGNING_PRIVATE_KEY=//p' .env)" > "$work/deployer.skey"
   read -r tx ix < <(fee_utxo)
-  docker exec cardano-node-1 rm -rf /tmp/register-stake
-  docker cp "$work" cardano-node-1:/tmp/register-stake
-  rm -rf "$work"
-  local txid
-  txid=$(docker exec -w /tmp/register-stake cardano-node-1 sh -ec "
-    magic=\$(jq .networkMagic /shared/shelley/genesis.json)
-    deposit=\$(cardano-cli conway query protocol-parameters --testnet-magic \$magic | jq .stakeAddressDeposit)
-    cardano-cli conway stake-address registration-certificate --stake-script-file logic.plutus \
+  echo "Registered the stake credential of $1: $(cardano_tx "$work" "
+    cardano-cli conway stake-address registration-certificate --stake-script-file logic.plutus \\
       --key-reg-deposit-amt \$deposit --out-file reg.cert
-    cardano-cli conway transaction build --testnet-magic \$magic --tx-in $tx#$ix --tx-in-collateral $tx#$ix \
-      --certificate-file reg.cert --certificate-script-file logic.plutus --certificate-redeemer-value 0 \
+    cardano-cli conway transaction build --testnet-magic \$magic --tx-in $tx#$ix --tx-in-collateral $tx#$ix \\
+      --certificate-file reg.cert --certificate-script-file logic.plutus --certificate-redeemer-value 0 \\
       --change-address $deployer --out-file tx.raw >/dev/null
-    cardano-cli conway transaction sign --testnet-magic \$magic --tx-body-file tx.raw \
-      --signing-key-file deployer.skey --out-file tx.signed
-    cardano-cli conway transaction submit --testnet-magic \$magic --tx-file tx.signed >/dev/null
-    cardano-cli conway transaction txid --tx-file tx.signed | jq -r .txhash")
-  until curl -s "$KUPO_URL/matches/*@$txid" | jq -e 'length > 0' >/dev/null; do sleep 2; done
-  echo "Registered the stake credential of $1: $txid"
-  sleep 8
+    cardano-cli conway transaction sign --testnet-magic \$magic --tx-body-file tx.raw \\
+      --signing-key-file deployer.skey --out-file tx.signed")"
+}
+
+# Register the Lace wallet's stake key and delegate it to pool1, paid from the wallet.
+delegate_to_pool1() {
+  local work address stake_address
+  work=$(mktemp -d)
+  address=$(sed -n 's/^LACE_ADDRESS=//p' .env)
+  stake_address=$(sed -n 's/^LACE_STAKE_ADDRESS=//p' .env)
+  key_file PaymentExtendedSigningKeyShelley_ed25519_bip32 "$(sed -n 's/^LACE_PAYMENT_XSK=//p' .env)" > "$work/payment.xsk"
+  key_file StakeExtendedSigningKeyShelley_ed25519_bip32 "$(sed -n 's/^LACE_STAKE_XSK=//p' .env)" > "$work/stake.xsk"
+  read -r tx ix < <(curl -s "$KUPO_URL/matches/$address?unspent" | jq -r '.[0] | "\(.transaction_id) \(.output_index)"')
+  echo "Delegated $stake_address to pool1: $(cardano_tx "$work" "
+    pool=\$(cardano-cli conway stake-pool id --cold-verification-key-file /keys/cold.vkey --output-format hex)
+    cardano-cli conway stake-address registration-certificate --stake-address $stake_address \\
+      --key-reg-deposit-amt \$deposit --out-file reg.cert
+    cardano-cli conway stake-address stake-delegation-certificate --stake-address $stake_address \\
+      --stake-pool-id \$pool --out-file deleg.cert
+    cardano-cli conway transaction build --testnet-magic \$magic --tx-in $tx#$ix \\
+      --certificate-file reg.cert --certificate-file deleg.cert --change-address $address --out-file tx.raw >/dev/null
+    cardano-cli conway transaction sign --testnet-magic \$magic --tx-body-file tx.raw \\
+      --signing-key-file payment.xsk --signing-key-file stake.xsk --out-file tx.signed")"
 }
 
 # Each permissioned candidate's sidechain secret: every seed local-env gives its nodes
@@ -141,4 +176,26 @@ for secret in $(operator_secrets); do
   submit deployments/local/rewards-register.json
 done
 [ "$i" -gt 0 ] || { echo "no sidechain secret matches a permissioned candidate" >&2; exit 1; }
-echo "=== Deployed: $i operator accounts; run just private-net-pump"
+
+echo "=== pool1's operator account, at its reward key"
+printf '# rewards-deploy: pool1 reward key\nPOOL1_REWARD_KEY=%s\n' "$(jq -r '.cborHex[4:]' "$configurations/cardano/keys/reward.skey")" >> .env
+cli rewards-register -p kupmios --use-build --stake-key POOL1_REWARD_KEY \
+  --destinations "$destination:1000" --payout-threshold 0
+submit deployments/local/rewards-register.json
+
+echo "=== The Lace delegator: funded, delegated to pool1, registered"
+echo "# rewards-deploy: the Lace wallet of LACE_PHRASE" >> .env
+printf '%s' "$LACE_PHRASE" | bun "$repo/tests/private-net/wallet-keys.ts" 0 | sed 's/^/LACE_/' >> .env
+lace_address=$(sed -n 's/^LACE_ADDRESS=//p' .env)
+cli simple-tx -p kupmios --to "$lace_address" --amount 1000000000000 --count 1
+submit deployments/local/simple-tx.json
+delegate_to_pool1
+cli rewards-register -p kupmios --use-build --stake-key LACE_STAKE_KEY \
+  --destinations "01$(bun -e "import { Address } from '@blaze-cardano/core';
+    console.log(Address.fromBech32('$lace_address').toBytes())"):1000" --payout-threshold 0
+submit deployments/local/rewards-register.json
+
+echo "=== Deployed: $i operator accounts, pool1's operator and the Lace delegator"
+echo "Lace: restore the recovery phrase below; its wallet holds 1,000,000 ADA delegated to pool1"
+echo "$LACE_PHRASE"
+echo "Run just private-net-pump"

@@ -140,13 +140,22 @@ just private-net-pump    # land each handover, release, load and pay as it falls
 just private-net-down    # remove the stack and its volumes
 ```
 
+The committee is five permissioned producers and one registered pool: the
+devnet's pool1 (10% margin), whose Midnight node is node 6. A permissioned
+producer's rewards go to the account its `operator_keys` pair with; pool1's
+split between its reward account (the margin and rounding) and its
+delegators, by stake in the Cardano snapshot that selected the committee.
+
 `private-net-deploy` runs the CLI in `.private-net/demo`, a copy of the
 contract compiler's workspace (the pinned contracts, the deployed `local`
 profile and the local-env keys); `--use-build` stands in for deployed-scripts
-there. Each permissioned candidate's sidechain key comes from the seeds
-local-env gives its nodes, and each account gets a new stake key; both land
-in `.private-net/demo/.env`. Midnight epochs are one minute, so the pump loads
-and pays one epoch a minute.
+there. It registers one account per permissioned producer (its sidechain
+key from local-env's node seeds, a new stake key), pool1's operator account
+at its reward key, and a delegator: the Lace wallet of the recovery phrase
+in `tests/private-net/rewards-deploy.sh`, funded with 1,000,000 ADA and
+delegated to pool1. Keys land in `.private-net/demo/.env`. Midnight epochs
+are one minute, so the pump loads and pays one epoch a minute; a new
+delegation reaches the split about four Cardano epochs later.
 
 ## Out of scope (now)
 
