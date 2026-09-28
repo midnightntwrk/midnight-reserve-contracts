@@ -83,6 +83,8 @@ Each component is one deploy transaction, and that transaction creates all of th
 | `rewards-batcher` | `rewards_batcher`: the state NFT with the first state (`REWARDS_FIRST_EPOCH` − 1, complete), serving `virtual_account` and `rewards_pool_forever`; the transaction registers `rewards_batcher` |
 | `virtual-account-stake` | none: registers the `virtual_account` stake credential, which `virtual-account` withdraws from in a later transaction |
 | `virtual-account` | `virtual_account`: the list head and tail, under the InitList withdrawal |
+| `rewards-batcher-script` | none: a reference-script UTxO of `rewards_batcher` at the deployer address (alone: 10,072 bytes silent) |
+| `rewards-scripts` | none: reference-script UTxOs of `virtual_account`, `rewards_pool_forever` and `rewards_pool_logic` at the deployer address; the batches and the registrations spend through them |
 
 The bridge and rewards components are outside the default set: a run without `--components` builds the twelve governance transactions, and the others are built only when named. Build the rewards contracts with `--trace silent`: at the verbose trace `rewards_batcher` is 18,475 bytes, above the 16,384-byte transaction limit; silent it is 10,072. The bridge triple does not fit one transaction with the logic registration (17,156 script bytes at the verbose trace), so the registration rides on the threshold transaction.
 
