@@ -165,6 +165,10 @@ export class Settings extends Context.Tag("cli/Settings")<
     readonly signingKey: (
       variable: string,
     ) => Effect.Effect<PrivateKey, ConfigError>;
+    /** A secp256k1 secret key (64 hex characters) from `variable`, as bytes. */
+    readonly secp256k1Key: (
+      variable: string,
+    ) => Effect.Effect<Uint8Array, ConfigError>;
     /** The signers in COUNCIL_SIGNERS or TECH_AUTH_SIGNERS: the ones deploy installs, or a change command's new set. */
     readonly newSigners: (
       variable: SignersVariable,
@@ -486,6 +490,10 @@ export const SettingsLive = (
         }),
         privateKeys: (group: KeyGroup) => privateKeys(KEY_GROUPS[group]),
         signingKey: privateKey,
+        secp256k1Key: (variable: string) =>
+          Effect.map(privateKey(variable), (key) =>
+            Uint8Array.from(Buffer.from(key, "hex")),
+          ),
         newSigners: (variable: SignersVariable) =>
           Effect.flatMap(requiredString(variable), (value) =>
             parseSigners(variable, value),

@@ -34,6 +34,7 @@ import { bridgeUpdate } from "./commands/bridge-update";
 import { bridgeSetFee } from "./commands/bridge-set-fee";
 import { bridgeSetThreshold } from "./commands/bridge-set-threshold";
 import { pump } from "./commands/pump";
+import { rewardsRegister } from "./commands/rewards-register";
 import { rewardsRelease } from "./commands/rewards-release";
 import { BaseLive, EnvLive, reportFailure, teardown } from "./run";
 import packageJson from "../package.json";
@@ -72,6 +73,7 @@ const root = Command.make("midnight-reserve").pipe(
     bridgeFetchJustification,
     pump,
     rewardsRelease,
+    rewardsRegister,
   ]),
 );
 
