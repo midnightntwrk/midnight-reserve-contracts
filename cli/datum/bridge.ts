@@ -31,6 +31,9 @@ export const parseActivationBlock = integerIn(1n, U32_MAX);
 /** A fee-cap amount in lovelace. */
 export const parseLovelace = integerIn(0n, U64_MAX);
 
+/** A Midnight epoch: a u64. */
+export const parseEpoch = integerIn(0n, U64_MAX);
+
 /** `<validator_set_id>:<seat_count>:<keyset_commitment>`: a u64 id, a u32 seat count above zero and a 32-byte keyset commitment. */
 export const parseCommittee = (
   text: string,

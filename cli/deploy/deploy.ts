@@ -44,7 +44,11 @@ import {
 import { parseThreshold, type Threshold } from "../governance/threshold";
 import type { NetworkInput } from "../input";
 import { Output } from "../output";
+import { initialBatcherState } from "../datum/rewards";
 import {
+  buildAccountListTx,
+  buildAccountStakeTx,
+  buildBatcherInitTx,
   buildBeefyThresholdDeploymentTx,
   buildReferenceScriptsTx,
   buildThresholdDeploymentTx,
@@ -93,6 +97,10 @@ export const DEPLOY_COMPONENTS = [
   "committee-bridge",
   "committee-bridge-threshold",
   "committee-bridge-scripts",
+  "rewards-pool",
+  "rewards-batcher",
+  "virtual-account-stake",
+  "virtual-account",
 ] as const;
 
 export type DeployComponent = (typeof DEPLOY_COMPONENTS)[number];
@@ -126,6 +134,10 @@ export const DEPLOY_COMPONENT_VALIDATORS: Record<
   ],
   "committee-bridge-threshold": ["beefy_signer_threshold"],
   "committee-bridge-scripts": [],
+  "rewards-pool": twoStageNames("rewards_pool"),
+  "rewards-batcher": ["rewards_batcher"],
+  "virtual-account-stake": [],
+  "virtual-account": ["virtual_account"],
 };
 
 /** A deploy threshold: its option, what it governs, its env variable and the fraction when both are unset. */
@@ -386,6 +398,72 @@ const bridgeScripts: StepBody = {
     }),
 };
 
+const rewardsInstance = (instance: OptionalInstance) =>
+  Effect.flatMap(Blueprint, (b) => b.optional(instance));
+
+/** The batcher state over REWARDS_FIRST_EPOCH, serving the account policy and the pool forever; its transaction registers the batcher's stake credential. */
+const rewardsBatcher: StepBody = {
+  validators: Effect.map(rewardsInstance("rewardsBatcher"), (b) => [b]),
+  installs: Effect.all([
+    rewardsInstance("virtualAccount"),
+    rewardsInstance("rewardsPoolForever"),
+  ]),
+  oneShots: (c) => [
+    [c.rewards_batcher_one_shot_hash, c.rewards_batcher_one_shot_index],
+  ],
+  build: (ctx, [oneShotUtxo]) =>
+    Effect.gen(function* () {
+      const batcher = yield* rewardsInstance("rewardsBatcher");
+      const account = yield* rewardsInstance("virtualAccount");
+      const poolForever = yield* rewardsInstance("rewardsPoolForever");
+      const firstEpoch = yield* Effect.flatMap(
+        Settings,
+        (s) => s.rewardsFirstEpoch,
+      );
+      return buildBatcherInitTx(
+        ctx.blaze,
+        {
+          oneShotUtxo,
+          batcher: batcher.Script,
+          state: initialBatcherState(
+            account.Script.hash(),
+            poolForever.Script.hash(),
+            firstEpoch,
+          ),
+        },
+        ctx.params,
+      );
+    }),
+};
+
+/** The account's stake credential, registered before the list's InitList withdraws from it; no one-shot, and no validator created. */
+const virtualAccountStake: StepBody = {
+  validators: Effect.succeed([]),
+  installs: Effect.succeed([]),
+  oneShots: () => [],
+  build: (ctx) =>
+    Effect.map(rewardsInstance("virtualAccount"), (account) =>
+      buildAccountStakeTx(ctx.blaze, account.Script, ctx.params),
+    ),
+};
+
+/** The virtual account list: its head and tail, under the account's InitList withdrawal. */
+const virtualAccount: StepBody = {
+  validators: Effect.map(rewardsInstance("virtualAccount"), (a) => [a]),
+  installs: Effect.succeed([]),
+  oneShots: (c) => [
+    [c.virtual_account_one_shot_hash, c.virtual_account_one_shot_index],
+  ],
+  build: (ctx, [oneShotUtxo]) =>
+    Effect.map(rewardsInstance("virtualAccount"), (account) =>
+      buildAccountListTx(
+        ctx.blaze,
+        { oneShotUtxo, account: account.Script },
+        ctx.params,
+      ),
+    ),
+};
+
 /** Each component's deployment transaction: its name in the deployment file, the validators it creates and how it is built. */
 export const DEPLOY_STEPS: Record<
   DeployComponent,
@@ -529,6 +607,27 @@ export const DEPLOY_STEPS: Record<
   "committee-bridge-scripts": {
     name: "committee-bridge-scripts-deployment",
     ...bridgeScripts,
+  },
+  "rewards-pool": {
+    name: "rewards-pool-deployment",
+    ...twoStage(
+      "rewards-pool",
+      (c) => [c.rewards_pool_one_shot_hash, c.rewards_pool_one_shot_index],
+      zeroForever,
+      true,
+    ),
+  },
+  "rewards-batcher": {
+    name: "rewards-batcher-deployment",
+    ...rewardsBatcher,
+  },
+  "virtual-account-stake": {
+    name: "virtual-account-stake-deployment",
+    ...virtualAccountStake,
+  },
+  "virtual-account": {
+    name: "virtual-account-deployment",
+    ...virtualAccount,
   },
 };
 

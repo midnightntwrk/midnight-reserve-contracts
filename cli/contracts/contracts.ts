@@ -25,6 +25,7 @@ export const UPGRADABLE_VALIDATORS = [
   "terms-and-conditions",
   "cnight-minting",
   "committee-bridge",
+  "rewards-pool",
 ] as const;
 
 export type UpgradableValidator = (typeof UPGRADABLE_VALIDATORS)[number];
@@ -121,6 +122,11 @@ const OPTIONAL = {
   termsAndConditionsStagingForever:
     "StagingTandcTermsAndConditionsStagingForeverElse",
   rewardsPoolStagingForever: "StagingRewardsPoolRewardsPoolStagingForeverElse",
+  rewardsPoolTwoStage: "RewardsPoolRewardsPoolTwoStageUpgradeElse",
+  rewardsPoolForever: "RewardsPoolRewardsPoolForeverElse",
+  rewardsPoolLogic: "RewardsPoolRewardsPoolLogicElse",
+  rewardsBatcher: "RewardsBatcherRewardsBatcherElse",
+  virtualAccount: "VirtualAccountVirtualAccountElse",
   tcnightMintInfinite: "TestCnightNoAuditTcnightMintInfiniteElse",
   cnightMintTwoStage: "CnightMintingCnightMintTwoStageUpgradeElse",
   cnightMintForever: "CnightMintingCnightMintForeverElse",
@@ -305,9 +311,10 @@ const TRIPLE_PREFIX = {
   "terms-and-conditions": "termsAndConditions",
   "cnight-minting": "cnightMint",
   "committee-bridge": "committeeBridge",
+  "rewards-pool": "rewardsPool",
 } as const satisfies Record<UpgradableValidator, string>;
 
-/** The two-stage triple of a validator; only the cNIGHT minting and committee bridge ones are optional. */
+/** The two-stage triple of a validator; the cNIGHT minting, committee bridge and rewards pool ones are optional. */
 const twoStageContracts = (
   validator: UpgradableValidator,
   contracts: ContractInstances,

@@ -137,6 +137,7 @@ const LOCAL_ENV: Readonly<Record<string, string>> = {
   BRIDGE_NEXT_COMMITTEE: `5:7:${seed("bridge-next")}`,
   BRIDGE_MAX_FEE_BASE: "650000",
   BRIDGE_MAX_FEE_PER_SIGNER: "13000",
+  REWARDS_FIRST_EPOCH: "5",
   BLOCKFROST_PREVIEW_API_KEY: `preview${seed("blockfrost").slice(0, 32)}`,
   KUPO_URL: "http://127.0.0.1:1442",
   OGMIOS_URL: "ws://127.0.0.1:1337",

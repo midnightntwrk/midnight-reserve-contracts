@@ -50,6 +50,7 @@ import {
   FEE_TX,
   feeUtxo,
   randomHash,
+  registerRewardAccount,
   techAuthSigners,
   THRESHOLD,
   txHashOf,
@@ -297,6 +298,7 @@ const TWO_STAGE_COMPONENTS: readonly DeployComponent[] = [
   "federated-ops",
   "terms-and-conditions",
   "committee-bridge",
+  "rewards-pool",
 ];
 
 /** The components whose deployment registers a logic's stake credential, and whose logic; the bridge's registration rides on its threshold's transaction. */
@@ -306,6 +308,35 @@ const REGISTERS_LOGIC: Partial<Record<DeployComponent, UpgradableValidator>> = {
   "federated-ops": "federated-ops",
   "terms-and-conditions": "terms-and-conditions",
   "committee-bridge-threshold": "committee-bridge",
+  "rewards-pool": "rewards-pool",
+};
+
+const rewardsHash = (instance: "rewardsBatcher" | "virtualAccount") =>
+  runTest(
+    blueprint,
+    Effect.map(
+      Effect.flatMap(Blueprint, (b) => b.optional(instance)),
+      (c) => c.Script.hash(),
+    ),
+  );
+
+/** The stake credentials a component's transaction registers: its logic's, or the batcher's, or the account's. */
+const registeredBy = async (component: DeployComponent) => {
+  if (component === "rewards-batcher")
+    return [await rewardsHash("rewardsBatcher")];
+  if (component === "virtual-account-stake")
+    return [await rewardsHash("virtualAccount")];
+  const registers = REGISTERS_LOGIC[component];
+  return registers === undefined
+    ? []
+    : [
+        (
+          await runTest(
+            blueprint,
+            Effect.flatMap(Blueprint, (b) => b.twoStage(registers)),
+          )
+        ).logic.Script.hash(),
+      ];
 };
 
 /** The datum of the draft's output that holds one. */
@@ -336,7 +367,9 @@ describe("the deploy steps", () => {
       expect(namesOf(installed)).toEqual(
         TWO_STAGE_COMPONENTS.includes(component)
           ? ["main_gov_auth", "staging_gov_auth"]
-          : [],
+          : component === "rewards-batcher"
+            ? ["rewards_pool_forever", "virtual_account"]
+            : [],
       );
     },
   );
@@ -353,19 +386,12 @@ describe("the deploy steps", () => {
   ])(
     "the %s step builds a valid transaction, registering the logic where it should",
     async (_name, component, settings) => {
-      const registers = REGISTERS_LOGIC[component];
-      const logic =
-        registers === undefined
-          ? []
-          : [
-              (
-                await runTest(
-                  blueprint,
-                  Effect.flatMap(Blueprint, (b) => b.twoStage(registers)),
-                )
-              ).logic.Script.hash(),
-            ];
+      const logic = await registeredBy(component);
       await asFunded(async (emulator, blaze, addr) => {
+        if (component === "virtual-account")
+          registerRewardAccount(emulator, await rewardsHash("virtualAccount"));
+        // The verbose-trace batcher is 18 KB; the silent deploy build is 10 KB.
+        if (component === "rewards-batcher") emulator.params.maxTxSize = 32_768;
         const builder = await stepBuilder(
           component,
           emulator,
