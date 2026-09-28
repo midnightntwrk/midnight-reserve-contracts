@@ -2,6 +2,7 @@
 
 import { Command } from "@effect/cli";
 import { BunRuntime } from "@effect/platform-bun";
+import { initCrypto } from "@blaze-cardano/core";
 import { Effect, Exit } from "effect";
 import { deploy } from "./commands/deploy";
 import { deployStagingTrack } from "./commands/deploy-staging-track";
@@ -69,6 +70,9 @@ console.warn = (...args: unknown[]) => {
     warn(...args);
 };
 /* eslint-enable no-console */
+
+// Extended keys sign through libsodium, which loads asynchronously.
+await initCrypto();
 
 // runMain interrupts on SIGINT and SIGTERM only.
 process.once("SIGHUP", () => process.kill(process.pid, "SIGTERM"));

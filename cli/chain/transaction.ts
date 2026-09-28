@@ -12,6 +12,7 @@ import {
   Credential,
   CredentialType,
   derivePublicKey,
+  Ed25519PrivateKey,
   Ed25519PublicKeyHex,
   Ed25519SignatureHex,
   Hash28ByteBase16,
@@ -150,14 +151,22 @@ export function createRewardAccount(
   );
 }
 
+/** The public key of a private key. Blaze's helpers take a key as a seed, so an extended key, whose first half is already the scalar, goes through the SDK. */
+export const publicKeyOf = (key: PrivateKey): Ed25519PublicKeyHex =>
+  key.length === 128
+    ? Ed25519PrivateKey.fromExtendedHex(key).toPublic().hex()
+    : derivePublicKey(key);
+
 /** Each key's public key and signature of the transaction id. */
 export const signTransaction = (
   txId: string,
   privateKeys: readonly PrivateKey[],
 ): [Ed25519PublicKeyHex, Ed25519SignatureHex][] =>
   privateKeys.map((key) => [
-    derivePublicKey(key),
-    signMessage(HexBlob(txId), key),
+    publicKeyOf(key),
+    key.length === 128
+      ? Ed25519PrivateKey.fromExtendedHex(key).sign(HexBlob(txId)).hex()
+      : signMessage(HexBlob(txId), key),
   ]);
 
 /** A copy of the transaction with the signatures merged into its vkey witnesses; a key it has takes the new signature. */
