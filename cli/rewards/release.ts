@@ -44,6 +44,7 @@ import { Blueprint } from "../contracts/contracts";
 import { DatumParseError, PreconditionFailed } from "../errors";
 import { type TxFileInput, txFilePath } from "../input";
 import { Output } from "../output";
+import { plainNight } from "./batch";
 
 /** How far before now the validity starts. */
 const VALIDITY_MARGIN_MS = 60_000;
@@ -229,11 +230,6 @@ export const buildReleaseTx = (
     );
 };
 
-const hasNft = (utxo: TransactionUnspentOutput, policy: string) =>
-  [...(utxo.output().amount().multiasset()?.keys() ?? [])].some((id) =>
-    id.startsWith(policy),
-  );
-
 /** The release due now on `network`, built unsigned; ReleaseNotDue before a whole interval has passed. */
 export const releaseTx = (network: Environment) =>
   Effect.gen(function* () {
@@ -276,15 +272,15 @@ export const releaseTx = (network: Environment) =>
       poolState,
       pool.logic.Script.hash(),
     );
-    const reserveUtxos = found
-      .at("reserveForever")
-      .filter((u) => !hasNft(u, reserve.forever.Script.hash()));
-    const poolUtxos = found
-      .at("poolForever")
-      .filter((u) => !hasNft(u, pool.forever.Script.hash()));
     const night = AssetId(
       config.cnight_policy + Buffer.from(config.cnight_name).toString("hex"),
     );
+    const reserveUtxos = found
+      .at("reserveForever")
+      .filter((u) => plainNight(u, night));
+    const poolUtxos = found
+      .at("poolForever")
+      .filter((u) => plainNight(u, night));
 
     const slots = yield* slotConfig;
     const provider = yield* Provider;

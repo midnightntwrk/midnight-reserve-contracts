@@ -41,6 +41,7 @@ import {
   afterPay,
   cursorIndex,
   planBatch,
+  plainNight,
   type RewardLeaf,
   rewardLeaf,
 } from "./batch";
@@ -243,12 +244,13 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
       yield* upgradeStateAt(poolMain),
       pool.logic.Script.hash(),
     );
+    const night = AssetId(
+      config.cnight_policy + Buffer.from(config.cnight_name).toString("hex"),
+    );
     const poolUtxos =
       loading && treasury === 0n
         ? []
-        : (yield* at(pool.forever.Script)).filter(
-            (u) => !holds(u, pool.forever.Script.hash()),
-          );
+        : (yield* at(pool.forever.Script)).filter((u) => plainNight(u, night));
     const refHashes = [
       batcher,
       account,
@@ -282,9 +284,7 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
       stateUtxo,
       poolUtxos,
       collateral,
-      night: AssetId(
-        config.cnight_policy + Buffer.from(config.cnight_name).toString("hex"),
-      ),
+      night,
     };
 
     const name = Option.match(plan, {
