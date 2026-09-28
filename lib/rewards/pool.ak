@@ -1,6 +1,7 @@
 //// Withdraw logic of `rewards_pool_logic` (spec §9). `Receive` merges pool
-//// value UTXOs: the sum of the inputs at the forever address fits in the
-//// first `[ada, night]` output there and no input carries the forever NFT.
+//// value UTXOs: the sum of the inputs at the forever credential fits in the
+//// first `[ada, night]` output at `Address(Script(forever), None)` and no
+//// input carries the forever NFT.
 //// `Disburse` defers every value check to the batcher withdrawal. Track
 //// selection and the staging one-shot mint follow
 //// `logic/next_version.logic_merge_v2`.
@@ -8,7 +9,7 @@
 use aiken/builtin
 use aiken/collection/list
 use aiken/crypto.{ScriptHash}
-use cardano/address.{Script}
+use cardano/address.{Address, Script}
 use cardano/assets.{AssetName, PolicyId}
 use cardano/certificate.{RegisterCredential}
 use cardano/script_context.{Minting, Publishing, ScriptInfo, Withdrawing}
@@ -102,7 +103,7 @@ fn merge_ok(
       },
     )
   let Output { value, datum, .. } =
-    must_find(outputs, fn(o) { o.address.payment_credential == pool_cred })
+    must_find(outputs, fn(o) { o.address == Address(pool_cred, None) })
   let ada_out, rest <- split_ada(value)
   expect [Pair(policy, tokens)]: Pairs<PolicyId, Pairs<AssetName, Int>> = rest
   expect [Pair(name, night_out)] = tokens
