@@ -5,7 +5,7 @@
 
 use aiken/builtin
 use aiken/collection/list
-use cardano/address.{Credential, Script}
+use cardano/address.{Address, Credential, Inline, Pointer, Script}
 use cardano/assets.{PolicyId}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
@@ -159,9 +159,13 @@ pub fn account_withdraw(
             expect Deposit {
               cred: out_cred,
               next: out_next,
-              committed: Some(_),
+              committed: Some(refund),
             }: AccountDatum = out_datum
-            expect out_cred == cred && out_next == next
+            expect and {
+                out_cred == cred,
+                out_next == next,
+                payable(refund),
+              }
             return(rest, claim(unclaimed, registration_name(skh), -1))
           } else {
             expect builtin.index_bytearray(name, 0) == 1
@@ -285,6 +289,18 @@ fn each_deposit(
       check(input, cred, name, out)
     },
   )
+}
+
+/// An address a ledger output can carry: a 28-byte payment hash, and no stake part or an inline 28-byte hash.
+fn payable(address: Address) -> Bool {
+  and {
+    builtin.length_of_bytearray(key(address.payment_credential)) == 28,
+    when address.stake_credential is {
+      None -> True
+      Some(Inline(cred)) -> builtin.length_of_bytearray(key(cred)) == 28
+      Some(Pointer { .. }) -> False
+    },
+  }
 }
 
 /// Destination weights are all positive and sum to 1000; the payout threshold is not negative.

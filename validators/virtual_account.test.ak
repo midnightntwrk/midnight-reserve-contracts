@@ -2,7 +2,7 @@ use aiken/builtin
 use aiken/collection/list
 use aiken/crypto.{blake2b_224}
 use aiken/primitive/bytearray
-use cardano/address.{Address, Script, VerificationKey}
+use cardano/address.{Address, Inline, Pointer, Script, VerificationKey}
 use cardano/assets.{Value, add, from_asset, from_lovelace}
 use cardano/certificate.{RegisterCredential}
 use cardano/script_context.{Publishing, ScriptContext}
@@ -636,6 +636,44 @@ test set_deregister_ok() {
       [k1, owner_key],
     )
   run(tx, SetDeregister)
+}
+
+/// SetDeregister of k1 committing `refund_to`.
+fn deregister_to(refund_to: Address) -> Bool {
+  let tx =
+    deregister_tx(
+      deposit_input(500),
+      mk_deposit_output(k1, ada, 500, k2, Some(refund_to)),
+      registration_input(),
+      k1,
+      [k1, owner_key],
+    )
+  run(tx, SetDeregister)
+}
+
+test set_deregister_refund_to_staked_script_ok() {
+  deregister_to(Address(Script(k4), Some(Inline(VerificationKey(k5)))))
+}
+
+test set_deregister_refund_short_payment_hash() fail {
+  deregister_to(Address(VerificationKey(#"00"), None))
+}
+
+test set_deregister_refund_short_stake_hash() fail {
+  deregister_to(
+    Address(VerificationKey(k5), Some(Inline(VerificationKey(#"01")))),
+  )
+}
+
+test set_deregister_refund_pointer_stake() fail {
+  deregister_to(
+    Address(
+      VerificationKey(k5),
+      Some(
+        Pointer { slot_number: 1, transaction_index: 1, certificate_index: 1 },
+      ),
+    ),
+  )
 }
 
 test set_deregister_inputs_swapped_ok() {

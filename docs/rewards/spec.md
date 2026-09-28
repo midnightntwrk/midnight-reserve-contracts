@@ -247,7 +247,7 @@ on-chain accepts any `n`.
 | `Register` | `n` anchors | per anchor: anchor', node, registration | `+1` deposit and `+1` registration per node; exactly `2n` | stake auth for node `cred` | §4.3; one anchor links one key |
 | `Withdraw` | `n` deposits | `n` deposits' | none | stake auth for `cred` | same address, same datum, same NFT, NIGHT = 0, ADA unchanged |
 | `TopUp` | `n` deposits | `n` deposits' | none | stake auth for `cred` | same datum/NFT/NIGHT; `ADA_out − ADA_in ≥ deposit_min`; `ADA_out ≤ deposit_cap` |
-| `SetDeregister` | `n` deposits and their `n` registrations, any order | one per deposit, in deposit order | `−1` per registration; exactly `n` | stake auth for `cred`; `owner` auth | `committed == None`; deposit continues with same value, datum `committed = Some(addr)` for any `addr` in the output; every registration input's NFT is burned. The registration inputs themselves are forced by the ledger: a burn needs the NFT among the inputs |
+| `SetDeregister` | `n` deposits and their `n` registrations, any order | one per deposit, in deposit order | `−1` per registration; exactly `n` | stake auth for `cred`; `owner` auth | `committed == None`; deposit continues with same value, datum `committed = Some(addr)` for an `addr` a ledger output can carry (28-byte payment hash; no stake part or an inline 28-byte hash), since the exit must pay it; every registration input's NFT is burned. The registration inputs themselves are forced by the ledger: a burn needs the NFT among the inputs |
 | `UpdateRegistration` | `n` registrations | `n` registrations' | none | `owner` auth | NFT continues to the same address; destination weights `> 0`, sum `1000` |
 
 Node kind is read from the NFT name, never from the datum alone.
