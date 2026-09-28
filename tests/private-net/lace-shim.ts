@@ -7,13 +7,18 @@
  * (submitTransaction, evaluateTransaction, the v6 result Lace parses), and
  * network/eras comes from Ogmios's era summaries, which follow the devnet's
  * systemStart. Every response carries CORS headers for the extension.
+ * `/rewards/config` serves the current deploy's virtual_account script, NIGHT
+ * unit and deposit bounds: each fresh deploy spends a new one-shot UTxO, so
+ * the script hash and its addresses change, and Lace reads them at run time.
  * Env (own names, since bun loads the repo's .env): LACE_SHIM_PORT (3001),
  * LACE_SHIM_RYO_URL (http://127.0.0.1:3000), LACE_SHIM_OGMIOS_URL
- * (http://127.0.0.1:1337, JSON-RPC over HTTP).
+ * (http://127.0.0.1:1337, JSON-RPC over HTTP), LACE_SHIM_DEMO_DIR
+ * (.private-net/demo, the deploy's build).
  */
 const PORT = Number(process.env.LACE_SHIM_PORT ?? 3001);
 const RYO = process.env.LACE_SHIM_RYO_URL ?? "http://127.0.0.1:3000";
 const OGMIOS = process.env.LACE_SHIM_OGMIOS_URL ?? "http://127.0.0.1:1337";
+const DEMO = process.env.LACE_SHIM_DEMO_DIR ?? ".private-net/demo";
 const PREFIX = "/extension/preprod/api/v0/";
 
 const CORS = {
@@ -115,6 +120,49 @@ const eras = async () => {
   );
 };
 
+interface Blueprint {
+  readonly validators: readonly {
+    readonly title: string;
+    readonly hash: string;
+    readonly compiledCode: string;
+  }[];
+}
+
+interface LocalConfig {
+  readonly cnight_policy: { readonly bytes: string };
+  readonly cnight_name: string;
+  readonly deposit_min_lovelace: number;
+  readonly deposit_cap_lovelace: number;
+}
+
+const rewardsConfig = async () => {
+  const plutus = Bun.file(`${DEMO}/plutus-local.json`);
+  if (!(await plutus.exists()))
+    return json(
+      { status_code: 404, error: "Not Found", message: "no deploy yet" },
+      404,
+    );
+  const { validators } = (await plutus.json()) as Blueprint;
+  const account = validators.find(
+    (v) => v.title === "virtual_account.virtual_account.else",
+  )!;
+  const toml = Bun.TOML.parse(await Bun.file(`${DEMO}/aiken.toml`).text()) as {
+    config: { local: LocalConfig };
+  };
+  const local = toml.config.local;
+  return json({
+    virtualAccount: { hash: account.hash, compiledCode: account.compiledCode },
+    night: {
+      policyId: local.cnight_policy.bytes,
+      assetName: Buffer.from(local.cnight_name).toString("hex"),
+    },
+    deposit: {
+      minLovelace: local.deposit_min_lovelace,
+      capLovelace: local.deposit_cap_lovelace,
+    },
+  });
+};
+
 const proxy = async (request: Request, path: string, search: string) => {
   const reply = await fetch(`${RYO}/${path}${search}`, {
     method: request.method,
@@ -136,6 +184,7 @@ Bun.serve({
     const url = new URL(request.url);
     if (request.method === "OPTIONS")
       return new Response(null, { status: 204, headers: CORS });
+    if (url.pathname === "/rewards/config") return rewardsConfig();
     if (!url.pathname.startsWith(PREFIX))
       return json({ status_code: 404, error: "Not Found" }, 404);
     const path = url.pathname.slice(PREFIX.length);
