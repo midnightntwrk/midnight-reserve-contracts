@@ -60,6 +60,7 @@ Flags that differ from what you might expect:
 | `bridge-bootstrap` | `--rpc`, `--activation` | Reads the MIP bootstrap from a Midnight node's HTTP JSON-RPC (`http://host:9944`): the MMR root in the digest of block `activation − 1` and the committees `pallet-beefy-mmr` holds at `activation`. Prints the four `BRIDGE_*` bootstrap lines for `.env`. The activation block must be final. Needs no Cardano network. |
 | `bridge-verify-bootstrap` | `--rpc` | Diffs the deployed light client against its bootstrap recomputed from the node, and checks that the leaf of the activation block `b` is index `b − 1` of `b` (`mmr_generateProof`). Fails on any mismatch; true on a fresh deployment only, since each update moves the root and the height. |
 | `bridge-fetch-justification` | `--rpc`, `--block` | Writes the `BridgeUpdate` of block `--block`'s BEEFY justification to `<--output>/<env>/bridge-justification.json`, for `bridge-update --update`. Reads the threshold UTxO and keeps a minimal cover of its fraction (rule 6 rejects a surplus signer). A handover is the first block of a session; a block with no BEEFY justification is refused. |
+| `pump` | `--rpc`, `--signing-key`, `--poll` | Runs until stopped. Each round takes the light client's next committee, finds its first Midnight block once BEEFY has finalized it, and lands the funded handover from that block's justification: built as `bridge-update --funded` builds it, signed with the deployer key, submitted and awaited. A backlog lands oldest first; an idle or failed round (logged) waits `--poll` seconds. Submits transactions. |
 | `bridge-set-fee`, `bridge-set-threshold` | `--base`, `--per-signer` / `--threshold`, `--tx-hash`, `--tx-index`, `--no-sign` | Spend the BEEFY threshold under Council + Tech Auth, as the `change-*` commands do: the new fee cap keeps the fraction, the new fraction keeps the fee cap. |
 | `combine-signatures` | `--tx`, positional `<witness-file>...` | `--tx` holds exactly one transaction (for a deployment file use `sign-and-submit`); one or more witness files follow the options (a shell glob such as `<witness-dir>/*.json` works). Without `--no-sign-deployer` it also signs with `SIGNING_PRIVATE_KEY`. Submits. |
 
@@ -155,7 +156,9 @@ bun run cli bridge-info --network <env>
 bun run cli bridge-verify-bootstrap --network <env> --rpc http://<node>:9944
 bun run cli bridge-topup --network <env> --lovelace <amount>
 bun run cli sign-and-submit deployments/<env>/bridge-topup.json --network <env>
-# Each handover (the first block of each session, oldest first):
+# Every handover from here on, oldest first, until stopped (submits):
+bun run cli pump --network <env> --rpc http://<node>:9944
+# Or one handover by hand (the first block of a session):
 bun run cli bridge-fetch-justification --network <env> --rpc http://<node>:9944 --block <block>
 bun run cli bridge-update --network <env> --funded --update deployments/<env>/bridge-justification.json
 bun run cli sign-and-submit deployments/<env>/bridge-update.json --network <env>

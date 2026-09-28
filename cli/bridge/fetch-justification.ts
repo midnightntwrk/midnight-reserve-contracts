@@ -163,6 +163,28 @@ export const updateFromJustification = (
   });
 };
 
+/** The BridgeUpdate of block `block` from its justification under `threshold`, with the proof and leaf it came from. */
+export const justifiedUpdateAt = (
+  rpc: string,
+  block: number,
+  threshold: Fraction,
+) =>
+  Effect.gen(function* () {
+    const at = yield* blockHash(rpc, block);
+    const proof = yield* justificationAt(rpc, block, at);
+    const set = yield* validatorSetAt(rpc, at);
+    const { leaf, proof: leafProof } = yield* leafProofAt(rpc, block, at);
+    const justified = yield* Either.mapLeft(
+      updateFromJustification(block, proof, set, leaf, leafProof, threshold),
+      (refusal) =>
+        new PreconditionFailed({
+          command: "bridge-fetch-justification",
+          refusal,
+        }),
+    );
+    return { justified, proof, leaf, leafProof };
+  });
+
 /** The node, the block, and where the BridgeUpdate file goes. */
 export interface BridgeFetchJustificationInput extends TxFileInput {
   readonly rpc: string;
@@ -181,17 +203,10 @@ export const bridgeFetchJustificationProgram = (
     const scripts = yield* bridgeScripts;
     const utxos = yield* bridgeUtxos(scripts, networkId);
     const threshold = yield* beefyThresholdAt(utxos.threshold);
-    const at = yield* blockHash(rpc, block);
-    const proof = yield* justificationAt(rpc, block, at);
-    const set = yield* validatorSetAt(rpc, at);
-    const { leaf, proof: leafProof } = yield* leafProofAt(rpc, block, at);
-    const justified = yield* Either.mapLeft(
-      updateFromJustification(block, proof, set, leaf, leafProof, threshold),
-      (refusal) =>
-        new PreconditionFailed({
-          command: "bridge-fetch-justification",
-          refusal,
-        }),
+    const { justified, proof, leaf, leafProof } = yield* justifiedUpdateAt(
+      rpc,
+      block,
+      threshold,
     );
     const json = yield* Effect.orDie(
       Schema.encode(BridgeUpdateJson)(justified.update),

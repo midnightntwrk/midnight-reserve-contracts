@@ -17,7 +17,7 @@ import { upgradeScripts, upgradeStateAt } from "../chain/governance-provider";
 import { Provider } from "../chain/provider";
 import { DEPLOYER_ONLY } from "../chain/transaction";
 import { writeTransaction } from "../chain/tx-file";
-import { environmentOf } from "../config/network-mapping";
+import { type Environment, environmentOf } from "../config/network-mapping";
 import { BridgeUpdateJson, nextBridgeState } from "../datum/bridge";
 import { InputParseError, PreconditionFailed } from "../errors";
 import { readJsonFile, type TxFileInput, txFilePath } from "../input";
@@ -43,17 +43,15 @@ export interface BridgeUpdateInput extends TxFileInput {
   readonly funded: boolean;
 }
 
-/** Resolve the light client and its scripts, build the update (funded: twice, to set the debit) and write it unsigned. */
-export const bridgeUpdateProgram = (input: BridgeUpdateInput) =>
+/** Resolve the light client and its scripts and build the update, unsigned (funded: twice, to set the debit). */
+export const bridgeUpdateTx = (
+  network: Environment,
+  update: typeof BridgeUpdateJson.Type,
+  funded: boolean,
+) =>
   Effect.gen(function* () {
-    const { network, funded } = input;
     const out = yield* Output;
     const { networkId } = environmentOf(network);
-    const update = yield* readJsonFile(
-      input.update,
-      BridgeUpdateJson,
-      (reason) => new InputParseError({ source: "--update", issues: [reason] }),
-    );
     const scripts = yield* bridgeScripts;
     const utxos = yield* bridgeUtxos(scripts, networkId);
     const stateIn = yield* bridgeStateAt(utxos.lightClient);
@@ -176,6 +174,18 @@ export const bridgeUpdateProgram = (input: BridgeUpdateInput) =>
           out.log("Unfunded: the deployer pays the fee"),
         );
 
+    return tx;
+  });
+
+/** Build the update from the --update file and write it unsigned for the deployer. */
+export const bridgeUpdateProgram = (input: BridgeUpdateInput) =>
+  Effect.gen(function* () {
+    const update = yield* readJsonFile(
+      input.update,
+      BridgeUpdateJson,
+      (reason) => new InputParseError({ source: "--update", issues: [reason] }),
+    );
+    const tx = yield* bridgeUpdateTx(input.network, update, input.funded);
     yield* writeTransaction(
       txFilePath(input),
       tx.toCbor(),
