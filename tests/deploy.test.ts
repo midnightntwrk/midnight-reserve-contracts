@@ -432,7 +432,8 @@ describe("the deploy steps", () => {
     async (component, scripts) => {
       await asFunded(async (emulator, blaze, addr) => {
         // The verbose-trace batcher is 18 KB; the silent deploy build is 10 KB.
-        emulator.params.maxTxSize = 32_768;
+        if (component === "rewards-batcher-script")
+          emulator.params.maxTxSize = 32_768;
         const builder = await stepBuilder(component, emulator, blaze, addr);
         const references = Transaction.fromCbor(TxCBOR(builder.toCbor()))
           .body()
