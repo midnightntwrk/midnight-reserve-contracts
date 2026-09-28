@@ -1180,9 +1180,7 @@ test publish_registration_ok() {
 }
 
 // -- mutual exclusion with the batcher ----------------------------------------
-// No explicit check: the exact own-input set of every action rejects any tx
-// that also carries batch inputs. Both withdrawals may coexist only when the
-// input sets are disjoint.
+// A user action refuses any tx that also carries the batcher withdrawal.
 
 fn with_batcher(tx: Transaction) -> Transaction {
   Transaction { ..tx, withdrawals: [own_withdrawal, batcher_withdrawal] }
@@ -1276,7 +1274,7 @@ test exclusion_withdraw_with_batch_burn() fail {
   run(tx, Withdraw)
 }
 
-test coexistence_with_disjoint_inputs_ok() {
+test withdraw_beside_batcher_withdrawal() fail {
   let input = deposit_input(500)
   let tx =
     with_batcher(spend_tx(input, mk_deposit_output(k1, ada, 0, k2, None), [k1]))
