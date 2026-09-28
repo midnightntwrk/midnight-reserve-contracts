@@ -8,8 +8,10 @@
  * network/eras comes from Ogmios's era summaries, which follow the devnet's
  * systemStart. Every response carries CORS headers for the extension.
  * `/rewards/config` serves the current deploy's virtual_account script, NIGHT
- * unit and deposit bounds: each fresh deploy spends a new one-shot UTxO, so
- * the script hash and its addresses change, and Lace reads them at run time.
+ * unit and deposit bounds, and the Midnight network id (local-env's `local`,
+ * the prefix of its DUST addresses): each fresh deploy spends a new one-shot
+ * UTxO, so the script hash and its addresses change, and Lace reads them at
+ * run time.
  * Env (own names, since bun loads the repo's .env): LACE_SHIM_PORT (3001),
  * LACE_SHIM_RYO_URL (http://127.0.0.1:3000), LACE_SHIM_OGMIOS_URL
  * (http://127.0.0.1:1337, JSON-RPC over HTTP), LACE_SHIM_DEMO_DIR
@@ -160,6 +162,7 @@ const rewardsConfig = async () => {
       minLovelace: local.deposit_min_lovelace,
       capLovelace: local.deposit_cap_lovelace,
     },
+    midnightNetwork: "local",
   });
 };
 
