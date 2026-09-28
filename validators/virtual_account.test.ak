@@ -709,6 +709,35 @@ test set_deregister_refund_pointer_stake() fail {
   )
 }
 
+/// SetDeregister of k1 holding `ada_in`, continuing with `ada_out`.
+fn deregister_ada(ada_in: Int, ada_out: Int) -> Bool {
+  let tx =
+    deregister_tx(
+      Input(mk_outref(3), mk_deposit_output(k1, ada_in, 500, k2, None)),
+      mk_deposit_output(k1, ada_out, 500, k2, Some(refund)),
+      registration_input(),
+      k1,
+      [k1, owner_key],
+    )
+  run(tx, SetDeregister)
+}
+
+test set_deregister_tops_up_to_min_ok() {
+  deregister_ada(5_000_000, config.deposit_min_lovelace)
+}
+
+test set_deregister_below_min_not_topped_up() fail {
+  deregister_ada(5_000_000, 5_000_000)
+}
+
+test set_deregister_ada_decreased() fail {
+  deregister_ada(20_000_000, 19_999_999)
+}
+
+test set_deregister_above_cap() fail {
+  deregister_ada(20_000_000, config.deposit_cap_lovelace + 1)
+}
+
 test set_deregister_inputs_swapped_ok() {
   let input = deposit_input(500)
   let base =
