@@ -299,7 +299,7 @@ fn relinked(next: ByteArray, relink: Option<Relink>) -> ByteArray {
   }
 }
 
-/// The deposit continues at its address with its NFT, `amount` more NIGHT and its datum (relinked when its successor exits); its ADA falls by at most the skim cap.
+/// The deposit continues at its address with its NFT, `amount` more NIGHT and its datum (relinked when its successor exits); its ADA does not rise and falls by at most the skim cap.
 fn paid_ok(
   deposit: Input,
   out: Output,
@@ -312,6 +312,7 @@ fn paid_ok(
   let ada_in, _ <- split_ada(value)
   let ada_out, out_assets <- split_ada(out.value)
   and {
+    ada_out <= ada_in,
     ada_in - ada_out <= env.cap,
     out.address == address,
     out.datum == when relink is {
@@ -330,7 +331,7 @@ fn paid_ok(
   }
 }
 
-/// The exiting deposit's ADA (less the skim cap) and NIGHT plus the leaf amount go to its committed refund address; returns the `next` its predecessor takes.
+/// The exiting deposit's ADA (no more, and less at most the skim cap) and NIGHT plus the leaf amount go to its committed refund address; returns the `next` its predecessor takes.
 fn exit_ok(
   deposit: Input,
   refund: Output,
@@ -346,6 +347,7 @@ fn exit_ok(
   let ada_out, _ <- split_ada(refund.value)
   expect and {
       refund.address == refund_address,
+      ada_out <= ada_in,
       ada_in - ada_out <= env.cap,
       night_of(refund.value) >= night_of(value) + leaf.amount,
     }

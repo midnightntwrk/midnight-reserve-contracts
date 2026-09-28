@@ -278,11 +278,11 @@ skim ≤ max_skim[n_paid]                       // lovelace, per deposit
 fee  = if amount ≥ min_payout then dist_fee else 0   // NIGHT, per leaf
 ```
 
-- **Pay**: `ADA_out ≥ ADA_in − skim`; `NIGHT_out = NIGHT_in + amount − fee`;
+- **Pay**: `ADA_in − skim ≤ ADA_out ≤ ADA_in`; `NIGHT_out = NIGHT_in + amount − fee`;
   datum, address, NFT unchanged.
 - **Exit** (leaf `ack = 1`): requires `committed == Some(addr)`; no
   continuing deposit output; burn `0x00++skh`; `unlink(skh, next)`; an
-  output to `addr` with `ADA ≥ ADA_in − skim` and
+  output to `addr` with `ADA_in − skim ≤ ADA ≤ ADA_in` and
   `NIGHT ≥ NIGHT_in + amount − fee`. The registration is already gone
   (burned in the `SetDeregister` tx).
 
