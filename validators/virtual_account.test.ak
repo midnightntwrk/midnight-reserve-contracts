@@ -1180,7 +1180,9 @@ test publish_registration_ok() {
 }
 
 // -- mutual exclusion with the batcher ----------------------------------------
-// A user action refuses any tx that also carries the batcher withdrawal.
+// No explicit check: a tx with both withdrawals runs both logics, and each
+// binds every account input, burn and output exactly, so a mix passes only
+// when it satisfies both.
 
 fn with_batcher(tx: Transaction) -> Transaction {
   Transaction { ..tx, withdrawals: [own_withdrawal, batcher_withdrawal] }
@@ -1274,7 +1276,7 @@ test exclusion_withdraw_with_batch_burn() fail {
   run(tx, Withdraw)
 }
 
-test withdraw_beside_batcher_withdrawal() fail {
+test coexistence_with_disjoint_inputs_ok() {
   let input = deposit_input(500)
   let tx =
     with_batcher(spend_tx(input, mk_deposit_output(k1, ada, 0, k2, None), [k1]))
