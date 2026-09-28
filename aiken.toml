@@ -308,11 +308,11 @@ bytes = "20b841d1d415e250b287cbb455b945769360f82439317e23b4e118ed"
 encoding = "hex"
 
 [config.default.rewards_batcher_hash]
-bytes = "e797572a0fe06cb1652cec9b9aafb2863ecb6d32e2ad47ab7faab795"
+bytes = "f54b02b105c64cbc06fa2742f9dacac632935162b7b48d258a89f7f0"
 encoding = "hex"
 
 [config.default.virtual_account_hash]
-bytes = "dc365ad3304baa2408432e208c17dd092f5331561463f2faa3ef48b4"
+bytes = "b5dd862f5836f9e470ccfa0c7247fca438e183cd7a44c5665823ad66"
 encoding = "hex"
 
 [config.preview]

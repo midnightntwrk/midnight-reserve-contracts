@@ -78,9 +78,8 @@ pub type BatcherRedeemer {
   }
 }
 
-/// Deposit input and output indices for one paid leaf; for an exit the output is the refund.
+/// Output index of one paid leaf; for an exit the output is the refund. The leaf's deposit input is found by key among the account inputs, sorted by NFT name.
 pub type PayPair {
-  input_index: Int,
   output_index: Int,
 }
 

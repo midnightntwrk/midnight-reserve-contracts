@@ -7,12 +7,10 @@
  * completes the fold, the epoch's Treasury share for the ICS) from the
  * pool, and moves the state's cursor, as lib/rewards/batch.ak checks.
  *
- * The contract pairs each paid leaf with its deposit input and output, both
- * indices strictly increasing in leaf order, and the ledger orders inputs
- * by transaction id then index. So a run extends only while the next
- * deposit's input sorts after the previous one; the batch fixes its input
- * set (an explicit fee input from the deployer) so that order is the order
- * the ledger will see. Exits (ack leaves) are not built yet.
+ * The contract finds each paid leaf's deposit by key among the account
+ * inputs, sorted by NFT name, so the ledger's input order does not matter;
+ * the redeemer names only each deposit's output, strictly increasing in
+ * leaf order. Exits (ack leaves) are not built yet.
  */
 import {
   addressFromValidator,
@@ -32,10 +30,10 @@ import type {
 } from "@blaze-cardano/sdk";
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { bytesToHex } from "@noble/hashes/utils.js";
-import { Either, Option } from "effect";
+import { Option } from "effect";
 import * as Contracts from "../../contract_blueprint";
 import { buildMultiproof, toPlutusData } from "../bridge/authority-set";
-import { createRewardAccount, refOf } from "../chain/transaction";
+import { createRewardAccount } from "../chain/transaction";
 
 /** A decoded 45-byte reward leaf: ack ‖ skh ‖ amount (u128 BE). */
 export interface RewardLeaf {
@@ -61,65 +59,36 @@ export interface BatchPlan {
   readonly complete: boolean;
 }
 
-/** Ledger order of transaction inputs: transaction id, then index. */
-export const byLedgerOrder = (
-  a: TransactionUnspentOutput,
-  b: TransactionUnspentOutput,
-): number => {
-  const [ia, ib] = [a.input(), b.input()];
-  return ia.transactionId() === ib.transactionId()
-    ? Number(ia.index() - ib.index())
-    : ia.transactionId() < ib.transactionId()
-      ? -1
-      : 1;
-};
-
 /**
  * The run from leaf `from` of an epoch that started at leaf `start`: at
- * most `limit` paid leaves, stopping before `start`, after max_key (the
- * cursor wraps to min_key), or where the next deposit's input would not
- * sort after the previous one (`sortsAfter`). max_key is never a
- * lookahead, so a run that reaches the leaf before it pays it too; with
- * the epoch started at max_key (loadStart) that never happens, and a
- * one-leaf batch always fits. Left names a run that cannot be built.
+ * most `limit` paid leaves, stopping before `start` or after max_key (the
+ * cursor wraps to min_key). max_key is never a lookahead, so a run that
+ * reaches the leaf before it pays max_key too.
  */
 export const planBatch = (
   leaves: readonly RewardLeaf[],
   from: number,
   start: number,
   limit: number,
-  sortsAfter: (earlier: number, later: number) => boolean,
-): Either.Either<BatchPlan, string> => {
+): BatchPlan => {
   const last = leaves.length - 1;
   const paid = [from];
   for (;;) {
     const at = paid[paid.length - 1];
     const next = at + 1;
     if (at === last || next === start) break;
-    const forced = next === last;
-    if (!forced && paid.length >= limit) break;
-    if (!sortsAfter(at, next)) {
-      if (forced)
-        return Either.left(
-          `leaf ${at} must be paid with max_key, whose deposit input sorts before it`,
-        );
-      break;
-    }
+    if (next !== last && paid.length >= limit) break;
     paid.push(next);
   }
   const end = paid[paid.length - 1];
   const cursor = end === last ? leaves[0].key : leaves[end + 1].key;
-  return Either.right({
+  return {
     paid,
     lookahead: end === last ? Option.none() : Option.some(end + 1),
     cursor,
     complete: cursor === leaves[start].key,
-  });
+  };
 };
-
-/** Where an epoch's first batch starts: max_key, so it pays that leaf alone and every later run ends with a lookahead. */
-export const loadStart = (leaves: readonly RewardLeaf[]): number =>
-  leaves.length - 1;
 
 /** What every batch spends and references, resolved from the chain. */
 export interface BatchChain {
@@ -133,7 +102,6 @@ export interface BatchChain {
   readonly poolMain: TransactionUnspentOutput;
   readonly stateUtxo: TransactionUnspentOutput;
   readonly poolUtxos: readonly TransactionUnspentOutput[];
-  readonly feeUtxo: TransactionUnspentOutput;
   readonly collateral: TransactionUnspentOutput;
   readonly night: AssetId;
 }
@@ -174,58 +142,25 @@ const paidDeposit = (
   });
 };
 
-/** Whether a transaction spends exactly `expected` (in ledger order), so coin selection added nothing and the pair indices hold; the body may list them in any order, the ledger sorts them for the scripts. */
-export const inputsHold = (
-  inputs: readonly {
-    readonly transactionId: () => string;
-    readonly index: () => bigint;
-  }[],
-  expected: readonly string[],
-): boolean => {
-  const sorted = [...inputs]
-    .sort((a, b) =>
-      a.transactionId() === b.transactionId()
-        ? Number(a.index() - b.index())
-        : a.transactionId() < b.transactionId()
-          ? -1
-          : 1,
-    )
-    .map((input) => `${input.transactionId()}#${input.index()}`);
-  return (
-    sorted.length === expected.length &&
-    sorted.every((ref, i) => ref === expected[i])
-  );
-};
-
 /**
  * The batch transaction and its redeemer. Outputs: 0 the state, 1 the
  * pool, then one deposit per paid leaf in leaf order, then the ICS output
  * when the batch pays a Treasury share; the change goes last. Inputs: the
- * state, the pool's value UTxOs, the paid deposits and the fee input.
+ * state, the pool's value UTxOs and the paid deposits; coin selection adds
+ * the fee.
  */
 export const buildBatchTx = (
   blaze: Blaze<BlazeProvider, Wallet>,
   chain: BatchChain,
   batch: Batch,
   networkId: NetworkId,
-): { readonly builder: TxBuilder; readonly inputs: readonly string[] } => {
-  const inputs = [
-    chain.stateUtxo,
-    ...chain.poolUtxos,
-    ...batch.deposits,
-    chain.feeUtxo,
-  ].sort(byLedgerOrder);
-  const inputIndex = (utxo: TransactionUnspentOutput) =>
-    inputs.findIndex((u) => refOf(u.input()) === refOf(utxo.input()));
+): TxBuilder => {
   const paid = Option.match(batch.plan, {
     onNone: () => [] as number[],
     onSome: (p) => [...p.paid],
   });
   const total = paid.reduce((sum, i) => sum + batch.leaves[i].amount, 0n);
-  const pairs = paid.map((_, j) => ({
-    input_index: BigInt(inputIndex(batch.deposits[j])),
-    output_index: BigInt(2 + j),
-  }));
+  const pairs = paid.map((_, j) => ({ output_index: BigInt(2 + j) }));
   const proof: PlutusData[] = Option.match(batch.plan, {
     onNone: () => [],
     onSome: (p) => {
@@ -265,15 +200,12 @@ export const buildBatchTx = (
     onNone: () => tx,
     onSome: ({ bridge }) => tx.addReferenceInput(bridge),
   });
-  tx = tx
-    .addInput(chain.stateUtxo, unread)
-    .addInput(chain.feeUtxo)
-    .addOutput(
-      TransactionOutput.fromCore({
-        ...chain.stateUtxo.output().toCore(),
-        datum: serialize(Contracts.BatcherState, batch.stateOut).toCore(),
-      }),
-    );
+  tx = tx.addInput(chain.stateUtxo, unread).addOutput(
+    TransactionOutput.fromCore({
+      ...chain.stateUtxo.output().toCore(),
+      datum: serialize(Contracts.BatcherState, batch.stateOut).toCore(),
+    }),
+  );
   if (poolIn.length > 0) {
     tx = poolIn
       .reduce((t, u) => t.addInput(u, unread), tx)
@@ -328,8 +260,5 @@ export const buildBatchTx = (
       tx,
     );
   }
-  return {
-    builder: tx.provideCollateral([chain.collateral]),
-    inputs: inputs.map((u) => refOf(u.input())),
-  };
+  return tx.provideCollateral([chain.collateral]);
 };

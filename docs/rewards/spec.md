@@ -369,7 +369,7 @@ pub type BatcherRedeemer {
   Pay { proof: ProofNodeRec, pairs: List<PayPair>, exits: List<ExitInfo> }
   LoadAndPay { digest_proof: DigestProof, proof: ProofNodeRec, pairs: List<PayPair>, exits: List<ExitInfo> }   // digest: §7
 }
-pub type PayPair { input_index: Int, output_index: Int }       // deposit in/out per paid leaf, in leaf order; for an exit the output is the refund
+pub type PayPair { output_index: Int }       // the output per paid leaf, in leaf order; for an exit the output is the refund
 pub type ExitInfo { pred_input_index: Int, pred_output_index: Int }   // one per exit leaf, in leaf order
 ```
 Both redeemers also carry `batcher_pair: PayPair`, the batcher's own
@@ -406,13 +406,16 @@ There is no standalone load: an epoch opens with its first batch, so
      run (a leaf that would be paid) fails.
    So every batch pays at least one leaf and the epoch completes in the
    batch that pays its last leaf; a batch cannot strand the epoch.
-2. Every paid leaf: find deposit input/output by `pairs[i]`; input value
-   holds `0x00 ++ key` under `account_policy`; apply §4.5 Pay or Exit (for
-   an exit the `PayPair` output is the refund and `exits[j]` names the
-   predecessor). Input and output indices in `pairs` strictly increase (no
-   double satisfaction). Every input carrying an `account_policy` token is
-   a paid deposit or an exit predecessor (head or deposit) from `exits`:
-   the count of such inputs equals `len(paid) + len(exits)`. Deposit
+2. Every paid leaf: its deposit input is the one carrying `0x00 ++ key`
+   among the inputs holding an `account_policy` token, sorted by NFT name
+   and walked in leaf order (smaller names skipped are exit
+   predecessors), so the ledger's input order does not matter; its output
+   is `pairs[i]`; apply §4.5 Pay or Exit (for an exit the `PayPair` output
+   is the refund and `exits[j]` names the predecessor). Output indices in
+   `pairs` strictly increase, and each deposit is taken once (no double
+   satisfaction). Every input carrying an `account_policy` token is a paid
+   deposit or an exit predecessor (head or deposit) from `exits`: the count
+   of such inputs equals `len(paid) + len(exits)`. Deposit
    spends and the exit burn use the account gate `Batcher` (§4.4); a head
    input is accepted only as an exit predecessor; the tail is never an
    input. `pairs` and `exits` are consumed exactly. Every input pairs with

@@ -25,10 +25,10 @@ import { beefyFinalizedHash, storageAt } from "../bridge/midnight";
 import { buildTx } from "../chain/complete-tx";
 import { upgradeScripts, upgradeStateAt } from "../chain/governance-provider";
 import { Provider } from "../chain/provider";
-import { DEPLOYER_ONLY, refOf } from "../chain/transaction";
+import { DEPLOYER_ONLY } from "../chain/transaction";
 import { writeTransaction } from "../chain/tx-file";
 import { type Environment, environmentOf } from "../config/network-mapping";
-import { reservedRefs, Settings } from "../config/settings";
+import { Settings } from "../config/settings";
 import { Blueprint } from "../contracts/contracts";
 import { resolveCollateral } from "../deploy/deployment";
 import { PreconditionFailed, UtxoNotFound } from "../errors";
@@ -38,9 +38,6 @@ import {
   type Batch,
   type BatchPlan,
   buildBatchTx,
-  byLedgerOrder,
-  inputsHold,
-  loadStart,
   planBatch,
   type RewardLeaf,
   rewardLeaf,
@@ -49,7 +46,6 @@ import { decodeDigest, digestProofAt } from "./digest-proof";
 import { decodeDigestBlock, decodeEpochLeaves, epochKey } from "./storage";
 
 /** The least lovelace the fee input carries. */
-const FEE_INPUT_MIN = 5_000_000n;
 
 /** `binary_merkle_tree::merkle_root` over keccak leaves; 32 zero bytes for none. */
 export const rewardRoot = (leaves: readonly RewardLeaf[]): string => {
@@ -195,7 +191,7 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
       );
     const depositOf = (i: number) => deposits.get(leaves[i].key)!;
     const start = loading
-      ? loadStart(leaves)
+      ? 0
       : leaves.findIndex((l) => l.key === state.start_key);
     const from = loading
       ? start
@@ -203,18 +199,7 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
     const plan: Option.Option<BatchPlan> =
       leaves.length === 0
         ? Option.none()
-        : Option.some(
-            yield* Either.mapLeft(
-              planBatch(
-                leaves,
-                from,
-                start,
-                limit,
-                (a, b) => byLedgerOrder(depositOf(a), depositOf(b)) < 0,
-              ),
-              notMip,
-            ),
-          );
+        : Option.some(planBatch(leaves, from, start, limit));
     const loaded: Contracts.BatcherState =
       load === undefined
         ? state
@@ -282,19 +267,6 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
         UtxoNotFound.carrying(deployer, refHashes[i]),
       ),
     );
-    const reserved = reservedRefs(config);
-    const feeUtxo = yield* Either.fromOption(
-      Option.fromNullable(
-        (yield* provider.unspentOutputs(yield* settings.deployerAddress)).find(
-          (u) =>
-            u.output().scriptRef() === undefined &&
-            u.output().amount().multiasset() === undefined &&
-            u.output().amount().coin() >= FEE_INPUT_MIN &&
-            !reserved.has(refOf(u.input())),
-        ),
-      ),
-      () => UtxoNotFound.carrying(deployer, "an ADA-only fee UTxO"),
-    );
     const { collateralPercentage } = yield* provider.use("getParameters", (p) =>
       p.getParameters(),
     );
@@ -314,7 +286,6 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
       poolMain,
       stateUtxo,
       poolUtxos,
-      feeUtxo,
       collateral,
       night: AssetId(
         config.cnight_policy + Buffer.from(config.cnight_name).toString("hex"),
@@ -328,14 +299,13 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
     });
     yield* out.log(`\nRewards batch on ${network}: ${name}`);
     const blaze = yield* provider.blaze;
-    const { builder, inputs } = buildBatchTx(blaze, chain, batch, networkId);
+    const builder = buildBatchTx(blaze, chain, batch, networkId);
     const tx: Transaction = yield* buildTx(builder, {
       commandName: "rewards-batch",
       environment: network,
       witnesses: DEPLOYER_ONLY,
       knownUtxos: [
         stateUtxo,
-        feeUtxo,
         poolMain,
         lightClient,
         collateral,
@@ -344,16 +314,6 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
         ...scriptRefs,
       ],
     });
-    const built = [...tx.body().inputs().values()];
-    if (!inputsHold(built, inputs))
-      return yield* new PreconditionFailed({
-        command: "rewards-batch",
-        refusal: {
-          _tag: "BatchInputsChanged",
-          expected: inputs,
-          actual: built.map(refOf),
-        },
-      });
     return { tx, name };
   });
 
