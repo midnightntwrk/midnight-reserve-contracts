@@ -1,6 +1,6 @@
 use rewards/types.{
   AccountAction, AccountDatum, AccountGate, BatcherRedeemer, BatcherState,
-  PoolRedeemer, ReleaseState,
+  PoolRedeemer, ReleaseState, ReserveRedeemer, StagingStateV2,
 }
 
 validator z_rewards_types {
@@ -25,6 +25,21 @@ validator z_rewards_types {
   }
 
   propose(_redeemer: BatcherState, _proposal, _tx) {
+    fail
+  }
+}
+
+validator z_release_types {
+  spend(
+    _datum: Option<StagingStateV2>,
+    _redeemer: ReserveRedeemer,
+    _output,
+    _tx,
+  ) {
+    fail
+  }
+
+  else(_ctx) {
     fail
   }
 }

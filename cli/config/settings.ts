@@ -98,6 +98,14 @@ const ONE_SHOTS = [
 
 type OneShot = (typeof ONE_SHOTS)[number];
 
+/** The reserve release schedule of a profile (docs/rewards/spec.md §8): the first interval's start and the interval in ms, and the pool ceiling factor. */
+export interface ReleaseSchedule {
+  readonly t0Ms: bigint;
+  readonly intervalMs: bigint;
+  readonly factorNum: bigint;
+  readonly factorDen: bigint;
+}
+
 /** The aiken.toml profile of an environment. */
 export type NetworkConfig = {
   readonly [K in OneShot as `${K}_hash`]: TxHash;
@@ -106,6 +114,7 @@ export type NetworkConfig = {
 } & {
   readonly cnight_policy: string;
   readonly cnight_name: string;
+  readonly release: ReleaseSchedule;
 };
 
 /** Every UTxO the profile names, its one-shots and its collateral, as `txId#index`: coin selection never spends them. */
@@ -285,6 +294,18 @@ export const parseNetworkConfig = (
       ...Object.fromEntries(refs.flat()),
       cnight_policy: yield* bytesField(profile, "cnight_policy", path),
       cnight_name: yield* stringField(profile, "cnight_name", path),
+      release: {
+        t0Ms: BigInt(yield* integerField(profile, "release_t0_ms", path)),
+        intervalMs: BigInt(
+          yield* integerField(profile, "release_interval_ms", path),
+        ),
+        factorNum: BigInt(
+          yield* integerField(profile, "release_factor_num", path),
+        ),
+        factorDen: BigInt(
+          yield* integerField(profile, "release_factor_den", path),
+        ),
+      },
     } as NetworkConfig;
   });
 

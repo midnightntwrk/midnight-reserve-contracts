@@ -127,6 +127,7 @@ const OPTIONAL = {
   rewardsPoolLogic: "RewardsPoolRewardsPoolLogicElse",
   rewardsBatcher: "RewardsBatcherRewardsBatcherElse",
   virtualAccount: "VirtualAccountVirtualAccountElse",
+  reserveLogicV2: "ReserveV2ReserveLogicV2Else",
   tcnightMintInfinite: "TestCnightNoAuditTcnightMintInfiniteElse",
   cnightMintTwoStage: "CnightMintingCnightMintTwoStageUpgradeElse",
   cnightMintForever: "CnightMintingCnightMintForeverElse",

@@ -702,6 +702,31 @@
       "hash": "abe0faa878c6b96f7fa8f2f6bea49a4c306585b8de7feffabca949ce"
     },
     {
+      "title": "validator_types_rewards.z_release_types.spend",
+      "datum": {
+        "title": "_datum",
+        "schema": {
+          "$ref": "#/definitions/rewards~1types~1StagingStateV2"
+        }
+      },
+      "redeemer": {
+        "title": "_redeemer",
+        "schema": {
+          "$ref": "#/definitions/rewards~1types~1ReserveRedeemer"
+        }
+      },
+      "compiledCode": "59010e01010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cc0240092225980099b8748008c024dd500144c8cc896600200d1325980099b87480000062b3001300e375400f16805201e8acc004cdc3a400400313259800800c02e264b3001001806403201913259800980a001c5a01a8090dd6800c0310141808800a020300e375400f00a402c8058c030dd50034026013009804a022300d001300d300e001300a375400516401c300900130053754015149a2a6600692011856616c696461746f722072657475726e65642066616c7365001365640082a6600492011a5f72656465656d65723a205265736572766552656465656d6572001601",
+      "hash": "9167c634edef0a1cca904ec44d03e8851ea33929241954a3c9b340e5"
+    },
+    {
+      "title": "validator_types_rewards.z_release_types.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "compiledCode": "59010e01010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cc0240092225980099b8748008c024dd500144c8cc896600200d1325980099b87480000062b3001300e375400f16805201e8acc004cdc3a400400313259800800c02e264b3001001806403201913259800980a001c5a01a8090dd6800c0310141808800a020300e375400f00a402c8058c030dd50034026013009804a022300d001300d300e001300a375400516401c300900130053754015149a2a6600692011856616c696461746f722072657475726e65642066616c7365001365640082a6600492011a5f72656465656d65723a205265736572766552656465656d6572001601",
+      "hash": "9167c634edef0a1cca904ec44d03e8851ea33929241954a3c9b340e5"
+    },
+    {
       "title": "validator_types_rewards.z_rewards_types.spend",
       "datum": {
         "title": "_datum",
@@ -1765,6 +1790,47 @@
               "$ref": "#/definitions/Int"
             }
           ]
+        }
+      ]
+    },
+    "rewards/types/ReserveRedeemer": {
+      "title": "ReserveRedeemer",
+      "anyOf": [
+        {
+          "title": "Merge",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": []
+        },
+        {
+          "title": "Release",
+          "dataType": "constructor",
+          "index": 1,
+          "fields": [
+            {
+              "title": "intervals",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        }
+      ]
+    },
+    "rewards/types/StagingStateV2": {
+      "title": "StagingStateV2",
+      "description": "Staging-track hashes read from the reserve logic v2 NFT input: `StagingState` plus the staging pool forever.",
+      "dataType": "list",
+      "items": [
+        {
+          "title": "cnight_test_policy",
+          "$ref": "#/definitions/cardano~1assets~1PolicyId"
+        },
+        {
+          "title": "forever_script_hash",
+          "$ref": "#/definitions/cardano~1assets~1PolicyId"
+        },
+        {
+          "title": "pool_forever_hash",
+          "$ref": "#/definitions/cardano~1assets~1PolicyId"
         }
       ]
     },
