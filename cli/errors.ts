@@ -214,6 +214,17 @@ export type Refusal =
       readonly denominator: bigint;
     }
   | {
+      readonly _tag: "ReserveNotOnRelease";
+      readonly logicHash: string;
+      readonly releaseLogicHash: string;
+    }
+  | {
+      readonly _tag: "ReleaseNotDue";
+      readonly lastReleaseTime: bigint;
+      readonly intervalMs: bigint;
+      readonly now: bigint;
+    }
+  | {
       readonly _tag: "AlreadyRegistered";
       readonly environment: string;
       readonly scripts: readonly {
@@ -331,6 +342,10 @@ const renderRefusal = (refusal: Refusal): string => {
       return `the node's BEEFY data does not follow the MIP: ${refusal.detail}`;
     case "BelowThreshold":
       return `the justification's signers hold ${refusal.signedSeats} of ${refusal.seatCount} seats; the BEEFY threshold ${refusal.numerator}/${refusal.denominator} needs ${refusal.required}`;
+    case "ReserveNotOnRelease":
+      return `the reserve runs logic ${refusal.logicHash}, not reserve_logic_v2 (${refusal.releaseLogicHash}); stage and promote reserve_logic_v2 first`;
+    case "ReleaseNotDue":
+      return `no whole release interval has passed: the last release covers up to ${refusal.lastReleaseTime} ms, the interval is ${refusal.intervalMs} ms, and now is ${refusal.now} ms`;
     case "AlreadyRegistered":
       return `already registered on ${refusal.environment}: ${refusal.scripts
         .map(({ label, scriptHash }) => `${label} ${scriptHash}`)

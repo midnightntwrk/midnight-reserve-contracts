@@ -282,6 +282,19 @@ const Contracts = Type.Module({
   ReleaseState: Type.Object({
     last_release_time: Type.BigInt(),
   }, { ctor: 0n }),
+  ReserveRedeemer: Type.Union([
+    Type.Literal("Merge", { ctor: 0n }),
+    Type.Object({
+      Release: Type.Object({
+        intervals: Type.BigInt(),
+      }, { ctor: 1n })
+    }),
+  ]),
+  StagingStateV2: Type.Tuple([
+    Type.String(),
+    Type.String(),
+    Type.String(),
+  ]),
   TwoStageRedeemer: Type.Tuple([
     Type.Ref("UpdateField"),
     Type.Ref("WhichStage"),
@@ -398,6 +411,10 @@ export const PoolRedeemer = Contracts.Import("PoolRedeemer");
 export type PoolRedeemer = Exact<typeof PoolRedeemer>;
 export const ReleaseState = Contracts.Import("ReleaseState");
 export type ReleaseState = Exact<typeof ReleaseState>;
+export const ReserveRedeemer = Contracts.Import("ReserveRedeemer");
+export type ReserveRedeemer = Exact<typeof ReserveRedeemer>;
+export const StagingStateV2 = Contracts.Import("StagingStateV2");
+export type StagingStateV2 = Exact<typeof StagingStateV2>;
 export const TwoStageRedeemer = Contracts.Import("TwoStageRedeemer");
 export type TwoStageRedeemer = Exact<typeof TwoStageRedeemer>;
 export const UpdateField = Contracts.Import("UpdateField");
@@ -1742,6 +1759,44 @@ export class ValidatorTypesZTwoStageUpgradeTypesElse extends TypedScript<PlutusD
 
   redeemer(value: __ValidatorTypesZTwoStageUpgradeTypesElseRedeemerInput): __ValidatorTypesZTwoStageUpgradeTypesElseRedeemerData {
     return serializeContractData<__ValidatorTypesZTwoStageUpgradeTypesElseRedeemerData>(__ValidatorTypesZTwoStageUpgradeTypesElseRedeemerSchema, value);
+  }
+}
+type __ValidatorTypesRewardsZReleaseTypesSpendDatumData = PlutusData & { readonly __ValidatorTypesRewardsZReleaseTypesSpendDatum: "__ValidatorTypesRewardsZReleaseTypesSpendDatumData" };
+
+type __ValidatorTypesRewardsZReleaseTypesSpendRedeemerData = PlutusData & { readonly __ValidatorTypesRewardsZReleaseTypesSpendRedeemer: "__ValidatorTypesRewardsZReleaseTypesSpendRedeemerData" };
+
+export class ValidatorTypesRewardsZReleaseTypesSpend extends TypedScript<__ValidatorTypesRewardsZReleaseTypesSpendDatumData, __ValidatorTypesRewardsZReleaseTypesSpendRedeemerData> {
+  constructor() {
+    const Script = cborToScript(
+      "59010e01010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cc0240092225980099b8748008c024dd500144c8cc896600200d1325980099b87480000062b3001300e375400f16805201e8acc004cdc3a400400313259800800c02e264b3001001806403201913259800980a001c5a01a8090dd6800c0310141808800a020300e375400f00a402c8058c030dd50034026013009804a022300d001300d300e001300a375400516401c300900130053754015149a2a6600692011856616c696461746f722072657475726e65642066616c7365001365640082a6600492011a5f72656465656d65723a205265736572766552656465656d6572001601",
+      "PlutusV3"
+    );
+    super(Script, "validator_types_rewards.z_release_types.spend");
+  }
+
+  datum(value: StagingStateV2): __ValidatorTypesRewardsZReleaseTypesSpendDatumData {
+    return serializeContractData<__ValidatorTypesRewardsZReleaseTypesSpendDatumData>(StagingStateV2, value);
+  }
+
+  redeemer(value: ReserveRedeemer): __ValidatorTypesRewardsZReleaseTypesSpendRedeemerData {
+    return serializeContractData<__ValidatorTypesRewardsZReleaseTypesSpendRedeemerData>(ReserveRedeemer, value);
+  }
+}
+type __ValidatorTypesRewardsZReleaseTypesElseRedeemerData = PlutusData & { readonly __ValidatorTypesRewardsZReleaseTypesElseRedeemer: "__ValidatorTypesRewardsZReleaseTypesElseRedeemerData" };
+const __ValidatorTypesRewardsZReleaseTypesElseRedeemerSchema = TPlutusData;
+type __ValidatorTypesRewardsZReleaseTypesElseRedeemerInput = Exact<typeof __ValidatorTypesRewardsZReleaseTypesElseRedeemerSchema>;
+
+export class ValidatorTypesRewardsZReleaseTypesElse extends TypedScript<PlutusData, __ValidatorTypesRewardsZReleaseTypesElseRedeemerData> {
+  constructor() {
+    const Script = cborToScript(
+      "59010e01010029800aba4aba2aba1aab9faab9eaab9dab9cab9a488888888c96600264653001300900198049805000cc0240092225980099b8748008c024dd500144c8cc896600200d1325980099b87480000062b3001300e375400f16805201e8acc004cdc3a400400313259800800c02e264b3001001806403201913259800980a001c5a01a8090dd6800c0310141808800a020300e375400f00a402c8058c030dd50034026013009804a022300d001300d300e001300a375400516401c300900130053754015149a2a6600692011856616c696461746f722072657475726e65642066616c7365001365640082a6600492011a5f72656465656d65723a205265736572766552656465656d6572001601",
+      "PlutusV3"
+    );
+    super(Script, "validator_types_rewards.z_release_types.else");
+  }
+
+  redeemer(value: __ValidatorTypesRewardsZReleaseTypesElseRedeemerInput): __ValidatorTypesRewardsZReleaseTypesElseRedeemerData {
+    return serializeContractData<__ValidatorTypesRewardsZReleaseTypesElseRedeemerData>(__ValidatorTypesRewardsZReleaseTypesElseRedeemerSchema, value);
   }
 }
 type __ValidatorTypesRewardsZRewardsTypesSpendDatumData = PlutusData & { readonly __ValidatorTypesRewardsZRewardsTypesSpendDatum: "__ValidatorTypesRewardsZRewardsTypesSpendDatumData" };

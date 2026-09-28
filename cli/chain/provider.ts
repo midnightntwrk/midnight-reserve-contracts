@@ -5,6 +5,7 @@
 import {
   Address,
   type NetworkId,
+  type SlotConfig,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import {
@@ -147,6 +148,24 @@ export class Provider extends Context.Tag("cli/Provider")<
     >;
   }
 >() {}
+
+/** How the provider's network maps slots to time; the local devnet's comes from Ogmios: its start time and the current era. */
+export const slotConfig: Effect.Effect<
+  SlotConfig,
+  ProviderError | ConfigError,
+  Provider
+> = Effect.flatMap(Provider, (provider) =>
+  provider.use("slotConfig", async (p) => {
+    if (!(p instanceof Kupmios)) return p.getSlotConfig();
+    const start = Date.parse(await p.ogmios.queryNetworkStartTime());
+    const era = (await p.ogmios.queryLedgerStateEraSummaries()).at(-1)!;
+    return {
+      zeroTime: start + Number(era.start.time.seconds) * 1000,
+      zeroSlot: Number(era.start.slot),
+      slotLength: Number(era.parameters.slotLength.milliseconds),
+    };
+  }),
+);
 
 /** A report that reads the chain runs only on a public network; local and the emulator are refused. */
 export const requireOnChainNetwork = (environment: Environment) =>
