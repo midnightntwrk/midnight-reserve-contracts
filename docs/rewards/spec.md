@@ -229,7 +229,8 @@ pub type AccountGate { User  Batcher }
 pub type AccountAction { kind: ActionKind, offset: Int }
 pub type ActionKind { InitList  Register  Withdraw  TopUp  SetDeregister  UpdateRegistration }
 ```
-`User`: a withdrawal from the `virtual_account` credential exists.
+`User`: a withdrawal from the `virtual_account` credential exists; that
+withdraw handler refuses a tx that also carries the batcher withdrawal.
 `Batcher`: a withdrawal from `config.rewards_batcher_hash` exists (batch
 logic validates, §4.5). Nothing else is checked per input.
 
@@ -721,7 +722,8 @@ Every governance-domain spend still needs the domain's `logic` and
 - **List order**: following `next` from head visits strictly ascending keys.
 - **One authority per list UTXO**: every account-address input is covered
   by exactly one of the account withdraw (its action's exact set) or the
-  batcher withdraw (its fold, §5.3 run rule 2).
+  batcher withdraw (its fold, §5.3); the account withdraw refuses a tx that
+  also carries the batcher withdrawal.
 - **Exactly-once**: within an epoch a `skh` is paid at most once; a leaf is
   never skipped (contiguity + cursor).
 - **Completion**: `complete` becomes `True` only in the run that pays
