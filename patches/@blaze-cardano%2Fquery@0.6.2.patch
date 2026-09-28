@@ -1,5 +1,11 @@
+diff --git a/node_modules/@blaze-cardano/query/.bun-tag-504ef68f16c16043 b/.bun-tag-504ef68f16c16043
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/@blaze-cardano/query/.bun-tag-f6a1cc9efe403f11 b/.bun-tag-f6a1cc9efe403f11
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/dist/index.cjs b/dist/index.cjs
-index b6886f16945d616906f409b525de0a7ab2926b84..4d36a508adc394c91af5d1c0d4c02a796938a6fe 100644
+index b6886f16945d616906f409b525de0a7ab2926b84..0151081b8a68cc7fa75b60d96e9b10c3ec2aba9e 100644
 --- a/dist/index.cjs
 +++ b/dist/index.cjs
 @@ -582,7 +582,7 @@ var Blockfrost = class extends Provider {
@@ -20,8 +26,34 @@ index b6886f16945d616906f409b525de0a7ab2926b84..4d36a508adc394c91af5d1c0d4c02a79
  			else if (Date.now() - startTime < timeout) {
  				await new Promise((resolve) => setTimeout(resolve, Kupmios.confirmationTimeout));
  				return checkConfirmation();
+@@ -1094,11 +1094,12 @@ var Kupmios = class Kupmios extends Provider {
+ 		try {
+ 			const redeemers = tx.witnessSet().redeemers()?.values();
+ 			if (!redeemers) throw new Error("Cannot evaluate without redeemers!");
+-			const additionalInputs = additionalUtxos.map((utxo) => utxo.input());
+-			const utxosToDrop = await this.resolveUnspentOutputs(additionalInputs);
+-			const additional_utxos = Kupmios.serializeUtxos(additionalUtxos.filter((utxo) => {
+-				return !utxosToDrop.includes(utxo);
++			const onLedger = /* @__PURE__ */ new Set();
++			await Promise.all(additionalUtxos.map(async (utxo) => {
++				const input = utxo.input();
++				if ((await this._getUnspentOutputs(`${input.index()}@${input.transactionId()}`, null)).length === 1) onLedger.add(utxo);
+ 			}));
++			const additional_utxos = Kupmios.serializeUtxos(additionalUtxos.filter((utxo) => !onLedger.has(utxo)));
+ 			return this.ogmios.evaluateTransaction({ cbor: tx.toCbor() }, additional_utxos).then((results) => {
+ 				if (results.length !== redeemers.length) throw new Error("Kupmios endpoint returned inconsistent length of the redeemers");
+ 				const updatedRedeemers = results.map((redeemerData) => {
+@@ -1106,7 +1107,7 @@ var Kupmios = class Kupmios extends Provider {
+ 						memory: redeemerData.budget.memory,
+ 						steps: redeemerData.budget.cpu
+ 					});
+-					const redeemer = redeemers.find((x) => Number(x.index()) === redeemerData.validator.index && (x.tag() === purposeToTag[redeemerData.validator.purpose] || redeemerData.validator.purpose === "withdraw" && x.tag() === _blaze_cardano_core.RedeemerTag.Reward));
++					const redeemer = redeemers.find((x) => Number(x.index()) === redeemerData.validator.index && (x.tag() === purposeToTag[redeemerData.validator.purpose] || redeemerData.validator.purpose === "withdraw" && x.tag() === _blaze_cardano_core.RedeemerTag.Reward || redeemerData.validator.purpose === "publish" && x.tag() === _blaze_cardano_core.RedeemerTag.Cert));
+ 					if (!redeemer) throw new Error("Kupmios endpoint returned extraneous redeemer data");
+ 					redeemer.setExUnits(exUnits);
+ 					return redeemer.toCore();
 diff --git a/dist/index.mjs b/dist/index.mjs
-index 2c017413f4f6f6e775243730607d71486a074d06..f08b4f901fa3432610b741ecb335d1c46075994a 100644
+index 2c017413f4f6f6e775243730607d71486a074d06..0fd81b91e836b407f41605e21e7779f4b24cf100 100644
 --- a/dist/index.mjs
 +++ b/dist/index.mjs
 @@ -558,7 +558,7 @@ var Blockfrost = class extends Provider {
@@ -42,3 +74,29 @@ index 2c017413f4f6f6e775243730607d71486a074d06..f08b4f901fa3432610b741ecb335d1c4
  			else if (Date.now() - startTime < timeout) {
  				await new Promise((resolve) => setTimeout(resolve, Kupmios.confirmationTimeout));
  				return checkConfirmation();
+@@ -1070,11 +1070,12 @@ var Kupmios = class Kupmios extends Provider {
+ 		try {
+ 			const redeemers = tx.witnessSet().redeemers()?.values();
+ 			if (!redeemers) throw new Error("Cannot evaluate without redeemers!");
+-			const additionalInputs = additionalUtxos.map((utxo) => utxo.input());
+-			const utxosToDrop = await this.resolveUnspentOutputs(additionalInputs);
+-			const additional_utxos = Kupmios.serializeUtxos(additionalUtxos.filter((utxo) => {
+-				return !utxosToDrop.includes(utxo);
++			const onLedger = /* @__PURE__ */ new Set();
++			await Promise.all(additionalUtxos.map(async (utxo) => {
++				const input = utxo.input();
++				if ((await this._getUnspentOutputs(`${input.index()}@${input.transactionId()}`, null)).length === 1) onLedger.add(utxo);
+ 			}));
++			const additional_utxos = Kupmios.serializeUtxos(additionalUtxos.filter((utxo) => !onLedger.has(utxo)));
+ 			return this.ogmios.evaluateTransaction({ cbor: tx.toCbor() }, additional_utxos).then((results) => {
+ 				if (results.length !== redeemers.length) throw new Error("Kupmios endpoint returned inconsistent length of the redeemers");
+ 				const updatedRedeemers = results.map((redeemerData) => {
+@@ -1082,7 +1083,7 @@ var Kupmios = class Kupmios extends Provider {
+ 						memory: redeemerData.budget.memory,
+ 						steps: redeemerData.budget.cpu
+ 					});
+-					const redeemer = redeemers.find((x) => Number(x.index()) === redeemerData.validator.index && (x.tag() === purposeToTag[redeemerData.validator.purpose] || redeemerData.validator.purpose === "withdraw" && x.tag() === RedeemerTag.Reward));
++					const redeemer = redeemers.find((x) => Number(x.index()) === redeemerData.validator.index && (x.tag() === purposeToTag[redeemerData.validator.purpose] || redeemerData.validator.purpose === "withdraw" && x.tag() === RedeemerTag.Reward || redeemerData.validator.purpose === "publish" && x.tag() === RedeemerTag.Cert));
+ 					if (!redeemer) throw new Error("Kupmios endpoint returned extraneous redeemer data");
+ 					redeemer.setExUnits(exUnits);
+ 					return redeemer.toCore();
