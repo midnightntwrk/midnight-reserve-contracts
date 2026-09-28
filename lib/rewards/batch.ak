@@ -1,19 +1,19 @@
-//// Withdraw logic of the `rewards_batcher` validator (spec §5). One
-//// verification per transaction: the state NFT input and output 0, one sorted
-//// multiproof, then one fold over the paid leaves, the account mint, the
-//// account inputs sorted by name and the outputs after the pool output. The
-//// fold takes each list in step and the mint and inputs must end empty, so
-//// every account input, burn and output has exactly one role.
+//// Withdraw logic of the `rewards_batcher` validator (spec §5). `Load`
+//// takes the next epoch's digest from the bridge and pays its Treasury
+//// share from the pool to the ICS; the fold then starts at the digest's
+//// `min_key`. `Pay` reveals one contiguous run `[cursor, …, lookahead]` with
+//// a sorted multiproof, pays every leaf before the lookahead, and moves the
+//// cursor to it; the run that pays `max_key` has no lookahead and completes
+//// the epoch.
 ////
-//// Outputs: 0 the state, 1 the pool, then per paid leaf in leaf order its
-//// deposit (`ack = 0`) or its predecessor and refund (`ack = 1`), then the
-//// ICS output when the batch pays the Treasury share.
+//// A `Pay` is one fold over the paid leaves, the account mint, the account
+//// inputs sorted by name and the outputs after the pool output. The fold
+//// takes each list in step and the mint and inputs must end empty, so every
+//// account input, burn and output has exactly one role.
 ////
-//// A run is `[cursor, …, lookahead]`: every leaf up to the lookahead is
-//// paid; the lookahead is the next cursor. A run whose last leaf is
-//// `max_key` pays it and wraps the cursor to `min_key`. A lookahead equal
-//// to `start_key` closes the epoch. So an epoch completes in the same batch
-//// that pays its last leaf and no batch can be empty.
+//// Outputs: 0 the state, 1 the pool, then (`Pay`) per paid leaf in leaf
+//// order its deposit (`ack = 0`) or its predecessor and refund (`ack = 1`),
+//// or (`Load` with a Treasury share) the ICS output.
 
 use aiken/builtin
 use aiken/collection/dict
@@ -33,7 +33,7 @@ use rewards/linked_list.{deposit_name, unlink}
 use rewards/merkle_range.{RewardLeaf, parse_leaf, verify_range}
 use rewards/types.{
   AccountDatum, BatcherRedeemer, BatcherState, Deposit, Digest, DigestProof,
-  LoadAndPay, Pay,
+  Load, Pay,
 }
 use rewards/value.{quantity, split_ada, tokens_of}
 use utils.{
@@ -80,50 +80,36 @@ pub fn validate(tx: Transaction, own_hash: ScriptHash, redeemer: Data) -> Bool {
       is_singleton(state_output.value, own_hash, ""),
     }
   when redeemer is {
-    Pay { proof } -> {
-      expect !state_in.complete
-      pay(state_in, leaves(state_in.root, proof), outputs, tx) == state_out
-    }
-    LoadAndPay { digest_proof, proof } -> {
+    Load { digest_proof } -> {
       expect state_in.complete
       let Digest { epoch, leaf_count, root, min_key, max_key, treasury_total } =
         load(state_in, digest_proof, tx.reference_inputs)
-      let loaded =
-        BatcherState {
-          ..state_in,
-          epoch,
-          root,
-          min_key,
-          max_key,
-          treasury_total,
+      expect and {
+          account_inputs(tx.inputs, state_in.account_policy) == 0,
+          tokens_of(tx.mint, state_in.account_policy) == [],
         }
-      if leaf_count == 0 {
-        expect proof == []
-        expect account_inputs(tx.inputs, state_in.account_policy) == 0
-        expect tokens_of(tx.mint, state_in.account_policy) == []
-        expect
-          if treasury_total == 0 {
-            pool_inputs(tx.inputs, state_in.pool_forever) == assets.zero
-          } else {
-            expect [pool_out, ics_out, ..] = outputs
-            and {
-              pool_ok(
-                tx.inputs,
-                pool_out,
-                state_in.pool_forever,
-                treasury_total,
-              ),
-              ics_ok(tx.inputs, ics_out, treasury_total),
-            }
+      expect
+        if treasury_total == 0 {
+          pool_inputs(tx.inputs, state_in.pool_forever) == assets.zero
+        } else {
+          expect [pool_out, ics_out, ..] = outputs
+          and {
+            pool_ok(tx.inputs, pool_out, state_in.pool_forever, treasury_total),
+            ics_ok(tx.inputs, ics_out, treasury_total),
           }
-        loaded == state_out
-      } else {
-        let leaves = leaves(root, proof)
-        expect [first, ..] = leaves
-        let opened =
-          BatcherState { ..loaded, start_key: first.key, cursor: first.key }
-        pay(opened, leaves, outputs, tx) == state_out
+        }
+      state_out == BatcherState {
+        ..state_in,
+        epoch,
+        root,
+        max_key,
+        cursor: min_key,
+        complete: leaf_count == 0,
       }
+    }
+    Pay { proof } -> {
+      expect !state_in.complete
+      pay(state_in, leaves(state_in.root, proof), outputs, tx) == state_out
     }
   }
 }
@@ -149,7 +135,7 @@ pub fn leaves(root: ByteArray, proof: ProofNodeRec) -> List<RewardLeaf> {
   verify_range(root, proof) |> list.map(parse_leaf)
 }
 
-/// Apply one batch to `state`; `outputs` follow the state output. The run that completes the fold pays the Treasury share.
+/// Apply one batch to `state`; `outputs` follow the state output.
 pub fn pay(
   state: BatcherState,
   leaves: List<RewardLeaf>,
@@ -157,7 +143,7 @@ pub fn pay(
   tx: Transaction,
 ) -> BatcherState {
   let Transaction { inputs, mint, fee, .. } = tx
-  let paid, cursor <- split_run(state, leaves)
+  let paid, next <- split_run(state, leaves)
   let n_paid = list.length(paid)
   let env =
     Env {
@@ -168,67 +154,49 @@ pub fn pay(
       ),
     }
   expect [pool_out, ..outputs] = outputs
-  let
-    total,
-    after,
-  <-
+  let total =
     pay_fold(
       paid,
       tokens_of(mint, state.account_policy),
       sorted_account_inputs(inputs, state.account_policy),
       outputs,
       env,
-      0,
     )
-  let complete = cursor == state.start_key
-  let treasury =
-    if complete {
-      state.treasury_total
-    } else {
-      0
-    }
-  expect pool_ok(inputs, pool_out, state.pool_forever, total + treasury)
-  expect
-    if treasury == 0 {
-      True
-    } else {
-      expect [ics_out, ..] = after
-      ics_ok(inputs, ics_out, treasury)
-    }
-  BatcherState { ..state, cursor, complete }
+  expect pool_ok(inputs, pool_out, state.pool_forever, total)
+  when next is {
+    Some(cursor) -> BatcherState { ..state, cursor }
+    None -> BatcherState { ..state, complete: True }
+  }
 }
 
-/// Split an ascending run starting at `state.cursor` into the paid leaves and the next cursor.
+/// Split an ascending run starting at `state.cursor` into the paid leaves and the next cursor, `None` when the run pays `max_key`.
 pub fn split_run(
   state: BatcherState,
   leaves: List<RewardLeaf>,
-  return: fn(List<RewardLeaf>, ByteArray) -> result,
+  return: fn(List<RewardLeaf>, Option<ByteArray>) -> result,
 ) -> result {
   expect [head, ..] = leaves
   expect head.key == state.cursor
-  take_run(leaves, state, return)
+  take_run(leaves, state.max_key, return)
 }
 
-/// `leaves` is non-empty and its head is paid.
+/// `leaves` is non-empty and its head is paid; `max_key` is never the lookahead.
 fn take_run(
   leaves: List<RewardLeaf>,
-  state: BatcherState,
-  return: fn(List<RewardLeaf>, ByteArray) -> result,
+  max_key: ByteArray,
+  return: fn(List<RewardLeaf>, Option<ByteArray>) -> result,
 ) -> result {
   when leaves is {
     [x] -> {
-      expect x.key == state.max_key
-      return([x], state.min_key)
+      expect x.key == max_key
+      return([x], None)
     }
     [x, y, ..more] ->
-      if y.key == state.start_key {
-        expect more == []
-        return([x], y.key)
-      } else if more == [] && y.key != state.max_key {
-        return([x], y.key)
+      if more == [] && y.key != max_key {
+        return([x], Some(y.key))
       } else {
-        let paid, cursor <- take_run([y, ..more], state)
-        return([x, ..paid], cursor)
+        let paid, next <- take_run([y, ..more], max_key)
+        return([x, ..paid], next)
       }
     [] -> fail
   }
@@ -260,20 +228,18 @@ fn sorted_account_inputs(
     |> list.sort(fn(a, b) { bytearray.compare(a.1st, b.1st) })
 }
 
-/// One step per paid leaf, taking in order its account inputs, its burn (an exit) and its outputs; returns the NIGHT paid and the outputs after the run.
+/// One step per paid leaf, taking in order its account inputs, its burn (an exit) and its outputs; returns the NIGHT paid.
 fn pay_fold(
   leaves: List<RewardLeaf>,
   burns: Pairs<AssetName, Int>,
   inputs: List<(AssetName, Input)>,
   outputs: List<Output>,
   env: Env,
-  total: Int,
-  return: fn(Int, List<Output>) -> result,
-) -> result {
+) -> Int {
   when leaves is {
     [] -> {
       expect burns == [] && inputs == []
-      return(total, outputs)
+      0
     }
     [leaf, ..leaves] -> {
       let name = deposit_name(leaf.key)
@@ -284,15 +250,7 @@ fn pay_fold(
             found == name,
             paid_ok(deposit, out, name, leaf.amount, env),
           }
-        pay_fold(
-          leaves,
-          burns,
-          inputs,
-          outputs,
-          env,
-          total + leaf.amount,
-          return,
-        )
+        leaf.amount + pay_fold(leaves, burns, inputs, outputs, env)
       } else {
         expect leaf.ack == 1
         expect [(_, pred), (found, deposit), ..inputs] = inputs
@@ -303,15 +261,7 @@ fn pay_fold(
             burned == name,
             exit_ok(pred, pred_out, deposit, refund, leaf, env),
           }
-        pay_fold(
-          leaves,
-          burns,
-          inputs,
-          outputs,
-          env,
-          total + leaf.amount,
-          return,
-        )
+        leaf.amount + pay_fold(leaves, burns, inputs, outputs, env)
       }
     }
   }

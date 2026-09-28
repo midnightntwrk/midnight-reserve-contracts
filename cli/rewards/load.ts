@@ -1,12 +1,12 @@
 /**
  * rewards-batch: the batcher's next transaction, from the chain and a
  * Midnight node, as the pump lands it. With the state complete it is the
- * LoadAndPay of the next epoch: the digest's block from the rewards
- * pallet's DigestBlock at the BEEFY-finalized head, its DigestProof under
- * the bridge's latest_height (once that covers the block's leaf), and the
- * epoch's leaves from EpochLeaves, checked against the digest. Otherwise
- * it is the next Pay of the loaded epoch. Built unsigned; the deployer
- * pays through an explicit fee input and signs.
+ * Load of the next epoch: the digest's block from the rewards pallet's
+ * DigestBlock at the BEEFY-finalized head, its DigestProof under the
+ * bridge's latest_height (once that covers the block's leaf), checked
+ * against the epoch's leaves in EpochLeaves; it pays the epoch's Treasury
+ * share to the ICS. Otherwise it is the next Pay of the loaded epoch.
+ * Built unsigned; coin selection adds the fee.
  */
 import {
   addressFromValidator,
@@ -173,58 +173,58 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
             return yield* notMip(
               `the digest in block ${digestBlock} does not match the ${leaves.length} leaves EpochLeaves holds for epoch ${epoch}`,
             );
-          return { proof, digest, digestBlock };
+          return { proof, digest };
         })
       : undefined;
 
-    const deposits = new Map(
-      (yield* at(account)).flatMap((u) =>
-        leaves
-          .filter((l) => holds(u, `${account.hash()}00${l.key}`))
-          .map((l) => [l.key, u] as const),
-      ),
-    );
-    const missing = leaves.find((l) => !deposits.has(l.key));
+    const deposits = loading
+      ? new Map<string, TransactionUnspentOutput>()
+      : new Map(
+          (yield* at(account)).flatMap((u) =>
+            leaves
+              .filter((l) => holds(u, `${account.hash()}00${l.key}`))
+              .map((l) => [l.key, u] as const),
+          ),
+        );
+    const missing = loading
+      ? undefined
+      : leaves.find((l) => !deposits.has(l.key));
     if (missing !== undefined)
       return yield* notMip(
         `epoch ${epoch} pays ${missing.key}, which has no deposit in the list`,
       );
-    const depositOf = (i: number) => deposits.get(leaves[i].key)!;
-    const start = loading
-      ? 0
-      : leaves.findIndex((l) => l.key === state.start_key);
-    const from = loading
-      ? start
-      : leaves.findIndex((l) => l.key === state.cursor);
-    const plan: Option.Option<BatchPlan> =
-      leaves.length === 0
-        ? Option.none()
-        : Option.some(planBatch(leaves, from, start, limit));
-    const loaded: Contracts.BatcherState =
+    if (!loading && rewardRoot(leaves) !== state.root)
+      return yield* notMip(
+        `the ${leaves.length} leaves EpochLeaves holds for epoch ${epoch} do not have the loaded root`,
+      );
+    const plan: Option.Option<BatchPlan> = loading
+      ? Option.none()
+      : Option.some(
+          planBatch(
+            leaves,
+            leaves.findIndex((l) => l.key === state.cursor),
+            limit,
+          ),
+        );
+    const stateOut: Contracts.BatcherState =
       load === undefined
-        ? state
+        ? Option.match(plan, {
+            onNone: () => state,
+            onSome: (p) =>
+              Option.match(p.lookahead, {
+                onNone: () => ({ ...state, complete: true }),
+                onSome: (i) => ({ ...state, cursor: leaves[i].key }),
+              }),
+          })
         : {
             ...state,
             epoch,
             root: load.digest.root,
-            min_key: load.digest.minKey,
             max_key: load.digest.maxKey,
-            treasury_total: load.digest.treasuryTotal,
+            cursor: load.digest.minKey,
+            complete: load.digest.leafCount === 0n,
           };
-    const stateOut = Option.match(plan, {
-      onNone: () => loaded,
-      onSome: (p): Contracts.BatcherState => ({
-        ...loaded,
-        ...(loading ? { start_key: leaves[start].key } : {}),
-        cursor: p.cursor,
-        complete: p.complete,
-      }),
-    });
-    const completes = Option.match(plan, {
-      onNone: () => true,
-      onSome: (p) => p.complete,
-    });
-    const treasury = completes ? loaded.treasury_total : 0n;
+    const treasury = load === undefined ? 0n : load.digest.treasuryTotal;
     const batch: Batch = {
       load: Option.map(Option.fromNullable(load), ({ proof }) => ({
         digestProof: proof,
@@ -234,7 +234,7 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
       plan,
       deposits: Option.match(plan, {
         onNone: () => [],
-        onSome: (p) => p.paid.map(depositOf),
+        onSome: (p) => p.paid.map((i) => deposits.get(leaves[i].key)!),
       }),
       stateOut,
       treasury,
@@ -249,7 +249,7 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
       pool.logic.Script.hash(),
     );
     const poolUtxos =
-      treasury === 0n && leaves.length === 0
+      loading && treasury === 0n
         ? []
         : (yield* at(pool.forever.Script)).filter(
             (u) => !holds(u, pool.forever.Script.hash()),
@@ -293,9 +293,10 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
     };
 
     const name = Option.match(plan, {
-      onNone: () => `load of empty epoch ${epoch}`,
+      onNone: () =>
+        `load of epoch ${epoch}: ${leaves.length} leaves, Treasury share ${treasury}`,
       onSome: (p) =>
-        `${loading ? "load" : "pay"} of epoch ${epoch}: leaves ${p.paid.join(", ")}${p.complete ? ", completing the fold" : ""}`,
+        `pay of epoch ${epoch}: leaves ${p.paid.join(", ")}${Option.isNone(p.lookahead) ? ", completing the fold" : ""}`,
     });
     yield* out.log(`\nRewards batch on ${network}: ${name}`);
     const blaze = yield* provider.blaze;
