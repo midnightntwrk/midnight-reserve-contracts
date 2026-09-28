@@ -337,8 +337,9 @@ pub type BatcherState {
   pool_forever: ScriptHash,       // rewards_pool_forever hash, set at init, 28 bytes
   epoch: Int,                     // last loaded epoch; init = first_epoch − 1
   root: ByteArray,                // 32
+  min_key: ByteArray,
   max_key: ByteArray,
-  cursor: ByteArray,              // next skh to pay; the digest's min_key after the Load
+  cursor: ByteArray,              // last skh paid; empty after the Load
   complete: Bool,                 // init = True
 }
 ```
@@ -347,7 +348,7 @@ shapes (28-byte hashes, `complete == True`). Deployer sets the hashes;
 governance owns deployment.
 
 The fold runs once from `min_key` to `max_key`: the run that pays `max_key`
-completes the epoch.
+completes the epoch. The cursor is the last key paid, as in the MIP.
 
 ### 5.2 Spend / publish
 
@@ -385,16 +386,16 @@ The redeemer names no input or output. The transaction layout binds them:
    `[ada, treasury_total]` with no datum hash, the shape the ICS
    `logic_merge` accepts. No input may sit at the ICS credential, so no ICS
    merge shares the transaction and claims the same output.
-6. `state_out == state_in with { epoch, root, max_key, cursor: min_key,
+6. `state_out == state_in with { epoch, root, min_key, max_key, cursor: "",
    complete: leaf_count == 0 }`.
 
 **Pay** (every later batch)
 1. `state_in.complete == False`.
-2. `leaves = verify_range(root, proof)` (§6): ascending, contiguous;
-   `key(leaves[0]) == cursor`. The run is `[cursor, …, lookahead]`: the
-   last leaf is the **lookahead**, not paid, `cursor := its key`; except a
-   last leaf with `key == max_key`, which is paid and sets
-   `complete := True`. So every batch pays at least one leaf.
+2. `leaves = verify_range(root, proof)` (§6): ascending, contiguous. The
+   epoch's first run (`cursor == ""`) starts at `min_key` and pays every
+   revealed leaf. A later run starts at the cursor's leaf, already paid,
+   and pays the leaves after it. A run pays at least one leaf; the cursor
+   moves to the last leaf paid, and `complete := cursor == max_key`.
 3. One fold over four lists: the paid leaves; the mint under
    `account_policy`; the inputs holding an `account_policy` token, sorted
    by NFT name (so the ledger's input order does not matter); and the
@@ -898,7 +899,8 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 | `Pay` is one fold over the paid leaves, the account mint, the sorted account inputs and the outputs from index 2; fixed outputs (state 0, pool 1); `PayPair` and `ExitInfo` removed | redeemer indices let one input or output take two roles, and leftover account inputs were never checked |
 | The fold takes items going forward and checks them coming back: an exit returns a relink to its predecessor, which a paid deposit applies in its one output and an exit passes on | a paid predecessor and its exiting successor in one batch needed two outputs for one NFT, and the run that pays `max_key` always pays the leaf before it |
 | The batch's account mint is exactly its exit burns | the `Batcher` account gate trusts the batcher, so a batch could mint account NFTs |
-| `Load` loads the digest and pays the Treasury share, and pays no leaf; `min_key`, `start_key` and `treasury_total` leave the state; the fold runs once from `min_key` to `max_key` | the share does not depend on the fold; one payment path and no wrap |
+| `Load` loads the digest and pays the Treasury share, and pays no leaf; `start_key` and `treasury_total` leave the state; the fold runs once from `min_key` to `max_key` | the share does not depend on the fold; one payment path and no wrap |
+| `cursor` is the last key paid (MIP); a later run reveals the cursor's leaf and pays the leaves after it; no lookahead | without `start_key` and the wrap, the lookahead's reason (a batch one leaf short of `start_key`) is gone; any run may end anywhere, `max_key` included |
 | A `Load` that pays the Treasury share spends no ICS input and pays exactly `treasury_total` | the ICS `logic_merge` claims the first ICS output, so a merge in the same tx could also pass the payment check |
 | The batcher's own output is the last output of a `Pay` (rule for the batcher pair, built with the fee schedule) | the fixed layout leaves the change at the end |
 

@@ -94,6 +94,7 @@ fn st(root: ByteArray, cursor: ByteArray, complete: Bool) -> BatcherState {
     pool_forever,
     epoch: 5,
     root,
+    min_key: k(1),
     max_key: k(7),
     cursor,
     complete,
@@ -106,6 +107,7 @@ const init_state =
     pool_forever,
     epoch: 4,
     root: zero32,
+    min_key: zero28,
     max_key: zero28,
     cursor: zero28,
     complete: True,
@@ -228,8 +230,8 @@ fn simple_load(state_out: BatcherState, digest: Digest) -> Bool {
   run(load_tx(init_state, state_out, digest, [], []), load_redeemer(digest))
 }
 
-/// `init_state` after the `Load` of `digest5`: the fold starts at `min_key`.
-const loaded5 = st(root7, k(1), False)
+/// `init_state` after the `Load` of `digest5`: no leaf paid yet.
+const loaded5 = st(root7, #"", False)
 
 // -- init ----------------------------------------------------------------------
 
@@ -374,15 +376,15 @@ test load_without_bridge_reference() fail {
 }
 
 test load_wrong_root_in_state_out() fail {
-  simple_load(st(zero32, k(1), False), digest5)
+  simple_load(st(zero32, #"", False), digest5)
 }
 
-test load_cursor_not_min_key() fail {
-  simple_load(st(root7, k(2), False), digest5)
+test load_cursor_not_cleared() fail {
+  simple_load(st(root7, k(1), False), digest5)
 }
 
 test load_marks_complete() fail {
-  simple_load(st(root7, k(1), True), digest5)
+  simple_load(st(root7, #"", True), digest5)
 }
 
 test load_with_deposit_input() fail {
@@ -414,7 +416,7 @@ test load_next_epoch_after_complete() {
   let digest = Digest { ..digest5, epoch: 6 }
   run(
     load_tx(
-      st(root7, k(6), True),
+      st(root7, k(7), True),
       BatcherState { ..loaded5, epoch: 6 },
       digest,
       [],
@@ -435,7 +437,7 @@ const empty_digest =
   }
 
 /// `init_state` after the `Load` of an empty epoch 5: still complete.
-const loaded_empty = BatcherState { ..init_state, epoch: 5 }
+const loaded_empty = BatcherState { ..init_state, epoch: 5, cursor: #"" }
 
 test load_empty_epoch_ok() {
   simple_load(loaded_empty, empty_digest)
@@ -447,37 +449,45 @@ test load_empty_epoch_marks_incomplete() fail {
 
 // -- split_run table ----------------------------------------------------------------
 
-/// A run from `s` revealing `l` leaves: the paid leaves and the next cursor, `None` once it pays max_key.
-fn split_expected(s: Int, l: Int) -> (List<RewardLeaf>, Option<ByteArray>) {
-  let end = s + l - 1
-  if end == 7 {
-    (parsed(leaves7, s, 7), None)
-  } else {
-    (parsed(leaves7, s, end - 1), Some(k(end)))
-  }
-}
-
-fn split_case(s: Int, l: Int) -> Bool {
-  let
-    paid,
-    next,
-  <- split_run(st(root7, k(s), False), parsed(leaves7, s, s + l - 1))
-  (paid, next) == split_expected(s, l)
+/// A run revealing `s..e` from the cursor `k(s)`, or from `min_key` when `s` is 0: it pays the leaves after the cursor, or all of them, and ends at `k(e)`.
+fn split_case(s: Int, e: Int) -> Bool {
+  let (state, from, first_paid) =
+    if s == 0 {
+      (loaded5, 1, 1)
+    } else {
+      (st(root7, k(s), False), s, s + 1)
+    }
+  let paid, last <- split_run(state, parsed(leaves7, from, e))
+  paid == parsed(leaves7, first_paid, e) && last == k(e)
 }
 
 test split_run_table() {
   list.all(
-    list.range(1, 7),
-    fn(s) { list.all(list.range(2, 8 - s), fn(l) { split_case(s, l) }) },
+    list.range(0, 6),
+    fn(s) {
+      list.all(
+        list.range(
+          if s == 0 {
+            1
+          } else {
+            s + 1
+          },
+          7,
+        ),
+        fn(e) { split_case(s, e) },
+      )
+    },
   )
 }
 
-test split_run_single_max_leaf() {
-  split_case(7, 1)
+test split_run_first_run_not_at_min_key() fail {
+  let paid, _ <- split_run(loaded5, parsed(leaves7, 2, 4))
+  paid == []
 }
 
-test split_run_single_leaf_without_lookahead() fail {
-  split_case(3, 1)
+test split_run_only_the_cursor() fail {
+  let paid, _ <- split_run(st(root7, k(3), False), parsed(leaves7, 3, 3))
+  paid == []
 }
 
 test split_run_head_not_cursor() fail {
@@ -488,38 +498,45 @@ test split_run_head_not_cursor() fail {
 // -- folds -----------------------------------------------------------------------
 
 test fold_first_batch() {
-  simple_pay(loaded5, st(root7, k(3), False), 1, 3, [1, 2])
+  simple_pay(loaded5, st(root7, k(2), False), 1, 2, [1, 2])
 }
 
 test fold_middle_batch() {
-  simple_pay(st(root7, k(3), False), st(root7, k(6), False), 3, 6, [3, 4, 5])
+  simple_pay(st(root7, k(2), False), st(root7, k(5), False), 2, 5, [3, 4, 5])
 }
 
 test fold_last_batch_completes() {
-  simple_pay(st(root7, k(6), False), st(root7, k(6), True), 6, 7, [6, 7])
+  simple_pay(st(root7, k(5), False), st(root7, k(7), True), 5, 7, [6, 7])
 }
 
 test fold_single_batch_completes() {
-  simple_pay(loaded5, st(root7, k(1), True), 1, 7, [1, 2, 3, 4, 5, 6, 7])
+  simple_pay(loaded5, st(root7, k(7), True), 1, 7, [1, 2, 3, 4, 5, 6, 7])
 }
 
-test fold_lookahead_is_never_max() {
-  // A run that reaches the leaf before max_key pays max_key too.
-  simple_pay(st(root7, k(5), False), st(root7, k(5), True), 5, 7, [5, 6, 7])
+test fold_run_ends_before_max_key() {
+  simple_pay(st(root7, k(4), False), st(root7, k(6), False), 4, 6, [5, 6])
+}
+
+test fold_max_key_alone_completes() {
+  simple_pay(st(root7, k(6), False), st(root7, k(7), True), 6, 7, [7])
 }
 
 // -- run failures ------------------------------------------------------------------
 
 test pay_on_complete_state() fail {
-  simple_pay(st(root7, k(1), True), st(root7, k(3), False), 1, 3, [1, 2])
+  simple_pay(st(root7, k(1), True), st(root7, k(3), False), 1, 3, [2, 3])
 }
 
 test pay_head_not_cursor() fail {
-  simple_pay(st(root7, k(6), False), st(root7, k(7), False), 5, 7, [5, 6])
+  simple_pay(st(root7, k(6), False), st(root7, k(7), True), 5, 7, [6, 7])
 }
 
-test pay_without_lookahead() fail {
-  simple_pay(st(root7, k(6), False), st(root7, k(6), False), 6, 6, [6])
+test pay_only_the_cursor() fail {
+  simple_pay(st(root7, k(6), False), st(root7, k(6), False), 6, 6, [])
+}
+
+test pay_first_run_not_at_min_key() fail {
+  simple_pay(loaded5, st(root7, k(3), False), 2, 3, [2, 3])
 }
 
 test pay_non_contiguous_proof() fail {
@@ -536,31 +553,31 @@ test pay_non_contiguous_proof() fail {
 }
 
 test pay_wrong_root_state_out() fail {
-  simple_pay(loaded5, st(zero32, k(3), False), 1, 3, [1, 2])
+  simple_pay(loaded5, st(zero32, k(2), False), 1, 2, [1, 2])
 }
 
 test pay_wrong_cursor_state_out() fail {
-  simple_pay(loaded5, st(root7, k(4), False), 1, 3, [1, 2])
+  simple_pay(loaded5, st(root7, k(3), False), 1, 2, [1, 2])
 }
 
 test pay_premature_complete() fail {
-  simple_pay(loaded5, st(root7, k(1), True), 1, 3, [1, 2])
+  simple_pay(loaded5, st(root7, k(2), True), 1, 2, [1, 2])
 }
 
 test pay_last_run_left_incomplete() fail {
-  simple_pay(st(root7, k(6), False), st(root7, k(6), False), 6, 7, [6, 7])
+  simple_pay(st(root7, k(5), False), st(root7, k(7), False), 5, 7, [6, 7])
 }
 
-test pay_completing_run_moves_cursor() fail {
-  simple_pay(st(root7, k(6), False), st(root7, k(1), True), 6, 7, [6, 7])
+test pay_completing_run_cursor_not_max_key() fail {
+  simple_pay(st(root7, k(5), False), st(root7, k(5), True), 5, 7, [6, 7])
 }
 
 // -- deposit and pool failures -----------------------------------------------------
 
 fn two_paid_tx(dep_outs: List<Output>, pool_out_night: Int) -> Transaction {
   batch_tx(
-    st(root7, k(6), False),
-    st(root7, k(6), True),
+    st(root7, k(5), False),
+    st(root7, k(7), True),
     pool_out_night,
     [dep_in(6), dep_in(7)],
     dep_outs,
@@ -569,7 +586,7 @@ fn two_paid_tx(dep_outs: List<Output>, pool_out_night: Int) -> Transaction {
 }
 
 fn two_paid(tx: Transaction) -> Bool {
-  run(tx, Pay { proof: proof(leaves7, 6, 7) })
+  run(tx, Pay { proof: proof(leaves7, 5, 7) })
 }
 
 const two_total = amount(6) + amount(7)
@@ -577,8 +594,8 @@ const two_total = amount(6) + amount(7)
 test pay_wrong_deposit_nft() fail {
   let tx =
     batch_tx(
-      st(root7, k(6), False),
-      st(root7, k(6), True),
+      st(root7, k(5), False),
+      st(root7, k(7), True),
       pool_night - two_total,
       [dep_in(6), dep_in(5)],
       [dep_out(6, 0), dep_out(7, 0)],
@@ -776,8 +793,8 @@ test pay_deposit_outputs_out_of_leaf_order() fail {
 test pay_deposits_in_any_ledger_order() {
   let tx =
     batch_tx(
-      st(root7, k(6), False),
-      st(root7, k(6), True),
+      st(root7, k(5), False),
+      st(root7, k(7), True),
       pool_night - two_total,
       [dep_in(7), dep_in(6)],
       [dep_out(6, 0), dep_out(7, 0)],
@@ -789,8 +806,8 @@ test pay_deposits_in_any_ledger_order() {
 test pay_deposit_missing() fail {
   let tx =
     batch_tx(
-      st(root7, k(6), False),
-      st(root7, k(6), True),
+      st(root7, k(5), False),
+      st(root7, k(7), True),
       pool_night - two_total,
       [dep_in(6)],
       [dep_out(6, 0), dep_out(7, 0)],
@@ -829,14 +846,14 @@ test pay_extra_head_input() fail {
 test pay_mints_account_nft() fail {
   let tx =
     batch_tx(
-      st(root7, k(6), False),
-      st(root7, k(6), True),
+      st(root7, k(5), False),
+      st(root7, k(7), True),
       pool_night - sum_amounts([6, 7]),
       list.map([6, 7], dep_in),
       list.map([6, 7], fn(i) { dep_out(i, 0) }),
       forged_deposit_nft,
     )
-  run(tx, Pay { proof: proof(leaves7, 6, 7) })
+  run(tx, Pay { proof: proof(leaves7, 5, 7) })
 }
 
 // -- skim ----------------------------------------------------------------------------
@@ -896,7 +913,7 @@ fn refund_out(ada: Int, night: Int) -> Output {
 const exit_burn =
   from_asset(account_policy, builtin.append_bytearray(#"00", k(3)), -1)
 
-/// Leaves [k3 (exit), k4]; inputs: state, pool, deposit k3, predecessor k2.
+/// Run [k2 (cursor), k3 (exit)]; inputs: state, pool, deposit k3, predecessor k2.
 fn exit_tx(
   pred_in: Output,
   pred_out: Output,
@@ -905,8 +922,8 @@ fn exit_tx(
   mint: Value,
 ) -> Transaction {
   batch_tx(
+    st(exit_root, k(2), False),
     st(exit_root, k(3), False),
-    st(exit_root, k(4), False),
     pool_night - amount(3),
     [dep, pred_in],
     [pred_out, refund_output],
@@ -915,7 +932,7 @@ fn exit_tx(
 }
 
 fn run_exit(tx: Transaction) -> Bool {
-  run(tx, Pay { proof: proof(exit_tree, 3, 4) })
+  run(tx, Pay { proof: proof(exit_tree, 2, 3) })
 }
 
 const exit_night_in = 777
@@ -1075,8 +1092,8 @@ test exit_leaf_paid_as_deposit() fail {
   // ack = 1 leaf with a continuing deposit output instead of a refund.
   let tx =
     batch_tx(
+      st(exit_root, k(2), False),
       st(exit_root, k(3), False),
-      st(exit_root, k(4), False),
       pool_night - amount(3),
       [committed_dep(3, exit_night_in)],
       [
@@ -1090,7 +1107,7 @@ test exit_leaf_paid_as_deposit() fail {
       ],
       zero,
     )
-  run(tx, Pay { proof: proof(exit_tree, 3, 4) })
+  run(tx, Pay { proof: proof(exit_tree, 2, 3) })
 }
 
 test exit_predecessor_is_head_ok() {
@@ -1098,21 +1115,21 @@ test exit_predecessor_is_head_ok() {
   let r = build_root(t)
   let tx =
     batch_tx(
+      st(r, #"", False),
       st(r, k(1), False),
-      st(r, k(2), False),
       pool_night - amount(1),
       [committed_dep(1, 0), mk_head_output(k(1))],
       [mk_head_output(k(2)), refund_out(dep_ada, amount(1))],
       from_asset(account_policy, builtin.append_bytearray(#"00", k(1)), -1),
     )
-  run(tx, Pay { proof: proof(t, 1, 2) })
+  run(tx, Pay { proof: proof(t, 1, 1) })
 }
 
-/// Run [k2, k3 (exit)], lookahead k4: k2 is paid and is k3's predecessor.
+/// Run [k1 (cursor), k2, k3 (exit)]: k2 is paid and is k3's predecessor.
 fn paid_pred_tx(k2_out: Output) -> Transaction {
   batch_tx(
-    st(exit_root, k(2), False),
-    st(exit_root, k(4), False),
+    st(exit_root, k(1), False),
+    st(exit_root, k(3), False),
     pool_night - amount(2) - amount(3),
     [dep_in(2), committed_dep(3, exit_night_in)],
     [k2_out, refund_out(dep_ada, exit_night_in + amount(3))],
@@ -1123,12 +1140,12 @@ fn paid_pred_tx(k2_out: Output) -> Transaction {
 test exit_after_paid_predecessor_ok() {
   run(
     paid_pred_tx(mk_deposit_output(k(2), dep_ada, amount(2), k(4), None)),
-    Pay { proof: proof(exit_tree, 2, 4) },
+    Pay { proof: proof(exit_tree, 1, 3) },
   )
 }
 
 test exit_after_paid_predecessor_not_relinked() fail {
-  run(paid_pred_tx(dep_out(2, 0)), Pay { proof: proof(exit_tree, 2, 4) })
+  run(paid_pred_tx(dep_out(2, 0)), Pay { proof: proof(exit_tree, 1, 3) })
 }
 
 test exit_at_max_key_after_paid_predecessor_ok() {
@@ -1136,8 +1153,8 @@ test exit_at_max_key_after_paid_predecessor_ok() {
   let r = build_root(t)
   let tx =
     batch_tx(
-      st(r, k(6), False),
-      st(r, k(6), True),
+      st(r, k(5), False),
+      st(r, k(7), True),
       pool_night - amount(6) - amount(7),
       [dep_in(6), committed_dep(7, 0)],
       [
@@ -1146,7 +1163,7 @@ test exit_at_max_key_after_paid_predecessor_ok() {
       ],
       from_asset(account_policy, builtin.append_bytearray(#"00", k(7)), -1),
     )
-  run(tx, Pay { proof: proof(t, 6, 7) })
+  run(tx, Pay { proof: proof(t, 5, 7) })
 }
 
 test two_exits_in_a_row_ok() {
@@ -1164,8 +1181,8 @@ test two_exits_in_a_row_ok() {
   let r = build_root(t)
   let tx =
     batch_tx(
-      st(r, k(3), False),
-      st(r, k(5), False),
+      st(r, k(2), False),
+      st(r, k(4), False),
       pool_night - amount(3) - amount(4),
       [
         mk_deposit_output(k(2), dep_ada, 0, k(3), None),
@@ -1180,7 +1197,7 @@ test two_exits_in_a_row_ok() {
       from_asset(account_policy, builtin.append_bytearray(#"00", k(3)), -1)
         |> add(account_policy, builtin.append_bytearray(#"00", k(4)), -1),
     )
-  run(tx, Pay { proof: proof(t, 3, 5) })
+  run(tx, Pay { proof: proof(t, 2, 4) })
 }
 
 // -- budget ------------------------------------------------------------------------------
@@ -1203,9 +1220,9 @@ fn big_next(i: Int) -> ByteArray {
   }
 }
 
-/// 30 paid leaves from a 64-leaf tree (depth 6), lookahead k31.
+/// 30 paid leaves k2..k31 from a 64-leaf tree (depth 6), after the cursor k1.
 fn budget_tx() -> Transaction {
-  let paid = list.range(1, 30)
+  let paid = list.range(2, 31)
   let tx =
     batch_tx(
       big_state(k(1), False),
@@ -1367,8 +1384,8 @@ test pay_takes_no_treasury() fail {
   // Only the load pays the Treasury share; a completing run takes exactly its leaves.
   let tx =
     batch_tx(
-      st(root7, k(6), False),
-      st(root7, k(6), True),
+      st(root7, k(5), False),
+      st(root7, k(7), True),
       pool_night - two_total - treasury,
       [dep_in(6), dep_in(7)],
       [dep_out(6, 0), dep_out(7, 0), ics_output(treasury)],

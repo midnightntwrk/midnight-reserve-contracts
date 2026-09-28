@@ -1,7 +1,7 @@
 /**
  * The batch planner (docs/rewards/spec.md §5.3): which leaves a Pay pays
- * and the lookahead it reveals, under the run rules of lib/rewards/batch.ak. The rewards end-to-end test runs its plans through
- * the real scripts.
+ * after the cursor it reveals, under the run rules of lib/rewards/batch.ak.
+ * The rewards end-to-end test runs its plans through the real scripts.
  */
 import { describe, expect, test } from "bun:test";
 import { concatBytes, hexToBytes } from "@noble/hashes/utils.js";
@@ -21,24 +21,24 @@ const seven = [1, 2, 3, 4, 5, 6, 7].map((i) =>
 );
 
 describe("planBatch", () => {
-  test("a run from min_key stops at the limit and reveals the next leaf", () => {
-    expect(planBatch(seven, 0, 3)).toEqual({
+  test("an epoch's first run pays from the first leaf up to the limit", () => {
+    expect(planBatch(seven, Option.none(), 3)).toEqual({
+      cursor: Option.none(),
       paid: [0, 1, 2],
-      lookahead: Option.some(3),
     });
   });
 
-  test("a run that reaches max_key pays it and reveals no lookahead", () => {
-    expect(planBatch(seven, 3, 5)).toEqual({
-      paid: [3, 4, 5, 6],
-      lookahead: Option.none(),
+  test("a later run reveals the cursor and pays the leaves after it", () => {
+    expect(planBatch(seven, Option.some(2), 3)).toEqual({
+      cursor: Option.some(2),
+      paid: [3, 4, 5],
     });
   });
 
-  test("max_key is never a lookahead: the leaf before it pays it too, past the limit", () => {
-    expect(planBatch(seven, 5, 1)).toEqual({
+  test("a run stops at max_key", () => {
+    expect(planBatch(seven, Option.some(4), 5)).toEqual({
+      cursor: Option.some(4),
       paid: [5, 6],
-      lookahead: Option.none(),
     });
   });
 });
