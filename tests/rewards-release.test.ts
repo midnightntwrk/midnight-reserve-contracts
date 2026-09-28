@@ -9,6 +9,7 @@ import { describe, expect, test } from "bun:test";
 import {
   addressFromValidator,
   AssetId,
+  type Hash32ByteBase16,
   NetworkId,
   PaymentAddress,
   PlutusData,
@@ -258,6 +259,21 @@ describe("rewards-release in the emulator", async () => {
       (t) => t.forever.Script,
     ),
   );
+  const donate = (script: typeof poolForever) =>
+    emulator.addUtxo(
+      new TransactionUnspentOutput(
+        new TransactionInput(TransactionId(randomHash(32)), 0n),
+        TransactionOutput.fromCore({
+          address: PaymentAddress(
+            addressFromValidator(networkId, script).toBech32(),
+          ),
+          value: { coins: 2_000_000n },
+          datumHash: randomHash(32) as Hash32ByteBase16,
+        }),
+      ),
+    );
+  donate(reserve.forever.Script);
+  donate(poolForever);
   const nightAt = (script: typeof poolForever) =>
     emulator
       .utxos()
@@ -271,7 +287,7 @@ describe("rewards-release in the emulator", async () => {
         0n,
       );
 
-  test("releases the two elapsed intervals into the pool and advances the reserve's time", async () => {
+  test("releases the two elapsed intervals into the pool and advances the reserve's time, past donated datum-hash UTxOs", async () => {
     const tx = await runTest(layer, releaseTx("emulator"));
     const signed = await blaze.signTransaction(tx);
     emulator.awaitTransactionConfirmation(

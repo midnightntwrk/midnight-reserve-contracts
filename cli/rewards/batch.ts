@@ -127,6 +127,18 @@ const UNIT = PlutusData.fromCore({ constructor: 0n, fields: { items: [] } });
 const nightOf = (utxo: TransactionUnspentOutput, night: AssetId) =>
   utxo.output().amount().multiasset()?.get(night) ?? 0n;
 
+/** A pool or reserve value UTxO a builder can spend: no datum hash, no reference script, and only ADA and NIGHT. */
+export const plainNight = (utxo: TransactionUnspentOutput, night: AssetId) => {
+  const output = utxo.output();
+  return (
+    output.datum()?.asDataHash() === undefined &&
+    output.scriptRef() === undefined &&
+    [...(output.amount().multiasset()?.keys() ?? [])].every(
+      (id) => id === night,
+    )
+  );
+};
+
 const scriptAddress = (script: Script, networkId: NetworkId) =>
   PaymentAddress(addressFromValidator(networkId, script).toBech32());
 
