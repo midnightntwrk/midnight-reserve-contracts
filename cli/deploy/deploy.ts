@@ -101,6 +101,8 @@ export const DEPLOY_COMPONENTS = [
   "rewards-batcher",
   "virtual-account-stake",
   "virtual-account",
+  "rewards-batcher-script",
+  "rewards-scripts",
 ] as const;
 
 export type DeployComponent = (typeof DEPLOY_COMPONENTS)[number];
@@ -138,6 +140,8 @@ export const DEPLOY_COMPONENT_VALIDATORS: Record<
   "rewards-batcher": ["rewards_batcher"],
   "virtual-account-stake": [],
   "virtual-account": ["virtual_account"],
+  "rewards-batcher-script": [],
+  "rewards-scripts": [],
 };
 
 /** A deploy threshold: its option, what it governs, its env variable and the fraction when both are unset. */
@@ -464,6 +468,24 @@ const virtualAccount: StepBody = {
     ),
 };
 
+/** Reference scripts at the deployer address, where the deployer's wallet keeps them out of coin selection; no one-shot, and no validator created. */
+const referenceScripts = (
+  instances: readonly OptionalInstance[],
+): StepBody => ({
+  validators: Effect.succeed([]),
+  installs: Effect.succeed([]),
+  oneShots: () => [],
+  build: (ctx) =>
+    Effect.map(Effect.forEach(instances, rewardsInstance), (scripts) =>
+      buildReferenceScriptsTx(
+        ctx.blaze,
+        scripts.map((s) => s.Script),
+        ctx.deployer,
+        ctx.params,
+      ),
+    ),
+});
+
 /** Each component's deployment transaction: its name in the deployment file, the validators it creates and how it is built. */
 export const DEPLOY_STEPS: Record<
   DeployComponent,
@@ -628,6 +650,18 @@ export const DEPLOY_STEPS: Record<
   "virtual-account": {
     name: "virtual-account-deployment",
     ...virtualAccount,
+  },
+  "rewards-batcher-script": {
+    name: "rewards-batcher-script-deployment",
+    ...referenceScripts(["rewardsBatcher"]),
+  },
+  "rewards-scripts": {
+    name: "rewards-scripts-deployment",
+    ...referenceScripts([
+      "virtualAccount",
+      "rewardsPoolForever",
+      "rewardsPoolLogic",
+    ]),
   },
 };
 

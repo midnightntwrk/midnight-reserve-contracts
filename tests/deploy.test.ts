@@ -391,7 +391,11 @@ describe("the deploy steps", () => {
         if (component === "virtual-account")
           registerRewardAccount(emulator, await rewardsHash("virtualAccount"));
         // The verbose-trace batcher is 18 KB; the silent deploy build is 10 KB.
-        if (component === "rewards-batcher") emulator.params.maxTxSize = 32_768;
+        if (
+          component === "rewards-batcher" ||
+          component === "rewards-batcher-script"
+        )
+          emulator.params.maxTxSize = 32_768;
         const builder = await stepBuilder(
           component,
           emulator,
@@ -405,33 +409,47 @@ describe("the deploy steps", () => {
     },
   );
 
-  test("the committee-bridge-scripts step locks the forever, logic and pool scripts as reference scripts at the deployer address", async () => {
-    await asFunded(async (emulator, blaze, addr) => {
-      const builder = await stepBuilder(
-        "committee-bridge-scripts",
-        emulator,
-        blaze,
-        addr,
-      );
-      const references = Transaction.fromCbor(TxCBOR(builder.toCbor()))
-        .body()
-        .outputs()
-        .flatMap((output) => {
-          const script = output.scriptRef();
-          return script === undefined
-            ? []
-            : [[output.address().toBech32(), script.hash()]];
-        });
-      expect(references).toEqual(
-        [
-          contracts.committeeBridgeForever,
-          contracts.committeeBridgeLogic,
-          contracts.committeeBridgePool,
-        ].map((c) => [addr.toBech32(), c?.Script.hash()]),
-      );
-      await emulator.expectValidTransaction(blaze, builder);
-    });
-  });
+  test.each([
+    [
+      "committee-bridge-scripts",
+      [
+        contracts.committeeBridgeForever,
+        contracts.committeeBridgeLogic,
+        contracts.committeeBridgePool,
+      ],
+    ],
+    ["rewards-batcher-script", [contracts.rewardsBatcher]],
+    [
+      "rewards-scripts",
+      [
+        contracts.virtualAccount,
+        contracts.rewardsPoolForever,
+        contracts.rewardsPoolLogic,
+      ],
+    ],
+  ] as const)(
+    "the %s step locks its scripts as reference scripts at the deployer address",
+    async (component, scripts) => {
+      await asFunded(async (emulator, blaze, addr) => {
+        // The verbose-trace batcher is 18 KB; the silent deploy build is 10 KB.
+        emulator.params.maxTxSize = 32_768;
+        const builder = await stepBuilder(component, emulator, blaze, addr);
+        const references = Transaction.fromCbor(TxCBOR(builder.toCbor()))
+          .body()
+          .outputs()
+          .flatMap((output) => {
+            const script = output.scriptRef();
+            return script === undefined
+              ? []
+              : [[output.address().toBech32(), script.hash()]];
+          });
+        expect(references).toEqual(
+          scripts.map((c) => [addr.toBech32(), c?.Script.hash()]),
+        );
+        await emulator.expectValidTransaction(blaze, builder);
+      });
+    },
+  );
 
   test("the committee-bridge-threshold datum is a BeefyThreshold: the bridge fraction, then the fee cap", async () => {
     await asFunded(async (emulator, blaze, addr) => {
