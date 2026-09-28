@@ -15,7 +15,7 @@ import {
   type NetworkId,
   PlutusData,
   type Script,
-  type Slot,
+  Slot,
   TransactionOutput,
   type TransactionUnspentOutput,
   PaymentAddress,
@@ -46,7 +46,7 @@ import { type TxFileInput, txFilePath } from "../input";
 import { Output } from "../output";
 
 /** How far before now the validity starts. */
-const VALIDITY_MARGIN_MS = 60_000n;
+const VALIDITY_MARGIN_MS = 60_000;
 
 /** The most intervals one release covers; reserve_logic_v2 steps the ceiling once per interval, and a backlog catches up over several releases. */
 export const MAX_RELEASE_INTERVALS = 240n;
@@ -289,10 +289,12 @@ export const releaseTx = (network: Environment) =>
     const slots = yield* slotConfig;
     const provider = yield* Provider;
     const blaze = yield* provider.blaze;
-    const wall = BigInt(yield* Clock.currentTimeMillis) - VALIDITY_MARGIN_MS;
-    const validFrom = blaze.provider.unixToSlot(wall);
+    const wall = Number(yield* Clock.currentTimeMillis) - VALIDITY_MARGIN_MS;
+    const slot =
+      slots.zeroSlot + Math.floor((wall - slots.zeroTime) / slots.slotLength);
+    const validFrom = Slot(slot);
     const now = BigInt(
-      slots.zeroTime + (Number(validFrom) - slots.zeroSlot) * slots.slotLength,
+      slots.zeroTime + (slot - slots.zeroSlot) * slots.slotLength,
     );
     const nftDatum = nftUtxo.output().datum()?.asInlineData();
     const last = yield* Either.mapLeft(
