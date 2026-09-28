@@ -6,10 +6,11 @@
  * leaves, where leaf 10 commits a digest block with a three-leaf epoch and
  * leaf 12 an empty epoch, each block's extrinsics trie holding its 125-byte
  * submit_rewards_digest; three accounts registered through
- * buildRegisterTx; the pool funded with test NIGHT. The epoch loads at its
- * first leaf and pays the whole run in one batch, whatever order the
- * ledger gives the deposits; that batch completes the fold and pays the
- * Treasury share to the ICS, and the empty epoch's load pays its share.
+ * buildRegisterTx; the pool funded with test NIGHT. The Load of the epoch
+ * pays its Treasury share to the ICS and sets the cursor to min_key; the
+ * Pay then pays the whole run in one batch, whatever order the ledger
+ * gives the deposits, and completes the fold. The empty epoch's Load pays
+ * its share too.
  * The digest proofs come from digestProofOf, the pump's code path.
  */
 import { describe, expect, test } from "bun:test";
@@ -473,7 +474,7 @@ describe("the rewards batch path in the emulator", () => {
     expect(nightAt(scripts.pool.forever.Script)).toBe(1_000_000n);
   });
 
-  /** Land one batch of the fold and return its plan. */
+  /** Land a Load (given `load`) or the next Pay of the fold; returns the Pay's plan. */
   const batch = async (
     name: string,
     load: Option.Option<{ proof: Contracts.DigestProof }>,
@@ -484,17 +485,16 @@ describe("the rewards batch path in the emulator", () => {
     const chain = chainOf();
     const { state } = stateOf();
     const loading = Option.isSome(load);
-    const start = loading
-      ? 0
-      : leaves.findIndex((l) => l.key === state.start_key);
-    const from = loading
-      ? start
-      : leaves.findIndex((l) => l.key === state.cursor);
-    const plan =
-      leaves.length === 0
-        ? Option.none<BatchPlan>()
-        : Option.some(planBatch(leaves, from, start, limit));
-    const loaded: Contracts.BatcherState = loading
+    const plan = loading
+      ? Option.none<BatchPlan>()
+      : Option.some(
+          planBatch(
+            leaves,
+            leaves.findIndex((l) => l.key === state.cursor),
+            limit,
+          ),
+        );
+    const stateOut: Contracts.BatcherState = loading
       ? {
           ...state,
           epoch: state.epoch + 1n,
@@ -502,24 +502,14 @@ describe("the rewards batch path in the emulator", () => {
             leaves.length === 0
               ? "00".repeat(32)
               : bytesToHex(merkleRoot(leaves.map((l) => keccak(l.bytes)))),
-          min_key: leaves[0]?.key ?? "00".repeat(28),
           max_key: leaves[leaves.length - 1]?.key ?? "00".repeat(28),
-          treasury_total: treasuryTotal,
+          cursor: leaves[0]?.key ?? "00".repeat(28),
+          complete: leaves.length === 0,
         }
-      : state;
-    const stateOut: Contracts.BatcherState = Option.match(plan, {
-      onNone: () => loaded,
-      onSome: (p) => ({
-        ...loaded,
-        ...(loading ? { start_key: leaves[start].key } : {}),
-        cursor: p.cursor,
-        complete: p.complete,
-      }),
-    });
-    const completes = Option.match(plan, {
-      onNone: () => true,
-      onSome: (p) => p.complete,
-    });
+      : Option.match(Option.getOrThrow(plan).lookahead, {
+          onNone: () => ({ ...state, complete: true }),
+          onSome: (i) => ({ ...state, cursor: leaves[i].key }),
+        });
     const b: Batch = {
       load: Option.map(load, ({ proof }) => ({
         digestProof: proof,
@@ -535,14 +525,13 @@ describe("the rewards batch path in the emulator", () => {
         onSome: (p) => p.paid.map((i) => depositOf(leaves[i].key)),
       }),
       stateOut,
-      treasury: completes ? treasuryTotal : 0n,
+      treasury: loading ? treasuryTotal : 0n,
     };
     const builder = buildBatchTx(
       blaze,
       {
         ...chain,
-        poolUtxos:
-          b.treasury === 0n && leaves.length === 0 ? [] : chain.poolUtxos,
+        poolUtxos: loading && treasuryTotal === 0n ? [] : chain.poolUtxos,
       },
       b,
       networkId,
@@ -551,7 +540,7 @@ describe("the rewards batch path in the emulator", () => {
     return plan;
   };
 
-  test("loads epoch 5 at its first leaf, pays the run in one batch in any deposit order, and pays the Treasury share to the ICS", async () => {
+  test("loads epoch 5 and pays its Treasury share to the ICS, then pays the run from min_key in any deposit order", async () => {
     const icsBefore = nightAt(contracts.icsForever.Script);
     await batch(
       "load epoch 5",
@@ -560,6 +549,8 @@ describe("the rewards batch path in the emulator", () => {
       TREASURY_5,
       2,
     );
+    expect(stateOf().state.cursor).toBe(epoch5[0].key);
+    expect(nightAt(contracts.icsForever.Script) - icsBefore).toBe(TREASURY_5);
     for (let i = 1; !stateOf().state.complete; i++) {
       expect(i).toBeLessThan(5);
       await batch(`pay ${i}`, Option.none(), epoch5, TREASURY_5, 2);
@@ -568,7 +559,6 @@ describe("the rewards batch path in the emulator", () => {
     expect(nightAt(scripts.pool.forever.Script)).toBe(
       1_000_000n - total - TREASURY_5,
     );
-    expect(nightAt(contracts.icsForever.Script) - icsBefore).toBe(TREASURY_5);
     for (const leaf of epoch5)
       expect(
         depositOf(leaf.key).output().amount().multiasset()?.get(night),

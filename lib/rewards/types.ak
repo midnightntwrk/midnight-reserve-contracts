@@ -51,26 +51,22 @@ pub type ActionKind {
 }
 
 /// Inline datum on the batcher state NFT UTXO. `cursor` is the next key to
-/// pay; `start_key` is the first key paid in the epoch. Both are read only
-/// while `complete == False`. `treasury_total` is the loaded epoch's
-/// Treasury share, paid to the ICS by the batch that completes the fold.
+/// pay, the digest's `min_key` after the load; it is read only while
+/// `complete == False`.
 pub type BatcherState {
   account_policy: PolicyId,
   pool_forever: ScriptHash,
   epoch: Int,
   root: ByteArray,
-  min_key: ByteArray,
   max_key: ByteArray,
-  treasury_total: Int,
-  start_key: ByteArray,
   cursor: ByteArray,
   complete: Bool,
 }
 
-/// `LoadAndPay` opens an epoch with its first batch; `Pay` continues it.
+/// `Load` takes the next epoch's digest and pays its Treasury share; `Pay` pays one run of its leaves.
 pub type BatcherRedeemer {
   Pay { proof: ProofNodeRec }
-  LoadAndPay { digest_proof: DigestProof, proof: ProofNodeRec }
+  Load { digest_proof: DigestProof }
 }
 
 /// MMR proof of a BEEFY leaf, the SCALE header it commits to, and the

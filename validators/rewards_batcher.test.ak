@@ -17,9 +17,7 @@ use rewards/test_fixtures.{
   mk_head_output, mk_input, mk_outref, mk_pool_output, mk_state_output,
   pool_forever, ref_input_bridge, withdrawal_of,
 }
-use rewards/types.{
-  BatcherRedeemer, BatcherState, Digest, LoadAndPay, Pay, tail_key,
-}
+use rewards/types.{BatcherRedeemer, BatcherState, Digest, Load, Pay, tail_key}
 use rewards_batcher
 
 // -- fixtures ----------------------------------------------------------------
@@ -90,21 +88,13 @@ fn proof(ls: List<ByteArray>, from: Int, to: Int) {
   build_proof(ls, from - 1, to - 1)
 }
 
-fn st(
-  root: ByteArray,
-  start: ByteArray,
-  cursor: ByteArray,
-  complete: Bool,
-) -> BatcherState {
+fn st(root: ByteArray, cursor: ByteArray, complete: Bool) -> BatcherState {
   BatcherState {
     account_policy,
     pool_forever,
     epoch: 5,
     root,
-    min_key: k(1),
     max_key: k(7),
-    treasury_total: 0,
-    start_key: start,
     cursor,
     complete,
   }
@@ -116,10 +106,7 @@ const init_state =
     pool_forever,
     epoch: 4,
     root: zero32,
-    min_key: zero28,
     max_key: zero28,
-    treasury_total: 0,
-    start_key: zero28,
     cursor: zero28,
     complete: True,
   }
@@ -209,28 +196,40 @@ fn with_bridge(tx: Transaction, mmr_root: ByteArray) -> Transaction {
   Transaction { ..tx, reference_inputs: [ref_input_bridge(mmr_root)] }
 }
 
-/// `LoadAndPay` of `digest` revealing `from..to` and paying `paid` with no skim.
-fn simple_load(
+/// A `Load` of `digest` from `state_in`: inputs the state and `extra_in`, outputs the state and `rest`; the bridge holds the digest's MMR root.
+fn load_tx(
   state_in: BatcherState,
   state_out: BatcherState,
   digest: Digest,
-  from: Int,
-  to: Int,
-  paid: List<Int>,
-) -> Bool {
-  let (mmr_root, dp) = digest_proof(digest)
-  let tx =
-    batch_tx(
-      state_in,
-      state_out,
-      pool_night - sum_amounts(paid),
-      list.map(paid, dep_in),
-      list.map(paid, fn(i) { dep_out(i, 0) }),
-      zero,
-    )
-      |> with_bridge(mmr_root)
-  run(tx, LoadAndPay { digest_proof: dp, proof: proof(leaves7, from, to) })
+  extra_in: List<Output>,
+  rest: List<Output>,
+) -> Transaction {
+  let (mmr_root, _) = digest_proof(digest)
+  Transaction {
+    ..placeholder,
+    inputs: [
+      mk_input(mk_outref(1), mk_state_output(state_in)),
+      ..list.indexed_map(extra_in, fn(i, o) { mk_input(mk_outref(10 + i), o) })
+    ],
+    outputs: [mk_state_output(state_out), ..rest],
+    fee,
+    withdrawals: [withdrawal_of(batcher_hash)],
+  }
+    |> with_bridge(mmr_root)
 }
+
+fn load_redeemer(digest: Digest) -> BatcherRedeemer {
+  let (_, dp) = digest_proof(digest)
+  Load { digest_proof: dp }
+}
+
+/// A `Load` of `digest` from `init_state` with no other input or output.
+fn simple_load(state_out: BatcherState, digest: Digest) -> Bool {
+  run(load_tx(init_state, state_out, digest, [], []), load_redeemer(digest))
+}
+
+/// `init_state` after the `Load` of `digest5`: the fold starts at `min_key`.
+const loaded5 = st(root7, k(1), False)
 
 // -- init ----------------------------------------------------------------------
 
@@ -326,70 +325,103 @@ test publish_registration_ok() {
 
 // -- load ------------------------------------------------------------------------
 
-test load_first_batch_ok() {
-  simple_load(init_state, st(root7, k(4), k(6), False), digest5, 4, 6, [4, 5])
+test load_ok() {
+  simple_load(loaded5, digest5)
 }
 
 test load_on_incomplete_state() fail {
-  let state_in = BatcherState { ..init_state, complete: False }
-  simple_load(state_in, st(root7, k(4), k(6), False), digest5, 4, 6, [4, 5])
+  run(
+    load_tx(
+      BatcherState { ..init_state, complete: False },
+      loaded5,
+      digest5,
+      [],
+      [],
+    ),
+    load_redeemer(digest5),
+  )
 }
 
 test load_epoch_skip() fail {
-  let digest = Digest { ..digest5, epoch: 6 }
   simple_load(
-    init_state,
-    BatcherState { ..st(root7, k(4), k(6), False), epoch: 6 },
-    digest,
-    4,
-    6,
-    [4, 5],
+    BatcherState { ..loaded5, epoch: 6 },
+    Digest { ..digest5, epoch: 6 },
   )
 }
 
 test load_same_epoch() fail {
-  let digest = Digest { ..digest5, epoch: 4 }
   simple_load(
-    init_state,
-    BatcherState { ..st(root7, k(4), k(6), False), epoch: 4 },
-    digest,
-    4,
-    6,
-    [4, 5],
+    BatcherState { ..loaded5, epoch: 4 },
+    Digest { ..digest5, epoch: 4 },
   )
 }
 
 test load_bad_digest_proof() fail {
-  let (_, dp) = digest_proof(digest5)
-  let tx =
-    batch_tx(
-      init_state,
-      st(root7, k(4), k(6), False),
-      pool_night - sum_amounts([4, 5]),
-      [dep_in(4), dep_in(5)],
-      [dep_out(4, 0), dep_out(5, 0)],
-      zero,
-    )
-      |> with_bridge(zero32)
-  run(tx, LoadAndPay { digest_proof: dp, proof: proof(leaves7, 4, 6) })
+  run(
+    load_tx(init_state, loaded5, digest5, [], []) |> with_bridge(zero32),
+    load_redeemer(digest5),
+  )
 }
 
 test load_without_bridge_reference() fail {
-  let (_, dp) = digest_proof(digest5)
-  let tx =
-    batch_tx(
-      init_state,
-      st(root7, k(4), k(6), False),
-      pool_night - sum_amounts([4, 5]),
-      [dep_in(4), dep_in(5)],
-      [dep_out(4, 0), dep_out(5, 0)],
-      zero,
-    )
-  run(tx, LoadAndPay { digest_proof: dp, proof: proof(leaves7, 4, 6) })
+  run(
+    Transaction {
+      ..load_tx(init_state, loaded5, digest5, [], []),
+      reference_inputs: [],
+    },
+    load_redeemer(digest5),
+  )
 }
 
 test load_wrong_root_in_state_out() fail {
-  simple_load(init_state, st(zero32, k(4), k(6), False), digest5, 4, 6, [4, 5])
+  simple_load(st(zero32, k(1), False), digest5)
+}
+
+test load_cursor_not_min_key() fail {
+  simple_load(st(root7, k(2), False), digest5)
+}
+
+test load_marks_complete() fail {
+  simple_load(st(root7, k(1), True), digest5)
+}
+
+test load_with_deposit_input() fail {
+  run(
+    load_tx(init_state, loaded5, digest5, [dep_in(4)], [dep_in(4)]),
+    load_redeemer(digest5),
+  )
+}
+
+test load_mints_account_nft() fail {
+  run(
+    Transaction {
+      ..load_tx(init_state, loaded5, digest5, [], []),
+      mint: forged_deposit_nft,
+    },
+    load_redeemer(digest5),
+  )
+}
+
+test load_with_pool_input_without_treasury() fail {
+  let pool = mk_pool_output(pool_ada, pool_night)
+  run(
+    load_tx(init_state, loaded5, digest5, [pool], [pool]),
+    load_redeemer(digest5),
+  )
+}
+
+test load_next_epoch_after_complete() {
+  let digest = Digest { ..digest5, epoch: 6 }
+  run(
+    load_tx(
+      st(root7, k(6), True),
+      BatcherState { ..loaded5, epoch: 6 },
+      digest,
+      [],
+      [],
+    ),
+    load_redeemer(digest),
+  )
 }
 
 const empty_digest =
@@ -402,103 +434,35 @@ const empty_digest =
     treasury_total: 0,
   }
 
-fn empty_tx(state_out: BatcherState) -> Transaction {
-  let (mmr_root, _) = digest_proof(empty_digest)
-  Transaction {
-    ..placeholder,
-    inputs: [mk_input(mk_outref(1), mk_state_output(init_state))],
-    outputs: [mk_state_output(state_out)],
-    fee,
-    withdrawals: [withdrawal_of(batcher_hash)],
-  }
-    |> with_bridge(mmr_root)
-}
-
-fn empty_redeemer() -> BatcherRedeemer {
-  let (_, dp) = digest_proof(empty_digest)
-  LoadAndPay { digest_proof: dp, proof: [] }
-}
+/// `init_state` after the `Load` of an empty epoch 5: still complete.
+const loaded_empty = BatcherState { ..init_state, epoch: 5 }
 
 test load_empty_epoch_ok() {
-  run(empty_tx(BatcherState { ..init_state, epoch: 5 }), empty_redeemer())
+  simple_load(loaded_empty, empty_digest)
 }
 
 test load_empty_epoch_marks_incomplete() fail {
-  run(
-    empty_tx(BatcherState { ..init_state, epoch: 5, complete: False }),
-    empty_redeemer(),
-  )
-}
-
-test load_empty_epoch_with_proof() fail {
-  let (_, dp) = digest_proof(empty_digest)
-  run(
-    empty_tx(BatcherState { ..init_state, epoch: 5 }),
-    LoadAndPay { digest_proof: dp, proof: proof(leaves7, 4, 6) },
-  )
-}
-
-test load_empty_epoch_with_deposit_input() fail {
-  let tx = empty_tx(BatcherState { ..init_state, epoch: 5 })
-  run(
-    Transaction {
-      ..tx,
-      inputs: [mk_input(mk_outref(10), dep_in(4)), ..tx.inputs],
-      outputs: [dep_in(4), ..tx.outputs],
-    },
-    empty_redeemer(),
-  )
-}
-
-test load_empty_epoch_with_pool_input() fail {
-  let tx = empty_tx(BatcherState { ..init_state, epoch: 5 })
-  run(
-    Transaction {
-      ..tx,
-      inputs: [
-        mk_input(mk_outref(2), mk_pool_output(pool_ada, pool_night)),
-        ..tx.inputs
-      ],
-      outputs: [mk_pool_output(pool_ada, pool_night), ..tx.outputs],
-    },
-    empty_redeemer(),
-  )
-}
-
-test load_empty_epoch_mints_account_nft() fail {
-  let tx = empty_tx(BatcherState { ..init_state, epoch: 5 })
-  run(Transaction { ..tx, mint: forged_deposit_nft }, empty_redeemer())
-}
-
-test load_next_epoch_after_complete() {
-  let state_in = st(root7, k(4), k(4), True)
-  let digest = Digest { ..digest5, epoch: 6 }
-  simple_load(
-    state_in,
-    BatcherState { ..st(root7, k(1), k(1), True), epoch: 6 },
-    digest,
-    1,
-    7,
-    [1, 2, 3, 4, 5, 6, 7],
-  )
+  simple_load(BatcherState { ..loaded_empty, complete: False }, empty_digest)
 }
 
 // -- split_run table ----------------------------------------------------------------
 
-/// First batch from `s`, revealing `l` leaves: paid and next cursor per the run rule.
-fn split_expected(s: Int, l: Int) -> (List<RewardLeaf>, ByteArray) {
+/// A run from `s` revealing `l` leaves: the paid leaves and the next cursor, `None` once it pays max_key.
+fn split_expected(s: Int, l: Int) -> (List<RewardLeaf>, Option<ByteArray>) {
   let end = s + l - 1
   if end == 7 {
-    (parsed(leaves7, s, 7), k(1))
+    (parsed(leaves7, s, 7), None)
   } else {
-    (parsed(leaves7, s, end - 1), k(end))
+    (parsed(leaves7, s, end - 1), Some(k(end)))
   }
 }
 
 fn split_case(s: Int, l: Int) -> Bool {
-  let state = st(root7, k(s), k(s), False)
-  let paid, cursor <- split_run(state, parsed(leaves7, s, s + l - 1))
-  (paid, cursor) == split_expected(s, l)
+  let
+    paid,
+    next,
+  <- split_run(st(root7, k(s), False), parsed(leaves7, s, s + l - 1))
+  (paid, next) == split_expected(s, l)
 }
 
 test split_run_table() {
@@ -516,155 +480,53 @@ test split_run_single_leaf_without_lookahead() fail {
   split_case(3, 1)
 }
 
-test split_run_boundary_after_wrap() {
-  let state = st(root7, k(4), k(1), False)
-  let paid, cursor <- split_run(state, parsed(leaves7, 1, 4))
-  (paid, cursor) == (parsed(leaves7, 1, 3), k(4))
-}
-
-test split_run_short_of_boundary() {
-  let state = st(root7, k(4), k(1), False)
-  let paid, cursor <- split_run(state, parsed(leaves7, 1, 3))
-  (paid, cursor) == (parsed(leaves7, 1, 2), k(3))
-}
-
-test split_run_crossing_start() fail {
-  let state = st(root7, k(4), k(1), False)
-  let paid, _ <- split_run(state, parsed(leaves7, 1, 5))
-  paid == []
-}
-
 test split_run_head_not_cursor() fail {
-  let state = st(root7, k(4), k(6), False)
-  let paid, _ <- split_run(state, parsed(leaves7, 5, 7))
+  let paid, _ <- split_run(st(root7, k(6), False), parsed(leaves7, 5, 7))
   paid == []
 }
 
 // -- folds -----------------------------------------------------------------------
 
-test fold_k4_batch2() {
-  simple_pay(
-    st(root7, k(4), k(6), False),
-    st(root7, k(4), k(1), False),
-    6,
-    7,
-    [6, 7],
-  )
+test fold_first_batch() {
+  simple_pay(loaded5, st(root7, k(3), False), 1, 3, [1, 2])
 }
 
-test fold_k4_batch3() {
-  simple_pay(
-    st(root7, k(4), k(1), False),
-    st(root7, k(4), k(2), False),
-    1,
-    2,
-    [1],
-  )
+test fold_middle_batch() {
+  simple_pay(st(root7, k(3), False), st(root7, k(6), False), 3, 6, [3, 4, 5])
 }
 
-test fold_k4_batch4_completes() {
-  simple_pay(
-    st(root7, k(4), k(2), False),
-    st(root7, k(4), k(4), True),
-    2,
-    4,
-    [2, 3],
-  )
+test fold_last_batch_completes() {
+  simple_pay(st(root7, k(6), False), st(root7, k(6), True), 6, 7, [6, 7])
 }
 
-test fold_k1_single_batch_completes() {
-  simple_load(
-    init_state,
-    st(root7, k(1), k(1), True),
-    digest5,
-    1,
-    7,
-    [1, 2, 3, 4, 5, 6, 7],
-  )
+test fold_single_batch_completes() {
+  simple_pay(loaded5, st(root7, k(1), True), 1, 7, [1, 2, 3, 4, 5, 6, 7])
 }
 
-test fold_k7_first_batch_wraps() {
-  simple_load(init_state, st(root7, k(7), k(1), False), digest5, 7, 7, [7])
-}
-
-test fold_k7_second_batch_completes() {
-  simple_pay(
-    st(root7, k(7), k(1), False),
-    st(root7, k(7), k(7), True),
-    1,
-    7,
-    [1, 2, 3, 4, 5, 6],
-  )
-}
-
-test fold_k6_lookahead_is_max() {
-  // A run ending at max_key pays it; the lookahead is never max_key.
-  simple_pay(
-    st(root7, k(4), k(5), False),
-    st(root7, k(4), k(1), False),
-    5,
-    7,
-    [5, 6, 7],
-  )
+test fold_lookahead_is_never_max() {
+  // A run that reaches the leaf before max_key pays max_key too.
+  simple_pay(st(root7, k(5), False), st(root7, k(5), True), 5, 7, [5, 6, 7])
 }
 
 // -- run failures ------------------------------------------------------------------
 
 test pay_on_complete_state() fail {
-  simple_pay(
-    st(root7, k(4), k(4), True),
-    st(root7, k(4), k(6), False),
-    4,
-    6,
-    [4, 5],
-  )
+  simple_pay(st(root7, k(1), True), st(root7, k(3), False), 1, 3, [1, 2])
 }
 
 test pay_head_not_cursor() fail {
-  simple_pay(
-    st(root7, k(4), k(6), False),
-    st(root7, k(4), k(7), False),
-    5,
-    7,
-    [5, 6],
-  )
-}
-
-test pay_wrap_before_max() fail {
-  simple_pay(
-    st(root7, k(4), k(6), False),
-    st(root7, k(4), k(2), False),
-    1,
-    2,
-    [1],
-  )
-}
-
-test pay_crossing_start() fail {
-  simple_pay(
-    st(root7, k(4), k(2), False),
-    st(root7, k(4), k(6), False),
-    2,
-    6,
-    [2, 3, 4, 5],
-  )
+  simple_pay(st(root7, k(6), False), st(root7, k(7), False), 5, 7, [5, 6])
 }
 
 test pay_without_lookahead() fail {
-  simple_pay(
-    st(root7, k(4), k(6), False),
-    st(root7, k(4), k(6), False),
-    6,
-    6,
-    [6],
-  )
+  simple_pay(st(root7, k(6), False), st(root7, k(6), False), 6, 6, [6])
 }
 
 test pay_non_contiguous_proof() fail {
   let tx =
     batch_tx(
-      st(root7, k(4), k(1), False),
-      st(root7, k(4), k(3), False),
+      loaded5,
+      st(root7, k(3), False),
       pool_night - amount(1),
       [dep_in(1)],
       [dep_out(1, 0)],
@@ -674,41 +536,31 @@ test pay_non_contiguous_proof() fail {
 }
 
 test pay_wrong_root_state_out() fail {
-  simple_pay(
-    st(root7, k(4), k(6), False),
-    st(zero32, k(4), k(1), False),
-    6,
-    7,
-    [6, 7],
-  )
+  simple_pay(loaded5, st(zero32, k(3), False), 1, 3, [1, 2])
 }
 
 test pay_wrong_cursor_state_out() fail {
-  simple_pay(
-    st(root7, k(4), k(6), False),
-    st(root7, k(4), k(7), False),
-    6,
-    7,
-    [6, 7],
-  )
+  simple_pay(loaded5, st(root7, k(4), False), 1, 3, [1, 2])
 }
 
 test pay_premature_complete() fail {
-  simple_pay(
-    st(root7, k(4), k(6), False),
-    st(root7, k(4), k(1), True),
-    6,
-    7,
-    [6, 7],
-  )
+  simple_pay(loaded5, st(root7, k(1), True), 1, 3, [1, 2])
+}
+
+test pay_last_run_left_incomplete() fail {
+  simple_pay(st(root7, k(6), False), st(root7, k(6), False), 6, 7, [6, 7])
+}
+
+test pay_completing_run_moves_cursor() fail {
+  simple_pay(st(root7, k(6), False), st(root7, k(1), True), 6, 7, [6, 7])
 }
 
 // -- deposit and pool failures -----------------------------------------------------
 
 fn two_paid_tx(dep_outs: List<Output>, pool_out_night: Int) -> Transaction {
   batch_tx(
-    st(root7, k(4), k(6), False),
-    st(root7, k(4), k(1), False),
+    st(root7, k(6), False),
+    st(root7, k(6), True),
     pool_out_night,
     [dep_in(6), dep_in(7)],
     dep_outs,
@@ -725,8 +577,8 @@ const two_total = amount(6) + amount(7)
 test pay_wrong_deposit_nft() fail {
   let tx =
     batch_tx(
-      st(root7, k(4), k(6), False),
-      st(root7, k(4), k(1), False),
+      st(root7, k(6), False),
+      st(root7, k(6), True),
       pool_night - two_total,
       [dep_in(6), dep_in(5)],
       [dep_out(6, 0), dep_out(7, 0)],
@@ -924,8 +776,8 @@ test pay_deposit_outputs_out_of_leaf_order() fail {
 test pay_deposits_in_any_ledger_order() {
   let tx =
     batch_tx(
-      st(root7, k(4), k(6), False),
-      st(root7, k(4), k(1), False),
+      st(root7, k(6), False),
+      st(root7, k(6), True),
       pool_night - two_total,
       [dep_in(7), dep_in(6)],
       [dep_out(6, 0), dep_out(7, 0)],
@@ -937,8 +789,8 @@ test pay_deposits_in_any_ledger_order() {
 test pay_deposit_missing() fail {
   let tx =
     batch_tx(
-      st(root7, k(4), k(6), False),
-      st(root7, k(4), k(1), False),
+      st(root7, k(6), False),
+      st(root7, k(6), True),
       pool_night - two_total,
       [dep_in(6)],
       [dep_out(6, 0), dep_out(7, 0)],
@@ -977,8 +829,8 @@ test pay_extra_head_input() fail {
 test pay_mints_account_nft() fail {
   let tx =
     batch_tx(
-      st(root7, k(4), k(6), False),
-      st(root7, k(4), k(1), False),
+      st(root7, k(6), False),
+      st(root7, k(6), True),
       pool_night - sum_amounts([6, 7]),
       list.map([6, 7], dep_in),
       list.map([6, 7], fn(i) { dep_out(i, 0) }),
@@ -1022,8 +874,6 @@ const exit_tree = tree(3)
 
 const exit_root = build_root(exit_tree)
 
-const exit_digest = Digest { ..digest5, root: exit_root }
-
 fn committed_dep(i: Int, night_in: Int) -> Output {
   mk_deposit_output(k(i), dep_ada, night_in, next_of(i), Some(refund))
 }
@@ -1050,8 +900,8 @@ fn exit_tx(
   mint: Value,
 ) -> Transaction {
   batch_tx(
-    st(exit_root, k(1), k(3), False),
-    st(exit_root, k(1), k(4), False),
+    st(exit_root, k(3), False),
+    st(exit_root, k(4), False),
     pool_night - amount(3),
     [dep, pred_in],
     [pred_out, refund_output],
@@ -1208,8 +1058,8 @@ test exit_leaf_paid_as_deposit() fail {
   // ack = 1 leaf with a continuing deposit output instead of a refund.
   let tx =
     batch_tx(
-      st(exit_root, k(1), k(3), False),
-      st(exit_root, k(1), k(4), False),
+      st(exit_root, k(3), False),
+      st(exit_root, k(4), False),
       pool_night - amount(3),
       [committed_dep(3, exit_night_in)],
       [
@@ -1231,32 +1081,14 @@ test exit_predecessor_is_head_ok() {
   let r = build_root(t)
   let tx =
     batch_tx(
-      st(r, k(4), k(1), False),
-      st(r, k(4), k(2), False),
+      st(r, k(1), False),
+      st(r, k(2), False),
       pool_night - amount(1),
       [committed_dep(1, 0), mk_head_output(k(1))],
       [mk_head_output(k(2)), refund_out(dep_ada, amount(1))],
       from_asset(account_policy, builtin.append_bytearray(#"00", k(1)), -1),
     )
   run(tx, Pay { proof: proof(t, 1, 2) })
-}
-
-test exit_first_batch_ok() {
-  let (mmr_root, dp) = digest_proof(exit_digest)
-  let tx =
-    batch_tx(
-      init_state,
-      st(exit_root, k(3), k(4), False),
-      pool_night - amount(3),
-      [committed_dep(3, 0), mk_deposit_output(k(2), dep_ada, 0, k(3), None)],
-      [
-        mk_deposit_output(k(2), dep_ada, 0, k(4), None),
-        refund_out(dep_ada, amount(3)),
-      ],
-      exit_burn,
-    )
-      |> with_bridge(mmr_root)
-  run(tx, LoadAndPay { digest_proof: dp, proof: proof(exit_tree, 3, 4) })
 }
 
 // -- budget ------------------------------------------------------------------------------
@@ -1268,11 +1100,7 @@ const big_tree = list.map(list.range(1, big_n), fn(i) { leaf_bytes(0, i) })
 const big_root = build_root(big_tree)
 
 fn big_state(cursor: ByteArray, complete: Bool) -> BatcherState {
-  BatcherState {
-    ..st(big_root, k(1), cursor, complete),
-    min_key: k(1),
-    max_key: k(big_n),
-  }
+  BatcherState { ..st(big_root, cursor, complete), max_key: k(big_n) }
 }
 
 fn big_next(i: Int) -> ByteArray {
@@ -1340,191 +1168,119 @@ fn ics_output(night: Int) -> Output {
   )
 }
 
-fn with_treasury(state: BatcherState) -> BatcherState {
-  BatcherState { ..state, treasury_total: treasury }
-}
+const digest_t = Digest { ..digest5, treasury_total: treasury }
 
-/// The last batch of the k4 fold, with the pool paying `pool_paid` beyond the leaves and `extra` outputs appended.
-fn completing(pool_paid: Int, extra: List<Output>) -> Bool {
-  let tx =
-    batch_tx(
-      with_treasury(st(root7, k(4), k(2), False)),
-      with_treasury(st(root7, k(4), k(4), True)),
-      pool_night - sum_amounts([2, 3]) - pool_paid,
-      [dep_in(2), dep_in(3)],
-      [dep_out(2, 0), dep_out(3, 0)],
-      zero,
-    )
+const pool_in = mk_pool_output(pool_ada, pool_night)
+
+/// The `Load` of `digest_t`: the pool pays `pool_paid`, then `extra` outputs.
+fn treasury_load(pool_paid: Int, extra: List<Output>) -> Bool {
   run(
-    Transaction { ..tx, outputs: list.concat(tx.outputs, extra) },
-    Pay { proof: proof(leaves7, 2, 4) },
+    load_tx(
+      init_state,
+      loaded5,
+      digest_t,
+      [pool_in],
+      [mk_pool_output(pool_ada, pool_night - pool_paid), ..extra],
+    ),
+    load_redeemer(digest_t),
   )
 }
 
-test treasury_paid_by_completing_batch() {
-  completing(treasury, [ics_output(treasury)])
+test load_pays_treasury() {
+  treasury_load(treasury, [ics_output(treasury)])
 }
 
-test treasury_missing_ics_output() fail {
-  completing(treasury, [])
+test load_treasury_missing_ics_output() fail {
+  treasury_load(treasury, [])
 }
 
-test treasury_ics_underpaid() fail {
-  completing(treasury, [ics_output(treasury - 1)])
+test load_treasury_ics_underpaid() fail {
+  treasury_load(treasury, [ics_output(treasury - 1)])
 }
 
-test treasury_left_in_pool() fail {
-  completing(0, [ics_output(treasury)])
+test load_treasury_ics_overpaid() fail {
+  treasury_load(treasury, [ics_output(treasury + 1)])
 }
 
-test treasury_ics_output_with_datum_hash() fail {
-  completing(
+test load_treasury_left_in_pool() fail {
+  treasury_load(0, [ics_output(treasury)])
+}
+
+test load_treasury_ics_output_with_datum_hash() fail {
+  treasury_load(
     treasury,
     [Output { ..ics_output(treasury), datum: DatumHash(zero32) }],
   )
 }
 
-test treasury_ics_output_extra_asset() fail {
+test load_treasury_ics_output_extra_asset() fail {
   let out = ics_output(treasury)
-  completing(
+  treasury_load(
     treasury,
     [Output { ..out, value: out.value |> add(batcher_hash, "x", 1) }],
   )
 }
 
-test treasury_ics_output_with_stake_part() fail {
+test load_treasury_ics_output_with_stake_part() fail {
   let staked =
     Address(
       Script(config.ics_forever_hash),
       Some(Inline(VerificationKey(zero28))),
     )
-  completing(treasury, [Output { ..ics_output(treasury), address: staked }])
+  treasury_load(treasury, [Output { ..ics_output(treasury), address: staked }])
 }
 
-test treasury_ics_overpaid() fail {
-  completing(treasury, [ics_output(treasury + 1)])
-}
-
-/// The completing batch also merges an ICS UTXO of `treasury` NIGHT into its ICS output, so one output could satisfy both the merge and the payment.
-test treasury_with_ics_merge() fail {
-  let tx =
-    batch_tx(
-      with_treasury(st(root7, k(4), k(2), False)),
-      with_treasury(st(root7, k(4), k(4), True)),
-      pool_night - sum_amounts([2, 3]) - treasury,
-      [dep_in(2), dep_in(3)],
-      [dep_out(2, 0), dep_out(3, 0)],
-      zero,
-    )
+test load_treasury_ics_before_pool() fail {
   run(
-    Transaction {
-      ..tx,
-      inputs: list.concat(
-        tx.inputs,
-        [mk_input(mk_outref(30), ics_output(treasury))],
-      ),
-      outputs: list.concat(tx.outputs, [ics_output(treasury)]),
-    },
-    Pay { proof: proof(leaves7, 2, 4) },
+    load_tx(
+      init_state,
+      loaded5,
+      digest_t,
+      [pool_in],
+      [ics_output(treasury), mk_pool_output(pool_ada, pool_night - treasury)],
+    ),
+    load_redeemer(digest_t),
   )
 }
 
-test treasury_not_paid_mid_fold() fail {
+/// The load also merges an ICS UTXO of `treasury` NIGHT into its ICS output, so one output could satisfy both the merge and the payment.
+test load_treasury_with_ics_merge() fail {
+  run(
+    load_tx(
+      init_state,
+      loaded5,
+      digest_t,
+      [pool_in, ics_output(treasury)],
+      [mk_pool_output(pool_ada, pool_night - treasury), ics_output(treasury)],
+    ),
+    load_redeemer(digest_t),
+  )
+}
+
+test load_empty_epoch_pays_treasury() {
+  let digest = Digest { ..empty_digest, treasury_total: treasury }
+  run(
+    load_tx(
+      init_state,
+      loaded_empty,
+      digest,
+      [pool_in],
+      [mk_pool_output(pool_ada, pool_night - treasury), ics_output(treasury)],
+    ),
+    load_redeemer(digest),
+  )
+}
+
+test pay_takes_no_treasury() fail {
+  // Only the load pays the Treasury share; a completing run takes exactly its leaves.
   let tx =
     batch_tx(
-      with_treasury(st(root7, k(4), k(6), False)),
-      with_treasury(st(root7, k(4), k(1), False)),
+      st(root7, k(6), False),
+      st(root7, k(6), True),
       pool_night - two_total - treasury,
       [dep_in(6), dep_in(7)],
-      [dep_out(6, 0), dep_out(7, 0)],
+      [dep_out(6, 0), dep_out(7, 0), ics_output(treasury)],
       zero,
     )
-  run(
-    Transaction {
-      ..tx,
-      outputs: list.concat(tx.outputs, [ics_output(treasury)]),
-    },
-    Pay { proof: proof(leaves7, 6, 7) },
-  )
-}
-
-test treasury_paid_by_load_that_completes() {
-  let all = [1, 2, 3, 4, 5, 6, 7]
-  let (mmr_root, dp) =
-    digest_proof(Digest { ..digest5, treasury_total: treasury })
-  let tx =
-    batch_tx(
-      init_state,
-      with_treasury(st(root7, k(1), k(1), True)),
-      pool_night - sum_amounts(all) - treasury,
-      list.map(all, dep_in),
-      list.map(all, fn(i) { dep_out(i, 0) }),
-      zero,
-    )
-      |> with_bridge(mmr_root)
-  run(
-    Transaction {
-      ..tx,
-      outputs: list.concat(tx.outputs, [ics_output(treasury)]),
-    },
-    LoadAndPay { digest_proof: dp, proof: proof(leaves7, 1, 7) },
-  )
-}
-
-/// An empty-epoch load whose digest carries a Treasury share; the pool pays `pool_paid`.
-fn empty_treasury(pool_paid: Int, extra: List<Output>) -> Bool {
-  let (mmr_root, dp) =
-    digest_proof(Digest { ..empty_digest, treasury_total: treasury })
-  let tx =
-    Transaction {
-      ..placeholder,
-      inputs: [
-        mk_input(mk_outref(1), mk_state_output(init_state)),
-        mk_input(mk_outref(2), mk_pool_output(pool_ada, pool_night)),
-      ],
-      outputs: [
-        mk_state_output(with_treasury(BatcherState { ..init_state, epoch: 5 })),
-        mk_pool_output(pool_ada, pool_night - pool_paid),
-        ..extra
-      ],
-      fee,
-      withdrawals: [withdrawal_of(batcher_hash)],
-    }
-      |> with_bridge(mmr_root)
-  run(tx, LoadAndPay { digest_proof: dp, proof: [] })
-}
-
-test treasury_paid_by_empty_epoch_load() {
-  empty_treasury(treasury, [ics_output(treasury)])
-}
-
-test treasury_empty_epoch_without_ics_output() fail {
-  empty_treasury(treasury, [])
-}
-
-test treasury_empty_epoch_left_in_pool() fail {
-  empty_treasury(0, [ics_output(treasury)])
-}
-
-test treasury_empty_epoch_with_ics_merge() fail {
-  let (mmr_root, dp) =
-    digest_proof(Digest { ..empty_digest, treasury_total: treasury })
-  let tx =
-    Transaction {
-      ..placeholder,
-      inputs: [
-        mk_input(mk_outref(1), mk_state_output(init_state)),
-        mk_input(mk_outref(2), mk_pool_output(pool_ada, pool_night)),
-        mk_input(mk_outref(30), ics_output(treasury)),
-      ],
-      outputs: [
-        mk_state_output(with_treasury(BatcherState { ..init_state, epoch: 5 })),
-        mk_pool_output(pool_ada, pool_night - treasury),
-        ics_output(treasury),
-      ],
-      fee,
-      withdrawals: [withdrawal_of(batcher_hash)],
-    }
-      |> with_bridge(mmr_root)
-  run(tx, LoadAndPay { digest_proof: dp, proof: [] })
+  two_paid(tx)
 }

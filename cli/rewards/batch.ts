@@ -1,16 +1,15 @@
 /**
- * The rewards batcher's transactions (docs/rewards/spec.md §5.3): a
- * LoadAndPay that opens an epoch with its digest proof and first batch, and
- * a Pay that continues it. A batch reveals one contiguous run of the
- * epoch's sorted leaves, `[cursor, …, lookahead]`, pays every leaf but the
- * lookahead into its deposit, takes the total (and, in the batch that
- * completes the fold, the epoch's Treasury share for the ICS) from the
- * pool, and moves the state's cursor, as lib/rewards/batch.ak checks.
+ * The rewards batcher's transactions (docs/rewards/spec.md §5.3): a Load
+ * that takes the next epoch's digest and pays its Treasury share from the
+ * pool to the ICS, and a Pay that reveals one contiguous run of the epoch's
+ * sorted leaves, `[cursor, …, lookahead]`, pays every leaf but the
+ * lookahead into its deposit from the pool, and moves the state's cursor;
+ * the run that pays max_key completes the epoch, as lib/rewards/batch.ak
+ * checks.
  *
- * The contract finds each paid leaf's deposit by key among the account
- * inputs, sorted by NFT name, so the ledger's input order does not matter;
- * the redeemer names only each deposit's output, strictly increasing in
- * leaf order. Exits (ack leaves) are not built yet.
+ * Outputs: 0 the state, 1 the pool, then one deposit per paid leaf in leaf
+ * order (a Pay) or the ICS output (a Load with a Treasury share); the
+ * change goes last. Exits (ack leaves) are not built yet.
  */
 import {
   addressFromValidator,
@@ -51,42 +50,35 @@ export const rewardLeaf = (bytes: Uint8Array): RewardLeaf => ({
   amount: BigInt(`0x${bytesToHex(bytes.slice(29, 45))}`),
 });
 
-/** One batch over the epoch's leaves: the leaves it pays and the one it reveals after them, and the state it leaves. */
+/** One Pay over the epoch's leaves: the leaves it pays and the one it reveals after them, none once it pays max_key. */
 export interface BatchPlan {
   readonly paid: readonly number[];
   readonly lookahead: Option.Option<number>;
-  readonly cursor: string;
-  readonly complete: boolean;
 }
 
 /**
- * The run from leaf `from` of an epoch that started at leaf `start`: at
- * most `limit` paid leaves, stopping before `start` or after max_key (the
- * cursor wraps to min_key). max_key is never a lookahead, so a run that
- * reaches the leaf before it pays max_key too.
+ * The run from leaf `from`: at most `limit` paid leaves, through max_key at
+ * the latest. max_key is never a lookahead, so a run that reaches the leaf
+ * before it pays max_key too.
  */
 export const planBatch = (
   leaves: readonly RewardLeaf[],
   from: number,
-  start: number,
   limit: number,
 ): BatchPlan => {
   const last = leaves.length - 1;
   const paid = [from];
   for (;;) {
     const at = paid[paid.length - 1];
+    if (at === last) break;
     const next = at + 1;
-    if (at === last || next === start) break;
     if (next !== last && paid.length >= limit) break;
     paid.push(next);
   }
   const end = paid[paid.length - 1];
-  const cursor = end === last ? leaves[0].key : leaves[end + 1].key;
   return {
     paid,
     lookahead: end === last ? Option.none() : Option.some(end + 1),
-    cursor,
-    complete: cursor === leaves[start].key,
   };
 };
 
@@ -144,8 +136,8 @@ const paidDeposit = (
 
 /**
  * The batch transaction and its redeemer. Outputs: 0 the state, 1 the
- * pool, then one deposit per paid leaf in leaf order, then the ICS output
- * when the batch pays a Treasury share; the change goes last. Inputs: the
+ * pool, then one deposit per paid leaf in leaf order (a Pay) or the ICS
+ * output (a Load with a Treasury share); the change goes last. Inputs: the
  * state, the pool's value UTxOs and the paid deposits; coin selection adds
  * the fee.
  */
@@ -177,7 +169,7 @@ export const buildBatchTx = (
     Option.match(batch.load, {
       onNone: (): Contracts.BatcherRedeemer => ({ Pay: { proof } }),
       onSome: ({ digestProof }): Contracts.BatcherRedeemer => ({
-        LoadAndPay: { digest_proof: digestProof, proof },
+        Load: { digest_proof: digestProof },
       }),
     }),
   );
