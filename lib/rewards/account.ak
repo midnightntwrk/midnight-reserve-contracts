@@ -1,9 +1,7 @@
 //// User logic of the `virtual_account` validator (spec §3, §4). It runs once
 //// per transaction in the withdraw handler; mint and spend only gate on the
 //// authority named by their redeemer. One action kind per tx, applied to
-//// every account-address input; outputs from `offset` match them 1:1. A
-//// user action never shares its transaction with a batch, so each tx has
-//// one authority over the list.
+//// every account-address input; outputs from `offset` match them 1:1.
 
 use aiken/builtin
 use aiken/collection/list
@@ -49,8 +47,6 @@ pub fn account_withdraw(
   let Transaction { inputs, outputs, mint, extra_signatories, withdrawals, .. } =
     tx
   expect own_hash != config.cnight_policy
-  let batcher = Script(config.rewards_batcher_hash)
-  expect !list.any(withdrawals, fn(w) { w.1st == batcher })
   let own_address = Script(own_hash)
   let outs = list.drop(outputs, offset)
   let minted = tokens_of(mint, own_hash)
