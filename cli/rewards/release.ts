@@ -48,6 +48,9 @@ import { Output } from "../output";
 /** How far before now the validity starts. */
 const VALIDITY_MARGIN_MS = 60_000n;
 
+/** The most intervals one release covers; reserve_logic_v2 steps the ceiling once per interval, and a backlog catches up over several releases. */
+export const MAX_RELEASE_INTERVALS = 240n;
+
 /** One release: the intervals it covers, the NIGHT it moves, and the new last_release_time. */
 export interface ReleasePlan {
   readonly intervals: bigint;
@@ -94,8 +97,10 @@ export const releasePlan = (
   now: bigint,
   schedule: ReleaseSchedule,
 ): Option.Option<ReleasePlan> => {
-  const intervals = now < last ? 0n : (now - last) / schedule.intervalMs;
-  if (intervals < 1n) return Option.none();
+  const elapsed = now < last ? 0n : (now - last) / schedule.intervalMs;
+  if (elapsed < 1n) return Option.none();
+  const intervals =
+    elapsed < MAX_RELEASE_INTERVALS ? elapsed : MAX_RELEASE_INTERVALS;
   const ceiling = releaseCeiling(reserve, intervals, schedule);
   const released = ceiling > pool ? ceiling - pool : 0n;
   return Option.some({
