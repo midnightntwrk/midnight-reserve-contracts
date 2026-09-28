@@ -3,7 +3,9 @@
  * jobs in order: the committee bridge handover of the light client's next
  * committee, once BEEFY has finalized that set's first block (built as
  * bridge-update --funded builds it from the block's justification), then
- * the reserve release once a whole interval has passed (rewards-release).
+ * the reserve release once a whole interval has passed (rewards-release),
+ * then the rewards batcher's next load or pay once there is one
+ * (rewards-batch).
  * A job that lands signs with the deployer key, submits and awaits its
  * transaction, and the next round starts at once, so a backlog lands
  * oldest first. When no job lands, or a job fails (logged), the pump waits
@@ -23,6 +25,7 @@ import {
   bridgeStateAt,
   bridgeUtxos,
 } from "./bridge-chain";
+import { batchTx, nothingToBatch } from "../rewards/load";
 import { releaseNotDue, releaseTx } from "../rewards/release";
 import { justifiedUpdateAt } from "./fetch-justification";
 import { sessionStart } from "./midnight";
@@ -34,6 +37,7 @@ export interface PumpInput {
   readonly rpc: string;
   readonly signingKey: string;
   readonly poll: Duration.Duration;
+  readonly limit: number;
 }
 
 /** Land the handover of the light client's next committee; false when BEEFY has not finalized its first block yet. */
@@ -63,6 +67,17 @@ const release = (input: PumpInput) =>
       Effect.as(land(input, tx, "reserve release"), true),
     ),
     releaseNotDue,
+    () => Effect.succeed(false),
+  );
+
+/** Land the batcher's next load or pay; false when there is none yet. */
+const batch = (input: PumpInput) =>
+  Effect.catchIf(
+    Effect.flatMap(
+      batchTx(input.network, input.rpc, input.limit),
+      ({ tx, name }) => Effect.as(land(input, tx, name), true),
+    ),
+    nothingToBatch,
     () => Effect.succeed(false),
   );
 
@@ -99,6 +114,7 @@ export const pumpProgram = (input: PumpInput) =>
       Effect.all([
         job("handover", handover(input)),
         job("release", release(input)),
+        job("batch", batch(input)),
       ]),
       (landed) => landed.some((l) => l),
     );
