@@ -688,6 +688,10 @@ pub type PoolRedeemer { Receive  Disburse }
 - `Disburse`: a withdrawal from `config.rewards_batcher_hash` exists. All value
   checks live in the batcher (§5.3 run rule 3).
 
+Only the withdrawal runs these checks. Publishing a `RegisterCredential`
+passes; any other certificate, an unregistration included, fails, so the
+logic's stake credential stays registered.
+
 Staging forever variant (`rewards_pool_staging_forever`) mirrors
 `staging_reserve_ics.ak` so the release can be rehearsed on mainnet with
 test tokens before promotion.

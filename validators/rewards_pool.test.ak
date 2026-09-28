@@ -1,6 +1,6 @@
 use cardano/address.{Address, Script, VerificationKey}
 use cardano/assets.{Value, add, from_asset, from_lovelace}
-use cardano/certificate.{RegisterCredential}
+use cardano/certificate.{RegisterCredential, UnregisterCredential}
 use cardano/script_context.{
   Minting, Publishing, ScriptContext, Spending, Withdrawing,
 }
@@ -330,6 +330,44 @@ test publish_registration_ok() {
         },
       },
     ),
+  )
+}
+
+/// The logic credential's unregistration with a redeemer that would pass as a withdrawal.
+fn unregister(redeemer: PoolRedeemer, tx: Transaction) -> Bool {
+  rewards_pool.rewards_pool_logic.else(
+    ScriptContext(
+      tx,
+      redeemer,
+      Publishing {
+        at: 0,
+        certificate: UnregisterCredential {
+          credential: Script(logic_hash),
+          refund: Never,
+        },
+      },
+    ),
+  )
+}
+
+test unregistration_with_receive() fail {
+  unregister(
+    Receive,
+    logic_tx(
+      [main_pool(5_000_000, 100)],
+      [main_pool(5_000_000, 100)],
+      logic_hash,
+    ),
+  )
+}
+
+test unregistration_with_disburse() fail {
+  unregister(
+    Disburse,
+    Transaction {
+      ..placeholder,
+      withdrawals: [withdrawal_of(config.rewards_batcher_hash)],
+    },
   )
 }
 

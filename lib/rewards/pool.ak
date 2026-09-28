@@ -10,7 +10,7 @@ use aiken/collection/list
 use aiken/crypto.{ScriptHash}
 use cardano/address.{Script}
 use cardano/assets.{AssetName, PolicyId}
-use cardano/certificate.{RegisterCredential, UnregisterCredential}
+use cardano/certificate.{RegisterCredential}
 use cardano/script_context.{Minting, Publishing, ScriptInfo, Withdrawing}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
@@ -42,11 +42,7 @@ pub fn pool_logic(
         builtin.length_of_bytearray(forever_script_hash) == 28,
       }
     }
-    Withdrawing(Script(own_hash)) |
-    Publishing {
-      certificate: UnregisterCredential { credential: Script(own_hash), .. },
-      ..
-    } -> {
+    Withdrawing(Script(own_hash)) -> {
       expect redeemer: PoolRedeemer = redeemer
       when redeemer is {
         Disburse -> {
