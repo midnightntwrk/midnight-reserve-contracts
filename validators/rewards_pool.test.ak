@@ -1,4 +1,4 @@
-use cardano/address.{Address, Script, VerificationKey}
+use cardano/address.{Address, Inline, Script, VerificationKey}
 use cardano/assets.{Value, add, from_asset, from_lovelace}
 use cardano/certificate.{RegisterCredential, UnregisterCredential}
 use cardano/script_context.{
@@ -122,6 +122,19 @@ test receive_first_output_checked() {
     [main_pool(5_000_000, 100)],
     [main_pool(5_000_000, 100), main_pool(1_000_000, 1)],
   )
+}
+
+/// The pool value moves to an output with a stake part; no unstaked pool output holds it.
+test receive_into_staked_output() fail {
+  let staked =
+    Output {
+      ..main_pool(5_000_000, 100),
+      address: Address(
+        Script(main_forever),
+        Some(Inline(VerificationKey(other_logic))),
+      ),
+    }
+  receive([main_pool(5_000_000, 100)], [staked])
 }
 
 test receive_night_decreased() fail {

@@ -681,8 +681,8 @@ address hold `[ada, night]`.
 pub type PoolRedeemer { Receive  Disburse }
 ```
 - `Receive`: merge semantics — sum of pool value inputs ≤ the first
-  `[ada, night]` output at the forever credential (inline datum), NFT UTXO
-  not consumed. Used by the reserve release tx. Main track: config hashes;
+  `[ada, night]` output at `Address(Script(forever), None)` (inline datum,
+  no stake part), NFT UTXO not consumed. Used by the reserve release tx. Main track: config hashes;
   staging track: hashes from the logic's own `StagingState` NFT input
   (one-shot `config.rewards_pool_logic_one_shot_*`), as `logic_merge_v2`.
 - `Disburse`: a withdrawal from `config.rewards_batcher_hash` exists. All value
