@@ -153,6 +153,10 @@ test release_catch_up_three_ok() {
   )
 }
 
+test release_catch_up_240_ok() {
+  first_release(240 * interval_ms, 240, 38_355_550, reserve_night - 38_355_550)
+}
+
 test release_partial_catch_up_ok() {
   first_release(5 * interval_ms, 2, ceiling2, reserve_night - ceiling2)
 }

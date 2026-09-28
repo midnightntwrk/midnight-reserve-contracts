@@ -91,6 +91,15 @@ describe("releasePlan", () => {
     ).toEqual(Option.some(59_818n));
   });
 
+  test("a backlog is covered MAX_RELEASE_INTERVALS at a time", () => {
+    expect(
+      Option.map(
+        releasePlan(RESERVE, 0n, 0n, 1_000n * 60_000n, schedule),
+        (p) => [p.intervals, p.next],
+      ),
+    ).toEqual(Option.some([240n, 240n * 60_000n]));
+  });
+
   test("a pool above the ceiling releases nothing and still advances time", () => {
     expect(releasePlan(RESERVE, 200_000n, 0n, 60_000n, schedule)).toEqual(
       Option.some({ intervals: 1n, released: 0n, next: 60_000n }),
