@@ -7,13 +7,18 @@
 //// the epoch.
 ////
 //// A `Pay` is one fold over the paid leaves, the account mint, the account
-//// inputs sorted by name and the outputs after the pool output. The fold
-//// takes each list in step and the mint and inputs must end empty, so every
-//// account input, burn and output has exactly one role.
+//// inputs sorted by name and the outputs after the pool output. Going
+//// forward, each leaf takes its items from the four lists; the mint and the
+//// inputs must end empty, so every account input, burn and output has
+//// exactly one role. Coming back, each leaf gets its successor's `Relink`
+//// (the successor exits and names the `next` its predecessor takes) and
+//// checks its outputs with it: a paid deposit takes the relink in its one
+//// output, an exit passes it on to its own predecessor.
 ////
 //// Outputs: 0 the state, 1 the pool, then (`Pay`) per paid leaf in leaf
-//// order its deposit (`ack = 0`) or its predecessor and refund (`ack = 1`),
-//// or (`Load` with a Treasury share) the ICS output.
+//// order its deposit (`ack = 0`), or for an exit (`ack = 1`) its
+//// predecessor (only when that is not the previous paid leaf) and its
+//// refund; or (`Load` with a Treasury share) the ICS output.
 
 use aiken/builtin
 use aiken/collection/dict
@@ -154,7 +159,7 @@ pub fn pay(
       ),
     }
   expect [pool_out, ..outputs] = outputs
-  let total =
+  let (total, relink) =
     pay_fold(
       paid,
       tokens_of(mint, state.account_policy),
@@ -162,6 +167,7 @@ pub fn pay(
       outputs,
       env,
     )
+  expect relink == None
   expect pool_ok(inputs, pool_out, state.pool_forever, total)
   when next is {
     Some(cursor) -> BatcherState { ..state, cursor }
@@ -228,51 +234,78 @@ fn sorted_account_inputs(
     |> list.sort(fn(a, b) { bytearray.compare(a.1st, b.1st) })
 }
 
-/// One step per paid leaf, taking in order its account inputs, its burn (an exit) and its outputs; returns the NIGHT paid.
+/// An exit asks the node before it in the list for `next := next`, past the exiting `removed`.
+type Relink {
+  removed: ByteArray,
+  next: ByteArray,
+}
+
+/// Forward: each paid leaf takes its inputs, its burn (an exit) and its outputs. Back: each checks them with its successor's relink. Returns the NIGHT paid and the relink for the node before the run.
 fn pay_fold(
   leaves: List<RewardLeaf>,
   burns: Pairs<AssetName, Int>,
   inputs: List<(AssetName, Input)>,
   outputs: List<Output>,
   env: Env,
-) -> Int {
+) -> (Int, Option<Relink>) {
   when leaves is {
     [] -> {
       expect burns == [] && inputs == []
-      0
+      (0, None)
     }
     [leaf, ..leaves] -> {
       let name = deposit_name(leaf.key)
+      expect [(first_name, first), ..inputs] = inputs
       if leaf.ack == 0 {
-        expect [(found, deposit), ..inputs] = inputs
         expect [out, ..outputs] = outputs
+        let (total, relink) = pay_fold(leaves, burns, inputs, outputs, env)
         expect and {
-            found == name,
-            paid_ok(deposit, out, name, leaf.amount, env),
+            first_name == name,
+            paid_ok(first, out, name, leaf.amount, relink, env),
           }
-        leaf.amount + pay_fold(leaves, burns, inputs, outputs, env)
+        (total + leaf.amount, None)
       } else {
         expect leaf.ack == 1
-        expect [(_, pred), (found, deposit), ..inputs] = inputs
         expect [Pair(burned, -1), ..burns] = burns
-        expect [pred_out, refund, ..outputs] = outputs
-        expect and {
-            found == name,
-            burned == name,
-            exit_ok(pred, pred_out, deposit, refund, leaf, env),
-          }
-        leaf.amount + pay_fold(leaves, burns, inputs, outputs, env)
+        expect burned == name
+        if first_name == name {
+          // The predecessor is the previous paid leaf; it takes the relink.
+          expect [refund, ..outputs] = outputs
+          let (total, relink) = pay_fold(leaves, burns, inputs, outputs, env)
+          let next = exit_ok(first, refund, leaf, relink, env)
+          (total + leaf.amount, Some(Relink { removed: leaf.key, next }))
+        } else {
+          expect [(found, deposit), ..inputs] = inputs
+          expect found == name
+          expect [pred_out, refund, ..outputs] = outputs
+          let (total, relink) = pay_fold(leaves, burns, inputs, outputs, env)
+          let next = exit_ok(deposit, refund, leaf, relink, env)
+          expect unlink(first, pred_out, env.account_policy, leaf.key, next)
+          (total + leaf.amount, None)
+        }
       }
     }
   }
 }
 
-/// The deposit continues at its address with its datum, its NFT and `amount` more NIGHT; its ADA falls by at most the skim cap.
+/// `next` after the batch: unchanged, or past the exiting successor that asked.
+fn relinked(next: ByteArray, relink: Option<Relink>) -> ByteArray {
+  when relink is {
+    None -> next
+    Some(Relink { removed, next: new_next }) -> {
+      expect next == removed
+      new_next
+    }
+  }
+}
+
+/// The deposit continues at its address with its NFT, `amount` more NIGHT and its datum (relinked when its successor exits); its ADA falls by at most the skim cap.
 fn paid_ok(
   deposit: Input,
   out: Output,
   name: AssetName,
   amount: Int,
+  relink: Option<Relink>,
   env: Env,
 ) -> Bool {
   let Output { address, value, datum, .. } = deposit.output
@@ -281,7 +314,14 @@ fn paid_ok(
   and {
     ada_in - ada_out <= env.cap,
     out.address == address,
-    out.datum == datum,
+    out.datum == when relink is {
+      None -> datum
+      Some(_) -> {
+        expect InlineDatum(data) = datum
+        expect Deposit { cred, next, committed }: AccountDatum = data
+        InlineDatum(Deposit { cred, next: relinked(next, relink), committed })
+      }
+    },
     out_assets == deposit_assets(
       env.account_policy,
       name,
@@ -290,27 +330,26 @@ fn paid_ok(
   }
 }
 
-/// `pred` relinks past the exiting deposit, whose ADA (less the skim cap) and NIGHT plus the leaf amount go to its committed refund address.
+/// The exiting deposit's ADA (less the skim cap) and NIGHT plus the leaf amount go to its committed refund address; returns the `next` its predecessor takes.
 fn exit_ok(
-  pred: Input,
-  pred_out: Output,
   deposit: Input,
   refund: Output,
   leaf: RewardLeaf,
+  relink: Option<Relink>,
   env: Env,
-) -> Bool {
+) -> ByteArray {
   let Output { value, datum, .. } = deposit.output
   expect InlineDatum(data) = datum
   expect Deposit { next, committed: Some(refund_address), .. }: AccountDatum =
     data
   let ada_in, _ <- split_ada(value)
   let ada_out, _ <- split_ada(refund.value)
-  and {
-    unlink(pred, pred_out, env.account_policy, leaf.key, next),
-    refund.address == refund_address,
-    ada_in - ada_out <= env.cap,
-    night_of(refund.value) >= night_of(value) + leaf.amount,
-  }
+  expect and {
+      refund.address == refund_address,
+      ada_in - ada_out <= env.cap,
+      night_of(refund.value) >= night_of(value) + leaf.amount,
+    }
+  relinked(next, relink)
 }
 
 /// The pool pays `amount`: its inputs, none with the forever NFT, continue as `out` at the pool address with an inline datum, NIGHT down by `amount` and ADA not down.

@@ -369,7 +369,7 @@ The redeemer names no input or output. The transaction layout binds them:
 |---|---|---|
 | 0 | the state: same address as the state input, ADA and the state NFT only | same |
 | 1 | the pool, when `treasury_total > 0` | the pool |
-| 2… | the ICS output, when `treasury_total > 0` | per paid leaf, in leaf order: its deposit (`ack = 0`), or its predecessor and then its refund (`ack = 1`) |
+| 2… | the ICS output, when `treasury_total > 0` | per paid leaf, in leaf order: its deposit (`ack = 0`); or for an exit (`ack = 1`) its predecessor, unless that is the previous paid leaf, then its refund |
 | rest | free (the batcher's change) | free |
 
 **Load** (opens an epoch; pays no leaf)
@@ -398,15 +398,23 @@ The redeemer names no input or output. The transaction layout binds them:
 3. One fold over four lists: the paid leaves; the mint under
    `account_policy`; the inputs holding an `account_policy` token, sorted
    by NFT name (so the ledger's input order does not matter); and the
-   outputs from index 2. Each paid leaf takes its items in step:
+   outputs from index 2. Going forward, each paid leaf takes its items:
    - `ack = 0`: its deposit `0x00 ++ key` (next input) and its continuing
-     output (next output, §4.5 Pay).
-   - `ack = 1`: its list predecessor (head or deposit) and its deposit (next
-     two inputs), the burn `(0x00 ++ key, −1)` (next mint entry), and the
-     relinked predecessor and the refund (next two outputs, §4.5 Exit).
+     output (next output).
+   - `ack = 1`: the burn `(0x00 ++ key, −1)` (next mint entry). If the next
+     input is its own deposit, its list predecessor is the previous paid
+     leaf; it then takes the refund (next output). Otherwise the next two
+     inputs are its predecessor (head or deposit) and its deposit, and the
+     next two outputs the relinked predecessor and the refund.
    The mint and the inputs must end empty, so every account input, burn
    and output has exactly one role: an extra deposit, a registration, an
    unused head, a mint or a second burn fails.
+   Coming back, each leaf receives its successor's relink: an exit whose
+   predecessor is the previous paid leaf names itself and the `next` that
+   predecessor takes. A paid deposit applies it in its one output (§4.5
+   Pay, with `next` replaced); an exit passes it on through its own `next`,
+   so exits in a row relink their shared predecessor once. The run's first
+   leaf may not receive a relink: its predecessor is not in the batch.
    Deposit spends and the exit burn use the account gate `Batcher` (§4.4);
    the tail is never an input.
 4. Pool: all inputs at `Script(pool_forever)` are summed (none may carry
@@ -874,6 +882,7 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 | Change | Reason |
 |---|---|
 | `Pay` is one fold over the paid leaves, the account mint, the sorted account inputs and the outputs from index 2; fixed outputs (state 0, pool 1); `PayPair` and `ExitInfo` removed | redeemer indices let one input or output take two roles, and leftover account inputs were never checked |
+| The fold takes items going forward and checks them coming back: an exit returns a relink to its predecessor, which a paid deposit applies in its one output and an exit passes on | a paid predecessor and its exiting successor in one batch needed two outputs for one NFT, and the run that pays `max_key` always pays the leaf before it |
 | The batch's account mint is exactly its exit burns | the `Batcher` account gate trusts the batcher, so a batch could mint account NFTs |
 | `Load` loads the digest and pays the Treasury share, and pays no leaf; `min_key`, `start_key` and `treasury_total` leave the state; the fold runs once from `min_key` to `max_key` | the share does not depend on the fold; one payment path and no wrap |
 | A `Load` that pays the Treasury share spends no ICS input and pays exactly `treasury_total` | the ICS `logic_merge` claims the first ICS output, so a merge in the same tx could also pass the payment check |
