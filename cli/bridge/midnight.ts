@@ -12,7 +12,7 @@ import {
   HttpClientResponse,
 } from "@effect/platform";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
-import { Duration, Effect, Either, ParseResult, Schema } from "effect";
+import { Duration, Effect, Either, Option, ParseResult, Schema } from "effect";
 import { retryRead } from "../chain/blockfrost";
 import { PreconditionFailed, ProviderError } from "../errors";
 import {
@@ -173,6 +173,31 @@ export const finalizedNumber = (rpc: string) =>
     midnightCall(rpc, "chain_getFinalizedHead", [], Schema.String),
     (hash) => Effect.map(header(rpc, hash), (h) => h.number),
   );
+
+/** The number of the node's BEEFY-finalized head. */
+export const beefyFinalizedNumber = (rpc: string) =>
+  Effect.flatMap(
+    midnightCall(rpc, "beefy_getFinalizedHead", [], Schema.String),
+    (hash) => Effect.map(header(rpc, hash), (h) => h.number),
+  );
+
+/** The first block of BEEFY validator set `setId`, once the BEEFY-finalized head has reached it. */
+export const sessionStart = (rpc: string, setId: bigint) =>
+  Effect.gen(function* () {
+    const setAt = (block: number) =>
+      Effect.flatMap(blockHash(rpc, block), (at) =>
+        Effect.map(validatorSetAt(rpc, at), (set) => set.id),
+      );
+    const head = yield* beefyFinalizedNumber(rpc);
+    if ((yield* setAt(head)) < setId) return Option.none<number>();
+    let [low, high] = [1, head];
+    while (low < high) {
+      const mid = Math.floor((low + high) / 2);
+      if ((yield* setAt(mid)) >= setId) high = mid;
+      else low = mid + 1;
+    }
+    return Option.some(low);
+  });
 
 /** The MMR root in the digest of the block with hash `hash` (`ConsensusLog::MmrRoot`). */
 export const digestMmrRoot = (rpc: string, hash: string) =>

@@ -449,7 +449,9 @@ for the node team to port: it decodes the compact `VersionedFinalityProof`
 under engine `BEEF`, maps the signature slots to the validator set at the
 block, sums seats per key, drops the recovery byte, trims the signers to a
 minimal cover (most seats first), and takes the leaf and the proof items
-from `mmr_generateProof([b], b)`. The
+from `mmr_generateProof([b], b)`. `pump` (`cli/bridge/pump.ts`) runs
+that builder in a loop with `bridge-update --funded`, signing and submitting
+each handover of the light client's next committee as BEEFY finalizes it. The
 forever, logic and pool scripts MUST be supplied through reference-script
 UTxOs, never in the witness set (§11); the deployment (phase 06,
 `committee-bridge-scripts`) creates those UTxOs at the deployer address,

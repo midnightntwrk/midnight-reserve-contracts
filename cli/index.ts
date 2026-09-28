@@ -33,6 +33,7 @@ import { bridgeTopup } from "./commands/bridge-topup";
 import { bridgeUpdate } from "./commands/bridge-update";
 import { bridgeSetFee } from "./commands/bridge-set-fee";
 import { bridgeSetThreshold } from "./commands/bridge-set-threshold";
+import { pump } from "./commands/pump";
 import { BaseLive, EnvLive, reportFailure, teardown } from "./run";
 import packageJson from "../package.json";
 
@@ -68,6 +69,7 @@ const root = Command.make("midnight-reserve").pipe(
     bridgeBootstrap,
     bridgeVerifyBootstrap,
     bridgeFetchJustification,
+    pump,
   ]),
 );
 
