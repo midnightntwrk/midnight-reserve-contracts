@@ -1,7 +1,13 @@
 //// Withdraw logic of the `rewards_batcher` validator (spec §5). One
-//// verification per transaction: the state NFT input and output, one sorted
-//// multiproof, then a linear pass over the paid leaves and their indexed
-//// deposit inputs and outputs.
+//// verification per transaction: the state NFT input and output 0, one sorted
+//// multiproof, then one fold over the paid leaves, the account mint, the
+//// account inputs sorted by name and the outputs after the pool output. The
+//// fold takes each list in step and the mint and inputs must end empty, so
+//// every account input, burn and output has exactly one role.
+////
+//// Outputs: 0 the state, 1 the pool, then per paid leaf in leaf order its
+//// deposit (`ack = 0`) or its predecessor and refund (`ack = 1`), then the
+//// ICS output when the batch pays the Treasury share.
 ////
 //// A run is `[cursor, …, lookahead]`: every leaf up to the lookahead is
 //// paid; the lookahead is the next cursor. A run whose last leaf is
@@ -17,7 +23,7 @@ use aiken/math
 use aiken/primitive/bytearray
 use bridge/types.{BeefyConsensusState, ProofNodeRec} as bridge_types
 use cardano/address.{Address, Credential, Script}
-use cardano/assets.{PolicyId, Value, add, from_asset}
+use cardano/assets.{AssetName, PolicyId, Value, add, from_asset}
 use cardano/transaction.{
   DatumHash, InlineDatum, Input, Output, OutputReference, Transaction,
 }
@@ -27,11 +33,11 @@ use rewards/linked_list.{deposit_name, unlink}
 use rewards/merkle_range.{RewardLeaf, parse_leaf, verify_range}
 use rewards/types.{
   AccountDatum, BatcherRedeemer, BatcherState, Deposit, Digest, DigestProof,
-  ExitInfo, LoadAndPay, Pay, PayPair,
+  LoadAndPay, Pay,
 }
 use rewards/value.{quantity, split_ada, tokens_of}
 use utils.{
-  get_input_state_by_policy, get_output_state_by_policy, input_linked_mint,
+  get_input_state_by_policy, input_linked_mint, is_singleton, must_find,
 }
 
 /// One-shot mint of the state NFT: 28-byte hashes, `complete == True`.
@@ -62,15 +68,23 @@ pub fn spend_gate(
 
 pub fn validate(tx: Transaction, own_hash: ScriptHash, redeemer: Data) -> Bool {
   expect redeemer: BatcherRedeemer = redeemer
-  expect state_in: BatcherState = get_input_state_by_policy(tx.inputs, own_hash)
-  expect state_out: BatcherState =
-    get_output_state_by_policy(tx.outputs, own_hash)
-  when redeemer is {
-    Pay { proof, pairs, exits } -> {
-      expect !state_in.complete
-      pay(state_in, leaves(state_in.root, proof), pairs, exits, tx) == state_out
+  let state_input =
+    must_find(tx.inputs, fn(i) { is_singleton(i.output.value, own_hash, "") }).output
+  expect [state_output, ..outputs] = tx.outputs
+  expect InlineDatum(state_in_data) = state_input.datum
+  expect state_in: BatcherState = state_in_data
+  expect InlineDatum(state_out_data) = state_output.datum
+  expect state_out: BatcherState = state_out_data
+  expect and {
+      state_output.address == state_input.address,
+      is_singleton(state_output.value, own_hash, ""),
     }
-    LoadAndPay { digest_proof, proof, pairs, exits } -> {
+  when redeemer is {
+    Pay { proof } -> {
+      expect !state_in.complete
+      pay(state_in, leaves(state_in.root, proof), outputs, tx) == state_out
+    }
+    LoadAndPay { digest_proof, proof } -> {
       expect state_in.complete
       let Digest { epoch, leaf_count, root, min_key, max_key, treasury_total } =
         load(state_in, digest_proof, tx.reference_inputs)
@@ -84,21 +98,22 @@ pub fn validate(tx: Transaction, own_hash: ScriptHash, redeemer: Data) -> Bool {
           treasury_total,
         }
       if leaf_count == 0 {
-        expect proof == [] && pairs == [] && exits == []
+        expect proof == []
         expect account_inputs(tx.inputs, state_in.account_policy) == 0
         expect tokens_of(tx.mint, state_in.account_policy) == []
         expect
           if treasury_total == 0 {
             pool_inputs(tx.inputs, state_in.pool_forever) == assets.zero
           } else {
+            expect [pool_out, ics_out, ..] = outputs
             and {
               pool_ok(
                 tx.inputs,
-                tx.outputs,
+                pool_out,
                 state_in.pool_forever,
                 treasury_total,
               ),
-              ics_paid(tx.outputs, treasury_total),
+              ics_ok(tx.inputs, ics_out, treasury_total),
             }
           }
         loaded == state_out
@@ -107,7 +122,7 @@ pub fn validate(tx: Transaction, own_hash: ScriptHash, redeemer: Data) -> Bool {
         expect [first, ..] = leaves
         let opened =
           BatcherState { ..loaded, start_key: first.key, cursor: first.key }
-        pay(opened, leaves, pairs, exits, tx) == state_out
+        pay(opened, leaves, outputs, tx) == state_out
       }
     }
   }
@@ -134,24 +149,37 @@ pub fn leaves(root: ByteArray, proof: ProofNodeRec) -> List<RewardLeaf> {
   verify_range(root, proof) |> list.map(parse_leaf)
 }
 
-/// Apply one batch to `state` and return the resulting state.
+/// Apply one batch to `state`; `outputs` follow the state output. The run that completes the fold pays the Treasury share.
 pub fn pay(
   state: BatcherState,
   leaves: List<RewardLeaf>,
-  pairs: List<PayPair>,
-  exits: List<ExitInfo>,
+  outputs: List<Output>,
   tx: Transaction,
 ) -> BatcherState {
-  let Transaction { inputs, outputs, mint, fee, .. } = tx
+  let Transaction { inputs, mint, fee, .. } = tx
   let paid, cursor <- split_run(state, leaves)
   let n_paid = list.length(paid)
-  let cap =
-    math.min(( fee + n_paid - 1 ) / n_paid, config.batcher_skim_max_lovelace)
-  let env = Env { inputs, outputs, account_policy: state.account_policy, cap }
-  let deposits = sorted_account_inputs(inputs, state.account_policy)
-  expect list.length(deposits) == n_paid + list.length(exits)
-  expect tokens_of(mint, state.account_policy) == exit_burns(paid)
-  let total = pay_each(paid, pairs, exits, deposits, -1, 0, env)
+  let env =
+    Env {
+      account_policy: state.account_policy,
+      cap: math.min(
+        ( fee + n_paid - 1 ) / n_paid,
+        config.batcher_skim_max_lovelace,
+      ),
+    }
+  expect [pool_out, ..outputs] = outputs
+  let
+    total,
+    after,
+  <-
+    pay_fold(
+      paid,
+      tokens_of(mint, state.account_policy),
+      sorted_account_inputs(inputs, state.account_policy),
+      outputs,
+      env,
+      0,
+    )
   let complete = cursor == state.start_key
   let treasury =
     if complete {
@@ -159,8 +187,14 @@ pub fn pay(
     } else {
       0
     }
-  expect pool_ok(inputs, outputs, state.pool_forever, total + treasury)
-  expect treasury == 0 || ics_paid(outputs, treasury)
+  expect pool_ok(inputs, pool_out, state.pool_forever, total + treasury)
+  expect
+    if treasury == 0 {
+      True
+    } else {
+      expect [ics_out, ..] = after
+      ics_ok(inputs, ics_out, treasury)
+    }
   BatcherState { ..state, cursor, complete }
 }
 
@@ -200,23 +234,7 @@ fn take_run(
   }
 }
 
-/// A batch's account mint: `-1` of each exiting deposit NFT, in leaf order.
-fn exit_burns(paid: List<RewardLeaf>) -> Pairs<ByteArray, Int> {
-  list.filter_map(
-    paid,
-    fn(leaf) {
-      if leaf.ack == 1 {
-        Some(Pair(deposit_name(leaf.key), -1))
-      } else {
-        None
-      }
-    },
-  )
-}
-
 type Env {
-  inputs: List<Input>,
-  outputs: List<Output>,
   account_policy: PolicyId,
   cap: Int,
 }
@@ -242,120 +260,139 @@ fn sorted_account_inputs(
     |> list.sort(fn(a, b) { bytearray.compare(a.1st, b.1st) })
 }
 
-/// The input named `name` in the sorted account inputs, past the smaller names (exit predecessors), and the ones after it.
-fn take_deposit(
-  deposits: List<(ByteArray, Input)>,
-  name: ByteArray,
-  return: fn(Input, List<(ByteArray, Input)>) -> result,
-) -> result {
-  expect [(found, input), ..rest] = deposits
-  if found == name {
-    return(input, rest)
-  } else {
-    expect bytearray.compare(found, name) == Less
-    take_deposit(rest, name, return)
-  }
-}
-
-/// Check every paid leaf against its deposit, its `PayPair` output (and `ExitInfo` for an exit); returns the NIGHT paid.
-fn pay_each(
-  paid: List<RewardLeaf>,
-  pairs: List<PayPair>,
-  exits: List<ExitInfo>,
-  deposits: List<(ByteArray, Input)>,
-  prev_out: Int,
-  total: Int,
+/// One step per paid leaf, taking in order its account inputs, its burn (an exit) and its outputs; returns the NIGHT paid and the outputs after the run.
+fn pay_fold(
+  leaves: List<RewardLeaf>,
+  burns: Pairs<AssetName, Int>,
+  inputs: List<(AssetName, Input)>,
+  outputs: List<Output>,
   env: Env,
-) -> Int {
-  when paid is {
+  total: Int,
+  return: fn(Int, List<Output>) -> result,
+) -> result {
+  when leaves is {
     [] -> {
-      expect pairs == [] && exits == []
-      total
+      expect burns == [] && inputs == []
+      return(total, outputs)
     }
-    [leaf, ..rest] -> {
-      expect [PayPair { output_index }, ..pairs] = pairs
-      expect output_index > prev_out
-      expect Some(output) = list.at(env.outputs, output_index)
+    [leaf, ..leaves] -> {
       let name = deposit_name(leaf.key)
-      let input, deposits <- take_deposit(deposits, name)
-      expect InlineDatum(datum) = input.output.datum
-      expect Deposit { next, committed, .. }: AccountDatum = datum
-      let ada_in, _ <- split_ada(input.output.value)
-      let night_in = night_of(input.output.value)
-      let ada_out, out_assets <- split_ada(output.value)
-      expect ada_in - ada_out <= env.cap
-      let night_due = night_in + leaf.amount
-      let exits =
-        if leaf.ack == 0 {
-          expect output.address == input.output.address
-          expect output.datum == input.output.datum
-          expect
-            out_assets == deposit_assets(env.account_policy, name, night_due)
-          exits
-        } else {
-          expect leaf.ack == 1
-          expect Some(refund_address) = committed
-          expect [ExitInfo { pred_input_index, pred_output_index }, ..exits] =
-            exits
-          expect Some(pred) = list.at(env.inputs, pred_input_index)
-          expect Some(pred_out) = list.at(env.outputs, pred_output_index)
-          expect unlink(pred, pred_out, env.account_policy, leaf.key, next)
-          expect output.address == refund_address
-          expect night_of(output.value) >= night_due
-          exits
-        }
-      pay_each(
-        rest,
-        pairs,
-        exits,
-        deposits,
-        output_index,
-        total + leaf.amount,
-        env,
-      )
+      if leaf.ack == 0 {
+        expect [(found, deposit), ..inputs] = inputs
+        expect [out, ..outputs] = outputs
+        expect and {
+            found == name,
+            paid_ok(deposit, out, name, leaf.amount, env),
+          }
+        pay_fold(
+          leaves,
+          burns,
+          inputs,
+          outputs,
+          env,
+          total + leaf.amount,
+          return,
+        )
+      } else {
+        expect leaf.ack == 1
+        expect [(_, pred), (found, deposit), ..inputs] = inputs
+        expect [Pair(burned, -1), ..burns] = burns
+        expect [pred_out, refund, ..outputs] = outputs
+        expect and {
+            found == name,
+            burned == name,
+            exit_ok(pred, pred_out, deposit, refund, leaf, env),
+          }
+        pay_fold(
+          leaves,
+          burns,
+          inputs,
+          outputs,
+          env,
+          total + leaf.amount,
+          return,
+        )
+      }
     }
   }
 }
 
-/// Inputs at the pool address never carry the forever NFT; exactly one
-/// `[ada, night]` output with inline datum, NIGHT down by `total`, ADA not down.
+/// The deposit continues at its address with its datum, its NFT and `amount` more NIGHT; its ADA falls by at most the skim cap.
+fn paid_ok(
+  deposit: Input,
+  out: Output,
+  name: AssetName,
+  amount: Int,
+  env: Env,
+) -> Bool {
+  let Output { address, value, datum, .. } = deposit.output
+  let ada_in, _ <- split_ada(value)
+  let ada_out, out_assets <- split_ada(out.value)
+  and {
+    ada_in - ada_out <= env.cap,
+    out.address == address,
+    out.datum == datum,
+    out_assets == deposit_assets(
+      env.account_policy,
+      name,
+      night_of(value) + amount,
+    ),
+  }
+}
+
+/// `pred` relinks past the exiting deposit, whose ADA (less the skim cap) and NIGHT plus the leaf amount go to its committed refund address.
+fn exit_ok(
+  pred: Input,
+  pred_out: Output,
+  deposit: Input,
+  refund: Output,
+  leaf: RewardLeaf,
+  env: Env,
+) -> Bool {
+  let Output { value, datum, .. } = deposit.output
+  expect InlineDatum(data) = datum
+  expect Deposit { next, committed: Some(refund_address), .. }: AccountDatum =
+    data
+  let ada_in, _ <- split_ada(value)
+  let ada_out, _ <- split_ada(refund.value)
+  and {
+    unlink(pred, pred_out, env.account_policy, leaf.key, next),
+    refund.address == refund_address,
+    ada_in - ada_out <= env.cap,
+    night_of(refund.value) >= night_of(value) + leaf.amount,
+  }
+}
+
+/// The pool pays `amount`: its inputs, none with the forever NFT, continue as `out` at the pool address with an inline datum, NIGHT down by `amount` and ADA not down.
 fn pool_ok(
   inputs: List<Input>,
-  outputs: List<Output>,
+  out: Output,
   pool_forever: ScriptHash,
-  total: Int,
+  amount: Int,
 ) -> Bool {
-  let pool_cred = Script(pool_forever)
   let pool_in = pool_inputs(inputs, pool_forever)
-  expect [pool_out] =
-    list.filter(outputs, fn(o) { o.address.payment_credential == pool_cred })
-  let ada_out, out_assets <- split_ada(pool_out.value)
-  expect InlineDatum(_) = pool_out.datum
+  let ada_out, out_assets <- split_ada(out.value)
+  expect InlineDatum(_) = out.datum
   and {
+    out.address == Address(Script(pool_forever), None),
     ada_out >= assets.lovelace_of(pool_in),
-    out_assets == night_assets(night_of(pool_in) - total),
+    out_assets == night_assets(night_of(pool_in) - amount),
   }
 }
 
-/// An output at the ICS forever address holds `[ada, night]` with at least `amount` NIGHT and no datum hash, so the ICS logic can merge it.
-fn ics_paid(outputs: List<Output>, amount: Int) -> Bool {
-  let ics = Address(Script(config.ics_forever_hash), None)
-  list.any(
-    outputs,
-    fn(o) {
-      let night = night_of(o.value)
-      let _, out_assets <- split_ada(o.value)
-      and {
-        o.address == ics,
-        night >= amount,
-        out_assets == night_assets(night),
-        when o.datum is {
-          DatumHash(_) -> False
-          _ -> True
-        },
-      }
+/// No input at the ICS, so no ICS merge shares the transaction; `out` pays exactly `amount` NIGHT to the ICS forever address as `[ada, night]` without a datum hash.
+fn ics_ok(inputs: List<Input>, out: Output, amount: Int) -> Bool {
+  let ics = Script(config.ics_forever_hash)
+  let _, out_assets <- split_ada(out.value)
+  and {
+    list.all(inputs, fn(i) { i.output.address.payment_credential != ics }),
+    out.address == Address(ics, None),
+    out_assets == night_assets(amount),
+    when out.datum is {
+      DatumHash(_) -> False
+      _ -> True
     },
-  )
+  }
 }
 
 /// Sum of the inputs at the pool address; fails if any carries the forever NFT.

@@ -69,24 +69,8 @@ pub type BatcherState {
 
 /// `LoadAndPay` opens an epoch with its first batch; `Pay` continues it.
 pub type BatcherRedeemer {
-  Pay { proof: ProofNodeRec, pairs: List<PayPair>, exits: List<ExitInfo> }
-  LoadAndPay {
-    digest_proof: DigestProof,
-    proof: ProofNodeRec,
-    pairs: List<PayPair>,
-    exits: List<ExitInfo>,
-  }
-}
-
-/// Output index of one paid leaf; for an exit the output is the refund. The leaf's deposit input is found by key among the account inputs, sorted by NFT name.
-pub type PayPair {
-  output_index: Int,
-}
-
-/// Predecessor input and output indices for one exiting leaf.
-pub type ExitInfo {
-  pred_input_index: Int,
-  pred_output_index: Int,
+  Pay { proof: ProofNodeRec }
+  LoadAndPay { digest_proof: DigestProof, proof: ProofNodeRec }
 }
 
 /// MMR proof of a BEEFY leaf, the SCALE header it commits to, and the

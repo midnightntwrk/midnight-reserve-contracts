@@ -160,7 +160,6 @@ export const buildBatchTx = (
     onSome: (p) => [...p.paid],
   });
   const total = paid.reduce((sum, i) => sum + batch.leaves[i].amount, 0n);
-  const pairs = paid.map((_, j) => ({ output_index: BigInt(2 + j) }));
   const proof: PlutusData[] = Option.match(batch.plan, {
     onNone: () => [],
     onSome: (p) => {
@@ -173,13 +172,12 @@ export const buildBatchTx = (
       return Array.from({ length: root.getLength() }, (_, i) => root.get(i));
     },
   });
-  const body = { proof, pairs, exits: [] };
   const redeemer = serialize(
     Contracts.BatcherRedeemer,
     Option.match(batch.load, {
-      onNone: (): Contracts.BatcherRedeemer => ({ Pay: body }),
+      onNone: (): Contracts.BatcherRedeemer => ({ Pay: { proof } }),
       onSome: ({ digestProof }): Contracts.BatcherRedeemer => ({
-        LoadAndPay: { digest_proof: digestProof, ...body },
+        LoadAndPay: { digest_proof: digestProof, proof },
       }),
     }),
   );

@@ -366,15 +366,19 @@ rejected (§5.3). So one wrap per epoch is implied. `complete` is
 
 ```aiken
 pub type BatcherRedeemer {
-  Pay { proof: ProofNodeRec, pairs: List<PayPair>, exits: List<ExitInfo> }
-  LoadAndPay { digest_proof: DigestProof, proof: ProofNodeRec, pairs: List<PayPair>, exits: List<ExitInfo> }   // digest: §7
+  Pay { proof: ProofNodeRec }
+  LoadAndPay { digest_proof: DigestProof, proof: ProofNodeRec }   // digest: §7
 }
-pub type PayPair { output_index: Int }       // the output per paid leaf, in leaf order; for an exit the output is the refund
-pub type ExitInfo { pred_input_index: Int, pred_output_index: Int }   // one per exit leaf, in leaf order
 ```
-Both redeemers also carry `batcher_pair: PayPair`, the batcher's own
-input and the output that collects the skims' change and the distribution
-fees.
+The redeemer names no input or output. The transaction layout binds them:
+
+| Output | Holds |
+|---|---|
+| 0 | the state: same address as the state input, ADA and the state NFT only |
+| 1 | the pool (§5.3 run rule 3) |
+| 2… | per paid leaf, in leaf order: its deposit (`ack = 0`), or its predecessor and then its refund (`ack = 1`) |
+| next | the ICS output, only when the batch pays the Treasury share |
+| rest | free (the batcher's change) |
 
 There is no standalone load: an epoch opens with its first batch, so
 `complete` alone distinguishes "between epochs" from "mid-run".
@@ -386,10 +390,10 @@ There is no standalone load: an epoch opens with its first batch, so
    the `config.committee_bridge_forever_hash` singleton NFT.
 3. `digest.epoch == state_in.epoch + 1` (strict succession).
 4. `loaded = state_in with { epoch, root, min_key, max_key, treasury_total }`.
-5. `leaf_count == 0`: `proof`, `pairs`, `exits` empty; `state_out = loaded`
-   (`complete` stays `True`); no deposit inputs. With `treasury_total == 0`
-   no pool inputs either; otherwise the pool pays `treasury_total` to the
-   ICS as in run rule 3. Otherwise
+5. `leaf_count == 0`: `proof` empty; `state_out = loaded` (`complete`
+   stays `True`); no input holds an `account_policy` token and the mint
+   holds none. With `treasury_total == 0` no pool inputs either; otherwise
+   output 1 is the pool and output 2 the ICS, as in run rule 3. Otherwise
    `start_key := cursor := key(leaves[0])` and the run rules below apply.
 
 **Pay** (every later batch)
@@ -406,45 +410,48 @@ There is no standalone load: an epoch opens with its first batch, so
      run (a leaf that would be paid) fails.
    So every batch pays at least one leaf and the epoch completes in the
    batch that pays its last leaf; a batch cannot strand the epoch.
-2. Every paid leaf: its deposit input is the one carrying `0x00 ++ key`
-   among the inputs holding an `account_policy` token, sorted by NFT name
-   and walked in leaf order (smaller names skipped are exit
-   predecessors), so the ledger's input order does not matter; its output
-   is `pairs[i]`; apply §4.5 Pay or Exit (for an exit the `PayPair` output
-   is the refund and `exits[j]` names the predecessor). Output indices in
-   `pairs` strictly increase, and each deposit is taken once (no double
-   satisfaction). Every input carrying an `account_policy` token is a paid
-   deposit or an exit predecessor (head or deposit) from `exits`: the count
-   of such inputs equals `len(paid) + len(exits)`. Deposit
-   spends and the exit burn use the account gate `Batcher` (§4.4); a head
-   input is accepted only as an exit predecessor; the tail is never an
-   input. `pairs` and `exits` are consumed exactly. Every input pairs with
-   one output, the batcher's own (`batcher_pair`) included, and every pair
-   has `ADA_out ≤ ADA_in`: the batcher gains no ADA, and a deposit pair's
-   difference is the skim of §4.5.
+2. One fold walks four lists in step: the paid leaves; the mint under
+   `account_policy`; the inputs holding an `account_policy` token, sorted
+   by NFT name (so the ledger's input order does not matter); and the
+   outputs from index 2. Per paid leaf:
+   - `ack = 0`: the next input is its deposit `0x00 ++ key`; the next
+     output continues it (§4.5 Pay).
+   - `ack = 1`: the next two inputs are its list predecessor (head or
+     deposit) and its deposit; the next mint entry is `(0x00 ++ key, −1)`;
+     the next two outputs are the relinked predecessor and the refund
+     (§4.5 Exit).
+   At the end the mint and the inputs must be empty. So every account
+   input, burn and output has exactly one role: an extra deposit, a
+   registration, an unused head, a mint or a second burn fails. Deposit
+   spends and the exit burn use the account gate `Batcher` (§4.4); the tail
+   is never an input.
 3. Pool: all inputs at `Script(pool_forever)` are summed (none may carry the
-   pool forever NFT); exactly one output to that credential with
-   `NIGHT_out == NIGHT_in − Σ amount − treasury`, `ADA_out ≥ ADA_in`, value
-   shape `[ada, night]`, inline datum, where `treasury = state.treasury_total`
-   in the batch that sets `complete := True` (and in an empty-epoch
-   `LoadAndPay`) and `0` otherwise. In that batch, when `treasury > 0`,
-   one output at `Address(Script(config.ics_forever_hash), None)` holds
-   `[ada, night]` with NIGHT `≥ treasury` and no datum hash: the shape the
-   ICS `logic_merge` accepts. Σ fee (§4.5) is not checked against
-   the batcher pair; it is what the pool lost less what the deposits and
-   the ICS gained. Pool logic is satisfied separately (§9).
+   pool forever NFT); output 1 is at `Address(Script(pool_forever), None)`
+   with `NIGHT_out == NIGHT_in − Σ amount − treasury`, `ADA_out ≥ ADA_in`,
+   value shape `[ada, night]`, inline datum, where
+   `treasury = state.treasury_total` in the batch that sets
+   `complete := True` (and in an empty-epoch `LoadAndPay`) and `0`
+   otherwise. In that batch, when `treasury > 0`, the output after the
+   fold is at `Address(Script(config.ics_forever_hash), None)` and holds
+   `[ada, treasury]` with no datum hash: the shape the ICS `logic_merge`
+   accepts. No input of that batch may sit at the ICS credential, so no
+   ICS merge shares the transaction and claims the same output. Σ fee
+   (§4.5) is what the pool lost less what the deposits and the ICS
+   gained. Pool logic is satisfied separately (§9).
 4. `state_out == state_in with { cursor, complete }` (plus the digest fields
    on `LoadAndPay`); NFT continues.
 
 ### 5.4 Costs
 
 Per deposit input the spend script runs a constant-size gate (withdrawal
-lookup, ~0.13 M mem). The withdraw script does one multiproof verification
-plus a linear pass over paid leaves and their `pairs`. Measured (phase 04,
-`budget_30_pairs` minus its fixture): 30 paid leaves from a 64-leaf tree
-cost ≈ 10.3 M mem / 3.7 G cpu in the batcher alone; with 30 gates the tx
-reaches the 14 M mem limit. Recommended K ≈ 20–25 accounts per batch on
-mainnet limits. `max_skim` (§4.5) covers cost only at the target K, and
+lookup, ~0.13 M mem). The withdraw script does one multiproof verification,
+sorts the account inputs, and folds once over the paid leaves. Measured
+(`budget_30_pairs` minus its fixture): 30 paid leaves from a 64-leaf tree
+cost ≈ 5.3 M mem / 2.0 G cpu in the batcher alone; with 30 gates the tx
+uses about 9.2 M of the 14 M mem limit. The test gives the deposits in
+ascending order, the best case of the stdlib insertion sort; the ledger
+orders inputs by transaction id, so the worst case is higher.
+Recommended K ≈ 20–25 accounts per batch on mainnet limits. `max_skim` (§4.5) covers cost only at the target K, and
 the distribution fee is linear in leaves paid, so incentives point toward
 the largest batch that fits.
 
@@ -731,7 +738,7 @@ Every governance-domain spend still needs the domain's `logic` and
 - **List order**: following `next` from head visits strictly ascending keys.
 - **One authority per list UTXO**: every account-address input is covered
   by exactly one of the account withdraw (its action's exact set) or the
-  batcher withdraw (`pairs` + `exits`).
+  batcher withdraw (its fold, §5.3 run rule 2).
 - **Exactly-once**: within an epoch a `skh` is paid at most once; a leaf is
   never skipped (contiguity + cursor + start check).
 - **Completion**: `complete` becomes `True` only after every leaf between
@@ -885,6 +892,14 @@ with the two-stage / forever phases, `rewards_batcher_hash` and
 | `config.rewards_pallet_index` / `rewards_call_index` replace `rewards_digest_engine_id` | the call is identified by pallet and call index |
 | No block-position rule: any block, first extrinsic that decodes to `epoch + 1` | the node may emit the digest after an observation lag |
 | `lib/rewards/trie.ak` + test-only `trie_builder.ak`, validated against `sp_trie` golden vectors | new verifier |
+
+### Batcher review (2026-09-28, as built)
+
+| Change | Reason |
+|---|---|
+| One fold over the paid leaves, the account mint, the sorted account inputs and the outputs from index 2; fixed outputs (state 0, pool 1, ICS after the run); `PayPair` and `ExitInfo` removed | redeemer indices let one input or output take two roles, and leftover account inputs were never checked |
+| The batch's account mint is exactly its exit burns | the `Batcher` account gate trusts the batcher, so a batch could mint account NFTs |
+| A batch that pays the Treasury share spends no ICS input and pays exactly `treasury` | the ICS `logic_merge` claims the first ICS output, so a merge in the same tx could satisfy both checks |
 
 ### MIP alignment (2026-09-16, not yet built)
 
