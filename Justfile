@@ -52,11 +52,21 @@ use-env env:
 
 
 # The node repo's local-env stack (local Cardano devnet, db-sync, six nodes) on a node ref, sessions of `session_slots` 6 s slots, a Cardano epoch of `mc_epoch` s (a multiple of the session); RPC http://localhost:9945; then the Lace wallet's backend (Blockfrost RYO and the shim, BLOCKFROST_PROXY_URL=http://localhost:3001)
-private-net-up node="../midnight-node" ref="kc-beefy-mip-alignment" session_slots="10" mc_epoch="60":
+private-net-up node="../midnight-node" ref="kc-block-rewards" session_slots="10" mc_epoch="60":
     tests/private-net/local-env.sh up {{node}} {{ref}} {{session_slots}} {{mc_epoch}}
     tests/private-net/lace-backend.sh up
 
 
-private-net-down node="../midnight-node" ref="kc-beefy-mip-alignment":
+private-net-down node="../midnight-node" ref="kc-block-rewards":
     tests/private-net/lace-backend.sh down
     tests/private-net/local-env.sh down {{node}} {{ref}}
+
+
+# The rewards demo's Cardano side on the new stack: the committee bridge, the rewards contracts, the reserve on reserve_logic_v2 and one virtual account per permissioned candidate (tests/private-net/rewards-deploy.sh)
+private-net-deploy:
+    tests/private-net/rewards-deploy.sh
+
+
+# The data pump on the deployed stack: each committee handover, reserve release and rewards batch as it falls due
+private-net-pump:
+    cd .private-net/demo && KUPO_URL=http://127.0.0.1:1442 OGMIOS_URL=ws://127.0.0.1:1337 bun cli/index.ts pump -p kupmios --use-build --rpc http://127.0.0.1:9945
