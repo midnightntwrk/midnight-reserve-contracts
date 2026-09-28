@@ -18,8 +18,7 @@ use rewards/test_fixtures.{
   pool_forever, ref_input_bridge, withdrawal_of,
 }
 use rewards/types.{
-  BatcherRedeemer, BatcherState, Digest, ExitInfo, LoadAndPay, Pay, PayPair,
-  tail_key,
+  BatcherRedeemer, BatcherState, Digest, LoadAndPay, Pay, tail_key,
 }
 use rewards_batcher
 
@@ -182,10 +181,6 @@ fn batch_tx(
   }
 }
 
-fn pairs_for(n: Int) -> List<PayPair> {
-  list.map(list.range(0, n - 1), fn(i) { PayPair { output_index: 2 + i } })
-}
-
 fn run(tx: Transaction, redeemer: BatcherRedeemer) -> Bool {
   rewards_batcher.rewards_batcher.else(ctx_withdraw(tx, redeemer, batcher_hash))
 }
@@ -207,14 +202,7 @@ fn simple_pay(
       list.map(paid, fn(i) { dep_out(i, 0) }),
       zero,
     )
-  run(
-    tx,
-    Pay {
-      proof: proof(leaves7, from, to),
-      pairs: pairs_for(list.length(paid)),
-      exits: [],
-    },
-  )
+  run(tx, Pay { proof: proof(leaves7, from, to) })
 }
 
 fn with_bridge(tx: Transaction, mmr_root: ByteArray) -> Transaction {
@@ -241,15 +229,7 @@ fn simple_load(
       zero,
     )
       |> with_bridge(mmr_root)
-  run(
-    tx,
-    LoadAndPay {
-      digest_proof: dp,
-      proof: proof(leaves7, from, to),
-      pairs: pairs_for(list.length(paid)),
-      exits: [],
-    },
-  )
+  run(tx, LoadAndPay { digest_proof: dp, proof: proof(leaves7, from, to) })
 }
 
 // -- init ----------------------------------------------------------------------
@@ -391,15 +371,7 @@ test load_bad_digest_proof() fail {
       zero,
     )
       |> with_bridge(zero32)
-  run(
-    tx,
-    LoadAndPay {
-      digest_proof: dp,
-      proof: proof(leaves7, 4, 6),
-      pairs: pairs_for(2),
-      exits: [],
-    },
-  )
+  run(tx, LoadAndPay { digest_proof: dp, proof: proof(leaves7, 4, 6) })
 }
 
 test load_without_bridge_reference() fail {
@@ -413,15 +385,7 @@ test load_without_bridge_reference() fail {
       [dep_out(4, 0), dep_out(5, 0)],
       zero,
     )
-  run(
-    tx,
-    LoadAndPay {
-      digest_proof: dp,
-      proof: proof(leaves7, 4, 6),
-      pairs: pairs_for(2),
-      exits: [],
-    },
-  )
+  run(tx, LoadAndPay { digest_proof: dp, proof: proof(leaves7, 4, 6) })
 }
 
 test load_wrong_root_in_state_out() fail {
@@ -452,7 +416,7 @@ fn empty_tx(state_out: BatcherState) -> Transaction {
 
 fn empty_redeemer() -> BatcherRedeemer {
   let (_, dp) = digest_proof(empty_digest)
-  LoadAndPay { digest_proof: dp, proof: [], pairs: [], exits: [] }
+  LoadAndPay { digest_proof: dp, proof: [] }
 }
 
 test load_empty_epoch_ok() {
@@ -470,12 +434,7 @@ test load_empty_epoch_with_proof() fail {
   let (_, dp) = digest_proof(empty_digest)
   run(
     empty_tx(BatcherState { ..init_state, epoch: 5 }),
-    LoadAndPay {
-      digest_proof: dp,
-      proof: proof(leaves7, 4, 6),
-      pairs: [],
-      exits: [],
-    },
+    LoadAndPay { digest_proof: dp, proof: proof(leaves7, 4, 6) },
   )
 }
 
@@ -711,14 +670,7 @@ test pay_non_contiguous_proof() fail {
       [dep_out(1, 0)],
       zero,
     )
-  run(
-    tx,
-    Pay {
-      proof: build_proof_indices(leaves7, [0, 2]),
-      pairs: pairs_for(1),
-      exits: [],
-    },
-  )
+  run(tx, Pay { proof: build_proof_indices(leaves7, [0, 2]) })
 }
 
 test pay_wrong_root_state_out() fail {
@@ -764,8 +716,8 @@ fn two_paid_tx(dep_outs: List<Output>, pool_out_night: Int) -> Transaction {
   )
 }
 
-fn two_paid(tx: Transaction, pairs: List<PayPair>) -> Bool {
-  run(tx, Pay { proof: proof(leaves7, 6, 7), pairs, exits: [] })
+fn two_paid(tx: Transaction) -> Bool {
+  run(tx, Pay { proof: proof(leaves7, 6, 7) })
 }
 
 const two_total = amount(6) + amount(7)
@@ -780,39 +732,27 @@ test pay_wrong_deposit_nft() fail {
       [dep_out(6, 0), dep_out(7, 0)],
       zero,
     )
-  two_paid(tx, pairs_for(2))
+  two_paid(tx)
 }
 
 test pay_night_underpaid() fail {
   let short = mk_deposit_output(k(7), dep_ada, amount(7) - 1, tail_key, None)
-  two_paid(
-    two_paid_tx([dep_out(6, 0), short], pool_night - two_total),
-    pairs_for(2),
-  )
+  two_paid(two_paid_tx([dep_out(6, 0), short], pool_night - two_total))
 }
 
 test pay_night_overpaid() fail {
   let over = mk_deposit_output(k(7), dep_ada, amount(7) + 1, tail_key, None)
-  two_paid(
-    two_paid_tx([dep_out(6, 0), over], pool_night - two_total - 1),
-    pairs_for(2),
-  )
+  two_paid(two_paid_tx([dep_out(6, 0), over], pool_night - two_total - 1))
 }
 
 test pay_deposit_datum_changed() fail {
   let changed = mk_deposit_output(k(7), dep_ada, amount(7), k(1), None)
-  two_paid(
-    two_paid_tx([dep_out(6, 0), changed], pool_night - two_total),
-    pairs_for(2),
-  )
+  two_paid(two_paid_tx([dep_out(6, 0), changed], pool_night - two_total))
 }
 
 test pay_deposit_moved() fail {
   let moved = Output { ..dep_out(7, 0), address: refund }
-  two_paid(
-    two_paid_tx([dep_out(6, 0), moved], pool_night - two_total),
-    pairs_for(2),
-  )
+  two_paid(two_paid_tx([dep_out(6, 0), moved], pool_night - two_total))
 }
 
 test pay_deposit_extra_asset() fail {
@@ -821,23 +761,18 @@ test pay_deposit_extra_asset() fail {
       ..dep_out(7, 0),
       value: dep_out(7, 0).value |> add(batcher_hash, "x", 1),
     }
-  two_paid(
-    two_paid_tx([dep_out(6, 0), extra], pool_night - two_total),
-    pairs_for(2),
-  )
+  two_paid(two_paid_tx([dep_out(6, 0), extra], pool_night - two_total))
 }
 
 test pay_pool_overdrawn() fail {
   two_paid(
     two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total - 1),
-    pairs_for(2),
   )
 }
 
 test pay_pool_under_decreased() fail {
   two_paid(
     two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total + 1),
-    pairs_for(2),
   )
 }
 
@@ -854,7 +789,7 @@ test pay_pool_ada_decreased() fail {
         }
       },
     )
-  two_paid(Transaction { ..tx, outputs }, pairs_for(2))
+  two_paid(Transaction { ..tx, outputs })
 }
 
 test pay_pool_ada_increased_ok() {
@@ -870,7 +805,7 @@ test pay_pool_ada_increased_ok() {
         }
       },
     )
-  two_paid(Transaction { ..tx, outputs }, pairs_for(2))
+  two_paid(Transaction { ..tx, outputs })
 }
 
 test pay_pool_forever_nft_spent() fail {
@@ -885,19 +820,60 @@ test pay_pool_forever_nft_spent() fail {
       ..tx,
       inputs: list.concat(tx.inputs, [mk_input(mk_outref(3), nft_utxo)]),
     },
-    pairs_for(2),
   )
 }
 
-test pay_two_pool_outputs() fail {
+test pay_pool_output_not_second() fail {
   let tx = two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total)
+  expect [state_out, pool_out, ..deposits] = tx.outputs
   two_paid(
     Transaction {
       ..tx,
-      outputs: list.concat(tx.outputs, [mk_pool_output(pool_ada, 0)]),
+      outputs: [state_out, ..list.concat(deposits, [pool_out])],
     },
-    pairs_for(2),
   )
+}
+
+test pay_pool_output_with_stake_part() fail {
+  let tx = two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total)
+  let outputs =
+    list.indexed_map(
+      tx.outputs,
+      fn(i, o) {
+        if i == 1 {
+          Output {
+            ..o,
+            address: Address(
+              Script(pool_forever),
+              Some(Inline(VerificationKey(zero28))),
+            ),
+          }
+        } else {
+          o
+        }
+      },
+    )
+  two_paid(Transaction { ..tx, outputs })
+}
+
+test pay_state_output_not_first() fail {
+  let tx = two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total)
+  expect [state_out, ..rest] = tx.outputs
+  two_paid(Transaction { ..tx, outputs: list.concat(rest, [state_out]) })
+}
+
+test pay_state_output_with_stake_part() fail {
+  let tx = two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total)
+  expect [state_out, ..rest] = tx.outputs
+  let staked =
+    Output {
+      ..state_out,
+      address: Address(
+        state_out.address.payment_credential,
+        Some(Inline(VerificationKey(zero28))),
+      ),
+    }
+  two_paid(Transaction { ..tx, outputs: [staked, ..rest] })
 }
 
 test pay_pool_output_without_datum() fail {
@@ -913,7 +889,7 @@ test pay_pool_output_without_datum() fail {
         }
       },
     )
-  two_paid(Transaction { ..tx, outputs }, pairs_for(2))
+  two_paid(Transaction { ..tx, outputs })
 }
 
 test pay_two_pool_inputs_summed_ok() {
@@ -938,15 +914,11 @@ test pay_two_pool_inputs_summed_ok() {
       ),
       outputs,
     },
-    pairs_for(2),
   )
 }
 
-test pay_two_pairs_one_output() fail {
-  two_paid(
-    two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total),
-    [PayPair(2), PayPair(2)],
-  )
+test pay_deposit_outputs_out_of_leaf_order() fail {
+  two_paid(two_paid_tx([dep_out(7, 0), dep_out(6, 0)], pool_night - two_total))
 }
 
 test pay_deposits_in_any_ledger_order() {
@@ -959,7 +931,7 @@ test pay_deposits_in_any_ledger_order() {
       [dep_out(6, 0), dep_out(7, 0)],
       zero,
     )
-  two_paid(tx, pairs_for(2))
+  two_paid(tx)
 }
 
 test pay_deposit_missing() fail {
@@ -972,21 +944,11 @@ test pay_deposit_missing() fail {
       [dep_out(6, 0), dep_out(7, 0)],
       zero,
     )
-  two_paid(tx, pairs_for(2))
+  two_paid(tx)
 }
 
-test pay_missing_pair() fail {
-  two_paid(
-    two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total),
-    pairs_for(1),
-  )
-}
-
-test pay_extra_pair() fail {
-  two_paid(
-    two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total),
-    pairs_for(3),
-  )
+test pay_deposit_output_missing() fail {
+  two_paid(two_paid_tx([dep_out(6, 0)], pool_night - two_total))
 }
 
 test pay_extra_deposit_input() fail {
@@ -996,7 +958,6 @@ test pay_extra_deposit_input() fail {
       ..tx,
       inputs: list.concat(tx.inputs, [mk_input(mk_outref(20), dep_in(3))]),
     },
-    pairs_for(2),
   )
 }
 
@@ -1010,7 +971,6 @@ test pay_extra_head_input() fail {
         [mk_input(mk_outref(20), mk_head_output(k(1)))],
       ),
     },
-    pairs_for(2),
   )
 }
 
@@ -1024,19 +984,7 @@ test pay_mints_account_nft() fail {
       list.map([6, 7], fn(i) { dep_out(i, 0) }),
       forged_deposit_nft,
     )
-  run(tx, Pay { proof: proof(leaves7, 6, 7), pairs: pairs_for(2), exits: [] })
-}
-
-test pay_stale_exit_info() fail {
-  let tx = two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total)
-  run(
-    tx,
-    Pay {
-      proof: proof(leaves7, 6, 7),
-      pairs: pairs_for(2),
-      exits: [ExitInfo(0, 0)],
-    },
-  )
+  run(tx, Pay { proof: proof(leaves7, 6, 7) })
 }
 
 // -- skim ----------------------------------------------------------------------------
@@ -1049,26 +997,23 @@ fn skim_tx(skim: Int, tx_fee: Int) -> Transaction {
 }
 
 test skim_at_fee_share_ok() {
-  two_paid(skim_tx(3_000, 6_000), pairs_for(2))
+  two_paid(skim_tx(3_000, 6_000))
 }
 
 test skim_above_fee_share() fail {
-  two_paid(skim_tx(3_001, 6_000), pairs_for(2))
+  two_paid(skim_tx(3_001, 6_000))
 }
 
 test skim_rounds_up() {
-  two_paid(skim_tx(3_001, 6_001), pairs_for(2))
+  two_paid(skim_tx(3_001, 6_001))
 }
 
 test skim_at_config_max_with_padded_fee() {
-  two_paid(skim_tx(config.batcher_skim_max_lovelace, 5_000_000), pairs_for(2))
+  two_paid(skim_tx(config.batcher_skim_max_lovelace, 5_000_000))
 }
 
 test skim_above_config_max_with_padded_fee() fail {
-  two_paid(
-    skim_tx(config.batcher_skim_max_lovelace + 1, 5_000_000),
-    pairs_for(2),
-  )
+  two_paid(skim_tx(config.batcher_skim_max_lovelace + 1, 5_000_000))
 }
 
 // -- exits -----------------------------------------------------------------------------
@@ -1109,20 +1054,13 @@ fn exit_tx(
     st(exit_root, k(1), k(4), False),
     pool_night - amount(3),
     [dep, pred_in],
-    [refund_output, pred_out],
+    [pred_out, refund_output],
     mint,
   )
 }
 
 fn run_exit(tx: Transaction) -> Bool {
-  run(
-    tx,
-    Pay {
-      proof: proof(exit_tree, 3, 4),
-      pairs: [PayPair(2)],
-      exits: [ExitInfo(3, 3)],
-    },
-  )
+  run(tx, Pay { proof: proof(exit_tree, 3, 4) })
 }
 
 const exit_night_in = 777
@@ -1183,7 +1121,7 @@ test exit_refund_wrong_address() fail {
     list.indexed_map(
       tx.outputs,
       fn(i, o) {
-        if i == 2 {
+        if i == 3 {
           Output { ..o, address: Address(VerificationKey(k(9)), None) }
         } else {
           o
@@ -1242,10 +1180,27 @@ test exit_wrong_predecessor() fail {
   )
 }
 
-test exit_without_exit_info() fail {
-  run(
-    good_exit_tx(),
-    Pay { proof: proof(exit_tree, 3, 4), pairs: [PayPair(2)], exits: [] },
+test exit_without_predecessor_input() fail {
+  let tx = good_exit_tx()
+  run_exit(
+    Transaction {
+      ..tx,
+      inputs: list.filter(
+        tx.inputs,
+        fn(i) { i.output != mk_deposit_output(k(2), dep_ada, 0, k(3), None) },
+      ),
+    },
+  )
+}
+
+test exit_refund_before_predecessor() fail {
+  let tx = good_exit_tx()
+  expect [state_out, pool_out, pred_o, refund_o, ..rest] = tx.outputs
+  run_exit(
+    Transaction {
+      ..tx,
+      outputs: [state_out, pool_out, refund_o, pred_o, ..rest],
+    },
   )
 }
 
@@ -1268,7 +1223,7 @@ test exit_leaf_paid_as_deposit() fail {
       ],
       zero,
     )
-  run(tx, Pay { proof: proof(exit_tree, 3, 4), pairs: pairs_for(1), exits: [] })
+  run(tx, Pay { proof: proof(exit_tree, 3, 4) })
 }
 
 test exit_predecessor_is_head_ok() {
@@ -1280,13 +1235,10 @@ test exit_predecessor_is_head_ok() {
       st(r, k(4), k(2), False),
       pool_night - amount(1),
       [committed_dep(1, 0), mk_head_output(k(1))],
-      [refund_out(dep_ada, amount(1)), mk_head_output(k(2))],
+      [mk_head_output(k(2)), refund_out(dep_ada, amount(1))],
       from_asset(account_policy, builtin.append_bytearray(#"00", k(1)), -1),
     )
-  run(
-    tx,
-    Pay { proof: proof(t, 1, 2), pairs: [PayPair(2)], exits: [ExitInfo(3, 3)] },
-  )
+  run(tx, Pay { proof: proof(t, 1, 2) })
 }
 
 test exit_first_batch_ok() {
@@ -1298,21 +1250,13 @@ test exit_first_batch_ok() {
       pool_night - amount(3),
       [committed_dep(3, 0), mk_deposit_output(k(2), dep_ada, 0, k(3), None)],
       [
-        refund_out(dep_ada, amount(3)),
         mk_deposit_output(k(2), dep_ada, 0, k(4), None),
+        refund_out(dep_ada, amount(3)),
       ],
       exit_burn,
     )
       |> with_bridge(mmr_root)
-  run(
-    tx,
-    LoadAndPay {
-      digest_proof: dp,
-      proof: proof(exit_tree, 3, 4),
-      pairs: [PayPair(2)],
-      exits: [ExitInfo(3, 3)],
-    },
-  )
+  run(tx, LoadAndPay { digest_proof: dp, proof: proof(exit_tree, 3, 4) })
 }
 
 // -- budget ------------------------------------------------------------------------------
@@ -1363,17 +1307,16 @@ fn budget_tx() -> Transaction {
 }
 
 fn budget_redeemer() -> BatcherRedeemer {
-  Pay { proof: build_proof(big_tree, 0, 30), pairs: pairs_for(30), exits: [] }
+  Pay { proof: build_proof(big_tree, 0, 30) }
 }
 
 /// Fixture cost alone; subtract from `budget_30_pairs` for the validator's share.
 test budget_30_pairs_fixture_only() {
   let tx = budget_tx()
-  expect Pay { proof, pairs, .. } = budget_redeemer()
+  expect Pay { proof } = budget_redeemer()
   and {
     list.length(tx.inputs) == 32,
     list.length(proof) == 2,
-    list.length(pairs) == 30,
   }
 }
 
@@ -1414,7 +1357,7 @@ fn completing(pool_paid: Int, extra: List<Output>) -> Bool {
     )
   run(
     Transaction { ..tx, outputs: list.concat(tx.outputs, extra) },
-    Pay { proof: proof(leaves7, 2, 4), pairs: pairs_for(2), exits: [] },
+    Pay { proof: proof(leaves7, 2, 4) },
   )
 }
 
@@ -1458,6 +1401,34 @@ test treasury_ics_output_with_stake_part() fail {
   completing(treasury, [Output { ..ics_output(treasury), address: staked }])
 }
 
+test treasury_ics_overpaid() fail {
+  completing(treasury, [ics_output(treasury + 1)])
+}
+
+/// The completing batch also merges an ICS UTXO of `treasury` NIGHT into its ICS output, so one output could satisfy both the merge and the payment.
+test treasury_with_ics_merge() fail {
+  let tx =
+    batch_tx(
+      with_treasury(st(root7, k(4), k(2), False)),
+      with_treasury(st(root7, k(4), k(4), True)),
+      pool_night - sum_amounts([2, 3]) - treasury,
+      [dep_in(2), dep_in(3)],
+      [dep_out(2, 0), dep_out(3, 0)],
+      zero,
+    )
+  run(
+    Transaction {
+      ..tx,
+      inputs: list.concat(
+        tx.inputs,
+        [mk_input(mk_outref(30), ics_output(treasury))],
+      ),
+      outputs: list.concat(tx.outputs, [ics_output(treasury)]),
+    },
+    Pay { proof: proof(leaves7, 2, 4) },
+  )
+}
+
 test treasury_not_paid_mid_fold() fail {
   let tx =
     batch_tx(
@@ -1473,7 +1444,7 @@ test treasury_not_paid_mid_fold() fail {
       ..tx,
       outputs: list.concat(tx.outputs, [ics_output(treasury)]),
     },
-    Pay { proof: proof(leaves7, 6, 7), pairs: pairs_for(2), exits: [] },
+    Pay { proof: proof(leaves7, 6, 7) },
   )
 }
 
@@ -1496,12 +1467,7 @@ test treasury_paid_by_load_that_completes() {
       ..tx,
       outputs: list.concat(tx.outputs, [ics_output(treasury)]),
     },
-    LoadAndPay {
-      digest_proof: dp,
-      proof: proof(leaves7, 1, 7),
-      pairs: pairs_for(7),
-      exits: [],
-    },
+    LoadAndPay { digest_proof: dp, proof: proof(leaves7, 1, 7) },
   )
 }
 
@@ -1525,7 +1491,7 @@ fn empty_treasury(pool_paid: Int, extra: List<Output>) -> Bool {
       withdrawals: [withdrawal_of(batcher_hash)],
     }
       |> with_bridge(mmr_root)
-  run(tx, LoadAndPay { digest_proof: dp, proof: [], pairs: [], exits: [] })
+  run(tx, LoadAndPay { digest_proof: dp, proof: [] })
 }
 
 test treasury_paid_by_empty_epoch_load() {
@@ -1538,4 +1504,27 @@ test treasury_empty_epoch_without_ics_output() fail {
 
 test treasury_empty_epoch_left_in_pool() fail {
   empty_treasury(0, [ics_output(treasury)])
+}
+
+test treasury_empty_epoch_with_ics_merge() fail {
+  let (mmr_root, dp) =
+    digest_proof(Digest { ..empty_digest, treasury_total: treasury })
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: [
+        mk_input(mk_outref(1), mk_state_output(init_state)),
+        mk_input(mk_outref(2), mk_pool_output(pool_ada, pool_night)),
+        mk_input(mk_outref(30), ics_output(treasury)),
+      ],
+      outputs: [
+        mk_state_output(with_treasury(BatcherState { ..init_state, epoch: 5 })),
+        mk_pool_output(pool_ada, pool_night - treasury),
+        ics_output(treasury),
+      ],
+      fee,
+      withdrawals: [withdrawal_of(batcher_hash)],
+    }
+      |> with_bridge(mmr_root)
+  run(tx, LoadAndPay { digest_proof: dp, proof: [] })
 }
