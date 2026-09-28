@@ -159,6 +159,7 @@ fn release_ok(tx: Transaction, track: Track, intervals: Int) -> Bool {
     nft_out.value == nft_in.value,
     nft_out.datum == InlineDatum(ReleaseState { last_release_time: next }),
     value_out.address == Address(Script(track.reserve), None),
+    pool_out.address == Address(Script(track.pool), None),
     no_datum_hash(value_out),
     reserve_ada >= assets.lovelace_of(reserve_in),
     reserve_night_out == reserve_night - released,

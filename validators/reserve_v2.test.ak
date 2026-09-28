@@ -1,6 +1,6 @@
 use aiken/builtin
 use aiken/interval
-use cardano/address.{Address, Script, VerificationKey}
+use cardano/address.{Address, Inline, Script, VerificationKey}
 use cardano/assets.{add, from_asset, from_lovelace}
 use cardano/certificate.{UnregisterCredential}
 use cardano/script_context.{Minting, Publishing, ScriptContext, Withdrawing}
@@ -283,6 +283,24 @@ test release_without_pool_output() fail {
     [
       nft_utxo(reserve, ReleaseState(interval_ms)),
       reserve_utxo(reserve_night - ceiling1),
+    ],
+    interval_ms,
+    Release { intervals: 1 },
+  )
+}
+
+test release_pool_output_with_stake_part() fail {
+  let staked =
+    Output {
+      ..pool_utxo(ceiling1),
+      address: Address(Script(pool), Some(Inline(VerificationKey(other_logic)))),
+    }
+  run(
+    [nft_utxo(reserve, deploy_datum), reserve_utxo(reserve_night)],
+    [
+      nft_utxo(reserve, ReleaseState(interval_ms)),
+      reserve_utxo(reserve_night - ceiling1),
+      staked,
     ],
     interval_ms,
     Release { intervals: 1 },
