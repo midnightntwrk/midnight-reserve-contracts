@@ -639,7 +639,9 @@ at least the next interval's need.
 
 ### 8.2 Release rules
 
-1. `Release` requires both logic withdrawals as usual (forever pattern).
+1. `Release` requires both logic withdrawals as usual (forever pattern). `Merge` and
+   `Release` run only as the withdrawal; publishing a `RegisterCredential`
+   passes and any other certificate, an unregistration included, fails.
 2. `now = validity_range.lower_bound` (finite, inclusive). `intervals ≥ 1`
    and `last_release_time + intervals × interval_ms ≤ now`. Partial catch-up
    is allowed (`intervals` may be less than elapsed); fully permissionless.

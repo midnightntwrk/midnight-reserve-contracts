@@ -16,7 +16,7 @@ use aiken/interval.{Finite}
 use aiken/math
 use cardano/address.{Address, Script}
 use cardano/assets.{AssetName, PolicyId, Value}
-use cardano/certificate.{RegisterCredential, UnregisterCredential}
+use cardano/certificate.{RegisterCredential}
 use cardano/script_context.{Minting, Publishing, ScriptInfo, Withdrawing}
 use cardano/transaction.{
   DatumHash, InlineDatum, Input, Output, OutputReference, Transaction,
@@ -60,11 +60,7 @@ pub fn reserve_logic(
         builtin.length_of_bytearray(pool_forever_hash) == 28,
       }
     }
-    Withdrawing(Script(own_hash)) |
-    Publishing {
-      certificate: UnregisterCredential { credential: Script(own_hash), .. },
-      ..
-    } -> {
+    Withdrawing(Script(own_hash)) -> {
       expect redeemer: ReserveRedeemer = redeemer
       let track = track(inputs, reference_inputs, two_stage_hash, own_hash)
       when redeemer is {

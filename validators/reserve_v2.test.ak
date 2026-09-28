@@ -2,7 +2,8 @@ use aiken/builtin
 use aiken/interval
 use cardano/address.{Address, Script, VerificationKey}
 use cardano/assets.{add, from_asset, from_lovelace}
-use cardano/script_context.{Minting, ScriptContext, Withdrawing}
+use cardano/certificate.{UnregisterCredential}
+use cardano/script_context.{Minting, Publishing, ScriptContext, Withdrawing}
 use cardano/transaction.{
   InlineDatum, Input, NoDatum, Output, OutputReference, Transaction, placeholder,
 }
@@ -359,6 +360,55 @@ test merge_spends_nft() fail {
     [nft_utxo(reserve, deploy_datum), reserve_utxo(100)],
     0,
     Merge,
+  )
+}
+
+// -- unregistration ----------------------------------------------------------------
+
+/// The logic credential's unregistration, with a redeemer and tx that pass as a withdrawal.
+fn unregister(
+  inputs: List<Output>,
+  outputs: List<Output>,
+  now: Int,
+  redeemer: ReserveRedeemer,
+) -> Bool {
+  let tx =
+    Transaction {
+      ..placeholder,
+      inputs: inputs_of(inputs, 1),
+      outputs,
+      reference_inputs: [main_ref(logic_hash)],
+      validity_range: interval.after(now),
+    }
+  reserve_v2.reserve_logic_v2.else(
+    ScriptContext(
+      tx,
+      redeemer,
+      Publishing {
+        at: 0,
+        certificate: UnregisterCredential {
+          credential: Script(logic_hash),
+          refund: Never,
+        },
+      },
+    ),
+  )
+}
+
+test unregistration_with_merge() fail {
+  unregister([reserve_utxo(100), reserve_utxo(200)], [merged(300)], 0, Merge)
+}
+
+test unregistration_with_release() fail {
+  unregister(
+    [nft_utxo(reserve, deploy_datum), reserve_utxo(reserve_night)],
+    [
+      nft_utxo(reserve, ReleaseState(interval_ms)),
+      reserve_utxo(reserve_night - ceiling1),
+      pool_utxo(ceiling1),
+    ],
+    interval_ms,
+    Release { intervals: 1 },
   )
 }
 
