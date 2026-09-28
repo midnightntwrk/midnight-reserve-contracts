@@ -1,4 +1,5 @@
 use aiken/builtin
+use aiken/collection/list
 use aiken/interval
 use cardano/address.{Address, Inline, Script, VerificationKey}
 use cardano/assets.{add, from_asset, from_lovelace}
@@ -125,7 +126,7 @@ fn first_release(now: Int, intervals: Int, to_pool: Int, kept: Int) -> Bool {
   run(
     [nft_utxo(reserve, deploy_datum), reserve_utxo(reserve_night)],
     [
-      nft_utxo(reserve, ReleaseState(intervals * interval_ms)),
+      nft_utxo(reserve, ReleaseState(intervals * interval_ms, kept)),
       reserve_utxo(kept),
       pool_utxo(to_pool),
     ],
@@ -143,14 +144,68 @@ test release_first_interval_ok() {
 test release_catch_up_three_ok() {
   let last = 5 * interval_ms
   run(
-    [nft_utxo(reserve, ReleaseState(last)), reserve_utxo(reserve_night)],
     [
-      nft_utxo(reserve, ReleaseState(last + 3 * interval_ms)),
+      nft_utxo(reserve, ReleaseState(last, reserve_night)),
+      reserve_utxo(reserve_night),
+    ],
+    [
+      nft_utxo(
+        reserve,
+        ReleaseState(last + 3 * interval_ms, reserve_night - ceiling3),
+      ),
       reserve_utxo(reserve_night - ceiling3),
       pool_utxo(ceiling3),
     ],
     last + 3 * interval_ms,
     Release { intervals: 3 },
+  )
+}
+
+/// A release after one at `last` that left `reserve_night`: spends `reserve_in` (5 ADA each), keeps `kept`, pays `to_pool`, records `floor`.
+fn next_release(
+  reserve_in: List<Output>,
+  kept: Int,
+  to_pool: Int,
+  floor: Int,
+) -> Bool {
+  let last = 5 * interval_ms
+  run(
+    [nft_utxo(reserve, ReleaseState(last, reserve_night)), ..reserve_in],
+    [
+      nft_utxo(reserve, ReleaseState(last + interval_ms, floor)),
+      night_utxo(
+        reserve,
+        config.cnight_policy,
+        5_000_000 * list.length(reserve_in),
+        kept,
+      ),
+      pool_utxo(to_pool),
+    ],
+    last + interval_ms,
+    Release { intervals: 1 },
+  )
+}
+
+/// Spending a 1_000-unit reserve UTXO in place of the recorded reserve would release almost nothing and still use the interval.
+test release_below_floor() fail {
+  next_release([reserve_utxo(1_000)], 999, 1, 999)
+}
+
+test release_floor_not_recorded() fail {
+  next_release(
+    [reserve_utxo(reserve_night)],
+    reserve_night - ceiling1,
+    ceiling1,
+    reserve_night,
+  )
+}
+
+test release_with_donation_above_floor_ok() {
+  next_release(
+    [reserve_utxo(reserve_night), reserve_utxo(1_000_000)],
+    reserve_night + 1_000_000 - ceiling1,
+    ceiling1,
+    reserve_night + 1_000_000 - ceiling1,
   )
 }
 
@@ -170,7 +225,10 @@ test release_net_of_pool_ok() {
       pool_utxo(100_000),
     ],
     [
-      nft_utxo(reserve, ReleaseState(interval_ms)),
+      nft_utxo(
+        reserve,
+        ReleaseState(interval_ms, reserve_night - ( ceiling1 - 100_000 )),
+      ),
       reserve_utxo(reserve_night - ( ceiling1 - 100_000 )),
       pool_utxo(ceiling1),
     ],
@@ -187,7 +245,7 @@ test release_pool_above_ceiling_releases_nothing() {
       pool_utxo(ceiling1 + 1),
     ],
     [
-      nft_utxo(reserve, ReleaseState(interval_ms)),
+      nft_utxo(reserve, ReleaseState(interval_ms, reserve_night)),
       reserve_utxo(reserve_night),
       pool_utxo(ceiling1 + 1),
     ],
@@ -203,12 +261,12 @@ test release_too_early() fail {
 test release_zero_intervals() fail {
   run(
     [
-      nft_utxo(reserve, ReleaseState(interval_ms)),
+      nft_utxo(reserve, ReleaseState(interval_ms, reserve_night)),
       reserve_utxo(reserve_night),
       pool_utxo(ceiling1 + 1),
     ],
     [
-      nft_utxo(reserve, ReleaseState(interval_ms)),
+      nft_utxo(reserve, ReleaseState(interval_ms, reserve_night)),
       reserve_utxo(reserve_night),
       pool_utxo(ceiling1 + 1),
     ],
@@ -226,7 +284,7 @@ test release_without_lower_bound() fail {
         1,
       ),
       outputs: [
-        nft_utxo(reserve, ReleaseState(interval_ms)),
+        nft_utxo(reserve, ReleaseState(interval_ms, reserve_night - ceiling1)),
         reserve_utxo(reserve_night - ceiling1),
         pool_utxo(ceiling1),
       ],
@@ -264,7 +322,8 @@ test release_time_not_advanced() fail {
 }
 
 test release_nft_value_changed() fail {
-  let nft = nft_utxo(reserve, ReleaseState(interval_ms))
+  let nft =
+    nft_utxo(reserve, ReleaseState(interval_ms, reserve_night - ceiling1))
   run(
     [nft_utxo(reserve, deploy_datum), reserve_utxo(reserve_night)],
     [
@@ -277,11 +336,27 @@ test release_nft_value_changed() fail {
   )
 }
 
+/// The release datum is larger than the deploy datum, so the NFT output may need more ADA.
+test release_nft_ada_raised_ok() {
+  let nft =
+    nft_utxo(reserve, ReleaseState(interval_ms, reserve_night - ceiling1))
+  run(
+    [nft_utxo(reserve, deploy_datum), reserve_utxo(reserve_night)],
+    [
+      Output { ..nft, value: nft.value |> add(#"", #"", 50_000) },
+      reserve_utxo(reserve_night - ceiling1),
+      pool_utxo(ceiling1),
+    ],
+    interval_ms,
+    Release { intervals: 1 },
+  )
+}
+
 test release_without_pool_output() fail {
   run(
     [nft_utxo(reserve, deploy_datum), reserve_utxo(reserve_night)],
     [
-      nft_utxo(reserve, ReleaseState(interval_ms)),
+      nft_utxo(reserve, ReleaseState(interval_ms, reserve_night - ceiling1)),
       reserve_utxo(reserve_night - ceiling1),
     ],
     interval_ms,
@@ -298,7 +373,7 @@ test release_pool_output_with_stake_part() fail {
   run(
     [nft_utxo(reserve, deploy_datum), reserve_utxo(reserve_night)],
     [
-      nft_utxo(reserve, ReleaseState(interval_ms)),
+      nft_utxo(reserve, ReleaseState(interval_ms, reserve_night - ceiling1)),
       reserve_utxo(reserve_night - ceiling1),
       staked,
     ],
@@ -311,7 +386,7 @@ test release_without_nft_input() fail {
   run(
     [reserve_utxo(reserve_night)],
     [
-      nft_utxo(reserve, ReleaseState(interval_ms)),
+      nft_utxo(reserve, ReleaseState(interval_ms, reserve_night - ceiling1)),
       reserve_utxo(reserve_night - ceiling1),
       pool_utxo(ceiling1),
     ],
@@ -346,7 +421,7 @@ test release_staging_track_ok() {
       ),
       outputs: [
         staging_state_utxo(),
-        nft_utxo(staging_reserve, ReleaseState(interval_ms)),
+        nft_utxo(staging_reserve, ReleaseState(interval_ms, staged - 79_909)),
         night_utxo(staging_reserve, test_policy, 5_000_000, staged - 79_909),
         night_utxo(staging_pool, test_policy, 5_000_000, 79_909),
       ],
@@ -421,7 +496,7 @@ test unregistration_with_release() fail {
   unregister(
     [nft_utxo(reserve, deploy_datum), reserve_utxo(reserve_night)],
     [
-      nft_utxo(reserve, ReleaseState(interval_ms)),
+      nft_utxo(reserve, ReleaseState(interval_ms, reserve_night - ceiling1)),
       reserve_utxo(reserve_night - ceiling1),
       pool_utxo(ceiling1),
     ],

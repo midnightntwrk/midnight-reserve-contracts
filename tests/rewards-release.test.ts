@@ -123,13 +123,20 @@ describe("lastReleaseTime", () => {
   });
 
   test("a ReleaseState gives its time", () => {
-    expect(lastReleaseTime(constr([180_000n]), schedule)).toEqual(
+    expect(lastReleaseTime(constr([180_000n, 5n]), schedule)).toEqual(
       Either.right(180_000n),
     );
   });
 
+  test("a time before t0 gives t0", () => {
+    expect(
+      lastReleaseTime(constr([3n, 5n]), { ...schedule, t0Ms: 7n }),
+    ).toEqual(Either.right(7n));
+  });
+
   test("anything else is refused", () => {
     expect(Either.isLeft(lastReleaseTime(constr([]), schedule))).toBe(true);
+    expect(Either.isLeft(lastReleaseTime(constr([1n]), schedule))).toBe(true);
   });
 });
 
@@ -189,6 +196,7 @@ describe("rewards-release in the emulator", async () => {
         stagingGovAuth: contracts.stagingGovAuth.Script,
         foreverDatum: serialize(Contracts.ReleaseState, {
           last_release_time: last,
+          reserve_floor: 0n,
         }),
         foreverRedeemer: PlutusData.newInteger(0n),
         registerLogic: false,
@@ -296,6 +304,7 @@ describe("rewards-release in the emulator", async () => {
     expect(nft?.output().datum()?.asInlineData()?.toCbor()).toBe(
       serialize(Contracts.ReleaseState, {
         last_release_time: last + 2n * interval,
+        reserve_floor: RESERVE - 319_636n,
       }).toCbor(),
     );
   });

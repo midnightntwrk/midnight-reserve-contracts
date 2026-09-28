@@ -100,6 +100,7 @@ pub type ReserveRedeemer {
 /// Inline datum on the reserve forever NFT UTXO after the first release; before it the NFT holds the deploy datum `Constr 0 [0, 0]`.
 pub type ReleaseState {
   last_release_time: Int,
+  reserve_floor: Int,
 }
 
 /// Staging-track hashes read from the reserve logic v2 NFT input: `StagingState` plus the staging pool forever.

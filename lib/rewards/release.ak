@@ -114,14 +114,16 @@ fn merge_ok(inputs: List<Input>, outputs: List<Output>, track: Track) -> Bool {
   }
 }
 
-/// Spec §8.2: release `min(reserve, max(0, ceiling − pool))` into the pool and advance the forever NFT's `last_release_time` by `intervals`.
+/// Spec §8.2: from reserve inputs of at least the recorded floor, release `min(reserve, max(0, ceiling − pool))` into the pool; the forever NFT's state advances `last_release_time` by `intervals` (from `release_t0_ms` at the latest) and records what the reserve keeps as the next floor.
 fn release_ok(tx: Transaction, track: Track, intervals: Int) -> Bool {
   let Transaction { inputs, outputs, validity_range, .. } = tx
   expect Finite(now) = validity_range.lower_bound.bound_type
   let (nfts, reserve_in) = reserve_inputs(inputs, track.reserve)
   expect [nft_in] = nfts
   expect InlineDatum(state) = nft_in.datum
-  let next = last_release_time(state) + intervals * config.release_interval_ms
+  expect ReleaseState { last_release_time, reserve_floor }: ReleaseState = state
+  let next =
+    math.max(last_release_time, config.release_t0_ms) + intervals * config.release_interval_ms
   let reserve_night = night_of(reserve_in, track.night_policy)
   let pool_night = pool_input_night(inputs, track)
   let released =
@@ -151,28 +153,28 @@ fn release_ok(tx: Transaction, track: Track, intervals: Int) -> Bool {
     reserve_night_out,
   <- ada_and_night(value_out.value, track.night_policy)
   let _, pool_night_out <- ada_and_night(pool_out.value, track.night_policy)
+  let nft_ada_in, nft_assets_in <- split_ada(nft_in.value)
+  let nft_ada_out, nft_assets_out <- split_ada(nft_out.value)
   expect InlineDatum(_) = pool_out.datum
   and {
     intervals >= 1,
     next <= now,
+    reserve_night >= reserve_floor,
     nft_out.address == nft_in.address,
-    nft_out.value == nft_in.value,
-    nft_out.datum == InlineDatum(ReleaseState { last_release_time: next }),
+    nft_assets_out == nft_assets_in,
+    nft_ada_out >= nft_ada_in,
+    nft_out.datum == InlineDatum(
+      ReleaseState {
+        last_release_time: next,
+        reserve_floor: reserve_night - released,
+      },
+    ),
     value_out.address == Address(Script(track.reserve), None),
     pool_out.address == Address(Script(track.pool), None),
     no_datum_hash(value_out),
     reserve_ada >= assets.lovelace_of(reserve_in),
     reserve_night_out == reserve_night - released,
     pool_night_out >= pool_night + released,
-  }
-}
-
-/// `last_release_time` from the forever NFT's datum; the deploy datum `Constr 0 [0, 0]` means no release yet.
-fn last_release_time(state: Data) -> Int {
-  when builtin.un_constr_data(state).2nd is {
-    [time] -> builtin.un_i_data(time)
-    [_, _] -> config.release_t0_ms
-    _ -> fail
   }
 }
 

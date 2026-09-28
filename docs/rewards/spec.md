@@ -613,6 +613,7 @@ pub type ReserveRedeemer { Merge  Release { intervals: Int } }
 
 pub type ReleaseState {              // inline datum on the reserve forever NFT UTXO
   last_release_time: Int,            // ms POSIX, start of the last released interval
+  reserve_floor: Int,                // NIGHT the reserve kept after the last release
 }
 
 @list
@@ -645,19 +646,24 @@ at least the next interval's need.
 2. `now = validity_range.lower_bound` (finite, inclusive). `intervals ≥ 1`
    and `last_release_time + intervals × interval_ms ≤ now`. Partial catch-up
    is allowed (`intervals` may be less than elapsed); fully permissionless.
-3. First release: deploy puts `Constr 0 [0, 0]` on the reserve NFT
-   (`ZERO_FOREVER_DATUM`). Two fields mean no release yet:
-   `last_release_time = release_t0_ms`. One field is `ReleaseState`.
-   Anything else fails.
+3. State: `ReleaseState { last_release_time, reserve_floor }`. Deploy puts
+   `Constr 0 [0, 0]` on the reserve NFT (`ZERO_FOREVER_DATUM`), which is the
+   state before any release. The clock is `max(last_release_time,
+   release_t0_ms)`. The reserve value inputs must hold at least
+   `reserve_floor` NIGHT, so a release cannot size its ceiling on a small
+   UTxO; the output state records what the reserve keeps
+   (`reserve − released`) as the next floor. The first release (floor 0)
+   records the value it spends.
 4. `ceiling` over `intervals` catch-up steps, each a ceiling division on
    what the previous step left: `c := 0; repeat intervals: c += ((reserve − c) × num + den − 1) / den`.
-   `last_release_time' = last_release_time + intervals × interval_ms`.
+   `last_release_time' = max(last_release_time, release_t0_ms) + intervals × interval_ms`.
 5. `released = min(reserve, max(0, ceiling − pool_in))` where `reserve` is
    the NIGHT in the reserve value inputs and `pool_in` the NIGHT in the
    pool value inputs of this tx (the pool is already an input for the
    merge). A release of 0 still advances `last_release_time`.
 6. Inputs at the reserve forever address: the NFT UTXO (datum updated,
-   value unchanged) and value UTXOs. Outputs: NFT UTXO with `ReleaseState'`;
+   assets unchanged, ADA not down: a larger datum may need more minimum
+   ADA) and value UTXOs. Outputs: NFT UTXO with `ReleaseState'`;
    one value output with `[ada, night]`, `night_out == night_in − released`,
    `ada_out ≥ ada_in`; one output at the pool forever credential, at
    `Address(Script(pool_forever), None)`, whose NIGHT is

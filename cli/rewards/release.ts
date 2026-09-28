@@ -73,20 +73,17 @@ export const releaseCeiling = (
   return ceiling;
 };
 
-/** last_release_time of the reserve NFT's datum: the deploy datum's two fields mean no release yet. */
+/** last_release_time of the reserve NFT's ReleaseState, t0 at the earliest; the deploy datum Constr 0 [0, 0] is the state before any release. */
 export const lastReleaseTime = (
   datum: PlutusData,
   schedule: ReleaseSchedule,
 ): Either.Either<bigint, string> => {
   const fields = datum.asConstrPlutusData()?.getData();
-  if (fields?.getLength() === 2) return Either.right(schedule.t0Ms);
   const time =
-    fields?.getLength() === 1 ? fields.get(0).asInteger() : undefined;
+    fields?.getLength() === 2 ? fields.get(0).asInteger() : undefined;
   return time === undefined
-    ? Either.left(
-        `${datum.toCbor()} is neither the deploy datum nor a ReleaseState`,
-      )
-    : Either.right(time);
+    ? Either.left(`${datum.toCbor()} is not a ReleaseState`)
+    : Either.right(time > schedule.t0Ms ? time : schedule.t0Ms);
 };
 
 /** The release due at `now` from `reserve` into `pool` NIGHT, or none before a whole interval has passed. */
@@ -159,7 +156,7 @@ const nightOutput = (
   return output;
 };
 
-/** The release transaction over the plan: the reserve NFT with its new time, the reserve less the release, the pool plus it. */
+/** The release transaction over the plan: the reserve NFT with its new time and floor, the reserve less the release, the pool plus it. */
 export const buildReleaseTx = (
   blaze: Blaze<BlazeProvider, Wallet>,
   inputs: ReleaseInputs,
@@ -204,6 +201,7 @@ export const buildReleaseTx = (
         ...nft.toCore(),
         datum: serialize(Contracts.ReleaseState, {
           last_release_time: plan.next,
+          reserve_floor: nightIn(inputs.reserveUtxos, night) - plan.released,
         }).toCore(),
       }),
     )
