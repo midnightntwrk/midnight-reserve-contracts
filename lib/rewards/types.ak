@@ -50,14 +50,15 @@ pub type ActionKind {
   UpdateRegistration
 }
 
-/// Inline datum on the batcher state NFT UTXO. `cursor` is the next key to
-/// pay, the digest's `min_key` after the load; it is read only while
+/// Inline datum on the batcher state NFT UTXO. `cursor` is the last key paid
+/// in the epoch, empty after the load; it is read only while
 /// `complete == False`.
 pub type BatcherState {
   account_policy: PolicyId,
   pool_forever: ScriptHash,
   epoch: Int,
   root: ByteArray,
+  min_key: ByteArray,
   max_key: ByteArray,
   cursor: ByteArray,
   complete: Bool,

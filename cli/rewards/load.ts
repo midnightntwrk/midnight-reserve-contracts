@@ -38,6 +38,8 @@ import {
   type Batch,
   type BatchPlan,
   buildBatchTx,
+  afterPay,
+  cursorIndex,
   planBatch,
   type RewardLeaf,
   rewardLeaf,
@@ -200,28 +202,21 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
     const plan: Option.Option<BatchPlan> = loading
       ? Option.none()
       : Option.some(
-          planBatch(
-            leaves,
-            leaves.findIndex((l) => l.key === state.cursor),
-            limit,
-          ),
+          planBatch(leaves, cursorIndex(leaves, state.cursor), limit),
         );
     const stateOut: Contracts.BatcherState =
       load === undefined
         ? Option.match(plan, {
             onNone: () => state,
-            onSome: (p) =>
-              Option.match(p.lookahead, {
-                onNone: () => ({ ...state, complete: true }),
-                onSome: (i) => ({ ...state, cursor: leaves[i].key }),
-              }),
+            onSome: (p) => afterPay(state, leaves, p),
           })
         : {
             ...state,
             epoch,
             root: load.digest.root,
+            min_key: load.digest.minKey,
             max_key: load.digest.maxKey,
-            cursor: load.digest.minKey,
+            cursor: "",
             complete: load.digest.leafCount === 0n,
           };
     const treasury = load === undefined ? 0n : load.digest.treasuryTotal;
@@ -296,7 +291,7 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
       onNone: () =>
         `load of epoch ${epoch}: ${leaves.length} leaves, Treasury share ${treasury}`,
       onSome: (p) =>
-        `pay of epoch ${epoch}: leaves ${p.paid.join(", ")}${Option.isNone(p.lookahead) ? ", completing the fold" : ""}`,
+        `pay of epoch ${epoch}: leaves ${p.paid.join(", ")}${p.paid[p.paid.length - 1] === leaves.length - 1 ? ", completing the fold" : ""}`,
     });
     yield* out.log(`\nRewards batch on ${network}: ${name}`);
     const blaze = yield* provider.blaze;

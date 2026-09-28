@@ -2,10 +2,10 @@
  * The rewards batcher's transactions (docs/rewards/spec.md §5.3): a Load
  * that takes the next epoch's digest and pays its Treasury share from the
  * pool to the ICS, and a Pay that reveals one contiguous run of the epoch's
- * sorted leaves, `[cursor, …, lookahead]`, pays every leaf but the
- * lookahead into its deposit from the pool, and moves the state's cursor;
- * the run that pays max_key completes the epoch, as lib/rewards/batch.ak
- * checks.
+ * sorted leaves: the cursor's leaf, the last one paid (none on the epoch's
+ * first run), then the leaves it pays into their deposits from the pool.
+ * The cursor moves to the last leaf paid, and the run that pays max_key
+ * completes the epoch, as lib/rewards/batch.ak checks.
  *
  * Outputs: 0 the state, 1 the pool, then one deposit per paid leaf in leaf
  * order (a Pay) or the ICS output (a Load with a Treasury share); the
@@ -50,35 +50,46 @@ export const rewardLeaf = (bytes: Uint8Array): RewardLeaf => ({
   amount: BigInt(`0x${bytesToHex(bytes.slice(29, 45))}`),
 });
 
-/** One Pay over the epoch's leaves: the leaves it pays and the one it reveals after them, none once it pays max_key. */
+/** One Pay over the epoch's leaves: the cursor's leaf it reveals (none on the epoch's first run) and the leaves it pays after it. */
 export interface BatchPlan {
+  readonly cursor: Option.Option<number>;
   readonly paid: readonly number[];
-  readonly lookahead: Option.Option<number>;
 }
 
-/**
- * The run from leaf `from`: at most `limit` paid leaves, through max_key at
- * the latest. max_key is never a lookahead, so a run that reaches the leaf
- * before it pays max_key too.
- */
+/** The index of the state's cursor among the leaves; none before the epoch's first Pay. */
+export const cursorIndex = (
+  leaves: readonly RewardLeaf[],
+  cursor: string,
+): Option.Option<number> =>
+  cursor === ""
+    ? Option.none()
+    : Option.some(leaves.findIndex((l) => l.key === cursor));
+
+/** The run after the cursor, or from the first leaf: at most `limit` leaves, through max_key at the latest. */
 export const planBatch = (
   leaves: readonly RewardLeaf[],
-  from: number,
+  cursor: Option.Option<number>,
   limit: number,
 ): BatchPlan => {
-  const last = leaves.length - 1;
-  const paid = [from];
-  for (;;) {
-    const at = paid[paid.length - 1];
-    if (at === last) break;
-    const next = at + 1;
-    if (next !== last && paid.length >= limit) break;
-    paid.push(next);
-  }
-  const end = paid[paid.length - 1];
+  const from = Option.match(cursor, { onNone: () => 0, onSome: (c) => c + 1 });
+  const to = Math.min(from + limit, leaves.length);
   return {
-    paid,
-    lookahead: end === last ? Option.none() : Option.some(end + 1),
+    cursor,
+    paid: Array.from({ length: to - from }, (_, i) => from + i),
+  };
+};
+
+/** The state after a Pay: the cursor at its last paid leaf, complete once that is max_key. */
+export const afterPay = (
+  state: Contracts.BatcherState,
+  leaves: readonly RewardLeaf[],
+  plan: BatchPlan,
+): Contracts.BatcherState => {
+  const last = plan.paid[plan.paid.length - 1];
+  return {
+    ...state,
+    cursor: leaves[last].key,
+    complete: last === leaves.length - 1,
   };
 };
 
@@ -158,7 +169,7 @@ export const buildBatchTx = (
       const root = toPlutusData(
         buildMultiproof(
           batch.leaves.map((l) => l.bytes),
-          new Set([...p.paid, ...Option.toArray(p.lookahead)]),
+          new Set([...Option.toArray(p.cursor), ...p.paid]),
         ),
       ).asList()!;
       return Array.from({ length: root.getLength() }, (_, i) => root.get(i));

@@ -15,6 +15,7 @@ export const initialBatcherState = (
   pool_forever: poolForever,
   epoch: firstEpoch - 1n,
   root: "00".repeat(32),
+  min_key: ZERO28,
   max_key: ZERO28,
   cursor: ZERO28,
   complete: true,

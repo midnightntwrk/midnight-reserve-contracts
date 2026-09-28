@@ -1,10 +1,11 @@
 //// Withdraw logic of the `rewards_batcher` validator (spec §5). `Load`
-//// takes the next epoch's digest from the bridge and pays its Treasury
-//// share from the pool to the ICS; the fold then starts at the digest's
-//// `min_key`. `Pay` reveals one contiguous run `[cursor, …, lookahead]` with
-//// a sorted multiproof, pays every leaf before the lookahead, and moves the
-//// cursor to it; the run that pays `max_key` has no lookahead and completes
-//// the epoch.
+//// takes the next epoch's digest from the bridge, pays its Treasury share
+//// from the pool to the ICS and clears the cursor. `Pay` reveals one
+//// contiguous run with a sorted multiproof: the first run of an epoch starts
+//// at `min_key` and pays every revealed leaf; a later run reveals the
+//// cursor's leaf, the last one paid, and pays the leaves after it. The
+//// cursor moves to the last leaf paid, and the run that pays `max_key`
+//// completes the epoch.
 ////
 //// A `Pay` is one fold over the paid leaves, the account mint, the account
 //// inputs sorted by name and the outputs after the pool output. Going
@@ -108,7 +109,8 @@ pub fn validate(tx: Transaction, own_hash: ScriptHash, redeemer: Data) -> Bool {
         epoch,
         root,
         max_key,
-        cursor: min_key,
+        min_key,
+        cursor: #"",
         complete: leaf_count == 0,
       }
     }
@@ -148,7 +150,7 @@ pub fn pay(
   tx: Transaction,
 ) -> BatcherState {
   let Transaction { inputs, mint, fee, .. } = tx
-  let paid, next <- split_run(state, leaves)
+  let paid, last <- split_run(state, leaves)
   let n_paid = list.length(paid)
   let env =
     Env {
@@ -169,43 +171,26 @@ pub fn pay(
     )
   expect relink == None
   expect pool_ok(inputs, pool_out, state.pool_forever, total)
-  when next is {
-    Some(cursor) -> BatcherState { ..state, cursor }
-    None -> BatcherState { ..state, complete: True }
-  }
+  BatcherState { ..state, cursor: last, complete: last == state.max_key }
 }
 
-/// Split an ascending run starting at `state.cursor` into the paid leaves and the next cursor, `None` when the run pays `max_key`.
+/// The paid leaves of a run and its last key: an epoch's first run starts at `min_key` and pays every revealed leaf; a later run starts at the cursor, already paid, and pays the leaves after it.
 pub fn split_run(
   state: BatcherState,
   leaves: List<RewardLeaf>,
-  return: fn(List<RewardLeaf>, Option<ByteArray>) -> result,
+  return: fn(List<RewardLeaf>, ByteArray) -> result,
 ) -> result {
-  expect [head, ..] = leaves
-  expect head.key == state.cursor
-  take_run(leaves, state.max_key, return)
-}
-
-/// `leaves` is non-empty and its head is paid; `max_key` is never the lookahead.
-fn take_run(
-  leaves: List<RewardLeaf>,
-  max_key: ByteArray,
-  return: fn(List<RewardLeaf>, Option<ByteArray>) -> result,
-) -> result {
-  when leaves is {
-    [x] -> {
-      expect x.key == max_key
-      return([x], None)
+  expect [head, ..rest] = leaves
+  let paid =
+    if state.cursor == #"" {
+      expect head.key == state.min_key
+      leaves
+    } else {
+      expect head.key == state.cursor
+      rest
     }
-    [x, y, ..more] ->
-      if more == [] && y.key != max_key {
-        return([x], Some(y.key))
-      } else {
-        let paid, next <- take_run([y, ..more], max_key)
-        return([x, ..paid], next)
-      }
-    [] -> fail
-  }
+  expect Some(last) = list.last(paid)
+  return(paid, last.key)
 }
 
 type Env {

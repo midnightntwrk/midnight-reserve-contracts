@@ -7,7 +7,7 @@
  * leaf 12 an empty epoch, each block's extrinsics trie holding its 125-byte
  * submit_rewards_digest; three accounts registered through
  * buildRegisterTx; the pool funded with test NIGHT. The Load of the epoch
- * pays its Treasury share to the ICS and sets the cursor to min_key; the
+ * pays its Treasury share to the ICS and clears the cursor; the
  * Pay then pays the whole run in one batch, whatever order the ledger
  * gives the deposits, and completes the fold. The empty epoch's Load pays
  * its share too.
@@ -51,6 +51,8 @@ import {
   type Batch,
   type BatchPlan,
   buildBatchTx,
+  afterPay,
+  cursorIndex,
   planBatch,
   type RewardLeaf,
   rewardLeaf,
@@ -488,11 +490,7 @@ describe("the rewards batch path in the emulator", () => {
     const plan = loading
       ? Option.none<BatchPlan>()
       : Option.some(
-          planBatch(
-            leaves,
-            leaves.findIndex((l) => l.key === state.cursor),
-            limit,
-          ),
+          planBatch(leaves, cursorIndex(leaves, state.cursor), limit),
         );
     const stateOut: Contracts.BatcherState = loading
       ? {
@@ -502,14 +500,12 @@ describe("the rewards batch path in the emulator", () => {
             leaves.length === 0
               ? "00".repeat(32)
               : bytesToHex(merkleRoot(leaves.map((l) => keccak(l.bytes)))),
+          min_key: leaves[0]?.key ?? "00".repeat(28),
           max_key: leaves[leaves.length - 1]?.key ?? "00".repeat(28),
-          cursor: leaves[0]?.key ?? "00".repeat(28),
+          cursor: "",
           complete: leaves.length === 0,
         }
-      : Option.match(Option.getOrThrow(plan).lookahead, {
-          onNone: () => ({ ...state, complete: true }),
-          onSome: (i) => ({ ...state, cursor: leaves[i].key }),
-        });
+      : afterPay(state, leaves, Option.getOrThrow(plan));
     const b: Batch = {
       load: Option.map(load, ({ proof }) => ({
         digestProof: proof,
@@ -549,7 +545,7 @@ describe("the rewards batch path in the emulator", () => {
       TREASURY_5,
       2,
     );
-    expect(stateOf().state.cursor).toBe(epoch5[0].key);
+    expect(stateOf().state.cursor).toBe("");
     expect(nightAt(contracts.icsForever.Script) - icsBefore).toBe(TREASURY_5);
     for (let i = 1; !stateOf().state.complete; i++) {
       expect(i).toBeLessThan(5);
