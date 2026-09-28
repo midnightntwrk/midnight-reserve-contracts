@@ -33,7 +33,11 @@ import {
   MAIN_TOKEN_HEX,
   STAGING_TOKEN_HEX,
 } from "../chain/governance-provider";
-import { createUpgradeState, registerScriptStake } from "../chain/transaction";
+import {
+  createRewardAccount,
+  createUpgradeState,
+  registerScriptStake,
+} from "../chain/transaction";
 
 /** The forever datum of reserve and ICS, main and staging: Constr 0 [0, 0]. */
 export const ZERO_FOREVER_DATUM = PlutusData.fromCore({
@@ -269,3 +273,102 @@ export const buildStagingForeverDeploymentTx = (
       .addOutput(nftOutput(inputs.stagingForever, "", inputs.datum, params)),
     params,
   );
+
+/** The virtual account list's key of the tail sentinel; every stake key hash sorts below it. */
+export const TAIL_KEY = "ff".repeat(28);
+
+/** The rewards batcher's init: its script and its first state. */
+export interface BatcherInitDeployment {
+  readonly oneShotUtxo: TransactionUnspentOutput;
+  readonly batcher: Script;
+  readonly state: Contracts.BatcherState;
+}
+
+/** The virtual account list's init: its one-shot and the account script. */
+export interface AccountListDeployment {
+  readonly oneShotUtxo: TransactionUnspentOutput;
+  readonly account: Script;
+}
+
+/** Spend the one-shot, mint the batcher state NFT and lock the first state at the batcher; register the batcher's stake credential, whose withdraw-zero logic every batch runs. */
+export const buildBatcherInitTx = (
+  blaze: Blaze<BlazeProvider, Wallet>,
+  inputs: BatcherInitDeployment,
+  params: DeployParams,
+): TxBuilder =>
+  withCollateral(
+    registerScriptStake(
+      blaze
+        .newTransaction()
+        .addInput(inputs.oneShotUtxo)
+        .addMint(
+          PolicyId(inputs.batcher.hash()),
+          new Map([[AssetName(""), 1n]]),
+          PlutusData.newInteger(0n),
+        )
+        .provideScript(inputs.batcher)
+        .addOutput(
+          nftOutput(
+            inputs.batcher,
+            "",
+            serialize(Contracts.BatcherState, inputs.state),
+            params,
+          ),
+        ),
+      inputs.batcher,
+    ),
+    params,
+  );
+
+/** Register the account's stake credential, alone: the list's InitList withdraws from it, and the ledger needs it registered in an earlier transaction. */
+export const buildAccountStakeTx = (
+  blaze: Blaze<BlazeProvider, Wallet>,
+  account: Script,
+  params: DeployParams,
+): TxBuilder =>
+  withCollateral(registerScriptStake(blaze.newTransaction(), account), params);
+
+/** Spend the one-shot, mint the list head and tail NFTs and lock `Head { next: tail }` then `Tail` at the account address, under the account's InitList withdrawal over those two outputs (spec §4.2). */
+export const buildAccountListTx = (
+  blaze: Blaze<BlazeProvider, Wallet>,
+  inputs: AccountListDeployment,
+  params: DeployParams,
+): TxBuilder => {
+  const tail = `00${TAIL_KEY}`;
+  return withCollateral(
+    blaze
+      .newTransaction()
+      .addInput(inputs.oneShotUtxo)
+      .addMint(
+        PolicyId(inputs.account.hash()),
+        new Map([
+          [AssetName(""), 1n],
+          [AssetName(tail), 1n],
+        ]),
+        serialize(Contracts.AccountGate, "User"),
+      )
+      .provideScript(inputs.account)
+      .addOutput(
+        nftOutput(
+          inputs.account,
+          "",
+          serialize(Contracts.AccountDatum, { Head: { next: TAIL_KEY } }),
+          params,
+        ),
+      )
+      .addOutput(
+        nftOutput(
+          inputs.account,
+          tail,
+          serialize(Contracts.AccountDatum, "Tail"),
+          params,
+        ),
+      )
+      .addWithdrawal(
+        createRewardAccount(inputs.account.hash(), params.networkId),
+        0n,
+        serialize(Contracts.AccountAction, { kind: "InitList", offset: 0n }),
+      ),
+    params,
+  );
+};

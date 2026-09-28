@@ -44,6 +44,7 @@ import {
   type BridgeMaxFee,
   parseActivationBlock,
   parseCommittee,
+  parseEpoch,
   parseLovelace,
 } from "../datum/bridge";
 import type { BeefyConsensusState } from "../../contract_blueprint";
@@ -171,6 +172,8 @@ export class Settings extends Context.Tag("cli/Settings")<
     readonly bridgeBootstrap: Effect.Effect<BeefyConsensusState, ConfigError>;
     /** BRIDGE_MAX_FEE_BASE and BRIDGE_MAX_FEE_PER_SIGNER, in lovelace. */
     readonly bridgeMaxFee: Effect.Effect<BridgeMaxFee, ConfigError>;
+    /** REWARDS_FIRST_EPOCH: the first Midnight epoch the rewards batcher loads. */
+    readonly rewardsFirstEpoch: Effect.Effect<bigint, ConfigError>;
   }
 >() {}
 
@@ -496,6 +499,7 @@ export const SettingsLive = (
           base: parsed("BRIDGE_MAX_FEE_BASE", parseLovelace),
           perSigner: parsed("BRIDGE_MAX_FEE_PER_SIGNER", parseLovelace),
         }),
+        rewardsFirstEpoch: parsed("REWARDS_FIRST_EPOCH", parseEpoch),
       };
     }),
   );

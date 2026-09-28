@@ -21,7 +21,9 @@ Of the 15 main keys, `deploy` reads 12: `technical_authority`, `main_tech_auth_u
 `cnight_minting_one_shot_*` (`deploy-cnight-minting` was deleted). The bridge components
 of `deploy` read `committee_bridge_one_shot_*` (`committee-bridge`) and
 `committee_threshold_one_shot_*` (`committee-bridge-threshold`); `committee-bridge-scripts`
-spends no one-shot.
+spends no one-shot. The rewards components read `rewards_pool_one_shot_*` (`rewards-pool`),
+`rewards_batcher_one_shot_*` (`rewards-batcher`) and `virtual_account_one_shot_*`
+(`virtual-account`); `virtual-account-stake` spends no one-shot.
 
 `deploy-staging-track` reads only the six `*_staging_one_shot_*` keys
 (`cli/deploy/staging-track.ts`). The `*_logic_v2_one_shot_*` keys belong to the 3rd run:
@@ -76,8 +78,12 @@ Each component is one deploy transaction, and that transaction creates all of th
 | `committee-bridge` | `committee_bridge_two_stage_upgrade`, `committee_bridge_forever`, `committee_bridge_logic`, `committee_bridge_pool` (the forever holds the bootstrap state from the `BRIDGE_*` env values) |
 | `committee-bridge-threshold` | `beefy_signer_threshold` (`--bridge-threshold` / `BRIDGE_THRESHOLD`, then `BRIDGE_MAX_FEE_BASE`, `BRIDGE_MAX_FEE_PER_SIGNER`); the transaction also registers `committee_bridge_logic` |
 | `committee-bridge-scripts` | none: reference-script UTxOs of the bridge forever, logic and pool at the deployer address, which the CLI's coin selection never spends |
+| `rewards-pool` | `rewards_pool_two_stage_upgrade`, `rewards_pool_forever`, `rewards_pool_logic`; the transaction registers `rewards_pool_logic` |
+| `rewards-batcher` | `rewards_batcher`: the state NFT with the first state (`REWARDS_FIRST_EPOCH` − 1, complete), serving `virtual_account` and `rewards_pool_forever`; the transaction registers `rewards_batcher` |
+| `virtual-account-stake` | none: registers the `virtual_account` stake credential, which `virtual-account` withdraws from in a later transaction |
+| `virtual-account` | `virtual_account`: the list head and tail, under the InitList withdrawal |
 
-The three bridge components are outside the default set: a run without `--components` builds the twelve governance transactions, and the bridge is built only when named. The bridge triple does not fit one transaction with the logic registration (17,156 script bytes at the verbose trace), so the registration rides on the threshold transaction.
+The bridge and rewards components are outside the default set: a run without `--components` builds the twelve governance transactions, and the others are built only when named. Build the rewards contracts with `--trace silent`: at the verbose trace `rewards_batcher` is 18,475 bytes, above the 16,384-byte transaction limit; silent it is 10,072. The bridge triple does not fit one transaction with the logic registration (17,156 script bytes at the verbose trace), so the registration rides on the threshold transaction.
 
 Set up an environment in two parts (each run writes the file again with only its transactions, so submit it before the next run; the snapshot keeps both parts):
 
