@@ -213,6 +213,7 @@ export type Refusal =
       readonly numerator: bigint;
       readonly denominator: bigint;
     }
+  | { readonly _tag: "AccountExists"; readonly skh: string }
   | {
       readonly _tag: "ReserveNotOnRelease";
       readonly logicHash: string;
@@ -342,6 +343,8 @@ const renderRefusal = (refusal: Refusal): string => {
       return `the node's BEEFY data does not follow the MIP: ${refusal.detail}`;
     case "BelowThreshold":
       return `the justification's signers hold ${refusal.signedSeats} of ${refusal.seatCount} seats; the BEEFY threshold ${refusal.numerator}/${refusal.denominator} needs ${refusal.required}`;
+    case "AccountExists":
+      return `the virtual account list already holds a deposit for stake key hash ${refusal.skh}`;
     case "ReserveNotOnRelease":
       return `the reserve runs logic ${refusal.logicHash}, not reserve_logic_v2 (${refusal.releaseLogicHash}); stage and promote reserve_logic_v2 first`;
     case "ReleaseNotDue":
