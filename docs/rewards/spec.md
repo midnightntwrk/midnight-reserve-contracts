@@ -659,7 +659,8 @@ at least the next interval's need.
 6. Inputs at the reserve forever address: the NFT UTXO (datum updated,
    value unchanged) and value UTXOs. Outputs: NFT UTXO with `ReleaseState'`;
    one value output with `[ada, night]`, `night_out == night_in − released`,
-   `ada_out ≥ ada_in`; one output at the pool forever address whose NIGHT is
+   `ada_out ≥ ada_in`; one output at the pool forever credential, at
+   `Address(Script(pool_forever), None)`, whose NIGHT is
    `≥ pool_in + released` (the pool logic (§9) merges it with the existing
    pool UTXO in the same tx).
 7. Track: on main use `config.cnight_policy` / `config.reserve_forever_hash`
