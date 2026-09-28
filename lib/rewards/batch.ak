@@ -86,6 +86,7 @@ pub fn validate(tx: Transaction, own_hash: ScriptHash, redeemer: Data) -> Bool {
       if leaf_count == 0 {
         expect proof == [] && pairs == [] && exits == []
         expect account_inputs(tx.inputs, state_in.account_policy) == 0
+        expect tokens_of(tx.mint, state_in.account_policy) == []
         expect
           if treasury_total == 0 {
             pool_inputs(tx.inputs, state_in.pool_forever) == assets.zero
@@ -146,16 +147,10 @@ pub fn pay(
   let n_paid = list.length(paid)
   let cap =
     math.min(( fee + n_paid - 1 ) / n_paid, config.batcher_skim_max_lovelace)
-  let env =
-    Env {
-      inputs,
-      outputs,
-      account_policy: state.account_policy,
-      burned: tokens_of(mint, state.account_policy),
-      cap,
-    }
+  let env = Env { inputs, outputs, account_policy: state.account_policy, cap }
   let deposits = sorted_account_inputs(inputs, state.account_policy)
   expect list.length(deposits) == n_paid + list.length(exits)
+  expect tokens_of(mint, state.account_policy) == exit_burns(paid)
   let total = pay_each(paid, pairs, exits, deposits, -1, 0, env)
   let complete = cursor == state.start_key
   let treasury =
@@ -205,11 +200,24 @@ fn take_run(
   }
 }
 
+/// A batch's account mint: `-1` of each exiting deposit NFT, in leaf order.
+fn exit_burns(paid: List<RewardLeaf>) -> Pairs<ByteArray, Int> {
+  list.filter_map(
+    paid,
+    fn(leaf) {
+      if leaf.ack == 1 {
+        Some(Pair(deposit_name(leaf.key), -1))
+      } else {
+        None
+      }
+    },
+  )
+}
+
 type Env {
   inputs: List<Input>,
   outputs: List<Output>,
   account_policy: PolicyId,
-  burned: Pairs<ByteArray, Int>,
   cap: Int,
 }
 
@@ -294,7 +302,6 @@ fn pay_each(
           expect unlink(pred, pred_out, env.account_policy, leaf.key, next)
           expect output.address == refund_address
           expect night_of(output.value) >= night_due
-          expect quantity(env.burned, name) == -1
           exits
         }
       pay_each(
