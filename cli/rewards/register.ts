@@ -16,7 +16,6 @@ import {
   addressFromValidator,
   AssetId,
   AssetName,
-  derivePublicKey,
   Ed25519KeyHashHex,
   Ed25519PublicKey,
   type NetworkId,
@@ -44,6 +43,7 @@ import { Provider } from "../chain/provider";
 import {
   attachWitnesses,
   createRewardAccount,
+  publicKeyOf,
   signTransaction,
 } from "../chain/transaction";
 import { writeTransaction } from "../chain/tx-file";
@@ -257,9 +257,7 @@ export const rewardsRegisterProgram = (input: RewardsRegisterInput) =>
     const settings = yield* Settings;
     const config = yield* settings.profile;
     const stakeKey = yield* settings.signingKey(input.stakeKey);
-    const skh = Ed25519PublicKey.fromHex(derivePublicKey(stakeKey))
-      .hash()
-      .hex();
+    const skh = Ed25519PublicKey.fromHex(publicKeyOf(stakeKey)).hash().hex();
     const operatorKeys = yield* Option.match(input.sidechainKey, {
       onNone: () => Effect.succeed({}),
       onSome: (variable) =>
