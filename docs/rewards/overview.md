@@ -127,11 +127,31 @@ Midnight; that is accepted.
   12 h-stale balance is always ≤ the live balance minus at most a few skims.
   The funded floor keeps every leaf payable.
 
+## Local demo
+
+The whole flow runs on a local devnet from nothing: the node repo's local-env
+on `kc-block-rewards` (a Cardano devnet with db-sync, six Midnight nodes with
+the rewards pallet), then this repo's contracts and pump against it.
+
+```bash
+just private-net-up      # build the node images if missing, start the stack and the Lace backend
+just private-net-deploy  # bridge, rewards contracts, reserve on reserve_logic_v2, one account per operator
+just private-net-pump    # land each handover, release, load and pay as it falls due
+just private-net-down    # remove the stack and its volumes
+```
+
+`private-net-deploy` runs the CLI in `.private-net/demo`, a copy of the
+contract compiler's workspace (the pinned contracts, the deployed `local`
+profile and the local-env keys); `--use-build` stands in for deployed-scripts
+there. Each permissioned candidate's sidechain key comes from the seeds
+local-env gives its nodes, and each account gets a new stake key; both land
+in `.private-net/demo/.env`. Midnight epochs are one minute, so the pump loads
+and pays one epoch a minute.
+
 ## Out of scope (now)
 
-- TypeScript CLI, reference batcher, off-chain prover, emulator e2e — planned
-  after the on-chain work (`plans/rewards/06-typescript.md`).
-- Rewards pallet, digest inherent, epoch length change (midnight-node).
+- Exits: the pallet emits no `ack = 1` leaf yet, so a committed deposit
+  cannot leave; the demo does not deregister.
 - Digest sharding past ~50k recipients per epoch (cursor design removes the
   bitmap size cap; multiproof size per batch is the remaining limit).
 - Pending-balance policy for unregistered recipients (pallet).
