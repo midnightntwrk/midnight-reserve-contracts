@@ -36,7 +36,11 @@ import {
   environmentOf,
   type Profile,
 } from "../config/network-mapping";
-import { Blueprint, type UpgradableValidator } from "../contracts/contracts";
+import {
+  Blueprint,
+  hasDeployedScripts,
+  type UpgradableValidator,
+} from "../contracts/contracts";
 import {
   contractUtxos,
   ensureRegistered,
@@ -542,7 +546,7 @@ const resolveAuthority = (
     return authority;
   });
 
-/** Resolve the inputs, build, complete and write the stage transaction; then copy a logic that only the build has into the record and track it as staged. */
+/** Resolve the inputs, build, complete and write the stage transaction; then, where the environment keeps a record, copy a logic that only the build has into it and track it as staged. */
 export const stageUpgradeProgram = (input: StageUpgradeInput) =>
   Effect.gen(function* () {
     const { network, validator, sign, newLogicHash } = input;
@@ -561,8 +565,10 @@ export const stageUpgradeProgram = (input: StageUpgradeInput) =>
       plutusPath: buildOutput(PROJECT_ROOT, profile).plutusPath,
     });
     const copy = yield* Effect.transposeOption(
-      Option.map(logic.copyFrom, (plutusPath) =>
-        prepareValidatorMerge(network, newLogicHash, plutusPath),
+      Option.map(
+        Option.filter(logic.copyFrom, () => hasDeployedScripts(network)),
+        (plutusPath) =>
+          prepareValidatorMerge(network, newLogicHash, plutusPath),
       ),
     );
     if (Option.isSome(copy)) {
