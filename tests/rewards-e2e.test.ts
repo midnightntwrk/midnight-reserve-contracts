@@ -6,10 +6,11 @@
  * leaves, where leaf 10 commits a digest block with a three-leaf epoch and
  * leaf 12 an empty epoch, each block's extrinsics trie holding its 125-byte
  * submit_rewards_digest; three accounts registered through
- * buildRegisterTx; the pool funded with test NIGHT. The epoch loads at
- * max_key, the batches pay the rest, the one that completes the fold pays
- * the Treasury share to the ICS, and the empty epoch's load pays its
- * share. The digest proofs come from digestProofOf, the pump's code path.
+ * buildRegisterTx; the pool funded with test NIGHT. The epoch loads at its
+ * first leaf and pays the whole run in one batch, whatever order the
+ * ledger gives the deposits; that batch completes the fold and pays the
+ * Treasury share to the ICS, and the empty epoch's load pays its share.
+ * The digest proofs come from digestProofOf, the pump's code path.
  */
 import { describe, expect, test } from "bun:test";
 import {
@@ -49,9 +50,6 @@ import {
   type Batch,
   type BatchPlan,
   buildBatchTx,
-  byLedgerOrder,
-  inputsHold,
-  loadStart,
   planBatch,
   type RewardLeaf,
   rewardLeaf,
@@ -331,16 +329,12 @@ const nightAt = (script: Script) =>
     0n,
   );
 
-/** Complete, check the inputs, sign with the wallet (and `keys`), submit and confirm; the size and budget of the transaction. */
+/** Complete, sign with the wallet (and `keys`), submit and confirm; the size and budget of the transaction. */
 const land = async (
   builder: TxBuilder,
-  expectedInputs: Option.Option<readonly string[]>,
   keys: readonly Ed25519PrivateNormalKeyHex[] = [],
 ) => {
   const tx = await builder.complete();
-  Option.map(expectedInputs, (expected) =>
-    expect(inputsHold([...tx.body().inputs().values()], expected)).toBe(true),
-  );
   const signed = await blaze.signTransaction(tx);
   const withKeys: Transaction =
     keys.length === 0
@@ -371,18 +365,7 @@ const stateOf = () => {
   };
 };
 
-const chainOf = (fee: bigint) => {
-  const feeUtxo = new TransactionUnspentOutput(
-    new TransactionInput(
-      TransactionId("f1".repeat(31) + fee.toString(16).padStart(2, "0")),
-      0n,
-    ),
-    TransactionOutput.fromCore({
-      address: PaymentAddress(wallet.toBech32()),
-      value: { coins: 50_000_000n },
-    }),
-  );
-  emulator.addUtxo(feeUtxo);
+const chainOf = () => {
   const { utxo } = stateOf();
   return {
     batcher: scripts.batcher.Script,
@@ -410,7 +393,6 @@ const chainOf = (fee: bigint) => {
           .multiasset()
           ?.get(AssetId(scripts.pool.forever.Script.hash())) ?? 0n) === 0n,
     ),
-    feeUtxo,
     collateral,
     night,
   };
@@ -463,7 +445,6 @@ describe("the rewards batch path in the emulator", () => {
           },
           networkId,
         ),
-        Option.none(),
         [key],
       );
     }
@@ -500,11 +481,11 @@ describe("the rewards batch path in the emulator", () => {
     treasuryTotal: bigint,
     limit: number,
   ): Promise<Option.Option<BatchPlan>> => {
-    const chain = chainOf(BigInt(Object.keys(measured).length));
+    const chain = chainOf();
     const { state } = stateOf();
     const loading = Option.isSome(load);
     const start = loading
-      ? loadStart(leaves)
+      ? 0
       : leaves.findIndex((l) => l.key === state.start_key);
     const from = loading
       ? start
@@ -512,21 +493,7 @@ describe("the rewards batch path in the emulator", () => {
     const plan =
       leaves.length === 0
         ? Option.none<BatchPlan>()
-        : Option.some(
-            Either.getOrThrow(
-              planBatch(
-                leaves,
-                from,
-                start,
-                limit,
-                (a, b) =>
-                  byLedgerOrder(
-                    depositOf(leaves[a].key),
-                    depositOf(leaves[b].key),
-                  ) < 0,
-              ),
-            ),
-          );
+        : Option.some(planBatch(leaves, from, start, limit));
     const loaded: Contracts.BatcherState = loading
       ? {
           ...state,
@@ -570,7 +537,7 @@ describe("the rewards batch path in the emulator", () => {
       stateOut,
       treasury: completes ? treasuryTotal : 0n,
     };
-    const { builder, inputs } = buildBatchTx(
+    const builder = buildBatchTx(
       blaze,
       {
         ...chain,
@@ -580,11 +547,11 @@ describe("the rewards batch path in the emulator", () => {
       b,
       networkId,
     );
-    measured[name] = await land(builder, Option.some(inputs));
+    measured[name] = await land(builder);
     return plan;
   };
 
-  test("loads epoch 5 at max_key, pays the rest, and the completing batch pays the Treasury share to the ICS", async () => {
+  test("loads epoch 5 at its first leaf, pays the run in one batch in any deposit order, and pays the Treasury share to the ICS", async () => {
     const icsBefore = nightAt(contracts.icsForever.Script);
     await batch(
       "load epoch 5",

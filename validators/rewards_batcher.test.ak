@@ -175,10 +175,7 @@ fn batch_tx(
 }
 
 fn pairs_for(n: Int) -> List<PayPair> {
-  list.map(
-    list.range(0, n - 1),
-    fn(i) { PayPair { input_index: 2 + i, output_index: 2 + i } },
-  )
+  list.map(list.range(0, n - 1), fn(i) { PayPair { output_index: 2 + i } })
 }
 
 fn run(tx: Transaction, redeemer: BatcherRedeemer) -> Bool {
@@ -935,15 +932,34 @@ test pay_two_pool_inputs_summed_ok() {
 test pay_two_pairs_one_output() fail {
   two_paid(
     two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total),
-    [PayPair(2, 2), PayPair(3, 2)],
+    [PayPair(2), PayPair(2)],
   )
 }
 
-test pay_pairs_inputs_not_increasing() fail {
-  two_paid(
-    two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total),
-    [PayPair(3, 2), PayPair(2, 3)],
-  )
+test pay_deposits_in_any_ledger_order() {
+  let tx =
+    batch_tx(
+      st(root7, k(4), k(6), False),
+      st(root7, k(4), k(1), False),
+      pool_night - two_total,
+      [dep_in(7), dep_in(6)],
+      [dep_out(6, 0), dep_out(7, 0)],
+      zero,
+    )
+  two_paid(tx, pairs_for(2))
+}
+
+test pay_deposit_missing() fail {
+  let tx =
+    batch_tx(
+      st(root7, k(4), k(6), False),
+      st(root7, k(4), k(1), False),
+      pool_night - two_total,
+      [dep_in(6)],
+      [dep_out(6, 0), dep_out(7, 0)],
+      zero,
+    )
+  two_paid(tx, pairs_for(2))
 }
 
 test pay_missing_pair() fail {
@@ -1077,7 +1093,7 @@ fn run_exit(tx: Transaction) -> Bool {
     tx,
     Pay {
       proof: proof(exit_tree, 3, 4),
-      pairs: [PayPair(2, 2)],
+      pairs: [PayPair(2)],
       exits: [ExitInfo(3, 3)],
     },
   )
@@ -1194,7 +1210,7 @@ test exit_wrong_predecessor() fail {
 test exit_without_exit_info() fail {
   run(
     good_exit_tx(),
-    Pay { proof: proof(exit_tree, 3, 4), pairs: [PayPair(2, 2)], exits: [] },
+    Pay { proof: proof(exit_tree, 3, 4), pairs: [PayPair(2)], exits: [] },
   )
 }
 
@@ -1234,11 +1250,7 @@ test exit_predecessor_is_head_ok() {
     )
   run(
     tx,
-    Pay {
-      proof: proof(t, 1, 2),
-      pairs: [PayPair(2, 2)],
-      exits: [ExitInfo(3, 3)],
-    },
+    Pay { proof: proof(t, 1, 2), pairs: [PayPair(2)], exits: [ExitInfo(3, 3)] },
   )
 }
 
@@ -1262,7 +1274,7 @@ test exit_first_batch_ok() {
     LoadAndPay {
       digest_proof: dp,
       proof: proof(exit_tree, 3, 4),
-      pairs: [PayPair(2, 2)],
+      pairs: [PayPair(2)],
       exits: [ExitInfo(3, 3)],
     },
   )

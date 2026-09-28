@@ -14,6 +14,7 @@ use aiken/collection/dict
 use aiken/collection/list
 use aiken/crypto.{ScriptHash}
 use aiken/math
+use aiken/primitive/bytearray
 use bridge/types.{BeefyConsensusState, ProofNodeRec} as bridge_types
 use cardano/address.{Address, Credential, Script}
 use cardano/assets.{PolicyId, Value, add, from_asset}
@@ -153,9 +154,9 @@ pub fn pay(
       burned: tokens_of(mint, state.account_policy),
       cap,
     }
-  let total = pay_each(paid, pairs, exits, -1, -1, 0, env)
-  expect
-    account_inputs(inputs, state.account_policy) == n_paid + list.length(exits)
+  let deposits = sorted_account_inputs(inputs, state.account_policy)
+  expect list.length(deposits) == n_paid + list.length(exits)
+  let total = pay_each(paid, pairs, exits, deposits, -1, 0, env)
   let complete = cursor == state.start_key
   let treasury =
     if complete {
@@ -212,12 +213,48 @@ type Env {
   cap: Int,
 }
 
-/// Check every paid leaf against its `PayPair` (and `ExitInfo` for an exit); returns the NIGHT paid.
+/// The inputs carrying an account NFT, as `(name, input)` sorted by name, so deposits come in leaf order.
+fn sorted_account_inputs(
+  inputs: List<Input>,
+  account_policy: PolicyId,
+) -> List<(ByteArray, Input)> {
+  list.foldr(
+    inputs,
+    [],
+    fn(input, acc) {
+      when tokens_of(input.output.value, account_policy) is {
+        [] -> acc
+        tokens -> {
+          expect [Pair(name, 1)] = tokens
+          [(name, input), ..acc]
+        }
+      }
+    },
+  )
+    |> list.sort(fn(a, b) { bytearray.compare(a.1st, b.1st) })
+}
+
+/// The input named `name` in the sorted account inputs, past the smaller names (exit predecessors), and the ones after it.
+fn take_deposit(
+  deposits: List<(ByteArray, Input)>,
+  name: ByteArray,
+  return: fn(Input, List<(ByteArray, Input)>) -> result,
+) -> result {
+  expect [(found, input), ..rest] = deposits
+  if found == name {
+    return(input, rest)
+  } else {
+    expect bytearray.compare(found, name) == Less
+    take_deposit(rest, name, return)
+  }
+}
+
+/// Check every paid leaf against its deposit, its `PayPair` output (and `ExitInfo` for an exit); returns the NIGHT paid.
 fn pay_each(
   paid: List<RewardLeaf>,
   pairs: List<PayPair>,
   exits: List<ExitInfo>,
-  prev_in: Int,
+  deposits: List<(ByteArray, Input)>,
   prev_out: Int,
   total: Int,
   env: Env,
@@ -228,14 +265,11 @@ fn pay_each(
       total
     }
     [leaf, ..rest] -> {
-      expect [PayPair { input_index, output_index }, ..pairs] = pairs
-      expect input_index > prev_in && output_index > prev_out
-      expect Some(input) = list.at(env.inputs, input_index)
+      expect [PayPair { output_index }, ..pairs] = pairs
+      expect output_index > prev_out
       expect Some(output) = list.at(env.outputs, output_index)
       let name = deposit_name(leaf.key)
-      expect [Pair(in_name, 1)] =
-        tokens_of(input.output.value, env.account_policy)
-      expect in_name == name
+      let input, deposits <- take_deposit(deposits, name)
       expect InlineDatum(datum) = input.output.datum
       expect Deposit { next, committed, .. }: AccountDatum = datum
       let ada_in, _ <- split_ada(input.output.value)
@@ -267,7 +301,7 @@ fn pay_each(
         rest,
         pairs,
         exits,
-        input_index,
+        deposits,
         output_index,
         total + leaf.amount,
         env,
