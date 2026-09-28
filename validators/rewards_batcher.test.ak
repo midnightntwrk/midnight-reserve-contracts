@@ -40,6 +40,14 @@ const fee = 200_000
 
 const refund = Address(VerificationKey(zero28), None)
 
+/// `+1` of a deposit NFT for a key that has no deposit.
+const forged_deposit_nft =
+  from_asset(
+    account_policy,
+    builtin.append_bytearray(#"00", builtin.integer_to_bytearray(True, 28, 9)),
+    1,
+  )
+
 fn k(i: Int) -> ByteArray {
   builtin.integer_to_bytearray(True, 28, i)
 }
@@ -496,6 +504,11 @@ test load_empty_epoch_with_pool_input() fail {
     },
     empty_redeemer(),
   )
+}
+
+test load_empty_epoch_mints_account_nft() fail {
+  let tx = empty_tx(BatcherState { ..init_state, epoch: 5 })
+  run(Transaction { ..tx, mint: forged_deposit_nft }, empty_redeemer())
 }
 
 test load_next_epoch_after_complete() {
@@ -1001,6 +1014,19 @@ test pay_extra_head_input() fail {
   )
 }
 
+test pay_mints_account_nft() fail {
+  let tx =
+    batch_tx(
+      st(root7, k(4), k(6), False),
+      st(root7, k(4), k(1), False),
+      pool_night - sum_amounts([6, 7]),
+      list.map([6, 7], dep_in),
+      list.map([6, 7], fn(i) { dep_out(i, 0) }),
+      forged_deposit_nft,
+    )
+  run(tx, Pay { proof: proof(leaves7, 6, 7), pairs: pairs_for(2), exits: [] })
+}
+
 test pay_stale_exit_info() fail {
   let tx = two_paid_tx([dep_out(6, 0), dep_out(7, 0)], pool_night - two_total)
   run(
@@ -1181,6 +1207,15 @@ test exit_not_committed() fail {
 
 test exit_without_burn() fail {
   run_exit(Transaction { ..good_exit_tx(), mint: zero })
+}
+
+test exit_with_extra_mint() fail {
+  run_exit(
+    Transaction {
+      ..good_exit_tx(),
+      mint: assets.merge(exit_burn, forged_deposit_nft),
+    },
+  )
 }
 
 test exit_without_relink() fail {
