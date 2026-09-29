@@ -132,7 +132,6 @@ export const registerGovAuthProgram = (input: TxFileInput) =>
       buildRegisterGovAuthTx(blaze, govAuth, stagingGovAuth),
       {
         commandName: "register-gov-auth",
-        environment: network,
         witnesses: DEPLOYER_ONLY,
       },
     );
@@ -195,7 +194,6 @@ export const registerCnightMintLogicProgram = (
       ),
       {
         commandName: "register-cnight-mint-logic",
-        environment: network,
         witnesses: DEPLOYER_ONLY,
         knownUtxos: [userUtxo],
       },

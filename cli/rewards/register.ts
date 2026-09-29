@@ -327,7 +327,6 @@ export const rewardsRegisterProgram = (input: RewardsRegisterInput) =>
       ),
       {
         commandName: "rewards-register",
-        environment: network,
         witnesses: 2,
         knownUtxos: [anchor.utxo, accountRef, collateral],
       },

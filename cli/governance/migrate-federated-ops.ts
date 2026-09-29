@@ -252,7 +252,6 @@ export const migrateFederatedOpsProgram = (input: MigrateFederatedOpsInput) =>
     );
     const tx = yield* buildTx(txBuilder, {
       commandName: COMMAND,
-      environment: network,
       witnesses: DEPLOYER_ONLY,
       knownUtxos: [foreverUtxo, twoStageUtxo, userUtxo],
     });

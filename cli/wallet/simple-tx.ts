@@ -92,7 +92,6 @@ export const simpleTxProgram = (input: SimpleTxInput) =>
       buildSimpleTx(blaze, { recipient, count, amount }),
       {
         commandName: "simple-tx",
-        environment: network,
         witnesses: DEPLOYER_ONLY,
       },
     );

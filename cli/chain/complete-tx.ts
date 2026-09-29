@@ -1,23 +1,17 @@
 import {
   Transaction,
   type TransactionUnspentOutput,
-  SLOT_CONFIG_NETWORK,
 } from "@blaze-cardano/core";
 import type { TxBuilder } from "@blaze-cardano/sdk";
 import { makeUplcEvaluator } from "@blaze-cardano/vm";
 import { Data, Effect, Either, Option } from "effect";
 import { Output } from "../output";
 import {
-  environmentOf,
-  type CardanoNetwork,
-  type Environment,
-} from "../config/network-mapping";
-import {
   validatorLabels,
   labelValidators,
   type ValidatorLabels,
 } from "./validator-labels";
-import { Provider } from "./provider";
+import { Provider, slotConfig } from "./provider";
 import { Blueprint } from "../contracts/contracts";
 import {
   type ConfigError,
@@ -45,13 +39,6 @@ function extractTraces(errorMsg: string): string[] {
   }
   return traces;
 }
-
-const slotConfigFor = (cardanoNetwork: CardanoNetwork | null) =>
-  cardanoNetwork === "mainnet"
-    ? SLOT_CONFIG_NETWORK.Mainnet
-    : cardanoNetwork === "preprod"
-      ? SLOT_CONFIG_NETWORK.Preprod
-      : SLOT_CONFIG_NETWORK.Preview;
 
 /** The advisory local UPLC phase did not pass; consumed inside buildTx, never leaves it. */
 class LocalUplcFailed extends Data.TaggedError("LocalUplcFailed")<{
@@ -86,7 +73,6 @@ const describeBuildCause = (
 /** What buildTx needs beyond the builder. */
 interface BuildTxOptions {
   readonly commandName: string;
-  readonly environment: Environment;
   /** Inputs the draft spends or references; enables the local UPLC phase. */
   readonly knownUtxos?: readonly TransactionUnspentOutput[];
   /** The vkey witnesses the transaction carries at submit (witnessCount), counted in its size. */
@@ -103,7 +89,7 @@ export const buildTx = (
   Provider | Output
 > =>
   Effect.gen(function* () {
-    const { commandName, environment } = options;
+    const { commandName } = options;
     const knownUtxos = [...(options.knownUtxos ?? [])];
     const provider = yield* Provider;
     const output = yield* Output;
@@ -119,15 +105,10 @@ export const buildTx = (
           const params = yield* provider.use("getParameters", (p) =>
             p.getParameters(),
           );
-          const { cardanoNetwork } = environmentOf(environment);
+          const slots = yield* slotConfig;
           const { draftTx, evaluator } = yield* localStep(() => ({
             draftTx: Transaction.fromCbor(txBuilder.toCbor()),
-            evaluator: makeUplcEvaluator(
-              params,
-              1.2,
-              1.2,
-              slotConfigFor(cardanoNetwork),
-            ),
+            evaluator: makeUplcEvaluator(params, 1.2, 1.2, slots),
           }));
           const blueprint = yield* Effect.serviceOption(Blueprint);
           if (Option.isSome(blueprint)) {

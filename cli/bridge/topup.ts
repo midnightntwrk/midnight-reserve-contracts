@@ -31,7 +31,6 @@ export const bridgeTopupProgram = (input: BridgeTopupInput) =>
       buildBridgeTopupTx(blaze, pool, lovelace, networkId),
       {
         commandName: "bridge-topup",
-        environment: network,
         witnesses: DEPLOYER_ONLY,
       },
     );

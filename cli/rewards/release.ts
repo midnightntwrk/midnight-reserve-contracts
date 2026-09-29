@@ -359,7 +359,6 @@ export const releaseTx = (network: Environment) =>
       ),
       {
         commandName: "rewards-release",
-        environment: network,
         witnesses: DEPLOYER_ONLY,
         knownUtxos: [
           nftUtxo,

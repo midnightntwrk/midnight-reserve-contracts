@@ -298,7 +298,6 @@ export const batchTx = (network: Environment, rpc: string, limit: number) =>
     const builder = buildBatchTx(blaze, chain, batch, networkId);
     const tx: Transaction = yield* buildTx(builder, {
       commandName: "rewards-batch",
-      environment: network,
       witnesses: DEPLOYER_ONLY,
       knownUtxos: [
         stateUtxo,

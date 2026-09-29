@@ -284,7 +284,6 @@ export const mintTcnightProgram = (input: MintTcnightInput) =>
       ),
       {
         commandName: "mint-tcnight",
-        environment: network,
         witnesses: DEPLOYER_ONLY,
         // A mint draft has no inputs before coin selection, so only a burn can run the local test.
         knownUtxos: action.kind === "burn" ? userUtxos : [],

@@ -214,7 +214,6 @@ export const deployStagingTrackProgram = (input: DeployStagingTrackInput) =>
           ),
           {
             commandName: `deploy-staging-track/${step.name}`,
-            environment: network,
             witnesses: DEPLOYER_ONLY,
             knownUtxos: [oneShotUtxo, setup.params.collateral],
           },

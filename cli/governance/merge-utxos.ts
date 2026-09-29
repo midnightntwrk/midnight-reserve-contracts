@@ -282,7 +282,6 @@ export const mergeUtxosProgram = (input: MergeUtxosInput) =>
     );
     const tx = yield* buildTx(txBuilder, {
       commandName: COMMAND,
-      environment: network,
       witnesses: DEPLOYER_ONLY,
       knownUtxos: [utxo1, utxo2, twoStageMainUtxo, userUtxo],
     });
