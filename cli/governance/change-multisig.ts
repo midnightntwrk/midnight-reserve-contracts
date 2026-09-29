@@ -354,7 +354,6 @@ export const multisigChangeProgram = (
     });
     const tx = yield* buildTx(txBuilder, {
       commandName: config.commandName,
-      environment: network,
       witnesses: witnessCount(signer, primary.required + secondary.required),
       knownUtxos: [
         primaryForeverUtxo,

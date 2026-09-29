@@ -209,7 +209,6 @@ export const termsChangeProgram = (input: TermsChangeInput) =>
     });
     const tx = yield* buildTx(txBuilder, {
       commandName: "change-terms",
-      environment: network,
       witnesses: witnessCount(signer, techAuth.required + council.required),
       knownUtxos: [
         foreverUtxo,

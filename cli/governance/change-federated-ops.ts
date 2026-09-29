@@ -219,7 +219,6 @@ export const federatedOpsChangeProgram = (input: FederatedOpsChangeInput) =>
     });
     const tx = yield* buildTx(txBuilder, {
       commandName: "change-federated-ops",
-      environment: network,
       witnesses: witnessCount(signer, techAuth.required + council.required),
       knownUtxos: [
         foreverUtxo,

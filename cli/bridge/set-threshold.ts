@@ -116,7 +116,6 @@ const thresholdEditProgram = (
       ),
       {
         commandName: command,
-        environment: network,
         witnesses: witnessCount(
           signer,
           requirements.techAuth.required + requirements.council.required,

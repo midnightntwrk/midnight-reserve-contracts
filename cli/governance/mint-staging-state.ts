@@ -296,7 +296,6 @@ export const mintStagingStateProgram = (input: MintStagingStateInput) =>
     });
     const tx = yield* buildTx(txBuilder, {
       commandName: "mint-staging-state",
-      environment: network,
       witnesses: witnessCount(signer, 0),
       knownUtxos: [oneShotUtxo, collateralUtxo],
     });

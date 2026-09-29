@@ -140,7 +140,6 @@ export const bridgeUpdateTx = (
         ),
         {
           commandName: "bridge-update",
-          environment: network,
           witnesses: DEPLOYER_ONLY,
           knownUtxos,
         },

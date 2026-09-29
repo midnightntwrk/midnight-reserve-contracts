@@ -659,7 +659,6 @@ export const stageUpgradeProgram = (input: StageUpgradeInput) =>
     const required = requiredSignatures(authority);
     const tx = yield* buildTx(txBuilder, {
       commandName: "stage-upgrade",
-      environment: network,
       witnesses: witnessCount(signer, required),
       knownUtxos: [
         stagingUtxo,
@@ -796,7 +795,6 @@ export const promoteUpgradeProgram = (input: PromoteUpgradeInput) =>
     const required = requiredSignatures(authority);
     const tx = yield* buildTx(txBuilder, {
       commandName: "promote-upgrade",
-      environment: network,
       witnesses: witnessCount(signer, required),
       knownUtxos: [
         targetMain,
