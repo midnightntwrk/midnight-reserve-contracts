@@ -13,7 +13,7 @@
 set -euo pipefail
 action=$1
 node=$(cd "${2:-../midnight-node}" && pwd)
-ref=${3:-kc-beefy-mip-alignment}
+ref=${3:-block-rewards-demo}
 session_slots=${4:-10}
 mc_epoch=${5:-60}
 work=$PWD/.private-net

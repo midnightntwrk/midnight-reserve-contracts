@@ -130,7 +130,7 @@ Midnight; that is accepted.
 ## Local demo
 
 The whole flow runs on a local devnet from nothing: the node repo's local-env
-on `kc-block-rewards` (a Cardano devnet with db-sync, six Midnight nodes with
+on `block-rewards-demo` (a Cardano devnet with db-sync, six Midnight nodes with
 the rewards pallet), then this repo's contracts and pump against it.
 
 ```bash
