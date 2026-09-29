@@ -4,10 +4,10 @@
 # rewards contracts (first epoch two after the current one), the reserve moved to
 # reserve_logic_v2, and one virtual account per permissioned candidate, registered
 # with its sidechain key and a new stake key; then pool1's operator account (its reward
-# key) and a delegator: the Lace wallet of LACE_PHRASE, funded, delegated to pool1 and
-# registered. Each account routes all its rewards to one DUST address (kind 0x00): an
-# operator's from its sidechain secret, pool1's from its reward key, and the Lace
-# wallet's from its phrase, the address Lace shows. The CLI runs from .private-net/demo,
+# key) and a delegator: the Lace wallet of LACE_PHRASE, funded and delegated to pool1 but
+# not registered, as the demo registers it in Lace. Each registered account routes all
+# its rewards to one DUST address (kind 0x00): an operator's from its sidechain secret
+# and pool1's from its reward key. The CLI runs from .private-net/demo,
 # a copy of the contract compiler's workspace: the pinned contracts with the deployed
 # local profile and the local-env keys. Afterwards `just private-net-pump` runs the pump there.
 # Usage: rewards-deploy.sh
@@ -195,19 +195,20 @@ cli rewards-register -p kupmios --use-build --stake-key POOL1_REWARD_KEY \
   --destinations "00$dust:1000" --payout-threshold 0
 submit deployments/local/rewards-register.json
 
-echo "=== The Lace delegator: funded, delegated to pool1, registered"
+echo "=== The Lace delegator: funded, delegated to pool1, not registered"
 echo "# rewards-deploy: the Lace wallet of LACE_PHRASE" >> .env
 printf '%s' "$LACE_PHRASE" | bun "$repo/tests/private-net/wallet-keys.ts" 0 | sed 's/^/LACE_/' >> .env
 lace_address=$(sed -n 's/^LACE_ADDRESS=//p' .env)
-cli simple-tx -p kupmios --to "$lace_address" --amount 1000000000000 --count 1
+# Two UTxOs: Lace holds one back as collateral.
+cli simple-tx -p kupmios --to "$lace_address" --amount 500000000000 --count 2
 submit deployments/local/simple-tx.json
 delegate_to_pool1
-dust=$(dust_bytes "$LACE_PHRASE")
-cli rewards-register -p kupmios --use-build --stake-key LACE_STAKE_KEY \
-  --destinations "00$dust:1000" --payout-threshold 0
-submit deployments/local/rewards-register.json
+image=$(docker inspect midnight-node-1 --format '{{.Config.Image}}')
+lace_dust=$(docker run --rm "${image/midnight-node:/midnight-node-toolkit:}" \
+  show-address --network local --seed "$LACE_PHRASE" --dust)
 
 echo "=== Deployed: $i operator accounts, pool1's operator and the Lace delegator"
-echo "Lace: restore the recovery phrase below; its wallet holds 1,000,000 ADA delegated to pool1"
+echo "Lace: restore the recovery phrase below; its wallet holds 1,000,000 ADA in two UTxOs, delegated to pool1"
 echo "$LACE_PHRASE"
+echo "Register it in Lace with its DUST address: $lace_dust"
 echo "Run just private-net-pump"
