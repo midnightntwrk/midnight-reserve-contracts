@@ -4,7 +4,7 @@
  * .env lines: PAYMENT_KEY and STAKE_KEY as 128-hex extended keys for the CLI,
  * PAYMENT_XSK and STAKE_XSK as cardano-cli extended signing key CBOR,
  * ADDRESS (base, testnet), STAKE_ADDRESS and STAKE_KEY_HASH.
- * Usage: bun tests/private-net/wallet-keys.ts <account> (phrase on stdin)
+ * Usage: bun demo/wallet-keys.ts <account> (phrase on stdin)
  */
 import {
   addressFromCredentials,

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Devnet Transactions</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #16181d; --muted: #5d6573; --line: #e2e5ea;
+    --accent: #3b5bdb; --good: #1f8a4c; --bad: #c92a2a; --chip: #eef1f6; --flash: #fff4c2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --panel: #171a21; --text: #e8eaef; --muted: #98a0ae; --line: #2a2f3a;
+      --accent: #8da2ff; --good: #5bd08a; --bad: #ff7b7b; --chip: #232833; --flash: #3a3413;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 16px;
+    border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 1; }
+  header h1 { font-size: 17px; margin: 0; }
+  #tip { color: var(--muted); font-size: 13px; }
+  #search { flex: 1; min-width: 220px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg); color: var(--text); }
+  main { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(360px, 1.4fr); gap: 16px; padding: 16px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; min-width: 0; }
+  h2 { font-size: 14px; margin: 0 0 8px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .row { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; padding: 8px 6px; border-top: 1px solid var(--line);
+    cursor: pointer; border-radius: 4px; }
+  .row:first-of-type { border-top: 0; }
+  .row:hover, .row.sel { background: var(--chip); }
+  .row.new { animation: flash 2.5s ease-out; }
+  @keyframes flash { from { background: var(--flash); } to { background: transparent; } }
+  .muted { color: var(--muted); }
+  .pos { color: var(--good); } .neg { color: var(--bad); }
+  .chip { display: inline-block; padding: 1px 7px; border-radius: 10px; background: var(--chip); font-size: 12px; white-space: nowrap; }
+  .chip.lace { background: var(--accent); color: #fff; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin-bottom: 10px; }
+  .kv div:nth-child(odd) { color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 6px 4px; border-top: 1px solid var(--line); vertical-align: top; }
+  td.num { text-align: right; white-space: nowrap; }
+  tr.lace td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .break { word-break: break-all; }
+  .empty { color: var(--muted); padding: 8px 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cardano devnet · transactions</h1>
+  <span id="tip">…</span>
+  <input id="search" class="mono" placeholder="Transaction hash" spellcheck="false" autocomplete="off">
+</header>
+<main>
+  <div>
+    <section><h2>Lace wallet</h2><div id="wallet" class="empty">Loading…</div></section>
+    <section><h2>Lace virtual account</h2><div id="account" class="empty">Loading…</div></section>
+  </div>
+  <div><section><h2>Transaction</h2><div id="detail" class="empty">Select a transaction.</div></section></div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const api = async (path) => {
+  const r = await fetch("/api/" + path);
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(path + ": HTTP " + r.status);
+  return r.json();
+};
+// ADA and NIGHT both have 6 decimals.
+const fmt6 = (v, signed) => {
+  const a = v < 0n ? -v : v;
+  const sign = v < 0n ? "−" : signed && v > 0n ? "+" : "";
+  return sign + (a / 1000000n).toLocaleString("en-US") + "." + (a % 1000000n).toString().padStart(6, "0");
+};
+const short = (s, n = 10) => (s.length > 2 * n + 1 ? s.slice(0, n) + "…" + s.slice(-6) : s);
+const time = (t) => new Date(t * 1000).toLocaleTimeString();
+
+let meta, tip;
+let selected = null;
+const details = new Map();
+const seen = { wallet: new Set(), account: new Set() };
+
+const addressLabel = (a) => {
+  const label = meta.addresses[a];
+  return label
+    ? `<span class="chip ${label === "Lace wallet" ? "lace" : ""}">${esc(label)}</span> <span class="mono muted">${esc(short(a, 12))}</span>`
+    : `<span class="mono">${esc(short(a, 14))}</span>`;
+};
+const assetName = (unit) => {
+  if (unit === meta.night) return "NIGHT";
+  if (unit.startsWith(meta.accountPolicy)) {
+    const name = unit.slice(56);
+    const owner = name.slice(2);
+    const who = owner === meta.laceOwner ? "Lace" : short(owner, 6);
+    if (name.startsWith("00")) return `Account NFT · ${who}`;
+    if (name.startsWith("01")) return `Registration token · ${who}`;
+  }
+  return short(unit, 8);
+};
+const amountOf = (u, unit) => BigInt(u.amount.find((a) => a.unit === unit)?.quantity ?? 0);
+
+async function load(hash) {
+  if (details.has(hash)) return details.get(hash);
+  const [tx, utxos, redeemers, withdrawals] = await Promise.all([
+    api(`txs/${hash}`), api(`txs/${hash}/utxos`), api(`txs/${hash}/redeemers`), api(`txs/${hash}/withdrawals`),
+  ]);
+  if (!tx) return null;
+  const d = { tx, utxos, redeemers: redeemers ?? [], withdrawals: withdrawals ?? [] };
+  details.set(hash, d);
+  return d;
+}
+// The inputs and outputs a transaction applies: collateral only when its scripts failed.
+const applied = (d) => {
+  const ok = d.tx.valid_contract;
+  return {
+    inputs: d.utxos.inputs.filter((u) => !u.reference && u.collateral !== ok),
+    outputs: d.utxos.outputs.filter((u) => u.collateral !== ok),
+  };
+};
+const walletChange = (d, unit) => {
+  const { inputs, outputs } = applied(d);
+  const sum = (us) => us.filter((u) => u.address === meta.lace).reduce((s, u) => s + amountOf(u, unit), 0n);
+  return sum(outputs) - sum(inputs);
+};
+const change = (v, name) =>
+  v === 0n ? "" : `<span class="${v > 0n ? "pos" : "neg"}">${fmt6(v, true)} ${name}</span>`;
+
+async function renderList(id, rows, summary) {
+  const box = $(id);
+  if (rows === null) { box.className = "empty"; box.textContent = "No virtual account yet: the wallet is not registered."; return; }
+  if (rows.length === 0) { box.className = "empty"; box.textContent = "No transactions."; return; }
+  const loaded = await Promise.all(rows.map((r) => load(r.tx_hash)));
+  const first = seen[id].size === 0;
+  box.className = "";
+  box.innerHTML = rows.map((r, i) => {
+    const d = loaded[i];
+    const fresh = !first && !seen[id].has(r.tx_hash);
+    return `<div class="row ${fresh ? "new" : ""} ${selected === r.tx_hash ? "sel" : ""}" data-hash="${r.tx_hash}">
+      <span class="muted">${time(r.block_time)}</span>
+      <span class="mono">${short(r.tx_hash, 8)}</span>
+      <span class="muted">#${r.block_height}</span>
+      <span></span><span>${d ? summary(d) : ""}</span><span></span></div>`;
+  }).join("");
+  rows.forEach((r) => seen[id].add(r.tx_hash));
+}
+const walletSummary = (d) =>
+  [change(walletChange(d, "lovelace"), "ADA"), change(walletChange(d, meta.night), "NIGHT")].filter(Boolean).join(" · ");
+const accountSummary = (d) => {
+  const out = applied(d).outputs.find((u) => u.amount.some((a) => a.unit === accountUnit));
+  return out
+    ? `account ${fmt6(amountOf(out, "lovelace"))} ADA · ${fmt6(amountOf(out, meta.night))} NIGHT`
+    : `<span class="muted">account spent</span>`;
+};
+
+const assets = (u) => u.amount.filter((a) => a.unit !== "lovelace" && a.unit !== meta.night)
+  .map((a) => `<span class="chip">${esc(assetName(a.unit))}${a.quantity === "1" ? "" : " × " + esc(a.quantity)}</span>`).join(" ");
+const utxoRows = (us, withRef) => us.map((u) => `<tr class="${u.address === meta.lace ? "lace" : ""}">
+    <td>${addressLabel(u.address)}${withRef ? `<div class="mono muted">${short(u.tx_hash, 8)}#${u.output_index}</div>` : ""}
+      <div>${assets(u)} ${u.inline_datum ? '<span class="chip">inline datum</span>' : ""}
+      ${u.reference ? '<span class="chip">reference</span>' : ""} ${u.collateral ? '<span class="chip">collateral</span>' : ""}</div></td>
+    <td class="num">${fmt6(amountOf(u, "lovelace"))} ADA${amountOf(u, meta.night) ? `<br>${fmt6(amountOf(u, meta.night))} NIGHT` : ""}</td></tr>`).join("");
+
+async function renderDetail() {
+  const box = $("detail");
+  if (!selected) return;
+  const d = await load(selected);
+  if (!d) { box.className = "empty"; box.textContent = "No transaction with this hash on the devnet."; return; }
+  const t = d.tx;
+  const status = t.valid_contract ? '<span class="pos">valid</span>' : '<span class="neg">scripts failed (collateral taken)</span>';
+  box.className = "";
+  box.innerHTML = `<div class="kv">
+      <div>Hash</div><div class="mono break">${t.hash}</div>
+      <div>Status</div><div>${status} · ${tip ? tip.height - t.block_height + 1 : "?"} confirmations</div>
+      <div>Block</div><div>#${t.block_height} · slot ${t.slot} · ${new Date(t.block_time * 1000).toLocaleString()}</div>
+      <div>Fee</div><div>${fmt6(BigInt(t.fees))} ADA · ${t.size} bytes</div>
+      ${t.invalid_hereafter ? `<div>Valid until</div><div>slot ${t.invalid_hereafter}</div>` : ""}
+      ${d.withdrawals.length ? `<div>Withdrawals</div><div>${d.withdrawals.map((w) => `${fmt6(BigInt(w.amount))} ADA from <span class="mono">${short(w.address, 12)}</span>`).join("<br>")}</div>` : ""}
+      ${d.redeemers.length ? `<div>Scripts</div><div>${d.redeemers.map((r) => `<span class="chip">${esc(r.purpose)} · ${esc(meta.scripts[r.script_hash] ?? short(r.script_hash, 6))}</span>`).join(" ")}</div>` : ""}
+    </div>
+    <h2>Inputs</h2><table>${utxoRows(d.utxos.inputs, true)}</table>
+    <h2 style="margin-top:12px">Outputs</h2><table>${utxoRows(d.utxos.outputs, false)}</table>`;
+}
+
+function select(hash) {
+  selected = hash;
+  history.replaceState(null, "", "#tx=" + hash);
+  document.querySelectorAll(".row").forEach((r) => r.classList.toggle("sel", r.dataset.hash === hash));
+  $("detail").className = "empty";
+  $("detail").textContent = "Loading…";
+  renderDetail().catch(showError);
+}
+const showError = (e) => { $("tip").textContent = "Error: " + e.message; };
+
+let accountUnit;
+async function refresh() {
+  tip = await api("blocks/latest");
+  $("tip").textContent = `tip #${tip.height} · slot ${tip.slot} · ${time(tip.time)}`;
+  await Promise.all([
+    api(`addresses/${meta.lace}/transactions?order=desc&count=15`).then((rows) => renderList("wallet", rows ?? [], walletSummary)),
+    api(`assets/${accountUnit}/transactions?order=desc&count=15`).then((rows) => renderList("account", rows, accountSummary)),
+  ]);
+  if (selected) await renderDetail();
+}
+
+document.addEventListener("click", (e) => {
+  const row = e.target.closest(".row");
+  if (row) select(row.dataset.hash);
+});
+$("search").addEventListener("keydown", (e) => {
+  const v = e.target.value.trim().toLowerCase();
+  if (e.key === "Enter" && /^[0-9a-f]{64}$/.test(v)) select(v);
+});
+
+(async () => {
+  meta = await (await fetch("/meta")).json();
+  accountUnit = meta.accountPolicy + "00" + meta.laceOwner;
+  const fromUrl = /^#tx=([0-9a-f]{64})$/.exec(location.hash);
+  if (fromUrl) select(fromUrl[1]);
+  const loop = () => refresh().catch(showError).finally(() => setTimeout(loop, 5000));
+  loop();
+})();
+</script>
+</body>
+</html>

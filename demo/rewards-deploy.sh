@@ -197,7 +197,7 @@ submit deployments/local/rewards-register.json
 
 echo "=== The Lace delegator: funded, delegated to pool1, not registered"
 echo "# rewards-deploy: the Lace wallet of LACE_PHRASE" >> .env
-printf '%s' "$LACE_PHRASE" | bun "$repo/tests/private-net/wallet-keys.ts" 0 | sed 's/^/LACE_/' >> .env
+printf '%s' "$LACE_PHRASE" | bun "$repo/demo/wallet-keys.ts" 0 | sed 's/^/LACE_/' >> .env
 lace_address=$(sed -n 's/^LACE_ADDRESS=//p' .env)
 # Two UTxOs: Lace holds one back as collateral.
 cli simple-tx -p kupmios --to "$lace_address" --amount 500000000000 --count 2

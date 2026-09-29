@@ -53,7 +53,7 @@ to coin selection (`GuardedWallet`, `reservedRefs`).
 Done (user decision 2026-09-27: a `just` recipe over the node repo's
 local-env, no stack copied here): `just private-net-up [node] [ref]
 [session_slots] [mc_epoch]` and `just private-net-down` run
-`tests/private-net/local-env.sh`. Demo timing (user decision 2026-09-27):
+`demo/local-env.sh`. Demo timing (user decision 2026-09-27):
 1-minute sessions (10 slots) over a 60 s devnet epoch; the node refuses a
 Cardano epoch that is not a whole multiple of the session. A
 `change-federated-ops` reached the committee 3 min 36 s after it confirmed. It builds the
@@ -71,7 +71,7 @@ Copy the compact-end-2-end pattern (`infra/docker-compose.yml`,
 `midnight-node-image` service runs the `node-image` Earthfile target from
 `MIDNIGHT_NODE_BUILD_CONTEXT=../midnight-node` (checked out on the BEEFY
 branch); the `midnight-node` service runs it with `CFG_PRESET=dev`. Place
-under `tests/private-net/` with a `just private-net-up` target. A second
+under `demo/` with a `just private-net-up` target. A second
 compose profile with 3 validators for the membership-change test (needs a
 chain spec with 3 permissioned candidates carrying `beef` keys; follow
 `midnight-node/docs/configuration-guide.md`).

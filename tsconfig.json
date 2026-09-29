@@ -15,7 +15,8 @@
   },
   "include": [
     "cli/**/*.ts",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "demo/**/*.ts"
   ],
   "exclude": [
     "node_modules",
