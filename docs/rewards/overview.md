@@ -134,11 +134,14 @@ on `kc-block-rewards` (a Cardano devnet with db-sync, six Midnight nodes with
 the rewards pallet), then this repo's contracts and pump against it.
 
 ```bash
-just private-net-up      # build the node images if missing, start the stack and the Lace backend
-just private-net-deploy  # bridge, rewards contracts, reserve on reserve_logic_v2, one account per operator
-just private-net-pump    # land each handover, release, load and pay as it falls due
-just private-net-down    # remove the stack and its volumes
+just private-net-up        # build the node images if missing, start the stack and the Lace backend
+just private-net-deploy    # bridge, rewards contracts, reserve on reserve_logic_v2, one account per operator
+just private-net-pump      # land each handover, release, load and pay as it falls due
+just private-net-explorer  # the transaction viewer on http://127.0.0.1:3002
+just private-net-down      # remove the stack and its volumes
 ```
+
+The scripts behind these recipes are in `demo/`.
 
 The committee is five permissioned producers and one registered pool: the
 devnet's pool1 (10% margin), whose Midnight node is node 6. A permissioned
@@ -150,12 +153,19 @@ delegators, by stake in the Cardano snapshot that selected the committee.
 contract compiler's workspace (the pinned contracts, the deployed `local`
 profile and the local-env keys); `--use-build` stands in for deployed-scripts
 there. It registers one account per permissioned producer (its sidechain
-key from local-env's node seeds, a new stake key), pool1's operator account
-at its reward key, and a delegator: the Lace wallet of the recovery phrase
-in `tests/private-net/rewards-deploy.sh`, funded with 1,000,000 ADA and
-delegated to pool1. Keys land in `.private-net/demo/.env`. Midnight epochs
-are one minute, so the pump loads and pays one epoch a minute; a new
-delegation reaches the split about four Cardano epochs later.
+key from local-env's node seeds, a new stake key) and pool1's operator
+account at its reward key. It funds a delegator, the Lace wallet of the
+recovery phrase in `demo/rewards-deploy.sh`, with 1,000,000 ADA in two UTxOs
+(Lace holds one back as collateral) and delegates it to pool1, but does not
+register it: the demo registers it in Lace. Keys land in
+`.private-net/demo/.env`. Midnight epochs are one minute, so the pump loads
+and pays one epoch a minute; a new delegation reaches the split about four
+Cardano epochs later.
+
+A delegator's first pay after it registers carries what it accrued before,
+and a catch-up after a stall pays several epochs between two releases. When
+such a pay needs more NIGHT than the pool holds, the batcher cannot build it;
+`demo/pool-topup.sh <NIGHT>` pays the pool from the deployer.
 
 ## Out of scope (now)
 

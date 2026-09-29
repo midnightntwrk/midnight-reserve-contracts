@@ -6,7 +6,7 @@ const RUNNERS = ["runPromise", "runPromiseExit", "runSync", "runSyncExit", "runF
 
 export default [
   {
-    files: ["cli/**/*.ts", "tests/**/*.ts"],
+    files: ["cli/**/*.ts", "tests/**/*.ts", "demo/**/*.ts"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",

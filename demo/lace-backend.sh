@@ -2,7 +2,7 @@
 # The Lace wallet's backend for the local devnet, beside local-env: Blockfrost
 # RYO over the stack's db-sync (the devnet's Shelley genesis as a custom
 # network, read from the running stack since systemStart changes each run)
-# and tests/private-net/lace-shim.ts on http://localhost:3001, which Lace
+# and demo/lace-shim.ts on http://localhost:3001, which Lace
 # takes as its Blockfrost proxy for Preprod. `up` needs a running local-env;
 # `down` stops both. Usage: lace-backend.sh up|down
 set -euo pipefail
@@ -60,7 +60,7 @@ case $action in
       -v "$work/genesis:/genesis:ro" \
       "$ryo_image" >/dev/null
     wait_for 600 curl -fs http://localhost:3000/health
-    nohup bun tests/private-net/lace-shim.ts > "$work/shim.log" 2>&1 &
+    nohup bun demo/lace-shim.ts > "$work/shim.log" 2>&1 &
     echo $! > "$work/shim.pid"
     wait_for 30 curl -fs http://localhost:3001/extension/preprod/api/v0/health
     echo "Lace backend: http://localhost:3001 (BLOCKFROST_PROXY_URL); RYO on :3000"

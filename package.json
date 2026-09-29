@@ -5,10 +5,10 @@
   "license": "MIT",
   "scripts": {
     "check": "tsc --noEmit && bun run lint",
-    "lint": "eslint 'cli/**/*.ts' 'tests/**/*.ts'",
+    "lint": "eslint 'cli/**/*.ts' 'tests/**/*.ts' 'demo/**/*.ts'",
     "lint:fix": "bun lint --fix",
-    "fmt": "prettier --write 'cli/**/*.ts' 'tests/**/*.ts'",
-    "fmt:check": "prettier --check 'cli/**/*.ts' 'tests/**/*.ts'",
+    "fmt": "prettier --write 'cli/**/*.ts' 'tests/**/*.ts' 'demo/**/*.ts'",
+    "fmt:check": "prettier --check 'cli/**/*.ts' 'tests/**/*.ts' 'demo/**/*.ts'",
     "cli": "bun run cli/index.ts"
   },
   "devDependencies": {
