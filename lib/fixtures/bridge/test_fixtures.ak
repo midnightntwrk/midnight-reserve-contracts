@@ -1,5 +1,5 @@
 //// Test-only fixtures for the bridge: the generated keys and signed
-//// scenarios from `bridge/vectors` (`bun tests/bridge/generate.ts`), a
+//// scenarios from `fixtures/bridge/vectors` (`bun tests/bridge/generate.ts`), a
 //// reference MMR builder, multiproof shapes, and transaction builders. Not
 //// imported by any validator.
 
@@ -11,11 +11,11 @@ use bridge/types.{
   AuthoritySetCommitment, BeefyConsensusState, BeefyMmrLeaf, BeefyThreshold,
   BridgeUpdate,
 }
-use bridge/vectors
 use cardano/address.{Address, Inline, Script, VerificationKey}
 use cardano/assets.{add, from_lovelace}
 use cardano/transaction.{InlineDatum, Input, NoDatum, Output, OutputReference}
 use config
+use fixtures/bridge/vectors
 use upgradable/types.{UpgradeState} as ut
 
 /// Re-exports of the generated fixtures so tests keep one import.

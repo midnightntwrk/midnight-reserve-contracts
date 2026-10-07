@@ -35,7 +35,7 @@ and `[k2,k1,k2,k3]` same root), `signed-bytes.json`, `leaf.json`,
 and `signatures.json` for the Aiken fixtures.
 
 ### 4. Aiken fixtures
-Embed the JSON values as `const`s in `lib/bridge/test_fixtures.ak` (a
+Embed the JSON values as `const`s in `lib/fixtures/bridge/test_fixtures.ak` (a
 small script `tests/bridge/emit-fixtures.ts` prints the Aiken `const`
 block; commit the output). Aiken tests assert the same bytes.
 

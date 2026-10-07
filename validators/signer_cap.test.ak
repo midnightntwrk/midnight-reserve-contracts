@@ -3,13 +3,15 @@
 //// runs committee_bridge_logic; the validator cost is the difference.
 
 use aiken/builtin
-use bridge/signer_cap.{Cap, state_in, state_out, update}
-use bridge/signer_cap_vectors.{cap_100, cap_150, cap_170, cap_200, cap_50}
-use bridge/test_fixtures as fx
 use cardano/address.{Script}
 use cardano/script_context.{ScriptContext, Withdrawing}
 use cardano/transaction.{Transaction, placeholder}
 use committee_bridge
+use fixtures/bridge/signer_cap.{Cap, state_in, state_out, update}
+use fixtures/bridge/signer_cap_vectors.{
+  cap_100, cap_150, cap_170, cap_200, cap_50,
+}
+use fixtures/bridge/test_fixtures as fx
 
 const logic_hash = #"33333333333333333333333333333333333333333333333333333333"
 

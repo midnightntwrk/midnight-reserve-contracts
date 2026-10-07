@@ -41,7 +41,7 @@ committee_bridge_pool   (fixed; depends on config.committee_bridge_two_stage_has
 | `lib/bridge/merkle.ak` | five-shape multiproof walker (leaves in tree order), single-leaf MMR verify by index and count |
 | `lib/bridge/beefy.ak` | `verify_update`: rules 1–10, next state; `required` |
 | `lib/bridge/pool.ak` | `check_pool`: rules 12–17 |
-| `lib/bridge/test_fixtures.ak` | test-only builders: keys, commitments, MMRs, multiproofs (phase 01) |
+| `lib/fixtures/bridge/test_fixtures.ak` | test-only builders: keys, commitments, MMRs, multiproofs (phase 01) |
 
 Config keys (all 8 profiles: `default`, `local`, `preview`, `qanet`,
 `govnet`, `devnet`, `preprod`, `mainnet`):
@@ -325,8 +325,8 @@ every encoding and proof the contract verifies (`@noble/curves`,
 `tests/vectors/bridge/*.json` (commitment, signed bytes, leaf, quorum,
 height, three-peak MMR, MMR edges, bootstrap datum with CBOR, handover
 cases with redeemer CBOR, the signed scenarios) and the Aiken fixtures
-`lib/bridge/vectors.ak`; `--signer-cap` regenerates
-`lib/bridge/signer_cap_vectors.ak` (slow). `tests/bridge/reference.test.ts`
+`lib/fixtures/bridge/vectors.ak`; `--signer-cap` regenerates
+`lib/fixtures/bridge/signer_cap_vectors.ak` (slow). `tests/bridge/reference.test.ts`
 fails when the committed files drift from the generator and checks the
 properties (every multiproof subset hashes to `merkle_root`, every MMR
 leaf of sizes 1–20 verifies, the two node golden vectors).

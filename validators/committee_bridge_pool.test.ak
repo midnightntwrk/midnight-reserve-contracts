@@ -1,7 +1,7 @@
-use bridge/test_fixtures as fx
 use cardano/address.{Script}
 use cardano/transaction.{OutputReference, Transaction, placeholder}
 use committee_bridge_pool
+use fixtures/bridge/test_fixtures as fx
 
 const logic_hash = #"33333333333333333333333333333333333333333333333333333333"
 

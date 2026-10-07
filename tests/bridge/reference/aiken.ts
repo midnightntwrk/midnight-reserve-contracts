@@ -25,7 +25,7 @@ const list = (items: readonly string[], indent: string): string =>
 const constant = (name: string, value: string): string =>
   `pub const ${name} =\n  ${value}\n`;
 
-/** `lib/bridge/vectors.ak`: keys, keyset root, the six scenarios, the MIP MMR vector. */
+/** `lib/fixtures/bridge/vectors.ak`: keys, keyset root, the six scenarios, the MIP MMR vector. */
 export function vectorsAk(): string {
   const three = new Mmr(Array.from({ length: 7 }, (_, i) => dummyLeafHash(i)));
   const out: string[] = [
@@ -75,7 +75,8 @@ export function vectorsAk(): string {
 }
 
 // Signer cap: committees of N single-seat keys, quorum with abstentions every
-// third key, one MMR proof of depth 20. Mirrors `lib/bridge/signer_cap.ak`.
+// third key, one MMR proof of depth 20. Mirrors
+// `lib/fixtures/bridge/signer_cap.ak`.
 
 const DEPTH = 20;
 const BLOCK = 1 << DEPTH;
@@ -115,7 +116,7 @@ export function signerCapAk(
     `//// key, one MMR proof of depth ${DEPTH} (block ${BLOCK}). Do not edit by hand.`,
     "",
     "use aiken/builtin",
-    "use bridge/signer_cap.{Cap}",
+    "use fixtures/bridge/signer_cap.{Cap}",
     "",
   ];
   for (const n of sizes) {

@@ -1,8 +1,8 @@
 /**
  * Write the MIP vectors (`tests/vectors/bridge/*.json`) and the generated
- * Aiken fixtures (`lib/bridge/vectors.ak`; `signer_cap_vectors.ak` with
- * `--signer-cap`, slow). `tests/bridge/reference.test.ts` fails when the
- * committed files drift from this output.
+ * Aiken fixtures (`lib/fixtures/bridge/vectors.ak`; `signer_cap_vectors.ak`
+ * with `--signer-cap`, slow). `tests/bridge/reference.test.ts` fails when
+ * the committed files drift from this output.
  */
 import { mkdirSync, writeFileSync } from "fs";
 import { resolve } from "path";
@@ -12,11 +12,11 @@ import { toJsonText, vectors } from "./reference/vectors";
 export const VECTORS_DIR = resolve(import.meta.dir, "../vectors/bridge");
 export const VECTORS_AK = resolve(
   import.meta.dir,
-  "../../lib/bridge/vectors.ak",
+  "../../lib/fixtures/bridge/vectors.ak",
 );
 export const SIGNER_CAP_AK = resolve(
   import.meta.dir,
-  "../../lib/bridge/signer_cap_vectors.ak",
+  "../../lib/fixtures/bridge/signer_cap_vectors.ak",
 );
 
 if (import.meta.main) {

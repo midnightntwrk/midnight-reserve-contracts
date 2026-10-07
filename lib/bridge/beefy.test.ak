@@ -1,11 +1,11 @@
 use aiken/collection/list
 use aiken/primitive/bytearray
 use bridge/beefy.{required, sum_signed_seats}
-use bridge/test_fixtures as fx
 use bridge/types.{
   AuthoritySetCommitment, BeefyConsensusState, BeefyThreshold, BridgeUpdate,
 }
-use bridge/vectors
+use fixtures/bridge/test_fixtures as fx
+use fixtures/bridge/vectors
 
 // MIP quorum table at (2, 3).
 test required_table() {

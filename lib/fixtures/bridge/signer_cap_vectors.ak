@@ -3,7 +3,7 @@
 //// key, one MMR proof of depth 20 (block 1048576). Do not edit by hand.
 
 use aiken/builtin
-use bridge/signer_cap.{Cap}
+use fixtures/bridge/signer_cap.{Cap}
 
 pub const cap_50 =
   Cap {

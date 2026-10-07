@@ -1,4 +1,3 @@
-use bridge/test_fixtures as fx
 use bridge/types.{AuthoritySetCommitment, BeefyConsensusState, BeefyThreshold}
 use cardano/address.{Address, Inline, Script, VerificationKey}
 use cardano/assets.{add, from_asset, from_lovelace}
@@ -10,6 +9,7 @@ use cardano/transaction.{
 }
 use committee_bridge
 use config
+use fixtures/bridge/test_fixtures as fx
 
 const logic_hash = #"33333333333333333333333333333333333333333333333333333333"
 

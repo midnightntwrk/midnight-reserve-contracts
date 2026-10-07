@@ -25,7 +25,7 @@ describe("committed vectors match the reference", () => {
       expect(onDisk).toEqual(JSON.parse(toJsonText(generated[name])));
     });
   }
-  test("lib/bridge/vectors.ak", () => {
+  test("lib/fixtures/bridge/vectors.ak", () => {
     expect(readFileSync(VECTORS_AK, "utf-8")).toBe(vectorsAk());
   });
 });
