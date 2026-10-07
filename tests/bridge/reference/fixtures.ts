@@ -1,8 +1,8 @@
 /**
  * The MIP §Test vectors committee (three keys, seats `(1, 2, 1)`) and the
- * signed scenarios `lib/bridge/vectors.ak` carries. Filler leaf `i` is
- * `keccak(u32le(i))`; the signed leaf is the last one and names a successor
- * committee of 9 seats under a keyset that is not the signing one.
+ * signed scenarios `lib/fixtures/bridge/vectors.ak` carries. Filler leaf `i`
+ * is `keccak(u32le(i))`; the signed leaf is the last one and names a
+ * successor committee of 9 seats under a keyset that is not the signing one.
  */
 import { concatBytes } from "@noble/hashes/utils.js";
 import { committeeCommitment, type Member } from "./commitment";

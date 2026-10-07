@@ -52,7 +52,7 @@ Delete `check_auth_sigs_and_sum_seats`, `find_auth_in_leaves`,
 - Forever mint init: `next.validator_set_id == current.validator_set_id + 1`,
   `latest_height == beefy_activation_block - 1`, both roots 32 bytes.
 
-### 4. `lib/bridge/test_fixtures.ak` (test-only, not imported by validators)
+### 4. `lib/fixtures/bridge/test_fixtures.ak` (test-only, not imported by validators)
 - Deterministic keys: N secp256k1 keypairs from fixed scalars (the
   `aiken/crypto` stdlib has no keygen; embed 8 precomputed pairs, generated
   once by the phase 05 TS code or by hand, in a `const`).

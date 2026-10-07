@@ -6,7 +6,7 @@ target.
 
 ## Tasks
 
-### 1. Builder (`lib/bridge/test_fixtures.ak` or `lib/bridge/signer_cap.test.ak`)
+### 1. Builder (`lib/fixtures/bridge/signer_cap.ak`)
 `committee(n)`: `n` distinct keys (derive deterministically: precomputed
 keys from phase 05's TS reference if signing is needed, or synthetic
 33-byte keys with synthetic 64-byte signatures when only *size and

@@ -2,9 +2,9 @@ use aiken/builtin
 use aiken/collection/list
 use bridge/codec.{scale_encode_beefy_mmr_leaf}
 use bridge/merkle.{leaf_root, verify_mmr_leaf, verify_multiproof}
-use bridge/test_fixtures as fx
 use bridge/types.{AuthoritySetCommitment, BeefyMmrLeaf}
-use bridge/vectors
+use fixtures/bridge/test_fixtures as fx
+use fixtures/bridge/vectors
 
 // MMR: every leaf of every size 1..12 against the reference builder.
 
