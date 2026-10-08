@@ -2,7 +2,7 @@
  * Every failure the CLI can report, one tagged class each. A new string
  * reason is not a new class; anything outside this union is a defect.
  */
-import { Data, Option } from "effect";
+import { Data } from "effect";
 
 /** An aiken.toml field or a .env value is missing or malformed. */
 export class ConfigError extends Data.TaggedError("ConfigError")<{
@@ -112,13 +112,6 @@ export interface MovedHash {
   readonly built: string;
 }
 
-/** The build does not reproduce validators the live record fixes; the remedy is a from-deployed build of the run's components. */
-export class LiveRecordMismatch extends Data.TaggedError("LiveRecordMismatch")<{
-  readonly environment: string;
-  readonly moved: readonly MovedHash[];
-  readonly components: Option.Option<readonly string[]>;
-}> {}
-
 /** A from-deployed build compiled pinned validators to other hashes. */
 export class PinsMoved extends Data.TaggedError("PinsMoved")<{
   readonly moved: readonly MovedHash[];
@@ -210,7 +203,6 @@ const CLI_ERRORS = [
   InputParseError,
   StakeNotRegistered,
   AikenBuildError,
-  LiveRecordMismatch,
   PinsMoved,
   PreconditionFailed,
   VerificationFailed,
@@ -335,14 +327,6 @@ export function renderError(error: CliError): string {
       ].join("\n");
     case "AikenBuildError":
       return `Build failed (${error.phase}): ${error.reason}`;
-    case "LiveRecordMismatch":
-      return `Blueprint (deployed, ${error.environment}): the build does not match the live ${movedNames(error.moved)}; build against the deployed hashes first: bun cli build -n ${error.environment} --from-deployed${Option.match(
-        error.components,
-        {
-          onNone: () => "",
-          onSome: (names) => ` --components ${names.join(",")}`,
-        },
-      )}`;
     case "PinsMoved":
       return `Build failed (pins): the build changes the deployed ${movedNames(error.moved)}: they depend on a component compiled from new, or aiken.toml does not describe the deployment; add the components that create them to --components, or build without the new ones`;
     case "PreconditionFailed":

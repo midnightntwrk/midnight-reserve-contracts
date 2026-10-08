@@ -11,7 +11,9 @@
  * is an upgrade (stage-upgrade, promote-upgrade). The deployed-scripts
  * snapshot records each deploy: a full deploy on a test environment starts
  * it again from the build output; a --components one, or any deploy on
- * preprod and mainnet, extends it. On preprod and mainnet a validator
+ * preprod and mainnet, extends it with the validators it creates, and its
+ * UpgradeState datums name the gov auths the snapshot promotes (the build's
+ * where it promotes none). On preprod and mainnet a validator
  * versions.json already promotes is refused before any build. The snapshot
  * is saved before the deployment file is written, so a snapshot that
  * cannot be saved fails the command and leaves no file to sign.
@@ -31,6 +33,7 @@ import {
   type UpgradableValidator,
 } from "../contracts/contracts";
 import {
+  liveHashOf,
   prepareDeploySnapshot,
   type SnapshotRule,
   writeDeploySnapshot,
@@ -169,9 +172,11 @@ export interface DeployInput extends NetworkInput {
   readonly components: Option.Option<readonly DeployComponent[]>;
 }
 
-/** What every deployment step builds from. */
+/** What every deployment step builds from; the gov auth hashes are the environment's live ones, else the build's. */
 interface DeployContext extends DeploymentSetup {
   readonly input: DeployInput;
+  readonly govAuth: string;
+  readonly stagingGovAuth: string;
 }
 
 type DeployBuildError = ConfigError | InputParseError | BlueprintError;
@@ -184,7 +189,7 @@ type Validators = Effect.Effect<
 
 type OneShotOf = (config: NetworkConfig) => UtxoRef;
 
-/** A deployment step: its one-shot, the validators it creates, the ones its datums install (not created, but fixed by the deploy), and how its transaction is built over the resolved one-shot. */
+/** A deployment step: its one-shot, the validators it creates, the build gov auths its datums install on an environment that has none, and how its transaction is built over the resolved one-shot. */
 interface StepBody {
   readonly oneShotOf: OneShotOf;
   readonly validators: Validators;
@@ -237,8 +242,8 @@ const twoStage = (
             twoStage: twoStage.Script,
             forever: forever.Script,
             logic: logic.Script,
-            govAuth: ctx.contracts.govAuth.Script,
-            stagingGovAuth: ctx.contracts.stagingGovAuth.Script,
+            govAuth: ctx.govAuth,
+            stagingGovAuth: ctx.stagingGovAuth,
             foreverDatum: datum,
             foreverRedeemer: redeemer,
             registerLogic,
@@ -315,8 +320,8 @@ const cnightMinting: StepBody = {
           twoStage: twoStage.Script,
           forever: forever.Script,
           logic: logic.Script,
-          govAuth: ctx.contracts.govAuth.Script,
-          stagingGovAuth: ctx.contracts.stagingGovAuth.Script,
+          govAuth: ctx.govAuth,
+          stagingGovAuth: ctx.stagingGovAuth,
         },
         ctx.params,
       ),
@@ -491,10 +496,28 @@ export const deployProgram = (input: DeployInput) =>
         (lists) => new Set(lists.flat().map((c) => c.Script.hash())),
       );
     const created = yield* hashesOf((step) => step.validators);
-    const installed = yield* hashesOf((step) => step.installs);
     if (snapshot === "production") {
       yield* refusePromoted("deploy", network, created);
     }
+    const extend =
+      snapshot !== "none" &&
+      snapshotRuleOf(snapshot, input.components) === "extend";
+    const contracts = yield* Effect.flatMap(Blueprint, (b) => b.instances);
+    const liveOr = (buildHash: string) =>
+      extend
+        ? Effect.map(
+            liveHashOf(network, buildOf(network).plutusPath, buildHash),
+            Option.getOrElse(() => buildHash),
+          )
+        : Effect.succeed(buildHash);
+    const govAuth = yield* liveOr(contracts.govAuth.Script.hash());
+    const stagingGovAuth = yield* liveOr(
+      contracts.stagingGovAuth.Script.hash(),
+    );
+    const installs = yield* hashesOf((step) => step.installs);
+    const installed = new Set(
+      [...installs].filter((h) => h === govAuth || h === stagingGovAuth),
+    );
     const timestamp = new Date(yield* Clock.currentTimeMillis).toISOString();
     const prepared =
       snapshot === "none"
@@ -505,7 +528,6 @@ export const deployProgram = (input: DeployInput) =>
               rule: snapshotRuleOf(snapshot, input.components),
               createdHashes: created,
               installedHashes: installed,
-              components: input.components,
               ...buildOf(network),
               timestamp,
             }),
@@ -513,6 +535,8 @@ export const deployProgram = (input: DeployInput) =>
 
     const ctx: DeployContext = {
       input,
+      govAuth,
+      stagingGovAuth,
       ...(yield* deploymentSetup("deploy", network)),
     };
     const oneShots = yield* resolveUnspent(

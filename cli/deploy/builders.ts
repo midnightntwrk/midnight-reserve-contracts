@@ -52,13 +52,13 @@ export interface DeployParams {
   readonly collateral: TransactionUnspentOutput;
 }
 
-/** The two-stage states of a deployment: the validator, the logic both states start on, and the gov-auth scripts they name. */
+/** The two-stage states of a deployment: the validator, the logic both states start on, and the gov-auth hashes they name. */
 export interface TwoStageStates {
   readonly oneShotUtxo: TransactionUnspentOutput;
   readonly twoStage: Script;
   readonly logic: Script;
-  readonly govAuth: Script;
-  readonly stagingGovAuth: Script;
+  readonly govAuth: string;
+  readonly stagingGovAuth: string;
 }
 
 /** A two-stage validator's deployment: its states, its forever with its datum and mint redeemer, and whether the logic is registered. */
@@ -110,11 +110,8 @@ const nftOutput = (
   return output;
 };
 
-const upgradeStateDatum = (logic: Script, govAuth: Script): PlutusData =>
-  serialize(
-    Contracts.UpgradeState,
-    createUpgradeState(logic.hash(), govAuth.hash()),
-  );
+const upgradeStateDatum = (logic: Script, govAuth: string): PlutusData =>
+  serialize(Contracts.UpgradeState, createUpgradeState(logic.hash(), govAuth));
 
 const withCollateral = (txBuilder: TxBuilder, params: DeployParams) =>
   txBuilder.provideCollateral([params.collateral]);

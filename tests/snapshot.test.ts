@@ -13,6 +13,7 @@ import { Effect, Layer, Option, Schema } from "effect";
 import { PlutusJson } from "../cli/contracts/plutus-json";
 import {
   DeployedScriptsAt,
+  liveHashOf,
   prepareValidatorMerge,
   writeValidatorMerge,
   prepareDeploySnapshot,
@@ -94,7 +95,6 @@ const snapshot = (
       rule,
       createdHashes: created,
       installedHashes: installed,
-      components: Option.none(),
       plutusPath: BUILD_PLUTUS,
       blueprintPath: BUILD_BLUEPRINT,
       timestamp: "2026-09-25T00:00:00.000Z",
@@ -123,6 +123,7 @@ const MAIN_GOV_AUTH = "gov_auth.main_gov_auth.else";
 const TWO_STAGE_TYPES = build.validators.filter((v) =>
   v.title.startsWith("validator_types.z_two_stage_upgrade_types."),
 );
+const twoStageTypes = new Set(TWO_STAGE_TYPES.map((v) => v.hash));
 /** Definitions only the two-stage type entries reach. */
 const TWO_STAGE_ONLY = [
   "upgradable/types/TwoStageRedeemer",
@@ -207,7 +208,7 @@ describe("prepareDeploySnapshot and writeDeploySnapshot", () => {
     });
   });
 
-  test("extend takes every build entry in place (a new title appended with the definitions it reaches), keeps a title only the snapshot has, and appends to the changelog, which keeps its start and gitCommit", async () => {
+  test("extend takes only the created entries in place, keeps every other entry as recorded, and appends to the changelog, which keeps its start and gitCommit", async () => {
     const { root, dir } = snapshotRoot();
     const stale = new Map([
       [COUNCIL_LOGIC_V2, "ee".repeat(28)],
@@ -236,24 +237,17 @@ describe("prepareDeploySnapshot and writeDeploySnapshot", () => {
     await save(root, "extend", ics, NONE);
 
     const plutus = readJson(dir, "plutus.json");
-    const titles = plutus.validators.map((v: { title: string }) => v.title);
-    expect(plutus.validators.slice(0, -TWO_STAGE_TYPES.length)).toEqual(
-      previous.validators.map((v) => (v === RECORD_ONLY ? v : titled(v.title))),
+    expect(plutus.validators).toEqual(
+      previous.validators.map((v) =>
+        v.title === ICS_FOREVER ? titled(ICS_FOREVER) : v,
+      ),
     );
-    expect(plutus.validators.slice(-TWO_STAGE_TYPES.length)).toEqual(
-      TWO_STAGE_TYPES,
-    );
-    expect(titles).toContain("old.gone.else");
-    for (const key of TWO_STAGE_ONLY) {
-      expect(plutus.definitions[key]).toEqual(build.definitions[key]);
-    }
-    expect(plutus.definitions.ByteArray).toEqual(build.definitions.ByteArray);
     expect(plutus.definitions["Old/Type"]).toEqual({
       title: "OldType",
       dataType: "bytes",
     });
     expect(readFileSync(join(dir, "contract_blueprint.ts"), "utf-8")).toContain(
-      "export class ValidatorTypesZTwoStageUpgradeTypesSpend ",
+      "export class IlliquidCirculationSupplyIcsForeverElse ",
     );
 
     expect(readJson(dir, "versions.json")).toEqual({
@@ -275,70 +269,45 @@ describe("prepareDeploySnapshot and writeDeploySnapshot", () => {
     });
   });
 
+  test("extend appends a created validator the snapshot lacks, with the definitions it reaches", async () => {
+    const { root, dir } = snapshotRoot();
+    writeJson(dir, "plutus.json", snapshotWithout({}));
+    writeJson(dir, "versions.json", { promoted: [], staged: [] });
+    await save(root, "extend", twoStageTypes, NONE);
+    const plutus = readJson(dir, "plutus.json");
+    expect(plutus.validators.slice(-TWO_STAGE_TYPES.length)).toEqual(
+      TWO_STAGE_TYPES,
+    );
+    for (const key of TWO_STAGE_ONLY) {
+      expect(plutus.definitions[key]).toEqual(build.definitions[key]);
+    }
+  });
+
   test.each([
-    [
-      "a promoted validator the build has with another hash",
-      RESERVE_FOREVER,
-      NONE,
-      "reserve_forever",
-    ],
-    [
-      "an installed validator the snapshot has with another hash",
-      MAIN_GOV_AUTH,
-      govAuths,
-      "main_gov_auth",
-    ],
+    ["promoted", ["reserve_forever"]],
+    ["not promoted", []],
   ])(
-    "extend refuses %s, before any write, with both hashes",
-    async (_name, title, installed, name) => {
+    "extend keeps the recorded entry of a %s validator it does not create, when the build has another hash",
+    async (_name, promoted) => {
       const { root, dir } = snapshotRoot();
       writeJson(
         dir,
         "plutus.json",
-        snapshotWithout({}, new Map([[title, "ff".repeat(28)]])),
+        snapshotWithout({}, new Map([[RESERVE_FOREVER, "ff".repeat(28)]])),
       );
-      writeJson(dir, "versions.json", {
-        promoted: ["reserve_forever"],
-        staged: [],
-      });
-      const before = filesOf(dir);
-      const error = await expectFailure(
-        layerAt(root),
-        snapshot("extend", ics, installed),
-        "LiveRecordMismatch",
-      );
-      expect(error.moved).toEqual([
-        {
-          validator: name,
-          deployed: "ff".repeat(28),
-          built: titled(title).hash,
-        },
-      ]);
-      expect(error.components).toEqual(Option.none());
-      expect(filesOf(dir)).toEqual(before);
+      writeJson(dir, "versions.json", { promoted, staged: [] });
+      await save(root, "extend", ics, NONE);
+      expect(
+        readJson(dir, "plutus.json").validators.find(
+          (v: { title: string }) => v.title === RESERVE_FOREVER,
+        ).hash,
+      ).toBe("ff".repeat(28));
     },
   );
 
-  test("a stale validator that is neither promoted, staged nor installed takes the build entry", async () => {
-    const { root, dir } = snapshotRoot();
-    writeJson(
-      dir,
-      "plutus.json",
-      snapshotWithout({}, new Map([[MAIN_GOV_AUTH, "ff".repeat(28)]])),
-    );
-    writeJson(dir, "versions.json", { promoted: [], staged: [] });
-    await save(root, "extend", ics, NONE);
-    const plutus = readJson(dir, "plutus.json");
-    expect(
-      plutus.validators.find(
-        (v: { title: string }) => v.title === MAIN_GOV_AUTH,
-      ),
-    ).toEqual(titled(MAIN_GOV_AUTH));
-  });
-
   test.each([
     [
-      "a definition a kept entry reads with another shape than the build",
+      "a definition a created entry and a kept entry read with different shapes",
       { Int: { title: "Int", dataType: "bytes" } },
       "definitions Int differ between the build and the entries the snapshot keeps",
     ],
@@ -354,7 +323,7 @@ describe("prepareDeploySnapshot and writeDeploySnapshot", () => {
     const before = filesOf(dir);
     const error = await expectFailure(
       layerAt(root),
-      snapshot("extend", ics, NONE),
+      snapshot("extend", twoStageTypes, NONE),
       "BlueprintError",
     );
     expect(error.reason).toBe(reason);
@@ -504,5 +473,47 @@ describe("promotedAmong", () => {
       "BlueprintError",
     );
     expect(error.reason).toContain(BUILD_PLUTUS);
+  });
+});
+
+describe("liveHashOf", () => {
+  const mainGovAuth = contracts.govAuth.Script.hash();
+  const live = liveHashOf("emulator", BUILD_PLUTUS, mainGovAuth);
+
+  test("is the record's hash of a build validator that versions.json promotes", async () => {
+    const { root, dir } = snapshotRoot();
+    writeJson(
+      dir,
+      "plutus.json",
+      snapshotWithout({}, new Map([[MAIN_GOV_AUTH, "ff".repeat(28)]])),
+    );
+    writeJson(dir, "versions.json", {
+      promoted: ["main_gov_auth"],
+      staged: [],
+    });
+    expect(await runTest(layerAt(root), live)).toEqual(
+      Option.some("ff".repeat(28)),
+    );
+  });
+
+  test("is None when versions.json does not promote it, whatever plutus.json holds", async () => {
+    const { root, dir } = snapshotRoot();
+    writeJson(
+      dir,
+      "plutus.json",
+      snapshotWithout({}, new Map([[MAIN_GOV_AUTH, "ff".repeat(28)]])),
+    );
+    writeJson(dir, "versions.json", { promoted: [], staged: [] });
+    expect(await runTest(layerAt(root), live)).toEqual(Option.none());
+  });
+
+  test("a promoted validator plutus.json lacks is a BlueprintError", async () => {
+    const { root, dir } = snapshotRoot();
+    writeJson(dir, "versions.json", {
+      promoted: ["main_gov_auth"],
+      staged: [],
+    });
+    const error = await expectFailure(layerAt(root), live, "BlueprintError");
+    expect(error.reason).toContain(MAIN_GOV_AUTH);
   });
 });
