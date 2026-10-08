@@ -116,7 +116,6 @@ export const registerGovAuthProgram = (input: TxFileInput) =>
     const outputPath = txFilePath(input);
     yield* out.log(`\nRegistering Gov Auth scripts on ${network} network`);
 
-    // govAuth/stagingGovAuth are audited immutable contracts: same hash in build and deployed
     const contracts = yield* Effect.flatMap(Blueprint, (b) => b.instances);
     const govAuth = contracts.govAuth.Script;
     const stagingGovAuth = contracts.stagingGovAuth.Script;

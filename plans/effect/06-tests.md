@@ -141,8 +141,7 @@ checks are pure functions over the record and the unspent outputs, tested
 in `tests/verify.test.ts` (the verify rewrite, `sltxmtvz`).
 
 Closed by plan 07 task 3c (2026-09-26): the refusals assert their
-`Refusal` fields, and `LiveRecordMismatch` and `PinsMoved` their moved
-hashes. The text asserts left (18 by a grep on 2026-09-26) are on
+`Refusal` fields, and `PinsMoved` its moved hashes. The text asserts left (18 by a grep on 2026-09-26) are on
 `ConfigError`, `BlueprintError`, `AikenBuildError`, `DatumParseError` and
 `InputParseError`, whose message is the data (a parse or config message),
 by the 07 task 3c decision.

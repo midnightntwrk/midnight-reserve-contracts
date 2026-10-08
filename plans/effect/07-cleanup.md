@@ -54,12 +54,10 @@ The `@effect/cli` decision moved to phase 09 (decided: yes).
    `reason` of `ConfigError`, `BlueprintError`, `AikenBuildError`,
    `DatumParseError` and the `issues` of `InputParseError` stay text: for
    those classes the message is the datum (a parse or config message), and
-   their tests keep asserting it. The live-record check and the moved-pin
-   check are their own classes: `LiveRecordMismatch { environment, moved,
-   components, path }` and `PinsMoved { moved }`, each `moved` entry the
-   validator with its deployed and built hash; the printed text is the
-   same as before (user decision 2026-09-26, replacing a recorded
-   deviation).
+   their tests keep asserting it. The moved-pin check is its own class,
+   `PinsMoved { moved }`, each `moved` entry the validator with its
+   deployed and built hash; the printed text is the same as before (user
+   decision 2026-09-26, replacing a recorded deviation).
 3d. Done 2026-09-26: the lint gate enforces task 1 (`eslint.config.js`).
    `cli/**` bans every `try` statement, `throw`, `console`, the `fetch`
    and `Bun` globals, `fs`/`fs/promises`/`child_process` imports (with or
