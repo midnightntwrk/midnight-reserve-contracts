@@ -66,7 +66,7 @@ Each component is one deploy transaction, and that transaction creates all of th
 | `main-gov`, `staging-gov`, `terms-and-conditions-threshold` | `main_gov_threshold`, `staging_gov_threshold`, `terms_and_conditions_threshold` |
 | `cnight-minting` (only when named) | `cnight_mint_two_stage_upgrade`, `cnight_mint_forever`, `cnight_mint_logic`. The transaction mints the two-stage `main` and `staging` NFTs and registers `cnight_mint_forever` as a stake credential; it mints no forever NFT. Both states start on `cnight_mint_logic`; register it with `register-cnight-mint-logic`. |
 
-Set up an environment in two parts (each run writes the file again with only its transactions, so submit it before the next run; the snapshot keeps both parts):
+Set up a new environment in two parts, only where `deployed-scripts/<env>/versions.json` promotes no gov auth. On an environment that has a record, a `--components` run adds to that environment: its two-stage states name the recorded gov auths, not the build's. To start a test environment again over an old record, run a full `deploy`, which replaces the record. In the two-part setup each run writes the file again with only its transactions, so submit it before the next run; the snapshot keeps both parts:
 
 ```bash
 bun run cli deploy -n preview --components tech-auth,tech-auth-threshold,council,council-threshold

@@ -280,18 +280,20 @@ replaces the rule choice and the failure note above:
   two-part deploy over a snapshot from another build left
   `main_gov_auth` stale: no step creates it, but every two-stage datum
   installs it, and it embeds `main_gov_threshold_hash`. The record then
-  gave `register-gov-auth` the wrong gov auth. Decision: the build must
-  match the live snapshot. Each step lists what it creates and what its
-  datums install (the two-stage steps: `main_gov_auth`,
-  `staging_gov_auth`). `prepareDeploySnapshot` runs every read, the
-  check and the generation before any chain call; a promoted, staged or
-  installed validator that the run does not create and whose build hash
-  differs is a `BlueprintError` naming the remedy, `build -n <env>
-  --from-deployed --components <the run's list>`. The
-  snapshot then takes every build entry (a title only it has is kept);
-  promoted gains the created and the installed names.
-  `writeDeploySnapshot` writes after the build, and the deployment file
-  comes last.
+  gave `register-gov-auth` the wrong gov auth. Decision (2026-10-08,
+  replaces the 2026-09-26 check of the build against the live snapshot):
+  the datums and the record name one gov auth. Each step lists what it
+  creates and the build gov auths its datums install (the two-stage
+  steps: `main_gov_auth`, `staging_gov_auth`). Where `versions.json`
+  promotes a gov auth, the datums name the record's hash (`liveHashOf`)
+  and the build's is not installed; where it promotes none, they name the
+  build's, and the record takes and promotes it. An extend takes only the
+  build entries the run creates or installs and keeps every other entry
+  as recorded. `prepareDeploySnapshot` runs every read and the generation
+  before any chain call; `writeDeploySnapshot` writes after the build, and
+  the deployment file comes last. So a `--components` run on an
+  environment that has a record adds to that environment; a new
+  environment over an old record starts with a full `deploy`.
 - The promoted refusal runs before any chain call.
 - `build-from-deployed` is now `build --from-deployed` (user decision):
   one build command. It pins each of the 19 core hashes (6 two-stage, 6
