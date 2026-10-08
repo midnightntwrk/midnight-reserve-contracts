@@ -15,7 +15,7 @@ import {
   type Error as PlatformError,
 } from "@effect/platform";
 import { Context, Effect, Either, Layer, Option, type Schema } from "effect";
-import { BlueprintError, LiveRecordMismatch, type MovedHash } from "../errors";
+import { BlueprintError } from "../errors";
 import {
   Changelog,
   type ChangeRecord,
@@ -526,42 +526,46 @@ export const promotedAmong = (
     });
   });
 
-/** The build entries whose names the live snapshot fixes (promoted, staged, or installed by this deploy, and not created by it) and whose hashes differ there: the build does not describe the live contracts. */
-const liveMismatches = (
-  snapshot: PlutusJson,
-  versions: Option.Option<VersionsJson>,
-  build: PlutusJson,
-  created: readonly string[],
-  installed: readonly string[],
-): MovedHash[] => {
-  const live = new Set([
-    ...Option.match(versions, {
-      onNone: () => [],
-      onSome: ({ promoted, staged }) => [...promoted, ...staged],
-    }),
-    ...installed,
-  ]);
-  const recorded = new Map(snapshot.validators.map((v) => [v.title, v.hash]));
-  return build.validators.flatMap((v) => {
-    const validator = validatorName(v.title);
-    const deployed = recorded.get(v.title);
-    return live.has(validator) &&
-      !created.includes(validator) &&
-      deployed !== undefined &&
-      deployed !== v.hash
-      ? [{ validator, deployed, built: v.hash }]
-      : [];
+/** The hash the record holds for the build validator with this hash, when versions.json promotes its name: the live contract the build's one stands for. */
+export const liveHashOf = (
+  env: string,
+  plutusPath: string,
+  buildHash: string,
+): Effect.Effect<
+  Option.Option<string>,
+  BlueprintError,
+  FileSystem.FileSystem | DeployedScripts
+> =>
+  Effect.gen(function* () {
+    const build = yield* readBuildPlutus(env, plutusPath);
+    const [entry] = yield* deployedAmong(
+      env,
+      plutusPath,
+      build,
+      new Set([buildHash]),
+    );
+    const name = validatorName(entry.title);
+    const versions = yield* readVersions(env);
+    if (!Option.exists(versions, ({ promoted }) => promoted.includes(name))) {
+      return Option.none();
+    }
+    const live = Option.flatMap(yield* readDeployedValidators(env), (all) =>
+      Option.fromNullable(all.find((v) => v.title === entry.title)),
+    );
+    return Option.isSome(live)
+      ? Option.some(live.value.hash)
+      : yield* snapshotError(
+          env,
+          `versions.json promotes ${name}, but plutus.json has no ${entry.title}`,
+        );
   });
-};
 
-/** A deploy's snapshot update: the environment, the rule, the validators the deploy creates and the ones its datums install, the build output and the time. */
+/** A deploy's snapshot update: the environment, the rule, the validators the deploy creates and the build ones its datums install, the build output and the time. */
 export interface DeploySnapshot {
   readonly env: string;
   readonly rule: SnapshotRule;
   readonly createdHashes: ReadonlySet<string>;
   readonly installedHashes: ReadonlySet<string>;
-  /** The run's --components, which the remedy of a mismatch repeats. */
-  readonly components: Option.Option<readonly string[]>;
   readonly plutusPath: string;
   readonly blueprintPath: string;
   readonly timestamp: string;
@@ -573,12 +577,12 @@ export interface PreparedSnapshot {
   readonly texts: Record<keyof ReturnType<typeof snapshotFiles>, string>;
 }
 
-/** A deploy's snapshot, read, checked and generated before any chain call: a replace starts again from the build; an extend checks the build against the live snapshot and merges it in. */
+/** A deploy's snapshot, read and generated before any chain call: a replace starts again from the build; an extend takes the build entries the deploy creates or installs and keeps every other entry. */
 export const prepareDeploySnapshot = (
   snapshot: DeploySnapshot,
 ): Effect.Effect<
   PreparedSnapshot,
-  BlueprintError | LiveRecordMismatch,
+  BlueprintError,
   FileSystem.FileSystem | CommandExecutor.CommandExecutor | DeployedScripts
 > =>
   Effect.scoped(
@@ -588,13 +592,21 @@ export const prepareDeploySnapshot = (
       const dir = yield* snapshotDirOf(env);
       const files = snapshotFiles(dir);
       const build = yield* readBuildPlutus(env, plutusPath);
-      const created = namesOf(
-        yield* deployedAmong(env, plutusPath, build, snapshot.createdHashes),
+      const createdEntries = yield* deployedAmong(
+        env,
+        plutusPath,
+        build,
+        snapshot.createdHashes,
       );
-      const installed = namesOf(
-        yield* deployedAmong(env, plutusPath, build, snapshot.installedHashes),
+      const installedEntries = yield* deployedAmong(
+        env,
+        plutusPath,
+        build,
+        snapshot.installedHashes,
       );
-      const recorded = [...created, ...installed];
+      const taken = [...createdEntries, ...installedEntries];
+      const created = namesOf(createdEntries);
+      const recorded = namesOf(taken);
 
       const previous =
         rule === "replace"
@@ -609,26 +621,10 @@ export const prepareDeploySnapshot = (
               files.versions,
               VersionsJson,
             );
-      if (Option.isSome(previous)) {
-        const mismatched = liveMismatches(
-          previous.value,
-          versions,
-          build,
-          created,
-          installed,
-        );
-        if (mismatched.length > 0) {
-          return yield* new LiveRecordMismatch({
-            environment: env,
-            moved: mismatched,
-            components: snapshot.components,
-          });
-        }
-      }
       const plutus = yield* Option.match(previous, {
         onNone: () => Either.right(build),
         onSome: (snapshotPlutus) =>
-          takeFromBuild(env, snapshotPlutus, build, build.validators),
+          takeFromBuild(env, snapshotPlutus, build, taken),
       });
       const nextVersions: VersionsJson = Option.match(versions, {
         onNone: () => ({ promoted: recorded, staged: [] }),

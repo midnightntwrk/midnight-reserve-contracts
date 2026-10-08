@@ -115,13 +115,20 @@ const deployInput: DeployInput = {
   components: Option.none(),
 };
 
-/** The component's step built over its one-shot, as deploy builds it, with Settings over `settings`. */
+/** The gov auth hashes a deploy names on an environment that has none: the build's. */
+const buildGovAuths = {
+  govAuth: contracts.govAuth.Script.hash(),
+  stagingGovAuth: contracts.stagingGovAuth.Script.hash(),
+};
+
+/** The component's step built over its one-shot, as deploy builds it, with Settings over `settings` and these gov auth hashes. */
 const stepBuilder = (
   component: DeployComponent,
   emulator: Emulator,
   blaze: BlazeOf,
   addr: Address,
   settings = SettingsOver("emulator"),
+  govAuths = buildGovAuths,
 ) => {
   const oneShotUtxo = oneShotOf(addr, component);
   emulator.addUtxo(oneShotUtxo);
@@ -130,6 +137,7 @@ const stepBuilder = (
     DEPLOY_STEPS[component].build(
       {
         input: deployInput,
+        ...govAuths,
         config: profile,
         contracts,
         deployer: addr.toBech32(),
@@ -157,8 +165,7 @@ describe("deployment builders", () => {
             twoStage: contracts.reserveTwoStage.Script,
             forever: contracts.reserveForever.Script,
             logic: contracts.reserveLogic.Script,
-            govAuth: contracts.govAuth.Script,
-            stagingGovAuth: contracts.stagingGovAuth.Script,
+            ...buildGovAuths,
             foreverDatum: zeroForeverDatum,
             foreverRedeemer: PlutusData.newInteger(0n),
             registerLogic: false,
@@ -376,17 +383,20 @@ describe("the deploy steps", () => {
     },
   );
 
-  test("the cnight-minting step mints only the two-stage NFTs, each state on its logic under its gov auth", async () => {
+  test("the cnight-minting step mints only the two-stage NFTs, each state on its logic under the gov auth hash the deploy gives it", async () => {
     const [twoStage, , logic] = await runTest(
       blueprint,
       DEPLOY_STEPS["cnight-minting"].validators,
     );
+    const live = { govAuth: randomHash(28), stagingGovAuth: randomHash(28) };
     await asFunded(async (emulator, blaze, addr) => {
       const builder = await stepBuilder(
         "cnight-minting",
         emulator,
         blaze,
         addr,
+        SettingsOver("emulator"),
+        live,
       );
       const body = Transaction.fromCbor(TxCBOR(builder.toCbor())).body();
       expect([...(body.mint()?.keys() ?? [])].sort()).toEqual(
@@ -400,15 +410,8 @@ describe("the deploy steps", () => {
           return datum ? [parse(Contracts.UpgradeState, datum)] : [];
         }),
       ).toEqual([
-        [logic.Script.hash(), "", contracts.govAuth.Script.hash(), "", 0n, 0n],
-        [
-          logic.Script.hash(),
-          "",
-          contracts.stagingGovAuth.Script.hash(),
-          "",
-          0n,
-          0n,
-        ],
+        [logic.Script.hash(), "", live.govAuth, "", 0n, 0n],
+        [logic.Script.hash(), "", live.stagingGovAuth, "", 0n, 0n],
       ]);
       await emulator.expectValidTransaction(blaze, builder);
     });

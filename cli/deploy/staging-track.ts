@@ -187,7 +187,6 @@ export const deployStagingTrackProgram = (input: DeployStagingTrackInput) =>
               rule: "extend",
               createdHashes: created,
               installedHashes: new Set(),
-              components: Option.none(),
               ...buildOf(network),
               timestamp,
             }),
