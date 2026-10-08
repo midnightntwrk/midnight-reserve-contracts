@@ -28,7 +28,7 @@ const count = parsedText("count", parsePositiveInteger).pipe(
 
 const amount = parsedText("amount", parsePositiveBigInt).pipe(
   Options.withDescription(
-    "Lovelace amount per output, e.g. 100000000 = 100 ADA (default: SIMPLE_TX_AMOUNT, else 20 ADA)",
+    "Lovelace per output (default: SIMPLE_TX_AMOUNT, else 20 ADA)",
   ),
   Options.withFallbackConfig(SIMPLE_TX_AMOUNT),
 );

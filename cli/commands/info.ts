@@ -10,7 +10,7 @@ const component = Options.choice("component", INFO_COMPONENT_CHOICES).pipe(
 
 const save = Options.boolean("save").pipe(
   Options.withDescription(
-    "Fetch on-chain data and save JSON + markdown report to release directory",
+    "Fetch on-chain data and save the report to the release directory",
   ),
 );
 

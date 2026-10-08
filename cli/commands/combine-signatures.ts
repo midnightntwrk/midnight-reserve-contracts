@@ -4,14 +4,12 @@ import { withProvider } from "../run";
 import { combineSignaturesProgram } from "../chain/combine-signatures";
 
 const tx = Options.text("tx").pipe(
-  Options.withDescription(
-    "Path to the transaction file; it holds exactly one transaction (for a deployment file, use sign-and-submit)",
-  ),
+  Options.withDescription("Transaction file that holds one transaction"),
 );
 
 const witnessFiles = Args.text({ name: "witness-file" }).pipe(
   Args.withDescription(
-    "Witness files: a cardano-cli TextEnvelope key witness ([0, [vkey, sig]] or [vkey, sig]) or a CIP-30 witness set as CBOR hex",
+    "Witness files: cardano-cli key witnesses or CIP-30 witness sets",
   ),
   Args.atLeast(1),
 );

@@ -24,7 +24,7 @@ const components = parsedText(
   parseNameList(DEPLOY_COMPONENTS),
 ).pipe(
   Options.withDescription(
-    `Comma-separated components to deploy: ${DEPLOY_COMPONENTS.join(", ")} (default: every one; a full run)`,
+    `Components, comma-separated (default: all): ${DEPLOY_COMPONENTS.join(", ")}`,
   ),
   Options.optional,
 );
