@@ -8,8 +8,6 @@ export const dustParticipants = Command.make(
   { network, provider, useBuild, format },
   dustParticipantsProgram,
 ).pipe(
-  Command.withDescription(
-    "Count registered dust participants from cnight_generates_dust UTxOs",
-  ),
+  Command.withDescription("Count registered dust participants"),
   withServicesUseBuild,
 );

@@ -59,9 +59,7 @@ export const testNetwork = Options.choice("network", ENVIRONMENTS).pipe(
 /** --network, -n on a build: the aiken.toml profile. */
 export const profile = Options.choice("network", PROFILES).pipe(
   Options.withAlias("n"),
-  Options.withDescription(
-    "The aiken.toml profile (default: default, the vanilla build with no overrides)",
-  ),
+  Options.withDescription("The aiken.toml profile (default: default)"),
   Options.withDefault("default"),
 );
 
@@ -123,7 +121,7 @@ export const feeUtxo = {
 export const deployerSigning = {
   signingKey: Options.text("signing-key").pipe(
     Options.withDescription(
-      "Environment variable name containing the deployer key (default: SIGNING_PRIVATE_KEY)",
+      "Environment variable with the deployer key (default: SIGNING_PRIVATE_KEY)",
     ),
     Options.withDefault("SIGNING_PRIVATE_KEY"),
   ),
@@ -137,7 +135,7 @@ export const deployerSigning = {
 export const sign = (keys: string) =>
   Options.boolean("no-sign").pipe(
     Options.withDescription(
-      `Write the transaction unsigned (signing requires ${keys})`,
+      `Leave the transaction unsigned (signing reads ${keys})`,
     ),
     Options.map((unsigned) => !unsigned),
   );

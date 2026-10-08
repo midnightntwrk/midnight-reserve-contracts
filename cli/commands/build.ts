@@ -16,7 +16,7 @@ const trace = Options.choice("trace", TRACE_LEVELS).pipe(
 
 const fromDeployed = Options.boolean("from-deployed").pipe(
   Options.withDescription(
-    "Compile against the hashes in deployed-scripts/<env>/plutus.json (one pass): each deployed two-stage, forever and threshold hash is pinned in aiken.toml, which is restored after the build",
+    "Compile against the hashes in deployed-scripts/<env>/plutus.json",
   ),
 );
 
@@ -25,7 +25,7 @@ const components = parsedText(
   parseNameList(DEPLOY_COMPONENTS),
 ).pipe(
   Options.withDescription(
-    `With --from-deployed: comma-separated deploy components to compile from new instead of pinning: ${DEPLOY_COMPONENTS.join(", ")}`,
+    "With --from-deployed: components to compile from new, named as in deploy --components",
   ),
   Options.optional,
 );

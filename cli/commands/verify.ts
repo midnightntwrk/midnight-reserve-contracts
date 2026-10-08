@@ -8,8 +8,6 @@ export const verify = Command.make(
   { network, provider },
   verifyProgram,
 ).pipe(
-  Command.withDescription(
-    "Verify the deployed record (deployed-scripts/<env>/) against the unspent outputs on chain",
-  ),
+  Command.withDescription("Verify the deployed record against the chain"),
   withProvider,
 );
