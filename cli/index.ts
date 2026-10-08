@@ -18,6 +18,7 @@ import { stageUpgrade } from "./commands/stage-upgrade";
 import { promoteUpgrade } from "./commands/promote-upgrade";
 import { registerGovAuth } from "./commands/register-gov-auth";
 import { registerCnightMintLogic } from "./commands/register-cnight-mint-logic";
+import { runCnightMintMainnet } from "./commands/run-cnight-mint-mainnet";
 import { generateKey } from "./commands/generate-key";
 import { signAndSubmit } from "./commands/sign-and-submit";
 import { combineSignatures } from "./commands/combine-signatures";
@@ -48,6 +49,7 @@ const root = Command.make(NAME).pipe(
     promoteUpgrade,
     registerGovAuth,
     registerCnightMintLogic,
+    runCnightMintMainnet,
     generateKey,
     signAndSubmit,
     combineSignatures,

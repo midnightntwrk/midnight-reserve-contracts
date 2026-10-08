@@ -62,6 +62,7 @@ by default; `--no-sign` writes an unsigned transaction for offline signing.
 | `promote-upgrade` | Promote a staged upgrade to main track |
 | `register-gov-auth` | Register gov auth scripts as stake credentials |
 | `register-cnight-mint-logic` | Register the cNIGHT mint logic script as a stake credential |
+| `run-cnight-mint-mainnet` | Run the cNIGHT mint forever and logic withdrawals (always unsigned) |
 | `merge-utxos` | Merge two value-holding UTxOs at a reserve or ICS forever validator |
 | `simple-tx` | Generate dust/funding transactions |
 | `info` | Display contract addresses and deployment info |
