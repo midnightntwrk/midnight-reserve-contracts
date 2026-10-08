@@ -193,13 +193,14 @@ export const federatedOpsForever: Effect.Effect<
   (candidates) => zeroRedeemer(initialFederatedOpsDatum(candidates)),
 );
 
-/** The --components selection in build order; None selects every one. */
+/** The --components selection in build order; None selects the defaults (every one unless given). */
 export const selectComponents = <Component extends string>(
   all: readonly Component[],
   components: Option.Option<readonly Component[]>,
+  defaults: readonly Component[] = all,
 ): Component[] =>
   Option.match(components, {
-    onNone: () => [...all],
+    onNone: () => [...defaults],
     onSome: (selected) => all.filter((c) => selected.includes(c)),
   });
 

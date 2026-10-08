@@ -27,6 +27,7 @@ import {
   Blueprint,
   BlueprintLive,
   type ContractClass,
+  type UpgradableValidator,
 } from "../cli/contracts/contracts";
 import type { PlutusJson } from "../cli/contracts/plutus-json";
 import { validatorName } from "../cli/contracts/versions";
@@ -35,6 +36,10 @@ import { completeBuilder, sizeAtSubmit } from "../cli/chain/complete-tx";
 import { attachWitnesses, signTransaction } from "../cli/chain/transaction";
 import { parsePrivateKey } from "../cli/datum/signers";
 import { validatorLabels } from "../cli/chain/validator-labels";
+import {
+  MAIN_TOKEN_HEX,
+  STAGING_TOKEN_HEX,
+} from "../cli/chain/governance-provider";
 import { Provider } from "../cli/chain/provider";
 import { refOf } from "../cli/chain/transaction";
 import { reservedRefs, Settings } from "../cli/config/settings";
@@ -286,15 +291,19 @@ const TWO_STAGE_COMPONENTS: readonly DeployComponent[] = [
   "ics",
   "federated-ops",
   "terms-and-conditions",
+  "cnight-minting",
 ];
 
-/** The components whose deployment registers its logic's stake credential. */
-const REGISTERS_LOGIC: readonly DeployComponent[] = [
-  "tech-auth",
-  "council",
-  "federated-ops",
-  "terms-and-conditions",
-];
+/** The stake credential each component's deployment registers: a validator's logic, or for cNIGHT minting its forever. */
+const REGISTERS: Partial<
+  Record<DeployComponent, readonly [UpgradableValidator, "logic" | "forever"]>
+> = {
+  "tech-auth": ["tech-auth", "logic"],
+  council: ["council", "logic"],
+  "federated-ops": ["federated-ops", "logic"],
+  "terms-and-conditions": ["terms-and-conditions", "logic"],
+  "cnight-minting": ["cnight-minting", "forever"],
+};
 
 /** The datum of the draft's output that holds one. */
 const datumOf = (builder: TxBuilder) =>
@@ -339,12 +348,20 @@ describe("the deploy steps", () => {
       SettingsWith("emulator", { PERMISSIONED_CANDIDATES: "[]" }),
     ] as const,
   ])(
-    "the %s step mints from its one-shot, registering the logic where it should",
+    "the %s step mints from its one-shot, registering the stake credential it should",
     async (_name, component, settings) => {
-      const [, , logic] = await runTest(
-        blueprint,
-        DEPLOY_STEPS[component].validators,
-      );
+      const registers = REGISTERS[component];
+      const registered =
+        registers === undefined
+          ? []
+          : [
+              (
+                await runTest(
+                  blueprint,
+                  Effect.flatMap(Blueprint, (b) => b.twoStage(registers[0])),
+                )
+              )[registers[1]].Script.hash(),
+            ];
       await asFunded(async (emulator, blaze, addr) => {
         const builder = await stepBuilder(
           component,
@@ -353,13 +370,49 @@ describe("the deploy steps", () => {
           addr,
           settings,
         );
-        expect(registeredStake(builder)).toEqual(
-          REGISTERS_LOGIC.includes(component) ? [logic.Script.hash()] : [],
-        );
+        expect(registeredStake(builder)).toEqual(registered);
         await emulator.expectValidTransaction(blaze, builder);
       });
     },
   );
+
+  test("the cnight-minting step mints only the two-stage NFTs, each state on its logic under its gov auth", async () => {
+    const [twoStage, , logic] = await runTest(
+      blueprint,
+      DEPLOY_STEPS["cnight-minting"].validators,
+    );
+    await asFunded(async (emulator, blaze, addr) => {
+      const builder = await stepBuilder(
+        "cnight-minting",
+        emulator,
+        blaze,
+        addr,
+      );
+      const body = Transaction.fromCbor(TxCBOR(builder.toCbor())).body();
+      expect([...(body.mint()?.keys() ?? [])].sort()).toEqual(
+        [MAIN_TOKEN_HEX, STAGING_TOKEN_HEX]
+          .map((name) => twoStage.Script.hash() + name)
+          .sort(),
+      );
+      expect(
+        body.outputs().flatMap((output) => {
+          const datum = output.datum()?.asInlineData();
+          return datum ? [parse(Contracts.UpgradeState, datum)] : [];
+        }),
+      ).toEqual([
+        [logic.Script.hash(), "", contracts.govAuth.Script.hash(), "", 0n, 0n],
+        [
+          logic.Script.hash(),
+          "",
+          contracts.stagingGovAuth.Script.hash(),
+          "",
+          0n,
+          0n,
+        ],
+      ]);
+      await emulator.expectValidTransaction(blaze, builder);
+    });
+  });
 
   test.each([
     ["main-gov", [3n, 4n, 1n, 5n]],

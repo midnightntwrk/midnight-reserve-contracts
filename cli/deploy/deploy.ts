@@ -3,7 +3,9 @@
  * contracts, each spending its one-shot UTxO from the aiken.toml profile,
  * built (never submitted) over the build blueprint and written to
  * <output>/<env>/deployment-transactions.json; --components builds only
- * the transactions of those components, and the file holds only them.
+ * the transactions of those components, and the file holds only them. The
+ * cNIGHT minting component is outside the default set: a run builds it
+ * only when --components names it.
  *
  * Deploy creates contracts that are not live; a change to a live contract
  * is an upgrade (stage-upgrade, promote-upgrade). The deployed-scripts
@@ -42,6 +44,7 @@ import { parseThreshold, type Threshold } from "../governance/threshold";
 import type { NetworkInput } from "../input";
 import { Output } from "../output";
 import {
+  buildCnightMintingDeploymentTx,
   buildThresholdDeploymentTx,
   buildTwoStageDeploymentTx,
   ZERO_FOREVER_DATUM,
@@ -66,8 +69,8 @@ import {
 } from "./deployment";
 import { DEPLOYER_ONLY } from "../chain/transaction";
 
-/** The components --components selects, one per deployment transaction, in build order. */
-export const DEPLOY_COMPONENTS = [
+/** The governance components: a run without --components builds these. */
+export const DEFAULT_DEPLOY_COMPONENTS = [
   "tech-auth",
   "tech-auth-threshold",
   "council",
@@ -80,6 +83,12 @@ export const DEPLOY_COMPONENTS = [
   "federated-ops-threshold",
   "terms-and-conditions",
   "terms-and-conditions-threshold",
+] as const;
+
+/** The components --components selects, one per deployment transaction, in build order. */
+export const DEPLOY_COMPONENTS = [
+  ...DEFAULT_DEPLOY_COMPONENTS,
+  "cnight-minting",
 ] as const;
 
 export type DeployComponent = (typeof DEPLOY_COMPONENTS)[number];
@@ -107,6 +116,7 @@ export const DEPLOY_COMPONENT_VALIDATORS: Record<
   "federated-ops-threshold": ["main_federated_ops_update_threshold"],
   "terms-and-conditions": twoStageNames("terms_and_conditions"),
   "terms-and-conditions-threshold": ["terms_and_conditions_threshold"],
+  "cnight-minting": twoStageNames("cnight_mint"),
 };
 
 /** A deploy threshold: its option, what it governs, its env variable and the fraction when both are unset. */
@@ -149,7 +159,7 @@ export const DEPLOY_THRESHOLDS = {
 export const thresholdConfig = (setting: ThresholdSetting) =>
   envFallback(setting.variable, parseThreshold, setting.fallback);
 
-/** A deployment: where the file goes, the four thresholds, and which components (None: every one). */
+/** A deployment: where the file goes, the four thresholds, and which components (None: the governance ones). */
 export interface DeployInput extends NetworkInput {
   readonly outputDir: string;
   readonly techAuthThreshold: Threshold;
@@ -196,6 +206,12 @@ const thresholdDatum = (
   council.denominator,
 ];
 
+/** The gov auths a two-stage deployment's UpgradeState datums install. */
+const govAuths: Validators = Effect.map(
+  Effect.flatMap(Blueprint, (b) => b.instances),
+  (c) => [c.govAuth, c.stagingGovAuth],
+);
+
 /** A two-stage deployment of an upgradable validator: its triple from the blueprint, its forever datum and mint redeemer from the step. */
 const twoStage = (
   validator: UpgradableValidator,
@@ -208,10 +224,7 @@ const twoStage = (
   const triple = Effect.flatMap(Blueprint, (b) => b.twoStage(validator));
   return {
     validators: Effect.map(triple, (t) => [t.twoStage, t.forever, t.logic]),
-    installs: Effect.map(
-      Effect.flatMap(Blueprint, (b) => b.instances),
-      (c) => [c.govAuth, c.stagingGovAuth],
-    ),
+    installs: govAuths,
     oneShotOf,
     build: (ctx, oneShotUtxo) =>
       Effect.gen(function* () {
@@ -276,6 +289,39 @@ const termsAndConditionsForever = () =>
         serialize(Contracts.VersionedTermsAndConditions, [[hash, link], 0n]),
       ),
   );
+
+const cnightMintTriple = Effect.flatMap(Blueprint, (b) =>
+  b.twoStage("cnight-minting"),
+);
+
+/** cNIGHT minting: the two-stage states on cnight_mint_logic; the forever is registered and holds no NFT. */
+const cnightMinting: StepBody = {
+  validators: Effect.map(cnightMintTriple, (t) => [
+    t.twoStage,
+    t.forever,
+    t.logic,
+  ]),
+  installs: govAuths,
+  oneShotOf: (c) => [
+    c.cnight_minting_one_shot_hash,
+    c.cnight_minting_one_shot_index,
+  ],
+  build: (ctx, oneShotUtxo) =>
+    Effect.map(cnightMintTriple, ({ twoStage, forever, logic }) =>
+      buildCnightMintingDeploymentTx(
+        ctx.blaze,
+        {
+          oneShotUtxo,
+          twoStage: twoStage.Script,
+          forever: forever.Script,
+          logic: logic.Script,
+          govAuth: ctx.contracts.govAuth.Script,
+          stagingGovAuth: ctx.contracts.stagingGovAuth.Script,
+        },
+        ctx.params,
+      ),
+    ),
+};
 
 /** Each component's deployment transaction: its name in the deployment file, the validators it creates and how it is built. */
 export const DEPLOY_STEPS: Record<
@@ -409,6 +455,10 @@ export const DEPLOY_STEPS: Record<
       mainFractions,
     ),
   },
+  "cnight-minting": {
+    name: "cnight-minting-deployment",
+    ...cnightMinting,
+  },
 };
 
 /** A full run on a test snapshot starts it again; a --components run, or any run on a production one, extends it. */
@@ -430,9 +480,11 @@ export const deployProgram = (input: DeployInput) =>
     );
     yield* out.log("Min UTxO: calculated dynamically from protocol parameters");
 
-    const steps = selectComponents(DEPLOY_COMPONENTS, input.components).map(
-      (component) => DEPLOY_STEPS[component],
-    );
+    const steps = selectComponents(
+      DEPLOY_COMPONENTS,
+      input.components,
+      DEFAULT_DEPLOY_COMPONENTS,
+    ).map((component) => DEPLOY_STEPS[component]);
     const hashesOf = (pick: (step: StepBody) => Validators) =>
       Effect.map(
         Effect.forEach(steps, pick),
