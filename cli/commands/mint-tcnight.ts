@@ -27,7 +27,7 @@ const userAddress = parsedText("user-address", parseBech32Address).pipe(
 const destination = parsedText("destination", parseBech32Address).pipe(
   Options.withAlias("d"),
   Options.withDescription(
-    "Destination address for minted tokens, mint only (default: user address)",
+    "Destination address, mint only (default: user address)",
   ),
   Options.optional,
 );

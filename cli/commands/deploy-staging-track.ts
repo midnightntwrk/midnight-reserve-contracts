@@ -12,7 +12,7 @@ const components = parsedText(
   parseNameList(STAGING_TRACK_COMPONENTS),
 ).pipe(
   Options.withDescription(
-    `Comma-separated staging track components to deploy: ${STAGING_TRACK_COMPONENTS.join(", ")} (default: every one)`,
+    `Components, comma-separated (default: all): ${STAGING_TRACK_COMPONENTS.join(", ")}`,
   ),
   Options.optional,
 );
