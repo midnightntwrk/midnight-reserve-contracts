@@ -3,7 +3,7 @@
 import { Command } from "@effect/cli";
 import { BunRuntime } from "@effect/platform-bun";
 import { initCrypto } from "@blaze-cardano/core";
-import { Console, Effect, Exit } from "effect";
+import { Console, Effect, Exit, Option } from "effect";
 import { deploy } from "./commands/deploy";
 import { deployStagingTrack } from "./commands/deploy-staging-track";
 import { changeCouncil } from "./commands/change-council";
@@ -27,7 +27,7 @@ import { dustParticipants } from "./commands/dust-participants";
 import { mergeUtxos } from "./commands/merge-utxos";
 import { build } from "./commands/build";
 import { BaseLive, EnvLive, reportFailure, teardown } from "./run";
-import { isRootHelp, rootHelp } from "./help";
+import { helpFor } from "./help";
 import packageJson from "../package.json";
 
 const NAME = "midnight-reserve";
@@ -80,14 +80,22 @@ await initCrypto();
 // runMain interrupts on SIGINT and SIGTERM only.
 process.once("SIGHUP", () => process.kill(process.pid, "SIGTERM"));
 
-const program = isRootHelp(process.argv.slice(2))
-  ? Console.log(rootHelp(root, NAME, packageJson.version))
-  : cli(process.argv).pipe(
-      Effect.provide(EnvLive),
-      Effect.onExit(
-        Exit.match({ onFailure: reportFailure, onSuccess: () => Effect.void }),
+const program = Option.match(
+  helpFor(root, NAME, packageJson.version, process.argv.slice(2)),
+  {
+    onSome: Console.log,
+    onNone: () =>
+      cli(process.argv).pipe(
+        Effect.provide(EnvLive),
+        Effect.onExit(
+          Exit.match({
+            onFailure: reportFailure,
+            onSuccess: () => Effect.void,
+          }),
+        ),
       ),
-    );
+  },
+);
 
 program.pipe(
   Effect.provide(BaseLive),
