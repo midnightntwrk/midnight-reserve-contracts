@@ -392,14 +392,12 @@ export const infoProgram = (input: InfoInput) =>
         ["Name", "Script Hash", "Address"],
         contractGroup.map((c) => [
           c.name,
-          c.scriptHash.slice(0, 16) + "...",
-          c.address.slice(0, 40) + "...",
+          c.scriptHash,
+          `${c.address.slice(0, 16)}...${c.address.slice(-8)}`,
         ]),
       );
       for (const line of lines) yield* output.log(line);
     }
-    yield* output.log(
-      "\nNote: Use --format json for full hashes and addresses",
-    );
+    yield* output.log("\nNote: Use --format json for full addresses");
     return filteredContracts;
   });
