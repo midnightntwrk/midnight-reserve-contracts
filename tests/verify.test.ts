@@ -97,10 +97,12 @@ const twoStageUtxo = (
     upgradeState(hashOf(logic), hashOf(auth)),
   );
 
-/** The chain a deploy of the record leaves: every NFT once, each UpgradeState on the v1 logic. */
+/** The chain a deploy of the record leaves: every NFT once (cNIGHT minting has no forever NFT), each UpgradeState on the v1 logic. */
 const deployedChain = tracksOf(record)
   .flatMap((track) => [
-    nftUtxo(hashOf(`${track}_forever`), ""),
+    ...(track === CNIGHT_MINT_TRACK
+      ? []
+      : [nftUtxo(hashOf(`${track}_forever`), "")]),
     twoStageUtxo(track, MAIN_TOKEN_HEX, `${track}_logic`, "main_gov_auth"),
     twoStageUtxo(
       track,
@@ -123,7 +125,7 @@ describe("verify checks", () => {
     const results = verifyChecks(record, deployedChain).flatMap(
       (s) => s.results,
     );
-    expect(results).toHaveLength(7 + 27 + 14);
+    expect(results).toHaveLength(7 + 26 + 14);
     expect(failedNames(results)).toEqual([]);
   });
 
@@ -318,14 +320,10 @@ describe("verify checks", () => {
   });
 
   test("cNIGHT minting is checked only where versions.json promotes its forever", () => {
-    const cnightNfts = new Set(
-      ["cnight_mint_forever", "cnight_mint_two_stage_upgrade"].map(hashOf),
-    );
+    const cnightTwoStage = hashOf("cnight_mint_two_stage_upgrade");
     const withoutCnight = deployedChain.filter(
       (u) =>
-        !cnightNfts.has(
-          u.output().address().getProps().paymentPart?.hash ?? "",
-        ),
+        u.output().address().getProps().paymentPart?.hash !== cnightTwoStage,
     );
     const notPromoting: DeployedRecord = {
       ...record,
@@ -348,7 +346,6 @@ describe("verify checks", () => {
         ),
       ),
     ).toEqual([
-      `${CNIGHT_MINT_TRACK}_forever`,
       `${CNIGHT_MINT_TRACK}_two_stage_upgrade main`,
       `${CNIGHT_MINT_TRACK}_two_stage_upgrade staging`,
       `${CNIGHT_MINT_TRACK} main`,
