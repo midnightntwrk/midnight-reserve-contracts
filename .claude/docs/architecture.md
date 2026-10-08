@@ -26,6 +26,8 @@ lib/                           # Shared Aiken helper modules
 cli-yargs/                     # TypeScript CLI (Blaze SDK)
 tests/                         # Blaze emulator integration tests
 deployments/                   # Network-specific artifacts
+docs/<domain>/                 # Specs: governance/, bridge/, rewards/
+plans/<domain>/                # Phased implementation plans, one file per phase
 ```
 
 ## Key Principles

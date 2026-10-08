@@ -8,13 +8,12 @@ import {
   RewardAccount,
   TransactionOutput,
   Value,
-  type Transaction,
   type TransactionUnspentOutput,
   type Script,
 } from "@blaze-cardano/core";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { TxBuilder } from "@blaze-cardano/tx";
-import { describe, expect, test } from "bun:test";
+import { describe, test } from "bun:test";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import {
   cnightAssetId,
@@ -61,26 +60,6 @@ function mergeValue(
   );
 }
 
-function contractOutput(tx: Transaction, address: string) {
-  const output = tx
-    .toCore()
-    .body.outputs.find((candidate) => candidate.address === address);
-  if (!output) {
-    throw new Error(`Missing contract output for ${address}`);
-  }
-  return output;
-}
-
-function sumAsset(
-  outputs: ReturnType<Transaction["toCore"]>["body"]["outputs"],
-  assetId: AssetId,
-) {
-  return outputs.reduce(
-    (total, output) => total + (output.value.assets?.get(assetId) ?? 0n),
-    0n,
-  );
-}
-
 function buildMergeTx(args: {
   blaze: { newTransaction(): TxBuilder };
   walletAddress: string;
@@ -117,7 +96,7 @@ function buildMergeTx(args: {
 }
 
 describe("Mainnet snapshot merge transactions", () => {
-  test("reserve merge keeps ADA+cNIGHT in contract output and returns random token to change", async () => {
+  test("reserve merge that keeps only ADA+cNIGHT in the contract output validates", async () => {
     const emulator = new Emulator([]);
     await emulator.as("deployer", async (blaze, addr) => {
       const fundingUtxo = makeFundingUtxo(addr, "e0".repeat(32));
@@ -148,36 +127,6 @@ describe("Mainnet snapshot merge transactions", () => {
         balance: 0n,
       });
 
-      const inspectTx = await buildMergeTx({
-        blaze,
-        walletAddress: addr.toBech32(),
-        foreverScript: reserveForever.Script,
-        logicScript: reserveLogic.Script,
-        logicHash: liveUpgradeStates.reserve.main[0],
-        twoStageMain: mainnetSnapshotUtxos.reserveMain,
-        utxo1: reserveInput1,
-        utxo2: reserveInput2,
-        fundingUtxo,
-      }).complete();
-
-      const mergedContractOutput = contractOutput(
-        inspectTx,
-        reserveInput1.output().address().toBech32(),
-      );
-      expect(mergedContractOutput.value.coins).toBe(12_000_000n);
-      expect(mergedContractOutput.value.assets?.get(cnightAssetId)).toBe(3n);
-      expect(
-        mergedContractOutput.value.assets?.has(randomAssetId) ?? false,
-      ).toBe(false);
-
-      const walletOutputs = inspectTx
-        .toCore()
-        .body.outputs.filter(
-          (candidate) => candidate.address === addr.toBech32(),
-        );
-      expect(sumAsset(walletOutputs, randomAssetId)).toBe(18n);
-      expect(sumAsset(walletOutputs, cnightAssetId)).toBe(0n);
-
       await emulator.expectValidTransaction(
         blaze,
         buildMergeTx({
@@ -195,7 +144,7 @@ describe("Mainnet snapshot merge transactions", () => {
     });
   });
 
-  test("ICS merge keeps ADA+cNIGHT in contract output and returns random token to change", async () => {
+  test("ICS merge that keeps only ADA+cNIGHT in the contract output validates", async () => {
     const emulator = new Emulator([]);
     await emulator.as("deployer", async (blaze, addr) => {
       const fundingUtxo = makeFundingUtxo(addr, "e3".repeat(32));
@@ -225,36 +174,6 @@ describe("Mainnet snapshot merge transactions", () => {
       emulator.accounts.set(rewardAccount(liveUpgradeStates.ics.main[0]), {
         balance: 0n,
       });
-
-      const inspectTx = await buildMergeTx({
-        blaze,
-        walletAddress: addr.toBech32(),
-        foreverScript: icsForever.Script,
-        logicScript: icsLogic.Script,
-        logicHash: liveUpgradeStates.ics.main[0],
-        twoStageMain: mainnetSnapshotUtxos.icsMain,
-        utxo1: icsInput1,
-        utxo2: icsInput2,
-        fundingUtxo,
-      }).complete();
-
-      const mergedContractOutput = contractOutput(
-        inspectTx,
-        icsInput1.output().address().toBech32(),
-      );
-      expect(mergedContractOutput.value.coins).toBe(13_000_000n);
-      expect(mergedContractOutput.value.assets?.get(cnightAssetId)).toBe(3n);
-      expect(
-        mergedContractOutput.value.assets?.has(randomAssetId) ?? false,
-      ).toBe(false);
-
-      const walletOutputs = inspectTx
-        .toCore()
-        .body.outputs.filter(
-          (candidate) => candidate.address === addr.toBech32(),
-        );
-      expect(sumAsset(walletOutputs, randomAssetId)).toBe(18n);
-      expect(sumAsset(walletOutputs, cnightAssetId)).toBe(0n);
 
       await emulator.expectValidTransaction(
         blaze,

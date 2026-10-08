@@ -1,0 +1,237 @@
+{
+  "state_in": {
+    "latest_mmr_root": "cb21d685c56ee400982c1e739a6be2b542529137f1a86a2b20c061f1cc62b273",
+    "latest_height": 6,
+    "beefy_activation_block": 1,
+    "current_committee": {
+      "validator_set_id": 4,
+      "seat_count": 4,
+      "keyset_commitment": "052f9919c3c309e60ca131820fde7ce63f1d1d7d3746f066f5263b285c787096"
+    },
+    "next_committee": {
+      "validator_set_id": 5,
+      "seat_count": 4,
+      "keyset_commitment": "052f9919c3c309e60ca131820fde7ce63f1d1d7d3746f066f5263b285c787096"
+    }
+  },
+  "cases": [
+    {
+      "scenario": "a_no_handover",
+      "signed_by": 4,
+      "leaf_next_id": 5,
+      "signers": [
+        0,
+        1
+      ],
+      "expect": "accepted",
+      "handover": false,
+      "update": {
+        "mmr_root": "ab4eac1bdc5cd05fa0f638c295f42ad024b1dff4d5f2436aa001e3294d9422db",
+        "block_number": 7,
+        "validator_set_id": 4,
+        "signatures": [
+          "f1c0b4022c7273144299b89415517f38c81f606568ff0885ece7421658fc777b2eb832afae575f8e59bc12e07d9c4a11a1845bd6cdcfdbe2336b6251cf7184cd",
+          "cf10e35facd47fba8146e27dc018b88ac20b3d282120e1f88b762f3a7901441333a4151917d03d03ec9dfc93559651e450c2eb337b28d1b21971b0263736c9df",
+          ""
+        ],
+        "leaf": {
+          "version": 0,
+          "parent_number": 6,
+          "parent_hash": "965fc89e6c02b012ddbdb7c3ac087e74e2dfc6cd8dcdc2efa28ddea9798fa4aa",
+          "next_authority_set": {
+            "validator_set_id": 5,
+            "seat_count": 9,
+            "keyset_commitment": "0c4588cadfed641a4b6041110ed35bc4d9c400154e9ded3305bcd80ece1c5d9a"
+          },
+          "extra": ""
+        },
+        "mmr_proof": [
+          "1d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af4907",
+          "e1c308ce661d3e6f5f8424ab903f77b257b3de11e34f9e99154c171bd9a0eb79"
+        ],
+        "multiproof": [
+          [
+            "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179801000000",
+            "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee502000000"
+          ],
+          [
+            "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000000"
+          ]
+        ]
+      },
+      "redeemer_cbor": "d8799f5820ab4eac1bdc5cd05fa0f638c295f42ad024b1dff4d5f2436aa001e3294d9422db07049f5840f1c0b4022c7273144299b89415517f38c81f606568ff0885ece7421658fc777b2eb832afae575f8e59bc12e07d9c4a11a1845bd6cdcfdbe2336b6251cf7184cd5840cf10e35facd47fba8146e27dc018b88ac20b3d282120e1f88b762f3a7901441333a4151917d03d03ec9dfc93559651e450c2eb337b28d1b21971b0263736c9df40ffd8799f00065820965fc89e6c02b012ddbdb7c3ac087e74e2dfc6cd8dcdc2efa28ddea9798fa4aad8799f050958200c4588cadfed641a4b6041110ed35bc4d9c400154e9ded3305bcd80ece1c5d9aff40ff9f58201d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af49075820e1c308ce661d3e6f5f8424ab903f77b257b3de11e34f9e99154c171bd9a0eb79ff9f9f58250279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179801000000582502c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee502000000ff9f582502f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000000ffffff",
+      "state_out": {
+        "latest_mmr_root": "ab4eac1bdc5cd05fa0f638c295f42ad024b1dff4d5f2436aa001e3294d9422db",
+        "latest_height": 7,
+        "beefy_activation_block": 1,
+        "current_committee": {
+          "validator_set_id": 4,
+          "seat_count": 4,
+          "keyset_commitment": "052f9919c3c309e60ca131820fde7ce63f1d1d7d3746f066f5263b285c787096"
+        },
+        "next_committee": {
+          "validator_set_id": 5,
+          "seat_count": 4,
+          "keyset_commitment": "052f9919c3c309e60ca131820fde7ce63f1d1d7d3746f066f5263b285c787096"
+        }
+      }
+    },
+    {
+      "scenario": "b_handover",
+      "signed_by": 5,
+      "leaf_next_id": 6,
+      "signers": [
+        0,
+        1
+      ],
+      "expect": "accepted",
+      "handover": true,
+      "update": {
+        "mmr_root": "350501af9cf6627e4642f864de66d37b8f6e8097edea3662bc93d51450997de3",
+        "block_number": 8,
+        "validator_set_id": 5,
+        "signatures": [
+          "df001efc2133466b70898c14d969762677eca122f30c4e6b48ea8202de437cc978ad2bcb5ae5df974ca6b888c30074717b59b9c3bdfabf9be1538e038ebfe43c",
+          "287eca8fc8ee46b6fc0c1215e3fda4c6941ac810b5d117a7ca4b6e4c3ecf2fcf1081414900116d1f4f7c3b99ea38fcd1bf0eccfea2d6a58a1ccec850917a51a3",
+          ""
+        ],
+        "leaf": {
+          "version": 0,
+          "parent_number": 7,
+          "parent_hash": "dac94472f7237cad8d6a810bbd1e431c9347ca475a545c4cde5a73ced01c9046",
+          "next_authority_set": {
+            "validator_set_id": 6,
+            "seat_count": 9,
+            "keyset_commitment": "245da07f4bcb44ecf031bb66a40d35ea4829a714de23dafba721b90b1900c58b"
+          },
+          "extra": ""
+        },
+        "mmr_proof": [
+          "291bd553ea938a33785762f076cbad142bde4a0caf55fbf122ac07d7489414ed",
+          "e1c308ce661d3e6f5f8424ab903f77b257b3de11e34f9e99154c171bd9a0eb79",
+          "1d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af4907"
+        ],
+        "multiproof": [
+          [
+            "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179801000000",
+            "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee502000000"
+          ],
+          [
+            "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000000"
+          ]
+        ]
+      },
+      "redeemer_cbor": "d8799f5820350501af9cf6627e4642f864de66d37b8f6e8097edea3662bc93d51450997de308059f5840df001efc2133466b70898c14d969762677eca122f30c4e6b48ea8202de437cc978ad2bcb5ae5df974ca6b888c30074717b59b9c3bdfabf9be1538e038ebfe43c5840287eca8fc8ee46b6fc0c1215e3fda4c6941ac810b5d117a7ca4b6e4c3ecf2fcf1081414900116d1f4f7c3b99ea38fcd1bf0eccfea2d6a58a1ccec850917a51a340ffd8799f00075820dac94472f7237cad8d6a810bbd1e431c9347ca475a545c4cde5a73ced01c9046d8799f06095820245da07f4bcb44ecf031bb66a40d35ea4829a714de23dafba721b90b1900c58bff40ff9f5820291bd553ea938a33785762f076cbad142bde4a0caf55fbf122ac07d7489414ed5820e1c308ce661d3e6f5f8424ab903f77b257b3de11e34f9e99154c171bd9a0eb7958201d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af4907ff9f9f58250279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179801000000582502c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee502000000ff9f582502f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000000ffffff",
+      "state_out": {
+        "latest_mmr_root": "350501af9cf6627e4642f864de66d37b8f6e8097edea3662bc93d51450997de3",
+        "latest_height": 8,
+        "beefy_activation_block": 1,
+        "current_committee": {
+          "validator_set_id": 5,
+          "seat_count": 4,
+          "keyset_commitment": "052f9919c3c309e60ca131820fde7ce63f1d1d7d3746f066f5263b285c787096"
+        },
+        "next_committee": {
+          "validator_set_id": 6,
+          "seat_count": 9,
+          "keyset_commitment": "245da07f4bcb44ecf031bb66a40d35ea4829a714de23dafba721b90b1900c58b"
+        }
+      }
+    },
+    {
+      "scenario": "c_next_signs_same",
+      "signed_by": 5,
+      "leaf_next_id": 5,
+      "signers": [
+        0,
+        1
+      ],
+      "expect": "rejected",
+      "handover": null,
+      "update": {
+        "mmr_root": "09a9b9a4849407362b300c11edfcd6c374e0fc97adfa07be1f3918c141fd4222",
+        "block_number": 8,
+        "validator_set_id": 5,
+        "signatures": [
+          "00bf20c7a825939114e3d91a8922361a6a55810c1df7af38d1242b19c59e7e9235fed43c33b7914e6c2f074d2c89ae9d8d1b6326c63e83afaa2db4f4c0eb2cd0",
+          "d5e25fa58dc4e2be00709f74193d63cd0f59d61167d341d6cc2ec2c088af8e7340f84ec0d365a5df6164d5a71eb839f4932a2b4e2fb2f79c9257c521fdd14ea5",
+          ""
+        ],
+        "leaf": {
+          "version": 0,
+          "parent_number": 7,
+          "parent_hash": "dac94472f7237cad8d6a810bbd1e431c9347ca475a545c4cde5a73ced01c9046",
+          "next_authority_set": {
+            "validator_set_id": 5,
+            "seat_count": 9,
+            "keyset_commitment": "0c4588cadfed641a4b6041110ed35bc4d9c400154e9ded3305bcd80ece1c5d9a"
+          },
+          "extra": ""
+        },
+        "mmr_proof": [
+          "291bd553ea938a33785762f076cbad142bde4a0caf55fbf122ac07d7489414ed",
+          "e1c308ce661d3e6f5f8424ab903f77b257b3de11e34f9e99154c171bd9a0eb79",
+          "1d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af4907"
+        ],
+        "multiproof": [
+          [
+            "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179801000000",
+            "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee502000000"
+          ],
+          [
+            "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000000"
+          ]
+        ]
+      },
+      "redeemer_cbor": "d8799f582009a9b9a4849407362b300c11edfcd6c374e0fc97adfa07be1f3918c141fd422208059f584000bf20c7a825939114e3d91a8922361a6a55810c1df7af38d1242b19c59e7e9235fed43c33b7914e6c2f074d2c89ae9d8d1b6326c63e83afaa2db4f4c0eb2cd05840d5e25fa58dc4e2be00709f74193d63cd0f59d61167d341d6cc2ec2c088af8e7340f84ec0d365a5df6164d5a71eb839f4932a2b4e2fb2f79c9257c521fdd14ea540ffd8799f00075820dac94472f7237cad8d6a810bbd1e431c9347ca475a545c4cde5a73ced01c9046d8799f050958200c4588cadfed641a4b6041110ed35bc4d9c400154e9ded3305bcd80ece1c5d9aff40ff9f5820291bd553ea938a33785762f076cbad142bde4a0caf55fbf122ac07d7489414ed5820e1c308ce661d3e6f5f8424ab903f77b257b3de11e34f9e99154c171bd9a0eb7958201d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af4907ff9f9f58250279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179801000000582502c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee502000000ff9f582502f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000000ffffff",
+      "state_out": null
+    },
+    {
+      "scenario": "d_skip_two",
+      "signed_by": 4,
+      "leaf_next_id": 7,
+      "signers": [
+        0,
+        1
+      ],
+      "expect": "rejected",
+      "handover": null,
+      "update": {
+        "mmr_root": "ef52bd6c94015877ebf8ceda4e16c5cf2d817212950545538f7e81aed9d0959f",
+        "block_number": 7,
+        "validator_set_id": 4,
+        "signatures": [
+          "4166c149f3ba0493cc6e564a4c5b07d49d5269b7e599177c6d81437288e00f9e63f3771a946ef8512d6c92c3d29fba99decf6de8a9ba156be0acaa67bdd03155",
+          "afcc4a4a1051d7755485fa6a2e05598e4566bd528e05a5a3ee05af449104821c56a8cd9a925116b1342875239f519f43d85d1d18f827c40bcc80b27dc13386d9",
+          ""
+        ],
+        "leaf": {
+          "version": 0,
+          "parent_number": 6,
+          "parent_hash": "965fc89e6c02b012ddbdb7c3ac087e74e2dfc6cd8dcdc2efa28ddea9798fa4aa",
+          "next_authority_set": {
+            "validator_set_id": 7,
+            "seat_count": 9,
+            "keyset_commitment": "830661e01badde04d347b668d626fd93aa611ffacf8f6e0abb22f94be2b197d0"
+          },
+          "extra": ""
+        },
+        "mmr_proof": [
+          "1d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af4907",
+          "e1c308ce661d3e6f5f8424ab903f77b257b3de11e34f9e99154c171bd9a0eb79"
+        ],
+        "multiproof": [
+          [
+            "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179801000000",
+            "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee502000000"
+          ],
+          [
+            "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000000"
+          ]
+        ]
+      },
+      "redeemer_cbor": "d8799f5820ef52bd6c94015877ebf8ceda4e16c5cf2d817212950545538f7e81aed9d0959f07049f58404166c149f3ba0493cc6e564a4c5b07d49d5269b7e599177c6d81437288e00f9e63f3771a946ef8512d6c92c3d29fba99decf6de8a9ba156be0acaa67bdd031555840afcc4a4a1051d7755485fa6a2e05598e4566bd528e05a5a3ee05af449104821c56a8cd9a925116b1342875239f519f43d85d1d18f827c40bcc80b27dc13386d940ffd8799f00065820965fc89e6c02b012ddbdb7c3ac087e74e2dfc6cd8dcdc2efa28ddea9798fa4aad8799f07095820830661e01badde04d347b668d626fd93aa611ffacf8f6e0abb22f94be2b197d0ff40ff9f58201d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af49075820e1c308ce661d3e6f5f8424ab903f77b257b3de11e34f9e99154c171bd9a0eb79ff9f9f58250279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179801000000582502c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee502000000ff9f582502f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000000ffffff",
+      "state_out": null
+    }
+  ]
+}
