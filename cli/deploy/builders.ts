@@ -3,9 +3,10 @@
  * its one-shot UTxO and mints the NFT(s) that one-shot parameterises:
  * a two-stage deployment mints the forever NFT and the two-stage main and
  * staging NFTs (and registers the logic as a stake credential where the
- * deployment asks for it), a threshold deployment mints the threshold NFT,
- * a staging-forever deployment mints the staging forever NFT. Every output
- * holds its min ADA.
+ * deployment asks for it), the cNIGHT minting deployment mints only the
+ * two-stage NFTs and registers its forever, a threshold deployment mints
+ * the threshold NFT, a staging-forever deployment mints the staging forever
+ * NFT. Every output holds its min ADA.
  */
 import {
   addressFromValidator,
@@ -51,17 +52,26 @@ export interface DeployParams {
   readonly collateral: TransactionUnspentOutput;
 }
 
-/** A two-stage validator's deployment: its triple, the gov-auth scripts its upgrade states name, and its forever datum and mint redeemer. */
-export interface TwoStageDeployment {
+/** The two-stage states of a deployment: the validator, the logic both states start on, and the gov-auth scripts they name. */
+export interface TwoStageStates {
   readonly oneShotUtxo: TransactionUnspentOutput;
   readonly twoStage: Script;
-  readonly forever: Script;
   readonly logic: Script;
   readonly govAuth: Script;
   readonly stagingGovAuth: Script;
+}
+
+/** A two-stage validator's deployment: its states, its forever with its datum and mint redeemer, and whether the logic is registered. */
+export interface TwoStageDeployment extends TwoStageStates {
+  readonly forever: Script;
   readonly foreverDatum: PlutusData;
   readonly foreverRedeemer: PlutusData;
   readonly registerLogic: boolean;
+}
+
+/** cNIGHT minting's deployment: its states and its forever, which is registered and holds no NFT. */
+export interface CnightMintingDeployment extends TwoStageStates {
+  readonly forever: Script;
 }
 
 /** A threshold's deployment: its script and its datum. */
@@ -109,20 +119,15 @@ const upgradeStateDatum = (logic: Script, govAuth: Script): PlutusData =>
 const withCollateral = (txBuilder: TxBuilder, params: DeployParams) =>
   txBuilder.provideCollateral([params.collateral]);
 
-/** Spend the one-shot, mint the forever NFT and the two-stage main and staging NFTs, and lock each at its script. */
-export const buildTwoStageDeploymentTx = (
+/** Spend the one-shot, mint the two-stage main and staging NFTs and lock each at the two-stage with its UpgradeState. */
+const mintTwoStageStates = (
   blaze: Blaze<BlazeProvider, Wallet>,
-  inputs: TwoStageDeployment,
+  inputs: TwoStageStates,
   params: DeployParams,
-): TxBuilder => {
-  const minted = blaze
+): TxBuilder =>
+  blaze
     .newTransaction()
     .addInput(inputs.oneShotUtxo)
-    .addMint(
-      PolicyId(inputs.forever.hash()),
-      new Map([[AssetName(""), 1n]]),
-      inputs.foreverRedeemer,
-    )
     .addMint(
       PolicyId(inputs.twoStage.hash()),
       new Map([
@@ -132,7 +137,6 @@ export const buildTwoStageDeploymentTx = (
       PlutusData.newInteger(0n),
     )
     .provideScript(inputs.twoStage)
-    .provideScript(inputs.forever)
     .addOutput(
       nftOutput(
         inputs.twoStage,
@@ -148,13 +152,41 @@ export const buildTwoStageDeploymentTx = (
         upgradeStateDatum(inputs.logic, inputs.stagingGovAuth),
         params,
       ),
+    );
+
+/** Mint the two-stage states and the forever NFT, lock each at its script, and register the logic where the deployment asks. */
+export const buildTwoStageDeploymentTx = (
+  blaze: Blaze<BlazeProvider, Wallet>,
+  inputs: TwoStageDeployment,
+  params: DeployParams,
+): TxBuilder => {
+  const minted = mintTwoStageStates(blaze, inputs, params)
+    .addMint(
+      PolicyId(inputs.forever.hash()),
+      new Map([[AssetName(""), 1n]]),
+      inputs.foreverRedeemer,
     )
+    .provideScript(inputs.forever)
     .addOutput(nftOutput(inputs.forever, "", inputs.foreverDatum, params));
   return withCollateral(
     inputs.registerLogic ? registerScriptStake(minted, inputs.logic) : minted,
     params,
   );
 };
+
+/** Mint the two-stage states and register the forever's stake credential: cNIGHT minting runs as a withdrawal from it, and it holds no NFT. */
+export const buildCnightMintingDeploymentTx = (
+  blaze: Blaze<BlazeProvider, Wallet>,
+  inputs: CnightMintingDeployment,
+  params: DeployParams,
+): TxBuilder =>
+  withCollateral(
+    registerScriptStake(
+      mintTwoStageStates(blaze, inputs, params),
+      inputs.forever,
+    ),
+    params,
+  );
 
 /** Spend the one-shot, mint the threshold NFT and lock it at the threshold with its datum. */
 export const buildThresholdDeploymentTx = (

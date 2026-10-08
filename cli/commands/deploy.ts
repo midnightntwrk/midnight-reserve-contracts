@@ -24,7 +24,7 @@ const components = parsedText(
   parseNameList(DEPLOY_COMPONENTS),
 ).pipe(
   Options.withDescription(
-    `Components, comma-separated (default: all): ${DEPLOY_COMPONENTS.join(", ")}`,
+    `Components, comma-separated (default: all but cnight-minting): ${DEPLOY_COMPONENTS.join(", ")}`,
   ),
   Options.optional,
 );

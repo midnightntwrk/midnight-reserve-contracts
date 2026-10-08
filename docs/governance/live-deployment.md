@@ -14,12 +14,12 @@ each phase consumes all available outputs:
 | 2nd | Staging track deploy | `*_staging_one_shot_hash` (6 entries) |
 | 3rd | v2 logic one-shots (mint-staging-state / stage-upgrade) | `*_logic_v2_one_shot_hash` (6 entries) |
 
-Of the 15 main keys, `deploy` reads 12: `technical_authority`, `main_tech_auth_update`,
-`council`, `main_council_update`, `reserve`, `ics`, `main_gov`, `staging_gov`,
-`federated_operators`, `main_federated_ops_update`, `terms_and_conditions` and
-`terms_and_conditions_threshold` (each `<name>_one_shot_hash` / `_index`). No command reads
-`cnight_minting_one_shot_*` (`deploy-cnight-minting` was deleted). The future bridge components
-of `deploy` read `committee_bridge_one_shot_*` and `committee_threshold_one_shot_*`.
+Of the 15 main keys, a `deploy` with no `--components` reads 12: `technical_authority`,
+`main_tech_auth_update`, `council`, `main_council_update`, `reserve`, `ics`, `main_gov`,
+`staging_gov`, `federated_operators`, `main_federated_ops_update`, `terms_and_conditions` and
+`terms_and_conditions_threshold` (each `<name>_one_shot_hash` / `_index`).
+`deploy --components cnight-minting` reads `cnight_minting_one_shot_*`. The future bridge
+components of `deploy` read `committee_bridge_one_shot_*` and `committee_threshold_one_shot_*`.
 
 `deploy-staging-track` reads only the six `*_staging_one_shot_*` keys
 (`cli/deploy/staging-track.ts`). The `*_logic_v2_one_shot_*` keys belong to the 3rd run:
@@ -48,7 +48,7 @@ Flags that differ from what you might expect:
 | `change-terms` | `--hash`, `--url` | `--hash` is the T&C document hash (64 hex chars); `--url` is plain text (auto-converted to hex for on-chain storage) |
 | `mint-staging-state`, `stage-upgrade`, `promote-upgrade` | `--validator <name>` | Required. E.g. `--validator council`, `--validator federated-ops` |
 | `stage-upgrade`, `promote-upgrade`, `migrate-federated-ops`, `merge-utxos`, `register-cnight-mint-logic` | `--tx-hash`, `--tx-index` | Required: fee UTxO to spend (same as change-* commands) |
-| `deploy` | `--components` | Deploy sets up contracts that are not live yet; a change to a live contract is an upgrade (`stage-upgrade`, `promote-upgrade`), never a deploy. With no `--components`, a full run builds every component. `--components <list>` (comma-separated, at least one name) builds only the transactions of those components, and `deployment-transactions.json` then holds only them, so `sign-and-submit` sends only them. Each component is one transaction that creates all of its validators (see [deploy --components](#deploy---components)). |
+| `deploy` | `--components` | Deploy sets up contracts that are not live yet; a change to a live contract is an upgrade (`stage-upgrade`, `promote-upgrade`), never a deploy. With no `--components`, a full run builds the twelve governance components; `cnight-minting` is built only when `--components` names it. `--components <list>` (comma-separated, at least one name) builds only the transactions of those components, and `deployment-transactions.json` then holds only them, so `sign-and-submit` sends only them. Each component is one transaction that creates all of its validators (see [deploy --components](#deploy---components)). |
 | `deploy` | — | Each run writes the snapshot `deployed-scripts/<env>/` when it builds the transactions, before they are submitted. A full run on a test environment starts it again: `plutus.json` and the blueprint from the build, `versions.json` promoted = the validators this deploy creates, staged = []. A `--components` run, and every run on `preprod` and `mainnet`, extends it: the build must match the live snapshot (every promoted or staged validator the run does not create, and the gov auths its datums install, has the same hash in the build), else the run is refused before any chain call and names `bun cli build -n <env> --from-deployed --components <the same list>`, which pins the deployed two-stage, forever and threshold hashes except those of the named components and compiles those from new; the snapshot then takes the build's entries and keeps a title only it has, and promoted gains the created validators and the installed gov auths. On `preprod` and `mainnet` the whole run is refused before it builds anything if one selected validator is already promoted in `versions.json` (promotion is permanent). The snapshot is written before `deployment-transactions.json`, so a snapshot that cannot be written fails the command and leaves no file to sign. An extend appends its entries, each with its own `timestamp`, to `changelog.json`, and keeps the file's first `timestamp` and its `gitCommit`. |
 | `deploy-staging-track` | `--components` | Builds the six staging forever transactions that start the upgrade flow (Phase 2). `--components` takes its own six names (`council`, `tech-auth`, `federated-ops`, `reserve`, `ics`, `terms-and-conditions`), and the file holds only their transactions. It extends `deployed-scripts/<env>/` with the staging forevers it creates, as a `deploy --components` run does: the build must match the live snapshot, else the run is refused before any chain call and names `bun cli build -n <env> --from-deployed`; `plutus.json` takes the build's entries, `versions.json` promotes the created staging forevers, and `changelog.json` gains them. On `preprod` and `mainnet` a selected staging forever that `versions.json` already promotes is refused. The snapshot is written before `staging-track-deployment-transactions.json`. |
 | `stage-upgrade`, `promote-upgrade` | — | Building the tx updates the staged/promoted lists in `deployed-scripts/<env>/versions.json`, before it is submitted. `stage-upgrade` finds `--new-logic-hash` in `deployed-scripts/<env>/plutus.json`, else in the build output `plutus-<profile>.json`, and then copies that one validator into `deployed-scripts/<env>/plutus.json`; a hash in neither is refused before any chain call. A copy overwrites a staged, unpromoted entry of that name; a build logic whose name `versions.json` promotes is refused (a promoted validator keeps its hash). |
@@ -64,6 +64,7 @@ Each component is one deploy transaction, and that transaction creates all of th
 | `tech-auth`, `council`, `reserve`, `ics`, `federated-ops`, `terms-and-conditions` | `<name>_two_stage_upgrade`, `<name>_forever`, `<name>_logic` |
 | `tech-auth-threshold`, `council-threshold`, `federated-ops-threshold` | `main_<name>_update_threshold` |
 | `main-gov`, `staging-gov`, `terms-and-conditions-threshold` | `main_gov_threshold`, `staging_gov_threshold`, `terms_and_conditions_threshold` |
+| `cnight-minting` (only when named) | `cnight_mint_two_stage_upgrade`, `cnight_mint_forever`, `cnight_mint_logic`. The transaction mints the two-stage `main` and `staging` NFTs and registers `cnight_mint_forever` as a stake credential; it mints no forever NFT. Both states start on `cnight_mint_logic`; register it with `register-cnight-mint-logic`. |
 
 Set up an environment in two parts (each run writes the file again with only its transactions, so submit it before the next run; the snapshot keeps both parts):
 
