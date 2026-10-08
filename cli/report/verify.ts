@@ -92,10 +92,18 @@ interface Nft {
   readonly label: string;
 }
 
-/** The NFTs the chain must hold for these tracks and the six thresholds. */
+/** The NFTs the chain must hold for these tracks and the six thresholds; the cNIGHT minting deploy mints no forever NFT. */
 const expectedNfts = (tracks: readonly Track[]): readonly Nft[] => [
   ...tracks.flatMap((track) => [
-    { validator: `${track}_forever`, assetName: "", label: `${track}_forever` },
+    ...(track === CNIGHT_MINT_TRACK
+      ? []
+      : [
+          {
+            validator: `${track}_forever`,
+            assetName: "",
+            label: `${track}_forever`,
+          },
+        ]),
     {
       validator: `${track}_two_stage_upgrade`,
       assetName: MAIN_TOKEN_HEX,
