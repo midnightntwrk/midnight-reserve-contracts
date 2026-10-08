@@ -65,6 +65,7 @@ const ONE_SHOTS = [
   "main_federated_ops_update_one_shot",
   "terms_and_conditions_one_shot",
   "terms_and_conditions_threshold_one_shot",
+  "cnight_minting_one_shot",
   "collateral_utxo",
   "reserve_staging_one_shot",
   "council_staging_one_shot",
