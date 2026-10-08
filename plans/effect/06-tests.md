@@ -56,9 +56,9 @@ Closed 2026-09-26: the offline `verify` and `dust-participants` goldens
 (plans 03 and 08) would test a whole command's stdout, which is manual QA
 now. The `verify` goldens are gone with the verify rewrite (plan 03): its
 checks are pure functions over the record and the unspent outputs, tested
-in `tests/verify.test.ts` on the preview record. The reference outputs
-under `tests/golden/` (deploy, info, dust-participants, register-gov-auth,
-the simple-tx stdout) were deleted 2026-09-26; jj history keeps them.
+in `tests/verify.test.ts` on a record of the default build. The reference
+outputs under `tests/golden/` (deploy, info, dust-participants,
+register-gov-auth, the simple-tx stdout) were deleted 2026-09-26.
 `tests/effect-output.test.ts` and `tests/combine-signatures.test.ts` read
 the one golden left, the simple-tx transaction, as data.
 
