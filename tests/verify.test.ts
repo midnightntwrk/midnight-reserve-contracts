@@ -10,16 +10,18 @@ import {
   TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
-import { Layer, Option } from "effect";
+import { Option } from "effect";
+import { resolve } from "path";
 import * as Contracts from "../contract_blueprint";
 import { credentialAddress } from "../cli/contracts/contracts";
+import { PROJECT_ROOT } from "../cli/contracts/paths";
+import { PlutusJson } from "../cli/contracts/plutus-json";
 import {
   type DeployedRecord,
-  DeployedScriptsLive,
   isTrackLogic,
-  readRecord,
   validatorName,
 } from "../cli/contracts/versions";
+import { readJsonFile } from "../cli/input";
 import {
   MAIN_TOKEN_HEX,
   STAGING_TOKEN_HEX,
@@ -36,11 +38,24 @@ import {
 import { randomHash, upgradeState } from "./helpers/fixtures";
 import { PlatformLive, runTest } from "./helpers/effect";
 
-/** The preview record in the repository. */
-const record = await runTest(
-  Layer.merge(PlatformLive, DeployedScriptsLive),
-  readRecord("preview"),
+/** The record a deploy of the default build leaves: its validators, each one promoted except the v2 logics. */
+const { validators } = await runTest(
+  PlatformLive,
+  readJsonFile(
+    resolve(PROJECT_ROOT, "plutus-default.json"),
+    PlutusJson,
+    (reason) => new Error(reason),
+  ),
 );
+const record: DeployedRecord = {
+  validators,
+  versions: {
+    promoted: validators
+      .map((v) => validatorName(v.title))
+      .filter((name) => !name.endsWith("_v2")),
+    staged: [],
+  },
+};
 
 const hashOf = (name: string) =>
   Option.getOrThrow(
@@ -104,7 +119,7 @@ const withCouncilMain = (utxo: TransactionUnspentOutput) =>
   deployedChain.map((u, i) => (i === 4 ? utxo : u));
 
 describe("verify checks", () => {
-  test("the preview record over the chain its deploy leaves passes every check", () => {
+  test("the record over the chain its deploy leaves passes every check", () => {
     const results = verifyChecks(record, deployedChain).flatMap(
       (s) => s.results,
     );
