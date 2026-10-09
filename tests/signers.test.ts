@@ -27,12 +27,12 @@ const KEY_A = "1".repeat(64);
 const KEY_B = "2".repeat(64);
 
 describe("parseSigners", () => {
-  test("trims entries, skips blanks and keeps duplicate hashes", () => {
+  test("trims entries and keeps duplicate hashes", () => {
     expect(
       Either.getOrThrow(
         parseSigners(
           SOURCE,
-          ` ${HASH_A} : ${KEY_A} ,, ${HASH_B}:${KEY_B}, ${HASH_A}:${KEY_B},`,
+          ` ${HASH_A} : ${KEY_A} , ${HASH_B}:${KEY_B}, ${HASH_A}:${KEY_B} `,
         ),
       ),
     ).toEqual([
@@ -64,7 +64,13 @@ describe("parseSigners", () => {
     ],
     ["short payment hash", `abcd:${KEY_A}`, "must be 56 hex characters"],
     ["non-hex key", `${HASH_A}:zz`, "must be valid hex"],
-    ["only blank entries", " , ,", "no signer entries"],
+    ["a trailing comma", `${HASH_A}:${KEY_A},`, "position 2 is empty"],
+    [
+      "an empty middle entry",
+      `${HASH_A}:${KEY_A},,${HASH_B}:${KEY_B}`,
+      "position 2 is empty",
+    ],
+    ["only blank entries", " , ,", "position 1 is empty"],
     ["unset", undefined, "required"],
   ])("rejects %s", (_name, value, issue) => {
     const error = leftOf(parseSigners(SOURCE, value));
