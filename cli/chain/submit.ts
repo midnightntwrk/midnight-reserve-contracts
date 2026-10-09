@@ -7,7 +7,12 @@ import { Duration, Effect, Ref, Schedule } from "effect";
 import { Output } from "../output";
 import { Provider } from "./provider";
 import { retryBackoff } from "./blockfrost";
-import { type ConfigError, type ProviderError, SubmitError } from "../errors";
+import {
+  type ConfigError,
+  describeCause,
+  type ProviderError,
+  SubmitError,
+} from "../errors";
 
 const CONFIRMATION_TIMEOUT = Duration.minutes(5);
 const CONFIRMATION_POLL = Duration.seconds(5);
@@ -63,7 +68,9 @@ export const submitTx = (
                     ),
                   )
                 : Effect.zipRight(
-                    networkFailure(error)
+                    // A network failure may have reached the node; a 429 is the rate limiter refusing the request.
+                    networkFailure(error) &&
+                      !(error._tag === "ProviderError" && error.status === 429)
                       ? Ref.set(outcomeUnknown, true)
                       : Effect.void,
                     Effect.fail(error),
@@ -89,7 +96,7 @@ export const submitTx = (
           unknown
             ? Effect.as(
                 Effect.logWarning(
-                  `Submission outcome unknown, awaiting confirmation: ${name}`,
+                  `Submission outcome unknown, awaiting confirmation: ${name} (last error: ${describeCause(cause)})`,
                 ).pipe(
                   Effect.annotateLogs({ op: "postTransactionToChain", txId }),
                 ),

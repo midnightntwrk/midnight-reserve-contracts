@@ -66,6 +66,8 @@ const ONE_SHOTS = [
   "terms_and_conditions_one_shot",
   "terms_and_conditions_threshold_one_shot",
   "cnight_minting_one_shot",
+  "committee_bridge_one_shot",
+  "committee_threshold_one_shot",
   "collateral_utxo",
   "reserve_staging_one_shot",
   "council_staging_one_shot",
@@ -360,13 +362,16 @@ export const envFallback = <A>(
     ),
   );
 
-/** Parse LOG_LEVEL: one of Effect's level labels (case-insensitive); empty means Info. */
+/** Parse LOG_LEVEL: an Effect level label (WARN, OFF) or name (Warning, None), as `--log-level` takes it, case-insensitive; empty means Info. */
 export const parseLogLevel = (
   value: string | undefined,
 ): Either.Either<LogLevel.LogLevel, ConfigError> => {
   if (!value) return Either.right(LogLevel.Info);
+  const wanted = value.toLowerCase();
   const level = LogLevel.allLevels.find(
-    (candidate) => candidate.label.toLowerCase() === value.toLowerCase(),
+    (candidate) =>
+      candidate.label.toLowerCase() === wanted ||
+      candidate._tag.toLowerCase() === wanted,
   );
   return level
     ? Either.right(level)
