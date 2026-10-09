@@ -2,13 +2,16 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { Effect, Either, Layer } from "effect";
+import { TOML } from "bun";
+import { Effect, Either, Layer, LogLevel, Schema } from "effect";
 import { DotEnvFallback } from "../cli/run";
-import { ENVIRONMENTS } from "../cli/config/network-mapping";
+import { ENVIRONMENTS, environmentOf } from "../cli/config/network-mapping";
 import {
   Settings,
   SettingsLive,
+  parseLogLevel,
   parseNetworkConfig,
+  reservedRefs,
 } from "../cli/config/settings";
 import { SIMPLE_TX_AMOUNT, SIMPLE_TX_COUNT } from "../cli/wallet/simple-tx";
 import {
@@ -218,5 +221,54 @@ describe("DotEnvFallback", () => {
       "ConfigError",
     );
     expect(error.key).toBe("DOTENV_FALLBACK_ONLY");
+  });
+});
+
+/** The raw profiles of aiken.toml, and a `{ bytes }` table: read independently of parseNetworkConfig. */
+const AikenProfiles = Schema.Struct({
+  config: Schema.Record({
+    key: Schema.String,
+    value: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+  }),
+});
+const HexBytes = Schema.Struct({ bytes: Schema.String });
+
+describe("reservedRefs", () => {
+  test("holds every UTxO reference each profile names, the bridge one-shots included", () => {
+    const text = readFileSync(join(import.meta.dir, "../aiken.toml"), "utf8");
+    const { config } = Schema.decodeUnknownSync(AikenProfiles)(
+      TOML.parse(text),
+    );
+    for (const environment of ENVIRONMENTS) {
+      const profile = config[environmentOf(environment).aikenConfigSection];
+      const named = Object.keys(profile)
+        .filter((key) => key.endsWith("_index"))
+        .map((key) => {
+          const { bytes } = Schema.decodeUnknownSync(HexBytes)(
+            profile[key.replace(/_index$/, "_hash")],
+          );
+          return `${bytes.toLowerCase()}#${String(profile[key])}`;
+        });
+      const reserved = reservedRefs(
+        Either.getOrThrow(parseNetworkConfig(environment, text)),
+      );
+      expect([...new Set(named)].sort()).toEqual([...reserved].sort());
+    }
+  });
+});
+
+describe("parseLogLevel", () => {
+  test.each([
+    ["WARN", LogLevel.Warning],
+    ["warning", LogLevel.Warning],
+    ["None", LogLevel.None],
+    ["off", LogLevel.None],
+    ["", LogLevel.Info],
+  ])("'%s'", (value, level) => {
+    expect(Either.getOrThrow(parseLogLevel(value))).toBe(level);
+  });
+
+  test("an unknown level is a ConfigError on LOG_LEVEL", () => {
+    expect(leftOf(parseLogLevel("loud")).key).toBe("LOG_LEVEL");
   });
 });
