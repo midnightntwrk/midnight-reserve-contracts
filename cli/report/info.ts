@@ -7,6 +7,7 @@ import {
 import { Effect } from "effect";
 import {
   credentialAddress,
+  type ContractClass,
   type ContractInstances,
   type RequiredInstance,
   Blueprint,
@@ -69,6 +70,7 @@ export const INFO_COMPONENT_CHOICES = [
   "federated-ops-threshold",
   "terms-and-conditions",
   "terms-and-conditions-threshold",
+  "cnight-minting",
 ] as const;
 
 type InfoComponent = (typeof INFO_COMPONENT_CHOICES)[number];
@@ -92,6 +94,7 @@ const MAIN_TRACK_COMPONENTS = [
   "gov",
   "registered-candidate",
   "cnight-generates-dust",
+  "cnight-minting",
 ] as const satisfies readonly ContractComponent[];
 
 type MainTrackComponent = (typeof MAIN_TRACK_COMPONENTS)[number];
@@ -174,10 +177,21 @@ const CONTRACTS: readonly (readonly [
   ["cNIGHT Generates Dust", "cnight-generates-dust", "cnightGeneratesDust"],
 ];
 
+/** The contracts info shows only where the blueprint has them: cNIGHT minting. */
+const OPTIONAL_CONTRACTS: readonly (readonly [
+  string,
+  ContractComponent,
+  Exclude<keyof ContractInstances, RequiredInstance>,
+])[] = [
+  ["cNIGHT Mint Forever", "cnight-minting", "cnightMintForever"],
+  ["cNIGHT Mint Two Stage", "cnight-minting", "cnightMintTwoStage"],
+  ["cNIGHT Mint Logic", "cnight-minting", "cnightMintLogic"],
+];
+
 const TWO_STAGE_NAMES = new Set(
-  CONTRACTS.filter(([, , key]) => key.endsWith("TwoStage")).map(
-    ([name]) => name,
-  ),
+  [...CONTRACTS, ...OPTIONAL_CONTRACTS]
+    .filter(([, , key]) => key.endsWith("TwoStage"))
+    .map(([name]) => name),
 );
 
 function isMainTrackComponent(
@@ -320,16 +334,30 @@ function generateMarkdownReport(
   return lines.join("\n");
 }
 
-/** Every contract of the blueprint in display order, with its address on the network. */
+/** Every contract of the blueprint in display order, with its address on the network; an optional one only where the blueprint has it. */
 const contractList = (
   networkId: NetworkId,
   contracts: ContractInstances,
-): ContractInfo[] =>
-  CONTRACTS.map(([name, component, key]) => {
-    const scriptHash = contracts[key].Script.hash();
+): ContractInfo[] => {
+  const info = (
+    name: string,
+    component: ContractComponent,
+    contract: ContractClass,
+  ): ContractInfo => {
+    const scriptHash = contract.Script.hash();
     const address = credentialAddress(networkId, scriptHash).toBech32();
     return { name, component, scriptHash, address };
-  });
+  };
+  return [
+    ...CONTRACTS.map(([name, component, key]) =>
+      info(name, component, contracts[key]),
+    ),
+    ...OPTIONAL_CONTRACTS.flatMap(([name, component, key]) => {
+      const contract = contracts[key];
+      return contract ? [info(name, component, contract)] : [];
+    }),
+  ];
+};
 
 /** List the contracts of the blueprint; with --save, read their UTxOs and write info.json and the markdown report. */
 export const infoProgram = (input: InfoInput) =>
