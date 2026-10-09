@@ -49,7 +49,7 @@ const checkSignerHex = (
           sr25519Key: sr25519Key.toLowerCase(),
         });
 
-/** Parse "hash:key,hash:key": blank entries skipped, duplicates kept with their weight. */
+/** Parse "hash:key,hash:key": an empty entry is refused (a stray comma would drop a member), duplicates kept with their weight. */
 export const parseSigners = (
   source: string,
   value: string | undefined,
@@ -60,8 +60,12 @@ export const parseSigners = (
       value
         .split(",")
         .map((entry) => entry.trim())
-        .filter((entry) => entry.length > 0)
-        .map((entry) => {
+        .map((entry, index) => {
+          if (entry.length === 0)
+            return issue(
+              source,
+              `signer entry at position ${index + 1} is empty`,
+            );
           const fields = entry.split(":").map((field) => field.trim());
           const [paymentHash = "", sr25519Key = ""] = fields;
           return fields.length !== 2
