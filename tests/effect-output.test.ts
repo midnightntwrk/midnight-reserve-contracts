@@ -9,6 +9,7 @@ import {
   Ed25519PublicKey,
   Ed25519Signature,
   HexBlob,
+  initCrypto,
   Transaction,
   TxCBOR,
 } from "@blaze-cardano/core";
@@ -54,6 +55,8 @@ describe("signerFor", () => {
 
 describe("signAndWrite", () => {
   test("signed: attaches a verifying witness for every tech-auth and council key in the env", async () => {
+    // Verify goes through libsodium, which cli/index.ts initialises; this test bypasses it.
+    await initCrypto();
     const capture = captureOutput();
     await runTest(
       Layer.mergeAll(OutputCaptured(capture), SettingsOver("emulator")),
