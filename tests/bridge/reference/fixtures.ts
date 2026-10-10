@@ -37,7 +37,7 @@ export const dummyLeafHash = (i: number): Uint8Array => keccak(u32le(i));
 export const parentHash = (block: number): Uint8Array =>
   keccak(concatBytes(text("parent"), u32le(block)));
 
-export const nextKeyset = (id: bigint): Uint8Array =>
+const nextKeyset = (id: bigint): Uint8Array =>
   keccak(concatBytes(text("next"), u32le(Number(id))));
 
 /** The successor committee a scenario's leaf names. */

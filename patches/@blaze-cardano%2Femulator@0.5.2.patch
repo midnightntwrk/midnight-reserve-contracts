@@ -1,14 +1,42 @@
-diff --git a/node_modules/@blaze-cardano/emulator/.bun-tag-2d167376db3f4759 b/.bun-tag-2d167376db3f4759
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
-diff --git a/node_modules/@blaze-cardano/emulator/.bun-tag-7763147180407b88 b/.bun-tag-7763147180407b88
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/dist/emulator-Cyvpkx5Z.mjs b/dist/emulator-Cyvpkx5Z.mjs
-index ad7fcc3f4173e42a8d00857828c5d410c0d10533..b6a84bb36a913bf42010bad55288befea73ad11a 100644
+index ad7fcc3f4173e42a8d00857828c5d410c0d10533..5ba9de3a178c1bbf577be598e0cf7ede3a0de0b7 100644
 --- a/dist/emulator-Cyvpkx5Z.mjs
 +++ b/dist/emulator-Cyvpkx5Z.mjs
-@@ -852,7 +852,7 @@ var Emulator = class {
+@@ -120,8 +120,7 @@ var EmulatorProvider = class extends Provider {
+ 		return findScriptRefInAddressUtxos(this, script, address);
+ 	}
+ 	awaitTransactionConfirmation(txId, _timeout) {
+-		this.emulator.awaitTransactionConfirmation(txId);
+-		return Promise.resolve(true);
++		return Promise.resolve(this.emulator.awaitTransactionConfirmation(txId));
+ 	}
+ 	postTransactionToChain(tx) {
+ 		return this.emulator.submitTransaction(tx);
+@@ -375,6 +374,7 @@ var Emulator = class {
+ 	* A pending pool of transactions to be confirmed in the next block.
+ 	*/
+ 	#mempool = {};
++	#confirmed = /* @__PURE__ */ new Set();
+ 	#nextGenesisUtxo;
+ 	govTrace(...args) {
+ 		if (this.govTraceEnabled) console.debug("[GOV]", ...args);
+@@ -624,6 +624,7 @@ var Emulator = class {
+ 		this.clock.block = Math.ceil((Number(slot) - this.clock.zeroSlot) / this.clock.slotsPerBlock);
+ 		this.clock.time = this.slotToUnix(slot);
+ 		this.clock.epoch = Math.floor((this.clock.slot - this.clock.zeroSlot) / this.clock.slotsPerEpoch);
++		Object.keys(this.#mempool).forEach((txId) => this.#confirmed.add(txId));
+ 		Object.values(this.#mempool).forEach(({ inputs, outputs }) => {
+ 			inputs.forEach(this.removeUtxo);
+ 			outputs.forEach(this.addUtxo);
+@@ -666,6 +667,7 @@ var Emulator = class {
+ 	*/
+ 	awaitTransactionConfirmation(txId) {
+ 		if (this.#mempool[txId]) this.stepForwardBlock();
++		return this.#confirmed.has(txId);
+ 	}
+ 	/**
+ 	* Starts the event loop for the ledger.
+@@ -852,7 +854,7 @@ var Emulator = class {
  				const deposit = isLegacyStakeCertificate(core) ? BigInt(this.params.stakeKeyDeposit) : certificateDeposit(core);
  				netValue = Value$1.merge(netValue, new Value(deposit));
  			}
@@ -18,10 +46,44 @@ index ad7fcc3f4173e42a8d00857828c5d410c0d10533..b6a84bb36a913bf42010bad55288befe
  				if (stakeCred) consumeCred(stakeCred, RedeemerTag.Cert, BigInt(index));
  			}
 diff --git a/dist/emulator-D_QI3kpk.cjs b/dist/emulator-D_QI3kpk.cjs
-index c0cd72217179d6b931a09e69629e673d28712446..dfc39c50f3c1e7c630f4242987e07dbb0a4e8c09 100644
+index c0cd72217179d6b931a09e69629e673d28712446..8a01bb72d18ac41837eca069af3b3ab3d4be2cfc 100644
 --- a/dist/emulator-D_QI3kpk.cjs
 +++ b/dist/emulator-D_QI3kpk.cjs
-@@ -852,7 +852,7 @@ var Emulator = class {
+@@ -120,8 +120,7 @@ var EmulatorProvider = class extends _blaze_cardano_query.Provider {
+ 		return (0, _blaze_cardano_query.findScriptRefInAddressUtxos)(this, script, address);
+ 	}
+ 	awaitTransactionConfirmation(txId, _timeout) {
+-		this.emulator.awaitTransactionConfirmation(txId);
+-		return Promise.resolve(true);
++		return Promise.resolve(this.emulator.awaitTransactionConfirmation(txId));
+ 	}
+ 	postTransactionToChain(tx) {
+ 		return this.emulator.submitTransaction(tx);
+@@ -375,6 +374,7 @@ var Emulator = class {
+ 	* A pending pool of transactions to be confirmed in the next block.
+ 	*/
+ 	#mempool = {};
++	#confirmed = /* @__PURE__ */ new Set();
+ 	#nextGenesisUtxo;
+ 	govTrace(...args) {
+ 		if (this.govTraceEnabled) console.debug("[GOV]", ...args);
+@@ -624,6 +624,7 @@ var Emulator = class {
+ 		this.clock.block = Math.ceil((Number(slot) - this.clock.zeroSlot) / this.clock.slotsPerBlock);
+ 		this.clock.time = this.slotToUnix(slot);
+ 		this.clock.epoch = Math.floor((this.clock.slot - this.clock.zeroSlot) / this.clock.slotsPerEpoch);
++		Object.keys(this.#mempool).forEach((txId) => this.#confirmed.add(txId));
+ 		Object.values(this.#mempool).forEach(({ inputs, outputs }) => {
+ 			inputs.forEach(this.removeUtxo);
+ 			outputs.forEach(this.addUtxo);
+@@ -666,6 +667,7 @@ var Emulator = class {
+ 	*/
+ 	awaitTransactionConfirmation(txId) {
+ 		if (this.#mempool[txId]) this.stepForwardBlock();
++		return this.#confirmed.has(txId);
+ 	}
+ 	/**
+ 	* Starts the event loop for the ledger.
+@@ -852,7 +854,7 @@ var Emulator = class {
  				const deposit = isLegacyStakeCertificate(core) ? BigInt(this.params.stakeKeyDeposit) : certificateDeposit(core);
  				netValue = _blaze_cardano_tx.Value.merge(netValue, new _blaze_cardano_core.Value(deposit));
  			}
@@ -30,3 +92,29 @@ index c0cd72217179d6b931a09e69629e673d28712446..dfc39c50f3c1e7c630f4242987e07dbb
  				const stakeCred = core.stakeCredential;
  				if (stakeCred) consumeCred(stakeCred, _blaze_cardano_core.RedeemerTag.Cert, BigInt(index));
  			}
+diff --git a/dist/index.d.cts b/dist/index.d.cts
+index 7a088ae7a620b17fe72a2e74d8ffd0e563276789..f64041f34de57f08ea3702e8b295e058c78ca08d 100644
+--- a/dist/index.d.cts
++++ b/dist/index.d.cts
+@@ -311,7 +311,7 @@ declare class Emulator {
+    * @param {TransactionId} txId - Identifier of the transaction awaiting confirmation.
+    * @returns {void}
+    */
+-  awaitTransactionConfirmation(txId: TransactionId): void;
++  awaitTransactionConfirmation(txId: TransactionId): boolean;
+   /**
+    * Starts the event loop for the ledger.
+    * If the event loop is already running, it is cleared and restarted.
+diff --git a/dist/index.d.mts b/dist/index.d.mts
+index 5a8073212c1cdd044fd03057a49ad0585952a35b..45c42fa3673c9f5cacce0065578c1b06619ea604 100644
+--- a/dist/index.d.mts
++++ b/dist/index.d.mts
+@@ -311,7 +311,7 @@ declare class Emulator {
+    * @param {TransactionId} txId - Identifier of the transaction awaiting confirmation.
+    * @returns {void}
+    */
+-  awaitTransactionConfirmation(txId: TransactionId): void;
++  awaitTransactionConfirmation(txId: TransactionId): boolean;
+   /**
+    * Starts the event loop for the ledger.
+    * If the event loop is already running, it is cleared and restarted.
