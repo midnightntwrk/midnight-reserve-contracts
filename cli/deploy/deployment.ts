@@ -33,7 +33,7 @@ import {
 } from "../datum/signers";
 import type { TxHash, TxIndex } from "../input";
 import { Provider } from "../chain/provider";
-import { refOf } from "../chain/transaction";
+import { refOf } from "../chain/utxo";
 import { transactionFile, type TransactionFile } from "../signing/tx-file";
 import { Output, transactionSummaryLines } from "../output";
 import {

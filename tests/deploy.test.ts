@@ -41,7 +41,7 @@ import {
   STAGING_TOKEN_HEX,
 } from "../cli/chain/governance-provider";
 import { Provider } from "../cli/chain/provider";
-import { refOf } from "../cli/chain/transaction";
+import { refOf } from "../cli/chain/utxo";
 import { reservedRefs, Settings } from "../cli/config/settings";
 import { buildSimpleTx } from "../cli/wallet/simple-tx";
 import { Blaze, ColdWallet } from "@blaze-cardano/sdk";

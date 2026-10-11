@@ -2,7 +2,7 @@
 import type { PlutusData } from "@blaze-cardano/core";
 import { parse, serialize } from "@blaze-cardano/data";
 import * as Contracts from "../../contract_blueprint";
-import { decodeDatum } from "../chain/transaction";
+import { decodeDatum } from "./inline";
 
 /** The terms: hash and link, both hex. */
 export interface TermsData {

@@ -33,7 +33,7 @@ import {
   upgradeScripts,
   upgradeStateAt,
 } from "../chain/governance-provider";
-import { decodeDatum, inlineDatum } from "../chain/transaction";
+import { decodeDatum, inlineDatum } from "../datum/inline";
 import {
   createRewardAccount,
   createTxMetadata,

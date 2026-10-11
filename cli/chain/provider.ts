@@ -36,7 +36,7 @@ import {
 import { reservedRefs, Settings } from "../config/settings";
 import { BlockfrostUnavailable, ConfigError, ProviderError } from "../errors";
 import { BLOCKFROST_NETWORK, retryableStatus, retryRead } from "./blockfrost";
-import { refOf } from "./transaction";
+import { refOf } from "./utxo";
 
 /** What a provider connects to: its type, and for Blockfrost the Cardano network, checked where the layer is built. */
 type Connection =

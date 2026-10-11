@@ -37,7 +37,7 @@ import {
   rawUpgradeStateAt,
 } from "../chain/governance-provider";
 import { Provider } from "../chain/provider";
-import { refOf } from "../chain/transaction";
+import { refOf } from "../chain/utxo";
 import { Output } from "../output";
 import { renderError, VerificationFailed } from "../errors";
 import type { NetworkInput } from "../input";

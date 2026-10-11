@@ -31,7 +31,7 @@ import {
   upgradeScripts,
   upgradeStateAt,
 } from "../chain/governance-provider";
-import { findUtxoByTxRef } from "../chain/transaction";
+import { findUtxoByTxRef } from "../chain/utxo";
 import {
   createRewardAccount,
   createTxMetadata,

@@ -5,7 +5,7 @@ import {
   AssetId,
   RewardAccount,
 } from "@blaze-cardano/core";
-import { refOf } from "../chain/transaction";
+import { refOf } from "../chain/utxo";
 
 export interface ValidatorLabels {
   [indexRef: string]: string;
