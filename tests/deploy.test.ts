@@ -33,7 +33,7 @@ import type { PlutusJson } from "../cli/contracts/plutus-json";
 import { validatorName } from "../cli/contracts/versions";
 import { resolveCollateral, resolveUnspent } from "../cli/deploy/deployment";
 import { completeBuilder, sizeAtSubmit } from "../cli/chain/complete-tx";
-import { attachWitnesses, signTransaction } from "../cli/chain/transaction";
+import { attachWitnesses, signTransaction } from "../cli/signing/signer";
 import { parsePrivateKey } from "../cli/datum/signers";
 import { validatorLabels } from "../cli/chain/validator-labels";
 import {

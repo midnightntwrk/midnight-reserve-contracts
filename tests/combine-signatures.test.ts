@@ -16,13 +16,13 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 import { bytesToNumberLE } from "@noble/curves/utils.js";
 import { sha512 } from "@noble/hashes/sha2.js";
 import { bytesToHex, concatBytes, hexToBytes } from "@noble/hashes/utils.js";
-import { readTransactionFile } from "../cli/chain/tx-file";
+import { readTransactionFile } from "../cli/signing/tx-file";
 import {
   mergeWitnesses,
   readSingleTransaction,
   readWitnessFile,
-} from "../cli/chain/combine-signatures";
-import { signTransaction } from "../cli/chain/transaction";
+} from "../cli/signing/combine-signatures";
+import { signTransaction } from "../cli/signing/signer";
 import {
   captureOutput,
   expectFailure,

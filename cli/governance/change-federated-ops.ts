@@ -31,12 +31,8 @@ import {
   type FederatedOpsData,
   type PermissionedCandidate,
 } from "../datum/federated-ops";
-import {
-  inlineDatum,
-  signAndWrite,
-  signerFor,
-  witnessCount,
-} from "../chain/transaction";
+import { inlineDatum } from "../chain/transaction";
+import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { buildTx } from "../chain/complete-tx";
 import { logicRound as datumLogicRound } from "../datum/datum-versions";
 import { witnessRequirements } from "./threshold";

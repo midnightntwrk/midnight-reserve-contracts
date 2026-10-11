@@ -1,12 +1,12 @@
 /**
  * Console and file output. OutputLive is the Output service for the CLI;
  * the formatters are pure and return lines for it. The transaction file
- * itself is chain/tx-file.ts.
+ * itself is signing/tx-file.ts.
  */
 import { dirname } from "path";
 import { FileSystem } from "@effect/platform";
 import { Console, Context, Effect, Layer } from "effect";
-import type { TransactionFile } from "./chain/tx-file";
+import type { TransactionFile } from "./signing/tx-file";
 import { FileWriteError } from "./errors";
 
 /** Console and file output; the only place text reaches the user. */

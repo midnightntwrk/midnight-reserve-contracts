@@ -16,8 +16,8 @@ import type { PrivateKey } from "../datum/signers";
 import { Output } from "../output";
 import { readTransactionFile } from "./tx-file";
 import { describeCause, renderError, SubmitError } from "../errors";
-import { attachWitnesses, signTransaction } from "./transaction";
-import { awaitConfirmation, submitTx } from "./submit";
+import { attachWitnesses, signTransaction } from "./signer";
+import { awaitConfirmation, submitTx } from "../chain/submit";
 
 /** Whether the deployer signs, and the variable that holds its key. */
 export interface DeployerKeyInput {

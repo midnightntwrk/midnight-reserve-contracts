@@ -1,7 +1,7 @@
 import { Args, Command, Options } from "@effect/cli";
 import { deployerSigning, network, provider } from "../options";
 import { withProvider } from "../run";
-import { combineSignaturesProgram } from "../chain/combine-signatures";
+import { combineSignaturesProgram } from "../signing/combine-signatures";
 
 const tx = Options.text("tx").pipe(
   Options.withDescription("Transaction file that holds one transaction"),

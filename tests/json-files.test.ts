@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { Glob } from "bun";
 import { Either } from "effect";
 import { decodeJson } from "../cli/input";
-import { DeploymentFile } from "../cli/chain/tx-file";
+import { DeploymentFile } from "../cli/signing/tx-file";
 import {
   Changelog,
   PlutusJson,

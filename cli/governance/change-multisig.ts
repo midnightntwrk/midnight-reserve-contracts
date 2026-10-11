@@ -46,14 +46,12 @@ import {
 } from "../chain/governance-provider";
 import {
   createRewardAccount,
-  signAndWrite,
-  signerFor,
   createTxMetadata,
   logicRedeemer,
   mintWitnesses,
   withdrawThroughLogic,
-  witnessCount,
 } from "../chain/transaction";
+import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { buildTx } from "../chain/complete-tx";
 import {
   type AuthorityThreshold,

@@ -30,11 +30,9 @@ import {
 import {
   createRewardAccount,
   createTxMetadata,
-  DEPLOYER_ONLY,
-  signAndWrite,
-  UNSIGNED,
   withdrawThroughLogic,
 } from "../chain/transaction";
+import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";
 import { buildTx } from "../chain/complete-tx";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";

@@ -14,7 +14,7 @@ import type {
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
 import { formatLovelaceToAda, Output } from "../output";
-import { writeTransaction } from "../chain/tx-file";
+import { writeTransaction } from "../signing/tx-file";
 import { buildTx } from "../chain/complete-tx";
 import {
   addressOn,
@@ -27,7 +27,7 @@ import {
 import { envFallback, Settings } from "../config/settings";
 import { Provider } from "../chain/provider";
 import { InputParseError } from "../errors";
-import { DEPLOYER_ONLY } from "../chain/transaction";
+import { DEPLOYER_ONLY } from "../signing/signer";
 
 /** SIMPLE_TX_COUNT, the --count fallback: 16 when unset. */
 export const SIMPLE_TX_COUNT = envFallback(

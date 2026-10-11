@@ -34,7 +34,7 @@ import {
 import type { TxHash, TxIndex } from "../input";
 import { Provider } from "../chain/provider";
 import { refOf } from "../chain/transaction";
-import { transactionFile, type TransactionFile } from "../chain/tx-file";
+import { transactionFile, type TransactionFile } from "../signing/tx-file";
 import { Output, transactionSummaryLines } from "../output";
 import {
   type ConfigError,

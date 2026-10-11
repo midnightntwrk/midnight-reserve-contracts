@@ -23,12 +23,8 @@ import {
   signersAt,
   thresholdAt,
 } from "../chain/governance-provider";
-import {
-  inlineDatum,
-  signAndWrite,
-  signerFor,
-  witnessCount,
-} from "../chain/transaction";
+import { inlineDatum } from "../chain/transaction";
+import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { buildTx } from "../chain/complete-tx";
 import {
   decodeTerms,

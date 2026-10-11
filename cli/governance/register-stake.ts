@@ -22,13 +22,8 @@ import {
   deployerUtxo,
   registrationOnChain,
 } from "../chain/governance-provider";
-import {
-  createRewardAccount,
-  registerScriptStake,
-  signAndWrite,
-  UNSIGNED,
-  DEPLOYER_ONLY,
-} from "../chain/transaction";
+import { createRewardAccount, registerScriptStake } from "../chain/transaction";
+import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";
 import { buildTx } from "../chain/complete-tx";
 import { Blueprint } from "../contracts/contracts";

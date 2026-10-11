@@ -1,7 +1,7 @@
 import { Args, Command } from "@effect/cli";
 import { deployerSigning, network, provider } from "../options";
 import { withProvider } from "../run";
-import { signAndSubmitProgram } from "../chain/sign-and-submit";
+import { signAndSubmitProgram } from "../signing/sign-and-submit";
 
 const jsonFile = Args.text({ name: "json-file" }).pipe(
   Args.withDescription("Path to the JSON file containing transaction(s)"),

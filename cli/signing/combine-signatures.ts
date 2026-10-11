@@ -23,7 +23,7 @@ import { Effect, Either, Option } from "effect";
 import { Output } from "../output";
 import { readTransactionFile } from "./tx-file";
 import { describeCause, InputParseError } from "../errors";
-import { signTransaction } from "./transaction";
+import { signTransaction } from "./signer";
 import {
   confirm,
   decodeTransaction,

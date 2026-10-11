@@ -1,51 +1,33 @@
 /**
  * Transaction building blocks shared by the commands: UTxO and datum
  * constructors, logic redeemers and withdrawals, native multisig witnesses,
- * stake registration, inline datum decoding, CIP-20 metadata, signing and
- * witness merging. signAndWrite is the one Effect; inlineDatum and
- * decodeInlineDatum return Either.
+ * stake registration, inline datum decoding and CIP-20 metadata.
+ * inlineDatum and decodeInlineDatum return Either.
  */
 import {
   addressFromCredential,
   AssetName,
-  CborSet,
   Credential,
   CredentialType,
-  derivePublicKey,
-  Ed25519PrivateKey,
-  Ed25519PublicKeyHex,
-  Ed25519SignatureHex,
   Hash28ByteBase16,
-  HexBlob,
   NativeScripts,
   type NetworkId,
   PlutusData,
   PolicyId,
   RewardAccount,
   Script,
-  signMessage,
-  Transaction,
   type TransactionInput,
   TransactionUnspentOutput,
-  TxCBOR,
-  VkeyWitness,
   Metadata,
   Metadatum,
   MetadatumMap,
   MetadatumList,
 } from "@blaze-cardano/core";
 import type { TxBuilder } from "@blaze-cardano/tx";
-import { Effect, Either, Option } from "effect";
-import type { PrivateKey, Signers } from "../datum/signers";
+import { Either, Option } from "effect";
+import type { Signers } from "../datum/signers";
 import type { TxHash, TxIndex } from "../input";
-import { writeTransaction } from "./tx-file";
-import { Output } from "../output";
-import { type KeyGroup, Settings } from "../config/settings";
-import {
-  type ConfigError,
-  DatumParseError,
-  type FileWriteError,
-} from "../errors";
+import { DatumParseError } from "../errors";
 import type * as Contracts from "../../contract_blueprint";
 
 export function createUpgradeState(
@@ -151,45 +133,6 @@ export function createRewardAccount(
   );
 }
 
-/** The public key of a private key. Blaze's helpers take a key as a seed, so an extended key, whose first half is already the scalar, goes through the SDK. */
-export const publicKeyOf = (key: PrivateKey): Ed25519PublicKeyHex =>
-  key.length === 128
-    ? Ed25519PrivateKey.fromExtendedHex(key).toPublic().hex()
-    : derivePublicKey(key);
-
-/** Each key's public key and signature of the transaction id. */
-export const signTransaction = (
-  txId: string,
-  privateKeys: readonly PrivateKey[],
-): [Ed25519PublicKeyHex, Ed25519SignatureHex][] =>
-  privateKeys.map((key) => [
-    publicKeyOf(key),
-    key.length === 128
-      ? Ed25519PrivateKey.fromExtendedHex(key).sign(HexBlob(txId)).hex()
-      : signMessage(HexBlob(txId), key),
-  ]);
-
-/** A copy of the transaction with the signatures merged into its vkey witnesses; a key it has takes the new signature. */
-export const attachWitnesses = (
-  txCbor: string,
-  signatures: readonly [Ed25519PublicKeyHex, Ed25519SignatureHex][],
-): Transaction => {
-  const tx = Transaction.fromCbor(TxCBOR(HexBlob(txCbor)));
-  const witnessSet = tx.witnessSet();
-  const merged = new Map([
-    ...(witnessSet.vkeys()?.values() ?? []).map(
-      (v): [Ed25519PublicKeyHex, Ed25519SignatureHex] => [
-        v.vkey(),
-        v.signature(),
-      ],
-    ),
-    ...signatures,
-  ]);
-  witnessSet.setVkeys(CborSet.fromCore([...merged], VkeyWitness.fromCore));
-  tx.setWitnessSet(witnessSet);
-  return tx;
-};
-
 /** A UTxO reference as `txId#index`. */
 export const refOf = (input: TransactionInput): string =>
   `${input.transactionId()}#${input.index()}`;
@@ -247,94 +190,6 @@ export const decodeInlineDatum = <T>(
   Either.flatMap(inlineDatum(utxo, what), (data) =>
     decodeDatum(data, what, decode),
   );
-
-const KEY_GROUP_LABELS: Record<KeyGroup, string> = {
-  techAuth: "tech auth",
-  council: "council",
-};
-
-/** Who signs a governance transaction: both authorities, or the tech authority alone. */
-type Signing = "both" | "tech-auth";
-
-const SIGNING_GROUPS: Record<Signing, readonly KeyGroup[]> = {
-  both: ["techAuth", "council"],
-  "tech-auth": ["techAuth"],
-};
-
-/** The keys of each group that signs a transaction, or no signing. */
-export type Signer =
-  | { readonly _tag: "Unsigned" }
-  | {
-      readonly _tag: "Signed";
-      readonly groups: readonly {
-        readonly group: KeyGroup;
-        readonly keys: readonly PrivateKey[];
-      }[];
-    };
-
-/** A transaction written without witnesses. */
-export const UNSIGNED: Signer = { _tag: "Unsigned" };
-
-/** The signer for `--sign`: every key of `signing`'s groups, resolved at once so a missing key fails before any chain access. */
-export const signerFor = (
-  sign: boolean,
-  signing: Signing,
-): Effect.Effect<Signer, ConfigError, Settings> =>
-  sign
-    ? Effect.flatMap(Settings, (settings) =>
-        Effect.map(
-          Effect.forEach(SIGNING_GROUPS[signing], (group) =>
-            Effect.map(settings.privateKeys(group), (keys) => ({
-              group,
-              keys,
-            })),
-          ),
-          (groups): Signer => ({ _tag: "Signed", groups }),
-        ),
-      )
-    : Effect.succeed(UNSIGNED);
-
-/** A transaction only the deployer signs, at sign-and-submit. */
-export const DEPLOYER_ONLY = 1;
-
-/** The vkey witnesses a transaction carries at submit: every key of a Signed signer or, for an unsigned file, the `required` signatures its multisig witnesses need; and the deployer's, which sign-and-submit adds. */
-export const witnessCount = (signer: Signer, required: number): number =>
-  DEPLOYER_ONLY +
-  (signer._tag === "Signed"
-    ? signer.groups.reduce((n, { keys }) => n + keys.length, 0)
-    : required);
-
-/** Write a transaction file with a witness from every key of `signer`. */
-export const signAndWrite = (
-  tx: Transaction,
-  outputPath: string,
-  signer: Signer,
-  description: string,
-): Effect.Effect<void, FileWriteError, Output> =>
-  Effect.gen(function* () {
-    const output = yield* Output;
-    const txId = tx.getId();
-    const signatures: ReturnType<typeof signTransaction> = [];
-    if (signer._tag === "Signed") {
-      for (const { group, keys } of signer.groups) {
-        yield* output.log(
-          `\nSigning with ${keys.length} ${KEY_GROUP_LABELS[group]} private keys...`,
-        );
-        const created = signTransaction(txId, keys);
-        signatures.push(...created);
-        yield* output.log(`  Created ${created.length} signatures`);
-      }
-    }
-    const signed = signer._tag === "Signed";
-    yield* writeTransaction(
-      outputPath,
-      (signed ? attachWitnesses(tx.toCbor(), signatures) : tx).toCbor(),
-      txId,
-      signed,
-      description,
-    );
-    yield* output.log(`\nTransaction ID: ${txId}`);
-  });
 
 const CIP20_LABEL = 674n;
 

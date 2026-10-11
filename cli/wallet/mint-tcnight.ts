@@ -26,7 +26,7 @@ import { calculateMinAda, type TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
 import { buildTx } from "../chain/complete-tx";
 import { GuardedWallet, Provider } from "../chain/provider";
-import { transactionFile } from "../chain/tx-file";
+import { transactionFile } from "../signing/tx-file";
 import { environmentOf, type TestEnvironment } from "../config/network-mapping";
 import { reservedRefs, Settings } from "../config/settings";
 import { Blueprint } from "../contracts/contracts";
@@ -38,7 +38,7 @@ import {
 } from "../errors";
 import { addressOn, type TxFileInput, txFilePath } from "../input";
 import { Output } from "../output";
-import { DEPLOYER_ONLY } from "../chain/transaction";
+import { DEPLOYER_ONLY } from "../signing/signer";
 
 /** --burn and --destination as one request: a mint to the destination (None: the user), or a burn from the user's UTxOs. */
 export type TcnightRequest =

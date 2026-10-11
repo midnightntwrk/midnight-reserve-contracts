@@ -6,7 +6,7 @@ import {
 } from "@blaze-cardano/core";
 import { EmulatorProvider } from "@blaze-cardano/emulator";
 import { Effect, Layer, Option } from "effect";
-import { confirm, signAndSubmitOne } from "../cli/chain/sign-and-submit";
+import { confirm, signAndSubmitOne } from "../cli/signing/sign-and-submit";
 import {
   buildInstances,
   emulatorProgram,

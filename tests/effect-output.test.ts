@@ -14,7 +14,7 @@ import {
   TxCBOR,
 } from "@blaze-cardano/core";
 import { OutputLive, Output } from "../cli/output";
-import { signAndWrite, signerFor } from "../cli/chain/transaction";
+import { signAndWrite, signerFor } from "../cli/signing/signer";
 import {
   OutputCaptured,
   captureOutput,

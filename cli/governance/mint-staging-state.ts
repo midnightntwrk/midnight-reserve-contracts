@@ -37,12 +37,8 @@ import {
   type ContractInstances,
   Blueprint,
 } from "../contracts/contracts";
-import {
-  createTxMetadata,
-  signAndWrite,
-  signerFor,
-  witnessCount,
-} from "../chain/transaction";
+import { createTxMetadata } from "../chain/transaction";
+import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { Output } from "../output";
 import { buildTx } from "../chain/complete-tx";
 import type { V2TrackValidator } from "./two-stage-upgrade";

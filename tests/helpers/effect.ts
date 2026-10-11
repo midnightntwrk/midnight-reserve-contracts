@@ -25,7 +25,7 @@ import { Settings, SettingsLive } from "../../cli/config/settings";
 import type { Environment } from "../../cli/config/network-mapping";
 import { Blueprint, BlueprintLive } from "../../cli/contracts/contracts";
 import { Provider, ProviderOver } from "../../cli/chain/provider";
-import { DEPLOYER_ONLY } from "../../cli/chain/transaction";
+import { DEPLOYER_ONLY } from "../../cli/signing/signer";
 import { completeBuilder } from "../../cli/chain/complete-tx";
 import { buildSimpleTx } from "../../cli/wallet/simple-tx";
 import { DeployedScripts } from "../../cli/contracts/versions";

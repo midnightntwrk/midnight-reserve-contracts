@@ -70,7 +70,7 @@ import {
   type UtxoRef,
   zeroRedeemer,
 } from "./deployment";
-import { DEPLOYER_ONLY } from "../chain/transaction";
+import { DEPLOYER_ONLY } from "../signing/signer";
 
 /** The governance components: a run without --components builds these. */
 export const DEFAULT_DEPLOY_COMPONENTS = [

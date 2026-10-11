@@ -36,11 +36,9 @@ import {
   findUtxoByTxRef,
   createTxMetadata,
   logicRedeemer,
-  signAndWrite,
-  UNSIGNED,
   withdrawThroughLogic,
-  DEPLOYER_ONLY,
 } from "../chain/transaction";
+import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";
 import { buildTx } from "../chain/complete-tx";
 import {

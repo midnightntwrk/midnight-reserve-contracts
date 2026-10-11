@@ -52,7 +52,7 @@ import {
   type UtxoRef,
   zeroRedeemer,
 } from "./deployment";
-import { DEPLOYER_ONLY } from "../chain/transaction";
+import { DEPLOYER_ONLY } from "../signing/signer";
 
 /** The components --components selects, one per staging forever validator, in build order. */
 export const STAGING_TRACK_COMPONENTS = [

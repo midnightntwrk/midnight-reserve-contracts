@@ -9,7 +9,7 @@ import {
   wordlist,
 } from "@blaze-cardano/core";
 import { Array as Arr, Either, Redacted } from "effect";
-import { signTransaction } from "../cli/chain/transaction";
+import { signTransaction } from "../cli/signing/signer";
 import {
   decodeSigners,
   encodeMultisigState,
