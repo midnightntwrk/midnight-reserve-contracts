@@ -14,11 +14,10 @@ import { PlutusJson } from "../cli/contracts/plutus-json";
 import { DeployedScriptsAt } from "../cli/contracts/snapshot/context";
 import { liveHashOf, promotedAmong } from "../cli/contracts/snapshot/read";
 import {
+  applyRecordUpdate,
   prepareDeploySnapshot,
   prepareValidatorMerge,
   type SnapshotRule,
-  writeDeploySnapshot,
-  writeValidatorMerge,
 } from "../cli/contracts/snapshot/write";
 import {
   buildInstances,
@@ -98,7 +97,7 @@ const snapshot = (
       blueprintPath: BUILD_BLUEPRINT,
       timestamp: "2026-09-25T00:00:00.000Z",
     }),
-    (prepared) => writeDeploySnapshot("emulator", prepared),
+    (prepared) => applyRecordUpdate("emulator", [{ _tag: "Deploy", prepared }]),
   );
 
 const save = (
@@ -167,7 +166,7 @@ const snapshotWithout = (
   },
 });
 
-describe("prepareDeploySnapshot and writeDeploySnapshot", () => {
+describe("prepareDeploySnapshot and applyRecordUpdate", () => {
   test("replace writes the build output over a stale snapshot: promoted = the created and installed validators, nothing staged, the changelog started again", async () => {
     const { root, dir } = snapshotRoot();
     writeJson(dir, "plutus.json", snapshotWithout({}));
@@ -180,7 +179,9 @@ describe("prepareDeploySnapshot and writeDeploySnapshot", () => {
       gitCommit: "c",
       changes: [{ type: "initial", validator: "old" }],
     });
-    await save(root, "replace", reserve, govAuths);
+    expect(await save(root, "replace", reserve, govAuths)).toEqual([
+      { _tag: "Saved", dir },
+    ]);
     expect(readJson(dir, "plutus.json")).toEqual(build);
     expect(readFileSync(join(dir, "contract_blueprint.ts"), "utf-8")).toBe(
       readFileSync(BUILD_BLUEPRINT, "utf-8"),
@@ -405,7 +406,10 @@ describe("prepareDeploySnapshot and writeDeploySnapshot", () => {
 describe("prepareValidatorMerge", () => {
   const merge = Effect.flatMap(
     prepareValidatorMerge("emulator", titled(ICS_FOREVER).hash, BUILD_PLUTUS),
-    (prepared) => writeValidatorMerge("emulator", prepared),
+    (prepared) =>
+      applyRecordUpdate("emulator", [
+        { _tag: "Merge", name: "ics_forever", prepared },
+      ]),
   );
 
   test("takes the build entry in place and regenerates the blueprint; versions.json is untouched", async () => {
@@ -416,7 +420,9 @@ describe("prepareValidatorMerge", () => {
     );
     writeJson(dir, "plutus.json", previous);
     writeJson(dir, "versions.json", { promoted: ["ics_forever"], staged: [] });
-    await runTest(layerAt(root), merge);
+    expect(await runTest(layerAt(root), merge)).toEqual([
+      { _tag: "Merged", name: "ics_forever" },
+    ]);
     const plutus = readJson(dir, "plutus.json");
     expect(plutus.validators).toEqual(
       previous.validators.map((v) =>
@@ -438,6 +444,52 @@ describe("prepareValidatorMerge", () => {
     const before = filesOf(dir);
     await expectFailure(layerAt(root), merge, "BlueprintError");
     expect(filesOf(dir)).toEqual(before);
+  });
+});
+
+describe("applyRecordUpdate Track", () => {
+  test("staged then promoted moves the name from staged[] to promoted[], each Tracked", async () => {
+    const { root, dir } = snapshotRoot();
+    writeJson(dir, "versions.json", {
+      promoted: ["council_logic"],
+      staged: [],
+    });
+    const track = (as: "staged" | "promoted") =>
+      runTest(
+        layerAt(root),
+        applyRecordUpdate("emulator", [
+          { _tag: "Track", as, name: "council_logic_v2" },
+        ]),
+      );
+    expect(await track("staged")).toEqual([
+      { _tag: "Tracked", as: "staged", name: "council_logic_v2" },
+    ]);
+    expect(readJson(dir, "versions.json")).toEqual({
+      promoted: ["council_logic"],
+      staged: ["council_logic_v2"],
+    });
+    expect(await track("promoted")).toEqual([
+      { _tag: "Tracked", as: "promoted", name: "council_logic_v2" },
+    ]);
+    expect(readJson(dir, "versions.json")).toEqual({
+      promoted: ["council_logic", "council_logic_v2"],
+      staged: [],
+    });
+  });
+
+  test("without versions.json is VersionsMissing and writes nothing", async () => {
+    const { root, dir } = snapshotRoot();
+    expect(
+      await runTest(
+        layerAt(root),
+        applyRecordUpdate("emulator", [
+          { _tag: "Track", as: "staged", name: "council_logic_v2" },
+        ]),
+      ),
+    ).toEqual([
+      { _tag: "VersionsMissing", as: "staged", name: "council_logic_v2" },
+    ]);
+    expect(existsSync(join(dir, "versions.json"))).toBe(false);
   });
 });
 

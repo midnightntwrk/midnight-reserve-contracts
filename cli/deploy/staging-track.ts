@@ -20,8 +20,9 @@ import {
   type ContractInstances,
 } from "../contracts/contracts";
 import {
+  applyRecordUpdate,
   prepareDeploySnapshot,
-  writeDeploySnapshot,
+  type RecordUpdate,
 } from "../contracts/snapshot/write";
 import {
   BlueprintError,
@@ -178,19 +179,22 @@ export const deployStagingTrackProgram = (input: DeployStagingTrackInput) =>
       yield* refusePromoted("deploy-staging-track", network, created);
     }
     const timestamp = new Date(yield* Clock.currentTimeMillis).toISOString();
-    const prepared =
+    const record: RecordUpdate[] =
       snapshot === "none"
-        ? Option.none()
-        : Option.some(
-            yield* prepareDeploySnapshot({
-              env: network,
-              rule: "extend",
-              createdHashes: created,
-              installedHashes: new Set(),
-              ...buildOf(network),
-              timestamp,
-            }),
-          );
+        ? []
+        : [
+            {
+              _tag: "Deploy",
+              prepared: yield* prepareDeploySnapshot({
+                env: network,
+                rule: "extend",
+                createdHashes: created,
+                installedHashes: new Set(),
+                ...buildOf(network),
+                timestamp,
+              }),
+            },
+          ];
 
     const setup = yield* deploymentSetup("deploy-staging-track", network);
     const oneShots = yield* resolveUnspent(
@@ -222,11 +226,12 @@ export const deployStagingTrackProgram = (input: DeployStagingTrackInput) =>
       }),
     );
 
-    if (Option.isSome(prepared)) {
-      yield* writeDeploySnapshot(network, prepared.value);
-      yield* out.success(
-        `Staging forever scripts saved to ${relative(process.cwd(), prepared.value.dir)}/`,
-      );
+    for (const outcome of yield* applyRecordUpdate(network, record)) {
+      if (outcome._tag === "Saved") {
+        yield* out.success(
+          `Staging forever scripts saved to ${relative(process.cwd(), outcome.dir)}/`,
+        );
+      }
     }
     yield* reportDeployment(
       `Generated ${built.length} staging track deployment transactions`,

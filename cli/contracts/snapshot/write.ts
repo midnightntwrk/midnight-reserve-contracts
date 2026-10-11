@@ -1,8 +1,8 @@
 /**
- * Snapshot writes: staging and promoting a validator in versions.json, a
- * build validator merged into the deployed plutus.json and blueprint, and a
- * deploy's whole snapshot. Each update is prepared (read and generated)
- * before it is written.
+ * Snapshot writes. A command prepares each RecordUpdate (reads and
+ * generation, no writes) during resolve and applies it where it writes
+ * today; applyRecordUpdate is the one write path and returns what each
+ * update did, for the command to print.
  */
 import { type CommandExecutor, FileSystem } from "@effect/platform";
 import { Effect, Either, Option } from "effect";
@@ -36,7 +36,7 @@ import {
 } from "./storage";
 
 /** Add a validator to staged[]; false when versions.json is missing. */
-export const stageValidator = (
+const stageValidator = (
   env: string,
   name: string,
 ): Effect.Effect<
@@ -57,7 +57,7 @@ export const stageValidator = (
   });
 
 /** Move a validator from staged[] to promoted[]; false when versions.json is missing. */
-export const promoteValidatorVersion = (
+const promoteValidatorVersion = (
   env: string,
   name: string,
 ): Effect.Effect<
@@ -129,7 +129,7 @@ export const prepareValidatorMerge = (
   });
 
 /** Write a prepared merge: the deployed plutus.json, then its blueprint. */
-export const writeValidatorMerge = (env: string, prepared: PreparedMerge) =>
+const writeValidatorMerge = (env: string, prepared: PreparedMerge) =>
   Effect.zipRight(
     writeText(env, prepared.plutusPath, prepared.plutusText),
     writeText(env, prepared.blueprintPath, prepared.blueprintText),
@@ -266,7 +266,7 @@ export const prepareDeploySnapshot = (
   );
 
 /** Write a prepared snapshot's four files. */
-export const writeDeploySnapshot = (
+const writeDeploySnapshot = (
   env: string,
   prepared: PreparedSnapshot,
 ): Effect.Effect<void, BlueprintError, FileSystem.FileSystem> =>
@@ -282,3 +282,78 @@ export const writeDeploySnapshot = (
     yield* writeText(env, files.versions, prepared.texts.versions);
     yield* writeText(env, files.changelog, prepared.texts.changelog);
   });
+
+/** A snapshot update, prepared and not yet written: a deploy's whole snapshot, a build validator merged into the record, or a name tracked in versions.json. */
+export type RecordUpdate =
+  | { readonly _tag: "Deploy"; readonly prepared: PreparedSnapshot }
+  | {
+      readonly _tag: "Merge";
+      readonly name: string;
+      readonly prepared: PreparedMerge;
+    }
+  | {
+      readonly _tag: "Track";
+      readonly as: "staged" | "promoted";
+      readonly name: string;
+    };
+
+/** What an applied update did; a Track without versions.json writes nothing and is VersionsMissing. */
+export type RecordOutcome =
+  | { readonly _tag: "Saved"; readonly dir: string }
+  | { readonly _tag: "Merged"; readonly name: string }
+  | {
+      readonly _tag: "Tracked";
+      readonly as: "staged" | "promoted";
+      readonly name: string;
+    }
+  | {
+      readonly _tag: "VersionsMissing";
+      readonly as: "staged" | "promoted";
+      readonly name: string;
+    };
+
+/** Write the updates in order; the first failure stops the rest. */
+export const applyRecordUpdate = (
+  env: string,
+  updates: readonly RecordUpdate[],
+): Effect.Effect<
+  readonly RecordOutcome[],
+  BlueprintError,
+  FileSystem.FileSystem | DeployedScripts
+> =>
+  Effect.forEach(
+    updates,
+    (
+      update,
+    ): Effect.Effect<
+      RecordOutcome,
+      BlueprintError,
+      FileSystem.FileSystem | DeployedScripts
+    > => {
+      switch (update._tag) {
+        case "Deploy":
+          return Effect.as(writeDeploySnapshot(env, update.prepared), {
+            _tag: "Saved",
+            dir: update.prepared.dir,
+          });
+        case "Merge":
+          return Effect.as(writeValidatorMerge(env, update.prepared), {
+            _tag: "Merged",
+            name: update.name,
+          });
+        case "Track": {
+          const { as, name } = update;
+          return Effect.map(
+            as === "staged"
+              ? stageValidator(env, name)
+              : promoteValidatorVersion(env, name),
+            (found): RecordOutcome => ({
+              _tag: found ? "Tracked" : "VersionsMissing",
+              as,
+              name,
+            }),
+          );
+        }
+      }
+    },
+  );

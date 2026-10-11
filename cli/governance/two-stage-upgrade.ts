@@ -71,10 +71,10 @@ import {
   validatorNameByHash,
 } from "../contracts/snapshot/read";
 import {
+  applyRecordUpdate,
   prepareValidatorMerge,
-  promoteValidatorVersion,
-  stageValidator,
-  writeValidatorMerge,
+  type RecordOutcome,
+  type RecordUpdate,
 } from "../contracts/snapshot/write";
 import {
   type FeeInput,
@@ -541,6 +541,33 @@ const resolveAuthority = (
     return authority;
   });
 
+/** The lines stage and promote print for what the record update did. */
+const renderRecord = (network: string, outcomes: readonly RecordOutcome[]) =>
+  Effect.flatMap(Output, (out) =>
+    Effect.forEach(
+      outcomes,
+      (outcome) => {
+        switch (outcome._tag) {
+          case "Merged":
+            return out.success(
+              `Added ${outcome.name} to deployed-scripts/${network}/plutus.json`,
+            );
+          case "Tracked":
+            return out.success(
+              `Tracked ${outcome.name} as ${outcome.as} in versions.json`,
+            );
+          case "VersionsMissing":
+            return out.stderr(
+              `Warning: Could not track ${outcome.as} validator — versions.json not found for ${network}`,
+            );
+          case "Saved":
+            return Effect.void;
+        }
+      },
+      { discard: true },
+    ),
+  );
+
 /** Resolve the inputs, build, complete and write the stage transaction; then, where the environment keeps a record, copy a logic that only the build has into it and track it as staged. */
 export const stageUpgradeProgram = (input: StageUpgradeInput) =>
   Effect.gen(function* () {
@@ -579,6 +606,18 @@ export const stageUpgradeProgram = (input: StageUpgradeInput) =>
         `\n  Re-staging promoted validator: ${logic.name} (${newLogicHash})`,
       );
     }
+    const record: RecordUpdate[] = [
+      ...Option.toArray(
+        Option.map(copy, (prepared): RecordUpdate => ({
+          _tag: "Merge",
+          name: logic.name,
+          prepared,
+        })),
+      ),
+      ...(restage
+        ? []
+        : [{ _tag: "Track", as: "staged", name: logic.name } as const]),
+    ];
 
     const { networkId } = environmentOf(network);
     const contracts = yield* blueprint.instances;
@@ -666,21 +705,7 @@ export const stageUpgradeProgram = (input: StageUpgradeInput) =>
 
     yield* signAndWrite(tx, outputPath, signer, "Stage Upgrade Transaction");
 
-    if (Option.isSome(copy)) {
-      yield* writeValidatorMerge(network, copy.value);
-      yield* out.success(
-        `Added ${logic.name} to deployed-scripts/${network}/plutus.json`,
-      );
-    }
-    if (!restage) {
-      if (yield* stageValidator(network, logic.name)) {
-        yield* out.success(`Tracked ${logic.name} as staged in versions.json`);
-      } else {
-        yield* out.stderr(
-          `Warning: Could not track staged validator — versions.json not found for ${network}`,
-        );
-      }
-    }
+    yield* renderRecord(network, yield* applyRecordUpdate(network, record));
     return tx;
   });
 
@@ -737,6 +762,16 @@ export const promoteUpgradeProgram = (input: PromoteUpgradeInput) =>
     yield* out.log("Reading staging state...");
     const stagedLogicHash = (yield* upgradeStateAt(stagingUtxo)).logicHash;
     yield* out.log(`\nStaged logic hash to promote: ${stagedLogicHash}`);
+    const record: RecordUpdate[] = [
+      {
+        _tag: "Track",
+        as: "promoted",
+        name: Option.getOrElse(
+          yield* validatorNameByHash(network, stagedLogicHash),
+          () => stagedLogicHash,
+        ),
+      },
+    ];
 
     // Governance withdraws through the promoted logic next; register it here when the chain lacks it.
     const registered = yield* rewardAccountRegistered(
@@ -802,18 +837,6 @@ export const promoteUpgradeProgram = (input: PromoteUpgradeInput) =>
 
     yield* signAndWrite(tx, outputPath, signer, "Promote Upgrade Transaction");
 
-    const promotedName = Option.getOrElse(
-      yield* validatorNameByHash(network, stagedLogicHash),
-      () => stagedLogicHash,
-    );
-    if (yield* promoteValidatorVersion(network, promotedName)) {
-      yield* out.success(
-        `Tracked ${promotedName} as promoted in versions.json`,
-      );
-    } else {
-      yield* out.stderr(
-        `Warning: Could not track promoted validator — versions.json not found for ${network}`,
-      );
-    }
+    yield* renderRecord(network, yield* applyRecordUpdate(network, record));
     return tx;
   });

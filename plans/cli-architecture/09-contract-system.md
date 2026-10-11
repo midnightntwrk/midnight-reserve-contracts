@@ -140,3 +140,7 @@ This phase moves ownership and APIs only; no artifact changes.
   read that file with `readJsonFile` on a path it built from
   `snapshotDirOf`; it now reads it through this function (same path, same
   error text, same log line) and no longer imports `snapshotDirOf`.
+- Task 3: stage applies its Merge and Track updates in one
+  `applyRecordUpdate` call and prints both lines after it returns. When
+  the versions.json write fails after the merge, the `Added …` line is
+  no longer printed before the error; the files written are the same.

@@ -34,9 +34,10 @@ import {
 } from "../contracts/contracts";
 import { liveHashOf } from "../contracts/snapshot/read";
 import {
+  applyRecordUpdate,
   prepareDeploySnapshot,
+  type RecordUpdate,
   type SnapshotRule,
-  writeDeploySnapshot,
 } from "../contracts/snapshot/write";
 import {
   type BlueprintError,
@@ -519,19 +520,22 @@ export const deployProgram = (input: DeployInput) =>
       [...installs].filter((h) => h === govAuth || h === stagingGovAuth),
     );
     const timestamp = new Date(yield* Clock.currentTimeMillis).toISOString();
-    const prepared =
+    const record: RecordUpdate[] =
       snapshot === "none"
-        ? Option.none()
-        : Option.some(
-            yield* prepareDeploySnapshot({
-              env: network,
-              rule: snapshotRuleOf(snapshot, input.components),
-              createdHashes: created,
-              installedHashes: installed,
-              ...buildOf(network),
-              timestamp,
-            }),
-          );
+        ? []
+        : [
+            {
+              _tag: "Deploy",
+              prepared: yield* prepareDeploySnapshot({
+                env: network,
+                rule: snapshotRuleOf(snapshot, input.components),
+                createdHashes: created,
+                installedHashes: installed,
+                ...buildOf(network),
+                timestamp,
+              }),
+            },
+          ];
 
     const ctx: DeployContext = {
       input,
@@ -554,11 +558,12 @@ export const deployProgram = (input: DeployInput) =>
       ),
     );
 
-    if (Option.isSome(prepared)) {
-      yield* writeDeploySnapshot(network, prepared.value);
-      yield* out.success(
-        `Deployment scripts saved to ${relative(process.cwd(), prepared.value.dir)}/`,
-      );
+    for (const outcome of yield* applyRecordUpdate(network, record)) {
+      if (outcome._tag === "Saved") {
+        yield* out.success(
+          `Deployment scripts saved to ${relative(process.cwd(), outcome.dir)}/`,
+        );
+      }
     }
     yield* reportDeployment(
       `Generated ${built.length} deployment transactions`,
