@@ -29,10 +29,10 @@ import type {
 import { calculateMinAda, type TxBuilder } from "@blaze-cardano/tx";
 import * as Contracts from "../../contract_blueprint";
 import {
+  createUpgradeState,
   MAIN_TOKEN_HEX,
   STAGING_TOKEN_HEX,
-} from "../chain/governance-provider";
-import { createUpgradeState } from "../chain/transaction";
+} from "../governance/two-stage";
 import { registerScriptStake } from "../tx/scripts";
 
 /** The forever datum of reserve and ICS, main and staging: Constr 0 [0, 0]. */

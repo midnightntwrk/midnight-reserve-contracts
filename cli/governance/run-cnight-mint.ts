@@ -20,13 +20,9 @@ import type {
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Option } from "effect";
 import { environmentOf } from "../config/network-mapping";
-import {
-  contractUtxos,
-  deployerUtxo,
-  ensureRegistered,
-  upgradeScripts,
-  upgradeStateAt,
-} from "../chain/governance-provider";
+import { contractUtxos, deployerUtxo } from "../chain/utxo";
+import { ensureRegistered } from "../chain/registration";
+import { upgradeScripts, upgradeStateAt } from "./two-stage";
 import {
   createRewardAccount,
   createTxMetadata,

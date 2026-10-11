@@ -18,10 +18,8 @@ import type {
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Option } from "effect";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
-import {
-  deployerUtxo,
-  registrationOnChain,
-} from "../chain/governance-provider";
+import { deployerUtxo } from "../chain/utxo";
+import { registrationOnChain } from "../chain/registration";
 import { createRewardAccount, registerScriptStake } from "../tx/scripts";
 import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";

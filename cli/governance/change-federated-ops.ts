@@ -19,12 +19,8 @@ import type {
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Record } from "effect";
 import { environmentOf } from "../config/network-mapping";
-import {
-  contractUtxos,
-  deployerUtxo,
-  signersAt,
-  thresholdAt,
-} from "../chain/governance-provider";
+import { contractUtxos, deployerUtxo } from "../chain/utxo";
+import { signersAt, thresholdAt } from "./authority";
 import {
   decodeFederatedOps,
   encodeFederatedOps,
@@ -41,7 +37,7 @@ import {
   type GovernedForeverInputs,
 } from "./governed-forever";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
-import { twoStageLogic } from "./change-multisig";
+import { twoStageLogic } from "./two-stage";
 import { Blueprint } from "../contracts/contracts";
 import { Settings } from "../config/settings";
 import { Output } from "../output";

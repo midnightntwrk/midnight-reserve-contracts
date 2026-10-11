@@ -1,4 +1,4 @@
-/** The logic_round of a versioned forever datum; UpgradeState (two-stage) belongs to governance-provider.ts. */
+/** The logic_round of a versioned forever datum; UpgradeState (two-stage) belongs to governance/two-stage.ts. */
 import type { PlutusData } from "@blaze-cardano/core";
 import { Either } from "effect";
 import { DatumParseError } from "../errors";

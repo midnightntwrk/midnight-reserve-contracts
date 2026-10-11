@@ -9,6 +9,7 @@ import {
   Credential,
   CredentialType,
   Hash28ByteBase16,
+  type NativeScript,
   NativeScripts,
   type NetworkId,
   PlutusData,
@@ -28,7 +29,7 @@ function createNativeMultisigScript(
   requiredSigners: number,
   signers: Signers,
   networkId: NetworkId,
-): ReturnType<typeof NativeScripts.atLeastNOfK> {
+): NativeScript {
   return NativeScripts.atLeastNOfK(
     requiredSigners,
     ...signers.map((s) => {

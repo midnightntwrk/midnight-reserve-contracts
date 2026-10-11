@@ -25,13 +25,8 @@ import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
 import { cnightAssetId, Settings } from "../config/settings";
 import { environmentOf } from "../config/network-mapping";
-import {
-  contractUtxos,
-  deployerUtxo,
-  upgradeScripts,
-  upgradeStateAt,
-} from "../chain/governance-provider";
-import { findUtxoByTxRef } from "../chain/utxo";
+import { contractUtxos, deployerUtxo, findUtxoByTxRef } from "../chain/utxo";
+import { upgradeScripts, upgradeStateAt } from "./two-stage";
 import {
   createRewardAccount,
   createTxMetadata,

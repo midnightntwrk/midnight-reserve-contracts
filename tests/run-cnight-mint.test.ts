@@ -11,7 +11,7 @@ import { Option } from "effect";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import { TestCnightNoAuditTcnightMintInfiniteElse } from "../contract_blueprint_mainnet";
 import { buildRunCnightMintTx } from "../cli/governance/run-cnight-mint";
-import { MAIN_TOKEN_HEX } from "../cli/chain/governance-provider";
+import { MAIN_TOKEN_HEX } from "../cli/governance/two-stage";
 import { feeUtxo, registerRewardAccount, scriptUtxo } from "./helpers/fixtures";
 
 const twoStage = new Contracts.CnightMintingCnightMintTwoStageUpgradeElse()

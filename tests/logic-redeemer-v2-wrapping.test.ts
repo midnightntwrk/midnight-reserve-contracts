@@ -27,7 +27,7 @@ import { authorityThreshold } from "../cli/governance/threshold";
 import { buildFederatedOpsChangeTx } from "../cli/governance/change-federated-ops";
 import { decodeFederatedOps } from "../cli/datum/federated-ops";
 import { buildTermsChangeTx } from "../cli/governance/change-terms";
-import { MAIN_TOKEN_HEX } from "../cli/chain/governance-provider";
+import { MAIN_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
   type BlazeOf,
   asFunded,

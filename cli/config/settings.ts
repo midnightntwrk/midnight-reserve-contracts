@@ -47,6 +47,8 @@ import {
   parseTxIndex,
   type TxHash,
   type TxIndex,
+  type TxRef,
+  txRef,
   ZERO_HASH32,
 } from "../input";
 import { PROJECT_ROOT } from "../contracts/paths";
@@ -95,12 +97,14 @@ export type NetworkConfig = {
   readonly cnight_name: string;
 };
 
-/** Every UTxO the profile names, its one-shots and its collateral, as `txId#index`: coin selection never spends them. */
-export const reservedRefs = (config: NetworkConfig): ReadonlySet<string> =>
+/** Every UTxO the profile names, its one-shots and its collateral: coin selection never spends them. */
+export const reservedRefs = (config: NetworkConfig): ReadonlySet<TxRef> =>
   new Set(
-    ONE_SHOTS.map(
-      (name) =>
-        `${config[`${name}_hash` as `${OneShot}_hash`]}#${config[`${name}_index` as `${OneShot}_index`]}`,
+    ONE_SHOTS.map((name) =>
+      txRef(
+        config[`${name}_hash` as `${OneShot}_hash`],
+        config[`${name}_index` as `${OneShot}_index`],
+      ),
     ),
   );
 

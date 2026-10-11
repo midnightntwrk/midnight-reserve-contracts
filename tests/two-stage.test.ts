@@ -1,30 +1,15 @@
-/**
- * The UpgradeState decoder on the recorded mainnet council main; the
- * reward-account check against preview.
- */
+/** The UpgradeState decoder on the recorded mainnet council main. */
 import { describe, expect, test } from "bun:test";
 import {
   Datum,
   HexBlob,
-  NetworkId,
   PlutusData,
   TransactionOutput,
   TransactionUnspentOutput,
 } from "@blaze-cardano/core";
-import { ConfigProvider, Either, Layer } from "effect";
-import {
-  rewardAccountRegistered,
-  upgradeStateAt,
-} from "../cli/chain/governance-provider";
-import { createRewardAccount } from "../cli/tx/scripts";
-import { SettingsLive } from "../cli/config/settings";
-import {
-  expectFailure,
-  leftOf,
-  onPreview,
-  PlatformLive,
-} from "./helpers/effect";
-import { randomHash } from "./helpers/fixtures";
+import { Either } from "effect";
+import { upgradeStateAt } from "../cli/governance/two-stage";
+import { leftOf } from "./helpers/effect";
 import { mainnetSnapshotUtxos as snap } from "./helpers/mainnet-snapshot";
 
 /** A UTxO at the council main's address carrying `cbor` as its inline datum. */
@@ -60,27 +45,4 @@ describe("upgradeStateAt", () => {
       cbor,
     });
   });
-});
-
-describe.if(onPreview)("rewardAccountRegistered on preview", () => {
-  test("a bad API key is a ConfigError naming its variable", async () => {
-    const badKey = Layer.setConfigProvider(
-      ConfigProvider.fromMap(
-        new Map([["BLOCKFROST_PREVIEW_API_KEY", `preview${"0".repeat(32)}`]]),
-      ).pipe(ConfigProvider.orElse(() => ConfigProvider.fromEnv())),
-    );
-    const error = await expectFailure(
-      Layer.mergeAll(
-        Layer.provide(SettingsLive("preview"), PlatformLive),
-        badKey,
-        PlatformLive,
-      ),
-      rewardAccountRegistered(
-        createRewardAccount(randomHash(28), NetworkId.Testnet),
-        "preview",
-      ),
-      "ConfigError",
-    );
-    expect(error.key).toBe("BLOCKFROST_PREVIEW_API_KEY");
-  }, 30_000);
 });

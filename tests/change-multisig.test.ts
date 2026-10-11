@@ -15,7 +15,7 @@ import {
   signerRequirements,
 } from "../cli/governance/change-multisig";
 import { authorityThreshold } from "../cli/governance/threshold";
-import { MAIN_TOKEN_HEX } from "../cli/chain/governance-provider";
+import { MAIN_TOKEN_HEX } from "../cli/governance/two-stage";
 import type { Signer, Signers } from "../cli/datum/signers";
 import {
   asFunded,

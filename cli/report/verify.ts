@@ -35,7 +35,7 @@ import {
   MAIN_TOKEN_HEX,
   STAGING_TOKEN_HEX,
   rawUpgradeStateAt,
-} from "../chain/governance-provider";
+} from "../governance/two-stage";
 import { Provider } from "../chain/provider";
 import { refOf } from "../chain/utxo";
 import { Output } from "../output";

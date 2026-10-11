@@ -22,10 +22,7 @@ import {
   validatorName,
 } from "../cli/contracts/versions";
 import { readJsonFile } from "../cli/input";
-import {
-  MAIN_TOKEN_HEX,
-  STAGING_TOKEN_HEX,
-} from "../cli/chain/governance-provider";
+import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
   checkEmbedding,
   checkPresence,

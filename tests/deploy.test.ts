@@ -36,13 +36,11 @@ import { completeBuilder, sizeAtSubmit } from "../cli/tx/compile";
 import { attachWitnesses, signTransaction } from "../cli/signing/signer";
 import { parsePrivateKey } from "../cli/datum/signers";
 import { validatorLabels } from "../cli/tx/labels";
-import {
-  MAIN_TOKEN_HEX,
-  STAGING_TOKEN_HEX,
-} from "../cli/chain/governance-provider";
+import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 import { Provider } from "../cli/chain/provider";
 import { refOf } from "../cli/chain/utxo";
 import { reservedRefs, Settings } from "../cli/config/settings";
+import { type TxRef, txRef } from "../cli/input";
 import { buildSimpleTx } from "../cli/wallet/simple-tx";
 import { Blaze, ColdWallet } from "@blaze-cardano/sdk";
 import { Emulator, EmulatorProvider } from "@blaze-cardano/emulator";
@@ -537,7 +535,7 @@ describe("the deployer wallet", () => {
     emulator.addUtxo(feeUtxo(deployer, FEE_TX, 0, 15_000_000n));
     const spent = async (
       blaze: Parameters<typeof buildSimpleTx>[0],
-    ): Promise<string[]> => {
+    ): Promise<TxRef[]> => {
       const tx = await buildSimpleTx(blaze, {
         recipient: deployer,
         count: 1,
@@ -550,7 +548,7 @@ describe("the deployer wallet", () => {
       layer,
       Effect.flatMap(Provider, (p) => p.blaze),
     );
-    expect(await spent(guarded)).toEqual([`${FEE_TX}#0`]);
+    expect(await spent(guarded)).toEqual([txRef(FEE_TX, 0)]);
     const provider = new EmulatorProvider(emulator);
     const plain = await Blaze.from(
       provider,

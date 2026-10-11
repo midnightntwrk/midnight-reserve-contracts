@@ -24,7 +24,7 @@ import {
   type PermissionedCandidate,
 } from "../cli/datum/federated-ops";
 import { logicRound } from "../cli/datum/datum-versions";
-import { MAIN_TOKEN_HEX } from "../cli/chain/governance-provider";
+import { MAIN_TOKEN_HEX } from "../cli/governance/two-stage";
 import type { Signers } from "../cli/datum/signers";
 import {
   asFunded,

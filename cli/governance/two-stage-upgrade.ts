@@ -41,20 +41,19 @@ import {
   hasDeployedScripts,
   type UpgradableValidator,
 } from "../contracts/contracts";
+import { contractUtxos, deployerUtxo, type ContractUtxos } from "../chain/utxo";
 import {
-  contractUtxos,
   ensureRegistered,
+  rewardAccountRegistered,
+} from "../chain/registration";
+import {
   MAIN_TOKEN_HEX,
   rawUpgradeStateAt,
-  rewardAccountRegistered,
   STAGING_TOKEN_HEX,
   twoStageUtxos,
-  deployerUtxo,
-  signersAt,
-  thresholdAt,
   upgradeStateAt,
-  type ContractUtxos,
-} from "../chain/governance-provider";
+} from "./two-stage";
+import { signersAt, thresholdAt } from "./authority";
 import {
   createRewardAccount,
   registerScriptStake,

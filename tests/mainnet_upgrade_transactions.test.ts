@@ -21,10 +21,7 @@ import {
   type TwoStageTarget,
   type UpgradeField,
 } from "../cli/governance/two-stage-upgrade";
-import {
-  MAIN_TOKEN_HEX,
-  STAGING_TOKEN_HEX,
-} from "../cli/chain/governance-provider";
+import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import {

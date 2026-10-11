@@ -13,7 +13,7 @@ import {
   type TermsChangeInputs,
 } from "../cli/governance/change-terms";
 import { type TermsData } from "../cli/datum/terms-and-conditions";
-import { MAIN_TOKEN_HEX } from "../cli/chain/governance-provider";
+import { MAIN_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
   asFunded,
   councilSigners,

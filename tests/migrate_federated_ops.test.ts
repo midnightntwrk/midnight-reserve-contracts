@@ -19,7 +19,7 @@ import {
   parseCandidates,
 } from "../cli/datum/federated-ops";
 import { buildFederatedOpsMigrationTx } from "../cli/governance/migrate-federated-ops";
-import { MAIN_TOKEN_HEX } from "../cli/chain/governance-provider";
+import { MAIN_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
   registerRewardAccount,
   scriptUtxo,

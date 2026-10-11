@@ -17,10 +17,7 @@ import {
   withGovernanceAuthority,
   stageUpgradeStep,
 } from "../cli/governance/two-stage-upgrade";
-import {
-  MAIN_TOKEN_HEX,
-  STAGING_TOKEN_HEX,
-} from "../cli/chain/governance-provider";
+import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
   asFunded,
   councilSigners,

@@ -40,8 +40,9 @@ re-exports.
    - → `chain/registration.ts`: `registrationOnChain`,
      `rewardAccountRegistered`, `ensureRegistered`.
    - `tests/governance-provider.test.ts` splits along the same lines
-     (`two-stage.test.ts`, `authority.test.ts`, `registration.test.ts`),
-     each case unchanged.
+     (`two-stage.test.ts`, `registration.test.ts`), each case unchanged.
+     There is no `authority.test.ts`: the old file has no `signersAt` /
+     `thresholdAt` cases.
 
 One commit per task. `tests/` importers to update: about 20 files
 (`MAIN_TOKEN_HEX`/`STAGING_TOKEN_HEX` alone in 11).
@@ -53,3 +54,19 @@ One commit per task. `tests/` importers to update: about 20 files
 - `just fmt && just build && just check && bun test` green after each
   commit; test count unchanged.
 - No module in `cli/` re-exports a moved symbol.
+
+## Deviations
+
+- Task 1: `signing/signer.ts` names the signature tuple `KeySignature`
+  in place of `ReturnType<typeof signTransaction>`; the shape is unchanged.
+- Task 4: UTxO references are a branded `TxRef` built only by
+  `txRef(txId, index)` in `input.ts`, beside `TxHash` and `TxIndex`.
+  `refOf`, `reservedRefs`, `GuardedWallet` and `resolveUnspent` key their
+  sets and maps with it; log and error text still interpolates
+  `hash#index`. `chain/provider` takes `txRef` from `input.ts`, not
+  `refOf` from `chain/utxo`: `chain/utxo` imports `findMainUtxo` from
+  `governance/two-stage`, which imports `chain/provider`, so going through
+  `refOf` would close a `provider → utxo → two-stage → provider` cycle.
+- Task 4: the one-call `parseUpgradeState` wrapper is inlined into
+  `rawUpgradeStateAt`; `tx/scripts.ts` types the multisig script as
+  `NativeScript` in place of `ReturnType<typeof NativeScripts.atLeastNOfK>`.

@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { NetworkId } from "@blaze-cardano/core";
 import { Effect, Layer, Redacted, Schema } from "effect";
 import { Blueprint, BlueprintLive } from "../cli/contracts/contracts";
-import { rewardAccountRegistered } from "../cli/chain/governance-provider";
+import { rewardAccountRegistered } from "../cli/chain/registration";
 import { createRewardAccount } from "../cli/tx/scripts";
 import { blockfrostGet } from "../cli/chain/blockfrost";
 import {

@@ -31,7 +31,7 @@ import {
   encodeRedeemerMap,
   type Signers,
 } from "../datum/signers";
-import type { TxHash, TxIndex } from "../input";
+import { type TxHash, type TxIndex, txRef } from "../input";
 import { Provider } from "../chain/provider";
 import { refOf } from "../chain/utxo";
 import { transactionFile, type TransactionFile } from "../signing/tx-file";
@@ -52,8 +52,6 @@ const RULE = "===========================================";
 /** A UTxO reference: a transaction hash and an output index. */
 export type UtxoRef = readonly [TxHash, TxIndex];
 
-const refKey = ([hash, index]: UtxoRef) => `${hash}#${index}`;
-
 /** The deployer's UTxOs at these references, in order (only the deployer signs a deploy); one that is not among its unspent outputs is UtxoNotFound naming it. */
 export const resolveUnspent = (refs: readonly UtxoRef[]) =>
   Effect.gen(function* () {
@@ -64,8 +62,8 @@ export const resolveUnspent = (refs: readonly UtxoRef[]) =>
       ),
     );
     return yield* Effect.forEach(refs, (ref) =>
-      Either.fromNullable(unspent.get(refKey(ref)), () =>
-        UtxoNotFound.byRef(refKey(ref), address.toBech32()),
+      Either.fromNullable(unspent.get(txRef(...ref)), () =>
+        UtxoNotFound.byRef(txRef(...ref), address.toBech32()),
       ),
     );
   });

@@ -34,6 +34,13 @@ export type TxIndex = number & Brand.Brand<"TxIndex">;
 /** An address whose payment credential is a key hash. */
 export type KeyAddress = Address & Brand.Brand<"KeyAddress">;
 
+/** A UTxO reference as `txId#index`: the key every UTxO set and map uses. */
+export type TxRef = string & Brand.Brand<"TxRef">;
+
+/** The reference of output `index` of transaction `txId`. */
+export const txRef = (txId: string, index: number | bigint): TxRef =>
+  Brand.nominal<TxRef>()(`${txId}#${index}`);
+
 const HEX = /^[a-fA-F0-9]+$/;
 
 /** Hex of this length, lower-cased: the chain and the blueprint compare hashes in lower case. */

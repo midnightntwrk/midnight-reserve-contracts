@@ -35,8 +35,8 @@ import {
 } from "../config/network-mapping";
 import { reservedRefs, Settings } from "../config/settings";
 import { BlockfrostUnavailable, ConfigError, ProviderError } from "../errors";
+import { type TxRef, txRef } from "../input";
 import { BLOCKFROST_NETWORK, retryableStatus, retryRead } from "./blockfrost";
-import { refOf } from "./utxo";
 
 /** What a provider connects to: its type, and for Blockfrost the Cardano network, checked where the layer is built. */
 type Connection =
@@ -109,7 +109,7 @@ export class GuardedWallet extends ColdWallet {
     address: Address,
     networkId: NetworkId,
     provider: BlazeProvider,
-    private readonly reserved: ReadonlySet<string>,
+    private readonly reserved: ReadonlySet<TxRef>,
   ) {
     super(address, networkId, provider);
   }
@@ -118,7 +118,9 @@ export class GuardedWallet extends ColdWallet {
     return (await super.getUnspentOutputs()).filter(
       (utxo) =>
         utxo.output().scriptRef() === undefined &&
-        !this.reserved.has(refOf(utxo.input())),
+        !this.reserved.has(
+          txRef(utxo.input().transactionId(), utxo.input().index()),
+        ),
     );
   }
 }

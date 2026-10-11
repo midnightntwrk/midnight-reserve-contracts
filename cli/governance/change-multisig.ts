@@ -4,7 +4,7 @@
  * logic_round), the forever datum, the secondary signers for the ML-3 check
  * and the fee UTxO; buildMultisigChangeTx is pure over those inputs and is
  * what the tests call. The config captures the differences between the two
- * commands. twoStageLogic also serves change-terms and change-federated-ops.
+ * commands.
  */
 import {
   type Address,
@@ -36,16 +36,10 @@ import {
   type ContractInstances,
   Blueprint,
 } from "../contracts/contracts";
+import { contractUtxos, deployerUtxo } from "../chain/utxo";
+import { signersAt, thresholdAt } from "./authority";
+import { twoStageLogic } from "./two-stage";
 import {
-  contractUtxos,
-  deployerUtxo,
-  signersAt,
-  thresholdAt,
-  upgradeScripts,
-  upgradeStateAt,
-} from "../chain/governance-provider";
-import {
-  createRewardAccount,
   createTxMetadata,
   logicRedeemer,
   mintWitnesses,
@@ -202,42 +196,6 @@ export const buildMultisigChangeTx = (
       .setChangeAddress(params.changeAddress)
       .setMetadata(createTxMetadata(params.commandName))
       .setFeePadding(params.feePadding);
-  });
-
-/** The logic scripts a two-stage main state names, logged with the reward accounts the transaction withdraws from. */
-export const twoStageLogic = (
-  label: string,
-  twoStageMain: TransactionUnspentOutput,
-  expectedLogic: string,
-  networkId: NetworkId,
-) =>
-  Effect.gen(function* () {
-    const out = yield* Output;
-    yield* out.log(`\nReading ${label} two-stage upgrade state...`);
-    const state = yield* upgradeStateAt(twoStageMain);
-    yield* out.log(`  Logic hash: ${state.logicHash}`);
-    yield* out.log(
-      `  Mitigation logic hash: ${state.mitigationLogicHash || "(empty)"}`,
-    );
-    yield* out.log(`  Logic round: ${state.logicRound}`);
-    const { logic, mitigationLogic } = yield* upgradeScripts(
-      state,
-      expectedLogic,
-    );
-    yield* out.log(
-      `\nLogic reward account: ${createRewardAccount(state.logicHash, networkId)}`,
-    );
-    if (Option.isSome(mitigationLogic)) {
-      yield* out.log(
-        `Mitigation logic reward account: ${createRewardAccount(state.mitigationLogicHash, networkId)}`,
-      );
-      yield* out.log("  Adding mitigation logic withdrawal...");
-    }
-    return {
-      logicRound: state.logicRound,
-      logicScript: logic,
-      mitigationLogicScript: mitigationLogic,
-    };
   });
 
 /** Resolve the inputs, build, complete and write the change transaction. */

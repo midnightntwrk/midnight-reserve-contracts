@@ -17,12 +17,8 @@ import type {
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Record } from "effect";
 import { environmentOf } from "../config/network-mapping";
-import {
-  contractUtxos,
-  deployerUtxo,
-  signersAt,
-  thresholdAt,
-} from "../chain/governance-provider";
+import { contractUtxos, deployerUtxo } from "../chain/utxo";
+import { signersAt, thresholdAt } from "./authority";
 import { inlineDatum } from "../datum/inline";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { buildTx } from "../tx/compile";
@@ -43,7 +39,7 @@ import {
   buildGovernedForeverUpdateTx,
   type GovernedForeverInputs,
 } from "./governed-forever";
-import { twoStageLogic } from "./change-multisig";
+import { twoStageLogic } from "./two-stage";
 import { Blueprint } from "../contracts/contracts";
 import { Output } from "../output";
 import { Provider } from "../chain/provider";

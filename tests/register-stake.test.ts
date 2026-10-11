@@ -19,7 +19,7 @@ import {
   buildRegisterGovAuthTx,
   refuseRegistered,
 } from "../cli/governance/register-stake";
-import { ensureRegistered } from "../cli/chain/governance-provider";
+import { ensureRegistered } from "../cli/chain/registration";
 import { createRewardAccount } from "../cli/tx/scripts";
 import { Blueprint, BlueprintLive } from "../cli/contracts/contracts";
 import {

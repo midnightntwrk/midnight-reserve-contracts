@@ -18,7 +18,7 @@ import {
   findMainUtxo,
   type UpgradeState,
   upgradeStateAt,
-} from "../chain/governance-provider";
+} from "../governance/two-stage";
 import { Provider, requireOnChainNetwork } from "../chain/provider";
 import { type Format, type NetworkInput } from "../input";
 
