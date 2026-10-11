@@ -60,10 +60,10 @@ import {
   registerScriptStake,
   createTxMetadata,
   mintWitnesses,
-} from "../chain/transaction";
+} from "../tx/scripts";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { Output } from "../output";
-import { buildTx } from "../chain/complete-tx";
+import { buildTx } from "../tx/compile";
 import { buildOutput, PROJECT_ROOT } from "../contracts/paths";
 import {
   buildValidatorNameByHash,

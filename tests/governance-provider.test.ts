@@ -16,7 +16,7 @@ import {
   rewardAccountRegistered,
   upgradeStateAt,
 } from "../cli/chain/governance-provider";
-import { createRewardAccount } from "../cli/chain/transaction";
+import { createRewardAccount } from "../cli/tx/scripts";
 import { SettingsLive } from "../cli/config/settings";
 import {
   expectFailure,

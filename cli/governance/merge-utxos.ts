@@ -31,16 +31,16 @@ import {
   upgradeScripts,
   upgradeStateAt,
 } from "../chain/governance-provider";
+import { findUtxoByTxRef } from "../chain/transaction";
 import {
   createRewardAccount,
-  findUtxoByTxRef,
   createTxMetadata,
   logicRedeemer,
   withdrawThroughLogic,
-} from "../chain/transaction";
+} from "../tx/scripts";
 import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";
-import { buildTx } from "../chain/complete-tx";
+import { buildTx } from "../tx/compile";
 import {
   type FeeInput,
   type TxFileInput,

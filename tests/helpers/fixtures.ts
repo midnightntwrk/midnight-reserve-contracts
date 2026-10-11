@@ -20,7 +20,7 @@ import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import { randomBytes } from "crypto";
 import * as Contracts from "../../deployed-scripts/mainnet/contract_blueprint";
-import { createRewardAccount } from "../../cli/chain/transaction";
+import { createRewardAccount } from "../../cli/tx/scripts";
 import type { Signer, Signers } from "../../cli/datum/signers";
 import {
   authorityThreshold,

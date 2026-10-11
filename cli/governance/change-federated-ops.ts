@@ -33,7 +33,7 @@ import {
 } from "../datum/federated-ops";
 import { inlineDatum } from "../chain/transaction";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
-import { buildTx } from "../chain/complete-tx";
+import { buildTx } from "../tx/compile";
 import { logicRound as datumLogicRound } from "../datum/datum-versions";
 import { witnessRequirements } from "./threshold";
 import {

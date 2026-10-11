@@ -22,10 +22,10 @@ import {
   deployerUtxo,
   registrationOnChain,
 } from "../chain/governance-provider";
-import { createRewardAccount, registerScriptStake } from "../chain/transaction";
+import { createRewardAccount, registerScriptStake } from "../tx/scripts";
 import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";
-import { buildTx } from "../chain/complete-tx";
+import { buildTx } from "../tx/compile";
 import { Blueprint } from "../contracts/contracts";
 import { Provider } from "../chain/provider";
 import { type Environment, environmentOf } from "../config/network-mapping";

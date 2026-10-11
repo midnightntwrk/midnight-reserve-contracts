@@ -15,7 +15,7 @@ import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
 import { formatLovelaceToAda, Output } from "../output";
 import { writeTransaction } from "../signing/tx-file";
-import { buildTx } from "../chain/complete-tx";
+import { buildTx } from "../tx/compile";
 import {
   addressOn,
   type KeyAddress,

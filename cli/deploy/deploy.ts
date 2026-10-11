@@ -24,7 +24,7 @@ import type { TxBuilder } from "@blaze-cardano/tx";
 import { Clock, Effect, Option } from "effect";
 import { relative, resolve } from "path";
 import * as Contracts from "../../contract_blueprint";
-import { completeBuilder } from "../chain/complete-tx";
+import { completeBuilder } from "../tx/compile";
 import { envFallback, type NetworkConfig, Settings } from "../config/settings";
 import {
   Blueprint,

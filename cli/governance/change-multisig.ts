@@ -50,9 +50,9 @@ import {
   logicRedeemer,
   mintWitnesses,
   withdrawThroughLogic,
-} from "../chain/transaction";
+} from "../tx/scripts";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
-import { buildTx } from "../chain/complete-tx";
+import { buildTx } from "../tx/compile";
 import {
   type AuthorityThreshold,
   type WitnessRequirement,

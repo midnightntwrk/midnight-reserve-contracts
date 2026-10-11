@@ -30,7 +30,7 @@ import {
   logicRedeemer,
   mintWitnesses,
   withdrawThroughLogic,
-} from "../chain/transaction";
+} from "../tx/scripts";
 import type { WitnessRequirements } from "./threshold";
 
 /** What a governed forever update spends and references, resolved from the chain and the blueprint. */

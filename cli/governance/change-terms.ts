@@ -25,7 +25,7 @@ import {
 } from "../chain/governance-provider";
 import { inlineDatum } from "../chain/transaction";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
-import { buildTx } from "../chain/complete-tx";
+import { buildTx } from "../tx/compile";
 import {
   decodeTerms,
   encodeTerms,

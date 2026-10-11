@@ -12,7 +12,7 @@ import { serialize } from "@blaze-cardano/data";
 import { Clock, Effect, Either, Option } from "effect";
 import { relative, resolve } from "path";
 import * as Contracts from "../../contract_blueprint";
-import { buildTx } from "../chain/complete-tx";
+import { buildTx } from "../tx/compile";
 import { type NetworkConfig, Settings } from "../config/settings";
 import {
   Blueprint,

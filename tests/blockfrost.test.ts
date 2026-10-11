@@ -4,7 +4,7 @@ import { NetworkId } from "@blaze-cardano/core";
 import { Effect, Layer, Redacted, Schema } from "effect";
 import { Blueprint, BlueprintLive } from "../cli/contracts/contracts";
 import { rewardAccountRegistered } from "../cli/chain/governance-provider";
-import { createRewardAccount } from "../cli/chain/transaction";
+import { createRewardAccount } from "../cli/tx/scripts";
 import { blockfrostGet } from "../cli/chain/blockfrost";
 import {
   captureOutput,

@@ -1,8 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import {
-  labelValidators,
-  type ValidatorLabels,
-} from "../cli/chain/validator-labels";
+import { labelValidators, type ValidatorLabels } from "../cli/tx/labels";
 
 describe("validator-labels", () => {
   describe("labelValidators", () => {

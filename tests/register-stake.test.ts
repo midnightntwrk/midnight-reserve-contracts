@@ -20,7 +20,7 @@ import {
   refuseRegistered,
 } from "../cli/governance/register-stake";
 import { ensureRegistered } from "../cli/chain/governance-provider";
-import { createRewardAccount } from "../cli/chain/transaction";
+import { createRewardAccount } from "../cli/tx/scripts";
 import { Blueprint, BlueprintLive } from "../cli/contracts/contracts";
 import {
   expectFailure,

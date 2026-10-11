@@ -16,8 +16,8 @@ import {
   validatorLabels,
   labelValidators,
   type ValidatorLabels,
-} from "./validator-labels";
-import { Provider } from "./provider";
+} from "./labels";
+import { Provider } from "../chain/provider";
 import { Blueprint } from "../contracts/contracts";
 import {
   type ConfigError,
