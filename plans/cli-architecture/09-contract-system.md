@@ -132,3 +132,11 @@ This phase moves ownership and APIs only; no artifact changes.
   run; afterwards `jj diff --stat` shows no change under
   `deployed-scripts/**`, to `plutus-*.json` or to any generated
   `contract_blueprint*.ts`.
+
+## Deviations
+
+- Task 2: `snapshot/read.ts` also exports `readDeployedPlutus(env)`,
+  which returns the deployed plutus.json with its path. `build-engine.ts`
+  read that file with `readJsonFile` on a path it built from
+  `snapshotDirOf`; it now reads it through this function (same path, same
+  error text, same log line) and no longer imports `snapshotDirOf`.

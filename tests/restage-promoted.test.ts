@@ -7,9 +7,11 @@ import { PlatformLive, runTest } from "./helpers/effect";
 import {
   type DeployedScripts,
   DeployedScriptsLive,
+} from "../cli/contracts/snapshot/context";
+import {
   readVersions,
   validatorNameByHash,
-} from "../cli/contracts/versions";
+} from "../cli/contracts/snapshot/read";
 import { logicToStage } from "../cli/governance/two-stage-upgrade";
 import { parseScriptHash } from "../cli/input";
 

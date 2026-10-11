@@ -24,7 +24,7 @@ import {
   hasDeployedScripts,
 } from "../contracts/contracts";
 import { buildOutput, PROJECT_ROOT } from "../contracts/paths";
-import { promotedAmong } from "../contracts/versions";
+import { promotedAmong } from "../contracts/snapshot/read";
 import { initialFederatedOpsDatum } from "../datum/federated-ops";
 import {
   encodeMultisigState,

@@ -1,7 +1,7 @@
 /** TypeScript blueprint generation from a plutus.json, through the installed generator. */
 import { resolve } from "path";
-import { Command, type CommandExecutor } from "@effect/platform";
-import { Effect } from "effect";
+import { Command, type CommandExecutor, FileSystem } from "@effect/platform";
+import { Effect, type Scope } from "effect";
 import { BlueprintError } from "../errors";
 import { PROJECT_ROOT } from "./paths";
 
@@ -36,3 +36,31 @@ export const generateBlueprint = (
           ),
   );
 };
+
+/** The blueprint the generator makes from plutus.json text, in a scoped temporary directory. */
+export const generatedBlueprint = (
+  env: string,
+  plutusText: string,
+): Effect.Effect<
+  string,
+  BlueprintError,
+  FileSystem.FileSystem | CommandExecutor.CommandExecutor | Scope.Scope
+> =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const failure = (cause: { readonly message: string }) =>
+      new BlueprintError({
+        environment: env,
+        source: "deployed",
+        reason: cause.message,
+      });
+    const dir = yield* Effect.mapError(
+      fs.makeTempDirectoryScoped({ prefix: "snapshot-" }),
+      failure,
+    );
+    const plutusPath = resolve(dir, "plutus.json");
+    const blueprintPath = resolve(dir, "contract_blueprint.ts");
+    yield* Effect.mapError(fs.writeFileString(plutusPath, plutusText), failure);
+    yield* generateBlueprint(env, "deployed", plutusPath, blueprintPath);
+    return yield* Effect.mapError(fs.readFileString(blueprintPath), failure);
+  });

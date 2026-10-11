@@ -11,16 +11,15 @@ import { tmpdir } from "os";
 import { join, resolve } from "path";
 import { Effect, Layer, Option, Schema } from "effect";
 import { PlutusJson } from "../cli/contracts/plutus-json";
+import { DeployedScriptsAt } from "../cli/contracts/snapshot/context";
+import { liveHashOf, promotedAmong } from "../cli/contracts/snapshot/read";
 import {
-  DeployedScriptsAt,
-  liveHashOf,
-  prepareValidatorMerge,
-  writeValidatorMerge,
   prepareDeploySnapshot,
-  promotedAmong,
+  prepareValidatorMerge,
   type SnapshotRule,
   writeDeploySnapshot,
-} from "../cli/contracts/versions";
+  writeValidatorMerge,
+} from "../cli/contracts/snapshot/write";
 import {
   buildInstances,
   expectFailure,

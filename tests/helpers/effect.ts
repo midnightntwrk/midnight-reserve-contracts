@@ -28,7 +28,7 @@ import { Provider, ProviderOver } from "../../cli/chain/provider";
 import { DEPLOYER_ONLY } from "../../cli/signing/signer";
 import { completeBuilder } from "../../cli/tx/compile";
 import { buildSimpleTx } from "../../cli/wallet/simple-tx";
-import { DeployedScripts } from "../../cli/contracts/versions";
+import { DeployedScripts } from "../../cli/contracts/snapshot/context";
 import { Output } from "../../cli/output";
 import { DotEnvFallback, type CliServices } from "../../cli/run";
 import { FEE_TX, feeUtxo, keyAddress } from "./fixtures";

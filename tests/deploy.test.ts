@@ -30,7 +30,7 @@ import {
   type UpgradableValidator,
 } from "../cli/contracts/contracts";
 import type { PlutusJson } from "../cli/contracts/plutus-json";
-import { validatorName } from "../cli/contracts/versions";
+import { validatorName } from "../cli/contracts/snapshot/names";
 import { resolveCollateral, resolveUnspent } from "../cli/deploy/deployment";
 import { completeBuilder, sizeAtSubmit } from "../cli/tx/compile";
 import { attachWitnesses, signTransaction } from "../cli/signing/signer";

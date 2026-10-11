@@ -23,7 +23,7 @@ import {
   withTomlHexValue,
 } from "../cli/contracts/build-engine";
 import type { PlutusJson } from "../cli/contracts/plutus-json";
-import { DeployedScriptsLive } from "../cli/contracts/versions";
+import { DeployedScriptsLive } from "../cli/contracts/snapshot/context";
 import { DEPLOY_COMPONENT_VALIDATORS } from "../cli/deploy/deploy";
 import {
   OutputCaptured,

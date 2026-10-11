@@ -64,16 +64,18 @@ import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { Output } from "../output";
 import { buildTx } from "../tx/compile";
 import { buildOutput, PROJECT_ROOT } from "../contracts/paths";
+import type { DeployedScripts } from "../contracts/snapshot/context";
 import {
   buildValidatorNameByHash,
-  type DeployedScripts,
+  isPromoted,
+  validatorNameByHash,
+} from "../contracts/snapshot/read";
+import {
   prepareValidatorMerge,
   promoteValidatorVersion,
-  readVersions,
   stageValidator,
-  validatorNameByHash,
   writeValidatorMerge,
-} from "../contracts/versions";
+} from "../contracts/snapshot/write";
 import {
   type FeeInput,
   type ScriptHash,
@@ -462,11 +464,7 @@ export const logicToStage = (
           buildPath: build.plutusPath,
         },
       });
-    if (
-      Option.exists(yield* readVersions(environment), ({ promoted }) =>
-        promoted.includes(built.value),
-      )
-    )
+    if (yield* isPromoted(environment, built.value))
       return yield* new PreconditionFailed({
         command: "stage-upgrade",
         refusal: {
@@ -575,10 +573,7 @@ export const stageUpgradeProgram = (input: StageUpgradeInput) =>
     }
     yield* out.log(`Using UTxO: ${txHash}#${txIndex}`);
 
-    const restage = Option.exists(
-      yield* readVersions(network),
-      ({ promoted }) => promoted.includes(logic.name),
-    );
+    const restage = yield* isPromoted(network, logic.name);
     if (restage) {
       yield* out.log(
         `\n  Re-staging promoted validator: ${logic.name} (${newLogicHash})`,

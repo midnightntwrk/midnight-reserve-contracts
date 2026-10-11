@@ -25,12 +25,8 @@ import { Effect, Either, Option } from "effect";
 import { environmentOf } from "../config/network-mapping";
 import { credentialAddress } from "../contracts/contracts";
 import type { PlutusValidator } from "../contracts/plutus-json";
-import {
-  type DeployedRecord,
-  isTrackLogic,
-  readRecord,
-  validatorName,
-} from "../contracts/versions";
+import { type DeployedRecord, readRecord } from "../contracts/snapshot/read";
+import { isTrackLogic, validatorName } from "../contracts/snapshot/names";
 import {
   MAIN_TOKEN_HEX,
   STAGING_TOKEN_HEX,

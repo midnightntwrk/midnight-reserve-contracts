@@ -30,7 +30,7 @@ import { Output, OutputLive } from "./output";
 import {
   type DeployedScripts,
   DeployedScriptsLive,
-} from "./contracts/versions";
+} from "./contracts/snapshot/context";
 import { BlueprintError, renderError, type CliError } from "./errors";
 import { type Provider, ProviderLive } from "./chain/provider";
 

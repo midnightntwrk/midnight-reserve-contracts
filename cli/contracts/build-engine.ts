@@ -16,7 +16,9 @@ import {
   type Error as PlatformError,
 } from "@effect/platform";
 import { Clock, Effect, Either, Option, Ref } from "effect";
-import { type DeployedScripts, snapshotDirOf, validatorName } from "./versions";
+import type { DeployedScripts } from "./snapshot/context";
+import { validatorName } from "./snapshot/names";
+import { readDeployedPlutus } from "./snapshot/read";
 import { PlutusJson, type PlutusValidator } from "./plutus-json";
 import { readJsonFile } from "../input";
 import type { Profile } from "../config/network-mapping";
@@ -631,10 +633,6 @@ const buildFromDeployed = (
 > =>
   Effect.gen(function* () {
     const output = yield* Output;
-    const deployedJsonFile = resolve(
-      yield* snapshotDirOf(build.network),
-      "plutus.json",
-    );
     const fs = yield* FileSystem.FileSystem;
     const tomlPath = resolve(build.projectRoot, TOML_FILE);
     const backupPath = resolve(
@@ -654,17 +652,8 @@ const buildFromDeployed = (
       () =>
         Effect.gen(function* () {
           yield* output.log("Reading hashes from deployed scripts...");
-          const deployed = yield* readJsonFile(
-            deployedJsonFile,
-            PlutusJson,
-            (reason) =>
-              new BlueprintError({
-                environment: build.network,
-                source: "deployed",
-                reason: `${deployedJsonFile}: ${reason}`,
-              }),
-          );
-          const pinned = pinnedMappings(deployed, fresh);
+          const deployed = yield* readDeployedPlutus(build.network);
+          const pinned = pinnedMappings(deployed.plutus, fresh);
           yield* output.log(
             `Pinning ${pinned.length} deployed hashes; compiled from new: ${
               [...fresh].join(", ") || "(none)"
@@ -684,7 +673,7 @@ const buildFromDeployed = (
           );
           yield* buildStandard({ ...build, pins });
           yield* output.log(
-            `Built against deployed hashes from: ${deployedJsonFile}`,
+            `Built against deployed hashes from: ${deployed.path}`,
           );
         }),
       () => restore,

@@ -22,7 +22,7 @@ import {
 import {
   prepareDeploySnapshot,
   writeDeploySnapshot,
-} from "../contracts/versions";
+} from "../contracts/snapshot/write";
 import {
   BlueprintError,
   type ConfigError,

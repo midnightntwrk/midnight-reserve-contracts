@@ -32,12 +32,12 @@ import {
   type ContractInstances,
   type UpgradableValidator,
 } from "../contracts/contracts";
+import { liveHashOf } from "../contracts/snapshot/read";
 import {
-  liveHashOf,
   prepareDeploySnapshot,
   type SnapshotRule,
   writeDeploySnapshot,
-} from "../contracts/versions";
+} from "../contracts/snapshot/write";
 import {
   type BlueprintError,
   type ConfigError,

@@ -16,11 +16,8 @@ import * as Contracts from "../contract_blueprint";
 import { credentialAddress } from "../cli/contracts/contracts";
 import { PROJECT_ROOT } from "../cli/contracts/paths";
 import { PlutusJson } from "../cli/contracts/plutus-json";
-import {
-  type DeployedRecord,
-  isTrackLogic,
-  validatorName,
-} from "../cli/contracts/versions";
+import type { DeployedRecord } from "../cli/contracts/snapshot/read";
+import { isTrackLogic, validatorName } from "../cli/contracts/snapshot/names";
 import { readJsonFile } from "../cli/input";
 import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
