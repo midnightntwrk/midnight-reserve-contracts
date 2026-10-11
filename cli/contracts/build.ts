@@ -8,7 +8,7 @@ import {
   type TraceLevel,
 } from "./build-engine";
 import { buildOutput, PROJECT_ROOT } from "./paths";
-import { generateBlueprint } from "./versions";
+import { generateBlueprint } from "./bindings";
 import { Output } from "../output";
 import { FileWriteError } from "../errors";
 

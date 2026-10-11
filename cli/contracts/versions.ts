@@ -9,7 +9,6 @@
  */
 import { resolve } from "path";
 import {
-  Command,
   type CommandExecutor,
   FileSystem,
   type Error as PlatformError,
@@ -25,6 +24,7 @@ import {
 } from "./plutus-json";
 import { readJsonFile } from "../input";
 import { PROJECT_ROOT } from "./paths";
+import { generateBlueprint } from "./bindings";
 
 type Source = BlueprintError["source"];
 
@@ -234,38 +234,6 @@ export const validatorNameByHash = (
       ),
     ),
   );
-
-/** The installed blueprint generator; bun runs it, so no registry is reached. */
-const BLUEPRINT_CLI = resolve(PROJECT_ROOT, "node_modules/.bin/blueprint");
-
-/** Generate the TypeScript blueprint of a plutus.json; the generator's stderr reaches the user, its one-line stdout does not. */
-export const generateBlueprint = (
-  env: string,
-  source: "deployed" | "build",
-  plutusPath: string,
-  outputPath: string,
-): Effect.Effect<void, BlueprintError, CommandExecutor.CommandExecutor> => {
-  const failure = (reason: string) =>
-    new BlueprintError({ environment: env, source, reason });
-  return Effect.flatMap(
-    Effect.mapError(
-      Command.make(
-        process.execPath,
-        BLUEPRINT_CLI,
-        plutusPath,
-        "-o",
-        outputPath,
-      ).pipe(Command.stderr("inherit"), Command.exitCode),
-      (cause) => failure(`blueprint generation failed: ${cause.message}`),
-    ),
-    (exitCode) =>
-      exitCode === 0
-        ? Effect.void
-        : Effect.fail(
-            failure(`blueprint generation failed with exit code ${exitCode}`),
-          ),
-  );
-};
 
 /** The definition keys a schema references directly ("#/definitions/a~1b" is "a/b"). */
 const refsOf = (value: unknown): string[] =>
