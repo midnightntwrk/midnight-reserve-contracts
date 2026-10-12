@@ -81,9 +81,13 @@ is built only when named. See bridge Plan 06 task 1.
   the message is rendered once, in `Output`.
 - Tests exercise CLI library functions or Aiken, never the binary and
   never a command program (the whole command is manual QA, user decision
-  2026-09-26). Every
-  command that builds a transaction exposes its builder from
-  its `cli/` domain module as `(resolved inputs, params) => TxBuilder`; the
-  emulator tests call that builder and let `expectValidTransaction` cover
-  the CLI function and the validator in one assertion. Hand-built
+  2026-09-26). A command that builds a transaction exposes its builder from
+  its `cli/` domain module. A command moved onto plan/compile exposes a
+  `plan*` function, `(resolved inputs, params) => TxPlan`, that
+  `tx/compile.ts` compiles; the rest still expose
+  `(resolved inputs, params) => TxBuilder` until their port
+  ([plans/cli-architecture](../cli-architecture/00-index.md), phases
+  04–07). Emulator tests call the builder (a `plan*` through
+  `toTxBuilder(blaze, plan, options)`) and let `expectValidTransaction`
+  cover the CLI function and the validator in one assertion. Hand-built
   transactions in tests are replaced as each builder lands (phases 04–06).
