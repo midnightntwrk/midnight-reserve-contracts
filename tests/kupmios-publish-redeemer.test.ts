@@ -19,7 +19,8 @@ import {
 import { Kupmios } from "@blaze-cardano/query";
 
 // Two Kupmios bugs patched in patches/@blaze-cardano%2Fquery@0.6.2.patch, both hit by
-// local-env deploys once script stake registrations carry a cert redeemer.
+// local-env deploys once script stake registrations carry a cert redeemer. Drop the
+// patch once butaneprotocol/blaze-cardano#367 ships.
 function certTx(): Transaction {
   const redeemer = new Redeemer(
     RedeemerTag.Cert,
