@@ -2,9 +2,9 @@
  * migrate-federated-ops: rewrite the federated-ops forever datum from the v1
  * shape to FederatedOpsV2 through the promoted v2 logic's Migrate redeemer.
  * The program resolves the forever and two-stage main UTxOs and the logic
- * scripts the UpgradeState names; buildFederatedOpsMigrationTx is pure over
- * them. No multisig witnesses: the Migrate branch only checks the datum
- * rewrite against the forever state.
+ * scripts the UpgradeState names; planFederatedOpsMigration is pure over
+ * them and compile completes it. No multisig witnesses: the Migrate branch
+ * only checks the datum rewrite against the forever state.
  */
 import {
   type Address,
@@ -18,29 +18,19 @@ import {
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import { parse, serialize } from "@blaze-cardano/data";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
-import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Option } from "effect";
-import { environmentOf } from "../config/network-mapping";
+import { environmentOf, slotConfigOf } from "../config/network-mapping";
 import { contractUtxos, deployerUtxo, deployerWallet } from "../chain/utxo";
 import { ensureRegistered } from "../chain/registration";
 import { upgradeScripts, upgradeStateAt } from "./two-stage";
 import { decodeDatum, inlineDatum } from "../datum/inline";
-import {
-  createRewardAccount,
-  createTxMetadata,
-  withdrawThroughLogic,
-} from "../tx/scripts";
+import { createRewardAccount, planWithdrawThroughLogic } from "../tx/scripts";
+import type { TxPlan } from "../tx/plan";
 import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";
-import { buildTx } from "../tx/complete-tx";
+import { compile } from "../tx/compile";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
 import { Blueprint } from "../contracts/contracts";
-import { Provider } from "../chain/provider";
 import { PreconditionFailed } from "../errors";
 import * as Contracts from "../../contract_blueprint";
 
@@ -64,8 +54,6 @@ export interface FederatedOpsMigrationInputs {
 
 export interface FederatedOpsMigrationParams {
   readonly networkId: NetworkId;
-  readonly changeAddress: Address;
-  readonly feePadding: bigint;
 }
 
 /** LogicRedeemer::Migrate — constructor 1, no fields. */
@@ -79,23 +67,27 @@ const migratedDatum = ([data, appendix]: Contracts.FederatedOps): PlutusData =>
   serialize(Contracts.FederatedOpsV2, [data, "", appendix, 2n]);
 
 /** The migration: spend the forever UTxO into the v2 datum, withdraw through the logic (and mitigation logic) with Migrate, referencing two-stage main. */
-export const buildFederatedOpsMigrationTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+export const planFederatedOpsMigration = (
   inputs: FederatedOpsMigrationInputs,
   params: FederatedOpsMigrationParams,
-): TxBuilder => {
+): TxPlan => {
   const { networkId } = params;
   const foreverAddress = addressFromValidator(
     networkId,
     inputs.federatedOpsForever,
   );
-  const txBuilder = blaze
-    .newTransaction()
-    .addInput(inputs.userUtxo)
-    .addInput(inputs.foreverUtxo, PlutusData.newInteger(0n))
-    .addReferenceInput(inputs.twoStageUtxo)
-    .provideScript(inputs.federatedOpsForever)
-    .addOutput(
+  return {
+    spends: [
+      { utxo: inputs.userUtxo, redeemer: Option.none() },
+      {
+        utxo: inputs.foreverUtxo,
+        redeemer: Option.some(PlutusData.newInteger(0n)),
+      },
+    ],
+    references: [inputs.twoStageUtxo],
+    scripts: [inputs.federatedOpsForever],
+    mints: [],
+    outputs: [
       TransactionOutput.fromCore({
         address: PaymentAddress(foreverAddress.toBech32()),
         value: {
@@ -104,27 +96,32 @@ export const buildFederatedOpsMigrationTx = (
         },
         datum: migratedDatum(inputs.current).toCore(),
       }),
-    );
-  return withdrawThroughLogic(
-    txBuilder,
-    inputs.logicScript,
-    inputs.mitigationLogicScript,
-    MIGRATE_REDEEMER,
-    networkId,
-  )
-    .setChangeAddress(params.changeAddress)
-    .setMetadata(createTxMetadata(COMMAND))
-    .setFeePadding(params.feePadding);
+    ],
+    withdrawals: planWithdrawThroughLogic(
+      inputs.logicScript,
+      inputs.mitigationLogicScript,
+      MIGRATE_REDEEMER,
+      networkId,
+    ),
+    registrations: [],
+    collateral: [],
+    requiredSignatures: 0,
+  };
 };
 
-/** Resolve the inputs, build, complete and write the migration transaction. */
-export const migrateFederatedOpsProgram = (input: MigrateFederatedOpsInput) =>
+/** What the migration plan is built from and where its change goes. */
+export interface ResolvedFederatedOpsMigration {
+  readonly inputs: FederatedOpsMigrationInputs;
+  readonly params: FederatedOpsMigrationParams;
+  readonly changeAddress: Address;
+}
+
+/** Read and report everything the migration needs: the forever and two-stage UTxOs, the logic scripts, the v1 datum, registrations and the fee UTxO. */
+export const resolveFederatedOpsMigration = (input: MigrateFederatedOpsInput) =>
   Effect.gen(function* () {
     const { network, txHash, txIndex } = input;
     const out = yield* Output;
     const blueprint = yield* Blueprint;
-    const provider = yield* Provider;
-    const outputPath = txFilePath(input);
 
     yield* out.log(
       `\nMigrating Federated Ops datum from v1 to v2 on ${network} network`,
@@ -140,7 +137,6 @@ export const migrateFederatedOpsProgram = (input: MigrateFederatedOpsInput) =>
       `\nFederated Ops Forever Address: ${foreverAddress.toBech32()}`,
     );
 
-    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const found = yield* contractUtxos(
       { federatedOpsForever: forever, federatedOpsTwoStage: twoStage },
       networkId,
@@ -226,9 +222,8 @@ export const migrateFederatedOpsProgram = (input: MigrateFederatedOpsInput) =>
     if (Option.isSome(mitigationLogicScript)) {
       yield* out.log("  Adding mitigation logic withdrawal...");
     }
-    const txBuilder = buildFederatedOpsMigrationTx(
-      blaze,
-      {
+    const resolved: ResolvedFederatedOpsMigration = {
+      inputs: {
         federatedOpsForever: forever,
         foreverUtxo,
         twoStageUtxo,
@@ -237,21 +232,31 @@ export const migrateFederatedOpsProgram = (input: MigrateFederatedOpsInput) =>
         logicScript,
         mitigationLogicScript,
       },
-      {
-        networkId,
-        changeAddress,
-        feePadding: input.feePadding,
-      },
-    );
-    const tx = yield* buildTx(txBuilder, {
+      params: { networkId },
+      changeAddress,
+    };
+    return resolved;
+  });
+
+/** Resolve, plan, compile and write the migration transaction. */
+export const migrateFederatedOpsProgram = (input: MigrateFederatedOpsInput) =>
+  Effect.gen(function* () {
+    const out = yield* Output;
+    const { inputs, params, changeAddress } =
+      yield* resolveFederatedOpsMigration(input);
+    const tx = yield* compile(planFederatedOpsMigration(inputs, params), {
       commandName: COMMAND,
-      environment: network,
-      witnesses: DEPLOYER_ONLY,
-      knownUtxos: [foreverUtxo, twoStageUtxo, userUtxo],
+      slotConfig: slotConfigOf(input.network),
+      wallet: yield* deployerWallet,
+      changeAddress,
+      feePadding: input.feePadding,
+      metadata: Option.some(COMMAND),
+      expectedWitnesses: DEPLOYER_ONLY,
+      contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
     });
     yield* signAndWrite(
       tx,
-      outputPath,
+      txFilePath(input),
       UNSIGNED,
       "Migrate Federated Ops Transaction",
     );

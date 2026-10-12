@@ -18,7 +18,8 @@ import {
   candidateToPermissionedDatum,
   parseCandidates,
 } from "../cli/datum/federated-ops";
-import { buildFederatedOpsMigrationTx } from "../cli/governance/migrate-federated-ops";
+import { planFederatedOpsMigration } from "../cli/governance/migrate-federated-ops";
+import { toTxBuilder } from "../cli/tx/compile";
 import { MAIN_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
   registerRewardAccount,
@@ -83,16 +84,23 @@ const migration = (
   utxos: ReturnType<typeof seed>,
   logicScript: Script,
 ) =>
-  buildFederatedOpsMigrationTx(
+  toTxBuilder(
     blaze,
+    planFederatedOpsMigration(
+      {
+        federatedOpsForever: federatedOpsForever.Script,
+        ...utxos,
+        current: federatedOpsDatumV1,
+        logicScript,
+        mitigationLogicScript: Option.none(),
+      },
+      { networkId: NetworkId.Testnet },
+    ),
     {
-      federatedOpsForever: federatedOpsForever.Script,
-      ...utxos,
-      current: federatedOpsDatumV1,
-      logicScript,
-      mitigationLogicScript: Option.none(),
+      changeAddress: addr,
+      feePadding: 0n,
+      metadata: Option.some("migrate-federated-ops"),
     },
-    { networkId: NetworkId.Testnet, changeAddress: addr, feePadding: 0n },
   );
 
 describe("Migrate Federated Ops from v1 to v2 datum", () => {
