@@ -15,6 +15,7 @@ const KEY_IDS = {
   aura: toHex(new TextEncoder().encode("aura")), // 61757261
   gran: toHex(new TextEncoder().encode("gran")), // 6772616e
   beef: toHex(new TextEncoder().encode("beef")), // 62656566
+  babe: toHex(new TextEncoder().encode("babe")), // 62616265
 } as const;
 
 /**
@@ -53,6 +54,7 @@ function decodeCandidateFromPlutus(item: PlutusData): PermissionedCandidate {
     if (id === KEY_IDS.aura) candidate.aura_pub_key = value;
     else if (id === KEY_IDS.gran) candidate.grandpa_pub_key = value;
     else if (id === KEY_IDS.beef) candidate.beefy_pub_key = value;
+    else if (id === KEY_IDS.babe) candidate.babe_pub_key = value;
   }
 
   return candidate;
@@ -105,6 +107,16 @@ function encodeCandidateToPlutus(candidate: PermissionedCandidate): PlutusData {
     PlutusData.newBytes(Buffer.from(candidate.beefy_pub_key, "hex")),
   );
   keysList.add(PlutusData.newList(beefTuple));
+
+  // babe key is optional; appended last, matching candidateToPermissionedDatum
+  if (candidate.babe_pub_key) {
+    const babeTuple = new PlutusList();
+    babeTuple.add(PlutusData.newBytes(Buffer.from(KEY_IDS.babe, "hex")));
+    babeTuple.add(
+      PlutusData.newBytes(Buffer.from(candidate.babe_pub_key, "hex")),
+    );
+    keysList.add(PlutusData.newList(babeTuple));
+  }
 
   const datumList = new PlutusList();
   datumList.add(
