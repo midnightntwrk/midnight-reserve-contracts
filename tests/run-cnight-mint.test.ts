@@ -7,10 +7,12 @@ import { describe, test } from "bun:test";
 import { NetworkId, type Script } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
+import type { TxBuilder } from "@blaze-cardano/sdk";
 import { Option } from "effect";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import { TestCnightNoAuditTcnightMintInfiniteElse } from "../contract_blueprint_mainnet";
-import { buildRunCnightMintTx } from "../cli/governance/run-cnight-mint";
+import { planRunCnightMint } from "../cli/governance/run-cnight-mint";
+import { toTxBuilder } from "../cli/tx/compile";
 import { MAIN_TOKEN_HEX } from "../cli/governance/two-stage";
 import { feeUtxo, registerRewardAccount, scriptUtxo } from "./helpers/fixtures";
 
@@ -29,7 +31,7 @@ const run = (
   check: (
     emulator: Emulator,
     blaze: Parameters<Parameters<Emulator["as"]>[1]>[0],
-    tx: ReturnType<typeof buildRunCnightMintTx>,
+    tx: TxBuilder,
   ) => Promise<unknown>,
 ) => {
   const emulator = new Emulator([]);
@@ -63,16 +65,23 @@ const run = (
     await check(
       emulator,
       blaze,
-      buildRunCnightMintTx(
+      toTxBuilder(
         blaze,
+        planRunCnightMint(
+          {
+            forever,
+            twoStageMainUtxo: mainUtxo,
+            userUtxo: fee,
+            logicScript: state.logic,
+            mitigationLogicScript: withdrawn.mitigation,
+          },
+          { networkId: NetworkId.Testnet },
+        ),
         {
-          forever,
-          twoStageMainUtxo: mainUtxo,
-          userUtxo: fee,
-          logicScript: state.logic,
-          mitigationLogicScript: withdrawn.mitigation,
+          changeAddress: addr,
+          feePadding: 0n,
+          metadata: Option.some("run-cnight-mint-mainnet"),
         },
-        { networkId: NetworkId.Testnet, changeAddress: addr, feePadding: 0n },
       ),
     );
   });

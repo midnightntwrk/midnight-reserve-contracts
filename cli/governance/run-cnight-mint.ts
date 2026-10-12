@@ -2,8 +2,8 @@
  * run-cnight-mint-mainnet: withdraw zero from the cNIGHT mint forever and
  * from the logic (and mitigation logic) that its two-stage main state
  * names, with that UTxO as reference input. The program resolves the UTxO
- * and the scripts and checks their reward accounts; buildRunCnightMintTx is
- * pure over them.
+ * and the scripts and checks their reward accounts; planRunCnightMint is
+ * pure over them and compile completes it.
  */
 import {
   type Address,
@@ -12,28 +12,18 @@ import {
   type Script,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
-import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Option } from "effect";
-import { environmentOf } from "../config/network-mapping";
+import { environmentOf, slotConfigOf } from "../config/network-mapping";
 import { contractUtxos, deployerUtxo, deployerWallet } from "../chain/utxo";
 import { ensureRegistered } from "../chain/registration";
 import { upgradeScripts, upgradeStateAt } from "./two-stage";
-import {
-  createRewardAccount,
-  createTxMetadata,
-  withdrawThroughLogic,
-} from "../tx/scripts";
+import { createRewardAccount, planWithdrawThroughLogic } from "../tx/scripts";
+import type { TxPlan } from "../tx/plan";
 import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";
-import { buildTx } from "../tx/complete-tx";
+import { compile } from "../tx/compile";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
 import { Blueprint } from "../contracts/contracts";
-import { Provider } from "../chain/provider";
 
 const COMMAND = "run-cnight-mint-mainnet";
 
@@ -51,46 +41,55 @@ export interface RunCnightMintInputs {
 
 export interface RunCnightMintParams {
   readonly networkId: NetworkId;
-  readonly changeAddress: Address;
-  readonly feePadding: bigint;
 }
 
 /** Zero withdrawals from the forever, the logic and, when set, the mitigation logic, each with the redeemer 0. */
-export const buildRunCnightMintTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+export const planRunCnightMint = (
   inputs: RunCnightMintInputs,
   params: RunCnightMintParams,
-): TxBuilder => {
+): TxPlan => {
   const redeemer = PlutusData.newInteger(0n);
-  return withdrawThroughLogic(
-    blaze
-      .newTransaction()
-      .addInput(inputs.userUtxo)
-      .addReferenceInput(inputs.twoStageMainUtxo)
-      .addWithdrawal(
-        createRewardAccount(inputs.forever.hash(), params.networkId),
-        0n,
+  return {
+    spends: [{ utxo: inputs.userUtxo, redeemer: Option.none() }],
+    references: [inputs.twoStageMainUtxo],
+    scripts: [],
+    mints: [],
+    outputs: [],
+    withdrawals: [
+      {
+        rewardAccount: createRewardAccount(
+          inputs.forever.hash(),
+          params.networkId,
+        ),
+        script: inputs.forever,
         redeemer,
-      )
-      .provideScript(inputs.forever),
-    inputs.logicScript,
-    inputs.mitigationLogicScript,
-    redeemer,
-    params.networkId,
-  )
-    .setChangeAddress(params.changeAddress)
-    .setMetadata(createTxMetadata(COMMAND))
-    .setFeePadding(params.feePadding);
+      },
+      ...planWithdrawThroughLogic(
+        inputs.logicScript,
+        inputs.mitigationLogicScript,
+        redeemer,
+        params.networkId,
+      ),
+    ],
+    registrations: [],
+    collateral: [],
+    requiredSignatures: 0,
+  };
 };
 
-/** Build (never submit) the cNIGHT mint run, and write it to a file. */
-export const runCnightMintProgram = (input: RunCnightMintInput) =>
+/** What the run plan is built from and where its change goes. */
+export interface ResolvedRunCnightMint {
+  readonly inputs: RunCnightMintInputs;
+  readonly params: RunCnightMintParams;
+  readonly changeAddress: Address;
+}
+
+/** Read and report everything the run needs: the two-stage main UTxO, the logic scripts it names, their registered reward accounts and the fee UTxO. */
+export const resolveRunCnightMint = (input: RunCnightMintInput) =>
   Effect.gen(function* () {
     const { network, txHash, txIndex } = input;
     const out = yield* Output;
     const blueprint = yield* Blueprint;
-    const provider = yield* Provider;
-    const outputPath = txFilePath(input);
     const { networkId } = environmentOf(network);
 
     yield* out.log(`\nRunning cNIGHT mint withdrawals on ${network} network`);
@@ -134,33 +133,42 @@ export const runCnightMintProgram = (input: RunCnightMintInput) =>
     }
     yield* ensureRegistered(accounts, network);
 
-    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const { address: changeAddress, utxo: userUtxo } = yield* deployerUtxo(
       txHash,
       txIndex,
     );
-    const tx = yield* buildTx(
-      buildRunCnightMintTx(
-        blaze,
-        {
-          forever: forever.Script,
-          twoStageMainUtxo,
-          userUtxo,
-          logicScript,
-          mitigationLogicScript,
-        },
-        { networkId, changeAddress, feePadding: input.feePadding },
-      ),
-      {
-        commandName: COMMAND,
-        environment: network,
-        witnesses: DEPLOYER_ONLY,
-        knownUtxos: [twoStageMainUtxo, userUtxo],
+    const resolved: ResolvedRunCnightMint = {
+      inputs: {
+        forever: forever.Script,
+        twoStageMainUtxo,
+        userUtxo,
+        logicScript,
+        mitigationLogicScript,
       },
-    );
+      params: { networkId },
+      changeAddress,
+    };
+    return resolved;
+  });
+
+/** Resolve, plan, compile (never submit) and write the cNIGHT mint run. */
+export const runCnightMintProgram = (input: RunCnightMintInput) =>
+  Effect.gen(function* () {
+    const { inputs, params, changeAddress } =
+      yield* resolveRunCnightMint(input);
+    const tx = yield* compile(planRunCnightMint(inputs, params), {
+      commandName: COMMAND,
+      slotConfig: slotConfigOf(input.network),
+      wallet: yield* deployerWallet,
+      changeAddress,
+      feePadding: input.feePadding,
+      metadata: Option.some(COMMAND),
+      expectedWitnesses: DEPLOYER_ONLY,
+      contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
+    });
     yield* signAndWrite(
       tx,
-      outputPath,
+      txFilePath(input),
       UNSIGNED,
       "Run cNIGHT Mint Mainnet Transaction",
     );
