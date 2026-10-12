@@ -8,7 +8,7 @@ import {
   sign,
 } from "../options";
 import { withServices } from "../run";
-import { V2_TRACK_VALIDATORS } from "../governance/two-stage-upgrade";
+import { V2_TRACK_VALIDATORS } from "../contracts/contracts";
 import { mintStagingStateProgram } from "../governance/mint-staging-state";
 
 const validator = Options.choice("validator", V2_TRACK_VALIDATORS).pipe(

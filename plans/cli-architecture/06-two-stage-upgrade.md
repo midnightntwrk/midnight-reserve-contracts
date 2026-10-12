@@ -45,3 +45,23 @@ Tests: `cnight-minting`, `mainnet_upgrade_transactions`,
   `governance/`.
 - Same-id checks for stage and promote; the record tests show the same
   `plutus.json` / `versions.json` writes as before.
+
+## Deviations
+
+Task 1 (pure move):
+
+- `governance/authority.ts` (signer and threshold datums, 37 lines) took the
+  governance authority too: `GovernanceAuthority`, `withGovernanceAuthority`,
+  the witness asset names, `requiredSignatures` and `resolveAuthority` (the
+  reads, logs and registration check both programs share). It is 177 lines
+  and one concern, the multisig authority.
+- `two-stage-upgrade/state.ts` also holds what both programs share about the
+  target: `TwoStageTarget`, `UpgradeInputs`, `outputRef`, `twoStageOutput`
+  and `withTwoStageScript`.
+- `logic-record.ts` owns the whole record path, so it is the one importer of
+  `contracts/snapshot/write`: `prepareLogicCopy` (the `Merge` preparation),
+  `stageRecord` and `promoteRecord` (the `RecordUpdate`s) and `applyRecord`
+  (apply, then print the outcome lines). The programs keep the order of
+  reads and log lines; `stageRecord` is built where the old program built
+  its list, `promoteRecord` where it read the staged logic's name.
+- The programs have no separate `resolve` yet: that comes with the ports.

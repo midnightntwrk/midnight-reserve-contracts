@@ -15,11 +15,9 @@ import {
   TestCnightNoAuditTcnightMintInfiniteElse,
 } from "../contract_blueprint_mainnet";
 import { describe, test } from "bun:test";
-import {
-  buildPromoteUpgradeTx,
-  buildStageUpgradeTx,
-  type GovernanceAuthority,
-} from "../cli/governance/two-stage-upgrade";
+import { type GovernanceAuthority } from "../cli/governance/authority";
+import { buildStageUpgradeTx } from "../cli/governance/two-stage-upgrade/stage";
+import { buildPromoteUpgradeTx } from "../cli/governance/two-stage-upgrade/promote";
 import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
   councilSigners,

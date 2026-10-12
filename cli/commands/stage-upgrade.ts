@@ -8,7 +8,7 @@ import {
 import { withServicesUseBuild } from "../run";
 import { parseScriptHash } from "../input";
 import { UPGRADABLE_VALIDATORS } from "../contracts/contracts";
-import { stageUpgradeProgram } from "../governance/two-stage-upgrade";
+import { stageUpgradeProgram } from "../governance/two-stage-upgrade/stage";
 
 const validator = Options.choice("validator", UPGRADABLE_VALIDATORS).pipe(
   Options.withAlias("v"),

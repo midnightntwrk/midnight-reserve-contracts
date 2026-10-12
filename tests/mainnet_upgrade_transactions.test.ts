@@ -12,15 +12,15 @@ import type { Blaze, Provider, Wallet } from "@blaze-cardano/sdk";
 import { describe, expect, test } from "bun:test";
 import { Either, Option } from "effect";
 import { decodeSigners } from "../cli/datum/signers";
+import { type GovernanceAuthority } from "../cli/governance/authority";
+import { buildStageUpgradeTx } from "../cli/governance/two-stage-upgrade/stage";
+import { buildPromoteUpgradeTx } from "../cli/governance/two-stage-upgrade/promote";
 import {
-  buildPromoteUpgradeTx,
-  buildStageUpgradeTx,
-  type GovernanceAuthority,
   nextStagingState,
   promotedMainState,
   type TwoStageTarget,
   type UpgradeField,
-} from "../cli/governance/two-stage-upgrade";
+} from "../cli/governance/two-stage-upgrade/state";
 import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";

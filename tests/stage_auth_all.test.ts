@@ -15,8 +15,8 @@ import { Either, Option } from "effect";
 import {
   type GovernanceAuthority,
   withGovernanceAuthority,
-  stageUpgradeStep,
-} from "../cli/governance/two-stage-upgrade";
+} from "../cli/governance/authority";
+import { stageUpgradeStep } from "../cli/governance/two-stage-upgrade/stage";
 import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
   asFunded,

@@ -28,6 +28,19 @@ export const UPGRADABLE_VALIDATORS = [
 
 export type UpgradableValidator = (typeof UPGRADABLE_VALIDATORS)[number];
 
+/** The two-stage validators with a v2 staging track, as mint-staging-state takes them. */
+export const V2_TRACK_VALIDATORS = [
+  "tech-auth",
+  "council",
+  "reserve",
+  "ics",
+  "federated-ops",
+  "terms-and-conditions",
+] as const;
+
+/** One of V2_TRACK_VALIDATORS. */
+export type V2TrackValidator = (typeof V2_TRACK_VALIDATORS)[number];
+
 /** Where a blueprint loads from: deployed-scripts/<env> or the build output. */
 export type BlueprintSource = "deployed" | "build";
 

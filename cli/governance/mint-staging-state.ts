@@ -32,12 +32,12 @@ import {
   type ContractClass,
   type ContractInstances,
   Blueprint,
+  type V2TrackValidator,
 } from "../contracts/contracts";
 import type { TxPlan } from "../tx/plan";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { Output } from "../output";
 import { compile } from "../tx/compile";
-import type { V2TrackValidator } from "./two-stage-upgrade";
 import { Provider } from "../chain/provider";
 import { BlueprintError } from "../errors";
 import {

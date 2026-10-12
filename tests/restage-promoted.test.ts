@@ -12,7 +12,7 @@ import {
   readVersions,
   validatorNameByHash,
 } from "../cli/contracts/snapshot/read";
-import { logicToStage } from "../cli/governance/two-stage-upgrade";
+import { logicToStage } from "../cli/governance/two-stage-upgrade/logic-record";
 import { parseScriptHash } from "../cli/input";
 
 /** The hash of a validator title in an environment's deployed plutus.json. */

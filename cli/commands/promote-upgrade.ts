@@ -2,7 +2,7 @@ import { Command, Options } from "@effect/cli";
 import { governanceTxOptions, outputDir, useBuild } from "../options";
 import { withServicesUseBuild } from "../run";
 import { UPGRADABLE_VALIDATORS } from "../contracts/contracts";
-import { promoteUpgradeProgram } from "../governance/two-stage-upgrade";
+import { promoteUpgradeProgram } from "../governance/two-stage-upgrade/promote";
 
 const validator = Options.choice("validator", UPGRADABLE_VALIDATORS).pipe(
   Options.withAlias("v"),
