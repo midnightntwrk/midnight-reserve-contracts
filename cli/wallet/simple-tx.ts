@@ -77,7 +77,7 @@ export const simpleTxProgram = (input: SimpleTxInput) =>
     const { count, amount } = input;
     const outputPath = txFilePath(input);
     const recipient = Option.isNone(input.to)
-      ? yield* Effect.flatMap(DeployerAddress, (d) => d.address)
+      ? yield* DeployerAddress.address
       : yield* Either.mapLeft(
           addressOn(input.to.value, network),
           (issue) => new InputParseError({ source: "--to", issues: [issue] }),

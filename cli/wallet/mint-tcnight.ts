@@ -255,9 +255,7 @@ export const mintTcnightProgram = (input: MintTcnightInput) =>
     yield* out.log(`\nTCnight Policy ID: ${policyId}`);
 
     const { networkId } = environmentOf(network);
-    const reserved = reservedRefs(
-      yield* Effect.flatMap(Profile, (p) => p.config),
-    );
+    const reserved = reservedRefs(yield* Profile.config);
     const blaze = yield* provider.use("Blaze.from", (p) =>
       Blaze.from(p, new GuardedWallet(user, networkId, p, reserved)),
     );

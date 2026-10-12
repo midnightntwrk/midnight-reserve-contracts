@@ -189,9 +189,7 @@ export const mergeUtxosProgram = (input: MergeUtxosInput) =>
     yield* out.log(`Fee UTxO: ${txHash}#${txIndex}`);
 
     const { networkId } = environmentOf(network);
-    const cnight = cnightAssetId(
-      yield* Effect.flatMap(Profile, (p) => p.config),
-    );
+    const cnight = cnightAssetId(yield* Profile.config);
     const { twoStage, forever, logic } = yield* blueprint.twoStage(validator);
     const foreverAddress = addressFromValidator(networkId, forever.Script);
     yield* out.log(`\nForever address: ${foreverAddress.toBech32()}`);

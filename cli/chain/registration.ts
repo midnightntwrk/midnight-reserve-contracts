@@ -3,8 +3,10 @@ import type { RewardAccount } from "@blaze-cardano/core";
 import type { HttpClient } from "@effect/platform";
 import { Effect, Option, Schema } from "effect";
 import { type Environment, publicNetworkOf } from "../config/network-mapping";
-import type { ProviderConfig } from "../config/provider-config";
-import { blockfrostApiKeyVariable } from "../config/provider-config";
+import {
+  blockfrostApiKeyVariable,
+  type ProviderConfig,
+} from "../config/provider-config";
 import { blockfrostAccessTo, blockfrostGet } from "./blockfrost";
 import { ConfigError, type ProviderError, StakeNotRegistered } from "../errors";
 

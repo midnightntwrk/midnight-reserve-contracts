@@ -183,10 +183,7 @@ export const buildInstances = () =>
 
 /** The emulator's aiken.toml profile (default). */
 export const emulatorProfile = () =>
-  runTest(
-    ConfigOver("emulator"),
-    Effect.flatMap(Profile, (p) => p.config),
-  );
+  runTest(ConfigOver("emulator"), Profile.config);
 
 /** The preview configuration and the real fetch client, for the preview-only tests. */
 export const PreviewLive = Layer.mergeAll(ConfigOver("preview"), PlatformLive);
@@ -246,10 +243,7 @@ export const emulatorProgram = async (env: Environment = "emulator") => {
   const emulator = new Emulator([]);
   const capture = captureOutput();
   const layer = EmulatorLive(emulator, capture, env);
-  const deployer = await runTest(
-    layer,
-    Effect.flatMap(DeployerAddress, (d) => d.address),
-  );
+  const deployer = await runTest(layer, DeployerAddress.address);
   const fee = feeUtxo(deployer, FEE_TX);
   emulator.addUtxo(fee);
   return { emulator, capture, layer, deployer, fee };
@@ -258,7 +252,7 @@ export const emulatorProgram = async (env: Environment = "emulator") => {
 /** The deployer's unsigned payment of 5 ADA to itself, built and completed over the Provider. */
 export const unsignedSimpleTx = Effect.gen(function* () {
   const provider = yield* Provider;
-  const recipient = yield* Effect.flatMap(DeployerAddress, (d) => d.address);
+  const recipient = yield* DeployerAddress.address;
   const { maxTxSize } = yield* provider.use("getParameters", (p) =>
     p.getParameters(),
   );

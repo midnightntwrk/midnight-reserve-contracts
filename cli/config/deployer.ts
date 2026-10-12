@@ -13,7 +13,14 @@ const DEFAULT_LOCAL_DEPLOYER =
 export class DeployerAddress extends Context.Tag("cli/DeployerAddress")<
   DeployerAddress,
   { readonly address: Effect.Effect<Address, ConfigError> }
->() {}
+>() {
+  /** The deployer's address, through the service. */
+  static readonly address: Effect.Effect<
+    Address,
+    ConfigError,
+    DeployerAddress
+  > = Effect.flatMap(DeployerAddress, (d) => d.address);
+}
 
 export const DeployerAddressLive = (environment: Environment) =>
   Layer.succeed(DeployerAddress, {

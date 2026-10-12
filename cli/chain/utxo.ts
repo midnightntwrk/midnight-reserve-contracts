@@ -82,7 +82,7 @@ export const deployerUtxo = (
   DeployerAddress | Provider
 > =>
   Effect.gen(function* () {
-    const address = yield* Effect.flatMap(DeployerAddress, (d) => d.address);
+    const address = yield* DeployerAddress.address;
     const utxos = yield* Effect.flatMap(Provider, (provider) =>
       provider.unspentOutputs(address),
     );

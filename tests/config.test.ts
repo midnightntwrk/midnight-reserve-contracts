@@ -56,8 +56,6 @@ describe("env values through the configuration services", () => {
 
 describe("DEPLOYER_ADDRESS", () => {
   const mainnet = "addr1v9uumy8pse90t4juh8hvx3y0xzn439na3hxadq55luydtgqg8mh8a";
-  const deployerAddress = Effect.flatMap(DeployerAddress, (d) => d.address);
-
   test.each([
     [mainnet, `'${mainnet}' is a Mainnet address; preview is on Testnet`],
     ["addr_nope", "is not a bech32 address"],
@@ -67,7 +65,7 @@ describe("DEPLOYER_ADDRESS", () => {
     async (value, reason) => {
       const error = await expectFailure(
         ConfigWith("preview", { DEPLOYER_ADDRESS: value }),
-        deployerAddress,
+        DeployerAddress.address,
         "ConfigError",
       );
       expect(error.key).toBe("DEPLOYER_ADDRESS");

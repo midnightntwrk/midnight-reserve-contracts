@@ -239,11 +239,8 @@ const providerService = (
     const blaze = yield* Effect.cached(
       Effect.gen(function* () {
         const provider = yield* cached;
-        const deployerAddress = yield* Effect.flatMap(
-          DeployerAddress,
-          (d) => d.address,
-        );
-        const config = yield* Effect.flatMap(Profile, (p) => p.config);
+        const deployerAddress = yield* DeployerAddress.address;
+        const config = yield* Profile.config;
         const { networkId } = environmentOf(environment);
         const wallet = new GuardedWallet(
           deployerAddress,

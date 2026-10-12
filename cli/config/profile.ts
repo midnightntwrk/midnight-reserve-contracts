@@ -199,7 +199,11 @@ export class Profile extends Context.Tag("cli/Profile")<
     /** The profile, read from the repository's aiken.toml once. */
     readonly config: Effect.Effect<NetworkConfig, ConfigError>;
   }
->() {}
+>() {
+  /** The profile, through the service. */
+  static readonly config: Effect.Effect<NetworkConfig, ConfigError, Profile> =
+    Effect.flatMap(Profile, (p) => p.config);
+}
 
 /** The environment's profile; aiken.toml is read through FileSystem on first use. */
 export const ProfileLive = (

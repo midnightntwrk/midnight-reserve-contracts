@@ -524,10 +524,7 @@ describe("the deployer wallet", () => {
   test("coin selection never spends a one-shot or the collateral the profile names; a plain cold wallet over the same UTxOs does", async () => {
     const emulator = new Emulator([]);
     const layer = EmulatorLive(emulator, captureOutput(), "emulator");
-    const deployer = await runTest(
-      layer,
-      Effect.flatMap(DeployerAddress, (d) => d.address),
-    );
+    const deployer = await runTest(layer, DeployerAddress.address);
     const reserved = reservedRefs(profile);
     for (const ref of reserved) {
       const [hash, index] = ref.split("#");

@@ -223,12 +223,9 @@ export const mintStagingStateProgram = (input: MintStagingStateInput) =>
     const outputPath = txFilePath(input);
 
     yield* out.log(`\nMinting StagingState NFT for ${validator} on ${network}`);
-    const config = yield* Effect.flatMap(Profile, (p) => p.config);
+    const config = yield* Profile.config;
     const { networkId } = environmentOf(network);
-    const deployerAddress = yield* Effect.flatMap(
-      DeployerAddress,
-      (d) => d.address,
-    );
+    const deployerAddress = yield* DeployerAddress.address;
     const contracts = yield* blueprint.instances;
 
     const v2LogicScript = (yield* blueprint.classOf(track.v2LogicClasses))

@@ -49,3 +49,6 @@ One commit per task; task 2 may be one commit per folder.
   task 2 could move callers without a broken build in between.
 - `tests/config.test.ts` stays one file; each case reads through the
   service that owns its variable.
+- Review follow-up: `DeployerAddress.address` and `Profile.config` are
+  static accessors on the tags (`yield* Profile.config`), replacing
+  `Effect.flatMap(Tag, (s) => s.field)` at every call site.
