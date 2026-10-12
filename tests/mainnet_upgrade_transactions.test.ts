@@ -13,7 +13,8 @@ import { describe, expect, test } from "bun:test";
 import { Either, Option } from "effect";
 import { decodeSigners } from "../cli/datum/signers";
 import { type GovernanceAuthority } from "../cli/governance/authority";
-import { buildStageUpgradeTx } from "../cli/governance/two-stage-upgrade/stage";
+import { planStage } from "../cli/governance/two-stage-upgrade/stage";
+import { toTxBuilder } from "../cli/tx/compile";
 import { buildPromoteUpgradeTx } from "../cli/governance/two-stage-upgrade/promote";
 import {
   nextStagingState,
@@ -129,12 +130,19 @@ const onSnapshot = (
     };
     return body(emulator, blaze, {
       stage: (field, newHash) =>
-        Either.getOrThrow(
-          buildStageUpgradeTx(
-            blaze,
-            { target: tgt, authority: auth, userUtxo },
-            { ...params, field, newHash },
+        toTxBuilder(
+          blaze,
+          Either.getOrThrow(
+            planStage(
+              { target: tgt, authority: auth, userUtxo },
+              { networkId: NetworkId.Mainnet, field, newHash },
+            ),
           ),
+          {
+            changeAddress: addr,
+            feePadding: 0n,
+            metadata: Option.some("stage-upgrade"),
+          },
         ),
       promote: (field, authority = auth) =>
         Either.getOrThrow(

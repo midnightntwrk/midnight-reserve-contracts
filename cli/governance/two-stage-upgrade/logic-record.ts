@@ -88,12 +88,15 @@ export const prepareLogicCopy = (
     ),
   );
 
+/** The record updates a stage or a promote makes, prepared and not yet written. */
+export type LogicRecord = readonly RecordUpdate[];
+
 /** What a stage records: the copied logic, then, unless it re-stages a promoted validator, its tracking as staged. */
 export const stageRecord = (
   name: string,
   copy: Option.Option<PreparedMerge>,
   restage: boolean,
-): RecordUpdate[] => [
+): LogicRecord => [
   ...Option.toArray(
     Option.map(copy, (prepared): RecordUpdate => ({
       _tag: "Merge",
@@ -108,7 +111,7 @@ export const stageRecord = (
 export const promoteRecord = (environment: string, stagedLogicHash: string) =>
   Effect.map(
     validatorNameByHash(environment, stagedLogicHash),
-    (name): RecordUpdate[] => [
+    (name): LogicRecord => [
       {
         _tag: "Track",
         as: "promoted",
@@ -145,7 +148,7 @@ const renderRecord = (network: string, outcomes: readonly RecordOutcome[]) =>
   );
 
 /** Write the record updates and print what they did. */
-export const applyRecord = (network: string, record: readonly RecordUpdate[]) =>
+export const applyRecord = (network: string, record: LogicRecord) =>
   Effect.flatMap(applyRecordUpdate(network, record), (outcomes) =>
     renderRecord(network, outcomes),
   );

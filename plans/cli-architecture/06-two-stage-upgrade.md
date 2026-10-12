@@ -65,3 +65,41 @@ Task 1 (pure move):
   reads and log lines; `stageRecord` is built where the old program built
   its list, `promoteRecord` where it read the staged logic's name.
 - The programs have no separate `resolve` yet: that comes with the ports.
+
+Task 2 (stage on plan/compile):
+
+- `planStage` returns `Either<TxPlan, DatumParseError>`: the staging UTxO's
+  datum is read raw. The target step is the exported fragment `stageStep`,
+  and `state.ts` holds the shared `twoStageStep` / `TwoStageStep`
+  (spend, reference, script or script reference, output), so promote reuses
+  it. `stage_auth_all` still stages seven targets in one transaction: it
+  joins seven `stageStep` fragments and one `governanceAuthorityPlan` into a
+  `TxPlan` by hand, as the old test chained `stageUpgradeStep` calls.
+- `governanceAuthorityPlan` returns the plan parts the authority owns:
+  references (threshold, both forevers, the council main when it applies),
+  the witness mints (`planMintWitnesses`), the gov-auth withdrawal and
+  `requiredSignatures`. The gov-auth script is provided by the withdrawal,
+  so `scripts` carries only the target's. `withGovernanceAuthority`,
+  `requiredSignatures` and `withTwoStageScript` stay until promote's port,
+  which still uses them.
+- `StageUpgradeParams` is `{ field, newHash, networkId }`. `ResolvedStage`
+  also carries the `LogicRecord` (`logic-record.ts`'s name for the prepared
+  `RecordUpdate[]`, so `stage.ts` does not import `contracts/snapshot/write`
+  even for the type). The record is applied where it was: after
+  `signAndWrite`.
+- `signerFor` still runs first. `deployerWallet` is read after resolve and
+  Blaze is built inside `compile`: before, `provider.blazeFor` ran mid-resolve
+  (after the logic and record lines), so a DEPLOYER_ADDRESS, aiken.toml or
+  Blaze.from failure now surfaces later. Stdout on the success path is
+  unchanged.
+- The old program's `knownUtxos` equal the plan's spends, references and
+  collateral. `buildTx` (old) and `compile` (new) both run the local check
+  over them.
+- Same-id on the emulator (throwaway, deleted), over the mainnet snapshot
+  UTxOs: the old `buildStageUpgradeTx` plus `buildTx` twice as a control,
+  then `planStage` plus `compile`; id and CBOR equal, one "Local UPLC test
+  passed" per build:
+  - reserve Auth via the main authority with a target script reference
+    `a6e56a35…`
+  - reserve Logic via the staging authority (council main referenced),
+    script provided `1a8ed411…`

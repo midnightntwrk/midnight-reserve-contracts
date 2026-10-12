@@ -10,11 +10,13 @@ import {
   AssetId,
   type NetworkId,
   PaymentAddress,
+  type PlutusData,
   type Script,
   type TransactionInput,
   TransactionOutput,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
+import type { TxPlan } from "../../tx/plan";
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Option } from "effect";
 import * as Contracts from "../../../contract_blueprint";
@@ -130,6 +132,26 @@ export const twoStageOutput = (
     },
     datum: serialize(Contracts.UpgradeState, state).toCore(),
   });
+
+/** The parts of a transaction one target contributes to a plan. */
+export type TwoStageStep = Pick<
+  TxPlan,
+  "spends" | "references" | "scripts" | "outputs"
+>;
+
+/** Spend `spent` with `redeemer`, reference `referenced`, write `output`; the target's script is a reference input when it has a reference script, else provided. */
+export const twoStageStep = (
+  target: TwoStageTarget,
+  spent: TransactionUnspentOutput,
+  redeemer: PlutusData,
+  referenced: TransactionUnspentOutput,
+  output: TransactionOutput,
+): TwoStageStep => ({
+  spends: [{ utxo: spent, redeemer: Option.some(redeemer) }],
+  references: [referenced, ...Option.toArray(target.scriptRef)],
+  scripts: Option.isSome(target.scriptRef) ? [] : [target.twoStage],
+  outputs: [output],
+});
 
 export const withTwoStageScript = (
   txBuilder: TxBuilder,

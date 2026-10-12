@@ -14,9 +14,11 @@ import { describe, test } from "bun:test";
 import { Either, Option } from "effect";
 import {
   type GovernanceAuthority,
-  withGovernanceAuthority,
+  governanceAuthorityPlan,
 } from "../cli/governance/authority";
-import { stageUpgradeStep } from "../cli/governance/two-stage-upgrade/stage";
+import { stageStep } from "../cli/governance/two-stage-upgrade/stage";
+import type { TxPlan } from "../cli/tx/plan";
+import { toTxBuilder } from "../cli/tx/compile";
 import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
   asFunded,
@@ -38,9 +40,9 @@ import {
  *
  * Approach:
  * 1. Deploy each two-stage validator script into a reference script UTxO
- * 2. One stageUpgradeStep per contract: spend its staging UTxO, reference its
+ * 2. One stageStep per contract: spend its staging UTxO, reference its
  *    main and its reference script
- * 3. One withGovernanceAuthority: staging_gov_auth withdrawal (inline) + tech/council witness minting
+ * 3. One governanceAuthorityPlan: staging_gov_auth withdrawal (inline) + tech/council witness minting
  */
 
 /** Seed all 7 two-stage contracts, stage a new auth hash for each, and run the authority as given. */
@@ -158,11 +160,9 @@ const stageAllAuth = (
       ),
       councilMainUtxo: Option.none(),
     };
-    let tx = blaze.newTransaction().addInput(fundingUtxo);
-    for (const actor of actorData) {
-      tx = Either.getOrThrow(
-        stageUpgradeStep(
-          tx,
+    const steps = actorData.map((actor) =>
+      Either.getOrThrow(
+        stageStep(
           {
             twoStage: actor.twoStage.Script,
             mainUtxo: actor.mainUtxo,
@@ -173,9 +173,34 @@ const stageAllAuth = (
           newAuthHash,
           NetworkId.Testnet,
         ),
-      );
-    }
-    tx = withGovernanceAuthority(tx, authorityOf(authority), NetworkId.Testnet);
+      ),
+    );
+    const authorityPlan = governanceAuthorityPlan(
+      authorityOf(authority),
+      NetworkId.Testnet,
+    );
+    const plan: TxPlan = {
+      spends: [
+        { utxo: fundingUtxo, redeemer: Option.none() },
+        ...steps.flatMap((step) => step.spends),
+      ],
+      references: [
+        ...steps.flatMap((step) => step.references),
+        ...authorityPlan.references,
+      ],
+      scripts: steps.flatMap((step) => step.scripts),
+      mints: authorityPlan.mints,
+      outputs: steps.flatMap((step) => step.outputs),
+      withdrawals: authorityPlan.withdrawals,
+      registrations: [],
+      collateral: [],
+      requiredSignatures: authorityPlan.requiredSignatures,
+    };
+    const tx = toTxBuilder(blaze, plan, {
+      changeAddress: addr,
+      feePadding: 0n,
+      metadata: Option.none(),
+    });
 
     return { emulator, blaze, tx };
   });

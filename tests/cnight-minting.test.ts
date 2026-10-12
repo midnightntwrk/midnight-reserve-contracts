@@ -16,8 +16,9 @@ import {
 } from "../contract_blueprint_mainnet";
 import { describe, test } from "bun:test";
 import { type GovernanceAuthority } from "../cli/governance/authority";
-import { buildStageUpgradeTx } from "../cli/governance/two-stage-upgrade/stage";
+import { planStage } from "../cli/governance/two-stage-upgrade/stage";
 import { buildPromoteUpgradeTx } from "../cli/governance/two-stage-upgrade/promote";
+import { toTxBuilder } from "../cli/tx/compile";
 import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
   councilSigners,
@@ -159,21 +160,28 @@ describe("CNight minting proxy chain", () => {
 
       await emulator.expectValidTransaction(
         blaze,
-        Either.getOrThrow(
-          buildStageUpgradeTx(
-            blaze,
-            {
-              target: {
-                twoStage: cnightTwoStage.Script,
-                mainUtxo,
-                stagingUtxo,
-                scriptRef: Option.none(),
+        toTxBuilder(
+          blaze,
+          Either.getOrThrow(
+            planStage(
+              {
+                target: {
+                  twoStage: cnightTwoStage.Script,
+                  mainUtxo,
+                  stagingUtxo,
+                  scriptRef: Option.none(),
+                },
+                authority,
+                userUtxo: fundingUtxos[1],
               },
-              authority,
-              userUtxo: fundingUtxos[1],
-            },
-            { ...params, newHash: alwaysTrueLogic.Script.hash() },
+              { ...params, newHash: alwaysTrueLogic.Script.hash() },
+            ),
           ),
+          {
+            changeAddress: addr,
+            feePadding: 0n,
+            metadata: Option.some("stage-upgrade"),
+          },
         ),
       );
 

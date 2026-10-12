@@ -1,9 +1,10 @@
 /**
  * stage-upgrade: move one field of a two-stage validator's UpgradeState into
  * its staging UTxO. The transaction is the target step (spend the staging
- * UTxO, reference main, write the next state) plus the governance
- * authority. The program resolves everything through Provider/Blueprint and
- * keeps the deployed-scripts snapshot in step with the chain.
+ * UTxO, reference main, write the next state), the fee UTxO and the
+ * governance authority. The program resolves everything through
+ * Provider/Blueprint and keeps the deployed-scripts snapshot in step with the
+ * chain.
  */
 import { serialize } from "@blaze-cardano/data";
 import {
@@ -12,14 +13,8 @@ import {
   type NetworkId,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
-import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
-import { environmentOf } from "../../config/network-mapping";
+import { environmentOf, slotConfigOf } from "../../config/network-mapping";
 import { Blueprint, type UpgradableValidator } from "../../contracts/contracts";
 import { contractUtxos, deployerUtxo, deployerWallet } from "../../chain/utxo";
 import {
@@ -27,10 +22,10 @@ import {
   rawUpgradeStateAt,
   twoStageUtxos,
 } from "../two-stage";
-import { createTxMetadata } from "../../tx/scripts";
 import { signAndWrite, signerFor, witnessCount } from "../../signing/signer";
 import { Output } from "../../output";
-import { buildTx } from "../../tx/complete-tx";
+import { compile } from "../../tx/compile";
+import type { TxPlan } from "../../tx/plan";
 import { buildOutput, PROJECT_ROOT } from "../../contracts/paths";
 import { isPromoted } from "../../contracts/snapshot/read";
 import {
@@ -39,16 +34,12 @@ import {
   type TxFileInput,
   txFilePath,
 } from "../../input";
-import { Provider } from "../../chain/provider";
 import type { DatumParseError } from "../../errors";
 import * as Contracts from "../../../contract_blueprint";
-import {
-  requiredSignatures,
-  resolveAuthority,
-  withGovernanceAuthority,
-} from "../authority";
+import { governanceAuthorityPlan, resolveAuthority } from "../authority";
 import {
   applyRecord,
+  type LogicRecord,
   logicToStage,
   prepareLogicCopy,
   stageRecord,
@@ -57,74 +48,76 @@ import {
   nextStagingState,
   outputRef,
   twoStageOutput,
+  type TwoStageStep,
+  twoStageStep,
   type TwoStageTarget,
   type UpgradeField,
   type UpgradeInputs,
-  withTwoStageScript,
 } from "./state";
 
+const COMMAND = "stage-upgrade";
+
+/** What the stage is for: the field, the hash to stage in it and the network. */
 export interface StageUpgradeParams {
   readonly field: UpgradeField;
   readonly newHash: string;
   readonly networkId: NetworkId;
-  readonly changeAddress: Address;
-  readonly feePadding: bigint;
 }
 
 /** Spend the target's staging UTxO into its next state, referencing main. */
-export const stageUpgradeStep = (
-  txBuilder: TxBuilder,
+export const stageStep = (
   target: TwoStageTarget,
   field: UpgradeField,
   newHash: string,
   networkId: NetworkId,
-): Either.Either<TxBuilder, DatumParseError> =>
-  Either.map(rawUpgradeStateAt(target.stagingUtxo), (current) => {
-    const redeemer = serialize(Contracts.TwoStageRedeemer, [
-      field,
-      { Staging: [outputRef(target.mainUtxo.input()), newHash] },
-    ]);
-    return withTwoStageScript(
-      txBuilder
-        .addInput(target.stagingUtxo, redeemer)
-        .addReferenceInput(target.mainUtxo)
-        .addOutput(
-          twoStageOutput(
-            target,
-            target.stagingUtxo,
-            STAGING_TOKEN_HEX,
-            nextStagingState(field, current, newHash),
-            networkId,
-          ),
-        ),
+): Either.Either<TwoStageStep, DatumParseError> =>
+  Either.map(rawUpgradeStateAt(target.stagingUtxo), (current) =>
+    twoStageStep(
       target,
-    );
-  });
+      target.stagingUtxo,
+      serialize(Contracts.TwoStageRedeemer, [
+        field,
+        { Staging: [outputRef(target.mainUtxo.input()), newHash] },
+      ]),
+      target.mainUtxo,
+      twoStageOutput(
+        target,
+        target.stagingUtxo,
+        STAGING_TOKEN_HEX,
+        nextStagingState(field, current, newHash),
+        networkId,
+      ),
+    ),
+  );
 
 /** The stage transaction: one target step, the fee UTxO, the authority. */
-export const buildStageUpgradeTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+export const planStage = (
   inputs: UpgradeInputs,
   params: StageUpgradeParams,
-): Either.Either<TxBuilder, DatumParseError> =>
-  Either.gen(function* () {
-    const stepped = yield* stageUpgradeStep(
-      blaze.newTransaction(),
-      inputs.target,
-      params.field,
-      params.newHash,
-      params.networkId,
-    );
-    const authorized = withGovernanceAuthority(
-      stepped.addInput(inputs.userUtxo),
-      inputs.authority,
-      params.networkId,
-    );
-    return authorized
-      .setChangeAddress(params.changeAddress)
-      .setMetadata(createTxMetadata("stage-upgrade"))
-      .setFeePadding(params.feePadding);
-  });
+): Either.Either<TxPlan, DatumParseError> =>
+  Either.map(
+    stageStep(inputs.target, params.field, params.newHash, params.networkId),
+    (step) => {
+      const authority = governanceAuthorityPlan(
+        inputs.authority,
+        params.networkId,
+      );
+      return {
+        spends: [
+          ...step.spends,
+          { utxo: inputs.userUtxo, redeemer: Option.none() },
+        ],
+        references: [...step.references, ...authority.references],
+        scripts: step.scripts,
+        mints: authority.mints,
+        outputs: step.outputs,
+        withdrawals: authority.withdrawals,
+        registrations: [],
+        collateral: [],
+        requiredSignatures: authority.requiredSignatures,
+      };
+    },
+  );
 
 /** A stage: the validator and the logic hash to stage, its fee UTxO, whether to sign, where the file goes. */
 export interface StageUpgradeInput extends TxFileInput, FeeInput {
@@ -137,16 +130,20 @@ const sameUtxo = (a: TransactionUnspentOutput, b: TransactionUnspentOutput) =>
   a.input().transactionId() === b.input().transactionId() &&
   a.input().index() === b.input().index();
 
-/** Resolve the inputs, build, complete and write the stage transaction; then, where the environment keeps a record, copy a logic that only the build has into it and track it as staged. */
-export const stageUpgradeProgram = (input: StageUpgradeInput) =>
+/** What the stage plan is built from, where its change goes and the record update that follows it. */
+export interface ResolvedStage {
+  readonly inputs: UpgradeInputs;
+  readonly params: StageUpgradeParams;
+  readonly changeAddress: Address;
+  readonly record: LogicRecord;
+}
+
+/** Read and report everything the stage needs: the logic to stage (a build-only one is prepared for the record), the target's UTxOs, the authority and the fee UTxO. */
+export const resolveStage = (input: StageUpgradeInput) =>
   Effect.gen(function* () {
-    const { network, validator, sign, newLogicHash } = input;
-    const { txHash, txIndex } = input;
-    const signer = yield* signerFor(sign, "both");
+    const { network, validator, newLogicHash, txHash, txIndex } = input;
     const out = yield* Output;
     const blueprint = yield* Blueprint;
-    const provider = yield* Provider;
-    const outputPath = txFilePath(input);
     const profile = environmentOf(network).aikenConfigSection;
 
     yield* out.log(`\nStaging upgrade for ${validator} on ${network} network`);
@@ -179,7 +176,6 @@ export const stageUpgradeProgram = (input: StageUpgradeInput) =>
       `\nTwo Stage Address: ${addressFromValidator(networkId, twoStage).toBech32()}`,
     );
 
-    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const scripts = {
       techAuthForever: contracts.techAuthForever.Script,
       councilForever: contracts.councilForever.Script,
@@ -218,10 +214,8 @@ export const stageUpgradeProgram = (input: StageUpgradeInput) =>
       txHash,
       txIndex,
     );
-
-    const txBuilder = yield* buildStageUpgradeTx(
-      blaze,
-      {
+    const resolved: ResolvedStage = {
+      inputs: {
         target: {
           twoStage,
           mainUtxo: targetMain,
@@ -231,32 +225,37 @@ export const stageUpgradeProgram = (input: StageUpgradeInput) =>
         authority,
         userUtxo,
       },
-      {
-        field: "Logic",
-        newHash: newLogicHash,
-        networkId,
-        changeAddress,
-        feePadding: input.feePadding,
-      },
-    );
-    const required = requiredSignatures(authority);
-    const tx = yield* buildTx(txBuilder, {
-      commandName: "stage-upgrade",
-      environment: network,
-      witnesses: witnessCount(signer, required),
-      knownUtxos: [
-        stagingUtxo,
-        targetMain,
-        authority.thresholdUtxo,
-        authority.techAuthForeverUtxo,
-        authority.councilForeverUtxo,
-        ...Option.toArray(authority.councilMainUtxo),
-        userUtxo,
-      ],
+      params: { field: "Logic", newHash: newLogicHash, networkId },
+      changeAddress,
+      record,
+    };
+    return resolved;
+  });
+
+/** Resolve, plan, compile and write the stage transaction; then, where the environment keeps a record, copy a logic that only the build has into it and track it as staged. */
+export const stageUpgradeProgram = (input: StageUpgradeInput) =>
+  Effect.gen(function* () {
+    const signer = yield* signerFor(input.sign, "both");
+    const { inputs, params, changeAddress, record } =
+      yield* resolveStage(input);
+    const plan = yield* planStage(inputs, params);
+    const tx = yield* compile(plan, {
+      commandName: COMMAND,
+      slotConfig: slotConfigOf(input.network),
+      wallet: yield* deployerWallet,
+      changeAddress,
+      feePadding: input.feePadding,
+      metadata: Option.some(COMMAND),
+      expectedWitnesses: witnessCount(signer, plan.requiredSignatures),
+      contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
     });
+    yield* signAndWrite(
+      tx,
+      txFilePath(input),
+      signer,
+      "Stage Upgrade Transaction",
+    );
 
-    yield* signAndWrite(tx, outputPath, signer, "Stage Upgrade Transaction");
-
-    yield* applyRecord(network, record);
+    yield* applyRecord(input.network, record);
     return tx;
   });

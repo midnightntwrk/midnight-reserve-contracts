@@ -25,7 +25,12 @@ import {
 import type { Environment } from "../config/network-mapping";
 import type { ContractUtxos } from "../chain/utxo";
 import { ensureRegistered } from "../chain/registration";
-import { createRewardAccount, mintWitnesses } from "../tx/scripts";
+import {
+  createRewardAccount,
+  mintWitnesses,
+  planMintWitnesses,
+} from "../tx/scripts";
+import type { TxPlan } from "../tx/plan";
 import { Output } from "../output";
 import { DatumParseError } from "../errors";
 
@@ -75,6 +80,50 @@ export interface GovernanceAuthority {
   /** The council main UTxO the staging authority reads; None when the target's own main already is it. */
   readonly councilMainUtxo: Option.Option<TransactionUnspentOutput>;
 }
+
+/** The authority as plan parts: reference the threshold and both forevers (and the council main when the staging authority reads it), mint both witness tokens, withdraw through gov-auth with the first tech-auth signer as redeemer. */
+export const governanceAuthorityPlan = (
+  authority: GovernanceAuthority,
+  networkId: NetworkId,
+): Pick<
+  TxPlan,
+  "references" | "mints" | "withdrawals" | "requiredSignatures"
+> => {
+  const { techAuth, council } = authority.requirements;
+  const [firstSigner] = authority.techAuthSigners;
+  return {
+    references: [
+      authority.thresholdUtxo,
+      authority.techAuthForeverUtxo,
+      authority.councilForeverUtxo,
+      ...Option.toArray(authority.councilMainUtxo),
+    ],
+    ...planMintWitnesses(
+      [
+        {
+          ...techAuth,
+          signers: authority.techAuthSigners,
+          assetName: TECH_WITNESS_ASSET,
+        },
+        {
+          ...council,
+          signers: authority.councilSigners,
+          assetName: COUNCIL_WITNESS_ASSET,
+        },
+      ],
+      networkId,
+    ),
+    withdrawals: [
+      {
+        rewardAccount: createRewardAccount(authority.govAuth.hash(), networkId),
+        script: authority.govAuth,
+        redeemer: serialize(Contracts.PermissionedRedeemer, {
+          [firstSigner.paymentHash]: firstSigner.sr25519Key,
+        }),
+      },
+    ],
+  };
+};
 
 /** Run the authority: reference the threshold and both forevers, mint both witness tokens, withdraw through gov-auth with the first tech-auth signer as redeemer. */
 export const withGovernanceAuthority = (
