@@ -1,70 +1,73 @@
 /**
- * Stake registration of the governance scripts. Both builders are pure over
- * the resolved scripts (and, for the cNIGHT mint logic, the fee UTxO); the
+ * Stake registration of the governance scripts. The plans are pure over the
+ * resolved scripts (and, for the cNIGHT mint logic, the fee UTxO); the
  * programs resolve them from the blueprint and the chain, refuse a
- * credential the chain already has registered, and write the unsigned
- * transaction file.
+ * credential the chain already has registered, compile the plan and write the
+ * unsigned transaction file.
  */
 import type {
   Address,
   Script,
   TransactionUnspentOutput,
 } from "@blaze-cardano/core";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
-import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Option } from "effect";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
 import { deployerUtxo, deployerWallet } from "../chain/utxo";
 import { registrationOnChain } from "../chain/registration";
-import { createRewardAccount, registerScriptStake } from "../tx/scripts";
+import { createRewardAccount } from "../tx/scripts";
+import type { TxPlan } from "../tx/plan";
 import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";
-import { buildTx } from "../tx/complete-tx";
+import { compile } from "../tx/compile";
 import { Blueprint } from "../contracts/contracts";
-import { Provider } from "../chain/provider";
-import { type Environment, environmentOf } from "../config/network-mapping";
+import {
+  type Environment,
+  environmentOf,
+  slotConfigOf,
+} from "../config/network-mapping";
 import { BlueprintError, PreconditionFailed } from "../errors";
 
 /** A cNIGHT mint logic registration: its fee UTxO and where the file goes. */
 export type RegisterCnightMintLogicInput = TxFileInput & FeeInput;
 
-/** Register the main and staging gov-auth scripts as stake credentials in one transaction. */
-export const buildRegisterGovAuthTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
-  govAuth: Script,
-  stagingGovAuth: Script,
-): TxBuilder =>
-  registerScriptStake(
-    registerScriptStake(blaze.newTransaction(), govAuth),
-    stagingGovAuth,
-  );
+/** The two scripts register-gov-auth registers. */
+export interface GovAuthScripts {
+  readonly govAuth: Script;
+  readonly stagingGovAuth: Script;
+}
+
+/** Register the main and staging gov-auth scripts as stake credentials in one transaction; the wallet supplies the inputs. */
+export const planRegisterGovAuth = (scripts: GovAuthScripts): TxPlan => ({
+  spends: [],
+  references: [],
+  scripts: [],
+  mints: [],
+  outputs: [],
+  withdrawals: [],
+  registrations: [scripts.govAuth, scripts.stagingGovAuth],
+  collateral: [],
+  requiredSignatures: 0,
+});
 
 export interface RegisterCnightMintLogicInputs {
   readonly userUtxo: TransactionUnspentOutput;
   readonly cnightMintLogic: Script;
 }
 
-export interface RegisterCnightMintLogicParams {
-  readonly changeAddress: Address;
-  readonly feePadding: bigint;
-}
-
 /** Register the cNIGHT mint logic script as a stake credential, paying from the given UTxO. */
-export const buildRegisterCnightMintLogicTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+export const planRegisterCnightMintLogic = (
   inputs: RegisterCnightMintLogicInputs,
-  params: RegisterCnightMintLogicParams,
-): TxBuilder =>
-  registerScriptStake(
-    blaze.newTransaction().addInput(inputs.userUtxo),
-    inputs.cnightMintLogic,
-  )
-    .setChangeAddress(params.changeAddress)
-    .setFeePadding(params.feePadding);
+): TxPlan => ({
+  spends: [{ utxo: inputs.userUtxo, redeemer: Option.none() }],
+  references: [],
+  scripts: [],
+  mints: [],
+  outputs: [],
+  withdrawals: [],
+  registrations: [inputs.cnightMintLogic],
+  collateral: [],
+  requiredSignatures: 0,
+});
 
 /** Fail when a script's stake credential is already registered on chain; local and emulator cannot tell, and build. */
 export const refuseRegistered = (
@@ -101,12 +104,11 @@ export const refuseRegistered = (
     }
   });
 
-/** Build (never submit) the registration of main and staging gov auth, and write it to a file. */
-export const registerGovAuthProgram = (input: TxFileInput) =>
+/** Read and report the two gov-auth scripts, and refuse when either credential is already registered. */
+export const resolveRegisterGovAuth = (input: TxFileInput) =>
   Effect.gen(function* () {
     const { network } = input;
     const out = yield* Output;
-    const outputPath = txFilePath(input);
     yield* out.log(`\nRegistering Gov Auth scripts on ${network} network`);
 
     const contracts = yield* Effect.flatMap(Blueprint, (b) => b.instances);
@@ -118,35 +120,47 @@ export const registerGovAuthProgram = (input: TxFileInput) =>
       { label: "Main Gov Auth", script: govAuth },
       { label: "Staging Gov Auth", script: stagingGovAuth },
     ]);
+    const scripts: GovAuthScripts = { govAuth, stagingGovAuth };
+    return scripts;
+  });
 
+/** Resolve, plan, compile and write (never submit) the registration of main and staging gov auth; the wallet's own address takes the change and no fee padding is added. */
+export const registerGovAuthProgram = (input: TxFileInput) =>
+  Effect.gen(function* () {
+    const scripts = yield* resolveRegisterGovAuth(input);
     const wallet = yield* deployerWallet;
-    const blaze = yield* Effect.flatMap(Provider, (p) => p.blazeFor(wallet));
-    const tx = yield* buildTx(
-      buildRegisterGovAuthTx(blaze, govAuth, stagingGovAuth),
-      {
-        commandName: "register-gov-auth",
-        environment: network,
-        witnesses: DEPLOYER_ONLY,
-      },
-    );
+    const tx = yield* compile(planRegisterGovAuth(scripts), {
+      commandName: "register-gov-auth",
+      slotConfig: slotConfigOf(input.network),
+      wallet,
+      changeAddress: wallet.address,
+      feePadding: 0n,
+      metadata: Option.none(),
+      expectedWitnesses: DEPLOYER_ONLY,
+      contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
+    });
     yield* signAndWrite(
       tx,
-      outputPath,
+      txFilePath(input),
       UNSIGNED,
       "Register Government Authority Transaction",
     );
     return tx;
   });
 
-/** Build (never submit) the registration of the cNIGHT mint logic script, and write it to a file. */
-export const registerCnightMintLogicProgram = (
+/** What the cNIGHT mint logic plan is built from and where its change goes. */
+export interface ResolvedRegisterCnightMintLogic {
+  readonly inputs: RegisterCnightMintLogicInputs;
+  readonly changeAddress: Address;
+}
+
+/** Read and report the cNIGHT mint logic script and the fee UTxO, and refuse when the credential is already registered. */
+export const resolveRegisterCnightMintLogic = (
   input: RegisterCnightMintLogicInput,
 ) =>
   Effect.gen(function* () {
     const { network, txHash, txIndex } = input;
     const out = yield* Output;
-    const provider = yield* Provider;
-    const outputPath = txFilePath(input);
 
     yield* out.log(
       `\nRegistering cNIGHT mint logic script on ${network} network`,
@@ -174,28 +188,37 @@ export const registerCnightMintLogicProgram = (
       { label: "cNIGHT mint logic", script: cnightMintLogic },
     ]);
 
-    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const { address: changeAddress, utxo: userUtxo } = yield* deployerUtxo(
       txHash,
       txIndex,
     );
+    const resolved: ResolvedRegisterCnightMintLogic = {
+      inputs: { userUtxo, cnightMintLogic },
+      changeAddress,
+    };
+    return resolved;
+  });
 
-    const tx = yield* buildTx(
-      buildRegisterCnightMintLogicTx(
-        blaze,
-        { userUtxo, cnightMintLogic },
-        { changeAddress, feePadding: input.feePadding },
-      ),
-      {
-        commandName: "register-cnight-mint-logic",
-        environment: network,
-        witnesses: DEPLOYER_ONLY,
-        knownUtxos: [userUtxo],
-      },
-    );
+/** Resolve, plan, compile and write (never submit) the registration of the cNIGHT mint logic script. */
+export const registerCnightMintLogicProgram = (
+  input: RegisterCnightMintLogicInput,
+) =>
+  Effect.gen(function* () {
+    const { inputs, changeAddress } =
+      yield* resolveRegisterCnightMintLogic(input);
+    const tx = yield* compile(planRegisterCnightMintLogic(inputs), {
+      commandName: "register-cnight-mint-logic",
+      slotConfig: slotConfigOf(input.network),
+      wallet: yield* deployerWallet,
+      changeAddress,
+      feePadding: input.feePadding,
+      metadata: Option.none(),
+      expectedWitnesses: DEPLOYER_ONLY,
+      contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
+    });
     yield* signAndWrite(
       tx,
-      outputPath,
+      txFilePath(input),
       UNSIGNED,
       "Register cNIGHT Mint Logic Transaction",
     );

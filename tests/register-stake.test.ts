@@ -1,7 +1,7 @@
 /**
  * Stake registration of the gov-auth scripts and the cNIGHT mint logic: the
- * builders submitted on the emulator (the ledger applies the certs, and
- * refuses a credential it already holds); on preview, the registration
+ * plans as builders submitted on the emulator (the ledger applies the certs,
+ * and refuses a credential it already holds); on preview, the registration
  * checks read the chain.
  */
 import { describe, expect, test } from "bun:test";
@@ -12,13 +12,14 @@ import {
 } from "@blaze-cardano/core";
 import type { Emulator } from "@blaze-cardano/emulator";
 import type { TxBuilder } from "@blaze-cardano/tx";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Option } from "effect";
 import * as Contracts from "../contract_blueprint";
 import {
-  buildRegisterCnightMintLogicTx,
-  buildRegisterGovAuthTx,
+  planRegisterCnightMintLogic,
+  planRegisterGovAuth,
   refuseRegistered,
 } from "../cli/governance/register-stake";
+import { toTxBuilder } from "../cli/tx/compile";
 import { ensureRegistered } from "../cli/chain/registration";
 import { createRewardAccount } from "../cli/tx/scripts";
 import { Blueprint, BlueprintLive } from "../cli/contracts/contracts";
@@ -43,22 +44,32 @@ const stagingGovAuth = new Contracts.GovAuthStagingGovAuthElse();
 const submitted = async (emulator: Emulator, blaze: BlazeOf, tx: TxBuilder) =>
   emulator.submitTransaction(await blaze.signTransaction(await tx.complete()));
 
-/** Each registration: its builder over the funded wallet and the credential it registers. */
+/** Each registration: its plan compiled over the funded wallet and the credential it registers. */
 const REGISTRATIONS = [
   {
     name: "both gov-auth scripts",
     credential: stagingGovAuth.Script.hash(),
-    build: (blaze: BlazeOf) =>
-      buildRegisterGovAuthTx(blaze, govAuth.Script, stagingGovAuth.Script),
+    build: (blaze: BlazeOf, addr: Address) =>
+      toTxBuilder(
+        blaze,
+        planRegisterGovAuth({
+          govAuth: govAuth.Script,
+          stagingGovAuth: stagingGovAuth.Script,
+        }),
+        { changeAddress: addr, feePadding: 0n, metadata: Option.none() },
+      ),
   },
   {
     name: "the cNIGHT mint logic",
     credential: cnightMintLogic.Script.hash(),
     build: (blaze: BlazeOf, addr: Address, fee: TransactionUnspentOutput) =>
-      buildRegisterCnightMintLogicTx(
+      toTxBuilder(
         blaze,
-        { userUtxo: fee, cnightMintLogic: cnightMintLogic.Script },
-        { changeAddress: addr, feePadding: 0n },
+        planRegisterCnightMintLogic({
+          userUtxo: fee,
+          cnightMintLogic: cnightMintLogic.Script,
+        }),
+        { changeAddress: addr, feePadding: 0n, metadata: Option.none() },
       ),
   },
 ];
