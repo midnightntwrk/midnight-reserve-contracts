@@ -1,6 +1,7 @@
 import { describe, test, expect } from "bun:test";
 import {
   Redeemer,
+  RedeemerPurpose,
   Redeemers,
   RedeemerTag,
   Transaction,
@@ -70,7 +71,7 @@ describe("Kupmios evaluateTransaction", () => {
 
     const result = await kupmios.evaluateTransaction(tx, []);
     const [cert] = result.toCore();
-    expect(cert.purpose).toBe("certificate");
+    expect(cert.purpose).toBe(RedeemerPurpose.certificate);
     expect(cert.executionUnits).toEqual({ memory: 7, steps: 11 });
   });
 
