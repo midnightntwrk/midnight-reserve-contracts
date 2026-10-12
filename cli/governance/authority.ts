@@ -11,7 +11,6 @@ import {
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import { parse, serialize } from "@blaze-cardano/data";
-import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
 import * as Contracts from "../../contract_blueprint";
 import { decodeSigners, type Signers } from "../datum/signers";
@@ -25,11 +24,7 @@ import {
 import type { Environment } from "../config/network-mapping";
 import type { ContractUtxos } from "../chain/utxo";
 import { ensureRegistered } from "../chain/registration";
-import {
-  createRewardAccount,
-  mintWitnesses,
-  planMintWitnesses,
-} from "../tx/scripts";
+import { createRewardAccount, planMintWitnesses } from "../tx/scripts";
 import type { TxPlan } from "../tx/plan";
 import { Output } from "../output";
 import { DatumParseError } from "../errors";
@@ -124,51 +119,6 @@ export const governanceAuthorityPlan = (
     ],
   };
 };
-
-/** Run the authority: reference the threshold and both forevers, mint both witness tokens, withdraw through gov-auth with the first tech-auth signer as redeemer. */
-export const withGovernanceAuthority = (
-  txBuilder: TxBuilder,
-  authority: GovernanceAuthority,
-  networkId: NetworkId,
-): TxBuilder => {
-  const { techAuth, council } = authority.requirements;
-  const [firstSigner] = authority.techAuthSigners;
-  const govAuthRedeemer = serialize(Contracts.PermissionedRedeemer, {
-    [firstSigner.paymentHash]: firstSigner.sr25519Key,
-  });
-  const authorized = mintWitnesses(
-    txBuilder
-      .addReferenceInput(authority.thresholdUtxo)
-      .addReferenceInput(authority.techAuthForeverUtxo)
-      .addReferenceInput(authority.councilForeverUtxo)
-      .provideScript(authority.govAuth),
-    [
-      {
-        ...techAuth,
-        signers: authority.techAuthSigners,
-        assetName: TECH_WITNESS_ASSET,
-      },
-      {
-        ...council,
-        signers: authority.councilSigners,
-        assetName: COUNCIL_WITNESS_ASSET,
-      },
-    ],
-    networkId,
-  ).addWithdrawal(
-    createRewardAccount(authority.govAuth.hash(), networkId),
-    0n,
-    govAuthRedeemer,
-  );
-  return Option.match(authority.councilMainUtxo, {
-    onNone: () => authorized,
-    onSome: (councilMain) => authorized.addReferenceInput(councilMain),
-  });
-};
-
-/** The multisig signatures an unsigned transaction of this authority needs: tech auth's and council's. */
-export const requiredSignatures = ({ requirements }: GovernanceAuthority) =>
-  requirements.techAuth.required + requirements.council.required;
 
 /** The authority from its queried UTxOs: both signer sets and the threshold read, the witness requirements logged, its gov-auth reward account checked. */
 export const resolveAuthority = (

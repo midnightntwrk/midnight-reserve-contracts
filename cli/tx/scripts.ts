@@ -13,7 +13,6 @@ import {
   NativeScripts,
   type NetworkId,
   PlutusData,
-  PolicyId,
   RewardAccount,
   Script,
   Metadata,
@@ -58,23 +57,6 @@ export const logicRedeemer = (
       })
     : inner;
 
-/** One witness token minted under each native multisig policy, with the policy script attached. */
-export const mintWitnesses = (
-  txBuilder: TxBuilder,
-  witnesses: readonly {
-    readonly required: number;
-    readonly signers: Signers;
-    readonly assetName: string;
-  }[],
-  networkId: NetworkId,
-): TxBuilder =>
-  witnesses.reduce((tx, { required, signers, assetName }) => {
-    const native = createNativeMultisigScript(required, signers, networkId);
-    return tx
-      .addMint(PolicyId(native.hash()), new Map([[AssetName(assetName), 1n]]))
-      .provideScript(Script.newNativeScript(native));
-  }, txBuilder);
-
 /** One witness token under each native multisig policy, as plan mints, and the signatures they demand together. */
 export const planMintWitnesses = (
   witnesses: readonly {
@@ -93,26 +75,6 @@ export const planMintWitnesses = (
   })),
   requiredSignatures: witnesses.reduce((n, { required }) => n + required, 0),
 });
-
-/** Zero withdrawals through the logic and, when set, the mitigation logic, both with `redeemer`. */
-export const withdrawThroughLogic = (
-  txBuilder: TxBuilder,
-  logic: Script,
-  mitigationLogic: Option.Option<Script>,
-  redeemer: PlutusData,
-  networkId: NetworkId,
-): TxBuilder =>
-  [logic, ...Option.toArray(mitigationLogic)].reduce(
-    (tx, script) =>
-      tx
-        .addWithdrawal(
-          createRewardAccount(script.hash(), networkId),
-          0n,
-          redeemer,
-        )
-        .provideScript(script),
-    txBuilder,
-  );
 
 /** The zero withdrawals through the logic and, when set, the mitigation logic, both with `redeemer`, as plan withdrawals. */
 export const planWithdrawThroughLogic = (

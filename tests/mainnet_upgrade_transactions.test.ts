@@ -15,7 +15,7 @@ import { decodeSigners } from "../cli/datum/signers";
 import { type GovernanceAuthority } from "../cli/governance/authority";
 import { planStage } from "../cli/governance/two-stage-upgrade/stage";
 import { toTxBuilder } from "../cli/tx/compile";
-import { buildPromoteUpgradeTx } from "../cli/governance/two-stage-upgrade/promote";
+import { planPromote } from "../cli/governance/two-stage-upgrade/promote";
 import {
   nextStagingState,
   promotedMainState,
@@ -123,11 +123,6 @@ const onSnapshot = (
     ])
       emulator.addUtxo(utxo);
     registerRewardAccount(emulator, auth.govAuth.hash(), NetworkId.Mainnet);
-    const params = {
-      networkId: NetworkId.Mainnet,
-      changeAddress: addr,
-      feePadding: 0n,
-    };
     return body(emulator, blaze, {
       stage: (field, newHash) =>
         toTxBuilder(
@@ -145,12 +140,23 @@ const onSnapshot = (
           },
         ),
       promote: (field, authority = auth) =>
-        Either.getOrThrow(
-          buildPromoteUpgradeTx(
-            blaze,
-            { target: tgt, authority, userUtxo },
-            { ...params, field, registerLogic: Option.none() },
+        toTxBuilder(
+          blaze,
+          Either.getOrThrow(
+            planPromote(
+              { target: tgt, authority, userUtxo },
+              {
+                networkId: NetworkId.Mainnet,
+                field,
+                registerLogic: Option.none(),
+              },
+            ),
           ),
+          {
+            changeAddress: addr,
+            feePadding: 0n,
+            metadata: Option.some("promote-upgrade"),
+          },
         ),
     });
   });

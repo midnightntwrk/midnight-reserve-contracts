@@ -103,3 +103,25 @@ Task 2 (stage on plan/compile):
     `a6e56a35…`
   - reserve Logic via the staging authority (council main referenced),
     script provided `1a8ed411…`
+
+Task 3 (promote on plan/compile):
+
+- `planPromote` returns `Either<TxPlan, DatumParseError>` (both datums are
+  read raw). The optional logic registration is the plan's `registrations`
+  (`Option.toArray(registerLogic)`), as the other ports do; there is no
+  separate fragment. `PromoteUpgradeParams` is `{ field, networkId,
+  registerLogic }`; `ResolvedPromote` carries the `LogicRecord`, built by
+  `promoteRecord` where the old program read the staged logic's name.
+- Same stdout order, `signerFor` first, and `deployerWallet` after resolve,
+  as in task 2.
+- `withGovernanceAuthority`, `requiredSignatures` and `withTwoStageScript`
+  are deleted with promote's last use. `mintWitnesses` and
+  `withdrawThroughLogic` in `tx/scripts.ts` had no caller left (the second
+  since phase 05) and are deleted there: the one edit outside the target
+  tree, a deletion.
+- Same-id on the emulator (throwaway, deleted), over the mainnet snapshot
+  UTxOs, as for stage with the old `buildPromoteUpgradeTx`; id and CBOR
+  equal, one "Local UPLC test passed" per build, `knownUtxos` equal:
+  - reserve Auth via the main authority, script provided `57de8d88…`
+  - the same with a target script reference and `registerLogic` (the
+    staging gov-auth script, unregistered on the emulator) `ecfa8baa…`

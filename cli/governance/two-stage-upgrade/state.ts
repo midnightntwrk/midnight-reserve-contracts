@@ -17,7 +17,6 @@ import {
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import type { TxPlan } from "../../tx/plan";
-import type { TxBuilder } from "@blaze-cardano/tx";
 import { Option } from "effect";
 import * as Contracts from "../../../contract_blueprint";
 import type { GovernanceAuthority } from "../authority";
@@ -152,12 +151,3 @@ export const twoStageStep = (
   scripts: Option.isSome(target.scriptRef) ? [] : [target.twoStage],
   outputs: [output],
 });
-
-export const withTwoStageScript = (
-  txBuilder: TxBuilder,
-  target: TwoStageTarget,
-) =>
-  Option.match(target.scriptRef, {
-    onNone: () => txBuilder.provideScript(target.twoStage),
-    onSome: (ref) => txBuilder.addReferenceInput(ref),
-  });
