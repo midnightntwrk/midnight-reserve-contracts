@@ -8,8 +8,9 @@ import {
 import { Emulator } from "@blaze-cardano/emulator";
 import type { Blaze, Provider, Wallet } from "@blaze-cardano/sdk";
 import { describe, expect, test } from "bun:test";
-import { Either } from "effect";
-import { buildMergeTx } from "../cli/governance/merge-utxos";
+import { Either, Option } from "effect";
+import { planMerge } from "../cli/governance/merge-utxos";
+import { toTxBuilder } from "../cli/tx/compile";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import {
   cnightAssetId,
@@ -87,23 +88,25 @@ const merge = (
   logicScript: Script = family.logic,
   asset: AssetId = cnightAssetId,
 ) =>
-  buildMergeTx(
-    blaze,
-    {
-      forever: family.forever,
-      utxo1: utxos.utxo1,
-      utxo2: utxos.utxo2,
-      twoStageMainUtxo: family.twoStageMain,
-      userUtxo: utxos.fundingUtxo,
-      logicScript,
-      logicRound: Number(family.mainState[5]),
-    },
-    {
-      cnightAssetId: asset,
-      networkId: NetworkId.Testnet,
-      changeAddress: addr,
-      feePadding: 0n,
-    },
+  Either.map(
+    planMerge(
+      {
+        forever: family.forever,
+        utxo1: utxos.utxo1,
+        utxo2: utxos.utxo2,
+        twoStageMainUtxo: family.twoStageMain,
+        userUtxo: utxos.fundingUtxo,
+        logicScript,
+        logicRound: Number(family.mainState[5]),
+      },
+      { cnightAssetId: asset, networkId: NetworkId.Testnet },
+    ),
+    (plan) =>
+      toTxBuilder(blaze, plan, {
+        changeAddress: addr,
+        feePadding: 0n,
+        metadata: Option.some("merge-utxos"),
+      }),
   );
 
 // The CLI builder against mainnet snapshot two-stage states, validated by the deployed scripts in the emulator.

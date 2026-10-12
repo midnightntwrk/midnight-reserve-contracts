@@ -130,3 +130,31 @@ One commit per task.
   `Provider.blaze` needs the deployer's address and the profile; the types
   are inferred, so `tx/compile.ts` still imports nothing from `config/`.
   `knownUtxos` is the plan's spends followed by its references.
+- Merge pilot:
+  - The program reads `blueprint.contracts` before `compile` rather than
+    inside the local step. It cannot fail there: `contracts` and
+    `twoStage` load the same module, and `enumerateContracts` skips any
+    class that throws.
+  - Blaze is now built inside `compile`, after "Building transaction...",
+    not before the contract UTxO lookup. Stdout on the success path is
+    unchanged.
+  - `MergeParams` keeps only `cnightAssetId` and `networkId`.
+  - `tests/mainnet_merge_transactions.test.ts` builds through
+    `toTxBuilder(blaze, planMerge(…), …)` with its cases unchanged.
+- Acceptance as run:
+  - Emulator same-id check (throwaway, deleted): old `buildMergeTx` +
+    `buildTx` and `planMerge` + `compile` built the same transaction id
+    and the same CBOR from the same UTxOs. All three builds (old twice as
+    a control, new once) logged "Local UPLC test passed".
+  - Preview: no forever UTxO on the preview chain held cNIGHT and a
+    datum. Preview ICS had three cNIGHT UTxOs, none with a datum; the
+    other forevers held no cNIGHT. At the user's request, preview
+    transaction `c07f78d3…1298` (built through `compile` with an empty
+    spend list, submitted with `sign-and-submit`) locked two UTxOs at the
+    ICS forever: 2 ADA each, 1,000 and 2,000 cNIGHT, datum `Constr 0 [0, 0]`
+    as on the deployed ICS UTxO. The old and new CLI then ran
+    `merge-utxos -n preview --validator ics` over `c07f…#0` and `#1`, build
+    only, with the same arguments. Stdout was identical except the output
+    directory, stderr was identical, and both wrote the same file (tx
+    `d2ba1369…2091`). Both passed the local UPLC check. The merge was not
+    submitted.
