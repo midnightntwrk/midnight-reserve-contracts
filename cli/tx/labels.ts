@@ -11,11 +11,17 @@ export interface ValidatorLabels {
   [indexRef: string]: string;
 }
 
+/** A blueprint contract as the labels need it: its class name and script hash. */
+export interface NamedContract {
+  readonly className: string;
+  readonly hash: string;
+}
+
 /** Map redeemer index references ("spend[0]", "withdraw[1]") of a draft transaction to the class names of the blueprint contracts. */
 export function validatorLabels(
   tx: Transaction,
   knownUtxos: readonly TransactionUnspentOutput[],
-  contracts: readonly { readonly className: string; readonly hash: string }[],
+  contracts: readonly NamedContract[],
 ): ValidatorLabels {
   const labels: ValidatorLabels = {};
   const hashToName = new Map(contracts.map((c) => [c.hash, c.className]));

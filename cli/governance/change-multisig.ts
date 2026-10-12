@@ -46,7 +46,7 @@ import {
   withdrawThroughLogic,
 } from "../tx/scripts";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
-import { buildTx } from "../tx/compile";
+import { buildTx } from "../tx/complete-tx";
 import {
   type AuthorityThreshold,
   type WitnessRequirement,

@@ -41,7 +41,7 @@ import {
 import { createTxMetadata } from "../tx/scripts";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { Output } from "../output";
-import { buildTx } from "../tx/compile";
+import { buildTx } from "../tx/complete-tx";
 import type { V2TrackValidator } from "./two-stage-upgrade";
 import { Provider } from "../chain/provider";
 import { BlueprintError } from "../errors";

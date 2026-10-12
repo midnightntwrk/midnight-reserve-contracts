@@ -21,7 +21,7 @@ import { contractUtxos, deployerUtxo } from "../chain/utxo";
 import { signersAt, thresholdAt } from "./authority";
 import { inlineDatum } from "../datum/inline";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
-import { buildTx } from "../tx/compile";
+import { buildTx } from "../tx/complete-tx";
 import {
   decodeTerms,
   encodeTerms,

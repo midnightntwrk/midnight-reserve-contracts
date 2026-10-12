@@ -1,4 +1,8 @@
-import { NetworkId } from "@blaze-cardano/core";
+import {
+  NetworkId,
+  SLOT_CONFIG_NETWORK,
+  type SlotConfig,
+} from "@blaze-cardano/core";
 import { Option } from "effect";
 
 /** A Cardano network that Blockfrost serves. */
@@ -152,3 +156,13 @@ export const defaultProviderFor = (
     : cardanoNetwork === "local"
       ? "kupmios"
       : "blockfrost";
+
+/** The slot configuration of an environment's chain, for the local UPLC evaluator: Mainnet or Preprod by name, Preview for everything else (local and the emulator included). */
+export const slotConfigOf = (environment: Environment): SlotConfig => {
+  const { cardanoNetwork } = environmentOf(environment);
+  return cardanoNetwork === "mainnet"
+    ? SLOT_CONFIG_NETWORK.Mainnet
+    : cardanoNetwork === "preprod"
+      ? SLOT_CONFIG_NETWORK.Preprod
+      : SLOT_CONFIG_NETWORK.Preview;
+};

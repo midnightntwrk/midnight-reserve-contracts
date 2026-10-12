@@ -96,3 +96,19 @@ One commit per task.
 - `merge-utxos` build-only run against preview writes the same file shape
   and output lines as before (no submit).
 - `tx/compile.ts` imports nothing from `contracts/` or `config/`.
+
+## Deviations
+
+- A move commit comes before task 1. `buildTx` reads `Blueprint` and the
+  environment, so it cannot stay in `tx/compile.ts` under the import
+  acceptance. Its body becomes `completeChecked(txBuilder, completion)` in
+  `tx/compile.ts`, taking the slot configuration and a `contracts` effect.
+  `completeChecked` still reads `contracts` inside the local step, so a
+  failure there only fails the local check, as before. `buildTx` moves to
+  `tx/complete-tx.ts` as a thin wrapper that supplies `slotConfigOf(environment)` and
+  the Blueprint's contracts when a Blueprint is provided, and an empty
+  list otherwise. `tx/complete-tx.ts` imports `config/` and `contracts/`
+  until phase 08 deletes it. `slotConfigFor` is now
+  `slotConfigOf(environment)` in `config/network-mapping.ts`; a throwaway
+  check confirmed it returns the same configuration for every environment.
+  `tx/labels.ts` names the label input `NamedContract`.

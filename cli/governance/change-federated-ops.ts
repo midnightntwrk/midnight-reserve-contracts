@@ -29,7 +29,7 @@ import {
 } from "../datum/federated-ops";
 import { inlineDatum } from "../datum/inline";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
-import { buildTx } from "../tx/compile";
+import { buildTx } from "../tx/complete-tx";
 import { logicRound as datumLogicRound } from "../datum/datum-versions";
 import { witnessRequirements } from "./threshold";
 import {

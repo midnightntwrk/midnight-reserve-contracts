@@ -35,7 +35,7 @@ import {
 } from "../tx/scripts";
 import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";
-import { buildTx } from "../tx/compile";
+import { buildTx } from "../tx/complete-tx";
 import {
   type FeeInput,
   type TxFileInput,

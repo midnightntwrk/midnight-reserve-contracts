@@ -24,7 +24,7 @@ import {
 } from "@blaze-cardano/sdk";
 import { calculateMinAda, type TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
-import { buildTx } from "../tx/compile";
+import { buildTx } from "../tx/complete-tx";
 import { Provider } from "../chain/provider";
 import { transactionFile } from "../signing/tx-file";
 import type { TestEnvironment } from "../config/network-mapping";

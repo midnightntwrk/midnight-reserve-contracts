@@ -62,7 +62,7 @@ import {
 } from "../tx/scripts";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { Output } from "../output";
-import { buildTx } from "../tx/compile";
+import { buildTx } from "../tx/complete-tx";
 import { buildOutput, PROJECT_ROOT } from "../contracts/paths";
 import type { DeployedScripts } from "../contracts/snapshot/context";
 import {

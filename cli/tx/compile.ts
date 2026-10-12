@@ -1,25 +1,21 @@
 import {
+  type SlotConfig,
   Transaction,
   type TransactionUnspentOutput,
-  SLOT_CONFIG_NETWORK,
 } from "@blaze-cardano/core";
 import type { TxBuilder } from "@blaze-cardano/sdk";
 import { makeUplcEvaluator } from "@blaze-cardano/vm";
 import { Data, Effect, Either, Option } from "effect";
 import { Output } from "../output";
 import {
-  environmentOf,
-  type CardanoNetwork,
-  type Environment,
-} from "../config/network-mapping";
-import {
+  type NamedContract,
   validatorLabels,
   labelValidators,
   type ValidatorLabels,
 } from "./labels";
 import { Provider } from "../chain/provider";
-import { Blueprint } from "../contracts/contracts";
 import {
+  type BlueprintError,
   type ConfigError,
   type ProviderError,
   renderError,
@@ -46,14 +42,7 @@ function extractTraces(errorMsg: string): string[] {
   return traces;
 }
 
-const slotConfigFor = (cardanoNetwork: CardanoNetwork | null) =>
-  cardanoNetwork === "mainnet"
-    ? SLOT_CONFIG_NETWORK.Mainnet
-    : cardanoNetwork === "preprod"
-      ? SLOT_CONFIG_NETWORK.Preprod
-      : SLOT_CONFIG_NETWORK.Preview;
-
-/** The advisory local UPLC phase did not pass; consumed inside buildTx, never leaves it. */
+/** The advisory local UPLC phase did not pass; consumed inside completeChecked, never leaves it. */
 class LocalUplcFailed extends Data.TaggedError("LocalUplcFailed")<{
   readonly cause: unknown;
 }> {}
@@ -83,28 +72,31 @@ const describeBuildCause = (
   return lines;
 };
 
-/** What buildTx needs beyond the builder. */
-interface BuildTxOptions {
+/** What the completion needs beyond the builder. */
+export interface Completion {
   readonly commandName: string;
-  readonly environment: Environment;
+  /** The chain's slot configuration, for the local evaluator. */
+  readonly slotConfig: SlotConfig;
   /** Inputs the draft spends or references; enables the local UPLC phase. */
-  readonly knownUtxos?: readonly TransactionUnspentOutput[];
+  readonly knownUtxos: readonly TransactionUnspentOutput[];
   /** The vkey witnesses the transaction carries at submit (witnessCount), counted in its size. */
   readonly witnesses: number;
+  /** The contracts that name validators in traces, read in the local phase only; a failure there fails that phase alone. */
+  readonly contracts: Effect.Effect<readonly NamedContract[], BlueprintError>;
 }
 
 /** Complete the builder, with the local evaluator when an advisory local UPLC run over the draft passed; a failure is a TxBuildError whose traces name the validators. */
-export const buildTx = (
+export const completeChecked = (
   txBuilder: TxBuilder,
-  options: BuildTxOptions,
+  completion: Completion,
 ): Effect.Effect<
   Transaction,
   TxBuildError | ProviderError | ConfigError,
   Provider | Output
 > =>
   Effect.gen(function* () {
-    const { commandName, environment } = options;
-    const knownUtxos = [...(options.knownUtxos ?? [])];
+    const { commandName } = completion;
+    const knownUtxos = [...completion.knownUtxos];
     const provider = yield* Provider;
     const output = yield* Output;
     let traces: string[] = [];
@@ -117,24 +109,20 @@ export const buildTx = (
       const local = yield* Effect.either(
         Effect.gen(function* () {
           const params = yield* provider.parameters;
-          const { cardanoNetwork } = environmentOf(environment);
           const { draftTx, evaluator } = yield* localStep(() => ({
             draftTx: Transaction.fromCbor(txBuilder.toCbor()),
             evaluator: makeUplcEvaluator(
               params,
               1.2,
               1.2,
-              slotConfigFor(cardanoNetwork),
+              completion.slotConfig,
             ),
           }));
-          const blueprint = yield* Effect.serviceOption(Blueprint);
-          if (Option.isSome(blueprint)) {
-            labels = validatorLabels(
-              draftTx,
-              knownUtxos,
-              yield* blueprint.value.contracts,
-            );
-          }
+          labels = validatorLabels(
+            draftTx,
+            knownUtxos,
+            yield* completion.contracts,
+          );
           yield* Effect.tryPromise({
             try: () => evaluator(draftTx, knownUtxos),
             catch: (cause) => new LocalUplcFailed({ cause }),
@@ -170,7 +158,7 @@ export const buildTx = (
     const tx = yield* completeBuilder(
       txBuilder,
       commandName,
-      { maxTxSize, witnesses: options.witnesses },
+      { maxTxSize, witnesses: completion.witnesses },
       traces,
       labels,
     );
