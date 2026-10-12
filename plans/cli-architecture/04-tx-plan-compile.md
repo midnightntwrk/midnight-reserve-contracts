@@ -112,3 +112,21 @@ One commit per task.
   `slotConfigOf(environment)` in `config/network-mapping.ts`; a throwaway
   check confirmed it returns the same configuration for every environment.
   `tx/labels.ts` names the label input `NamedContract`.
+- Task 1 ships only what the merge pilot uses, so nothing is dead code.
+  `TxPlan` has `spends`, `references`, `scripts`, `outputs`
+  (`TransactionOutput` only) and `withdrawals`. `mints`, `registrations`,
+  `collateral`, the `payLovelace` output and `requiredSignatures`, with
+  their `toTxBuilder` branches, arrive with their first caller in phases
+  05 and 07, in the order the table above gives (mints between scripts and
+  outputs, registrations after withdrawals, then collateral).
+  `planMintWitnesses`, the registration fragment and `mergePlans` wait the
+  same way. `planWithdrawThroughLogic` returns only withdrawals. Each
+  withdrawal carries its script, which `toTxBuilder` provides, so the
+  fragment returns no separate `scripts`.
+- `toTxBuilder` takes `Pick<CompileOptions, "changeAddress" | "feePadding"
+  | "metadata">`, so emulator tests need not invent a slot configuration,
+  a witness count or contracts.
+- `compile` requires `Provider | Output | DeployerAddress | Profile`.
+  `Provider.blaze` needs the deployer's address and the profile; the types
+  are inferred, so `tx/compile.ts` still imports nothing from `config/`.
+  `knownUtxos` is the plan's spends followed by its references.

@@ -24,6 +24,7 @@ import {
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Option } from "effect";
 import type { Signers } from "../datum/signers";
+import type { TxPlan } from "./plan";
 
 function createNativeMultisigScript(
   requiredSigners: number,
@@ -93,6 +94,19 @@ export const withdrawThroughLogic = (
         .provideScript(script),
     txBuilder,
   );
+
+/** The zero withdrawals through the logic and, when set, the mitigation logic, both with `redeemer`, as plan withdrawals. */
+export const planWithdrawThroughLogic = (
+  logic: Script,
+  mitigationLogic: Option.Option<Script>,
+  redeemer: PlutusData,
+  networkId: NetworkId,
+): TxPlan["withdrawals"] =>
+  [logic, ...Option.toArray(mitigationLogic)].map((script) => ({
+    rewardAccount: createRewardAccount(script.hash(), networkId),
+    script,
+    redeemer,
+  }));
 
 /** Register a script's stake credential; the Conway reg_cert needs the script witness and a cert redeemer. */
 export function registerScriptStake(

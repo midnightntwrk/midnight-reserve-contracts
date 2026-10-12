@@ -3,9 +3,16 @@ import {
   Transaction,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
-import type { TxBuilder } from "@blaze-cardano/sdk";
+import type {
+  Blaze,
+  Provider as BlazeProvider,
+  TxBuilder,
+  Wallet,
+} from "@blaze-cardano/sdk";
 import { makeUplcEvaluator } from "@blaze-cardano/vm";
 import { Data, Effect, Either, Option } from "effect";
+import type { CompileOptions, TxPlan } from "./plan";
+import { createTxMetadata } from "./scripts";
 import { Output } from "../output";
 import {
   type NamedContract,
@@ -164,6 +171,39 @@ export const completeChecked = (
     );
     yield* output.success(`Transaction built: ${tx.getId()}`);
     return tx;
+  });
+
+/** The plan on a fresh Blaze builder, in the order the hand-written builders used (spends, references, scripts, outputs, withdrawals), then change address, metadata and fee padding. */
+export const toTxBuilder = (
+  blaze: Blaze<BlazeProvider, Wallet>,
+  plan: TxPlan,
+  options: Pick<CompileOptions, "changeAddress" | "feePadding" | "metadata">,
+): TxBuilder => {
+  const txBuilder = blaze.newTransaction();
+  for (const { utxo, redeemer } of plan.spends)
+    txBuilder.addInput(utxo, Option.getOrUndefined(redeemer));
+  for (const utxo of plan.references) txBuilder.addReferenceInput(utxo);
+  for (const script of plan.scripts) txBuilder.provideScript(script);
+  for (const output of plan.outputs) txBuilder.addOutput(output);
+  for (const { rewardAccount, script, redeemer } of plan.withdrawals)
+    txBuilder.addWithdrawal(rewardAccount, 0n, redeemer).provideScript(script);
+  txBuilder.setChangeAddress(options.changeAddress);
+  if (Option.isSome(options.metadata))
+    txBuilder.setMetadata(createTxMetadata(options.metadata.value));
+  return txBuilder.setFeePadding(options.feePadding);
+};
+
+/** Compile a plan over the deployer's Blaze: the local UPLC check over the UTxOs it spends and references, then completion and the size check (completeChecked). */
+export const compile = (plan: TxPlan, options: CompileOptions) =>
+  Effect.gen(function* () {
+    const blaze = yield* Effect.flatMap(Provider, (provider) => provider.blaze);
+    return yield* completeChecked(toTxBuilder(blaze, plan, options), {
+      commandName: options.commandName,
+      slotConfig: options.slotConfig,
+      knownUtxos: [...plan.spends.map(({ utxo }) => utxo), ...plan.references],
+      witnesses: options.expectedWitnesses,
+      contracts: Effect.succeed(options.contracts),
+    });
   });
 
 /** One vkey witness in the witness set: [vkey (32 bytes), signature (64 bytes)] with its CBOR headers. */
