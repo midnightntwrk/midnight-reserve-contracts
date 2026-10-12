@@ -1,7 +1,7 @@
 /**
- * change-federated-ops through buildFederatedOpsChangeTx on the emulator:
+ * change-federated-ops through planFederatedOpsChange on the emulator:
  * the federated-ops forever (v1 datum), threshold, council and tech-auth
- * forever and federated-ops two-stage UTxOs are seeded, the builder gets them
+ * forever and federated-ops two-stage UTxOs are seeded, the plan gets them
  * as inputs, the emulator runs the validators.
  */
 import {
@@ -15,9 +15,10 @@ import { Either, Option } from "effect";
 import { describe, expect, test } from "bun:test";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import {
-  buildFederatedOpsChangeTx,
+  planFederatedOpsChange,
   requireMigratedDatum,
 } from "../cli/governance/change-federated-ops";
+import { toTxBuilder } from "../cli/tx/compile";
 import {
   candidateToPermissionedDatum,
   decodeFederatedOps,
@@ -89,28 +90,30 @@ const federatedOpsChange = (
     };
     for (const u of Object.values(seeded)) emulator.addUtxo(u);
     registerRewardAccount(emulator, logic.Script.hash());
-    const builder = buildFederatedOpsChangeTx(
+    const builder = toTxBuilder(
       blaze,
-      {
-        forever: forever.Script,
-        ...seeded,
-        userUtxo,
-        logicScript: logic.Script,
-        mitigationLogicScript: Option.none(),
-        logicRound: 0,
-        currentData: Either.getOrThrow(decodeFederatedOps(currentDatum)),
-        councilSigners: witnesses.council,
-        techAuthSigners: witnesses.techAuth,
-        requirements: requirementsOf({
+      planFederatedOpsChange(
+        {
+          forever: forever.Script,
+          ...seeded,
+          userUtxo,
+          logicScript: logic.Script,
+          mitigationLogicScript: Option.none(),
+          logicRound: 0,
+          currentData: Either.getOrThrow(decodeFederatedOps(currentDatum)),
           councilSigners: witnesses.council,
           techAuthSigners: witnesses.techAuth,
-        }),
-      },
+          requirements: requirementsOf({
+            councilSigners: witnesses.council,
+            techAuthSigners: witnesses.techAuth,
+          }),
+        },
+        { newCandidates, networkId: NetworkId.Testnet },
+      ),
       {
-        newCandidates,
-        networkId: NetworkId.Testnet,
         changeAddress: addr,
         feePadding: 0n,
+        metadata: Option.some("change-federated-ops"),
       },
     );
     return { emulator, blaze, builder };

@@ -4,21 +4,16 @@
  * council and tech-auth UTxOs and the two-stage UpgradeState; the datum's
  * own shape (v1 or v2) is kept, since migrate-federated-ops can change it
  * without bumping the two-stage logicRound.
- * buildFederatedOpsChangeTx is pure over the resolved inputs.
+ * planFederatedOpsChange is pure over the resolved inputs and compile
+ * completes it.
  */
 import {
   type Address,
   addressFromValidator,
   type NetworkId,
 } from "@blaze-cardano/core";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
-import type { TxBuilder } from "@blaze-cardano/tx";
-import { Effect, Either, Record } from "effect";
-import { environmentOf } from "../config/network-mapping";
+import { Effect, Either, Option, Record } from "effect";
+import { environmentOf, slotConfigOf } from "../config/network-mapping";
 import { contractUtxos, deployerUtxo, deployerWallet } from "../chain/utxo";
 import { signersAt, thresholdAt } from "./authority";
 import {
@@ -29,20 +24,22 @@ import {
 } from "../datum/federated-ops";
 import { inlineDatum } from "../datum/inline";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
-import { buildTx } from "../tx/complete-tx";
+import { compile } from "../tx/compile";
+import type { TxPlan } from "../tx/plan";
 import { logicRound as datumLogicRound } from "../datum/datum-versions";
 import { witnessRequirements } from "./threshold";
 import {
-  buildGovernedForeverUpdateTx,
   type GovernedForeverInputs,
+  planGovernedForeverUpdate,
 } from "./governed-forever";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
 import { twoStageLogic } from "./two-stage";
 import { Blueprint } from "../contracts/contracts";
 import { permissionedCandidates } from "../config/intent-env";
 import { Output } from "../output";
-import { Provider } from "../chain/provider";
 import { PreconditionFailed } from "../errors";
+
+const COMMAND = "change-federated-ops";
 
 /** A federated ops change: its fee UTxO, whether to sign, and where the file goes. */
 export interface FederatedOpsChangeInput extends TxFileInput, FeeInput {
@@ -57,24 +54,20 @@ export interface FederatedOpsChangeInputs extends GovernedForeverInputs {
 export interface FederatedOpsChangeParams {
   readonly newCandidates: readonly PermissionedCandidate[];
   readonly networkId: NetworkId;
-  readonly changeAddress: Address;
-  readonly feePadding: bigint;
 }
 
-/** The change transaction: the governed forever update with the new candidate list. */
-export const buildFederatedOpsChangeTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+/** The change: the governed forever update with the new candidate list. */
+export const planFederatedOpsChange = (
   inputs: FederatedOpsChangeInputs,
   params: FederatedOpsChangeParams,
-): TxBuilder =>
-  buildGovernedForeverUpdateTx(
-    blaze,
+): TxPlan =>
+  planGovernedForeverUpdate(
     inputs,
     encodeFederatedOps({
       ...inputs.currentData,
       candidates: params.newCandidates,
     }),
-    { ...params, txType: "change-federated-ops" },
+    params,
   );
 
 const QUERY = {
@@ -99,15 +92,19 @@ export const requireMigratedDatum = (
       )
     : Either.void;
 
-/** Resolve the inputs, build, complete and write the change transaction. */
-export const federatedOpsChangeProgram = (input: FederatedOpsChangeInput) =>
+/** What the federated ops change plan is built from and where its change goes. */
+export interface ResolvedFederatedOpsChange {
+  readonly inputs: FederatedOpsChangeInputs;
+  readonly params: FederatedOpsChangeParams;
+  readonly changeAddress: Address;
+}
+
+/** Read and report everything the change needs: the forever, threshold, authority and two-stage UTxOs, the current datum, both authorities' signers, the new candidates, the threshold's requirements and the fee UTxO. */
+export const resolveFederatedOpsChange = (input: FederatedOpsChangeInput) =>
   Effect.gen(function* () {
-    const { network, txHash, txIndex, sign } = input;
-    const signer = yield* signerFor(sign, "both");
+    const { network, txHash, txIndex } = input;
     const out = yield* Output;
     const blueprint = yield* Blueprint;
-    const provider = yield* Provider;
-    const outputPath = txFilePath(input);
 
     yield* out.log(`\nChanging Federated Ops members on ${network} network`);
     yield* out.log(`Using UTxO: ${txHash}#${txIndex}`);
@@ -120,7 +117,6 @@ export const federatedOpsChangeProgram = (input: FederatedOpsChangeInput) =>
       `\nFederated Ops Forever Address: ${foreverAddress.toBech32()}`,
     );
 
-    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const scripts = {
       federatedOpsForever: forever,
       federatedOpsThreshold: contracts.mainFederatedOpsUpdateThreshold.Script,
@@ -178,22 +174,6 @@ export const federatedOpsChangeProgram = (input: FederatedOpsChangeInput) =>
       txHash,
       txIndex,
     );
-    const inputs: FederatedOpsChangeInputs = {
-      forever,
-      foreverUtxo,
-      thresholdUtxo,
-      councilForeverUtxo,
-      techAuthForeverUtxo,
-      twoStageUtxo,
-      userUtxo,
-      logicScript,
-      mitigationLogicScript,
-      logicRound,
-      currentData,
-      councilSigners,
-      techAuthSigners,
-      requirements,
-    };
     const { techAuth, council } = requirements;
     yield* out.log(
       `\nRequired tech auth signers: ${techAuth.required}/${techAuth.total}`,
@@ -201,29 +181,49 @@ export const federatedOpsChangeProgram = (input: FederatedOpsChangeInput) =>
     yield* out.log(
       `Required council signers: ${council.required}/${council.total}`,
     );
-
-    const txBuilder = buildFederatedOpsChangeTx(blaze, inputs, {
-      newCandidates,
-      networkId,
-      changeAddress,
-      feePadding: input.feePadding,
-    });
-    const tx = yield* buildTx(txBuilder, {
-      commandName: "change-federated-ops",
-      environment: network,
-      witnesses: witnessCount(signer, techAuth.required + council.required),
-      knownUtxos: [
+    const resolved: ResolvedFederatedOpsChange = {
+      inputs: {
+        forever,
         foreverUtxo,
         thresholdUtxo,
         councilForeverUtxo,
         techAuthForeverUtxo,
         twoStageUtxo,
         userUtxo,
-      ],
+        logicScript,
+        mitigationLogicScript,
+        logicRound,
+        currentData,
+        councilSigners,
+        techAuthSigners,
+        requirements,
+      },
+      params: { newCandidates, networkId },
+      changeAddress,
+    };
+    return resolved;
+  });
+
+/** Resolve, plan, compile and write the change transaction. */
+export const federatedOpsChangeProgram = (input: FederatedOpsChangeInput) =>
+  Effect.gen(function* () {
+    const signer = yield* signerFor(input.sign, "both");
+    const { inputs, params, changeAddress } =
+      yield* resolveFederatedOpsChange(input);
+    const plan = planFederatedOpsChange(inputs, params);
+    const tx = yield* compile(plan, {
+      commandName: COMMAND,
+      slotConfig: slotConfigOf(input.network),
+      wallet: yield* deployerWallet,
+      changeAddress,
+      feePadding: input.feePadding,
+      metadata: Option.some(COMMAND),
+      expectedWitnesses: witnessCount(signer, plan.requiredSignatures),
+      contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
     });
     yield* signAndWrite(
       tx,
-      outputPath,
+      txFilePath(input),
       signer,
       "Change Federated Ops Transaction",
     );

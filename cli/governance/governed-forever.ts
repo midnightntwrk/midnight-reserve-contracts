@@ -7,7 +7,6 @@
  * transaction with their own datum.
  */
 import {
-  type Address,
   addressFromValidator,
   AssetId,
   type NetworkId,
@@ -17,19 +16,13 @@ import {
   TransactionOutput,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
-import type { TxBuilder } from "@blaze-cardano/tx";
-import type { Option } from "effect";
+import { Option } from "effect";
 import type { Signers } from "../datum/signers";
+import type { TxPlan } from "../tx/plan";
 import {
-  createTxMetadata,
   logicRedeemer,
-  mintWitnesses,
-  withdrawThroughLogic,
+  planMintWitnesses,
+  planWithdrawThroughLogic,
 } from "../tx/scripts";
 import type { WitnessRequirements } from "./threshold";
 
@@ -52,59 +45,60 @@ export interface GovernedForeverInputs {
   readonly requirements: WitnessRequirements;
 }
 
-/** The network, change address and fee padding of a transaction, and its CIP-20 type. */
+/** The network the update is built for. */
 export interface GovernedForeverParams {
   readonly networkId: NetworkId;
-  readonly changeAddress: Address;
-  readonly feePadding: bigint;
-  readonly txType: string;
 }
 
-/** The update transaction with `newState` as the forever's datum. */
-export const buildGovernedForeverUpdateTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+/** The update with `newState` as the forever's datum: the user and forever UTxOs spent, the council and tech-auth witnesses minted, the logic (and mitigation logic) withdrawn through. */
+export const planGovernedForeverUpdate = (
   inputs: GovernedForeverInputs,
   newState: PlutusData,
   params: GovernedForeverParams,
-): TxBuilder => {
+): TxPlan => {
   const { networkId } = params;
   const { techAuth, council } = inputs.requirements;
-  const spent = blaze
-    .newTransaction()
-    .addInput(inputs.userUtxo)
-    .addInput(inputs.foreverUtxo, PlutusData.newInteger(0n))
-    .addReferenceInput(inputs.thresholdUtxo)
-    .addReferenceInput(inputs.councilForeverUtxo)
-    .addReferenceInput(inputs.techAuthForeverUtxo)
-    .addReferenceInput(inputs.twoStageUtxo)
-    .provideScript(inputs.forever);
-  const witnessed = mintWitnesses(
-    spent,
-    [
-      { ...council, signers: inputs.councilSigners, assetName: "" },
-      { ...techAuth, signers: inputs.techAuthSigners, assetName: "" },
-    ],
-    networkId,
-  ).addOutput(
-    TransactionOutput.fromCore({
-      address: PaymentAddress(
-        addressFromValidator(networkId, inputs.forever).toBech32(),
-      ),
-      value: {
-        coins: inputs.foreverUtxo.output().amount().coin(),
-        assets: new Map([[AssetId(inputs.forever.hash()), 1n]]),
+  return {
+    spends: [
+      { utxo: inputs.userUtxo, redeemer: Option.none() },
+      {
+        utxo: inputs.foreverUtxo,
+        redeemer: Option.some(PlutusData.newInteger(0n)),
       },
-      datum: newState.toCore(),
-    }),
-  );
-  return withdrawThroughLogic(
-    witnessed,
-    inputs.logicScript,
-    inputs.mitigationLogicScript,
-    logicRedeemer(PlutusData.newInteger(0n), inputs.logicRound),
-    networkId,
-  )
-    .setChangeAddress(params.changeAddress)
-    .setMetadata(createTxMetadata(params.txType))
-    .setFeePadding(params.feePadding);
+    ],
+    references: [
+      inputs.thresholdUtxo,
+      inputs.councilForeverUtxo,
+      inputs.techAuthForeverUtxo,
+      inputs.twoStageUtxo,
+    ],
+    scripts: [inputs.forever],
+    ...planMintWitnesses(
+      [
+        { ...council, signers: inputs.councilSigners, assetName: "" },
+        { ...techAuth, signers: inputs.techAuthSigners, assetName: "" },
+      ],
+      networkId,
+    ),
+    outputs: [
+      TransactionOutput.fromCore({
+        address: PaymentAddress(
+          addressFromValidator(networkId, inputs.forever).toBech32(),
+        ),
+        value: {
+          coins: inputs.foreverUtxo.output().amount().coin(),
+          assets: new Map([[AssetId(inputs.forever.hash()), 1n]]),
+        },
+        datum: newState.toCore(),
+      }),
+    ],
+    withdrawals: planWithdrawThroughLogic(
+      inputs.logicScript,
+      inputs.mitigationLogicScript,
+      logicRedeemer(PlutusData.newInteger(0n), inputs.logicRound),
+      networkId,
+    ),
+    registrations: [],
+    collateral: [],
+  };
 };

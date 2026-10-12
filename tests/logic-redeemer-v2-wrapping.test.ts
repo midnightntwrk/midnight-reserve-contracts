@@ -24,9 +24,10 @@ import {
   signerRequirements,
 } from "../cli/governance/change-multisig";
 import { authorityThreshold } from "../cli/governance/threshold";
-import { buildFederatedOpsChangeTx } from "../cli/governance/change-federated-ops";
+import { planFederatedOpsChange } from "../cli/governance/change-federated-ops";
 import { decodeFederatedOps } from "../cli/datum/federated-ops";
-import { buildTermsChangeTx } from "../cli/governance/change-terms";
+import { planTermsChange } from "../cli/governance/change-terms";
+import { toTxBuilder } from "../cli/tx/compile";
 import { MAIN_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
   type BlazeOf,
@@ -181,25 +182,27 @@ const federatedOpsChange = async (logicRound: number) => {
     Object.values(utxos),
     (blaze, changeAddress, userUtxo) =>
       Either.right(
-        buildFederatedOpsChangeTx(
+        toTxBuilder(
           blaze,
+          planFederatedOpsChange(
+            {
+              forever: forever.Script,
+              ...utxos,
+              userUtxo,
+              logicScript: logicV2.Script,
+              mitigationLogicScript: Option.none(),
+              logicRound,
+              currentData: Either.getOrThrow(decodeFederatedOps(foreverDatum)),
+              councilSigners,
+              techAuthSigners,
+              requirements: requirementsOf({ councilSigners, techAuthSigners }),
+            },
+            { newCandidates: [], networkId: NetworkId.Testnet },
+          ),
           {
-            forever: forever.Script,
-            ...utxos,
-            userUtxo,
-            logicScript: logicV2.Script,
-            mitigationLogicScript: Option.none(),
-            logicRound,
-            currentData: Either.getOrThrow(decodeFederatedOps(foreverDatum)),
-            councilSigners,
-            techAuthSigners,
-            requirements: requirementsOf({ councilSigners, techAuthSigners }),
-          },
-          {
-            newCandidates: [],
-            networkId: NetworkId.Testnet,
             changeAddress,
             feePadding: 0n,
+            metadata: Option.some("change-federated-ops"),
           },
         ),
       ),
@@ -243,27 +246,32 @@ const termsChange = async (logicRound: number) => {
     Object.values(utxos),
     (blaze, changeAddress, userUtxo) =>
       Either.right(
-        buildTermsChangeTx(
+        toTxBuilder(
           blaze,
-          {
-            forever: forever.Script,
-            ...utxos,
-            userUtxo,
-            logicScript: logicV2.Script,
-            mitigationLogicScript: Option.none(),
-            logicRound,
-            councilSigners,
-            techAuthSigners,
-            requirements: requirementsOf({ councilSigners, techAuthSigners }),
-          },
-          {
-            terms: {
-              hash: "bb".repeat(32),
-              link: toHex(new TextEncoder().encode("https://new.com")),
+          planTermsChange(
+            {
+              forever: forever.Script,
+              ...utxos,
+              userUtxo,
+              logicScript: logicV2.Script,
+              mitigationLogicScript: Option.none(),
+              logicRound,
+              councilSigners,
+              techAuthSigners,
+              requirements: requirementsOf({ councilSigners, techAuthSigners }),
             },
-            networkId: NetworkId.Testnet,
+            {
+              terms: {
+                hash: "bb".repeat(32),
+                link: toHex(new TextEncoder().encode("https://new.com")),
+              },
+              networkId: NetworkId.Testnet,
+            },
+          ),
+          {
             changeAddress,
             feePadding: 0n,
+            metadata: Option.some("change-terms"),
           },
         ),
       ),

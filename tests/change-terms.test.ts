@@ -1,7 +1,7 @@
 /**
- * change-terms through buildTermsChangeTx on the emulator: the terms forever,
+ * change-terms through planTermsChange on the emulator: the terms forever,
  * threshold, council and tech-auth forever and terms two-stage UTxOs are
- * seeded, the builder gets them as inputs, the emulator runs the validators.
+ * seeded, the plan gets them as inputs, the emulator runs the validators.
  */
 import { NetworkId } from "@blaze-cardano/core";
 import { parse, serialize } from "@blaze-cardano/data";
@@ -9,9 +9,10 @@ import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import { describe, expect, test } from "bun:test";
 import { Option } from "effect";
 import {
-  buildTermsChangeTx,
+  planTermsChange,
   type TermsChangeInputs,
 } from "../cli/governance/change-terms";
+import { toTxBuilder } from "../cli/tx/compile";
 import { type TermsData } from "../cli/datum/terms-and-conditions";
 import { MAIN_TOKEN_HEX } from "../cli/governance/two-stage";
 import {
@@ -78,12 +79,15 @@ const termsChange = (terms: TermsData) =>
       emulator.addUtxo(u);
     }
     registerRewardAccount(emulator, termsLogic.Script.hash());
-    const builder = buildTermsChangeTx(blaze, inputs, {
-      terms,
-      networkId: NetworkId.Testnet,
-      changeAddress: addr,
-      feePadding: 0n,
-    });
+    const builder = toTxBuilder(
+      blaze,
+      planTermsChange(inputs, { terms, networkId: NetworkId.Testnet }),
+      {
+        changeAddress: addr,
+        feePadding: 0n,
+        metadata: Option.some("change-terms"),
+      },
+    );
     return { emulator, blaze, builder };
   });
 

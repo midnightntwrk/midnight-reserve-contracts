@@ -2,26 +2,22 @@
  * change-terms: replace the hash and link in the terms-and-conditions
  * forever datum. The program resolves the forever, threshold, council and
  * tech-auth UTxOs and the two-stage UpgradeState (its logic_round is the
- * new datum's); buildTermsChangeTx is pure over the resolved inputs.
+ * new datum's); planTermsChange is pure over the resolved inputs and
+ * compile completes it.
  */
 import {
   type Address,
   addressFromValidator,
   type NetworkId,
 } from "@blaze-cardano/core";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
-import type { TxBuilder } from "@blaze-cardano/tx";
-import { Effect, Record } from "effect";
-import { environmentOf } from "../config/network-mapping";
+import { Effect, Option, Record } from "effect";
+import { environmentOf, slotConfigOf } from "../config/network-mapping";
 import { contractUtxos, deployerUtxo, deployerWallet } from "../chain/utxo";
 import { signersAt, thresholdAt } from "./authority";
 import { inlineDatum } from "../datum/inline";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
-import { buildTx } from "../tx/complete-tx";
+import { compile } from "../tx/compile";
+import type { TxPlan } from "../tx/plan";
 import {
   decodeTerms,
   encodeTerms,
@@ -36,13 +32,14 @@ import {
 } from "../input";
 import { witnessRequirements } from "./threshold";
 import {
-  buildGovernedForeverUpdateTx,
   type GovernedForeverInputs,
+  planGovernedForeverUpdate,
 } from "./governed-forever";
 import { twoStageLogic } from "./two-stage";
 import { Blueprint } from "../contracts/contracts";
 import { Output } from "../output";
-import { Provider } from "../chain/provider";
+
+const COMMAND = "change-terms";
 
 /** A terms change: the new hash and URL, its fee UTxO, whether to sign, and where the file goes. */
 export interface TermsChangeInput extends TxFileInput, FeeInput {
@@ -58,21 +55,17 @@ export interface TermsChangeParams {
   /** The new terms: hash and link, both hex. */
   readonly terms: TermsData;
   readonly networkId: NetworkId;
-  readonly changeAddress: Address;
-  readonly feePadding: bigint;
 }
 
-/** The change transaction: the governed forever update with the new terms datum. */
-export const buildTermsChangeTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+/** The change: the governed forever update with the new terms datum. */
+export const planTermsChange = (
   inputs: TermsChangeInputs,
   params: TermsChangeParams,
-): TxBuilder =>
-  buildGovernedForeverUpdateTx(
-    blaze,
+): TxPlan =>
+  planGovernedForeverUpdate(
     inputs,
     encodeTerms(params.terms, datumRoundOf(inputs.logicRound)),
-    { ...params, txType: "change-terms" },
+    params,
   );
 
 const QUERY = {
@@ -83,16 +76,20 @@ const QUERY = {
   termsTwoStage: "Terms and conditions two stage",
 } as const;
 
-/** Resolve the inputs, build, complete and write the change transaction. */
-export const termsChangeProgram = (input: TermsChangeInput) =>
+/** What the terms change plan is built from and where its change goes. */
+export interface ResolvedTermsChange {
+  readonly inputs: TermsChangeInputs;
+  readonly params: TermsChangeParams;
+  readonly changeAddress: Address;
+}
+
+/** Read and report everything the change needs: the forever, threshold, authority and two-stage UTxOs, the current terms, both authorities' signers, the threshold's requirements and the fee UTxO. */
+export const resolveTermsChange = (input: TermsChangeInput) =>
   Effect.gen(function* () {
-    const { network, txHash, txIndex, hash, url, sign } = input;
-    const signer = yield* signerFor(sign, "both");
+    const { network, txHash, txIndex, hash, url } = input;
     const urlHex = Buffer.from(url).toString("hex");
     const out = yield* Output;
     const blueprint = yield* Blueprint;
-    const provider = yield* Provider;
-    const outputPath = txFilePath(input);
 
     yield* out.log(`\nChanging Terms and Conditions on ${network} network`);
     yield* out.log(`Using UTxO: ${txHash}#${txIndex}`);
@@ -108,7 +105,6 @@ export const termsChangeProgram = (input: TermsChangeInput) =>
       `\nTerms and Conditions Forever Address: ${foreverAddress.toBech32()}`,
     );
 
-    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const scripts = {
       termsForever: forever,
       termsThreshold: contracts.termsAndConditionsThreshold.Script,
@@ -170,21 +166,6 @@ export const termsChangeProgram = (input: TermsChangeInput) =>
       txHash,
       txIndex,
     );
-    const inputs: TermsChangeInputs = {
-      forever,
-      foreverUtxo,
-      thresholdUtxo,
-      councilForeverUtxo,
-      techAuthForeverUtxo,
-      twoStageUtxo,
-      userUtxo,
-      logicScript,
-      mitigationLogicScript,
-      logicRound,
-      councilSigners,
-      techAuthSigners,
-      requirements,
-    };
     const { techAuth, council } = requirements;
     yield* out.log(
       `\nRequired tech auth signers: ${techAuth.required}/${techAuth.total}`,
@@ -192,29 +173,47 @@ export const termsChangeProgram = (input: TermsChangeInput) =>
     yield* out.log(
       `Required council signers: ${council.required}/${council.total}`,
     );
-
-    const txBuilder = buildTermsChangeTx(blaze, inputs, {
-      terms: { hash, link: urlHex },
-      networkId,
-      changeAddress,
-      feePadding: input.feePadding,
-    });
-    const tx = yield* buildTx(txBuilder, {
-      commandName: "change-terms",
-      environment: network,
-      witnesses: witnessCount(signer, techAuth.required + council.required),
-      knownUtxos: [
+    const resolved: ResolvedTermsChange = {
+      inputs: {
+        forever,
         foreverUtxo,
         thresholdUtxo,
         councilForeverUtxo,
         techAuthForeverUtxo,
         twoStageUtxo,
         userUtxo,
-      ],
+        logicScript,
+        mitigationLogicScript,
+        logicRound,
+        councilSigners,
+        techAuthSigners,
+        requirements,
+      },
+      params: { terms: { hash, link: urlHex }, networkId },
+      changeAddress,
+    };
+    return resolved;
+  });
+
+/** Resolve, plan, compile and write the change transaction. */
+export const termsChangeProgram = (input: TermsChangeInput) =>
+  Effect.gen(function* () {
+    const signer = yield* signerFor(input.sign, "both");
+    const { inputs, params, changeAddress } = yield* resolveTermsChange(input);
+    const plan = planTermsChange(inputs, params);
+    const tx = yield* compile(plan, {
+      commandName: COMMAND,
+      slotConfig: slotConfigOf(input.network),
+      wallet: yield* deployerWallet,
+      changeAddress,
+      feePadding: input.feePadding,
+      metadata: Option.some(COMMAND),
+      expectedWitnesses: witnessCount(signer, plan.requiredSignatures),
+      contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
     });
     yield* signAndWrite(
       tx,
-      outputPath,
+      txFilePath(input),
       signer,
       "Change Terms and Conditions Transaction",
     );
