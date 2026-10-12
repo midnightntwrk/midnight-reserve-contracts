@@ -63,6 +63,7 @@
     "@humanfs/node": "^0.16.8"
   },
   "patchedDependencies": {
-    "@blaze-cardano/emulator@0.5.2": "patches/@blaze-cardano%2Femulator@0.5.2.patch"
+    "@blaze-cardano/emulator@0.5.2": "patches/@blaze-cardano%2Femulator@0.5.2.patch",
+    "@blaze-cardano/query@0.6.2": "patches/@blaze-cardano%2Fquery@0.6.2.patch"
   }
 }
