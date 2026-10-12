@@ -6,6 +6,7 @@
  */
 import type {
   Address,
+  AssetName,
   PlutusData,
   RewardAccount,
   Script,
@@ -27,6 +28,12 @@ export interface TxPlan {
   readonly references: readonly TransactionUnspentOutput[];
   /** Scripts provided in the witness set for the spends. */
   readonly scripts: readonly Script[];
+  /** Mints and burns, each under its policy, which is provided in the witness set; a native policy has no redeemer. */
+  readonly mints: readonly {
+    readonly policy: Script;
+    readonly assets: ReadonlyMap<AssetName, bigint>;
+    readonly redeemer: Option.Option<PlutusData>;
+  }[];
   /** Outputs in transaction order; the change output follows them. */
   readonly outputs: readonly TransactionOutput[];
   /** Zero withdrawals, each with its script, which is provided in the witness set. */
@@ -35,6 +42,11 @@ export interface TxPlan {
     readonly script: Script;
     readonly redeemer: PlutusData;
   }[];
+  /** Scripts whose stake credential the transaction registers (Conway reg cert, script witness, redeemer 0). */
+  readonly registrations: readonly Script[];
+  readonly collateral: readonly TransactionUnspentOutput[];
+  /** The native multisig signatures the plan's mints demand, for witnessCount. */
+  readonly requiredSignatures: number;
 }
 
 /** How compile completes a plan; the program resolves every field. */

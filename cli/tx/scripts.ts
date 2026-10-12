@@ -75,6 +75,25 @@ export const mintWitnesses = (
       .provideScript(Script.newNativeScript(native));
   }, txBuilder);
 
+/** One witness token under each native multisig policy, as plan mints, and the signatures they demand together. */
+export const planMintWitnesses = (
+  witnesses: readonly {
+    readonly required: number;
+    readonly signers: Signers;
+    readonly assetName: string;
+  }[],
+  networkId: NetworkId,
+): Pick<TxPlan, "mints" | "requiredSignatures"> => ({
+  mints: witnesses.map(({ required, signers, assetName }) => ({
+    policy: Script.newNativeScript(
+      createNativeMultisigScript(required, signers, networkId),
+    ),
+    assets: new Map([[AssetName(assetName), 1n]]),
+    redeemer: Option.none(),
+  })),
+  requiredSignatures: witnesses.reduce((n, { required }) => n + required, 0),
+});
+
 /** Zero withdrawals through the logic and, when set, the mitigation logic, both with `redeemer`. */
 export const withdrawThroughLogic = (
   txBuilder: TxBuilder,

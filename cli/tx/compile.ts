@@ -1,4 +1,8 @@
 import {
+  Credential,
+  CredentialType,
+  PlutusData,
+  PolicyId,
   type SlotConfig,
   Transaction,
   type TransactionUnspentOutput,
@@ -173,7 +177,7 @@ export const completeChecked = (
     return tx;
   });
 
-/** The plan on a fresh Blaze builder, in the order the hand-written builders used (spends, references, scripts, outputs, withdrawals), then change address, metadata and fee padding. */
+/** The plan on a fresh Blaze builder, in the order the hand-written builders used (spends, references, scripts, mints, outputs, withdrawals, registrations, collateral), then change address, metadata and fee padding. */
 export const toTxBuilder = (
   blaze: Blaze<BlazeProvider, Wallet>,
   plan: TxPlan,
@@ -184,16 +188,34 @@ export const toTxBuilder = (
     txBuilder.addInput(utxo, Option.getOrUndefined(redeemer));
   for (const utxo of plan.references) txBuilder.addReferenceInput(utxo);
   for (const script of plan.scripts) txBuilder.provideScript(script);
+  for (const { policy, assets, redeemer } of plan.mints)
+    txBuilder
+      .addMint(
+        PolicyId(policy.hash()),
+        new Map(assets),
+        Option.getOrUndefined(redeemer),
+      )
+      .provideScript(policy);
   for (const output of plan.outputs) txBuilder.addOutput(output);
   for (const { rewardAccount, script, redeemer } of plan.withdrawals)
     txBuilder.addWithdrawal(rewardAccount, 0n, redeemer).provideScript(script);
+  for (const script of plan.registrations)
+    txBuilder.provideScript(script).addRegisterStake(
+      Credential.fromCore({
+        hash: script.hash(),
+        type: CredentialType.ScriptHash,
+      }),
+      PlutusData.newInteger(0n),
+    );
+  if (plan.collateral.length > 0)
+    txBuilder.provideCollateral([...plan.collateral]);
   txBuilder.setChangeAddress(options.changeAddress);
   if (Option.isSome(options.metadata))
     txBuilder.setMetadata(createTxMetadata(options.metadata.value));
   return txBuilder.setFeePadding(options.feePadding);
 };
 
-/** Compile a plan over the deployer's Blaze: the local UPLC check over the UTxOs it spends and references, then completion and the size check (completeChecked). */
+/** Compile a plan over the wallet's Blaze: the local UPLC check over the UTxOs it spends, references and offers as collateral, then completion and the size check (completeChecked). */
 export const compile = (plan: TxPlan, options: CompileOptions) =>
   Effect.gen(function* () {
     const blaze = yield* Effect.flatMap(Provider, (provider) =>
@@ -202,7 +224,11 @@ export const compile = (plan: TxPlan, options: CompileOptions) =>
     return yield* completeChecked(toTxBuilder(blaze, plan, options), {
       commandName: options.commandName,
       slotConfig: options.slotConfig,
-      knownUtxos: [...plan.spends.map(({ utxo }) => utxo), ...plan.references],
+      knownUtxos: [
+        ...plan.spends.map(({ utxo }) => utxo),
+        ...plan.references,
+        ...plan.collateral,
+      ],
       witnesses: options.expectedWitnesses,
       contracts: Effect.succeed(options.contracts),
     });

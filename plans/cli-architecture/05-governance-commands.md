@@ -41,3 +41,17 @@ after phase 01) stays one file.
 - No `build*Tx` and no `blaze` parameter left in `cli/governance/`
   outside `two-stage-upgrade.ts`.
 - Each family's same-id check passed (noted in its commit message).
+
+## Deviations
+
+- A prerequisite commit comes before the ports. `TxPlan` gains `mints`,
+  `registrations`, `collateral` and `requiredSignatures`, and
+  `toTxBuilder` applies them in the order the builders use: mints, each
+  with `provideScript(policy)`, after scripts; registrations after
+  withdrawals; collateral last. `knownUtxos` now includes the collateral,
+  as the old callers passed it. `tx/scripts.ts` adds `planMintWitnesses`,
+  which returns the mints and the summed `requiredSignatures`; the
+  hand-sum in programs goes. The native policy id comes from
+  `Script.newNativeScript(native).hash()`, checked equal to
+  `native.hash()`. A registration is the bare script in `registrations`,
+  so there is no separate fragment for it.

@@ -144,6 +144,7 @@ export const planMerge = (
       ],
       references: [inputs.twoStageMainUtxo],
       scripts: [inputs.forever],
+      mints: [],
       outputs: [merged],
       withdrawals: planWithdrawThroughLogic(
         inputs.logicScript,
@@ -151,6 +152,9 @@ export const planMerge = (
         logicRedeemer(PlutusData.newInteger(0n), inputs.logicRound),
         params.networkId,
       ),
+      registrations: [],
+      collateral: [],
+      requiredSignatures: 0,
     };
   });
 
