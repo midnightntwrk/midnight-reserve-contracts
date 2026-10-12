@@ -1,48 +1,42 @@
 /**
  * mint-staging-state: mint the StagingState NFT of a v2 logic script by
- * spending its one-shot UTxO. The program finds the one-shot and the
- * profile's collateral among the deployer's unspent outputs (resolveUnspent,
- * resolveCollateral, which also checks the collateral's size), the v2 logic
- * script and the staging forever hash through the build blueprint;
- * buildMintStagingStateTx is pure
- * over the resolved inputs. The datum is the StagingState list
+ * spending its one-shot UTxO. resolveMintStagingState finds the one-shot and
+ * the profile's collateral among the deployer's unspent outputs
+ * (resolveUnspent, resolveCollateral, which also checks the collateral's
+ * size), the v2 logic script and the staging forever hash through the build
+ * blueprint; planMintStagingState is pure over the resolved inputs and
+ * compile completes it. The datum is the StagingState list
  * [cnight_test_policy, forever_script_hash].
  */
 import {
-  Address,
+  type Address,
   addressFromValidator,
   AssetId,
   AssetName,
   type NetworkId,
   PaymentAddress,
   PlutusData,
-  PolicyId,
   type ProtocolParameters,
   type Script,
   TransactionOutput,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
-import { calculateMinAda, type TxBuilder } from "@blaze-cardano/tx";
-import { Effect } from "effect";
+import { calculateMinAda } from "@blaze-cardano/tx";
+import { Effect, Option } from "effect";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
 import { type NetworkConfig, Profile } from "../config/profile";
 import { DeployerAddress } from "../config/deployer";
 import { deployerWallet } from "../chain/utxo";
-import { environmentOf } from "../config/network-mapping";
+import { environmentOf, slotConfigOf } from "../config/network-mapping";
 import {
   type ContractClass,
   type ContractInstances,
   Blueprint,
 } from "../contracts/contracts";
-import { createTxMetadata } from "../tx/scripts";
+import type { TxPlan } from "../tx/plan";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { Output } from "../output";
-import { buildTx } from "../tx/complete-tx";
+import { compile } from "../tx/compile";
 import type { V2TrackValidator } from "./two-stage-upgrade";
 import { Provider } from "../chain/provider";
 import { BlueprintError } from "../errors";
@@ -51,6 +45,8 @@ import {
   resolveUnspent,
   type UtxoRef,
 } from "../deploy/deployment";
+
+const COMMAND = "mint-staging-state";
 
 /** A staging-state mint: the validator, whether to sign, the fee padding, and where the file goes. */
 export interface MintStagingStateInput
@@ -145,13 +141,12 @@ export interface MintStagingStateInputs {
   readonly stagingForeverHash: string;
   readonly cnightPolicy: string;
   readonly collateralUtxo: TransactionUnspentOutput;
-  readonly protocolParams: ProtocolParameters;
 }
 
 export interface MintStagingStateParams {
   readonly networkId: NetworkId;
-  readonly changeAddress: Address;
-  readonly feePadding: bigint;
+  /** The protocol parameter that prices the staging output's min UTxO. */
+  readonly coinsPerUtxoByte: ProtocolParameters["coinsPerUtxoByte"];
 }
 
 /** StagingState datum: the @list [cnight_test_policy, forever_script_hash]. */
@@ -169,11 +164,11 @@ const stagingStateDatum = (
 /** The NFT output at the v2 logic address with the StagingState datum and its min UTxO. */
 const stagingStateOutput = (
   inputs: MintStagingStateInputs,
-  networkId: NetworkId,
+  params: MintStagingStateParams,
 ): TransactionOutput => {
   const output = TransactionOutput.fromCore({
     address: PaymentAddress(
-      addressFromValidator(networkId, inputs.v2LogicScript).toBech32(),
+      addressFromValidator(params.networkId, inputs.v2LogicScript).toBech32(),
     ),
     value: {
       coins: 0n,
@@ -184,55 +179,57 @@ const stagingStateOutput = (
       inputs.stagingForeverHash,
     ).toCore(),
   });
-  output
-    .amount()
-    .setCoin(calculateMinAda(output, inputs.protocolParams.coinsPerUtxoByte));
+  output.amount().setCoin(calculateMinAda(output, params.coinsPerUtxoByte));
   return output;
 };
 
-/** The mint transaction: spend the one-shot, mint the empty-name NFT under the v2 logic policy, lock it with the datum. */
-export const buildMintStagingStateTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+/** The mint: spend the one-shot, mint the empty-name NFT under the v2 logic policy, lock it with the datum. */
+export const planMintStagingState = (
   inputs: MintStagingStateInputs,
   params: MintStagingStateParams,
-): TxBuilder => {
-  const txBuilder = blaze
-    .newTransaction()
-    .addInput(inputs.oneShotUtxo)
-    .addMint(
-      PolicyId(inputs.v2LogicScript.hash()),
-      new Map([[AssetName(""), 1n]]),
-      PlutusData.newInteger(0n),
-    )
-    .provideScript(inputs.v2LogicScript)
-    .addOutput(stagingStateOutput(inputs, params.networkId))
-    .setChangeAddress(params.changeAddress)
-    .setMetadata(createTxMetadata("mint-staging-state"))
-    .setFeePadding(params.feePadding);
-  return txBuilder.provideCollateral([inputs.collateralUtxo]);
-};
+): TxPlan => ({
+  spends: [{ utxo: inputs.oneShotUtxo, redeemer: Option.none() }],
+  references: [],
+  scripts: [],
+  mints: [
+    {
+      policy: inputs.v2LogicScript,
+      assets: new Map([[AssetName(""), 1n]]),
+      redeemer: Option.some(PlutusData.newInteger(0n)),
+    },
+  ],
+  outputs: [stagingStateOutput(inputs, params)],
+  withdrawals: [],
+  registrations: [],
+  collateral: [inputs.collateralUtxo],
+  requiredSignatures: 0,
+});
 
-/** Resolve the inputs, build, complete and write the mint transaction. */
-export const mintStagingStateProgram = (input: MintStagingStateInput) =>
+/** What the mint plan is built from and where its change goes. */
+export interface ResolvedMintStagingState {
+  readonly inputs: MintStagingStateInputs;
+  readonly params: MintStagingStateParams;
+  readonly changeAddress: Address;
+}
+
+/** Read and report everything the mint needs: the v2 logic script, the staging forever hash, the one-shot, the collateral and the staging output's min UTxO. */
+export const resolveMintStagingState = (input: MintStagingStateInput) =>
   Effect.gen(function* () {
-    const { network, validator, sign } = input;
-    const signer = yield* signerFor(sign, "tech-auth");
+    const { network, validator } = input;
     const track = V2_TRACKS[validator];
     const out = yield* Output;
     const blueprint = yield* Blueprint;
     const provider = yield* Provider;
-    const outputPath = txFilePath(input);
 
     yield* out.log(`\nMinting StagingState NFT for ${validator} on ${network}`);
     const config = yield* Profile.config;
     const { networkId } = environmentOf(network);
-    const deployerAddress = yield* DeployerAddress.address;
+    const changeAddress = yield* DeployerAddress.address;
     const contracts = yield* blueprint.instances;
 
     const v2LogicScript = (yield* blueprint.classOf(track.v2LogicClasses))
       .Script;
-    const v2LogicHash = v2LogicScript.hash();
-    yield* out.log(`V2 logic script hash (policy ID): ${v2LogicHash}`);
+    yield* out.log(`V2 logic script hash (policy ID): ${v2LogicScript.hash()}`);
 
     const oneShotRef = track.oneShot(config);
     yield* out.log(`One-shot UTxO: ${oneShotRef[0]}#${oneShotRef[1]}`);
@@ -250,17 +247,17 @@ export const mintStagingStateProgram = (input: MintStagingStateInput) =>
     const cnightPolicy = config.cnight_policy;
     yield* out.log(`CNIGHT test policy: ${cnightPolicy}`);
 
-    const blaze = yield* provider.blazeFor(yield* deployerWallet);
-    const protocolParams = yield* provider.parameters;
+    const { coinsPerUtxoByte, collateralPercentage } =
+      yield* provider.parameters;
     const [oneShotUtxo] = yield* resolveUnspent([oneShotRef]);
     yield* out.log(
       `One-shot UTxO resolved: ${oneShotUtxo.output().amount().coin()} lovelace`,
     );
 
     const collateralUtxo = yield* resolveCollateral(
-      "mint-staging-state",
+      COMMAND,
       config,
-      protocolParams.collateralPercentage,
+      collateralPercentage,
     );
 
     const inputs: MintStagingStateInputs = {
@@ -269,37 +266,52 @@ export const mintStagingStateProgram = (input: MintStagingStateInput) =>
       stagingForeverHash,
       cnightPolicy,
       collateralUtxo,
-      protocolParams,
     };
-    const v2Output = stagingStateOutput(inputs, networkId);
-    yield* out.log(`Min UTxO for output: ${v2Output.amount().coin()} lovelace`);
+    const params: MintStagingStateParams = { networkId, coinsPerUtxoByte };
+    yield* out.log(
+      `Min UTxO for output: ${stagingStateOutput(inputs, params).amount().coin()} lovelace`,
+    );
+    const resolved: ResolvedMintStagingState = {
+      inputs,
+      params,
+      changeAddress,
+    };
+    return resolved;
+  });
 
-    const txBuilder = buildMintStagingStateTx(blaze, inputs, {
-      networkId,
-      changeAddress: deployerAddress,
+/** Resolve, plan, compile and write the mint transaction. */
+export const mintStagingStateProgram = (input: MintStagingStateInput) =>
+  Effect.gen(function* () {
+    const signer = yield* signerFor(input.sign, "tech-auth");
+    const out = yield* Output;
+    const { inputs, params, changeAddress } =
+      yield* resolveMintStagingState(input);
+    const plan = planMintStagingState(inputs, params);
+    const tx = yield* compile(plan, {
+      commandName: COMMAND,
+      slotConfig: slotConfigOf(input.network),
+      wallet: yield* deployerWallet,
+      changeAddress,
       feePadding: input.feePadding,
-    });
-    const tx = yield* buildTx(txBuilder, {
-      commandName: "mint-staging-state",
-      environment: network,
-      witnesses: witnessCount(signer, 0),
-      knownUtxos: [oneShotUtxo, collateralUtxo],
+      metadata: Option.some(COMMAND),
+      expectedWitnesses: witnessCount(signer, plan.requiredSignatures),
+      contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
     });
 
     yield* signAndWrite(
       tx,
-      outputPath,
+      txFilePath(input),
       signer,
       "Mint StagingState NFT Transaction",
     );
     yield* out.log("\nStagingState NFT details:");
-    yield* out.log(`  Policy ID: ${v2LogicHash}`);
+    yield* out.log(`  Policy ID: ${inputs.v2LogicScript.hash()}`);
     yield* out.log(`  Asset Name: (empty)`);
     yield* out.log(
-      `  Output Address: ${addressFromValidator(networkId, v2LogicScript).toBech32()}`,
+      `  Output Address: ${addressFromValidator(params.networkId, inputs.v2LogicScript).toBech32()}`,
     );
     yield* out.log(`  Datum: StagingState`);
-    yield* out.log(`    cnight_test_policy: ${cnightPolicy}`);
-    yield* out.log(`    forever_script_hash: ${stagingForeverHash}`);
+    yield* out.log(`    cnight_test_policy: ${inputs.cnightPolicy}`);
+    yield* out.log(`    forever_script_hash: ${inputs.stagingForeverHash}`);
     return tx;
   });

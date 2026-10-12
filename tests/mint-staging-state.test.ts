@@ -1,7 +1,9 @@
 import { describe, test } from "bun:test";
 import { NetworkId } from "@blaze-cardano/core";
+import { Option } from "effect";
 import * as Contracts from "../contract_blueprint_default";
-import { buildMintStagingStateTx } from "../cli/governance/mint-staging-state";
+import { planMintStagingState } from "../cli/governance/mint-staging-state";
+import { toTxBuilder } from "../cli/tx/compile";
 import { emulatorProfile } from "./helpers/effect";
 import { addCollateral, asFunded, feeUtxo } from "./helpers/fixtures";
 
@@ -16,8 +18,7 @@ describe("mint-staging-state", () => {
         20_000_000n,
       );
       emulator.addUtxo(oneShotUtxo);
-      const builder = buildMintStagingStateTx(
-        blaze,
+      const plan = planMintStagingState(
         {
           oneShotUtxo,
           v2LogicScript: new Contracts.PermissionedV2CouncilLogicV2Else()
@@ -26,10 +27,18 @@ describe("mint-staging-state", () => {
             new Contracts.StagingPermissionedCouncilStagingForeverElse().Script.hash(),
           cnightPolicy: config.cnight_policy,
           collateralUtxo: addCollateral(emulator, addr),
-          protocolParams: await blaze.provider.getParameters(),
         },
-        { networkId: NetworkId.Testnet, changeAddress: addr, feePadding: 0n },
+        {
+          networkId: NetworkId.Testnet,
+          coinsPerUtxoByte: (await blaze.provider.getParameters())
+            .coinsPerUtxoByte,
+        },
       );
+      const builder = toTxBuilder(blaze, plan, {
+        changeAddress: addr,
+        feePadding: 0n,
+        metadata: Option.some("mint-staging-state"),
+      });
       await emulator.expectValidTransaction(blaze, builder);
     });
   });
