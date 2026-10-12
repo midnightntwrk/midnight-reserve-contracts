@@ -39,7 +39,7 @@ import { validatorLabels } from "../cli/tx/labels";
 import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 import { Provider } from "../cli/chain/provider";
 import { refOf } from "../cli/chain/utxo";
-import { Settings } from "../cli/config/settings";
+import { DeployerAddress } from "../cli/config/deployer";
 import { reservedRefs } from "../cli/config/profile";
 import { type TxRef, txRef } from "../cli/input";
 import { buildSimpleTx } from "../cli/wallet/simple-tx";
@@ -120,7 +120,7 @@ const buildGovAuths = {
   stagingGovAuth: contracts.stagingGovAuth.Script.hash(),
 };
 
-/** The component's step built over its one-shot, as deploy builds it, with Settings over `settings` and these gov auth hashes. */
+/** The component's step built over its one-shot, as deploy builds it, with the configuration over `settings` and these gov auth hashes. */
 const stepBuilder = (
   component: DeployComponent,
   emulator: Emulator,
@@ -526,7 +526,7 @@ describe("the deployer wallet", () => {
     const layer = EmulatorLive(emulator, captureOutput(), "emulator");
     const deployer = await runTest(
       layer,
-      Effect.flatMap(Settings, (s) => s.deployerAddress),
+      Effect.flatMap(DeployerAddress, (d) => d.address),
     );
     const reserved = reservedRefs(profile);
     for (const ref of reserved) {

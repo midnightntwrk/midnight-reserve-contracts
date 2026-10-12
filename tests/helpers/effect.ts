@@ -21,7 +21,9 @@ import { FetchHttpClient, FileSystem } from "@effect/platform";
 import { BunContext } from "@effect/platform-bun";
 import { ConfigProvider, Effect, Either, HashMap, Layer, Logger } from "effect";
 import type { CliError } from "../../cli/errors";
-import { Settings, SettingsLive } from "../../cli/config/settings";
+import { SettingsLive } from "../../cli/config/settings";
+import { Profile } from "../../cli/config/profile";
+import { DeployerAddress } from "../../cli/config/deployer";
 import type { Environment } from "../../cli/config/network-mapping";
 import { Blueprint, BlueprintLive } from "../../cli/contracts/contracts";
 import { Provider, ProviderOver } from "../../cli/chain/provider";
@@ -183,7 +185,7 @@ export const buildInstances = () =>
 export const emulatorProfile = () =>
   runTest(
     SettingsOver("emulator"),
-    Effect.flatMap(Settings, (s) => s.profile),
+    Effect.flatMap(Profile, (p) => p.config),
   );
 
 /** Preview Settings and the real fetch client, for the preview-only tests. */
@@ -249,7 +251,7 @@ export const emulatorProgram = async (env: Environment = "emulator") => {
   const layer = EmulatorLive(emulator, capture, env);
   const deployer = await runTest(
     layer,
-    Effect.flatMap(Settings, (c) => c.deployerAddress),
+    Effect.flatMap(DeployerAddress, (d) => d.address),
   );
   const fee = feeUtxo(deployer, FEE_TX);
   emulator.addUtxo(fee);
@@ -259,7 +261,7 @@ export const emulatorProgram = async (env: Environment = "emulator") => {
 /** The deployer's unsigned payment of 5 ADA to itself, built and completed over the Provider. */
 export const unsignedSimpleTx = Effect.gen(function* () {
   const provider = yield* Provider;
-  const recipient = yield* Effect.flatMap(Settings, (s) => s.deployerAddress);
+  const recipient = yield* Effect.flatMap(DeployerAddress, (d) => d.address);
   const { maxTxSize } = yield* provider.use("getParameters", (p) =>
     p.getParameters(),
   );

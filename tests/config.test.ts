@@ -6,8 +6,11 @@ import { TOML } from "bun";
 import { Effect, Either, Layer, LogLevel, Schema } from "effect";
 import { DotEnvFallback } from "../cli/run";
 import { ENVIRONMENTS, environmentOf } from "../cli/config/network-mapping";
-import { Settings, SettingsLive, parseLogLevel } from "../cli/config/settings";
+import { SettingsLive, parseLogLevel } from "../cli/config/settings";
 import { parseNetworkConfig, reservedRefs } from "../cli/config/profile";
+import { DeployerAddress } from "../cli/config/deployer";
+import { ProviderConfig } from "../cli/config/provider-config";
+import { Keys } from "../cli/config/keys";
 import { SIMPLE_TX_AMOUNT, SIMPLE_TX_COUNT } from "../cli/wallet/simple-tx";
 import {
   EnvValues,
@@ -41,7 +44,7 @@ describe("env values through SettingsLive", () => {
   test("an empty required value reads as unset", async () => {
     const error = await expectFailure(
       SettingsWith("emulator", { BLOCKFROST_PREVIEW_API_KEY: "" }),
-      Effect.flatMap(Settings, (s) => s.blockfrostApiKey("preview")),
+      Effect.flatMap(ProviderConfig, (p) => p.blockfrostApiKey("preview")),
       "ConfigError",
     );
     expect(error).toMatchObject({
@@ -53,7 +56,7 @@ describe("env values through SettingsLive", () => {
 
 describe("DEPLOYER_ADDRESS", () => {
   const mainnet = "addr1v9uumy8pse90t4juh8hvx3y0xzn439na3hxadq55luydtgqg8mh8a";
-  const deployerAddress = Effect.flatMap(Settings, (s) => s.deployerAddress);
+  const deployerAddress = Effect.flatMap(DeployerAddress, (d) => d.address);
 
   test.each([
     [mainnet, `'${mainnet}' is a Mainnet address; preview is on Testnet`],
@@ -188,7 +191,7 @@ describe("DotEnvFallback", () => {
     dotEnv,
     `KUPO_URL=http://kupo.from-dotenv-file\nDOTENV_FALLBACK_ONLY=${"ab".repeat(32)}\n`,
   );
-  /** Settings over the mode's env values, with `path` as the fallback. */
+  /** The configuration services over the mode's env values, with `path` as the fallback. */
   const over = (path: string) =>
     Layer.mergeAll(
       Layer.provide(SettingsLive("emulator"), PlatformLive),
@@ -198,12 +201,10 @@ describe("DotEnvFallback", () => {
   test("fills what the primary env lacks; the primary env wins", async () => {
     const read = await runTest(
       over(dotEnv),
-      Effect.flatMap(Settings, (c) =>
-        Effect.all({
-          kupmios: c.kupmios,
-          only: c.signingKey("DOTENV_FALLBACK_ONLY"),
-        }),
-      ),
+      Effect.all({
+        kupmios: Effect.flatMap(ProviderConfig, (p) => p.kupmios),
+        only: Effect.flatMap(Keys, (k) => k.signingKey("DOTENV_FALLBACK_ONLY")),
+      }),
     );
     expect(read.kupmios.kupoUrl).toBe(env("KUPO_URL"));
     expect(read.only).toBe("ab".repeat(32));
@@ -212,7 +213,7 @@ describe("DotEnvFallback", () => {
   test("a missing file adds nothing", async () => {
     const error = await expectFailure(
       over(join(tmpdir(), "no-such-dir", ".env")),
-      Effect.flatMap(Settings, (c) => c.signingKey("DOTENV_FALLBACK_ONLY")),
+      Effect.flatMap(Keys, (k) => k.signingKey("DOTENV_FALLBACK_ONLY")),
       "ConfigError",
     );
     expect(error.key).toBe("DOTENV_FALLBACK_ONLY");
