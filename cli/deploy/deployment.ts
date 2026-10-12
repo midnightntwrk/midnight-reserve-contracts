@@ -137,9 +137,7 @@ export const deploymentSetup = (command: string, network: Environment) =>
     yield* out.log(`Number of council signer pairs: ${councilSigners.length}`);
 
     const blaze = yield* provider.blaze;
-    const protocolParams = yield* provider.use("getParameters", (p) =>
-      p.getParameters(),
-    );
+    const protocolParams = yield* provider.parameters;
     const collateral = yield* resolveCollateral(
       command,
       config,

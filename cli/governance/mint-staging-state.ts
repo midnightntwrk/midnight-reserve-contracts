@@ -250,9 +250,7 @@ export const mintStagingStateProgram = (input: MintStagingStateInput) =>
     yield* out.log(`CNIGHT test policy: ${cnightPolicy}`);
 
     const blaze = yield* provider.blaze;
-    const protocolParams = yield* provider.use("getParameters", (p) =>
-      p.getParameters(),
-    );
+    const protocolParams = yield* provider.parameters;
     const [oneShotUtxo] = yield* resolveUnspent([oneShotRef]);
     yield* out.log(
       `One-shot UTxO resolved: ${oneShotUtxo.output().amount().coin()} lovelace`,

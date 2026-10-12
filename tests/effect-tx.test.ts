@@ -79,9 +79,7 @@ describe("ProviderLive", () => {
     await runTest(layer, Effect.asVoid(Provider));
     const error = await expectFailure(
       layer,
-      Effect.flatMap(Provider, (provider) =>
-        provider.use("getParameters", (p) => p.getParameters()),
-      ),
+      Effect.flatMap(Provider, (provider) => provider.parameters),
       "ProviderError",
     );
     expect(error).toMatchObject({ op: "Ogmios.new", retryable: false });

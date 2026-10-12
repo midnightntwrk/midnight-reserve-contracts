@@ -1,10 +1,13 @@
 /**
  * Chain providers: Blockfrost, Kupmios or an emulator, and a Blaze instance
- * over one.
+ * over one. Callers reach the provider through named operations only.
  */
 import {
   Address,
   type NetworkId,
+  type ProtocolParameters,
+  type Transaction,
+  type TransactionId,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import {
@@ -63,7 +66,7 @@ const connectionFor = (
     : Either.right({ type });
 };
 
-/** A failed connect is final: the connection is cached, so a retry would see the same failure. */
+/** A failed connect is final: the run keeps one connection, so a retry would see the same failure. */
 const connectFailure = (op: string) => (cause: unknown) =>
   new ProviderError({ op, cause, retryable: false });
 
@@ -124,28 +127,40 @@ export class GuardedWallet extends ColdWallet {
   }
 }
 
-/** A Blaze instance over the provider with the deployer's cold wallet. */
-type DeployerBlaze = Blaze<BlazeProvider, GuardedWallet>;
+/** A Blaze instance over the provider with a GuardedWallet. */
+type GuardedBlaze = Blaze<BlazeProvider, GuardedWallet>;
 
-/** A chain provider; every call is an Effect failing with ProviderError. */
+/** A chain provider; every call is an Effect failing with ProviderError, under PROVIDER_TIMEOUT unless stated, its `retryable` following the failure's shape. */
 export class Provider extends Context.Tag("cli/Provider")<
   Provider,
   {
-    /** Run one provider call under PROVIDER_TIMEOUT; `op` names it in the error, whose `retryable` follows the failure's shape. */
-    readonly use: <A>(
-      op: string,
-      f: (provider: BlazeProvider) => Promise<A>,
-    ) => Effect.Effect<A, ProviderError | ConfigError>;
+    /** The protocol parameters, read on each call. */
+    readonly parameters: Effect.Effect<
+      ProtocolParameters,
+      ProviderError | ConfigError
+    >;
+    /** Post a signed transaction once (no retry; chain/submit retries). */
+    readonly submit: (
+      tx: Transaction,
+    ) => Effect.Effect<TransactionId, ProviderError | ConfigError>;
+    /** One lookup, no wait: whether the transaction is on chain. */
+    readonly isConfirmed: (
+      txId: TransactionId,
+    ) => Effect.Effect<boolean, ProviderError | ConfigError>;
     /** Every UTxO at an address, under ADDRESS_READ_TIMEOUT (Blaze reads it one page at a time), retried on a retryable failure other than that timeout. */
     readonly unspentOutputs: (
       address: Address,
     ) => Effect.Effect<TransactionUnspentOutput[], ProviderError | ConfigError>;
-    /** Blaze over the provider with the deployer's cold wallet (DeployerAddress), the profile's UTxOs reserved; built once. */
+    /** Blaze over the provider with the deployer's cold wallet (DeployerAddress), the profile's UTxOs reserved; built on each call. */
     readonly blaze: Effect.Effect<
-      DeployerBlaze,
+      GuardedBlaze,
       ProviderError | ConfigError,
       DeployerAddress | Profile
     >;
+    /** Blaze over the provider with a cold wallet at `address`, the profile's UTxOs reserved; built on each call. */
+    readonly blazeFor: (
+      address: Address,
+    ) => Effect.Effect<GuardedBlaze, ProviderError | ConfigError, Profile>;
   }
 >() {}
 
@@ -235,15 +250,21 @@ const providerService = (
   acquire: Effect.Effect<BlazeProvider, ProviderError | ConfigError>,
 ) =>
   Effect.gen(function* () {
-    const cached = yield* Effect.cached(acquire);
-    const blaze = yield* Effect.cached(
+    // One connection for the run, opened on first use: the emulator keeps its ledger, Kupmios keeps one Ogmios socket.
+    const connected = yield* Effect.cached(acquire);
+    /** One call on the connected provider under PROVIDER_TIMEOUT; `op` names it in the error. */
+    const use = <A>(op: string, f: (provider: BlazeProvider) => Promise<A>) =>
+      Effect.flatMap(connected, (provider) =>
+        providerCall(op, () => f(provider)),
+      );
+    const blazeFor = (address: Address) =>
       Effect.gen(function* () {
-        const provider = yield* cached;
-        const deployerAddress = yield* DeployerAddress.address;
+        // The profile before the connection, as mint-tcnight read them: a bad aiken.toml fails before a socket opens.
         const config = yield* Profile.config;
+        const provider = yield* connected;
         const { networkId } = environmentOf(environment);
         const wallet = new GuardedWallet(
-          deployerAddress,
+          address,
           networkId,
           provider,
           reservedRefs(config),
@@ -251,15 +272,17 @@ const providerService = (
         return yield* providerCall("Blaze.from", () =>
           Blaze.from(provider, wallet),
         );
-      }),
-    );
+      });
     return {
-      use: <A>(op: string, f: (provider: BlazeProvider) => Promise<A>) =>
-        Effect.flatMap(cached, (provider) =>
-          providerCall(op, () => f(provider)),
+      parameters: use("getParameters", (p) => p.getParameters()),
+      submit: (tx: Transaction) =>
+        use("postTransactionToChain", (p) => p.postTransactionToChain(tx)),
+      isConfirmed: (txId: TransactionId) =>
+        use("awaitTransactionConfirmation", (p) =>
+          p.awaitTransactionConfirmation(txId, 0),
         ),
       unspentOutputs: (address: Address) =>
-        Effect.flatMap(cached, (provider) =>
+        Effect.flatMap(connected, (provider) =>
           providerCall(
             "getUnspentOutputs",
             () => provider.getUnspentOutputs(address),
@@ -272,7 +295,12 @@ const providerService = (
             Effect.catchIf(unseenAddress, () => Effect.succeed([])),
           ),
         ),
-      blaze,
+      // The connection first, as before: a failed connect is reported ahead of a DEPLOYER_ADDRESS error.
+      blaze: Effect.zipRight(
+        connected,
+        Effect.flatMap(DeployerAddress.address, blazeFor),
+      ),
+      blazeFor,
     };
   });
 

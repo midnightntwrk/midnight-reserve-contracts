@@ -116,9 +116,7 @@ export const buildTx = (
       yield* output.log("  Testing transaction locally (UPLC)...");
       const local = yield* Effect.either(
         Effect.gen(function* () {
-          const params = yield* provider.use("getParameters", (p) =>
-            p.getParameters(),
-          );
+          const params = yield* provider.parameters;
           const { cardanoNetwork } = environmentOf(environment);
           const { draftTx, evaluator } = yield* localStep(() => ({
             draftTx: Transaction.fromCbor(txBuilder.toCbor()),
@@ -168,9 +166,7 @@ export const buildTx = (
 
     if (Option.isSome(localEvaluator))
       txBuilder.useEvaluator(localEvaluator.value);
-    const { maxTxSize } = yield* provider.use("getParameters", (p) =>
-      p.getParameters(),
-    );
+    const { maxTxSize } = yield* provider.parameters;
     const tx = yield* completeBuilder(
       txBuilder,
       commandName,

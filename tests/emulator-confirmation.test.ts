@@ -33,11 +33,7 @@ class RateLimitedOnce extends EmulatorProvider {
 }
 
 const onChain = (txId: TransactionId) =>
-  Effect.flatMap(Provider, (provider) =>
-    provider.use("awaitTransactionConfirmation", (p) =>
-      p.awaitTransactionConfirmation(txId, 0),
-    ),
-  );
+  Effect.flatMap(Provider, (provider) => provider.isConfirmed(txId));
 
 describe("submission on the emulator", () => {
   test("an unsigned transaction is rejected once and never counts as on chain", async () => {

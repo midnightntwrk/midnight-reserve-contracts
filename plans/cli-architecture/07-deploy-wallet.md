@@ -10,10 +10,10 @@
    passes, ex-units come from the local evaluator
    (`makeUplcEvaluator(params, 1.2, 1.2, …)`, 20% over-estimate) instead of
    the provider's, so fees and ids differ from earlier builds; a failing
-   validator's traces name it through the blueprint labels. Protocol
-   parameters come from the per-run cache (phase 03), so the local check
-   adds no provider calls. The deploy tests' validity assertions stay
-   green.
+   validator's traces name it through the blueprint labels. The local
+   check reads protocol parameters through `Provider.parameters`, so it
+   adds provider calls (no cache; see 00-index "Decisions taken"). The
+   deploy tests' validity assertions stay green.
 1. `deploy/builders.ts`: `planTwoStageDeployment`,
    `planCnightMintingDeployment`, `planThresholdDeployment`,
    `planStagingForeverDeployment`. `DeployParams` keeps `networkId` and

@@ -253,9 +253,7 @@ export const emulatorProgram = async (env: Environment = "emulator") => {
 export const unsignedSimpleTx = Effect.gen(function* () {
   const provider = yield* Provider;
   const recipient = yield* DeployerAddress.address;
-  const { maxTxSize } = yield* provider.use("getParameters", (p) =>
-    p.getParameters(),
-  );
+  const { maxTxSize } = yield* provider.parameters;
   const blaze = yield* provider.blaze;
   return yield* completeBuilder(
     buildSimpleTx(blaze, { recipient, count: 1, amount: 5_000_000n }),

@@ -1,6 +1,6 @@
 /**
  * Submission and confirmation with retries on retryable provider failures
- * (Provider.use classifies them).
+ * (the Provider classifies them).
  */
 import type { Transaction, TransactionId } from "@blaze-cardano/core";
 import { Duration, Effect, Ref, Schedule } from "effect";
@@ -30,11 +30,7 @@ const retryNetwork = (
 /** One lookup without a wait; any failure counts as "not on chain". */
 const alreadyOnChain = (txId: TransactionId) =>
   Effect.flatMap(Provider, (provider) =>
-    provider
-      .use("awaitTransactionConfirmation", (p) =>
-        p.awaitTransactionConfirmation(txId, 0),
-      )
-      .pipe(Effect.orElseSucceed(() => false)),
+    provider.isConfirmed(txId).pipe(Effect.orElseSucceed(() => false)),
   );
 
 /** Submit a signed transaction with retries on network errors, returning the id once it landed or its outcome is unknown (a network error may have reached the node); a SubmitError only when the provider rejected every attempt. */
@@ -55,29 +51,27 @@ export const submitTx = (
           ? `Submitting: ${name}`
           : `Submitting (attempt ${n}/${MAX_ATTEMPTS}): ${name}`,
       );
-      return yield* provider
-        .use("postTransactionToChain", (p) => p.postTransactionToChain(tx))
-        .pipe(
-          Effect.as(txId),
-          Effect.catchAll((error) =>
-            Effect.flatMap(alreadyOnChain(txId), (landed) =>
-              landed
-                ? Effect.tap(Effect.succeed(txId), () =>
-                    output.info(
-                      `Transaction already confirmed on-chain: ${name}`,
-                    ),
-                  )
-                : Effect.zipRight(
-                    // A network failure may have reached the node; a 429 is the rate limiter refusing the request.
-                    networkFailure(error) &&
-                      !(error._tag === "ProviderError" && error.status === 429)
-                      ? Ref.set(outcomeUnknown, true)
-                      : Effect.void,
-                    Effect.fail(error),
+      return yield* provider.submit(tx).pipe(
+        Effect.as(txId),
+        Effect.catchAll((error) =>
+          Effect.flatMap(alreadyOnChain(txId), (landed) =>
+            landed
+              ? Effect.tap(Effect.succeed(txId), () =>
+                  output.info(
+                    `Transaction already confirmed on-chain: ${name}`,
                   ),
-            ),
+                )
+              : Effect.zipRight(
+                  // A network failure may have reached the node; a 429 is the rate limiter refusing the request.
+                  networkFailure(error) &&
+                    !(error._tag === "ProviderError" && error.status === 429)
+                    ? Ref.set(outcomeUnknown, true)
+                    : Effect.void,
+                  Effect.fail(error),
+                ),
           ),
-        );
+        ),
+      );
     });
     return yield* attempt.pipe(
       retryNetwork((delay) =>
@@ -129,9 +123,7 @@ export const awaitConfirmation = (
             `Awaiting confirmation (attempt ${n}/${MAX_ATTEMPTS}): ${name}`,
           );
         }
-        return yield* provider.use("awaitTransactionConfirmation", (p) =>
-          p.awaitTransactionConfirmation(txId, 0),
-        );
+        return yield* provider.isConfirmed(txId);
       });
       return yield* attempt.pipe(
         retryNetwork((delay) =>

@@ -196,7 +196,7 @@ export const parseNetworkConfig = (
 export class Profile extends Context.Tag("cli/Profile")<
   Profile,
   {
-    /** The profile, read from the repository's aiken.toml once. */
+    /** The profile, read from the repository's aiken.toml on each call. */
     readonly config: Effect.Effect<NetworkConfig, ConfigError>;
   }
 >() {
@@ -205,15 +205,14 @@ export class Profile extends Context.Tag("cli/Profile")<
     Effect.flatMap(Profile, (p) => p.config);
 }
 
-/** The environment's profile; aiken.toml is read through FileSystem on first use. */
+/** The environment's profile; aiken.toml is read through FileSystem on each use. */
 export const ProfileLive = (
   environment: Environment,
 ): Layer.Layer<Profile, never, FileSystem.FileSystem> =>
   Layer.effect(
     Profile,
-    Effect.gen(function* () {
-      const fs = yield* FileSystem.FileSystem;
-      const read = Effect.flatMap(
+    Effect.map(FileSystem.FileSystem, (fs) => ({
+      config: Effect.flatMap(
         Effect.mapError(
           fs.readFileString(resolve(PROJECT_ROOT, "aiken.toml")),
           (cause) =>
@@ -224,7 +223,6 @@ export const ProfileLive = (
             }),
         ),
         (text) => parseNetworkConfig(environment, text),
-      );
-      return { config: yield* Effect.cached(read) };
-    }),
+      ),
+    })),
   );

@@ -37,7 +37,7 @@ export class Blueprint extends Context.Tag("cli/Blueprint")<
   {
     /** Where this blueprint loads from. */
     readonly source: BlueprintSource;
-    /** Every contract instance, loaded once. */
+    /** Every contract instance. */
     readonly instances: Effect.Effect<ContractInstances, BlueprintError>;
     /** The two-stage triple of a validator name. */
     readonly twoStage: (
@@ -52,7 +52,7 @@ export class Blueprint extends Context.Tag("cli/Blueprint")<
     readonly classOf: (
       classNames: readonly string[],
     ) => Effect.Effect<ContractClass, BlueprintError>;
-    /** Every zero-argument contract class with its script hash, loaded once. */
+    /** Every zero-argument contract class with its script hash. */
     readonly contracts: Effect.Effect<
       readonly BlueprintContract[],
       BlueprintError
@@ -329,46 +329,35 @@ const contractClass = (
     ),
   );
 
-/** Blueprint for one environment from its source, loaded on first use. */
+/** Blueprint for one environment from its source, loaded on each use. */
 export const BlueprintLive = (
   environment: Environment,
   source: BlueprintSource,
-) =>
-  Layer.effect(
-    Blueprint,
-    Effect.map(
-      Effect.all([
-        Effect.cached(
-          Effect.suspend(() => contractInstances(environment, source)),
-        ),
-        Effect.cached(
-          Effect.suspend(() =>
-            Either.map(
-              loadBlueprintModule(environment, source),
-              enumerateContracts,
-            ),
-          ),
-        ),
-      ]),
-      ([instances, contracts]) => ({
-        source,
-        instances,
-        twoStage: (validator: UpgradableValidator) =>
-          Effect.flatMap(instances, (all) =>
-            twoStageContracts(validator, all, environment, source),
-          ),
-        scriptByHash: (hash: string, reason: string) =>
-          Effect.flatMap(contracts, (all) =>
-            Either.fromNullable(all.find((c) => c.hash === hash)?.script, () =>
-              blueprintError(environment, source)(reason),
-            ),
-          ),
-        classOf: (classNames: readonly string[]) =>
-          Effect.suspend(() => contractClass(classNames, environment, source)),
-        contracts,
-      }),
-    ),
+) => {
+  const instances = Effect.suspend(() =>
+    contractInstances(environment, source),
   );
+  const contracts = Effect.suspend(() =>
+    Either.map(loadBlueprintModule(environment, source), enumerateContracts),
+  );
+  return Layer.succeed(Blueprint, {
+    source,
+    instances,
+    twoStage: (validator: UpgradableValidator) =>
+      Effect.flatMap(instances, (all) =>
+        twoStageContracts(validator, all, environment, source),
+      ),
+    scriptByHash: (hash: string, reason: string) =>
+      Effect.flatMap(contracts, (all) =>
+        Either.fromNullable(all.find((c) => c.hash === hash)?.script, () =>
+          blueprintError(environment, source)(reason),
+        ),
+      ),
+    classOf: (classNames: readonly string[]) =>
+      Effect.suspend(() => contractClass(classNames, environment, source)),
+    contracts,
+  });
+};
 
 /** A zero-argument contract class of a blueprint module: its name, script and hash. */
 export interface BlueprintContract {

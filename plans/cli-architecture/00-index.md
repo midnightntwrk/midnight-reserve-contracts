@@ -187,3 +187,7 @@ same way). 02 and 03 can run in either order; so can 05 and 07.
   confirmation. Moving it to confirmation is a separate decision.
 - The Blaze patches (`patches/@blaze-cardano%2F*.patch`) are not touched;
   upstreaming them is outside this plan.
+- No caching (user, 2026-10-12): a run makes a handful of reads, so
+  protocol parameters, the profile, the blueprint and Blaze are read or
+  built on each use. The provider connection is shared for the run, which
+  is connection reuse rather than a cache.
