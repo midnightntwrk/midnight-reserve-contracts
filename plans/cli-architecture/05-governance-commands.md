@@ -30,10 +30,9 @@ Same port as the phase 04 pilot, one command family per commit. Each port:
    `Provider.parameters` in resolve and is a plan parameter (min-ADA of the
    staging output).
 
-Files under 300 lines stay single files, ordered resolve → plan →
-program. `change-multisig.ts` (401 lines) may split into
-`change-multisig/{signers,plan,program}.ts` if it is still over 300 after
-the port; decide in its commit.
+Files stay single files, ordered resolve → plan → program, up to the
+index's 600–700 line guideline. `change-multisig.ts` (about 360 lines
+after phase 01) stays one file.
 
 ## Acceptance
 

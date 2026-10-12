@@ -40,7 +40,7 @@ Tests: `cnight-minting`, `mainnet_upgrade_transactions`,
 
 ## Acceptance
 
-- No file under `cli/governance/` over 400 lines.
+- No file under `cli/governance/` over 700 lines.
 - `contracts/snapshot/write` imported only from `logic-record.ts` within
   `governance/`.
 - Same-id checks for stage and promote; the record tests show the same

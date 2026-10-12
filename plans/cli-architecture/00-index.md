@@ -134,8 +134,9 @@ flowchart TB
 | 06 | [06-two-stage-upgrade.md](06-two-stage-upgrade.md) | `two-stage-upgrade/` folder by phase; stage/promote on plan/compile; their snapshot writes through `RecordUpdate` | 05, 09 |
 | 07 | [07-deploy-wallet.md](07-deploy-wallet.md) | deploy builders, `deploy`, `deploy-staging-track`, `simple-tx`, `mint-tcnight` on plan/compile; one completion path | 04, 09 |
 | 08 | [08-enforce-cleanup.md](08-enforce-cleanup.md) | `build*Tx`, `buildTx`, `complete-tx.ts` gone; dependency rules in the lint gate; docs | 05, 06, 07 |
+| 10 | [10-commands.md](10-commands.md) | `cli/commands/` (23 one-command files) merged into one `cli/commands.ts` | 08 |
 
-Order: 01 → 09 → 02/03 → 04 → 05/07 → 06 → 08. 09 is numbered last to
+Order: 01 → 09 → 02/03 → 04 → 05/07 → 06 → 08 → 10. 09 is numbered last to
 keep the other files' numbers (plans/effect ran 08 and 09 before 05 the
 same way). 02 and 03 can run in either order; so can 05 and 07.
 
@@ -147,6 +148,9 @@ same way). 02 and 03 can run in either order; so can 05 and 07.
 - Clean cutover per step: a move deletes the old module in the same commit;
   no re-exports, no aliases. A new folder never sits beside the module it
   replaces.
+- File size: below about 600–700 lines, size alone is no reason to split a
+  module. Past that, split it by what it holds. A flat list of
+  declarations reads like a table and may run longer.
 - Behaviour-preserving: same output, same files, same transaction. A
   ported command's transaction id on the emulator equals the id its old
   builder produced from the same UTxOs (metadata is a fixed CIP-20 text,
