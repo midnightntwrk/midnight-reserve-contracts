@@ -12,7 +12,7 @@ import {
   emulatorProgram,
   expectFailure,
   runTest,
-  SettingsWith,
+  ConfigWith,
   testEnv,
   unsignedSimpleTx,
 } from "./helpers/effect";
@@ -71,7 +71,7 @@ describe("ProviderLive", () => {
   test("kupmios connects on first use; a refused Ogmios socket renders its message", async () => {
     const layer = Layer.provide(
       ProviderLive("local", "kupmios"),
-      SettingsWith("local", {
+      ConfigWith("local", {
         KUPO_URL: "http://127.0.0.1:9",
         OGMIOS_URL: "ws://127.0.0.1:9",
       }),
@@ -91,7 +91,7 @@ describe("ProviderLive", () => {
     const error = await expectFailure(
       Layer.provide(
         ProviderLive("local", "blockfrost"),
-        SettingsWith("local", {}),
+        ConfigWith("local", {}),
       ),
       Effect.asVoid(Provider),
       "BlockfrostUnavailable",

@@ -24,7 +24,7 @@ import {
   type TxFileInput,
   txFilePath,
 } from "../input";
-import { envFallback } from "../config/settings";
+import { envFallback } from "../config/env";
 import { DeployerAddress } from "../config/deployer";
 import { Provider } from "../chain/provider";
 import { InputParseError } from "../errors";

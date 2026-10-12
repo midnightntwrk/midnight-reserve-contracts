@@ -21,8 +21,8 @@ import {
   expectFailure,
   PlatformLive,
   runTest,
-  SettingsOver,
-  SettingsWith,
+  ConfigOver,
+  ConfigWith,
   testEnv,
 } from "./helpers/effect";
 
@@ -35,7 +35,7 @@ const golden = JSON.parse(readFileSync(goldenPath, "utf-8")) as {
 const goldenTx = Transaction.fromCbor(TxCBOR(HexBlob(golden.cborHex)));
 
 describe("signerFor", () => {
-  const techAuthOnly = SettingsWith("emulator", {
+  const techAuthOnly = ConfigWith("emulator", {
     TECH_AUTH_PRIVATE_KEYS: testEnv("TECH_AUTH_PRIVATE_KEYS"),
   });
 
@@ -59,7 +59,7 @@ describe("signAndWrite", () => {
     await initCrypto();
     const capture = captureOutput();
     await runTest(
-      Layer.mergeAll(OutputCaptured(capture), SettingsOver("emulator")),
+      Layer.mergeAll(OutputCaptured(capture), ConfigOver("emulator")),
       Effect.flatMap(signerFor(true, "both"), (signer) =>
         signAndWrite(goldenTx, "out/tx.json", signer, "Change X"),
       ),

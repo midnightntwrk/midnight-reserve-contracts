@@ -20,14 +20,14 @@ import {
   buildInstances,
   emulatorProfile,
   runTest,
-  SettingsOver,
+  ConfigOver,
 } from "./helpers/effect";
 
 const contracts = await buildInstances();
 const profile = await emulatorProfile();
 
 const settings = Layer.merge(
-  SettingsOver("emulator"),
+  ConfigOver("emulator"),
   BlueprintLive("emulator", "build"),
 );
 

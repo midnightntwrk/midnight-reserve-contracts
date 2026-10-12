@@ -4,9 +4,9 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { TOML } from "bun";
 import { Effect, Either, Layer, LogLevel, Schema } from "effect";
-import { DotEnvFallback } from "../cli/run";
+import { ConfigLive, DotEnvFallback } from "../cli/run";
 import { ENVIRONMENTS, environmentOf } from "../cli/config/network-mapping";
-import { SettingsLive, parseLogLevel } from "../cli/config/settings";
+import { parseLogLevel } from "../cli/config/env";
 import { parseNetworkConfig, reservedRefs } from "../cli/config/profile";
 import { DeployerAddress } from "../cli/config/deployer";
 import { ProviderConfig } from "../cli/config/provider-config";
@@ -18,7 +18,7 @@ import {
   runTest,
   leftOf,
   PlatformLive,
-  SettingsWith,
+  ConfigWith,
   testEnv as env,
   TestEnvLive,
 } from "./helpers/effect";
@@ -40,10 +40,10 @@ describe("simple-tx env fallbacks", () => {
   });
 });
 
-describe("env values through SettingsLive", () => {
+describe("env values through the configuration services", () => {
   test("an empty required value reads as unset", async () => {
     const error = await expectFailure(
-      SettingsWith("emulator", { BLOCKFROST_PREVIEW_API_KEY: "" }),
+      ConfigWith("emulator", { BLOCKFROST_PREVIEW_API_KEY: "" }),
       Effect.flatMap(ProviderConfig, (p) => p.blockfrostApiKey("preview")),
       "ConfigError",
     );
@@ -66,7 +66,7 @@ describe("DEPLOYER_ADDRESS", () => {
     "preview with '%s' is a ConfigError naming the key",
     async (value, reason) => {
       const error = await expectFailure(
-        SettingsWith("preview", { DEPLOYER_ADDRESS: value }),
+        ConfigWith("preview", { DEPLOYER_ADDRESS: value }),
         deployerAddress,
         "ConfigError",
       );
@@ -194,7 +194,7 @@ describe("DotEnvFallback", () => {
   /** The configuration services over the mode's env values, with `path` as the fallback. */
   const over = (path: string) =>
     Layer.mergeAll(
-      Layer.provide(SettingsLive("emulator"), PlatformLive),
+      Layer.provide(ConfigLive("emulator"), PlatformLive),
       Layer.provide(DotEnvFallback(path), TestEnvLive),
     );
 

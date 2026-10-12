@@ -17,13 +17,16 @@ import {
   type LogLevel,
   Option,
 } from "effect";
-import type { ProviderType } from "./config/network-mapping";
+import type { Environment, ProviderType } from "./config/network-mapping";
 import type { NetworkInput } from "./input";
-import { type Settings, SettingsLive, logLevel } from "./config/settings";
-import type { Profile } from "./config/profile";
-import type { DeployerAddress } from "./config/deployer";
-import type { ProviderConfig } from "./config/provider-config";
-import type { Keys } from "./config/keys";
+import { logLevel } from "./config/env";
+import { type Profile, ProfileLive } from "./config/profile";
+import { type DeployerAddress, DeployerAddressLive } from "./config/deployer";
+import {
+  type ProviderConfig,
+  ProviderConfigLive,
+} from "./config/provider-config";
+import { type Keys, KeysLive } from "./config/keys";
 import {
   type Blueprint,
   BlueprintLive,
@@ -40,7 +43,6 @@ import { type Provider, ProviderLive } from "./chain/provider";
 
 /** Everything a command program may require: the CLI services and the platform (FileSystem, Path, CommandExecutor, Terminal, HttpClient). */
 export type CliServices =
-  | Settings
   | Profile
   | DeployerAddress
   | ProviderConfig
@@ -141,23 +143,32 @@ const useBuildSource = (
           }),
         );
 
-/** Settings and the provider of a command's environment. */
+/** The configuration services of one environment: its Profile, DeployerAddress, ProviderConfig and Keys. */
+export const ConfigLive = (environment: Environment) =>
+  Layer.mergeAll(
+    ProfileLive(environment),
+    DeployerAddressLive(environment),
+    ProviderConfigLive,
+    KeysLive,
+  );
+
+/** The configuration and the provider of a command's environment. */
 const ChainLive = (input: ProviderInput) => {
-  const settings = SettingsLive(input.network);
+  const config = ConfigLive(input.network);
   return Layer.merge(
-    settings,
+    config,
     Layer.provide(
       ProviderLive(input.network, Option.getOrUndefined(input.provider)),
-      settings,
+      config,
     ),
   );
 };
 
-/** Settings, the blueprint and the provider of a command's environment. */
+/** The configuration, the blueprint and the provider of a command's environment. */
 const ServicesLive = (input: ProviderInput, source: BlueprintSource) =>
   Layer.merge(ChainLive(input), BlueprintLive(input.network, source));
 
-/** Run a command's program on the Settings and the provider of its parsed environment, with no blueprint. */
+/** Run a command's program on the configuration and the provider of its parsed environment, with no blueprint. */
 export const withProvider = <
   Name extends string,
   R,

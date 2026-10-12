@@ -82,10 +82,11 @@ Adding a command: create `cli/commands/<name>.ts` with an `@effect/cli`
 `Command.make` over its options: the shared ones from `cli/options.ts` and
 its own, each text value parsed at the boundary (`parsedText`). Its handler
 is the program. Pipe it through the `cli/run.ts` helper that gives it the
-services it reads: `withServices(source)` (Settings, Blueprint and Provider
-over the `"deployed"` or `"build"` blueprint), `withServicesUseBuild` (the
-same, with the blueprint from `--use-build`) or `withProvider` (Settings
-and Provider); a command that reads none of them (`build`,
+services it reads: `withServices(source)` (the configuration services,
+Blueprint and Provider over the `"deployed"` or `"build"` blueprint),
+`withServicesUseBuild` (the same, with the blueprint from `--use-build`) or
+`withProvider` (the configuration services and Provider); a command that
+reads none of them (`build`,
 `generate-key`) takes no helper. Add it to the root in
 `cli/index.ts`. The program takes a typed input record and lives in the
 domain folder that owns it (`cli/governance/`, `cli/chain/`,

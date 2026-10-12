@@ -37,3 +37,15 @@ One commit per task; task 2 may be one commit per folder.
   (layer wiring).
 - Every `ConfigError` text an operator sees is unchanged (the config
   tests assert them).
+
+## Deviations
+
+- `config/env.ts` holds the shared env readers (required/optional values
+  and secrets, `envError`) the four services and `intent-env` build on,
+  plus `envFallback`, `parseLogLevel` and `logLevel`, which lived in
+  `settings.ts`. `ConfigLive(environment)` (the four layers) is exported
+  from `run.ts`; the test helpers `ConfigOver` / `ConfigWith` wrap it.
+- Task 1 kept `SettingsLive` as a facade over the four services, so
+  task 2 could move callers without a broken build in between.
+- `tests/config.test.ts` stays one file; each case reads through the
+  service that owns its variable.

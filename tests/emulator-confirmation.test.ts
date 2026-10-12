@@ -16,7 +16,7 @@ import {
   LoggerCaptured,
   OutputCaptured,
   runTest,
-  SettingsOver,
+  ConfigOver,
   unsignedSimpleTx,
 } from "./helpers/effect";
 
@@ -58,7 +58,7 @@ describe("submission on the emulator", () => {
     const tx = await runTest(layer, unsignedSimpleTx);
     const capture = captureOutput();
     const rateLimited = Layer.mergeAll(
-      SettingsOver("emulator"),
+      ConfigOver("emulator"),
       ProviderOver(new RateLimitedOnce(emulator), "emulator"),
       OutputCaptured(capture),
       LoggerCaptured(capture),

@@ -3,11 +3,12 @@
  * runtime entry.
  *
  * Two modes. Local (the default, and what CI runs): the emulator only, no
- * network, and Settings over LOCAL_ENV, never the process environment or
- * .env (Bun loads .env into process.env on a developer machine). Preview
- * (`TEST_NETWORK=preview`, `just test-preview`): Settings over the process
- * environment with .env as the fallback, as the CLI root's EnvLive reads it, and the
- * chain-facing tests (`describe.if(onPreview)`) run against preview.
+ * network, and the configuration over LOCAL_ENV, never the process
+ * environment or .env (Bun loads .env into process.env on a developer
+ * machine). Preview (`TEST_NETWORK=preview`, `just test-preview`): the
+ * configuration over the process environment with .env as the fallback, as
+ * the CLI root's EnvLive reads it, and the chain-facing tests
+ * (`describe.if(onPreview)`) run against preview.
  */
 import { createHash } from "crypto";
 import {
@@ -21,7 +22,6 @@ import { FetchHttpClient, FileSystem } from "@effect/platform";
 import { BunContext } from "@effect/platform-bun";
 import { ConfigProvider, Effect, Either, HashMap, Layer, Logger } from "effect";
 import type { CliError } from "../../cli/errors";
-import { SettingsLive } from "../../cli/config/settings";
 import { Profile } from "../../cli/config/profile";
 import { DeployerAddress } from "../../cli/config/deployer";
 import type { Environment } from "../../cli/config/network-mapping";
@@ -32,7 +32,7 @@ import { completeBuilder } from "../../cli/tx/compile";
 import { buildSimpleTx } from "../../cli/wallet/simple-tx";
 import { DeployedScripts } from "../../cli/contracts/snapshot/context";
 import { Output } from "../../cli/output";
-import { DotEnvFallback, type CliServices } from "../../cli/run";
+import { ConfigLive, DotEnvFallback, type CliServices } from "../../cli/run";
 import { FEE_TX, feeUtxo, keyAddress } from "./fixtures";
 
 /** One log record a test can assert on. */
@@ -160,17 +160,17 @@ export const TestEnvLive = onPreview
   ? DotEnvFallback(".env")
   : EnvValues(LOCAL_ENV);
 
-/** The env's Settings over the real Bun platform and the mode's env values. */
-export const SettingsOver = (env: Environment) =>
-  Layer.mergeAll(Layer.provide(SettingsLive(env), PlatformLive), TestEnvLive);
+/** The env's configuration services over the real Bun platform and the mode's env values. */
+export const ConfigOver = (env: Environment) =>
+  Layer.mergeAll(Layer.provide(ConfigLive(env), PlatformLive), TestEnvLive);
 
-/** The env's Settings over the real Bun platform and exactly these env values, in either mode. */
-export const SettingsWith = (
+/** The env's configuration services over the real Bun platform and exactly these env values, in either mode. */
+export const ConfigWith = (
   env: Environment,
   values: Readonly<Record<string, string>>,
 ) =>
   Layer.mergeAll(
-    Layer.provide(SettingsLive(env), PlatformLive),
+    Layer.provide(ConfigLive(env), PlatformLive),
     EnvValues(values),
   );
 
@@ -184,15 +184,12 @@ export const buildInstances = () =>
 /** The emulator's aiken.toml profile (default). */
 export const emulatorProfile = () =>
   runTest(
-    SettingsOver("emulator"),
+    ConfigOver("emulator"),
     Effect.flatMap(Profile, (p) => p.config),
   );
 
-/** Preview Settings and the real fetch client, for the preview-only tests. */
-export const PreviewLive = Layer.mergeAll(
-  SettingsOver("preview"),
-  PlatformLive,
-);
+/** The preview configuration and the real fetch client, for the preview-only tests. */
+export const PreviewLive = Layer.mergeAll(ConfigOver("preview"), PlatformLive);
 
 /** Snapshots under a temporary directory that lives as long as the layer, so no test writes the repository's deployed-scripts/. */
 export const DeployedScriptsTemp = Layer.scoped(
@@ -214,7 +211,7 @@ export const EmulatorLive = (
   env: Environment = "emulator",
 ) =>
   Layer.mergeAll(
-    SettingsOver(env),
+    ConfigOver(env),
     BlueprintLive(env, "build"),
     ProviderOver(new EmulatorProvider(emulator), env),
     OutputCaptured(capture),

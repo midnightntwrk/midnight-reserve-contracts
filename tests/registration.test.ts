@@ -4,7 +4,7 @@ import { NetworkId } from "@blaze-cardano/core";
 import { ConfigProvider, Layer } from "effect";
 import { rewardAccountRegistered } from "../cli/chain/registration";
 import { createRewardAccount } from "../cli/tx/scripts";
-import { SettingsLive } from "../cli/config/settings";
+import { ConfigLive } from "../cli/run";
 import { expectFailure, onPreview, PlatformLive } from "./helpers/effect";
 import { randomHash } from "./helpers/fixtures";
 
@@ -17,7 +17,7 @@ describe.if(onPreview)("rewardAccountRegistered on preview", () => {
     );
     const error = await expectFailure(
       Layer.mergeAll(
-        Layer.provide(SettingsLive("preview"), PlatformLive),
+        Layer.provide(ConfigLive("preview"), PlatformLive),
         badKey,
         PlatformLive,
       ),

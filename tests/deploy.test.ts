@@ -68,8 +68,8 @@ import {
   expectFailure,
   PlatformLive,
   runTest,
-  SettingsOver,
-  SettingsWith,
+  ConfigOver,
+  ConfigWith,
   testEnv,
 } from "./helpers/effect";
 
@@ -126,7 +126,7 @@ const stepBuilder = (
   emulator: Emulator,
   blaze: BlazeOf,
   addr: Address,
-  settings = SettingsOver("emulator"),
+  settings = ConfigOver("emulator"),
   govAuths = buildGovAuths,
 ) => {
   const oneShotUtxo = oneShotOf(addr, component);
@@ -346,12 +346,12 @@ describe("the deploy steps", () => {
 
   test.each([
     ...DEPLOY_COMPONENTS.map(
-      (component) => [component, component, SettingsOver("emulator")] as const,
+      (component) => [component, component, ConfigOver("emulator")] as const,
     ),
     [
       "federated-ops with no candidates",
       "federated-ops",
-      SettingsWith("emulator", { PERMISSIONED_CANDIDATES: "[]" }),
+      ConfigWith("emulator", { PERMISSIONED_CANDIDATES: "[]" }),
     ] as const,
   ])(
     "the %s step mints from its one-shot, registering the stake credential it should",
@@ -394,7 +394,7 @@ describe("the deploy steps", () => {
         emulator,
         blaze,
         addr,
-        SettingsOver("emulator"),
+        ConfigOver("emulator"),
         live,
       );
       const body = Transaction.fromCbor(TxCBOR(builder.toCbor())).body();

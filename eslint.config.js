@@ -50,7 +50,7 @@ export default [
         {
           object: "process",
           property: "env",
-          message: "Read environment values through the Settings service.",
+          message: "Read environment values through cli/config (Profile, DeployerAddress, ProviderConfig, Keys, intent-env, env).",
         },
         ...RUNNERS.map((property) => ({
           object: "Effect",

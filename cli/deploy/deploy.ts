@@ -25,7 +25,7 @@ import { Clock, Effect, Option } from "effect";
 import { relative, resolve } from "path";
 import * as Contracts from "../../contract_blueprint";
 import { completeBuilder } from "../tx/compile";
-import { envFallback } from "../config/settings";
+import { envFallback } from "../config/env";
 import { initialTermsAndConditions } from "../config/intent-env";
 import type { NetworkConfig } from "../config/profile";
 import {
