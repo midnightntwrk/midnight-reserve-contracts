@@ -11,7 +11,7 @@ import {
   type TransactionId,
 } from "@blaze-cardano/core";
 import { Effect, Either, Option } from "effect";
-import { Settings } from "../config/settings";
+import { Keys } from "../config/keys";
 import type { PrivateKey } from "../datum/signers";
 import { Output } from "../output";
 import { readTransactionFile } from "./tx-file";
@@ -37,9 +37,7 @@ type Failure = { readonly name: string; readonly error: string };
 export const deployerKey = (input: DeployerKeyInput) =>
   input.signDeployer
     ? Effect.map(
-        Effect.flatMap(Settings, (settings) =>
-          settings.signingKey(input.signingKey),
-        ),
+        Effect.flatMap(Keys, (keys) => keys.signingKey(input.signingKey)),
         Option.some,
       )
     : Effect.succeed(Option.none<PrivateKey>());

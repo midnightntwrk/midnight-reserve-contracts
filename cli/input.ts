@@ -1,6 +1,6 @@
 /**
  * Parsers of external input: argument and env text (Left is the reason; the
- * options parse arguments through them at the boundary, Settings its env
+ * options parse arguments through them at the boundary, the config readers their env
  * values), the input records the programs share, and JSON files decoded
  * through a schema.
  */

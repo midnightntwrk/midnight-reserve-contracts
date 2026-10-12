@@ -17,7 +17,9 @@ import type {
 import { calculateRequiredCollateral } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
 import { type Environment, environmentOf } from "../config/network-mapping";
-import { Settings } from "../config/settings";
+import { DeployerAddress } from "../config/deployer";
+import { newSigners, permissionedCandidates } from "../config/intent-env";
+import { Profile } from "../config/profile";
 import type { NetworkConfig } from "../config/profile";
 import {
   Blueprint,
@@ -56,7 +58,7 @@ export type UtxoRef = readonly [TxHash, TxIndex];
 /** The deployer's UTxOs at these references, in order (only the deployer signs a deploy); one that is not among its unspent outputs is UtxoNotFound naming it. */
 export const resolveUnspent = (refs: readonly UtxoRef[]) =>
   Effect.gen(function* () {
-    const address = yield* Effect.flatMap(Settings, (s) => s.deployerAddress);
+    const address = yield* Effect.flatMap(DeployerAddress, (d) => d.address);
     const unspent = new Map(
       (yield* Effect.flatMap(Provider, (p) => p.unspentOutputs(address))).map(
         (utxo) => [refOf(utxo.input()), utxo],
@@ -121,13 +123,15 @@ export interface DeploymentSetup {
 export const deploymentSetup = (command: string, network: Environment) =>
   Effect.gen(function* () {
     const out = yield* Output;
-    const settings = yield* Settings;
     const provider = yield* Provider;
-    const config = yield* settings.profile;
+    const config = yield* Effect.flatMap(Profile, (p) => p.config);
     const contracts = yield* Effect.flatMap(Blueprint, (b) => b.instances);
-    const deployer = (yield* settings.deployerAddress).toBech32();
-    const techAuthSigners = yield* settings.newSigners("TECH_AUTH_SIGNERS");
-    const councilSigners = yield* settings.newSigners("COUNCIL_SIGNERS");
+    const deployer = (yield* Effect.flatMap(
+      DeployerAddress,
+      (d) => d.address,
+    )).toBech32();
+    const techAuthSigners = yield* newSigners("TECH_AUTH_SIGNERS");
+    const councilSigners = yield* newSigners("COUNCIL_SIGNERS");
     yield* out.log(`\nTotal tech auth signers: ${techAuthSigners.length}`);
     yield* out.log(
       `Number of tech auth signer pairs: ${techAuthSigners.length}`,
@@ -185,11 +189,9 @@ export const multisigForever = (
 /** The FederatedOps datum over PERMISSIONED_CANDIDATES, minted with redeemer 0. */
 export const federatedOpsForever: Effect.Effect<
   ForeverMint,
-  ConfigError | InputParseError,
-  Settings
-> = Effect.map(
-  Effect.flatMap(Settings, (s) => s.permissionedCandidates),
-  (candidates) => zeroRedeemer(initialFederatedOpsDatum(candidates)),
+  ConfigError | InputParseError
+> = Effect.map(permissionedCandidates, (candidates) =>
+  zeroRedeemer(initialFederatedOpsDatum(candidates)),
 );
 
 /** The --components selection in build order; None selects the defaults (every one unless given). */

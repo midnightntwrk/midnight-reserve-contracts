@@ -30,8 +30,8 @@ import type {
 import { calculateMinAda, type TxBuilder } from "@blaze-cardano/tx";
 import { Effect } from "effect";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
-import { Settings } from "../config/settings";
-import type { NetworkConfig } from "../config/profile";
+import { type NetworkConfig, Profile } from "../config/profile";
+import { DeployerAddress } from "../config/deployer";
 import { environmentOf } from "../config/network-mapping";
 import {
   type ContractClass,
@@ -218,15 +218,17 @@ export const mintStagingStateProgram = (input: MintStagingStateInput) =>
     const signer = yield* signerFor(sign, "tech-auth");
     const track = V2_TRACKS[validator];
     const out = yield* Output;
-    const cfg = yield* Settings;
     const blueprint = yield* Blueprint;
     const provider = yield* Provider;
     const outputPath = txFilePath(input);
 
     yield* out.log(`\nMinting StagingState NFT for ${validator} on ${network}`);
-    const config = yield* cfg.profile;
+    const config = yield* Effect.flatMap(Profile, (p) => p.config);
     const { networkId } = environmentOf(network);
-    const deployerAddress = yield* cfg.deployerAddress;
+    const deployerAddress = yield* Effect.flatMap(
+      DeployerAddress,
+      (d) => d.address,
+    );
     const contracts = yield* blueprint.instances;
 
     const v2LogicScript = (yield* blueprint.classOf(track.v2LogicClasses))

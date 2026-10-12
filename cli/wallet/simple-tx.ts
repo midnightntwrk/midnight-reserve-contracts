@@ -3,7 +3,7 @@
  * (never submitted) and written to a file. The builder is pure over the
  * parsed inputs. --count and --amount fall back to SIMPLE_TX_COUNT and
  * SIMPLE_TX_AMOUNT through their options; the recipient falls back to
- * DEPLOYER_ADDRESS through Settings.
+ * DEPLOYER_ADDRESS.
  */
 import type { Address } from "@blaze-cardano/core";
 import type {
@@ -24,7 +24,8 @@ import {
   type TxFileInput,
   txFilePath,
 } from "../input";
-import { envFallback, Settings } from "../config/settings";
+import { envFallback } from "../config/settings";
+import { DeployerAddress } from "../config/deployer";
 import { Provider } from "../chain/provider";
 import { InputParseError } from "../errors";
 import { DEPLOYER_ONLY } from "../signing/signer";
@@ -72,12 +73,11 @@ export const buildSimpleTx = (
 export const simpleTxProgram = (input: SimpleTxInput) =>
   Effect.gen(function* () {
     const { network } = input;
-    const config = yield* Settings;
     const out = yield* Output;
     const { count, amount } = input;
     const outputPath = txFilePath(input);
     const recipient = Option.isNone(input.to)
-      ? yield* config.deployerAddress
+      ? yield* Effect.flatMap(DeployerAddress, (d) => d.address)
       : yield* Either.mapLeft(
           addressOn(input.to.value, network),
           (issue) => new InputParseError({ source: "--to", issues: [issue] }),

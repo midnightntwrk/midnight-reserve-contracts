@@ -25,7 +25,8 @@ import { Clock, Effect, Option } from "effect";
 import { relative, resolve } from "path";
 import * as Contracts from "../../contract_blueprint";
 import { completeBuilder } from "../tx/compile";
-import { envFallback, Settings } from "../config/settings";
+import { envFallback } from "../config/settings";
+import { initialTermsAndConditions } from "../config/intent-env";
 import type { NetworkConfig } from "../config/profile";
 import {
   Blueprint,
@@ -199,7 +200,7 @@ interface StepBody {
   readonly build: (
     ctx: DeployContext,
     oneShotUtxo: TransactionUnspentOutput,
-  ) => Effect.Effect<TxBuilder, DeployBuildError, Settings | Blueprint>;
+  ) => Effect.Effect<TxBuilder, DeployBuildError, Blueprint>;
 }
 
 /** The main-gov datum shape of a threshold: the tech-auth then the council fraction. */
@@ -225,7 +226,7 @@ const twoStage = (
   oneShotOf: OneShotOf,
   foreverOf: (
     ctx: DeployContext,
-  ) => Effect.Effect<ForeverMint, DeployBuildError, Settings>,
+  ) => Effect.Effect<ForeverMint, DeployBuildError>,
   registerLogic: boolean,
 ): StepBody => {
   const triple = Effect.flatMap(Blueprint, (b) => b.twoStage(validator));
@@ -289,12 +290,10 @@ const zeroForever = () => Effect.succeed(zeroRedeemer(ZERO_FOREVER_DATUM));
 
 /** VersionedTermsAndConditions [[initial hash, initial link], 0], minted with redeemer 0. */
 const termsAndConditionsForever = () =>
-  Effect.map(
-    Effect.flatMap(Settings, (s) => s.initialTermsAndConditions),
-    ({ hash, link }) =>
-      zeroRedeemer(
-        serialize(Contracts.VersionedTermsAndConditions, [[hash, link], 0n]),
-      ),
+  Effect.map(initialTermsAndConditions, ({ hash, link }) =>
+    zeroRedeemer(
+      serialize(Contracts.VersionedTermsAndConditions, [[hash, link], 0n]),
+    ),
   );
 
 const cnightMintTriple = Effect.flatMap(Blueprint, (b) =>

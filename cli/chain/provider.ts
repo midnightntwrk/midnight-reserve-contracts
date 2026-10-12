@@ -33,8 +33,9 @@ import {
   environmentOf,
   publicNetworkOf,
 } from "../config/network-mapping";
-import { Settings } from "../config/settings";
-import { reservedRefs } from "../config/profile";
+import { DeployerAddress } from "../config/deployer";
+import { Profile, reservedRefs } from "../config/profile";
+import { ProviderConfig } from "../config/provider-config";
 import { BlockfrostUnavailable, ConfigError, ProviderError } from "../errors";
 import { type TxRef, txRef } from "../input";
 import { BLOCKFROST_NETWORK, retryableStatus, retryRead } from "./blockfrost";
@@ -66,11 +67,8 @@ const connectionFor = (
 const connectFailure = (op: string) => (cause: unknown) =>
   new ProviderError({ op, cause, retryable: false });
 
-/** The Settings reads a provider's credentials need. */
-type Credentials = Pick<
-  Context.Tag.Service<Settings>,
-  "blockfrostApiKey" | "kupmios"
->;
+/** The credentials a provider connects with. */
+type Credentials = Context.Tag.Service<ProviderConfig>;
 
 const connect = (
   connection: Connection,
@@ -142,11 +140,11 @@ export class Provider extends Context.Tag("cli/Provider")<
     readonly unspentOutputs: (
       address: Address,
     ) => Effect.Effect<TransactionUnspentOutput[], ProviderError | ConfigError>;
-    /** Blaze over the provider with the deployer's cold wallet (Settings.deployerAddress), built once. */
+    /** Blaze over the provider with the deployer's cold wallet (DeployerAddress), the profile's UTxOs reserved; built once. */
     readonly blaze: Effect.Effect<
       DeployerBlaze,
       ProviderError | ConfigError,
-      Settings
+      DeployerAddress | Profile
     >;
   }
 >() {}
@@ -241,14 +239,17 @@ const providerService = (
     const blaze = yield* Effect.cached(
       Effect.gen(function* () {
         const provider = yield* cached;
-        const config = yield* Settings;
-        const deployerAddress = yield* config.deployerAddress;
+        const deployerAddress = yield* Effect.flatMap(
+          DeployerAddress,
+          (d) => d.address,
+        );
+        const config = yield* Effect.flatMap(Profile, (p) => p.config);
         const { networkId } = environmentOf(environment);
         const wallet = new GuardedWallet(
           deployerAddress,
           networkId,
           provider,
-          reservedRefs(yield* config.profile),
+          reservedRefs(config),
         );
         return yield* providerCall("Blaze.from", () =>
           Blaze.from(provider, wallet),
@@ -278,7 +279,7 @@ const providerService = (
     };
   });
 
-/** Provider for the environment (Blockfrost, Kupmios or emulator), credentials from Settings; Blockfrost off a Cardano network fails the layer, a connection is made on first use, and an Ogmios socket closes with the layer. */
+/** Provider for the environment (Blockfrost, Kupmios or emulator), credentials from ProviderConfig; Blockfrost off a Cardano network fails the layer, a connection is made on first use, and an Ogmios socket closes with the layer. */
 export const ProviderLive = (
   environment: Environment,
   providerType?: ProviderType,
@@ -288,7 +289,7 @@ export const ProviderLive = (
     Effect.gen(function* () {
       const connection = yield* connectionFor(environment, providerType);
       const scope = yield* Effect.scope;
-      const config = yield* Settings;
+      const config = yield* ProviderConfig;
       return yield* providerService(
         environment,
         Scope.extend(connect(connection, config), scope),

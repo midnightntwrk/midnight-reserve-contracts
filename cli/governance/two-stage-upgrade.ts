@@ -6,7 +6,7 @@
  * governance authority (gov-auth withdrawal, threshold reference, both
  * authority witnesses). The build*Tx functions compose one step with the
  * authority. The programs resolve everything through
- * Provider/Blueprint/Settings and keep the deployed-scripts snapshot
+ * Provider/Blueprint and keep the deployed-scripts snapshot
  * (versions.json, merged plutus.json) in step with the chain.
  */
 import { serialize } from "@blaze-cardano/data";

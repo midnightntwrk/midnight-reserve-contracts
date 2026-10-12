@@ -19,8 +19,7 @@ import { Effect } from "effect";
 import type { PrivateKey } from "../datum/signers";
 import { writeTransaction } from "./tx-file";
 import { Output } from "../output";
-import { Settings } from "../config/settings";
-import type { KeyGroup } from "../config/keys";
+import { type KeyGroup, Keys } from "../config/keys";
 import type { ConfigError, FileWriteError } from "../errors";
 
 /** The public key of a private key. Blaze's helpers take a key as a seed, so an extended key, whose first half is already the scalar, goes through the SDK. */
@@ -94,12 +93,12 @@ export const UNSIGNED: Signer = { _tag: "Unsigned" };
 export const signerFor = (
   sign: boolean,
   signing: Signing,
-): Effect.Effect<Signer, ConfigError, Settings> =>
+): Effect.Effect<Signer, ConfigError, Keys> =>
   sign
-    ? Effect.flatMap(Settings, (settings) =>
+    ? Effect.flatMap(Keys, (keys) =>
         Effect.map(
           Effect.forEach(SIGNING_GROUPS[signing], (group) =>
-            Effect.map(settings.privateKeys(group), (keys) => ({
+            Effect.map(keys.privateKeys(group), (keys) => ({
               group,
               keys,
             })),

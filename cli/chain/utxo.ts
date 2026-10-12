@@ -8,7 +8,7 @@ import {
   TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import { Effect, Either, Record } from "effect";
-import { Settings } from "../config/settings";
+import { DeployerAddress } from "../config/deployer";
 import { findMainUtxo } from "../governance/two-stage";
 import { type TxHash, type TxIndex, type TxRef, txRef } from "../input";
 import { Provider } from "./provider";
@@ -72,20 +72,17 @@ export const contractUtxos = <K extends string>(
     );
   });
 
-/** The deployer's address (Settings) and its UTxO with this reference, which carries no reference script. */
+/** The deployer's address and its UTxO with this reference, which carries no reference script. */
 export const deployerUtxo = (
   txHash: TxHash,
   txIndex: TxIndex,
 ): Effect.Effect<
   { readonly address: Address; readonly utxo: TransactionUnspentOutput },
   ConfigError | ProviderError | UtxoNotFound | InputParseError,
-  Settings | Provider
+  DeployerAddress | Provider
 > =>
   Effect.gen(function* () {
-    const address = yield* Effect.flatMap(
-      Settings,
-      (settings) => settings.deployerAddress,
-    );
+    const address = yield* Effect.flatMap(DeployerAddress, (d) => d.address);
     const utxos = yield* Effect.flatMap(Provider, (provider) =>
       provider.unspentOutputs(address),
     );

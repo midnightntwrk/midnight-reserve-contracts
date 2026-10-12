@@ -3,7 +3,7 @@ import type { RewardAccount } from "@blaze-cardano/core";
 import type { HttpClient } from "@effect/platform";
 import { Effect, Option, Schema } from "effect";
 import { type Environment, publicNetworkOf } from "../config/network-mapping";
-import type { Settings } from "../config/settings";
+import type { ProviderConfig } from "../config/provider-config";
 import { blockfrostApiKeyVariable } from "../config/provider-config";
 import { blockfrostAccessTo, blockfrostGet } from "./blockfrost";
 import { ConfigError, type ProviderError, StakeNotRegistered } from "../errors";
@@ -18,7 +18,7 @@ export const registrationOnChain = (
 ): Effect.Effect<
   Option.Option<boolean>,
   ConfigError | ProviderError,
-  Settings | HttpClient.HttpClient
+  ProviderConfig | HttpClient.HttpClient
 > =>
   Effect.gen(function* () {
     const network = publicNetworkOf(environment);
@@ -52,7 +52,7 @@ export const rewardAccountRegistered = (
 ): Effect.Effect<
   boolean,
   ConfigError | ProviderError,
-  Settings | HttpClient.HttpClient
+  ProviderConfig | HttpClient.HttpClient
 > =>
   Effect.map(
     registrationOnChain(rewardAccount, environment),
@@ -70,7 +70,7 @@ export const ensureRegistered = (
 ): Effect.Effect<
   void,
   ConfigError | ProviderError | StakeNotRegistered,
-  Settings | HttpClient.HttpClient
+  ProviderConfig | HttpClient.HttpClient
 > =>
   Effect.flatMap(
     Effect.all(

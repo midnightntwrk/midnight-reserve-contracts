@@ -20,7 +20,7 @@ import {
 } from "effect";
 import type { NetworkName } from "@blaze-cardano/query";
 import { type ConfigError, ProviderError } from "../errors";
-import { Settings } from "../config/settings";
+import { ProviderConfig } from "../config/provider-config";
 import type { PublicNetwork } from "../config/network-mapping";
 
 /** How long one Blockfrost call may take. */
@@ -163,9 +163,9 @@ export interface BlockfrostAccess {
 /** Base URL and API key of a public network. */
 export const blockfrostAccessTo = (
   cardanoNetwork: PublicNetwork,
-): Effect.Effect<BlockfrostAccess, ConfigError, Settings> =>
+): Effect.Effect<BlockfrostAccess, ConfigError, ProviderConfig> =>
   Effect.map(
-    Effect.flatMap(Settings, (c) => c.blockfrostApiKey(cardanoNetwork)),
+    Effect.flatMap(ProviderConfig, (c) => c.blockfrostApiKey(cardanoNetwork)),
     (apiKey) => ({
       cardanoNetwork,
       baseUrl: baseUrlOf(BLOCKFROST_NETWORK[cardanoNetwork]),

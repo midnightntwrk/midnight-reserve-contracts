@@ -53,8 +53,10 @@ import {
   witnessRequirements,
 } from "./threshold";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
-import { Settings } from "../config/settings";
-import type { SignersVariable } from "../config/intent-env";
+import {
+  newSigners as readNewSigners,
+  type SignersVariable,
+} from "../config/intent-env";
 import { Output } from "../output";
 import { Provider } from "../chain/provider";
 import type { InputParseError } from "../errors";
@@ -208,7 +210,6 @@ export const multisigChangeProgram = (
     const { network, txHash, txIndex, sign } = input;
     const signer = yield* signerFor(sign, "both");
     const out = yield* Output;
-    const cfg = yield* Settings;
     const blueprint = yield* Blueprint;
     const provider = yield* Provider;
     const label = config.commandLabel;
@@ -261,7 +262,7 @@ export const multisigChangeProgram = (
     yield* out.log("\nReading current secondary state for ML-3 validation...");
     const secondarySigners = yield* signersAt(secondaryForeverUtxo);
 
-    const newSigners = yield* cfg.newSigners(config.signerEnvVar);
+    const newSigners = yield* readNewSigners(config.signerEnvVar);
     yield* out.log(`New ${lower} signers count: ${newSigners.length}`);
     yield* out.log(
       `  Unique payment hashes: ${new Set(newSigners.map((s) => s.paymentHash)).size}`,

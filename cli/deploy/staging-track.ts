@@ -13,7 +13,6 @@ import { Clock, Effect, Either, Option } from "effect";
 import { relative, resolve } from "path";
 import * as Contracts from "../../contract_blueprint";
 import { buildTx } from "../tx/compile";
-import { Settings } from "../config/settings";
 import type { NetworkConfig } from "../config/profile";
 import {
   Blueprint,
@@ -81,7 +80,7 @@ interface StagingStep {
   readonly contract: (c: ContractInstances) => ContractClass | undefined;
   readonly datum: (
     setup: DeploymentSetup,
-  ) => Effect.Effect<ForeverMint, ConfigError | InputParseError, Settings>;
+  ) => Effect.Effect<ForeverMint, ConfigError | InputParseError>;
 }
 
 /** Each component's staging track transaction: its name, one-shot, script and datum. */

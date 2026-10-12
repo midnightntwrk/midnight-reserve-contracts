@@ -28,8 +28,7 @@ import { buildTx } from "../tx/compile";
 import { GuardedWallet, Provider } from "../chain/provider";
 import { transactionFile } from "../signing/tx-file";
 import { environmentOf, type TestEnvironment } from "../config/network-mapping";
-import { Settings } from "../config/settings";
-import { reservedRefs } from "../config/profile";
+import { Profile, reservedRefs } from "../config/profile";
 import { Blueprint } from "../contracts/contracts";
 import {
   BlueprintError,
@@ -257,7 +256,7 @@ export const mintTcnightProgram = (input: MintTcnightInput) =>
 
     const { networkId } = environmentOf(network);
     const reserved = reservedRefs(
-      yield* Effect.flatMap(Settings, (s) => s.profile),
+      yield* Effect.flatMap(Profile, (p) => p.config),
     );
     const blaze = yield* provider.use("Blaze.from", (p) =>
       Blaze.from(p, new GuardedWallet(user, networkId, p, reserved)),

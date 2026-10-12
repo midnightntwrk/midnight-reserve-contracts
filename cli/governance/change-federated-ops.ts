@@ -39,7 +39,7 @@ import {
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
 import { twoStageLogic } from "./two-stage";
 import { Blueprint } from "../contracts/contracts";
-import { Settings } from "../config/settings";
+import { permissionedCandidates } from "../config/intent-env";
 import { Output } from "../output";
 import { Provider } from "../chain/provider";
 import { PreconditionFailed } from "../errors";
@@ -105,7 +105,6 @@ export const federatedOpsChangeProgram = (input: FederatedOpsChangeInput) =>
     const { network, txHash, txIndex, sign } = input;
     const signer = yield* signerFor(sign, "both");
     const out = yield* Output;
-    const cfg = yield* Settings;
     const blueprint = yield* Blueprint;
     const provider = yield* Provider;
     const outputPath = txFilePath(input);
@@ -163,7 +162,7 @@ export const federatedOpsChangeProgram = (input: FederatedOpsChangeInput) =>
     yield* out.log("\nReading current tech auth state for ML-3 validation...");
     const techAuthSigners = yield* signersAt(techAuthForeverUtxo);
 
-    const newCandidates = yield* cfg.permissionedCandidates;
+    const newCandidates = yield* permissionedCandidates;
     yield* out.log(
       `\nNew federated ops candidates count: ${newCandidates.length}`,
     );

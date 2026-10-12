@@ -23,8 +23,7 @@ import type {
 } from "@blaze-cardano/sdk";
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
-import { Settings } from "../config/settings";
-import { cnightAssetId } from "../config/profile";
+import { cnightAssetId, Profile } from "../config/profile";
 import { environmentOf } from "../config/network-mapping";
 import { contractUtxos, deployerUtxo, findUtxoByTxRef } from "../chain/utxo";
 import { upgradeScripts, upgradeStateAt } from "./two-stage";
@@ -179,7 +178,6 @@ export const mergeUtxosProgram = (input: MergeUtxosInput) =>
     }
     const { txHash, txIndex } = input;
     const out = yield* Output;
-    const cfg = yield* Settings;
     const blueprint = yield* Blueprint;
     const provider = yield* Provider;
     const outputPath = txFilePath(input);
@@ -191,7 +189,9 @@ export const mergeUtxosProgram = (input: MergeUtxosInput) =>
     yield* out.log(`Fee UTxO: ${txHash}#${txIndex}`);
 
     const { networkId } = environmentOf(network);
-    const cnight = cnightAssetId(yield* cfg.profile);
+    const cnight = cnightAssetId(
+      yield* Effect.flatMap(Profile, (p) => p.config),
+    );
     const { twoStage, forever, logic } = yield* blueprint.twoStage(validator);
     const foreverAddress = addressFromValidator(networkId, forever.Script);
     yield* out.log(`\nForever address: ${foreverAddress.toBech32()}`);
