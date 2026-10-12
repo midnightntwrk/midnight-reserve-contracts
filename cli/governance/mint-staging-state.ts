@@ -30,7 +30,8 @@ import type {
 import { calculateMinAda, type TxBuilder } from "@blaze-cardano/tx";
 import { Effect } from "effect";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
-import { type NetworkConfig, Settings } from "../config/settings";
+import { Settings } from "../config/settings";
+import type { NetworkConfig } from "../config/profile";
 import { environmentOf } from "../config/network-mapping";
 import {
   type ContractClass,

@@ -19,7 +19,8 @@ import { Effect } from "effect";
 import type { PrivateKey } from "../datum/signers";
 import { writeTransaction } from "./tx-file";
 import { Output } from "../output";
-import { type KeyGroup, Settings } from "../config/settings";
+import { Settings } from "../config/settings";
+import type { KeyGroup } from "../config/keys";
 import type { ConfigError, FileWriteError } from "../errors";
 
 /** The public key of a private key. Blaze's helpers take a key as a seed, so an extended key, whose first half is already the scalar, goes through the SDK. */

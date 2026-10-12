@@ -17,7 +17,8 @@ import type {
 import { calculateRequiredCollateral } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
 import { type Environment, environmentOf } from "../config/network-mapping";
-import { type NetworkConfig, Settings } from "../config/settings";
+import { Settings } from "../config/settings";
+import type { NetworkConfig } from "../config/profile";
 import {
   Blueprint,
   type ContractInstances,

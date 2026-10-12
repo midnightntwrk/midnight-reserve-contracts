@@ -12,7 +12,7 @@ import { Either, Record } from "effect";
 import {
   cnightAssetId as cnightAssetIdOf,
   parseNetworkConfig,
-} from "../../cli/config/settings";
+} from "../../cli/config/profile";
 import * as Contracts from "../../deployed-scripts/mainnet/contract_blueprint";
 import { scriptAddress, zeroForeverDatum } from "./fixtures";
 

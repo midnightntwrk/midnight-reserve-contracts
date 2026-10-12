@@ -33,7 +33,8 @@ import {
   environmentOf,
   publicNetworkOf,
 } from "../config/network-mapping";
-import { reservedRefs, Settings } from "../config/settings";
+import { Settings } from "../config/settings";
+import { reservedRefs } from "../config/profile";
 import { BlockfrostUnavailable, ConfigError, ProviderError } from "../errors";
 import { type TxRef, txRef } from "../input";
 import { BLOCKFROST_NETWORK, retryableStatus, retryRead } from "./blockfrost";

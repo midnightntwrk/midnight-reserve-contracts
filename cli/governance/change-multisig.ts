@@ -53,7 +53,8 @@ import {
   witnessRequirements,
 } from "./threshold";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
-import { Settings, type SignersVariable } from "../config/settings";
+import { Settings } from "../config/settings";
+import type { SignersVariable } from "../config/intent-env";
 import { Output } from "../output";
 import { Provider } from "../chain/provider";
 import type { InputParseError } from "../errors";

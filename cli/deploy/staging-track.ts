@@ -13,7 +13,8 @@ import { Clock, Effect, Either, Option } from "effect";
 import { relative, resolve } from "path";
 import * as Contracts from "../../contract_blueprint";
 import { buildTx } from "../tx/compile";
-import { type NetworkConfig, Settings } from "../config/settings";
+import { Settings } from "../config/settings";
+import type { NetworkConfig } from "../config/profile";
 import {
   Blueprint,
   type ContractClass,

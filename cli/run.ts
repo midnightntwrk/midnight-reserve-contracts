@@ -20,6 +20,10 @@ import {
 import type { ProviderType } from "./config/network-mapping";
 import type { NetworkInput } from "./input";
 import { type Settings, SettingsLive, logLevel } from "./config/settings";
+import type { Profile } from "./config/profile";
+import type { DeployerAddress } from "./config/deployer";
+import type { ProviderConfig } from "./config/provider-config";
+import type { Keys } from "./config/keys";
 import {
   type Blueprint,
   BlueprintLive,
@@ -37,6 +41,10 @@ import { type Provider, ProviderLive } from "./chain/provider";
 /** Everything a command program may require: the CLI services and the platform (FileSystem, Path, CommandExecutor, Terminal, HttpClient). */
 export type CliServices =
   | Settings
+  | Profile
+  | DeployerAddress
+  | ProviderConfig
+  | Keys
   | Blueprint
   | Provider
   | Output

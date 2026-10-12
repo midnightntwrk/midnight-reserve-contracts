@@ -23,7 +23,8 @@ import type {
 } from "@blaze-cardano/sdk";
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
-import { cnightAssetId, Settings } from "../config/settings";
+import { Settings } from "../config/settings";
+import { cnightAssetId } from "../config/profile";
 import { environmentOf } from "../config/network-mapping";
 import { contractUtxos, deployerUtxo, findUtxoByTxRef } from "../chain/utxo";
 import { upgradeScripts, upgradeStateAt } from "./two-stage";

@@ -6,13 +6,8 @@ import { TOML } from "bun";
 import { Effect, Either, Layer, LogLevel, Schema } from "effect";
 import { DotEnvFallback } from "../cli/run";
 import { ENVIRONMENTS, environmentOf } from "../cli/config/network-mapping";
-import {
-  Settings,
-  SettingsLive,
-  parseLogLevel,
-  parseNetworkConfig,
-  reservedRefs,
-} from "../cli/config/settings";
+import { Settings, SettingsLive, parseLogLevel } from "../cli/config/settings";
+import { parseNetworkConfig, reservedRefs } from "../cli/config/profile";
 import { SIMPLE_TX_AMOUNT, SIMPLE_TX_COUNT } from "../cli/wallet/simple-tx";
 import {
   EnvValues,

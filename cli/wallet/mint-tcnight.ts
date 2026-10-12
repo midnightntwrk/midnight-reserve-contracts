@@ -28,7 +28,8 @@ import { buildTx } from "../tx/compile";
 import { GuardedWallet, Provider } from "../chain/provider";
 import { transactionFile } from "../signing/tx-file";
 import { environmentOf, type TestEnvironment } from "../config/network-mapping";
-import { reservedRefs, Settings } from "../config/settings";
+import { Settings } from "../config/settings";
+import { reservedRefs } from "../config/profile";
 import { Blueprint } from "../contracts/contracts";
 import {
   BlueprintError,

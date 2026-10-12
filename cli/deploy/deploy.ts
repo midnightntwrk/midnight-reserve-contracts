@@ -25,7 +25,8 @@ import { Clock, Effect, Option } from "effect";
 import { relative, resolve } from "path";
 import * as Contracts from "../../contract_blueprint";
 import { completeBuilder } from "../tx/compile";
-import { envFallback, type NetworkConfig, Settings } from "../config/settings";
+import { envFallback, Settings } from "../config/settings";
+import type { NetworkConfig } from "../config/profile";
 import {
   Blueprint,
   type ContractClass,
