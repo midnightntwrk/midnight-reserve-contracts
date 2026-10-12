@@ -28,6 +28,7 @@ import { buildTx } from "../tx/complete-tx";
 import { Provider } from "../chain/provider";
 import { transactionFile } from "../signing/tx-file";
 import type { TestEnvironment } from "../config/network-mapping";
+import { Profile, reservedRefs } from "../config/profile";
 import { Blueprint } from "../contracts/contracts";
 import {
   BlueprintError,
@@ -253,7 +254,10 @@ export const mintTcnightProgram = (input: MintTcnightInput) =>
     const assetId = AssetId.fromParts(policyId, NIGHT);
     yield* out.log(`\nTCnight Policy ID: ${policyId}`);
 
-    const blaze = yield* provider.blazeFor(user);
+    const blaze = yield* provider.blazeFor({
+      address: user,
+      reserved: reservedRefs(yield* Profile.config),
+    });
     const protocolParams = yield* provider.parameters;
     const userUtxos = yield* provider.unspentOutputs(user);
     if (userUtxos.length === 0) {

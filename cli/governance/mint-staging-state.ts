@@ -32,6 +32,7 @@ import { Effect } from "effect";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
 import { type NetworkConfig, Profile } from "../config/profile";
 import { DeployerAddress } from "../config/deployer";
+import { deployerWallet } from "../chain/utxo";
 import { environmentOf } from "../config/network-mapping";
 import {
   type ContractClass,
@@ -249,7 +250,7 @@ export const mintStagingStateProgram = (input: MintStagingStateInput) =>
     const cnightPolicy = config.cnight_policy;
     yield* out.log(`CNIGHT test policy: ${cnightPolicy}`);
 
-    const blaze = yield* provider.blaze;
+    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const protocolParams = yield* provider.parameters;
     const [oneShotUtxo] = yield* resolveUnspent([oneShotRef]);
     yield* out.log(

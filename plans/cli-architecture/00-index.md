@@ -128,7 +128,7 @@ flowchart TB
 | 01 | [01-module-moves.md](01-module-moves.md) | `chain/transaction.ts` and `chain/governance-provider.ts` split by owner; `signing/` and `tx/` created by moves; no behaviour change | — |
 | 09 | [09-contract-system.md](09-contract-system.md) | `versions.ts` split into `snapshot/read` and `snapshot/write`; `bindings.ts`; `RecordUpdate` / `applyRecordUpdate` as the one snapshot write path | 01 |
 | 02 | [02-settings-split.md](02-settings-split.md) | `Settings` replaced by `ProviderConfig`, `Keys`, `Profile`, `DeployerAddress`; env-sourced intent read by the commands that use it | 01 |
-| 03 | [03-provider.md](03-provider.md) | `Provider.use(op, f)` replaced by named methods; `Provider.blaze` reachable only from `tx/` | 01 |
+| 03 | [03-provider.md](03-provider.md) | `Provider.use(op, f)` replaced by named methods; Blaze built only by `Provider.blazeFor(wallet)`, reached only from `tx/` | 01 |
 | 04 | [04-tx-plan-compile.md](04-tx-plan-compile.md) | `TxPlan`, `CompileOptions`, `compile`, `toTxBuilder`; derived `knownUtxos`, witness requirements, labels; pilot `merge-utxos` | 02, 03 |
 | 05 | [05-governance-commands.md](05-governance-commands.md) | governed-forever family, `change-multisig`, `migrate-federated-ops`, `run-cnight-mint`, `register-stake`, `mint-staging-state` on plan/compile | 04 |
 | 06 | [06-two-stage-upgrade.md](06-two-stage-upgrade.md) | `two-stage-upgrade/` folder by phase; stage/promote on plan/compile; their snapshot writes through `RecordUpdate` | 05, 09 |

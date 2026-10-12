@@ -6,10 +6,10 @@
    only `compile` uses it, make it private), the `TxBuilder`-taking
    helpers in `tx/scripts.ts`; rename the `plan*` fragments to the old
    names (`mintWitnesses`, `withdrawThroughLogic`, `registerScriptStake`).
-2. `Provider.blaze` is read only in `tx/compile.ts`.
+2. `Provider.blazeFor` is read only in `tx/compile.ts`.
 3. Lint gate (`eslint.config.js`): the index dependency rules as
    `no-restricted-imports` blocks per folder, and
-   `MemberExpression[property.name='blaze']` in `no-restricted-syntax`
+   `MemberExpression[property.name='blazeFor']` in `no-restricted-syntax`
    outside `cli/tx/**` and `cli/chain/provider.ts`. In flat config a later
    block's options replace an earlier block's for the same rule, so every
    per-folder block repeats the existing `fs`/`child_process` bans from a

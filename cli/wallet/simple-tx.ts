@@ -27,6 +27,7 @@ import {
 import { envFallback } from "../config/env";
 import { DeployerAddress } from "../config/deployer";
 import { Provider } from "../chain/provider";
+import { deployerWallet } from "../chain/utxo";
 import { InputParseError } from "../errors";
 import { DEPLOYER_ONLY } from "../signing/signer";
 
@@ -87,7 +88,8 @@ export const simpleTxProgram = (input: SimpleTxInput) =>
     yield* out.log(`Creating ${count} outputs of ${amount} lovelace each`);
     yield* out.log(`Recipient: ${recipient.toBech32()}`);
 
-    const blaze = yield* Effect.flatMap(Provider, (p) => p.blaze);
+    const wallet = yield* deployerWallet;
+    const blaze = yield* Effect.flatMap(Provider, (p) => p.blazeFor(wallet));
     const tx = yield* buildTx(
       buildSimpleTx(blaze, { recipient, count, amount }),
       {

@@ -8,8 +8,10 @@ Same port as the phase 04 pilot, one command family per commit. Each port:
   and the metadata type move to `CompileOptions`.
 - The program keeps its resolve code and logs, builds `CompileOptions`
   (with `expectedWitnesses = witnessCount(signer, plan.requiredSignatures)`)
-  and calls `compile`. It no longer touches `Provider.blaze`, `knownUtxos`
-  or a hand-summed witness count.
+  and calls `compile` with `wallet: yield* deployerWallet`. It no longer
+  touches `Provider.blazeFor`, `knownUtxos` or a hand-summed witness count.
+  Its reads move into a `resolve*` function (as `resolveMerge`) that
+  returns the plan's inputs and params.
 - The emulator tests that called the builder call `toTxBuilder(blaze,
   plan*(…), options)`; assertions unchanged.
 - The throwaway same-transaction-id check from phase 04, per command.

@@ -1,4 +1,4 @@
-/** UTxO references, lookup by reference, and the contract and deployer UTxOs through the Provider service. */
+/** UTxO references, lookup by reference, the contract and deployer UTxOs through the Provider service, and the deployer's wallet context. */
 import {
   type Address,
   addressFromValidator,
@@ -9,15 +9,26 @@ import {
 } from "@blaze-cardano/core";
 import { Effect, Either, Record } from "effect";
 import { DeployerAddress } from "../config/deployer";
+import { Profile, reservedRefs } from "../config/profile";
 import { findMainUtxo } from "../governance/two-stage";
 import { type TxHash, type TxIndex, type TxRef, txRef } from "../input";
-import { Provider } from "./provider";
+import { Provider, type WalletContext } from "./provider";
 import {
   type ConfigError,
   InputParseError,
   type ProviderError,
   UtxoNotFound,
 } from "../errors";
+
+/** The deployer's wallet: DEPLOYER_ADDRESS (read first) and the profile's reserved UTxOs. */
+export const deployerWallet: Effect.Effect<
+  WalletContext,
+  ConfigError,
+  DeployerAddress | Profile
+> = Effect.all({
+  address: DeployerAddress.address,
+  reserved: Effect.map(Profile.config, reservedRefs),
+});
 
 /** A UTxO reference as `txId#index`. */
 export const refOf = (input: TransactionInput): TxRef =>

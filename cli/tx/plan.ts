@@ -14,6 +14,7 @@ import type {
   TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import type { Option } from "effect";
+import type { WalletContext } from "../chain/provider";
 import type { NamedContract } from "./labels";
 
 /** A transaction before completion: coin selection, balancing and evaluation are compile's. */
@@ -41,6 +42,8 @@ export interface CompileOptions {
   readonly commandName: string;
   /** The chain's slot configuration (slotConfigOf), for the local evaluator. */
   readonly slotConfig: SlotConfig;
+  /** The wallet coin selection draws from: the deployer's, or the user's for a user-paid transaction. */
+  readonly wallet: WalletContext;
   readonly changeAddress: Address;
   readonly feePadding: bigint;
   /** The CIP-20 transaction type (createTxMetadata); None for no metadata. */

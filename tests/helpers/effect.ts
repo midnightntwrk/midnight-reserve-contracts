@@ -27,6 +27,7 @@ import { DeployerAddress } from "../../cli/config/deployer";
 import type { Environment } from "../../cli/config/network-mapping";
 import { Blueprint, BlueprintLive } from "../../cli/contracts/contracts";
 import { Provider, ProviderOver } from "../../cli/chain/provider";
+import { deployerWallet } from "../../cli/chain/utxo";
 import { DEPLOYER_ONLY } from "../../cli/signing/signer";
 import { completeBuilder } from "../../cli/tx/compile";
 import { buildSimpleTx } from "../../cli/wallet/simple-tx";
@@ -254,7 +255,7 @@ export const unsignedSimpleTx = Effect.gen(function* () {
   const provider = yield* Provider;
   const recipient = yield* DeployerAddress.address;
   const { maxTxSize } = yield* provider.parameters;
-  const blaze = yield* provider.blaze;
+  const blaze = yield* provider.blazeFor(yield* deployerWallet);
   return yield* completeBuilder(
     buildSimpleTx(blaze, { recipient, count: 1, amount: 5_000_000n }),
     "simple-tx",

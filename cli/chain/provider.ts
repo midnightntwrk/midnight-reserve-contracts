@@ -36,8 +36,6 @@ import {
   environmentOf,
   publicNetworkOf,
 } from "../config/network-mapping";
-import { DeployerAddress } from "../config/deployer";
-import { Profile, reservedRefs } from "../config/profile";
 import { ProviderConfig } from "../config/provider-config";
 import { BlockfrostUnavailable, ConfigError, ProviderError } from "../errors";
 import { type TxRef, txRef } from "../input";
@@ -130,6 +128,12 @@ export class GuardedWallet extends ColdWallet {
 /** A Blaze instance over the provider with a GuardedWallet. */
 type GuardedBlaze = Blaze<BlazeProvider, GuardedWallet>;
 
+/** The wallet coin selection draws from: its address and the UTxOs it must never spend (the profile's one-shots and collateral). */
+export interface WalletContext {
+  readonly address: Address;
+  readonly reserved: ReadonlySet<TxRef>;
+}
+
 /** A chain provider; every call is an Effect failing with ProviderError, under PROVIDER_TIMEOUT unless stated, its `retryable` following the failure's shape. */
 export class Provider extends Context.Tag("cli/Provider")<
   Provider,
@@ -151,16 +155,10 @@ export class Provider extends Context.Tag("cli/Provider")<
     readonly unspentOutputs: (
       address: Address,
     ) => Effect.Effect<TransactionUnspentOutput[], ProviderError | ConfigError>;
-    /** Blaze over the provider with the deployer's cold wallet (DeployerAddress), the profile's UTxOs reserved; built on each call. */
-    readonly blaze: Effect.Effect<
-      GuardedBlaze,
-      ProviderError | ConfigError,
-      DeployerAddress | Profile
-    >;
-    /** Blaze over the provider with a cold wallet at `address`, the profile's UTxOs reserved; built on each call. */
+    /** Blaze over the provider with a GuardedWallet over `wallet`; built on each call. */
     readonly blazeFor: (
-      address: Address,
-    ) => Effect.Effect<GuardedBlaze, ProviderError | ConfigError, Profile>;
+      wallet: WalletContext,
+    ) => Effect.Effect<GuardedBlaze, ProviderError | ConfigError>;
   }
 >() {}
 
@@ -257,22 +255,20 @@ const providerService = (
       Effect.flatMap(connected, (provider) =>
         providerCall(op, () => f(provider)),
       );
-    const blazeFor = (address: Address) =>
-      Effect.gen(function* () {
-        // The profile before the connection, as mint-tcnight read them: a bad aiken.toml fails before a socket opens.
-        const config = yield* Profile.config;
-        const provider = yield* connected;
-        const { networkId } = environmentOf(environment);
-        const wallet = new GuardedWallet(
-          address,
-          networkId,
-          provider,
-          reservedRefs(config),
-        );
-        return yield* providerCall("Blaze.from", () =>
-          Blaze.from(provider, wallet),
-        );
-      });
+    const blazeFor = ({ address, reserved }: WalletContext) =>
+      Effect.flatMap(connected, (provider) =>
+        providerCall("Blaze.from", () =>
+          Blaze.from(
+            provider,
+            new GuardedWallet(
+              address,
+              environmentOf(environment).networkId,
+              provider,
+              reserved,
+            ),
+          ),
+        ),
+      );
     return {
       parameters: use("getParameters", (p) => p.getParameters()),
       submit: (tx: Transaction) =>
@@ -295,11 +291,6 @@ const providerService = (
             Effect.catchIf(unseenAddress, () => Effect.succeed([])),
           ),
         ),
-      // The connection first, as before: a failed connect is reported ahead of a DEPLOYER_ADDRESS error.
-      blaze: Effect.zipRight(
-        connected,
-        Effect.flatMap(DeployerAddress.address, blazeFor),
-      ),
       blazeFor,
     };
   });

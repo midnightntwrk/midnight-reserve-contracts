@@ -18,7 +18,7 @@ import type {
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Option } from "effect";
 import { type FeeInput, type TxFileInput, txFilePath } from "../input";
-import { deployerUtxo } from "../chain/utxo";
+import { deployerUtxo, deployerWallet } from "../chain/utxo";
 import { registrationOnChain } from "../chain/registration";
 import { createRewardAccount, registerScriptStake } from "../tx/scripts";
 import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
@@ -119,7 +119,8 @@ export const registerGovAuthProgram = (input: TxFileInput) =>
       { label: "Staging Gov Auth", script: stagingGovAuth },
     ]);
 
-    const blaze = yield* Effect.flatMap(Provider, (p) => p.blaze);
+    const wallet = yield* deployerWallet;
+    const blaze = yield* Effect.flatMap(Provider, (p) => p.blazeFor(wallet));
     const tx = yield* buildTx(
       buildRegisterGovAuthTx(blaze, govAuth, stagingGovAuth),
       {
@@ -173,7 +174,7 @@ export const registerCnightMintLogicProgram = (
       { label: "cNIGHT mint logic", script: cnightMintLogic },
     ]);
 
-    const blaze = yield* provider.blaze;
+    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const { address: changeAddress, utxo: userUtxo } = yield* deployerUtxo(
       txHash,
       txIndex,

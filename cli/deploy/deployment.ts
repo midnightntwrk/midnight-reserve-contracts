@@ -36,7 +36,7 @@ import {
 } from "../datum/signers";
 import { type TxHash, type TxIndex, txRef } from "../input";
 import { Provider } from "../chain/provider";
-import { refOf } from "../chain/utxo";
+import { deployerWallet, refOf } from "../chain/utxo";
 import { transactionFile, type TransactionFile } from "../signing/tx-file";
 import { Output, transactionSummaryLines } from "../output";
 import {
@@ -136,7 +136,7 @@ export const deploymentSetup = (command: string, network: Environment) =>
     yield* out.log(`Total council signers: ${councilSigners.length}`);
     yield* out.log(`Number of council signer pairs: ${councilSigners.length}`);
 
-    const blaze = yield* provider.blaze;
+    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const protocolParams = yield* provider.parameters;
     const collateral = yield* resolveCollateral(
       command,

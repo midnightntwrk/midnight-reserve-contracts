@@ -36,7 +36,7 @@ import {
   type ContractInstances,
   Blueprint,
 } from "../contracts/contracts";
-import { contractUtxos, deployerUtxo } from "../chain/utxo";
+import { contractUtxos, deployerUtxo, deployerWallet } from "../chain/utxo";
 import { signersAt, thresholdAt } from "./authority";
 import { twoStageLogic } from "./two-stage";
 import {
@@ -230,7 +230,7 @@ export const multisigChangeProgram = (
       `\n${label} Forever Address: ${primaryForeverAddress.toBech32()}`,
     );
 
-    const blaze = yield* provider.blaze;
+    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const queryMap = {
       primaryForever: selected.primaryForever.Script,
       primaryThreshold: selected.primaryThreshold.Script,

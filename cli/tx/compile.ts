@@ -196,7 +196,9 @@ export const toTxBuilder = (
 /** Compile a plan over the deployer's Blaze: the local UPLC check over the UTxOs it spends and references, then completion and the size check (completeChecked). */
 export const compile = (plan: TxPlan, options: CompileOptions) =>
   Effect.gen(function* () {
-    const blaze = yield* Effect.flatMap(Provider, (provider) => provider.blaze);
+    const blaze = yield* Effect.flatMap(Provider, (provider) =>
+      provider.blazeFor(options.wallet),
+    );
     return yield* completeChecked(toTxBuilder(blaze, plan, options), {
       commandName: options.commandName,
       slotConfig: options.slotConfig,

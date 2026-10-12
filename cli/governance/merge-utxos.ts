@@ -6,6 +6,7 @@
  * over them and compile completes it.
  */
 import {
+  type Address,
   addressFromValidator,
   type AssetId,
   type NetworkId,
@@ -18,7 +19,12 @@ import {
 import { Effect, Either, Option } from "effect";
 import { cnightAssetId, Profile } from "../config/profile";
 import { environmentOf, slotConfigOf } from "../config/network-mapping";
-import { contractUtxos, deployerUtxo, findUtxoByTxRef } from "../chain/utxo";
+import {
+  contractUtxos,
+  deployerUtxo,
+  deployerWallet,
+  findUtxoByTxRef,
+} from "../chain/utxo";
 import { upgradeScripts, upgradeStateAt } from "./two-stage";
 import {
   createRewardAccount,
@@ -148,8 +154,15 @@ export const planMerge = (
     };
   });
 
-/** Resolve the inputs, build, complete and write the merge transaction. */
-export const mergeUtxosProgram = (input: MergeUtxosInput) =>
+/** What the merge plan is built from and where its change goes. */
+export interface ResolvedMerge {
+  readonly inputs: MergeInputs;
+  readonly params: MergeParams;
+  readonly changeAddress: Address;
+}
+
+/** Read and report everything the merge needs: the two forever UTxOs, the two-stage main state and its logic, the fee UTxO and the merged amounts. */
+export const resolveMerge = (input: MergeUtxosInput) =>
   Effect.gen(function* () {
     const { network, validator, utxo1Hash, utxo1Index, utxo2Hash, utxo2Index } =
       input;
@@ -164,7 +177,6 @@ export const mergeUtxosProgram = (input: MergeUtxosInput) =>
     const { txHash, txIndex } = input;
     const out = yield* Output;
     const blueprint = yield* Blueprint;
-    const outputPath = txFilePath(input);
 
     yield* out.log(`\nMerging UTxOs on ${network} network`);
     yield* out.log(`Validator: ${validator}`);
@@ -235,10 +247,8 @@ export const mergeUtxosProgram = (input: MergeUtxosInput) =>
     yield* out.log(
       `  Merged: ${amounts.ada} lovelace, ${amounts.cnight} CNIGHT`,
     );
-    yield* out.log("\nBuilding transaction...");
-
-    const plan = yield* planMerge(
-      {
+    const resolved: ResolvedMerge = {
+      inputs: {
         forever: forever.Script,
         utxo1,
         utxo2,
@@ -247,17 +257,35 @@ export const mergeUtxosProgram = (input: MergeUtxosInput) =>
         logicScript,
         logicRound,
       },
-      { cnightAssetId: cnight, networkId },
+      params: { cnightAssetId: cnight, networkId },
+      changeAddress,
+    };
+    return resolved;
+  });
+
+/** Resolve, plan, compile and write the merge transaction. */
+export const mergeUtxosProgram = (input: MergeUtxosInput) =>
+  Effect.gen(function* () {
+    const { inputs, params, changeAddress } = yield* resolveMerge(input);
+    yield* Effect.flatMap(Output, (out) =>
+      out.log("\nBuilding transaction..."),
     );
+    const plan = yield* planMerge(inputs, params);
     const tx = yield* compile(plan, {
       commandName: COMMAND,
-      slotConfig: slotConfigOf(network),
+      slotConfig: slotConfigOf(input.network),
+      wallet: yield* deployerWallet,
       changeAddress,
       feePadding: input.feePadding,
       metadata: Option.some(COMMAND),
       expectedWitnesses: DEPLOYER_ONLY,
-      contracts: yield* blueprint.contracts,
+      contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
     });
-    yield* signAndWrite(tx, outputPath, UNSIGNED, "Merge UTxOs Transaction");
+    yield* signAndWrite(
+      tx,
+      txFilePath(input),
+      UNSIGNED,
+      "Merge UTxOs Transaction",
+    );
     return tx;
   });

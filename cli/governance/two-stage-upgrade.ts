@@ -41,7 +41,12 @@ import {
   hasDeployedScripts,
   type UpgradableValidator,
 } from "../contracts/contracts";
-import { contractUtxos, deployerUtxo, type ContractUtxos } from "../chain/utxo";
+import {
+  contractUtxos,
+  deployerUtxo,
+  deployerWallet,
+  type ContractUtxos,
+} from "../chain/utxo";
 import {
   ensureRegistered,
   rewardAccountRegistered,
@@ -627,7 +632,7 @@ export const stageUpgradeProgram = (input: StageUpgradeInput) =>
       `\nTwo Stage Address: ${addressFromValidator(networkId, twoStage).toBech32()}`,
     );
 
-    const blaze = yield* provider.blaze;
+    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const scripts = {
       techAuthForever: contracts.techAuthForever.Script,
       councilForever: contracts.councilForever.Script,
@@ -732,7 +737,7 @@ export const promoteUpgradeProgram = (input: PromoteUpgradeInput) =>
       `\nTwo Stage Address: ${addressFromValidator(networkId, twoStage).toBech32()}`,
     );
 
-    const blaze = yield* provider.blaze;
+    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const scripts = {
       techAuthForever: contracts.techAuthForever.Script,
       councilForever: contracts.councilForever.Script,

@@ -38,7 +38,7 @@ import { parsePrivateKey } from "../cli/datum/signers";
 import { validatorLabels } from "../cli/tx/labels";
 import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "../cli/governance/two-stage";
 import { Provider } from "../cli/chain/provider";
-import { refOf } from "../cli/chain/utxo";
+import { deployerWallet, refOf } from "../cli/chain/utxo";
 import { DeployerAddress } from "../cli/config/deployer";
 import { reservedRefs } from "../cli/config/profile";
 import { type TxRef, txRef } from "../cli/input";
@@ -544,7 +544,9 @@ describe("the deployer wallet", () => {
 
     const guarded = await runTest(
       layer,
-      Effect.flatMap(Provider, (p) => p.blaze),
+      Effect.flatMap(deployerWallet, (wallet) =>
+        Effect.flatMap(Provider, (p) => p.blazeFor(wallet)),
+      ),
     );
     expect(await spent(guarded)).toEqual([txRef(FEE_TX, 0)]);
     const provider = new EmulatorProvider(emulator);

@@ -26,7 +26,7 @@ import type {
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Option } from "effect";
 import { environmentOf } from "../config/network-mapping";
-import { contractUtxos, deployerUtxo } from "../chain/utxo";
+import { contractUtxos, deployerUtxo, deployerWallet } from "../chain/utxo";
 import { ensureRegistered } from "../chain/registration";
 import { upgradeScripts, upgradeStateAt } from "./two-stage";
 import { decodeDatum, inlineDatum } from "../datum/inline";
@@ -140,7 +140,7 @@ export const migrateFederatedOpsProgram = (input: MigrateFederatedOpsInput) =>
       `\nFederated Ops Forever Address: ${foreverAddress.toBech32()}`,
     );
 
-    const blaze = yield* provider.blaze;
+    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const found = yield* contractUtxos(
       { federatedOpsForever: forever, federatedOpsTwoStage: twoStage },
       networkId,

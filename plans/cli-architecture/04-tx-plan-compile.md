@@ -126,10 +126,23 @@ One commit per task.
 - `toTxBuilder` takes `Pick<CompileOptions, "changeAddress" | "feePadding"
   | "metadata">`, so emulator tests need not invent a slot configuration,
   a witness count or contracts.
-- `compile` requires `Provider | Output | DeployerAddress | Profile`.
-  `Provider.blaze` needs the deployer's address and the profile; the types
-  are inferred, so `tx/compile.ts` still imports nothing from `config/`.
+- `compile` requires only `Provider | Output`. The wallet that coin
+  selection draws from (`WalletContext`: address and reserved refs) is a
+  `CompileOptions` field, `wallet`, which the program resolves
+  (`deployerWallet` in `chain/utxo.ts`, or the user's for mint-tcnight), as
+  the planning context of architecture #2. `compile` builds Blaze with
+  `Provider.blazeFor(options.wallet)`. `Provider.blaze` (which read
+  DEPLOYER_ADDRESS and the profile itself) is gone, and `blazeFor` no
+  longer reads the profile. The commands not yet ported call
+  `provider.blazeFor(yield* deployerWallet)`. Read order changed: the
+  wallet is now read before the connection opens, so if both fail, a
+  DEPLOYER_ADDRESS or aiken.toml error now comes before a failed connect.
+  A throwaway re-run gave the same emulator merge id (`05c8edfb…`).
   `knownUtxos` is the plan's spends followed by its references.
+- `resolveMerge(input)` holds the merge's reads and logs and returns
+  `ResolvedMerge` (`MergeInputs`, `MergeParams`, change address). The
+  program is resolve → `planMerge` → `compile` → write, the template for
+  phase 05. Stdout is unchanged.
 - Merge pilot:
   - The program reads `blueprint.contracts` before `compile` rather than
     inside the local step. It cannot fail there: `contracts` and

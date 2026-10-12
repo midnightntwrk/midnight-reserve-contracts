@@ -17,7 +17,7 @@ import type {
 import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Record } from "effect";
 import { environmentOf } from "../config/network-mapping";
-import { contractUtxos, deployerUtxo } from "../chain/utxo";
+import { contractUtxos, deployerUtxo, deployerWallet } from "../chain/utxo";
 import { signersAt, thresholdAt } from "./authority";
 import { inlineDatum } from "../datum/inline";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
@@ -108,7 +108,7 @@ export const termsChangeProgram = (input: TermsChangeInput) =>
       `\nTerms and Conditions Forever Address: ${foreverAddress.toBech32()}`,
     );
 
-    const blaze = yield* provider.blaze;
+    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const scripts = {
       termsForever: forever,
       termsThreshold: contracts.termsAndConditionsThreshold.Script,
