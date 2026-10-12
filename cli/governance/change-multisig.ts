@@ -2,9 +2,9 @@
  * Shared engine for change-council and change-tech-auth. The program
  * resolves the contract UTxOs, the two-stage UpgradeState (logic hash and
  * logic_round), the forever datum, the secondary signers for the ML-3 check
- * and the fee UTxO; buildMultisigChangeTx is pure over those inputs and is
- * what the tests call. The config captures the differences between the two
- * commands.
+ * and the fee UTxO; planMultisigChange is pure over those inputs and is
+ * what the tests call, and compile completes it. The config captures the
+ * differences between the two commands.
  */
 import {
   type Address,
@@ -17,12 +17,6 @@ import {
   type TransactionUnspentOutput,
   PaymentAddress,
 } from "@blaze-cardano/core";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
-import type { TxBuilder } from "@blaze-cardano/tx";
 import { Effect, Either, Option, Record } from "effect";
 import {
   type Signers,
@@ -30,7 +24,7 @@ import {
   encodeRedeemerMap,
 } from "../datum/signers";
 import { datumRoundOf } from "../datum/datum-versions";
-import { environmentOf } from "../config/network-mapping";
+import { environmentOf, slotConfigOf } from "../config/network-mapping";
 import {
   type ContractClass,
   type ContractInstances,
@@ -40,13 +34,13 @@ import { contractUtxos, deployerUtxo, deployerWallet } from "../chain/utxo";
 import { signersAt, thresholdAt } from "./authority";
 import { twoStageLogic } from "./two-stage";
 import {
-  createTxMetadata,
   logicRedeemer,
-  mintWitnesses,
-  withdrawThroughLogic,
+  planMintWitnesses,
+  planWithdrawThroughLogic,
 } from "../tx/scripts";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
-import { buildTx } from "../tx/complete-tx";
+import { compile } from "../tx/compile";
+import type { TxPlan } from "../tx/plan";
 import {
   type AuthorityThreshold,
   type WitnessRequirement,
@@ -58,7 +52,6 @@ import {
   type SignersVariable,
 } from "../config/intent-env";
 import { Output } from "../output";
-import { Provider } from "../chain/provider";
 import type { InputParseError } from "../errors";
 
 export type MultisigFamily = "council" | "tech-auth";
@@ -110,9 +103,6 @@ export interface MultisigChangeInputs {
 export interface MultisigChangeParams {
   readonly newSigners: Signers;
   readonly networkId: NetworkId;
-  readonly changeAddress: Address;
-  readonly commandName: string;
-  readonly feePadding: bigint;
 }
 
 /** A requirement with the authority's label. */
@@ -145,12 +135,11 @@ export const signerRequirements = (
     : { primary: techAuth, secondary: council };
 };
 
-/** The change transaction: spend the primary forever with the new datum, mint both native-script witnesses, withdraw through the logic scripts with the member redeemer. */
-export const buildMultisigChangeTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+/** The change: spend the primary forever with the new datum, mint both native-script witnesses, withdraw through the logic scripts with the member redeemer. */
+export const planMultisigChange = (
   inputs: MultisigChangeInputs,
   params: MultisigChangeParams,
-): Either.Either<TxBuilder, InputParseError> =>
+): Either.Either<TxPlan, InputParseError> =>
   Either.gen(function* () {
     const { networkId, newSigners } = params;
     const newForeverStateCbor = yield* encodeMultisigState(
@@ -159,62 +148,68 @@ export const buildMultisigChangeTx = (
     );
     const innerRedeemer = yield* encodeRedeemerMap(newSigners);
     const { primary, secondary } = inputs.requirements;
-    const primaryForeverAddress = addressFromValidator(
-      networkId,
-      inputs.primaryForever,
-    );
-
-    const spent = blaze
-      .newTransaction()
-      .addInput(inputs.userUtxo)
-      .addInput(inputs.primaryForeverUtxo, PlutusData.newInteger(0n))
-      .addReferenceInput(inputs.primaryThresholdUtxo)
-      .addReferenceInput(inputs.secondaryForeverUtxo)
-      .addReferenceInput(inputs.primaryTwoStageUtxo)
-      .provideScript(inputs.primaryForever);
-    const witnessed = mintWitnesses(
-      spent,
-      [
-        { ...primary, signers: inputs.currentPrimarySigners, assetName: "" },
-        { ...secondary, signers: inputs.secondarySigners, assetName: "" },
-      ],
-      networkId,
-    ).addOutput(
-      TransactionOutput.fromCore({
-        address: PaymentAddress(primaryForeverAddress.toBech32()),
-        value: {
-          coins: inputs.primaryForeverUtxo.output().amount().coin(),
-          assets: new Map([[AssetId(inputs.primaryForever.hash()), 1n]]),
+    return {
+      spends: [
+        { utxo: inputs.userUtxo, redeemer: Option.none() },
+        {
+          utxo: inputs.primaryForeverUtxo,
+          redeemer: Option.some(PlutusData.newInteger(0n)),
         },
-        datum: newForeverStateCbor.toCore(),
-      }),
-    );
-    return withdrawThroughLogic(
-      witnessed,
-      inputs.logicScript,
-      inputs.mitigationLogicScript,
-      logicRedeemer(innerRedeemer, inputs.logicRound),
-      networkId,
-    )
-      .setChangeAddress(params.changeAddress)
-      .setMetadata(createTxMetadata(params.commandName))
-      .setFeePadding(params.feePadding);
+      ],
+      references: [
+        inputs.primaryThresholdUtxo,
+        inputs.secondaryForeverUtxo,
+        inputs.primaryTwoStageUtxo,
+      ],
+      scripts: [inputs.primaryForever],
+      ...planMintWitnesses(
+        [
+          { ...primary, signers: inputs.currentPrimarySigners, assetName: "" },
+          { ...secondary, signers: inputs.secondarySigners, assetName: "" },
+        ],
+        networkId,
+      ),
+      outputs: [
+        TransactionOutput.fromCore({
+          address: PaymentAddress(
+            addressFromValidator(networkId, inputs.primaryForever).toBech32(),
+          ),
+          value: {
+            coins: inputs.primaryForeverUtxo.output().amount().coin(),
+            assets: new Map([[AssetId(inputs.primaryForever.hash()), 1n]]),
+          },
+          datum: newForeverStateCbor.toCore(),
+        }),
+      ],
+      withdrawals: planWithdrawThroughLogic(
+        inputs.logicScript,
+        inputs.mitigationLogicScript,
+        logicRedeemer(innerRedeemer, inputs.logicRound),
+        networkId,
+      ),
+      registrations: [],
+      collateral: [],
+    };
   });
 
-/** Resolve the inputs, build, complete and write the change transaction. */
-export const multisigChangeProgram = (
+/** What the multisig change plan is built from and where its change goes. */
+export interface ResolvedMultisigChange {
+  readonly inputs: MultisigChangeInputs;
+  readonly params: MultisigChangeParams;
+  readonly changeAddress: Address;
+}
+
+/** Read and report everything the change needs: the primary and secondary forever UTxOs, the threshold, the two-stage state and its logic, both authorities' signers, the new signers and the fee UTxO. */
+export const resolveMultisigChange = (
   config: MultisigChangeConfig,
   input: MultisigChangeInput,
 ) =>
   Effect.gen(function* () {
-    const { network, txHash, txIndex, sign } = input;
-    const signer = yield* signerFor(sign, "both");
+    const { network, txHash, txIndex } = input;
     const out = yield* Output;
     const blueprint = yield* Blueprint;
-    const provider = yield* Provider;
     const label = config.commandLabel;
     const lower = label.toLowerCase();
-    const outputPath = txFilePath(input);
 
     yield* out.log(`\nChanging ${label} members on ${network} network`);
     yield* out.log(`Using UTxO: ${txHash}#${txIndex}`);
@@ -230,7 +225,6 @@ export const multisigChangeProgram = (
       `\n${label} Forever Address: ${primaryForeverAddress.toBech32()}`,
     );
 
-    const blaze = yield* provider.blazeFor(yield* deployerWallet);
     const queryMap = {
       primaryForever: selected.primaryForever.Script,
       primaryThreshold: selected.primaryThreshold.Script,
@@ -289,40 +283,50 @@ export const multisigChangeProgram = (
       txHash,
       txIndex,
     );
-    const inputs: MultisigChangeInputs = {
-      primaryForever: selected.primaryForever.Script,
-      primaryForeverUtxo,
-      primaryThresholdUtxo,
-      secondaryForeverUtxo,
-      primaryTwoStageUtxo,
-      userUtxo,
-      logicScript,
-      mitigationLogicScript,
-      logicRound,
-      currentPrimarySigners,
-      secondarySigners,
-      requirements,
-    };
-    const txBuilder = yield* buildMultisigChangeTx(blaze, inputs, {
-      newSigners,
-      networkId,
-      changeAddress,
-      commandName: config.commandName,
-      feePadding: input.feePadding,
-    });
-    const tx = yield* buildTx(txBuilder, {
-      commandName: config.commandName,
-      environment: network,
-      witnesses: witnessCount(signer, primary.required + secondary.required),
-      knownUtxos: [
+    const resolved: ResolvedMultisigChange = {
+      inputs: {
+        primaryForever: selected.primaryForever.Script,
         primaryForeverUtxo,
         primaryThresholdUtxo,
         secondaryForeverUtxo,
         primaryTwoStageUtxo,
         userUtxo,
-      ],
+        logicScript,
+        mitigationLogicScript,
+        logicRound,
+        currentPrimarySigners,
+        secondarySigners,
+        requirements,
+      },
+      params: { newSigners, networkId },
+      changeAddress,
+    };
+    return resolved;
+  });
+
+/** Resolve, plan, compile and write the change transaction. */
+export const multisigChangeProgram = (
+  config: MultisigChangeConfig,
+  input: MultisigChangeInput,
+) =>
+  Effect.gen(function* () {
+    const signer = yield* signerFor(input.sign, "both");
+    const { inputs, params, changeAddress } = yield* resolveMultisigChange(
+      config,
+      input,
+    );
+    const plan = yield* planMultisigChange(inputs, params);
+    const tx = yield* compile(plan, {
+      commandName: config.commandName,
+      slotConfig: slotConfigOf(input.network),
+      wallet: yield* deployerWallet,
+      changeAddress,
+      feePadding: input.feePadding,
+      metadata: Option.some(config.commandName),
+      expectedWitnesses: witnessCount(signer, plan.requiredSignatures),
+      contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
     });
-    yield* signAndWrite(tx, outputPath, signer, config.signDescription);
+    yield* signAndWrite(tx, txFilePath(input), signer, config.signDescription);
     return tx;
   });
 

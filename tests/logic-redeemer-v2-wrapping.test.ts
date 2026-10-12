@@ -20,7 +20,7 @@ import { describe, test } from "bun:test";
 import { Either, Option } from "effect";
 import * as Contracts from "../contract_blueprint";
 import {
-  buildMultisigChangeTx,
+  planMultisigChange,
   signerRequirements,
 } from "../cli/governance/change-multisig";
 import { authorityThreshold } from "../cli/governance/threshold";
@@ -125,34 +125,35 @@ const multisigChange =
         primaryTwoStageUtxo,
       ],
       (blaze, changeAddress, userUtxo) =>
-        buildMultisigChangeTx(
-          blaze,
-          {
-            primaryForever: primary.forever.Script,
-            primaryForeverUtxo,
-            primaryThresholdUtxo,
-            secondaryForeverUtxo,
-            primaryTwoStageUtxo,
-            userUtxo,
-            logicScript: primary.logicV2.Script,
-            mitigationLogicScript: Option.none(),
-            logicRound,
-            currentPrimarySigners: councilSigners,
-            secondarySigners: techAuthSigners,
-            requirements: signerRequirements(
-              Either.getOrThrow(authorityThreshold(THRESHOLD)),
-              councilSigners,
-              techAuthSigners,
-              family,
-            ),
-          },
-          {
-            newSigners: councilSigners,
-            networkId: NetworkId.Testnet,
-            changeAddress,
-            commandName: `change-${family}`,
-            feePadding: 0n,
-          },
+        Either.map(
+          planMultisigChange(
+            {
+              primaryForever: primary.forever.Script,
+              primaryForeverUtxo,
+              primaryThresholdUtxo,
+              secondaryForeverUtxo,
+              primaryTwoStageUtxo,
+              userUtxo,
+              logicScript: primary.logicV2.Script,
+              mitigationLogicScript: Option.none(),
+              logicRound,
+              currentPrimarySigners: councilSigners,
+              secondarySigners: techAuthSigners,
+              requirements: signerRequirements(
+                Either.getOrThrow(authorityThreshold(THRESHOLD)),
+                councilSigners,
+                techAuthSigners,
+                family,
+              ),
+            },
+            { newSigners: councilSigners, networkId: NetworkId.Testnet },
+          ),
+          (plan) =>
+            toTxBuilder(blaze, plan, {
+              changeAddress,
+              feePadding: 0n,
+              metadata: Option.some(`change-${family}`),
+            }),
         ),
     );
   };

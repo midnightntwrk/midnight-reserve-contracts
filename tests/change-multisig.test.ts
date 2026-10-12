@@ -1,7 +1,7 @@
 /**
- * change-council and change-tech-auth through buildMultisigChangeTx on the
+ * change-council and change-tech-auth through planMultisigChange on the
  * emulator: the primary forever, threshold, secondary forever and primary
- * two-stage UTxOs are seeded, the builder gets them as inputs, the emulator
+ * two-stage UTxOs are seeded, the plan gets them as inputs, the emulator
  * runs the validators. Duplicate payment hashes in the new signers must
  * survive the CBOR round trip.
  */
@@ -10,10 +10,11 @@ import { Either, Option } from "effect";
 import { describe, expect, test } from "bun:test";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import {
-  buildMultisigChangeTx,
+  planMultisigChange,
   type MultisigFamily,
   signerRequirements,
 } from "../cli/governance/change-multisig";
+import { toTxBuilder } from "../cli/tx/compile";
 import { authorityThreshold } from "../cli/governance/threshold";
 import { MAIN_TOKEN_HEX } from "../cli/governance/two-stage";
 import type { Signer, Signers } from "../cli/datum/signers";
@@ -89,30 +90,31 @@ const multisigChange = (
     };
     for (const u of Object.values(seeded)) emulator.addUtxo(u);
     registerRewardAccount(emulator, f.logic.Script.hash());
-    const builder = buildMultisigChangeTx(
-      blaze,
-      {
-        ...seeded,
-        primaryForever: f.forever.Script,
-        logicScript: f.logic.Script,
-        mitigationLogicScript: Option.none(),
-        logicRound: 0,
-        currentPrimarySigners: f.signers,
-        secondarySigners,
-        requirements: signerRequirements(
-          Either.getOrThrow(authorityThreshold(THRESHOLD)),
-          f.signers,
+    const builder = Either.map(
+      planMultisigChange(
+        {
+          ...seeded,
+          primaryForever: f.forever.Script,
+          logicScript: f.logic.Script,
+          mitigationLogicScript: Option.none(),
+          logicRound: 0,
+          currentPrimarySigners: f.signers,
           secondarySigners,
-          family,
-        ),
-      },
-      {
-        newSigners,
-        networkId: NetworkId.Testnet,
-        changeAddress: addr,
-        commandName: `change-${family}`,
-        feePadding: 0n,
-      },
+          requirements: signerRequirements(
+            Either.getOrThrow(authorityThreshold(THRESHOLD)),
+            f.signers,
+            secondarySigners,
+            family,
+          ),
+        },
+        { newSigners, networkId: NetworkId.Testnet },
+      ),
+      (plan) =>
+        toTxBuilder(blaze, plan, {
+          changeAddress: addr,
+          feePadding: 0n,
+          metadata: Option.some(`change-${family}`),
+        }),
     );
     return { emulator, blaze, builder };
   });
