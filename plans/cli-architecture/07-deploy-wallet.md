@@ -103,3 +103,13 @@ real, the fix is batch-wide reservation in the deploy loop, not in
   to the deployer and with 1 payment of 1 lovelace to a `--to` address
   (raised to min ADA) gave the same ids and CBOR as `buildSimpleTx` +
   `buildTx`.
+- Task 5: `planMintTcnight` takes the user's wallet through
+  `CompileOptions.wallet` (`{ address: user, reserved: reservedRefs(profile) }`)
+  and the user as change address. A burn's local check now runs over the
+  UTxOs it spends (the selected ones); the old call passed every UTxO at
+  the user's address, the unselected ones unused by the draft. A mint plan
+  has no spends, so compile skips the local check by derivation and the
+  hand-written comment is deleted. Same-id on the emulator (throwaway,
+  deleted): `mintTcnightProgram` for a mint of 100, a burn of 12 across two
+  NIGHT-holding UTxOs and a burn of 4 from one gave the same ids and CBOR
+  as `buildMintTcnightTx` + `buildTx`.

@@ -17,17 +17,13 @@ import {
   TransactionOutput,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
-import {
-  Blaze,
-  type Provider as BlazeProvider,
-  type Wallet,
-} from "@blaze-cardano/sdk";
-import { calculateMinAda, type TxBuilder } from "@blaze-cardano/tx";
+import { calculateMinAda } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
-import { buildTx } from "../tx/complete-tx";
+import { compile } from "../tx/compile";
+import type { TxPlan } from "../tx/plan";
 import { Provider } from "../chain/provider";
 import { transactionFile } from "../signing/tx-file";
-import type { TestEnvironment } from "../config/network-mapping";
+import { slotConfigOf, type TestEnvironment } from "../config/network-mapping";
 import { Profile, reservedRefs } from "../config/profile";
 import { Blueprint } from "../contracts/contracts";
 import {
@@ -97,47 +93,56 @@ const nightOutput = (
   return output;
 };
 
-/** Mint `amount` NIGHT to the destination, or burn it from the spent UTxOs and return the remainder. */
-export const buildMintTcnightTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+/** Mint `amount` NIGHT to the destination, or burn it from the spent UTxOs and return the remainder. A mint has no spends, so compile runs no local check on it. */
+export const planMintTcnight = (
   inputs: {
     readonly policy: Script;
     readonly amount: bigint;
     readonly action: TcnightAction;
   },
   params: { readonly coinsPerUtxoByte: number },
-): TxBuilder => {
+): TxPlan => {
   const policyId = PolicyId(inputs.policy.hash());
   const assetId = AssetId.fromParts(policyId, NIGHT);
   const { action } = inputs;
-  if (action.kind === "mint") {
-    return blaze
-      .newTransaction()
-      .addMint(policyId, new Map([[NIGHT, inputs.amount]]), REDEEMER)
-      .provideScript(inputs.policy)
-      .addOutput(
-        nightOutput(
-          action.destination,
-          assetId,
-          inputs.amount,
-          params.coinsPerUtxoByte,
-        ),
-      );
-  }
-  const burned = action.spend
-    .reduce((tx, utxo) => tx.addInput(utxo), blaze.newTransaction())
-    .addMint(policyId, new Map([[NIGHT, -inputs.amount]]), REDEEMER)
-    .provideScript(inputs.policy);
-  return action.remainder > 0n
-    ? burned.addOutput(
-        nightOutput(
-          action.user,
-          assetId,
-          action.remainder,
-          params.coinsPerUtxoByte,
-        ),
-      )
-    : burned;
+  const mint = (quantity: bigint): TxPlan["mints"] => [
+    {
+      policy: inputs.policy,
+      assets: new Map([[NIGHT, quantity]]),
+      redeemer: Option.some(REDEEMER),
+    },
+  ];
+  const outputOf = (address: Address, quantity: bigint) =>
+    nightOutput(address, assetId, quantity, params.coinsPerUtxoByte);
+  const base: TxPlan = {
+    spends: [],
+    references: [],
+    scripts: [],
+    mints: [],
+    outputs: [],
+    withdrawals: [],
+    registrations: [],
+    collateral: [],
+    requiredSignatures: 0,
+  };
+  return action.kind === "mint"
+    ? {
+        ...base,
+        mints: mint(inputs.amount),
+        outputs: [outputOf(action.destination, inputs.amount)],
+      }
+    : {
+        ...base,
+        spends: action.spend.map((utxo) => ({
+          utxo,
+          redeemer: Option.none(),
+        })),
+        mints: mint(-inputs.amount),
+        outputs:
+          action.remainder > 0n
+            ? [outputOf(action.user, action.remainder)]
+            : [],
+      };
 };
 
 /** The NIGHT an output holds. */
@@ -254,10 +259,10 @@ export const mintTcnightProgram = (input: MintTcnightInput) =>
     const assetId = AssetId.fromParts(policyId, NIGHT);
     yield* out.log(`\nTCnight Policy ID: ${policyId}`);
 
-    const blaze = yield* provider.blazeFor({
+    const wallet = {
       address: user,
       reserved: reservedRefs(yield* Profile.config),
-    });
+    };
     const protocolParams = yield* provider.parameters;
     const userUtxos = yield* provider.unspentOutputs(user);
     if (userUtxos.length === 0) {
@@ -271,18 +276,20 @@ export const mintTcnightProgram = (input: MintTcnightInput) =>
       request.kind === "mint"
         ? { kind: "mint", destination: mintTo }
         : yield* burnAction(user, userUtxos, assetId, amount);
-    const tx = yield* buildTx(
-      buildMintTcnightTx(
-        blaze,
+    const tx = yield* compile(
+      planMintTcnight(
         { policy: policy.Script, amount, action },
         { coinsPerUtxoByte: protocolParams.coinsPerUtxoByte },
       ),
       {
         commandName: "mint-tcnight",
-        environment: network,
-        witnesses: DEPLOYER_ONLY,
-        // A mint draft has no inputs before coin selection, so only a burn can run the local test.
-        knownUtxos: action.kind === "burn" ? userUtxos : [],
+        slotConfig: slotConfigOf(network),
+        wallet,
+        changeAddress: user,
+        feePadding: 0n,
+        metadata: Option.none(),
+        expectedWitnesses: DEPLOYER_ONLY,
+        contracts: yield* blueprint.contracts,
       },
     );
 

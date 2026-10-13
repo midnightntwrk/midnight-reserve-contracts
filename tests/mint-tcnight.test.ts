@@ -14,10 +14,11 @@ import {
 import { Either, Option } from "effect";
 import type { TxBuilder } from "@blaze-cardano/tx";
 import {
-  buildMintTcnightTx,
+  planMintTcnight,
   burnAction,
   selectBurn,
 } from "../cli/wallet/mint-tcnight";
+import { toTxBuilder } from "../cli/tx/compile";
 import { asFunded, keyAddress, randomHash } from "./helpers/fixtures";
 import {
   buildInstances,
@@ -88,14 +89,17 @@ const nightAt = (builder: TxBuilder, address: Address) =>
 const draftOf = (builder: TxBuilder) =>
   Transaction.fromCbor(TxCBOR(builder.toCbor()));
 
-describe("the mint-tcnight builder", () => {
+describe("the mint-tcnight plan", () => {
   test("mints NIGHT to a destination that is not the wallet", async () => {
-    await asFunded(async (emulator, blaze) => {
+    await asFunded(async (emulator, blaze, addr) => {
       const destination = keyAddress("04".repeat(28));
-      const builder = buildMintTcnightTx(
+      const builder = toTxBuilder(
         blaze,
-        { policy, amount: 100n, action: { kind: "mint", destination } },
-        { coinsPerUtxoByte: emulator.params.coinsPerUtxoByte },
+        planMintTcnight(
+          { policy, amount: 100n, action: { kind: "mint", destination } },
+          { coinsPerUtxoByte: emulator.params.coinsPerUtxoByte },
+        ),
+        { changeAddress: addr, feePadding: 0n, metadata: Option.none() },
       );
       expect(draftOf(builder).body().mint()?.get(NIGHT)).toBe(100n);
       expect(nightAt(builder, destination)).toEqual([100n]);
@@ -107,19 +111,22 @@ describe("the mint-tcnight builder", () => {
     await asFunded(async (emulator, blaze, addr) => {
       const tokens = holding(addr, 10n);
       emulator.addUtxo(tokens);
-      const builder = buildMintTcnightTx(
+      const builder = toTxBuilder(
         blaze,
-        {
-          policy,
-          amount: 4n,
-          action: {
-            kind: "burn",
-            spend: [tokens],
-            remainder: 6n,
-            user: addr,
+        planMintTcnight(
+          {
+            policy,
+            amount: 4n,
+            action: {
+              kind: "burn",
+              spend: [tokens],
+              remainder: 6n,
+              user: addr,
+            },
           },
-        },
-        { coinsPerUtxoByte: emulator.params.coinsPerUtxoByte },
+          { coinsPerUtxoByte: emulator.params.coinsPerUtxoByte },
+        ),
+        { changeAddress: addr, feePadding: 0n, metadata: Option.none() },
       );
       expect(draftOf(builder).body().mint()?.get(NIGHT)).toBe(-4n);
       expect(nightAt(builder, addr)).toEqual([6n]);
