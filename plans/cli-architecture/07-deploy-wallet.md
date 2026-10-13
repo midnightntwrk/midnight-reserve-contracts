@@ -84,3 +84,11 @@ real, the fix is batch-wide reservation in the deploy loop, not in
   tech-auth,main-gov,reserve,terms-and-conditions,cnight-minting` (5), and
   for `deployStagingTrackProgram` (all six, and `council` with
   `terms-and-conditions`).
+- Task 3: `deployStagingTrackProgram` calls `compile` with the same
+  `compileOptions` deploy uses. The derived `knownUtxos` (spends, then
+  references, then collateral) is `[oneShot, collateral]`, the list the
+  explicit `buildTx` call passed. Same-id on the emulator (throwaway,
+  deleted): the previous change's build and the `compile` build gave the
+  same ids and CBOR for all six components and for `council` with
+  `terms-and-conditions`; each transaction logged one "Local UPLC test
+  passed".
