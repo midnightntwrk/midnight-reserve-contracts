@@ -92,3 +92,14 @@ real, the fix is batch-wide reservation in the deploy loop, not in
   same ids and CBOR for all six components and for `council` with
   `terms-and-conditions`; each transaction logged one "Local UPLC test
   passed".
+- Task 4: `planSimpleTx` builds each payment as
+  `new TransactionOutput(recipient, new Value(amount))`; no `TxPlan`
+  support was needed. Blaze's `payLovelace` adds the same output through
+  `addOutput`, which `toTxBuilder` also calls, so the min-ADA raise is the
+  same. It also asserts a payment credential that is not a script, which
+  a plan does not repeat: `--to` is a `KeyAddress`, and a script or reward
+  `DEPLOYER_ADDRESS` is no key the deployer can sign for. Same-id on the
+  emulator (throwaway, deleted): `simpleTxProgram` with 3 payments of 5 ADA
+  to the deployer and with 1 payment of 1 lovelace to a `--to` address
+  (raised to min ADA) gave the same ids and CBOR as `buildSimpleTx` +
+  `buildTx`.

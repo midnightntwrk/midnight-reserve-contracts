@@ -20,17 +20,28 @@ import {
 import { Emulator, EmulatorProvider } from "@blaze-cardano/emulator";
 import { FetchHttpClient, FileSystem } from "@effect/platform";
 import { BunContext } from "@effect/platform-bun";
-import { ConfigProvider, Effect, Either, HashMap, Layer, Logger } from "effect";
+import {
+  ConfigProvider,
+  Effect,
+  Either,
+  HashMap,
+  Layer,
+  Logger,
+  Option,
+} from "effect";
 import type { CliError } from "../../cli/errors";
 import { Profile } from "../../cli/config/profile";
 import { DeployerAddress } from "../../cli/config/deployer";
-import type { Environment } from "../../cli/config/network-mapping";
+import {
+  type Environment,
+  slotConfigOf,
+} from "../../cli/config/network-mapping";
 import { Blueprint, BlueprintLive } from "../../cli/contracts/contracts";
-import { Provider, ProviderOver } from "../../cli/chain/provider";
+import { ProviderOver } from "../../cli/chain/provider";
 import { deployerWallet } from "../../cli/chain/utxo";
 import { DEPLOYER_ONLY } from "../../cli/signing/signer";
-import { completeBuilder } from "../../cli/tx/compile";
-import { buildSimpleTx } from "../../cli/wallet/simple-tx";
+import { compile } from "../../cli/tx/compile";
+import { planSimpleTx } from "../../cli/wallet/simple-tx";
 import { DeployedScripts } from "../../cli/contracts/snapshot/context";
 import { Output } from "../../cli/output";
 import { ConfigLive, DotEnvFallback, type CliServices } from "../../cli/run";
@@ -252,14 +263,23 @@ export const emulatorProgram = async (env: Environment = "emulator") => {
 
 /** The deployer's unsigned payment of 5 ADA to itself, built and completed over the Provider. */
 export const unsignedSimpleTx = Effect.gen(function* () {
-  const provider = yield* Provider;
-  const recipient = yield* DeployerAddress.address;
-  const { maxTxSize } = yield* provider.parameters;
-  const blaze = yield* provider.blazeFor(yield* deployerWallet);
-  return yield* completeBuilder(
-    buildSimpleTx(blaze, { recipient, count: 1, amount: 5_000_000n }),
-    "simple-tx",
-    { maxTxSize, witnesses: DEPLOYER_ONLY },
+  const wallet = yield* deployerWallet;
+  return yield* compile(
+    planSimpleTx({
+      recipient: wallet.address,
+      count: 1,
+      amount: 5_000_000n,
+    }),
+    {
+      commandName: "simple-tx",
+      slotConfig: slotConfigOf("emulator"),
+      wallet,
+      changeAddress: wallet.address,
+      feePadding: 0n,
+      metadata: Option.none(),
+      expectedWitnesses: DEPLOYER_ONLY,
+      contracts: [],
+    },
   );
 });
 

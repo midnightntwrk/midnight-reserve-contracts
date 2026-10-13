@@ -1,21 +1,17 @@
 /**
  * simple-tx: `count` payments of `amount` lovelace to one address, built
- * (never submitted) and written to a file. The builder is pure over the
- * parsed inputs. --count and --amount fall back to SIMPLE_TX_COUNT and
+ * (never submitted) and written to a file. The plan is pure over the
+ * parsed inputs and has no spends: coin selection funds it, so there is no
+ * local UPLC check. --count and --amount fall back to SIMPLE_TX_COUNT and
  * SIMPLE_TX_AMOUNT through their options; the recipient falls back to
  * DEPLOYER_ADDRESS.
  */
-import type { Address } from "@blaze-cardano/core";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
-import type { TxBuilder } from "@blaze-cardano/tx";
+import { type Address, TransactionOutput, Value } from "@blaze-cardano/core";
 import { Effect, Either, Option } from "effect";
 import { formatLovelaceToAda, Output } from "../output";
 import { writeTransaction } from "../signing/tx-file";
-import { buildTx } from "../tx/complete-tx";
+import { compile } from "../tx/compile";
+import type { TxPlan } from "../tx/plan";
 import {
   addressOn,
   type KeyAddress,
@@ -26,7 +22,7 @@ import {
 } from "../input";
 import { envFallback } from "../config/env";
 import { DeployerAddress } from "../config/deployer";
-import { Provider } from "../chain/provider";
+import { slotConfigOf } from "../config/network-mapping";
 import { deployerWallet } from "../chain/utxo";
 import { InputParseError } from "../errors";
 import { DEPLOYER_ONLY } from "../signing/signer";
@@ -59,16 +55,21 @@ export interface SimpleTxInputs {
   readonly amount: bigint;
 }
 
-/** `count` outputs of `amount` lovelace to one address. */
-export const buildSimpleTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
-  inputs: SimpleTxInputs,
-): TxBuilder => {
-  const builder = blaze.newTransaction();
-  for (let i = 0; i < inputs.count; i++)
-    builder.payLovelace(inputs.recipient, inputs.amount);
-  return builder;
-};
+/** `count` outputs of `amount` lovelace to one address; Blaze raises each to its min ADA. */
+export const planSimpleTx = (inputs: SimpleTxInputs): TxPlan => ({
+  spends: [],
+  references: [],
+  scripts: [],
+  mints: [],
+  outputs: Array.from(
+    { length: inputs.count },
+    () => new TransactionOutput(inputs.recipient, new Value(inputs.amount)),
+  ),
+  withdrawals: [],
+  registrations: [],
+  collateral: [],
+  requiredSignatures: 0,
+});
 
 /** Build (never submit) one transaction paying the deployer or --to several times, and write it to a file. */
 export const simpleTxProgram = (input: SimpleTxInput) =>
@@ -89,15 +90,16 @@ export const simpleTxProgram = (input: SimpleTxInput) =>
     yield* out.log(`Recipient: ${recipient.toBech32()}`);
 
     const wallet = yield* deployerWallet;
-    const blaze = yield* Effect.flatMap(Provider, (p) => p.blazeFor(wallet));
-    const tx = yield* buildTx(
-      buildSimpleTx(blaze, { recipient, count, amount }),
-      {
-        commandName: "simple-tx",
-        environment: network,
-        witnesses: DEPLOYER_ONLY,
-      },
-    );
+    const tx = yield* compile(planSimpleTx({ recipient, count, amount }), {
+      commandName: "simple-tx",
+      slotConfig: slotConfigOf(network),
+      wallet,
+      changeAddress: wallet.address,
+      feePadding: 0n,
+      metadata: Option.none(),
+      expectedWitnesses: DEPLOYER_ONLY,
+      contracts: [],
+    });
 
     yield* out.log("\nTransaction details:");
     yield* out.log(`  - Outputs: ${count}`);

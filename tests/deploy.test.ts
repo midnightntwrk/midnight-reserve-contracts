@@ -43,7 +43,7 @@ import { deployerWallet, refOf } from "../cli/chain/utxo";
 import { DeployerAddress } from "../cli/config/deployer";
 import { reservedRefs } from "../cli/config/profile";
 import { type TxRef, txRef } from "../cli/input";
-import { buildSimpleTx } from "../cli/wallet/simple-tx";
+import { planSimpleTx } from "../cli/wallet/simple-tx";
 import { Blaze, ColdWallet } from "@blaze-cardano/sdk";
 import { Emulator, EmulatorProvider } from "@blaze-cardano/emulator";
 import {
@@ -538,13 +538,13 @@ describe("the deployer wallet", () => {
     }
     emulator.addUtxo(feeUtxo(deployer, FEE_TX, 0, 15_000_000n));
     const spent = async (
-      blaze: Parameters<typeof buildSimpleTx>[0],
+      blaze: Parameters<typeof toTxBuilder>[0],
     ): Promise<TxRef[]> => {
-      const tx = await buildSimpleTx(blaze, {
-        recipient: deployer,
-        count: 1,
-        amount: 5_000_000n,
-      }).complete();
+      const tx = await toTxBuilder(
+        blaze,
+        planSimpleTx({ recipient: deployer, count: 1, amount: 5_000_000n }),
+        compileOf(deployer),
+      ).complete();
       return [...tx.body().inputs().values()].map(refOf);
     };
 

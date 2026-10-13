@@ -1,14 +1,20 @@
 import { expect, test } from "bun:test";
-import { buildSimpleTx } from "../cli/wallet/simple-tx";
+import { Option } from "effect";
+import { toTxBuilder } from "../cli/tx/compile";
+import { planSimpleTx } from "../cli/wallet/simple-tx";
 import { asFunded, keyAddress } from "./helpers/fixtures";
 
 const recipient = keyAddress("11".repeat(28));
 
-test("buildSimpleTx pays `count` outputs of `amount` to the recipient", () =>
-  asFunded(async (emulator, blaze) => {
+test("planSimpleTx pays `count` outputs of `amount` to the recipient", () =>
+  asFunded(async (emulator, blaze, addr) => {
     await emulator.expectValidTransaction(
       blaze,
-      buildSimpleTx(blaze, { recipient, count: 3, amount: 5_000_000n }),
+      toTxBuilder(
+        blaze,
+        planSimpleTx({ recipient, count: 3, amount: 5_000_000n }),
+        { changeAddress: addr, feePadding: 0n, metadata: Option.none() },
+      ),
     );
     const paid = await blaze.provider.getUnspentOutputs(recipient);
     expect(paid.map((u) => u.output().amount().coin())).toEqual([
