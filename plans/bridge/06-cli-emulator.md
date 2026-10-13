@@ -7,25 +7,62 @@ Blaze emulator; every MIP contract-test bullet reproduced (spec §9, §10).
 
 ### 0. Prerequisites and style
 Runs after `plans/effect/` 01–07: every command here is an Effect
-`program(argv)` over a `cli-yargs/lib/bridge-tx.ts` builder
-(`buildBridgeDeployTxs`, `buildBridgeUpdateTx`, `buildBridgeTopupTx`,
-`buildBridgeThresholdTx`), typed errors from `lib/effect/errors.ts`, and
-the emulator tests call the builders (Effect plan phase 06 rule).
-Config keys to add to `NetworkConfig`/`loadAikenConfig`:
+program over a typed input record, parsed at the boundary in
+`cli/commands/`, over a `cli/bridge/bridge-tx.ts` builder
+(`buildBridgeUpdateTx`, `buildBridgeTopupTx`, `buildBridgeThresholdTx`),
+typed errors from `cli/errors.ts`, and the emulator tests call the
+builders (Effect plan phase 06 rule). The deployment builders live with
+the governance ones in `cli/deploy/builders.ts` (task 1).
+Config keys to add to `NetworkConfig`/`parseNetworkConfig`
+(`cli/config/settings.ts`, read through `Settings.profile`):
 `committee_bridge_one_shot_hash/index`, `committee_threshold_one_shot_hash/index`
-(already in every `aiken.toml` profile). `getContractInstances` and
-`info`'s `buildContractList` gain the bridge scripts.
+(already in every `aiken.toml` profile). `ContractInstances` (read through
+`Blueprint.instances`) and `info`'s `contractList` gain the bridge
+scripts.
 
-### 1. `bridge-deploy` (own command; `deploy` is not extended)
-`beefy_signer_threshold` with `(2, 3, base, per_signer)` — its own
-`BeefyThreshold` datum builder, never `MultisigThreshold` (same four-`Int`
-shape); `committee_bridge_two_stage_upgrade` main + staging;
-`committee_bridge_forever` with a bootstrap datum from `--bridge-bootstrap <json>`
-(fields of `BeefyConsensusState`); register `committee_bridge_logic`;
-reference-script UTxOs for forever, logic and pool. Pool needs no
-deployment (script address only); `info` prints its address.
+### 1. Deploy through `deploy --components` (one deploy command)
+User decision 2026-09-25: there is one deploy command. The bridge is two
+new `deploy` components, each one `DEPLOY_STEPS` entry and one atomic
+transaction (`cli/deploy/deploy.ts`):
+- `committee-bridge` (one-shot `committee_bridge_one_shot_*`):
+  `committee_bridge_two_stage_upgrade` main + staging and
+  `committee_bridge_forever` with the bootstrap `BeefyConsensusState`
+  datum, and the registration of `committee_bridge_logic`. `"committee-bridge"`
+  joins the two-stage triples (`UpgradableValidator`, `Blueprint.twoStage`),
+  so the step is the existing `twoStage` factory over a bootstrap
+  `ForeverMint`.
+- `committee-bridge-threshold` (one-shot `committee_threshold_one_shot_*`):
+  `beefy_signer_threshold` with `(2, 3, base, per_signer)`. Its own step
+  and its own `BeefyThreshold` datum builder, never `MultisigThreshold`
+  (same four-`Int` shape).
+- Not in the default set: no `--components` stays the twelve
+  governance transactions; the two bridge components are built only when
+  named: `deploy -n <env> --components committee-bridge,committee-bridge-threshold`.
+  `--help` marks the default set. In code: no `--components` (None)
+  selects a default list of the twelve, not every `DEPLOY_STEPS` entry.
+- The values come from the env through `Settings`, like `TECH_AUTH_SIGNERS`
+  and `PERMISSIONED_CANDIDATES`, parsed and checked once there (bootstrap
+  rules: `next = current + 1`, both `seat_count > 0`, 32-byte roots). Names
+  to settle when the step is written: the bootstrap state (the output of
+  phase 07's `bridge-bootstrap`), `max_fee.base` and `max_fee.per_signer`
+  (measured in phase 04). A bridge run with a value missing fails before
+  any build.
+- The record and the preprod/mainnet check need no bridge code: the step's
+  validators are the targets, so a live bridge validator is refused, and
+  a new one is added to `deployed-scripts/<env>/` with its definitions.
+- Reference-script UTxOs for forever, logic and pool: in the
+  `committee-bridge` transaction if the size allows, else a third
+  component whose transaction creates no validator. Pool needs no
+  deployment (script address only); `info` prints its address.
+- A full run on a test environment replaces the record (and drops the
+  bridge's names). That is correct (user decision 2026-09-25): a full
+  base deploy is only for a new environment, and the bridge is deployed
+  after it with its own `--components` run, which extends the record.
+- Open: a live test-network deploy needs a bootstrap state value, and
+  phase 07's `bridge-bootstrap` comes later. The emulator test (task 3)
+  builds its own bootstrap state from the phase 05 reference.
 
-### 2. New commands (`cli-yargs/commands/bridge-*/`)
+### 2. New commands (`cli/commands/bridge-*.ts`)
 - `bridge-info`: light-client datum, threshold datum, pool balance and UTxO
   count.
 - `bridge-topup --lovelace N`: pay to the pool address.
@@ -56,6 +93,11 @@ Using the phase 05 reference to produce every update:
 ### 4. Docs
 `docs/bridge/spec.md` §9 transaction table verified against the built txs;
 README command table gains the `bridge-*` rows.
+`docs/governance/live-deployment.md`: the `deploy --components` table
+gains the rows `committee-bridge` and `committee-bridge-threshold`, and
+the full sequence gains a step that deploys the bridge after the base
+with its own `--components` run. `.env.example` gets the bootstrap state
+and the `max_fee` variables.
 
 ## Acceptance
 - `bun test` green; commands run live against the emulator (not only

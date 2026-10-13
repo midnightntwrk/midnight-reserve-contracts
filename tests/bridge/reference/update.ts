@@ -19,14 +19,6 @@ export function toCommitment(c: Commitment): AuthoritySetCommitment {
   };
 }
 
-export function fromCommitment(c: AuthoritySetCommitment): Commitment {
-  return {
-    validatorSetId: c.validator_set_id,
-    seatCount: Number(c.seat_count),
-    keysetCommitment: Buffer.from(c.keyset_commitment, "hex"),
-  };
-}
-
 /** The update for `s`: multiproof over `proofLeaves` (tree order), signatures from `signers`, `""` for the rest. */
 export function bridgeUpdate(
   s: Scenario,
