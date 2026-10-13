@@ -9,10 +9,14 @@ import {
 } from "fs";
 import { tmpdir } from "os";
 import { join, resolve } from "path";
-import { Effect, Layer, Option, Schema } from "effect";
+import { Either, Effect, Layer, Option, Schema } from "effect";
 import { PlutusJson } from "../cli/contracts/plutus-json";
 import { DeployedScriptsAt } from "../cli/contracts/snapshot/context";
-import { liveHashOf, promotedAmong } from "../cli/contracts/snapshot/read";
+import {
+  isPromoted,
+  liveHashOf,
+  promotedAmong,
+} from "../cli/contracts/snapshot/read";
 import {
   applyRecordUpdate,
   prepareDeploySnapshot,
@@ -20,8 +24,18 @@ import {
   type SnapshotRule,
 } from "../cli/contracts/snapshot/write";
 import {
+  applyRecord,
+  logicToStage,
+  prepareLogicCopy,
+  promoteRecord,
+  stageRecord,
+} from "../cli/governance/two-stage-upgrade/logic-record";
+import { parseScriptHash, type ScriptHash } from "../cli/input";
+import {
   buildInstances,
+  captureOutput,
   expectFailure,
+  OutputCaptured,
   PlatformLive,
   runTest,
 } from "./helpers/effect";
@@ -566,5 +580,183 @@ describe("liveHashOf", () => {
     });
     const error = await expectFailure(layerAt(root), live, "BlueprintError");
     expect(error.reason).toContain(MAIN_GOV_AUTH);
+  });
+});
+
+describe("stage and promote records", () => {
+  const ENV = "devnet";
+  const V2_HASH = titled(COUNCIL_LOGIC_V2).hash;
+  const v2 = Either.getOrThrow(parseScriptHash(V2_HASH));
+  const withoutV2: PlutusJson = {
+    ...build,
+    validators: build.validators.filter((v) => v.title !== COUNCIL_LOGIC_V2),
+  };
+  const staleV2: PlutusJson = {
+    ...build,
+    validators: build.validators.map((v) =>
+      v.title === COUNCIL_LOGIC_V2 ? { ...v, hash: "dd".repeat(28) } : v,
+    ),
+  };
+
+  /** A devnet record: its plutus.json and versions.json. */
+  const record = (
+    plutus: PlutusJson,
+    versions: { promoted: string[]; staged: string[] },
+  ) => {
+    const { root } = snapshotRoot();
+    const dir = join(root, ENV);
+    mkdirSync(dir);
+    writeJson(dir, "plutus.json", plutus);
+    writeJson(dir, "versions.json", versions);
+    return {
+      dir,
+      layer: Layer.merge(layerAt(root), OutputCaptured(captureOutput())),
+    };
+  };
+
+  /** What stage-upgrade does with the record: name the logic, prepare its copy, decide the re-stage, write. */
+  const stage = (hash: ScriptHash) =>
+    Effect.gen(function* () {
+      const logic = yield* logicToStage(ENV, hash, {
+        profile: "devnet",
+        plutusPath: BUILD_PLUTUS,
+      });
+      const copy = yield* prepareLogicCopy(ENV, hash, logic.copyFrom);
+      const restage = yield* isPromoted(ENV, logic.name);
+      yield* applyRecord(ENV, stageRecord(logic.name, copy, restage));
+    });
+
+  test("staging a build-only logic copies it into plutus.json, regenerates the blueprint and tracks it as staged", async () => {
+    const { dir, layer } = record(withoutV2, {
+      promoted: ["council_logic"],
+      staged: [],
+    });
+    expect(readJson(dir, "plutus.json").validators).not.toContainEqual(
+      titled(COUNCIL_LOGIC_V2),
+    );
+    await runTest(layer, stage(v2));
+    expect(readJson(dir, "plutus.json").validators).toContainEqual(
+      titled(COUNCIL_LOGIC_V2),
+    );
+    expect(readFileSync(join(dir, "contract_blueprint.ts"), "utf-8")).toContain(
+      "export class PermissionedV2CouncilLogicV2Else ",
+    );
+    expect(readJson(dir, "versions.json")).toEqual({
+      promoted: ["council_logic"],
+      staged: ["council_logic_v2"],
+    });
+  });
+
+  test("staging a logic already in the record copies nothing and tracks it as staged", async () => {
+    const { dir, layer } = record(build, {
+      promoted: ["council_logic"],
+      staged: [],
+    });
+    const before = readFileSync(join(dir, "plutus.json"), "utf-8");
+    await runTest(layer, stage(v2));
+    expect(readFileSync(join(dir, "plutus.json"), "utf-8")).toBe(before);
+    expect(existsSync(join(dir, "contract_blueprint.ts"))).toBe(false);
+    expect(readJson(dir, "versions.json")).toEqual({
+      promoted: ["council_logic"],
+      staged: ["council_logic_v2"],
+    });
+  });
+
+  test("re-staging a promoted validator already in the record changes neither file", async () => {
+    const { dir, layer } = record(build, {
+      promoted: ["council_logic", "council_logic_v2"],
+      staged: [],
+    });
+    const before = filesOf(dir);
+    await runTest(layer, stage(v2));
+    expect(filesOf(dir)).toEqual(before);
+  });
+
+  test("a copy of a promoted validator is merged into plutus.json without tracking it as staged", async () => {
+    const { dir, layer } = record(staleV2, {
+      promoted: ["council_logic_v2"],
+      staged: [],
+    });
+    await runTest(
+      layer,
+      Effect.gen(function* () {
+        const copy = yield* prepareLogicCopy(
+          ENV,
+          v2,
+          Option.some(BUILD_PLUTUS),
+        );
+        yield* applyRecord(ENV, stageRecord("council_logic_v2", copy, true));
+      }),
+    );
+    expect(readJson(dir, "plutus.json").validators).toContainEqual(
+      titled(COUNCIL_LOGIC_V2),
+    );
+    expect(readJson(dir, "versions.json")).toEqual({
+      promoted: ["council_logic_v2"],
+      staged: [],
+    });
+  });
+
+  test("an environment without a record prepares no copy, so staging writes nothing there", async () => {
+    const { root, dir } = snapshotRoot();
+    const layer = Layer.merge(layerAt(root), OutputCaptured(captureOutput()));
+    expect(
+      await runTest(
+        layer,
+        prepareLogicCopy("emulator", v2, Option.some(BUILD_PLUTUS)),
+      ),
+    ).toEqual(Option.none());
+    expect(
+      await runTest(
+        layer,
+        applyRecord(
+          "emulator",
+          stageRecord("council_logic_v2", Option.none(), false),
+        ),
+      ),
+    ).toBeUndefined();
+    expect(filesOf(dir)).toEqual({
+      "plutus.json": undefined,
+      "contract_blueprint.ts": undefined,
+      "versions.json": undefined,
+      "changelog.json": undefined,
+    });
+  });
+
+  test("promoting after a build-only stage resolves the name from the record the stage wrote and moves it from staged[] to promoted[]", async () => {
+    const { dir, layer } = record(withoutV2, {
+      promoted: ["council_logic"],
+      staged: [],
+    });
+    await runTest(
+      layer,
+      Effect.zipRight(
+        stage(v2),
+        Effect.flatMap(promoteRecord(ENV, V2_HASH), (updates) =>
+          applyRecord(ENV, updates),
+        ),
+      ),
+    );
+    expect(readJson(dir, "versions.json")).toEqual({
+      promoted: ["council_logic", "council_logic_v2"],
+      staged: [],
+    });
+  });
+
+  test("promoting a staged hash the record does not hold tracks the hash itself as promoted", async () => {
+    const { dir, layer } = record(withoutV2, {
+      promoted: ["council_logic"],
+      staged: ["council_logic_v2"],
+    });
+    await runTest(
+      layer,
+      Effect.flatMap(promoteRecord(ENV, V2_HASH), (updates) =>
+        applyRecord(ENV, updates),
+      ),
+    );
+    expect(readJson(dir, "versions.json")).toEqual({
+      promoted: ["council_logic", V2_HASH],
+      staged: ["council_logic_v2"],
+    });
   });
 });
