@@ -24,7 +24,7 @@ import type { TxBuilder } from "@blaze-cardano/tx";
 import { Clock, Effect, Option } from "effect";
 import { relative, resolve } from "path";
 import * as Contracts from "../../contract_blueprint";
-import { completeBuilder } from "../tx/compile";
+import { buildTx } from "../tx/complete-tx";
 import { envFallback } from "../config/env";
 import { initialTermsAndConditions } from "../config/intent-env";
 import type { NetworkConfig } from "../config/profile";
@@ -549,9 +549,11 @@ export const deployProgram = (input: DeployInput) =>
     const built = yield* Effect.forEach(steps, (step, i) =>
       Effect.flatMap(step.build(ctx, oneShots[i]), (txBuilder) =>
         Effect.map(
-          completeBuilder(txBuilder, `deploy/${step.name}`, {
-            maxTxSize: ctx.maxTxSize,
+          buildTx(txBuilder, {
+            commandName: `deploy/${step.name}`,
+            environment: network,
             witnesses: DEPLOYER_ONLY,
+            knownUtxos: [oneShots[i], ctx.params.collateral],
           }),
           (tx) => builtDeployment(step.name, tx),
         ),

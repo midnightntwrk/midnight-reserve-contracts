@@ -116,7 +116,6 @@ export interface DeploymentSetup {
   readonly councilSigners: Signers;
   readonly blaze: Blaze<BlazeProvider, Wallet>;
   readonly params: DeployParams;
-  readonly maxTxSize: number;
 }
 
 /** The profile, the build contracts, the deployer, the signers to install, Blaze and the DeployParams with the checked collateral. */
@@ -155,7 +154,6 @@ export const deploymentSetup = (command: string, network: Environment) =>
         coinsPerUtxoByte: protocolParams.coinsPerUtxoByte,
         collateral,
       },
-      maxTxSize: protocolParams.maxTxSize,
     };
     return setup;
   });

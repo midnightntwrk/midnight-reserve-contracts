@@ -144,7 +144,6 @@ const stepBuilder = (
         councilSigners,
         blaze,
         params: params(emulator, addr),
-        maxTxSize: emulator.params.maxTxSize,
       },
       oneShotUtxo,
     ),

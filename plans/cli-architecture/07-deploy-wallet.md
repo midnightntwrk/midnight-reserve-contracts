@@ -46,3 +46,15 @@ real, the fix is batch-wide reservation in the deploy loop, not in
   emulator yields the same transaction ids as before (throwaway check).
 - `cli/deploy/` and `cli/wallet/` have no `blaze` parameter and no
   `TxBuilder` import.
+
+## Deviations
+
+- Task 0: `DeploymentSetup.maxTxSize` is removed. `deploy` was its only
+  reader, and `buildTx` reads `maxTxSize` from `Provider.parameters`.
+- Task 0, observed on the emulator (`deployProgram`, default components
+  and a five-component `--components` run): each transaction now prints
+  "Testing transaction locally (UPLC)...", "Local UPLC test passed" and
+  "Transaction built: <id>". Every local run passed. The ids differ from
+  the `completeBuilder` build, as the task says; the build is
+  deterministic (two runs gave byte-identical ids and CBOR), so it is the
+  baseline for tasks 1+2.

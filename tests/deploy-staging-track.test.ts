@@ -58,7 +58,6 @@ describe("the staging forever builder", () => {
             councilSigners,
             blaze,
             params,
-            maxTxSize: emulator.params.maxTxSize,
           }),
         );
         await emulator.expectValidTransaction(
