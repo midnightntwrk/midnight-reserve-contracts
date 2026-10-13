@@ -58,3 +58,29 @@ real, the fix is batch-wide reservation in the deploy loop, not in
   the `completeBuilder` build, as the task says; the build is
   deterministic (two runs gave byte-identical ids and CBOR), so it is the
   baseline for tasks 1+2.
+- Tasks 1+2: the collateral UTxO travels in each deployment's inputs
+  (`TwoStageStates`, `ThresholdDeployment`, `StagingForeverDeployment`)
+  and becomes `plan.collateral`; `DeployParams` keeps `networkId` and
+  `coinsPerUtxoByte` only. `StepBody.build` is renamed `plan`.
+- Tasks 1+2: `DeploymentSetup` loses `blaze`, `deployer` (a string nothing
+  read) and `params.collateral`, and gains `collateral` and `compile`, the
+  `CompileOptions` but for `commandName` (the deployer's wallet, change
+  address, no metadata, fee padding 0, `DEPLOYER_ONLY`, the blueprint
+  contracts for labels), built once in `deploymentSetup`. A step plans
+  from `DeployContext`, which omits `compile`. `StagingStep.datum` takes
+  only the two signer sets it reads.
+- Tasks 1+2: `deploy-staging-track` plans through
+  `planStagingForeverDeployment` in the same commit, since the setup no
+  longer holds Blaze. Until task 3 it completes through `toTxBuilder` and
+  `buildTx` over `provider.blazeFor(setup.compile.wallet)`.
+- Tasks 1+2: `registerScriptStake` (`tx/scripts.ts`) has no caller left and
+  is deleted. `tests/deploy.test.ts` keeps `completeBuilder` over
+  `toTxBuilder` for the size-check test, which needs an explicit
+  `maxTxSize` that `compile` reads from the provider.
+- Tasks 1+2, same-id check on the emulator (throwaway, deleted): the task 0
+  build and the plan + `compile` build from the same seeded state gave the
+  same ids and the same CBOR for `deployProgram` with the default
+  components (12 transactions, first `0b67e5b1…`) and with `--components
+  tech-auth,main-gov,reserve,terms-and-conditions,cnight-minting` (5), and
+  for `deployStagingTrackProgram` (all six, and `council` with
+  `terms-and-conditions`).

@@ -13,6 +13,8 @@ import { Clock, Effect, Either, Option } from "effect";
 import { relative, resolve } from "path";
 import * as Contracts from "../../contract_blueprint";
 import { buildTx } from "../tx/complete-tx";
+import { toTxBuilder } from "../tx/compile";
+import { Provider } from "../chain/provider";
 import type { NetworkConfig } from "../config/profile";
 import {
   Blueprint,
@@ -31,10 +33,7 @@ import {
 } from "../errors";
 import { type NetworkInput, ZERO_HASH32 } from "../input";
 import { Output } from "../output";
-import {
-  buildStagingForeverDeploymentTx,
-  ZERO_FOREVER_DATUM,
-} from "./builders";
+import { planStagingForeverDeployment, ZERO_FOREVER_DATUM } from "./builders";
 import {
   buildOf,
   builtDeployment,
@@ -79,7 +78,7 @@ interface StagingStep {
   readonly oneShot: (config: NetworkConfig) => UtxoRef;
   readonly contract: (c: ContractInstances) => ContractClass | undefined;
   readonly datum: (
-    setup: DeploymentSetup,
+    setup: Pick<DeploymentSetup, "techAuthSigners" | "councilSigners">,
   ) => Effect.Effect<ForeverMint, ConfigError | InputParseError>;
 }
 
@@ -200,26 +199,33 @@ export const deployStagingTrackProgram = (input: DeployStagingTrackInput) =>
     const oneShots = yield* resolveUnspent(
       steps.map((step) => step.oneShot(setup.config)),
     );
+    const blaze = yield* Effect.flatMap(Provider, (provider) =>
+      provider.blazeFor(setup.compile.wallet),
+    );
     const built: BuiltDeployment[] = yield* Effect.forEach(steps, (step, i) =>
       Effect.gen(function* () {
         const { datum, redeemer } = yield* step.datum(setup);
         const oneShotUtxo = oneShots[i];
         const tx = yield* buildTx(
-          buildStagingForeverDeploymentTx(
-            setup.blaze,
-            {
-              oneShotUtxo,
-              stagingForever: forevers[i].Script,
-              datum,
-              redeemer,
-            },
-            setup.params,
+          toTxBuilder(
+            blaze,
+            planStagingForeverDeployment(
+              {
+                oneShotUtxo,
+                collateral: setup.collateral,
+                stagingForever: forevers[i].Script,
+                datum,
+                redeemer,
+              },
+              setup.params,
+            ),
+            setup.compile,
           ),
           {
             commandName: `deploy-staging-track/${step.name}`,
             environment: network,
             witnesses: DEPLOYER_ONLY,
-            knownUtxos: [oneShotUtxo, setup.params.collateral],
+            knownUtxos: [oneShotUtxo, setup.collateral],
           },
         );
         return builtDeployment(step.name, tx);

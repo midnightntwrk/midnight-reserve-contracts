@@ -1,7 +1,7 @@
 /**
  * Script building blocks shared by the commands: logic redeemers and
- * withdrawals, native multisig witnesses, stake registration, reward
- * accounts and CIP-20 metadata.
+ * withdrawals, native multisig witnesses, reward accounts and CIP-20
+ * metadata.
  */
 import {
   addressFromCredential,
@@ -20,7 +20,6 @@ import {
   MetadatumMap,
   MetadatumList,
 } from "@blaze-cardano/core";
-import type { TxBuilder } from "@blaze-cardano/tx";
 import { Option } from "effect";
 import type { Signers } from "../datum/signers";
 import type { TxPlan } from "./plan";
@@ -88,20 +87,6 @@ export const planWithdrawThroughLogic = (
     script,
     redeemer,
   }));
-
-/** Register a script's stake credential; the Conway reg_cert needs the script witness and a cert redeemer. */
-export function registerScriptStake(
-  txBuilder: TxBuilder,
-  script: Script,
-): TxBuilder {
-  return txBuilder.provideScript(script).addRegisterStake(
-    Credential.fromCore({
-      hash: script.hash(),
-      type: CredentialType.ScriptHash,
-    }),
-    PlutusData.newInteger(0n),
-  );
-}
 
 export function createRewardAccount(
   scriptHash: string,

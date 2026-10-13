@@ -1,12 +1,12 @@
 /**
- * The deployment transactions, pure over their resolved inputs. Each spends
- * its one-shot UTxO and mints the NFT(s) that one-shot parameterises:
- * a two-stage deployment mints the forever NFT and the two-stage main and
- * staging NFTs (and registers the logic as a stake credential where the
- * deployment asks for it), the cNIGHT minting deployment mints only the
- * two-stage NFTs and registers its forever, a threshold deployment mints
- * the threshold NFT, a staging-forever deployment mints the staging forever
- * NFT. Every output holds its min ADA.
+ * The deployment transactions as plans, pure over their resolved inputs.
+ * Each spends its one-shot UTxO and mints the NFT(s) that one-shot
+ * parameterises: a two-stage deployment mints the forever NFT and the
+ * two-stage main and staging NFTs (and registers the logic as a stake
+ * credential where the deployment asks for it), the cNIGHT minting
+ * deployment mints only the two-stage NFTs and registers its forever, a
+ * threshold deployment mints the threshold NFT, a staging-forever
+ * deployment mints the staging forever NFT. Every output holds its min ADA.
  */
 import {
   addressFromValidator,
@@ -15,25 +15,20 @@ import {
   type NetworkId,
   PaymentAddress,
   PlutusData,
-  PolicyId,
   type Script,
   TransactionOutput,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import { serialize } from "@blaze-cardano/data";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
-import { calculateMinAda, type TxBuilder } from "@blaze-cardano/tx";
+import { calculateMinAda } from "@blaze-cardano/tx";
+import { Option } from "effect";
 import * as Contracts from "../../contract_blueprint";
 import {
   createUpgradeState,
   MAIN_TOKEN_HEX,
   STAGING_TOKEN_HEX,
 } from "../governance/two-stage";
-import { registerScriptStake } from "../tx/scripts";
+import type { TxPlan } from "../tx/plan";
 
 /** The forever datum of reserve and ICS, main and staging: Constr 0 [0, 0]. */
 export const ZERO_FOREVER_DATUM = PlutusData.fromCore({
@@ -46,16 +41,16 @@ export const ZERO_FOREVER_DATUM = PlutusData.fromCore({
   },
 });
 
-/** What every deployment transaction is built with. */
+/** What every deployment plan is built with. */
 export interface DeployParams {
   readonly networkId: NetworkId;
   readonly coinsPerUtxoByte: number;
-  readonly collateral: TransactionUnspentOutput;
 }
 
-/** The two-stage states of a deployment: the validator, the logic both states start on, and the gov-auth hashes they name. */
+/** The two-stage states of a deployment: the one-shot and collateral UTxOs, the validator, the logic both states start on, and the gov-auth hashes they name. */
 export interface TwoStageStates {
   readonly oneShotUtxo: TransactionUnspentOutput;
+  readonly collateral: TransactionUnspentOutput;
   readonly twoStage: Script;
   readonly logic: Script;
   readonly govAuth: string;
@@ -78,6 +73,7 @@ export interface CnightMintingDeployment extends TwoStageStates {
 /** A threshold's deployment: its script and its datum. */
 export interface ThresholdDeployment {
   readonly oneShotUtxo: TransactionUnspentOutput;
+  readonly collateral: TransactionUnspentOutput;
   readonly threshold: Script;
   readonly datum: Contracts.MultisigThreshold;
 }
@@ -85,6 +81,7 @@ export interface ThresholdDeployment {
 /** A staging forever validator's deployment: its script, its datum and its mint redeemer. */
 export interface StagingForeverDeployment {
   readonly oneShotUtxo: TransactionUnspentOutput;
+  readonly collateral: TransactionUnspentOutput;
   readonly stagingForever: Script;
   readonly datum: PlutusData;
   readonly redeemer: PlutusData;
@@ -114,121 +111,123 @@ const nftOutput = (
 const upgradeStateDatum = (logic: Script, govAuth: string): PlutusData =>
   serialize(Contracts.UpgradeState, createUpgradeState(logic.hash(), govAuth));
 
-const withCollateral = (txBuilder: TxBuilder, params: DeployParams) =>
-  txBuilder.provideCollateral([params.collateral]);
+/** The plan every deployment starts from: it spends the one-shot and offers the collateral. */
+const fromOneShot = (
+  inputs: Pick<TwoStageStates, "oneShotUtxo" | "collateral">,
+): TxPlan => ({
+  spends: [{ utxo: inputs.oneShotUtxo, redeemer: Option.none() }],
+  references: [],
+  scripts: [],
+  mints: [],
+  outputs: [],
+  withdrawals: [],
+  registrations: [],
+  collateral: [inputs.collateral],
+  requiredSignatures: 0,
+});
+
+/** The empty-named NFT of `policy`, minted with `redeemer` and locked at the policy's address with `datum`. */
+const mintEmptyNamed = (
+  policy: Script,
+  redeemer: PlutusData,
+  datum: PlutusData,
+  params: DeployParams,
+): Pick<TxPlan, "mints" | "outputs"> => ({
+  mints: [
+    {
+      policy,
+      assets: new Map([[AssetName(""), 1n]]),
+      redeemer: Option.some(redeemer),
+    },
+  ],
+  outputs: [nftOutput(policy, "", datum, params)],
+});
 
 /** Spend the one-shot, mint the two-stage main and staging NFTs and lock each at the two-stage with its UpgradeState. */
-const mintTwoStageStates = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+const planTwoStageStates = (
   inputs: TwoStageStates,
   params: DeployParams,
-): TxBuilder =>
-  blaze
-    .newTransaction()
-    .addInput(inputs.oneShotUtxo)
-    .addMint(
-      PolicyId(inputs.twoStage.hash()),
-      new Map([
+): TxPlan => ({
+  ...fromOneShot(inputs),
+  mints: [
+    {
+      policy: inputs.twoStage,
+      assets: new Map([
         [AssetName(MAIN_TOKEN_HEX), 1n],
         [AssetName(STAGING_TOKEN_HEX), 1n],
       ]),
-      PlutusData.newInteger(0n),
-    )
-    .provideScript(inputs.twoStage)
-    .addOutput(
-      nftOutput(
-        inputs.twoStage,
-        MAIN_TOKEN_HEX,
-        upgradeStateDatum(inputs.logic, inputs.govAuth),
-        params,
-      ),
-    )
-    .addOutput(
-      nftOutput(
-        inputs.twoStage,
-        STAGING_TOKEN_HEX,
-        upgradeStateDatum(inputs.logic, inputs.stagingGovAuth),
-        params,
-      ),
-    );
+      redeemer: Option.some(PlutusData.newInteger(0n)),
+    },
+  ],
+  outputs: [
+    nftOutput(
+      inputs.twoStage,
+      MAIN_TOKEN_HEX,
+      upgradeStateDatum(inputs.logic, inputs.govAuth),
+      params,
+    ),
+    nftOutput(
+      inputs.twoStage,
+      STAGING_TOKEN_HEX,
+      upgradeStateDatum(inputs.logic, inputs.stagingGovAuth),
+      params,
+    ),
+  ],
+});
 
 /** Mint the two-stage states and the forever NFT, lock each at its script, and register the logic where the deployment asks. */
-export const buildTwoStageDeploymentTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+export const planTwoStageDeployment = (
   inputs: TwoStageDeployment,
   params: DeployParams,
-): TxBuilder => {
-  const minted = mintTwoStageStates(blaze, inputs, params)
-    .addMint(
-      PolicyId(inputs.forever.hash()),
-      new Map([[AssetName(""), 1n]]),
-      inputs.foreverRedeemer,
-    )
-    .provideScript(inputs.forever)
-    .addOutput(nftOutput(inputs.forever, "", inputs.foreverDatum, params));
-  return withCollateral(
-    inputs.registerLogic ? registerScriptStake(minted, inputs.logic) : minted,
+): TxPlan => {
+  const states = planTwoStageStates(inputs, params);
+  const forever = mintEmptyNamed(
+    inputs.forever,
+    inputs.foreverRedeemer,
+    inputs.foreverDatum,
     params,
   );
+  return {
+    ...states,
+    mints: [...states.mints, ...forever.mints],
+    outputs: [...states.outputs, ...forever.outputs],
+    registrations: inputs.registerLogic ? [inputs.logic] : [],
+  };
 };
 
 /** Mint the two-stage states and register the forever's stake credential: cNIGHT minting runs as a withdrawal from it, and it holds no NFT. */
-export const buildCnightMintingDeploymentTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+export const planCnightMintingDeployment = (
   inputs: CnightMintingDeployment,
   params: DeployParams,
-): TxBuilder =>
-  withCollateral(
-    registerScriptStake(
-      mintTwoStageStates(blaze, inputs, params),
-      inputs.forever,
-    ),
-    params,
-  );
+): TxPlan => ({
+  ...planTwoStageStates(inputs, params),
+  registrations: [inputs.forever],
+});
 
 /** Spend the one-shot, mint the threshold NFT and lock it at the threshold with its datum. */
-export const buildThresholdDeploymentTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+export const planThresholdDeployment = (
   inputs: ThresholdDeployment,
   params: DeployParams,
-): TxBuilder =>
-  withCollateral(
-    blaze
-      .newTransaction()
-      .addInput(inputs.oneShotUtxo)
-      .addMint(
-        PolicyId(inputs.threshold.hash()),
-        new Map([[AssetName(""), 1n]]),
-        PlutusData.newInteger(0n),
-      )
-      .provideScript(inputs.threshold)
-      .addOutput(
-        nftOutput(
-          inputs.threshold,
-          "",
-          serialize(Contracts.MultisigThreshold, inputs.datum),
-          params,
-        ),
-      ),
+): TxPlan => ({
+  ...fromOneShot(inputs),
+  ...mintEmptyNamed(
+    inputs.threshold,
+    PlutusData.newInteger(0n),
+    serialize(Contracts.MultisigThreshold, inputs.datum),
     params,
-  );
+  ),
+});
 
 /** Spend the one-shot, mint the staging forever NFT and lock it at the staging forever with its datum. */
-export const buildStagingForeverDeploymentTx = (
-  blaze: Blaze<BlazeProvider, Wallet>,
+export const planStagingForeverDeployment = (
   inputs: StagingForeverDeployment,
   params: DeployParams,
-): TxBuilder =>
-  withCollateral(
-    blaze
-      .newTransaction()
-      .addInput(inputs.oneShotUtxo)
-      .addMint(
-        PolicyId(inputs.stagingForever.hash()),
-        new Map([[AssetName(""), 1n]]),
-        inputs.redeemer,
-      )
-      .provideScript(inputs.stagingForever)
-      .addOutput(nftOutput(inputs.stagingForever, "", inputs.datum, params)),
+): TxPlan => ({
+  ...fromOneShot(inputs),
+  ...mintEmptyNamed(
+    inputs.stagingForever,
+    inputs.redeemer,
+    inputs.datum,
     params,
-  );
+  ),
+});

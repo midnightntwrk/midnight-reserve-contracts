@@ -20,11 +20,11 @@
  */
 import { serialize } from "@blaze-cardano/data";
 import type { TransactionUnspentOutput } from "@blaze-cardano/core";
-import type { TxBuilder } from "@blaze-cardano/tx";
 import { Clock, Effect, Option } from "effect";
 import { relative, resolve } from "path";
 import * as Contracts from "../../contract_blueprint";
-import { buildTx } from "../tx/complete-tx";
+import { compile } from "../tx/compile";
+import type { TxPlan } from "../tx/plan";
 import { envFallback } from "../config/env";
 import { initialTermsAndConditions } from "../config/intent-env";
 import type { NetworkConfig } from "../config/profile";
@@ -50,9 +50,9 @@ import { parseThreshold, type Threshold } from "../governance/threshold";
 import type { NetworkInput } from "../input";
 import { Output } from "../output";
 import {
-  buildCnightMintingDeploymentTx,
-  buildThresholdDeploymentTx,
-  buildTwoStageDeploymentTx,
+  planCnightMintingDeployment,
+  planThresholdDeployment,
+  planTwoStageDeployment,
   ZERO_FOREVER_DATUM,
 } from "./builders";
 import {
@@ -73,7 +73,6 @@ import {
   type UtxoRef,
   zeroRedeemer,
 } from "./deployment";
-import { DEPLOYER_ONLY } from "../signing/signer";
 
 /** The governance components: a run without --components builds these. */
 export const DEFAULT_DEPLOY_COMPONENTS = [
@@ -175,8 +174,8 @@ export interface DeployInput extends NetworkInput {
   readonly components: Option.Option<readonly DeployComponent[]>;
 }
 
-/** What every deployment step builds from; the gov auth hashes are the environment's live ones, else the build's. */
-interface DeployContext extends DeploymentSetup {
+/** What every deployment step plans from; the gov auth hashes are the environment's live ones, else the build's. */
+interface DeployContext extends Omit<DeploymentSetup, "compile"> {
   readonly input: DeployInput;
   readonly govAuth: string;
   readonly stagingGovAuth: string;
@@ -192,15 +191,15 @@ type Validators = Effect.Effect<
 
 type OneShotOf = (config: NetworkConfig) => UtxoRef;
 
-/** A deployment step: its one-shot, the validators it creates, the build gov auths its datums install on an environment that has none, and how its transaction is built over the resolved one-shot. */
+/** A deployment step: its one-shot, the validators it creates, the build gov auths its datums install on an environment that has none, and its transaction's plan over the resolved one-shot. */
 interface StepBody {
   readonly oneShotOf: OneShotOf;
   readonly validators: Validators;
   readonly installs: Validators;
-  readonly build: (
+  readonly plan: (
     ctx: DeployContext,
     oneShotUtxo: TransactionUnspentOutput,
-  ) => Effect.Effect<TxBuilder, DeployBuildError, Blueprint>;
+  ) => Effect.Effect<TxPlan, DeployBuildError, Blueprint>;
 }
 
 /** The main-gov datum shape of a threshold: the tech-auth then the council fraction. */
@@ -234,14 +233,14 @@ const twoStage = (
     validators: Effect.map(triple, (t) => [t.twoStage, t.forever, t.logic]),
     installs: govAuths,
     oneShotOf,
-    build: (ctx, oneShotUtxo) =>
+    plan: (ctx, oneShotUtxo) =>
       Effect.gen(function* () {
         const { twoStage, forever, logic } = yield* triple;
         const { datum, redeemer } = yield* foreverOf(ctx);
-        return buildTwoStageDeploymentTx(
-          ctx.blaze,
+        return planTwoStageDeployment(
           {
             oneShotUtxo,
+            collateral: ctx.collateral,
             twoStage: twoStage.Script,
             forever: forever.Script,
             logic: logic.Script,
@@ -269,12 +268,12 @@ const threshold = (
   ),
   installs: Effect.succeed([]),
   oneShotOf,
-  build: (ctx, oneShotUtxo) =>
+  plan: (ctx, oneShotUtxo) =>
     Effect.succeed(
-      buildThresholdDeploymentTx(
-        ctx.blaze,
+      planThresholdDeployment(
         {
           oneShotUtxo,
+          collateral: ctx.collateral,
           threshold: script(ctx.contracts).Script,
           datum: thresholdDatum(...fractions(ctx.input)),
         },
@@ -312,12 +311,12 @@ const cnightMinting: StepBody = {
     c.cnight_minting_one_shot_hash,
     c.cnight_minting_one_shot_index,
   ],
-  build: (ctx, oneShotUtxo) =>
+  plan: (ctx, oneShotUtxo) =>
     Effect.map(cnightMintTriple, ({ twoStage, forever, logic }) =>
-      buildCnightMintingDeploymentTx(
-        ctx.blaze,
+      planCnightMintingDeployment(
         {
           oneShotUtxo,
+          collateral: ctx.collateral,
           twoStage: twoStage.Script,
           forever: forever.Script,
           logic: logic.Script,
@@ -537,23 +536,20 @@ export const deployProgram = (input: DeployInput) =>
             },
           ];
 
-    const ctx: DeployContext = {
-      input,
-      govAuth,
-      stagingGovAuth,
-      ...(yield* deploymentSetup("deploy", network)),
-    };
+    const { compile: compileOptions, ...setup } = yield* deploymentSetup(
+      "deploy",
+      network,
+    );
+    const ctx: DeployContext = { input, govAuth, stagingGovAuth, ...setup };
     const oneShots = yield* resolveUnspent(
       steps.map((step) => step.oneShotOf(ctx.config)),
     );
     const built = yield* Effect.forEach(steps, (step, i) =>
-      Effect.flatMap(step.build(ctx, oneShots[i]), (txBuilder) =>
+      Effect.flatMap(step.plan(ctx, oneShots[i]), (plan) =>
         Effect.map(
-          buildTx(txBuilder, {
+          compile(plan, {
+            ...compileOptions,
             commandName: `deploy/${step.name}`,
-            environment: network,
-            witnesses: DEPLOYER_ONLY,
-            knownUtxos: [oneShots[i], ctx.params.collateral],
           }),
           (tx) => builtDeployment(step.name, tx),
         ),

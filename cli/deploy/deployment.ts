@@ -1,6 +1,6 @@
 /**
  * What deploy and deploy-staging-track share: the setup (profile, build
- * contracts, deployer, signers, Blaze and the checked collateral), the
+ * contracts, the deployer wallet, signers and the checked collateral), the
  * forever datums, the transaction file entry and the script outputs of a
  * built transaction, and the header and closing report.
  */
@@ -8,15 +8,15 @@ import {
   CredentialType,
   PlutusData,
   type Transaction,
+  type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
-import type {
-  Blaze,
-  Provider as BlazeProvider,
-  Wallet,
-} from "@blaze-cardano/sdk";
 import { calculateRequiredCollateral } from "@blaze-cardano/tx";
 import { Effect, Either, Option } from "effect";
-import { type Environment, environmentOf } from "../config/network-mapping";
+import {
+  type Environment,
+  environmentOf,
+  slotConfigOf,
+} from "../config/network-mapping";
 import { DeployerAddress } from "../config/deployer";
 import { newSigners, permissionedCandidates } from "../config/intent-env";
 import { Profile } from "../config/profile";
@@ -45,6 +45,8 @@ import {
   PreconditionFailed,
   UtxoNotFound,
 } from "../errors";
+import { DEPLOYER_ONLY } from "../signing/signer";
+import type { CompileOptions } from "../tx/plan";
 import type { DeployParams } from "./builders";
 
 /** The fee a deployment's collateral must cover, before the protocol's percentage. */
@@ -111,21 +113,22 @@ export const resolveCollateral = (
 export interface DeploymentSetup {
   readonly config: NetworkConfig;
   readonly contracts: ContractInstances;
-  readonly deployer: string;
   readonly techAuthSigners: Signers;
   readonly councilSigners: Signers;
-  readonly blaze: Blaze<BlazeProvider, Wallet>;
+  /** The profile's collateral UTxO, checked against the protocol's collateral percentage. */
+  readonly collateral: TransactionUnspentOutput;
   readonly params: DeployParams;
+  /** How every deployment transaction is compiled but for its command name: the deployer's wallet and change address, no metadata or fee padding, the deployer's witness. */
+  readonly compile: Omit<CompileOptions, "commandName">;
 }
 
-/** The profile, the build contracts, the deployer, the signers to install, Blaze and the DeployParams with the checked collateral. */
+/** The profile, the build contracts, the signers to install, the checked collateral, the DeployParams and the compile options over the deployer's wallet. */
 export const deploymentSetup = (command: string, network: Environment) =>
   Effect.gen(function* () {
     const out = yield* Output;
     const provider = yield* Provider;
     const config = yield* Profile.config;
     const contracts = yield* Effect.flatMap(Blueprint, (b) => b.instances);
-    const deployer = (yield* DeployerAddress.address).toBech32();
     const techAuthSigners = yield* newSigners("TECH_AUTH_SIGNERS");
     const councilSigners = yield* newSigners("COUNCIL_SIGNERS");
     yield* out.log(`\nTotal tech auth signers: ${techAuthSigners.length}`);
@@ -135,7 +138,7 @@ export const deploymentSetup = (command: string, network: Environment) =>
     yield* out.log(`Total council signers: ${councilSigners.length}`);
     yield* out.log(`Number of council signer pairs: ${councilSigners.length}`);
 
-    const blaze = yield* provider.blazeFor(yield* deployerWallet);
+    const wallet = yield* deployerWallet;
     const protocolParams = yield* provider.parameters;
     const collateral = yield* resolveCollateral(
       command,
@@ -145,14 +148,21 @@ export const deploymentSetup = (command: string, network: Environment) =>
     const setup: DeploymentSetup = {
       config,
       contracts,
-      deployer,
       techAuthSigners,
       councilSigners,
-      blaze,
+      collateral,
       params: {
         networkId: environmentOf(network).networkId,
         coinsPerUtxoByte: protocolParams.coinsPerUtxoByte,
-        collateral,
+      },
+      compile: {
+        slotConfig: slotConfigOf(network),
+        wallet,
+        changeAddress: wallet.address,
+        feePadding: 0n,
+        metadata: Option.none(),
+        expectedWitnesses: DEPLOYER_ONLY,
+        contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
       },
     };
     return setup;

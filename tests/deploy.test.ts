@@ -4,6 +4,7 @@ import {
   NetworkId,
   PlutusData,
   Transaction,
+  type TransactionUnspentOutput,
   TxCBOR,
 } from "@blaze-cardano/core";
 import { parse } from "@blaze-cardano/data";
@@ -12,8 +13,8 @@ import { readFileSync } from "fs";
 import { Effect, Either, Layer, Option } from "effect";
 import * as Contracts from "../contract_blueprint_default";
 import {
-  buildThresholdDeploymentTx,
-  buildTwoStageDeploymentTx,
+  planThresholdDeployment,
+  planTwoStageDeployment,
   type DeployParams,
 } from "../cli/deploy/builders";
 import {
@@ -32,7 +33,7 @@ import {
 import type { PlutusJson } from "../cli/contracts/plutus-json";
 import { validatorName } from "../cli/contracts/snapshot/names";
 import { resolveCollateral, resolveUnspent } from "../cli/deploy/deployment";
-import { completeBuilder, sizeAtSubmit } from "../cli/tx/compile";
+import { completeBuilder, sizeAtSubmit, toTxBuilder } from "../cli/tx/compile";
 import { attachWitnesses, signTransaction } from "../cli/signing/signer";
 import { parsePrivateKey } from "../cli/datum/signers";
 import { validatorLabels } from "../cli/tx/labels";
@@ -81,10 +82,16 @@ const blueprint = BlueprintLive("emulator", "build");
 const oneShotOf = (addr: Address, component: DeployComponent) =>
   feeUtxo(addr, ...DEPLOY_STEPS[component].oneShotOf(profile));
 
-const params = (emulator: Emulator, addr: Address): DeployParams => ({
+const params = (emulator: Emulator): DeployParams => ({
   networkId: NetworkId.Testnet,
   coinsPerUtxoByte: emulator.params.coinsPerUtxoByte,
-  collateral: addCollateral(emulator, addr),
+});
+
+/** How a deployment's plan is built over the wallet at `addr`: its change address, no metadata or fee padding. */
+const compileOf = (addr: Address) => ({
+  changeAddress: addr,
+  feePadding: 0n,
+  metadata: Option.none(),
 });
 
 /** The script hashes the builder's draft registers as stake credentials. */
@@ -120,8 +127,8 @@ const buildGovAuths = {
   stagingGovAuth: contracts.stagingGovAuth.Script.hash(),
 };
 
-/** The component's step built over its one-shot, as deploy builds it, with the configuration over `settings` and these gov auth hashes. */
-const stepBuilder = (
+/** The component's step planned over its one-shot, as deploy plans it, with the configuration over `settings` and these gov auth hashes, and built over the wallet's Blaze. */
+const stepBuilder = async (
   component: DeployComponent,
   emulator: Emulator,
   blaze: BlazeOf,
@@ -131,44 +138,64 @@ const stepBuilder = (
 ) => {
   const oneShotUtxo = oneShotOf(addr, component);
   emulator.addUtxo(oneShotUtxo);
-  return runTest(
+  const plan = await runTest(
     Layer.merge(blueprint, settings),
-    DEPLOY_STEPS[component].build(
+    DEPLOY_STEPS[component].plan(
       {
         input: deployInput,
         ...govAuths,
         config: profile,
         contracts,
-        deployer: addr.toBech32(),
         techAuthSigners,
         councilSigners,
-        blaze,
-        params: params(emulator, addr),
+        collateral: addCollateral(emulator, addr),
+        params: params(emulator),
       },
       oneShotUtxo,
     ),
   );
+  return toTxBuilder(blaze, plan, compileOf(addr));
 };
 
-describe("deployment builders", () => {
+/** The main-gov threshold deployment over the UTxO, as a plan. */
+const mainGovPlan = (
+  emulator: Emulator,
+  addr: Address,
+  oneShotUtxo: TransactionUnspentOutput,
+) =>
+  planThresholdDeployment(
+    {
+      oneShotUtxo,
+      collateral: addCollateral(emulator, addr),
+      threshold: contracts.mainGovThreshold.Script,
+      datum: THRESHOLD,
+    },
+    params(emulator),
+  );
+
+describe("deployment plans", () => {
   test("a two-stage deployment over a UTxO that is not its one-shot is refused", async () => {
     await asFunded(async (emulator, blaze, addr) => {
       const other = feeUtxo(addr, randomHash(32), 0);
       emulator.addUtxo(other);
       await emulator.expectScriptFailure(
-        buildTwoStageDeploymentTx(
+        toTxBuilder(
           blaze,
-          {
-            oneShotUtxo: other,
-            twoStage: contracts.reserveTwoStage.Script,
-            forever: contracts.reserveForever.Script,
-            logic: contracts.reserveLogic.Script,
-            ...buildGovAuths,
-            foreverDatum: zeroForeverDatum,
-            foreverRedeemer: PlutusData.newInteger(0n),
-            registerLogic: false,
-          },
-          params(emulator, addr),
+          planTwoStageDeployment(
+            {
+              oneShotUtxo: other,
+              collateral: addCollateral(emulator, addr),
+              twoStage: contracts.reserveTwoStage.Script,
+              forever: contracts.reserveForever.Script,
+              logic: contracts.reserveLogic.Script,
+              ...buildGovAuths,
+              foreverDatum: zeroForeverDatum,
+              foreverRedeemer: PlutusData.newInteger(0n),
+              registerLogic: false,
+            },
+            params(emulator),
+          ),
+          compileOf(addr),
         ),
         NOT_ITS_ONE_SHOT,
       );
@@ -179,21 +206,13 @@ describe("deployment builders", () => {
     await asFunded(async (emulator, blaze, addr) => {
       const oneShotUtxo = oneShotOf(addr, "main-gov");
       emulator.addUtxo(oneShotUtxo);
-      const deployment = () =>
-        buildThresholdDeploymentTx(
-          blaze,
-          {
-            oneShotUtxo,
-            threshold: contracts.mainGovThreshold.Script,
-            datum: THRESHOLD,
-          },
-          params(emulator, addr),
-        );
+      const plan = mainGovPlan(emulator, addr, oneShotUtxo);
       const complete = (maxTxSize: number, witnesses: number) =>
-        completeBuilder(deployment(), "deploy/main-gov-threshold-deployment", {
-          maxTxSize,
-          witnesses,
-        });
+        completeBuilder(
+          toTxBuilder(blaze, plan, compileOf(addr)),
+          "deploy/main-gov-threshold-deployment",
+          { maxTxSize, witnesses },
+        );
       const tx = await runTest(PlatformLive, complete(16_384, 0));
       const unsigned = sizeAtSubmit(tx, 0);
       const signed = attachWitnesses(
@@ -227,14 +246,10 @@ describe("deployment builders", () => {
       const tx = await runTest(
         PlatformLive,
         completeBuilder(
-          buildThresholdDeploymentTx(
+          toTxBuilder(
             blaze,
-            {
-              oneShotUtxo,
-              threshold: contracts.mainGovThreshold.Script,
-              datum: THRESHOLD,
-            },
-            params(emulator, addr),
+            mainGovPlan(emulator, addr, oneShotUtxo),
+            compileOf(addr),
           ),
           "deploy/main-gov-threshold-deployment",
           { maxTxSize: 16_384, witnesses: 0 },
@@ -255,15 +270,7 @@ describe("deployment builders", () => {
       const other = feeUtxo(addr, randomHash(32), 0);
       emulator.addUtxo(other);
       await emulator.expectScriptFailure(
-        buildThresholdDeploymentTx(
-          blaze,
-          {
-            oneShotUtxo: other,
-            threshold: contracts.mainGovThreshold.Script,
-            datum: THRESHOLD,
-          },
-          params(emulator, addr),
-        ),
+        toTxBuilder(blaze, mainGovPlan(emulator, addr, other), compileOf(addr)),
         NOT_ITS_ONE_SHOT,
       );
     });
