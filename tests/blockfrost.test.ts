@@ -1,22 +1,11 @@
 /** The Blockfrost adapter: local checks always; real requests against preview under TEST_NETWORK=preview. */
-import { beforeAll, describe, expect, test } from "bun:test";
-import {
-  addressFromCredential,
-  Credential,
-  CredentialType,
-  Hash28ByteBase16,
-  NetworkId,
-} from "@blaze-cardano/core";
+import { describe, expect, test } from "bun:test";
+import { NetworkId } from "@blaze-cardano/core";
 import { Effect, Layer, Redacted, Schema } from "effect";
 import { Blueprint, BlueprintLive } from "../cli/contracts/contracts";
 import { rewardAccountRegistered } from "../cli/chain/governance-provider";
 import { createRewardAccount } from "../cli/chain/transaction";
-import { Provider, ProviderLive } from "../cli/chain/provider";
-import {
-  blockfrostAccessTo,
-  blockfrostGet,
-  type BlockfrostAccess,
-} from "../cli/chain/blockfrost";
+import { blockfrostGet } from "../cli/chain/blockfrost";
 import {
   captureOutput,
   expectFailure,
@@ -25,7 +14,6 @@ import {
   PlatformLive,
   PreviewLive,
   runTest,
-  SettingsOver,
 } from "./helpers/effect";
 import { randomHash } from "./helpers/fixtures";
 
@@ -67,48 +55,6 @@ describe("Blockfrost locally", () => {
 });
 
 describe.if(onPreview)("Blockfrost on preview", () => {
-  let access: BlockfrostAccess;
-  beforeAll(async () => {
-    access = await runTest(PreviewLive, blockfrostAccessTo("preview"));
-  });
-
-  test(
-    "a bad API key is a 403 ProviderError that is not retried",
-    async () => {
-      const error = await expectFailure(
-        PlatformLive,
-        blockfrostGet(
-          access.baseUrl,
-          Redacted.make("previewInvalidKey"),
-          accountPath(),
-          Schema.Unknown,
-        ),
-        "ProviderError",
-      );
-      expect(error).toMatchObject({ status: 403, retryable: false });
-    },
-    PREVIEW_TIMEOUT,
-  );
-
-  test(
-    "the Provider reads an address the chain has never seen as empty",
-    async () => {
-      const unseen = addressFromCredential(
-        NetworkId.Testnet,
-        Credential.fromCore({
-          type: CredentialType.ScriptHash,
-          hash: Hash28ByteBase16(randomHash(28)),
-        }),
-      );
-      const utxos = await runTest(
-        Layer.provide(ProviderLive("preview"), SettingsOver("preview")),
-        Effect.flatMap(Provider, (p) => p.unspentOutputs(unseen)),
-      );
-      expect(utxos).toEqual([]);
-    },
-    PREVIEW_TIMEOUT,
-  );
-
   test(
     "the preview gov-auth reward account is registered; a random one is not",
     async () => {

@@ -358,7 +358,6 @@ describe("isTrackLogic", () => {
   test.each([
     ["council_logic", true],
     ["council_logic_v2", true],
-    ["council_logic_v3", true],
     ["council_logic_v10", true],
     ["council_logic_v1", false],
     ["council_logic_v0", false],

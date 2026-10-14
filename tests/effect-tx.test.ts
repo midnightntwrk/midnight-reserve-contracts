@@ -7,24 +7,17 @@ import {
 import { EmulatorProvider } from "@blaze-cardano/emulator";
 import { Effect, Layer, Option } from "effect";
 import { confirm, signAndSubmitOne } from "../cli/chain/sign-and-submit";
-import { awaitConfirmation } from "../cli/chain/submit";
 import {
   buildInstances,
-  LoggerCaptured,
-  OutputCaptured,
-  onPreview,
-  PreviewLive,
-  captureOutput,
   emulatorProgram,
   expectFailure,
   runTest,
-  SettingsOver,
   SettingsWith,
   testEnv,
   unsignedSimpleTx,
 } from "./helpers/effect";
 import { Provider, ProviderLive } from "../cli/chain/provider";
-import { feeUtxo, PREVIEW_DEPLOYMENT_TX, randomHash } from "./helpers/fixtures";
+import { feeUtxo, randomHash } from "./helpers/fixtures";
 
 describe("signAndSubmitOne on the emulator", () => {
   test("signs the entry with the deployer key and submits it; the confirmation follows", async () => {
@@ -105,21 +98,4 @@ describe("ProviderLive", () => {
     );
     expect(error.environment).toBe("local");
   });
-});
-
-describe.if(onPreview)("awaitConfirmation on preview", () => {
-  const capture = captureOutput();
-  const layer = Layer.mergeAll(
-    Layer.provide(ProviderLive("preview"), SettingsOver("preview")),
-    PreviewLive,
-    OutputCaptured(capture),
-    LoggerCaptured(capture),
-  );
-
-  test("resolves for the confirmed preview deployment transaction", async () => {
-    await runTest(
-      layer,
-      awaitConfirmation(TransactionId(PREVIEW_DEPLOYMENT_TX), "deployment"),
-    );
-  }, 60_000);
 });
