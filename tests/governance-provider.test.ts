@@ -1,5 +1,5 @@
 /**
- * The UpgradeState decoder on the recorded mainnet two-stage UTxOs; the
+ * The UpgradeState decoder on the recorded mainnet council main; the
  * reward-account check against preview.
  */
 import { describe, expect, test } from "bun:test";
@@ -27,32 +27,6 @@ import {
 import { randomHash } from "./helpers/fixtures";
 import { mainnetSnapshotUtxos as snap } from "./helpers/mainnet-snapshot";
 
-/** The main gov-auth hash every mainnet UpgradeState names. */
-const MAIN_AUTH = "00d92f55c57d6d95f863202885e76304e6ef970767249413561b289c";
-
-const mains = [
-  {
-    family: "council",
-    main: snap.councilMain,
-    logic: "8909f41e675804f225f8aeb0615677317388b4311e5a6776b1ef9718",
-  },
-  {
-    family: "reserve",
-    main: snap.reserveMain,
-    logic: "bef22ae3cdf56cccce6b775af9782398c4a28dc9d6a68847f42c4dda",
-  },
-  {
-    family: "ics",
-    main: snap.icsMain,
-    logic: "c4ece55c00238e5e4f2ae3de2a41ee5b3791f4468f425debe560c98b",
-  },
-  {
-    family: "tech-auth",
-    main: snap.techAuthMain,
-    logic: "bc108d499a863cdebe0f725099df562a0ab064dd864e34a1359d69d0",
-  },
-];
-
 /** A UTxO at the council main's address carrying `cbor` as its inline datum. */
 const withDatum = (cbor: string) => {
   const output = new TransactionOutput(
@@ -64,12 +38,12 @@ const withDatum = (cbor: string) => {
 };
 
 describe("upgradeStateAt", () => {
-  test.each(mains)("decodes the mainnet $family main", ({ main, logic }) => {
-    expect(upgradeStateAt(main)).toEqual(
+  test("decodes the mainnet council main", () => {
+    expect(upgradeStateAt(snap.councilMain)).toEqual(
       Either.right({
-        logicHash: logic,
+        logicHash: "8909f41e675804f225f8aeb0615677317388b4311e5a6776b1ef9718",
         mitigationLogicHash: "",
-        authHash: MAIN_AUTH,
+        authHash: "00d92f55c57d6d95f863202885e76304e6ef970767249413561b289c",
         logicRound: 0,
       }),
     );

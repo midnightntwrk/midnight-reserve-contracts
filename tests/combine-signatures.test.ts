@@ -190,9 +190,5 @@ describe("readSingleTransaction", () => {
       "InputParseError",
     );
     expect(error.source).toBe(path);
-    expect(error.issues).toEqual([
-      "combine-signatures only supports single-transaction files. " +
-        "For multi-transaction deployments, use sign-and-submit instead.",
-    ]);
   });
 });

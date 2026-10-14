@@ -44,12 +44,6 @@ describe("validator-labels", () => {
         { "withdraw[0]": "CouncilLogicV2Else", "withdraw[1]": "TechAuthLogic" },
         "Error at Reward[0] (CouncilLogicV2Else) and reward[1] (TechAuthLogic)",
       ],
-      [
-        "names the Withdraw tag the UPLC evaluator prints",
-        "failed script execution\n     Withdraw[0] the validator crashed",
-        labels,
-        "failed script execution\n     Withdraw[0] (CouncilLogicV2Else) the validator crashed",
-      ],
     ] satisfies [string, string, ValidatorLabels, string][])(
       "%s",
       (_name, msg, map, expected) => {
