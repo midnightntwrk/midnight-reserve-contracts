@@ -108,11 +108,11 @@ flowchart TB
 
 | Module | May import | Must not import |
 |---|---|---|
-| `tx/**` | Blaze, `chain/provider`, `output`, `errors` | `contracts/**`, `config/**`, `signing/**` |
-| a command's `plan*` | `tx/plan`, `tx/scripts`, `datum/**` | `effect` services, `chain/**`, `config/**`, `contracts/**` |
+| `tx/**` | Blaze, `chain/provider`, `output`, `errors`, `datum/**` | `contracts/**`, `config/**`, `signing/**`, `chain/**` other than `chain/provider` |
+| a command's `plan*` | `tx/plan`, `tx/scripts`, `datum/**` | `effect` services, `chain/**`, `config/**`, `contracts/**` (enforced for `deploy/builders`, whose module holds only plans) |
 | `signing/**` | `config/keys` | `contracts/**` |
-| `config/keys` | — | imported only by `signing/**` |
-| `config/provider-config` | — | imported only by `chain/provider`, `chain/blockfrost` |
+| `config/keys` | — | imported only by `signing/**` and `run.ts` (the layers) |
+| `config/provider-config` | — | imported only by `chain/provider`, `chain/blockfrost`, `chain/registration`, `run.ts` |
 | `contracts/snapshot/write` | — | imported only by `deploy/**`, `governance/two-stage-upgrade/logic-record` |
 | `contracts/snapshot/read` | — | imported only by `contracts/**`, `deploy/**`, `governance/two-stage-upgrade/**`, `report/verify` |
 | `contracts/bindings` | — | imported only by `contracts/build`, `contracts/snapshot/write` |

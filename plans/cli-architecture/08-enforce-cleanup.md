@@ -51,3 +51,41 @@ One commit per task.
   (`grep -rn blazeFor cli`). `tests/deploy.test.ts` still calls it once, to
   test the Provider's GuardedWallet coin selection; the lint rule of task 3
   covers `cli/**` only.
+- Task 3: the dependency rules are not per-folder `no-restricted-imports`
+  blocks. A rule such as "imported only by `deploy/**`" depends on the
+  importer, and a later flat-config block replaces an earlier one, so
+  overlapping folder blocks would drop each other's rules. `eslint.config.js`
+  holds the rules as `forbids(from, to)` predicates over module paths
+  (`BOUNDARIES`) and generates, for each `cli/` module that breaks one, one
+  block whose `paths` are the exact specifiers of the forbidden modules
+  (`./config/keys`, `../config/keys`, …) after the shared `fs` /
+  `child_process` list. Each message names its rule. The `blazeFor` rule is
+  a separate block over `cli/**` minus `cli/tx/**` and
+  `cli/chain/provider.ts`; it repeats the `ThrowStatement` and
+  `TryStatement` selectors and also refuses `{ blazeFor }` destructuring.
+- Task 3: the rules enforce the table's "must not import" column, with
+  these differences, all in the index table too. `config/keys` and
+  `config/provider-config` are also imported by `run.ts`, which builds their
+  layers, and `provider-config` by `chain/registration`, a Blockfrost read
+  beside `chain/blockfrost`. `tx/**` may import `datum/**` (`tx/scripts`
+  takes `Signers`), and `chain/**` only through `chain/provider`
+  (`tx/labels` no longer imports `chain/utxo`, see task 1).
+- Task 3: "a command's `plan*` imports no effect services" is enforced only
+  for `deploy/builders`, the one module that holds nothing but plans. Plans
+  elsewhere share a file with their `resolve*` and program (`governance/*`,
+  `wallet/*`), so a per-module import rule cannot separate them; they stay
+  checked by review and by the plans' pure signatures. The `effect` package
+  itself cannot be refused: plans use `Option`.
+- Task 3: the rules cover imports written as module specifiers. A dynamic
+  `import()` or an import through a re-export is not covered; `cli/` has no
+  re-exports (phase 01 rule).
+- Task 3: probe, run once and deleted. One file per folder (`cli/tx/`,
+  `cli/signing/`, `cli/governance/`, `cli/contracts/snapshot/`) with one
+  violation per rule, plus the leaf rule and the pure-plans rule appended
+  to `snapshot/context.ts` and `deploy/builders.ts` and reverted. `bun run
+  lint` refused 18 lines: `no-restricted-imports` for the `fs` ban, the
+  `tx/**`, `deploy/builders`, `signing/**`, `config/keys`,
+  `config/provider-config`, `snapshot/write`, `snapshot/read`,
+  `snapshot/storage`, `bindings`, `build-engine`, leaf and no-output rules,
+  and `no-restricted-syntax` for `provider.blazeFor` and `{ blazeFor }`.
+  `import "../chain/provider"` from `tx/` passed.
