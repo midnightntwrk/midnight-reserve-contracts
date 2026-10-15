@@ -92,6 +92,52 @@ reads none of them (`build`,
 domain folder that owns it (`cli/governance/`, `cli/chain/`,
 `cli/report/`, ...).
 
+A command that builds a transaction has the same four steps in its program
+(`governance/merge-utxos.ts` is the shortest example):
+
+1. `resolve*` reads the chain, the blueprint and the profile, reports what
+   it found, and returns the plan's inputs, its domain params and the
+   change address.
+2. `plan*` is a pure function of those: it returns a `TxPlan`
+   (`cli/tx/plan.ts`: spends, references, scripts, mints, outputs,
+   withdrawals, registrations, collateral, required signatures) or a typed
+   failure. It reads no service and builds no Blaze transaction.
+3. `compile(plan, options)` (`cli/tx/compile.ts`) builds Blaze over the
+   wallet in `options` (`deployerWallet`, or the user's), runs the local
+   UPLC check, completes the transaction and checks its size with the
+   witnesses `options.expectedWitnesses` it will carry. It is the only
+   caller of `Provider.blazeFor`.
+4. `signAndWrite(tx, path, signer, description)` writes the transaction
+   file (`{description, cborHex, txHash, signed}`), signed by `signerFor` or
+   `UNSIGNED`.
+
+The dependency rules between the folders are in `eslint.config.js`, so
+`bun run lint` (part of `just check`) refuses a breach. Each module must not
+import:
+
+| Module | Must not import |
+|---|---|
+| `tx/**` | `contracts/**`, `config/**`, `signing/**`, `chain/**` other than `chain/provider` |
+| `deploy/builders` (plans only) | `chain/**`, `config/**`, `contracts/**`, `output` |
+| `signing/**` | `contracts/**` |
+| `contracts/snapshot/**`, `contracts/bindings` | `output` |
+| `contracts/snapshot/names`, `contracts/snapshot/context` | anything under `contracts/snapshot/` |
+
+and each of these is imported only by the modules listed:
+
+| Module | Imported only by |
+|---|---|
+| `config/keys` | `signing/**`, `run.ts` |
+| `config/provider-config` | `chain/provider`, `chain/blockfrost`, `chain/registration`, `run.ts` |
+| `contracts/snapshot/write` | `deploy/**`, `governance/two-stage-upgrade/logic-record` |
+| `contracts/snapshot/read` | `contracts/**`, `deploy/**`, `governance/two-stage-upgrade/**`, `report/verify` |
+| `contracts/bindings` | `contracts/build`, `contracts/snapshot/write` |
+| `contracts/snapshot/storage` | `contracts/snapshot/read`, `contracts/snapshot/write` |
+| `contracts/build-engine` | `contracts/build`, `commands/build` |
+
+A plan in the same file as its `resolve*` (as in `governance/`) is kept
+pure by review; the lint rule cannot separate them.
+
 ## Environment Configuration
 
 The CLI maps Midnight deployment environments to their underlying Cardano networks:

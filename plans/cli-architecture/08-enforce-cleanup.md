@@ -89,3 +89,7 @@ One commit per task.
   `snapshot/storage`, `bindings`, `build-engine`, leaf and no-output rules,
   and `no-restricted-syntax` for `provider.blazeFor` and `{ blazeFor }`.
   `import "../chain/provider"` from `tx/` passed.
+- Task 4: the existing "Adding a command" text had no `build*Tx` wording
+  and its `withServices` text is still right, so it stays; the new section
+  follows it. The transaction file's fields are `description`, `cborHex`,
+  `txHash`, `signed` (`signing/tx-file.ts`), not `txId`.
