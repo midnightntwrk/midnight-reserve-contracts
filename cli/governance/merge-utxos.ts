@@ -271,9 +271,6 @@ export const resolveMerge = (input: MergeUtxosInput) =>
 export const mergeUtxosProgram = (input: MergeUtxosInput) =>
   Effect.gen(function* () {
     const { inputs, params, changeAddress } = yield* resolveMerge(input);
-    yield* Effect.flatMap(Output, (out) =>
-      out.log("\nBuilding transaction..."),
-    );
     const plan = yield* planMerge(inputs, params);
     const tx = yield* compile(plan, {
       commandName: COMMAND,

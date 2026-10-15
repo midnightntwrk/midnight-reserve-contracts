@@ -215,9 +215,12 @@ export const toTxBuilder = (
   return txBuilder.setFeePadding(options.feePadding);
 };
 
-/** Compile a plan over the wallet's Blaze: the local UPLC check over the UTxOs it spends, references and offers as collateral, then completion and the size check (completeChecked). */
+/** Compile a plan over the wallet's Blaze: announce the build, run the local UPLC check over the UTxOs it spends, references and offers as collateral, then complete and size-check it (completeChecked). */
 export const compile = (plan: TxPlan, options: CompileOptions) =>
   Effect.gen(function* () {
+    yield* Effect.flatMap(Output, (output) =>
+      output.log("\nBuilding transaction..."),
+    );
     const blaze = yield* Effect.flatMap(Provider, (provider) =>
       provider.blazeFor(options.wallet),
     );

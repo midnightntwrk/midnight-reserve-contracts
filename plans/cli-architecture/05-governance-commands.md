@@ -63,8 +63,12 @@ after phase 01) stays one file.
   (governed-forever, terms, federated-ops, migration, run-cnight-mint,
   register-stake, mint-staging-state). `planMultisigChange` keeps
   `Either`, for the failure on more than 255 signers.
-- No program gained a "Building transaction..." line: only merge-utxos
-  ever printed it. Stdout is unchanged everywhere.
+- At first no program gained a "Building transaction..." line, since only
+  merge-utxos printed it. Later, at the user's request, `compile` prints
+  it once before it builds, so every ported command prints it (deploy and
+  deploy-staging-track once per transaction), and merge-utxos no longer
+  prints its own. On merge's failure path, a `planMerge` error (first UTxO
+  without a datum) now comes before the line, not after it.
 - Programs that take `--sign` still call `signerFor` before `resolve*`, so
   a missing key fails before any output.
 - `deployerWallet` is now read after resolve, and Blaze is built inside
