@@ -253,7 +253,7 @@ export function saveVersionSnapshot(
     // Regenerate contract_blueprint.ts from merged plutus.json
     const blueprintOutputPath = resolve(basePath, "contract_blueprint.ts");
     execFileSync("bunx", [
-      "@blaze-cardano/blueprint@latest",
+      "@blaze-cardano/blueprint@0.9.0",
       mergedPlutusPath,
       "-o",
       blueprintOutputPath,
@@ -358,7 +358,7 @@ export function mergeValidatorToDeployedScripts(
   // Regenerate contract_blueprint.ts from merged plutus.json
   const blueprintOutputPath = resolve(basePath, "contract_blueprint.ts");
   execFileSync("bunx", [
-    "@blaze-cardano/blueprint@latest",
+    "@blaze-cardano/blueprint@0.9.0",
     deployedPlutusPath,
     "-o",
     blueprintOutputPath,

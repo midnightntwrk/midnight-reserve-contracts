@@ -31,6 +31,7 @@ Files that existed at commit ca38d87 (the audited commit) are **immutable**. Nev
 - `lib/logic/types.ak` is audited — new types go in `lib/logic/types_v2.ak`
 - Original `.ak` files must stay unchanged (except `lib/auth/staging.ak`)
 - Post-audit files (`validators/staging_*.ak`, `lib/forever/staging.ak`) are freely editable
+- **Committee bridge exception:** `lib/bridge/*`, `validators/committee_bridge.ak`, and the `beefy_signer_threshold` validator plus `beefy_validation` in `validators/thresholds.ak` are editable in place. Nothing bridge-related is deployed, and the bridge is re-audited after the MIP alignment in `plans/bridge/`. The other validators in `thresholds.ak` stay immutable.
 
 ## Aiken v1.1.21 Gotchas
 
@@ -49,4 +50,5 @@ Architecture patterns derived from:
 - [Code Conventions](.claude/docs/code-conventions.md)
 - [Testing](.claude/docs/testing.md)
 - [Live Deployment Runbook](.claude/docs/live-deployment.md)
-- [SPEC.md](SPEC.md) - detailed architecture context
+- [docs/governance/](docs/governance/) - validator constraints, transactions, upgrade flow
+- [docs/bridge/](docs/bridge/) - committee bridge spec; implementation plan in [plans/bridge/](plans/bridge/)

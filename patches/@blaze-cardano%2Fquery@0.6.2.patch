@@ -1,0 +1,44 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index b6886f1..d852194 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -1097,7 +1097,7 @@ var Kupmios = class Kupmios extends Provider {
+ 			const additionalInputs = additionalUtxos.map((utxo) => utxo.input());
+ 			const utxosToDrop = await this.resolveUnspentOutputs(additionalInputs);
+ 			const additional_utxos = Kupmios.serializeUtxos(additionalUtxos.filter((utxo) => {
+-				return !utxosToDrop.includes(utxo);
++				return !utxosToDrop.some((dropped) => dropped.input().toCbor() === utxo.input().toCbor());
+ 			}));
+ 			return this.ogmios.evaluateTransaction({ cbor: tx.toCbor() }, additional_utxos).then((results) => {
+ 				if (results.length !== redeemers.length) throw new Error("Kupmios endpoint returned inconsistent length of the redeemers");
+@@ -1106,7 +1106,7 @@ var Kupmios = class Kupmios extends Provider {
+ 						memory: redeemerData.budget.memory,
+ 						steps: redeemerData.budget.cpu
+ 					});
+-					const redeemer = redeemers.find((x) => Number(x.index()) === redeemerData.validator.index && (x.tag() === purposeToTag[redeemerData.validator.purpose] || redeemerData.validator.purpose === "withdraw" && x.tag() === _blaze_cardano_core.RedeemerTag.Reward));
++					const redeemer = redeemers.find((x) => Number(x.index()) === redeemerData.validator.index && (x.tag() === purposeToTag[redeemerData.validator.purpose] || redeemerData.validator.purpose === "withdraw" && x.tag() === _blaze_cardano_core.RedeemerTag.Reward || redeemerData.validator.purpose === "publish" && x.tag() === _blaze_cardano_core.RedeemerTag.Cert));
+ 					if (!redeemer) throw new Error("Kupmios endpoint returned extraneous redeemer data");
+ 					redeemer.setExUnits(exUnits);
+ 					return redeemer.toCore();
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 2c01741..90274d1 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -1073,7 +1073,7 @@ var Kupmios = class Kupmios extends Provider {
+ 			const additionalInputs = additionalUtxos.map((utxo) => utxo.input());
+ 			const utxosToDrop = await this.resolveUnspentOutputs(additionalInputs);
+ 			const additional_utxos = Kupmios.serializeUtxos(additionalUtxos.filter((utxo) => {
+-				return !utxosToDrop.includes(utxo);
++				return !utxosToDrop.some((dropped) => dropped.input().toCbor() === utxo.input().toCbor());
+ 			}));
+ 			return this.ogmios.evaluateTransaction({ cbor: tx.toCbor() }, additional_utxos).then((results) => {
+ 				if (results.length !== redeemers.length) throw new Error("Kupmios endpoint returned inconsistent length of the redeemers");
+@@ -1082,7 +1082,7 @@ var Kupmios = class Kupmios extends Provider {
+ 						memory: redeemerData.budget.memory,
+ 						steps: redeemerData.budget.cpu
+ 					});
+-					const redeemer = redeemers.find((x) => Number(x.index()) === redeemerData.validator.index && (x.tag() === purposeToTag[redeemerData.validator.purpose] || redeemerData.validator.purpose === "withdraw" && x.tag() === RedeemerTag.Reward));
++					const redeemer = redeemers.find((x) => Number(x.index()) === redeemerData.validator.index && (x.tag() === purposeToTag[redeemerData.validator.purpose] || redeemerData.validator.purpose === "withdraw" && x.tag() === RedeemerTag.Reward || redeemerData.validator.purpose === "publish" && x.tag() === RedeemerTag.Cert));
+ 					if (!redeemer) throw new Error("Kupmios endpoint returned extraneous redeemer data");
+ 					redeemer.setExUnits(exUnits);
+ 					return redeemer.toCore();

@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  #v7.0.1
       - uses: aiken-lang/setup-aiken@1728a4be43be099752e22d8b841706caaa6fdd88  #v1.0.4
         with:
-          version: v1.1.19
+          version: v1.1.21
       - run: aiken fmt --check
       - run: aiken check
       - run: aiken build
