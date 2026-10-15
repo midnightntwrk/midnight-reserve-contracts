@@ -93,3 +93,38 @@ One commit per task.
   and its `withServices` text is still right, so it stays; the new section
   follows it. The transaction file's fields are `description`, `cborHex`,
   `txHash`, `signed` (`signing/tx-file.ts`), not `txId`.
+
+## Build-only QA on preview (2026-10-15)
+
+Every transaction command was run with `-n preview -o <dir>` (no `--sign`;
+governance commands with `--no-sign`; no `sign-and-submit`) from this
+branch and from the `cli/04-effect` commit, over the same preview state
+(deployer fee UTxO `8fdf3058…#1`, ICS forever UTxOs `c07f78d3…#0`/`#1`).
+For each run the output lines and the transaction file (`txHash`,
+`cborHex`, `signed`, `description`) were compared.
+
+- Built, file equal to the baseline's (same `txHash` and `cborHex`):
+  `merge-utxos` (ICS #0 + #1), `change-council`, `change-tech-auth`,
+  `change-federated-ops`, `change-terms`, `mint-tcnight` (mint 100),
+  `simple-tx` (2 × 5 ADA), `stage-upgrade` (federated-ops, tech-auth,
+  council with `--use-build`), `promote-upgrade` (council, tech-auth,
+  federated-ops, reserve, ics, terms-and-conditions).
+- Refused identically by both, with the same message: `deploy` (every
+  component: the profile's one-shot `b585c885…#15` is not at the deployer
+  any more; `cnight-minting` is not in the preview blueprint),
+  `deploy-staging-track` (no staging forever in the preview build),
+  `migrate-federated-ops` (active logic is still v1),
+  `mint-staging-state` (no v2 logic in the build; no staging forever for
+  federated-ops), `register-gov-auth` (already registered),
+  `register-cnight-mint-logic` and `run-cnight-mint-mainnet` (no cNIGHT
+  contracts in the preview blueprint, with or without `--use-build`).
+- Output lines differ in one way: a `Building transaction...` line before
+  the local UPLC lines in the commands that did not print it before. That
+  is the previous commit's change ("compile prints it for every command"),
+  not this phase's. The `stage-upgrade` refusal for an unknown hash names
+  the workspace path of the build, which differs by workspace only.
+- Not reachable on preview: `deploy`, `deploy-staging-track`,
+  `migrate-federated-ops`, `mint-staging-state`, `register-gov-auth`,
+  `register-cnight-mint-logic` and `run-cnight-mint-mainnet` build no
+  transaction from current preview state, so no preview build of them was
+  compared.
