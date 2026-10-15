@@ -86,7 +86,7 @@ flowchart TB
 - `Blueprint` is the contract resolver. It reads artifacts; it never runs a
   build. `--use-build` (`withServicesUseBuild`) picks the build output
   instead of the snapshot. `build-engine.ts` is reached only from
-  `commands/build.ts` and `contracts/build.ts`.
+  `commands.ts` and `contracts/build.ts`.
 - The deployed-scripts snapshot is a manifest the CLI writes when it builds
   transactions, not chain truth. Chain truth is `Provider`.
   A `RecordUpdate` is a workflow output, prepared during the command's
@@ -119,7 +119,7 @@ flowchart TB
 | `contracts/snapshot/storage` | — | imported only by `contracts/snapshot/read`, `contracts/snapshot/write` |
 | `contracts/snapshot/names`, `contracts/snapshot/context` | — | anything under `contracts/snapshot/` (they are the leaves) |
 | `contracts/snapshot/**`, `contracts/bindings` | — | `output` (the contract system returns outcomes; commands print) |
-| `contracts/build-engine` | `contracts/snapshot/read` | imported only by `contracts/build`, `commands/build` |
+| `contracts/build-engine` | `contracts/snapshot/read` | imported only by `contracts/build`, `commands` |
 
 ## Phases
 

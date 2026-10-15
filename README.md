@@ -78,7 +78,7 @@ bun run cli/index.ts deploy --network preview
 bun run cli/index.ts sign-and-submit deployments/preview/deployment-transactions.json --network preview
 ```
 
-Adding a command: create `cli/commands/<name>.ts` with an `@effect/cli`
+Adding a command: declare it in `cli/commands.ts` as an `@effect/cli`
 `Command.make` over its options: the shared ones from `cli/options.ts` and
 its own, each text value parsed at the boundary (`parsedText`). Its handler
 is the program. Pipe it through the `cli/run.ts` helper that gives it the
@@ -87,8 +87,8 @@ Blueprint and Provider over the `"deployed"` or `"build"` blueprint),
 `withServicesUseBuild` (the same, with the blueprint from `--use-build`) or
 `withProvider` (the configuration services and Provider); a command that
 reads none of them (`build`,
-`generate-key`) takes no helper. Add it to the root in
-`cli/index.ts`. The program takes a typed input record and lives in the
+`generate-key`) takes no helper. Add it to the `commands` array at the end
+of `cli/commands.ts`. The program takes a typed input record and lives in the
 domain folder that owns it (`cli/governance/`, `cli/chain/`,
 `cli/report/`, ...).
 
@@ -133,7 +133,7 @@ and each of these is imported only by the modules listed:
 | `contracts/snapshot/read` | `contracts/**`, `deploy/**`, `governance/two-stage-upgrade/**`, `report/verify` |
 | `contracts/bindings` | `contracts/build`, `contracts/snapshot/write` |
 | `contracts/snapshot/storage` | `contracts/snapshot/read`, `contracts/snapshot/write` |
-| `contracts/build-engine` | `contracts/build`, `commands/build` |
+| `contracts/build-engine` | `contracts/build`, `commands` |
 
 A plan in the same file as its `resolve*` (as in `governance/`) is kept
 pure by review; the lint rule cannot separate them.

@@ -127,9 +127,9 @@ const BOUNDARIES = [
     forbids: (from, to) => within(from, "contracts/snapshot", "contracts/bindings") && to === "output",
   },
   {
-    message: "contracts/build-engine is imported only by contracts/build and commands/build.",
+    message: "contracts/build-engine is imported only by contracts/build and commands.",
     forbids: (from, to) =>
-      to === "contracts/build-engine" && !within(from, "contracts/build", "commands/build"),
+      to === "contracts/build-engine" && !within(from, "contracts/build", "commands"),
   },
 ];
 

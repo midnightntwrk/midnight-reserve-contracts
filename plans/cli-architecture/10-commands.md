@@ -32,3 +32,17 @@ One commit.
 - `help.test` unchanged and green; `bun cli/index.ts --help` and each
   command's `--help` print the same text as before (manual smoke, no test
   drives the binary).
+
+## Deviations
+
+- Options that only one command uses moved with it and are prefixed with the
+  command (`deployComponents`, `buildComponents`, `stageUpgradeValidator`,
+  `mintTcnightAmount`, ...), because several commands each had a local
+  `components`, `validator` or `amount`. Their flag names are unchanged.
+- `commands` is declared `as const`; `cli/commands.ts` is 691 lines, a flat
+  list of declarations in help order.
+- `eslint.config.js` allows `contracts/build-engine` to `commands` instead of
+  `commands/build`; README and `00-index.md` / `09-contract-system.md` name the
+  new module.
+- Help output: `--help` of the root and of all 23 commands is byte-identical
+  to the tree before the change.

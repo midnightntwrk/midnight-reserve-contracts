@@ -9,7 +9,7 @@ has four parts, and today two of them share `contracts/versions.ts`
 
 | Part | Today | Consumers |
 |---|---|---|
-| Build | `contracts/build-engine.ts`, `contracts/build.ts` | `commands/build.ts` |
+| Build | `contracts/build-engine.ts`, `contracts/build.ts` | `commands.ts` |
 | Bindings (TypeScript blueprint generation) | `generateBlueprint` in `versions.ts` | `build.ts`, the snapshot writes |
 | Deployed-scripts snapshot | `versions.ts`: reads (`readVersions`, `readRecord`, names, `promotedAmong`, `liveHashOf`) and writes (`stageValidator`, `promoteValidatorVersion`, validator merge, deploy snapshot) | build-engine (from-deployed pins), deploy, staging-track, two-stage-upgrade, verify |
 | Resolution | `Blueprint` (`contracts/contracts.ts`), deployed or build source | every transaction command, `report/` |
