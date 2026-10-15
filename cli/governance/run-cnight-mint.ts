@@ -17,7 +17,7 @@ import { environmentOf, slotConfigOf } from "../config/network-mapping";
 import { contractUtxos, deployerUtxo, deployerWallet } from "../chain/utxo";
 import { ensureRegistered } from "../chain/registration";
 import { upgradeScripts, upgradeStateAt } from "./two-stage";
-import { createRewardAccount, planWithdrawThroughLogic } from "../tx/scripts";
+import { createRewardAccount, withdrawThroughLogic } from "../tx/scripts";
 import type { TxPlan } from "../tx/plan";
 import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";
@@ -64,7 +64,7 @@ export const planRunCnightMint = (
         script: inputs.forever,
         redeemer,
       },
-      ...planWithdrawThroughLogic(
+      ...withdrawThroughLogic(
         inputs.logicScript,
         inputs.mitigationLogicScript,
         redeemer,

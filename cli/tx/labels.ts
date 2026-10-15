@@ -1,11 +1,15 @@
 import {
   type Transaction,
+  type TransactionInput,
   type TransactionUnspentOutput,
   CredentialType,
   AssetId,
   RewardAccount,
 } from "@blaze-cardano/core";
-import { refOf } from "../chain/utxo";
+
+/** The key a UTxO is looked up by within one transaction's labels. */
+const keyOf = (input: TransactionInput): string =>
+  `${input.transactionId()}#${input.index()}`;
 
 export interface ValidatorLabels {
   [indexRef: string]: string;
@@ -29,7 +33,7 @@ export function validatorLabels(
   const body = tx.body();
 
   const utxoMap = new Map(
-    knownUtxos.map((utxo) => [refOf(utxo.input()), utxo]),
+    knownUtxos.map((utxo) => [keyOf(utxo.input()), utxo]),
   );
 
   // matches Blaze insertSorted
@@ -41,7 +45,7 @@ export function validatorLabels(
 
   for (let i = 0; i < inputs.length; i++) {
     const input = inputs[i];
-    const utxo = utxoMap.get(refOf(input));
+    const utxo = utxoMap.get(keyOf(input));
     if (!utxo) continue;
 
     const paymentPart = utxo.output().address().getProps().paymentPart;

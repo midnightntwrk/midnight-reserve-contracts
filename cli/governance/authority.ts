@@ -24,7 +24,7 @@ import {
 import type { Environment } from "../config/network-mapping";
 import type { ContractUtxos } from "../chain/utxo";
 import { ensureRegistered } from "../chain/registration";
-import { createRewardAccount, planMintWitnesses } from "../tx/scripts";
+import { createRewardAccount, mintWitnesses } from "../tx/scripts";
 import type { TxPlan } from "../tx/plan";
 import { Output } from "../output";
 import { DatumParseError } from "../errors";
@@ -93,7 +93,7 @@ export const governanceAuthorityPlan = (
       authority.councilForeverUtxo,
       ...Option.toArray(authority.councilMainUtxo),
     ],
-    ...planMintWitnesses(
+    ...mintWitnesses(
       [
         {
           ...techAuth,

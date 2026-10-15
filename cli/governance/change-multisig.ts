@@ -35,8 +35,8 @@ import { signersAt, thresholdAt } from "./authority";
 import { twoStageLogic } from "./two-stage";
 import {
   logicRedeemer,
-  planMintWitnesses,
-  planWithdrawThroughLogic,
+  mintWitnesses,
+  withdrawThroughLogic,
 } from "../tx/scripts";
 import { signAndWrite, signerFor, witnessCount } from "../signing/signer";
 import { compile } from "../tx/compile";
@@ -162,7 +162,7 @@ export const planMultisigChange = (
         inputs.primaryTwoStageUtxo,
       ],
       scripts: [inputs.primaryForever],
-      ...planMintWitnesses(
+      ...mintWitnesses(
         [
           { ...primary, signers: inputs.currentPrimarySigners, assetName: "" },
           { ...secondary, signers: inputs.secondarySigners, assetName: "" },
@@ -181,7 +181,7 @@ export const planMultisigChange = (
           datum: newForeverStateCbor.toCore(),
         }),
       ],
-      withdrawals: planWithdrawThroughLogic(
+      withdrawals: withdrawThroughLogic(
         inputs.logicScript,
         inputs.mitigationLogicScript,
         logicRedeemer(innerRedeemer, inputs.logicRound),

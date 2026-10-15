@@ -33,7 +33,8 @@ import {
 import type { PlutusJson } from "../cli/contracts/plutus-json";
 import { validatorName } from "../cli/contracts/snapshot/names";
 import { resolveCollateral, resolveUnspent } from "../cli/deploy/deployment";
-import { completeBuilder, sizeAtSubmit, toTxBuilder } from "../cli/tx/compile";
+import { slotConfigOf } from "../cli/config/network-mapping";
+import { compile, sizeAtSubmit, toTxBuilder } from "../cli/tx/compile";
 import { attachWitnesses, signTransaction } from "../cli/signing/signer";
 import { parsePrivateKey } from "../cli/datum/signers";
 import { validatorLabels } from "../cli/tx/labels";
@@ -67,7 +68,6 @@ import {
   emulatorProfile,
   emulatorProgram,
   expectFailure,
-  PlatformLive,
   runTest,
   ConfigOver,
   ConfigWith,
@@ -202,66 +202,59 @@ describe("deployment plans", () => {
     });
   });
 
+  /** The main-gov threshold deployment over the emulator's deployer, compiled with `witnesses` vkey witnesses expected at submit. */
+  const mainGovCompiled = async () => {
+    const { emulator, layer, deployer } = await emulatorProgram();
+    const oneShotUtxo = oneShotOf(deployer, "main-gov");
+    emulator.addUtxo(oneShotUtxo);
+    const plan = mainGovPlan(emulator, deployer, oneShotUtxo);
+    const listed = await runTest(
+      blueprint,
+      Effect.flatMap(Blueprint, (b) => b.contracts),
+    );
+    const compileWith = (witnesses: number) =>
+      Effect.flatMap(deployerWallet, (wallet) =>
+        compile(plan, {
+          commandName: "deploy/main-gov-threshold-deployment",
+          slotConfig: slotConfigOf("emulator"),
+          wallet,
+          changeAddress: deployer,
+          feePadding: 0n,
+          metadata: Option.none(),
+          expectedWitnesses: witnesses,
+          contracts: listed,
+        }),
+      );
+    return { emulator, layer, oneShotUtxo, listed, compileWith };
+  };
+
   test("the size check counts the vkey witnesses: a transaction at the maximum unsigned is over it with one signature", async () => {
-    await asFunded(async (emulator, blaze, addr) => {
-      const oneShotUtxo = oneShotOf(addr, "main-gov");
-      emulator.addUtxo(oneShotUtxo);
-      const plan = mainGovPlan(emulator, addr, oneShotUtxo);
-      const complete = (maxTxSize: number, witnesses: number) =>
-        completeBuilder(
-          toTxBuilder(blaze, plan, compileOf(addr)),
-          "deploy/main-gov-threshold-deployment",
-          { maxTxSize, witnesses },
-        );
-      const tx = await runTest(PlatformLive, complete(16_384, 0));
-      const unsigned = sizeAtSubmit(tx, 0);
-      const signed = attachWitnesses(
-        tx.toCbor(),
-        signTransaction(tx.getId(), [
-          Either.getOrThrow(parsePrivateKey(testEnv("SIGNING_PRIVATE_KEY"))),
-        ]),
-      );
-      expect(signed.toCbor().length / 2).toBeGreaterThan(unsigned + 100);
-      expect(signed.toCbor().length / 2).toBeLessThanOrEqual(
-        sizeAtSubmit(tx, 1),
-      );
-      await runTest(PlatformLive, complete(unsigned, 0));
-      const error = await expectFailure(
-        PlatformLive,
-        complete(unsigned, 1),
-        "TxBuildError",
-      );
-      expect(error.size).toEqual({
-        bytes: unsigned + 107,
-        witnesses: 1,
-        max: unsigned,
-      });
+    const { emulator, layer, compileWith } = await mainGovCompiled();
+    const tx = await runTest(layer, compileWith(0));
+    const unsigned = sizeAtSubmit(tx, 0);
+    const signed = attachWitnesses(
+      tx.toCbor(),
+      signTransaction(tx.getId(), [
+        Either.getOrThrow(parsePrivateKey(testEnv("SIGNING_PRIVATE_KEY"))),
+      ]),
+    );
+    expect(signed.toCbor().length / 2).toBeGreaterThan(unsigned + 100);
+    expect(signed.toCbor().length / 2).toBeLessThanOrEqual(sizeAtSubmit(tx, 1));
+    emulator.params = { ...emulator.params, maxTxSize: unsigned };
+    await runTest(layer, compileWith(0));
+    const error = await expectFailure(layer, compileWith(1), "TxBuildError");
+    expect(error.size).toEqual({
+      bytes: unsigned + 107,
+      witnesses: 1,
+      max: unsigned,
     });
   });
 
   test("validatorLabels names the minted threshold policy by its blueprint class", async () => {
-    await asFunded(async (emulator, blaze, addr) => {
-      const oneShotUtxo = oneShotOf(addr, "main-gov");
-      emulator.addUtxo(oneShotUtxo);
-      const tx = await runTest(
-        PlatformLive,
-        completeBuilder(
-          toTxBuilder(
-            blaze,
-            mainGovPlan(emulator, addr, oneShotUtxo),
-            compileOf(addr),
-          ),
-          "deploy/main-gov-threshold-deployment",
-          { maxTxSize: 16_384, witnesses: 0 },
-        ),
-      );
-      const listed = await runTest(
-        BlueprintLive("emulator", "build"),
-        Effect.flatMap(Blueprint, (b) => b.contracts),
-      );
-      expect(validatorLabels(tx, [oneShotUtxo], listed)).toEqual({
-        "mint[0]": "ThresholdsMainGovThresholdElse",
-      });
+    const { layer, oneShotUtxo, listed, compileWith } = await mainGovCompiled();
+    const tx = await runTest(layer, compileWith(0));
+    expect(validatorLabels(tx, [oneShotUtxo], listed)).toEqual({
+      "mint[0]": "ThresholdsMainGovThresholdElse",
     });
   });
 

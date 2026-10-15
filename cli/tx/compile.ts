@@ -84,7 +84,7 @@ const describeBuildCause = (
 };
 
 /** What the completion needs beyond the builder. */
-export interface Completion {
+interface Completion {
   readonly commandName: string;
   /** The chain's slot configuration, for the local evaluator. */
   readonly slotConfig: SlotConfig;
@@ -97,7 +97,7 @@ export interface Completion {
 }
 
 /** Complete the builder, with the local evaluator when an advisory local UPLC run over the draft passed; a failure is a TxBuildError whose traces name the validators. */
-export const completeChecked = (
+const completeChecked = (
   txBuilder: TxBuilder,
   completion: Completion,
 ): Effect.Effect<
@@ -215,7 +215,7 @@ export const toTxBuilder = (
   return txBuilder.setFeePadding(options.feePadding);
 };
 
-/** Compile a plan over the wallet's Blaze: announce the build, run the local UPLC check over the UTxOs it spends, references and offers as collateral, then complete and size-check it (completeChecked). */
+/** Compile a plan over the wallet's Blaze: announce the build, run the local UPLC check over the UTxOs it spends, references and offers as collateral, then complete and size-check it. */
 export const compile = (plan: TxPlan, options: CompileOptions) =>
   Effect.gen(function* () {
     yield* Effect.flatMap(Output, (output) =>
@@ -251,7 +251,7 @@ export const sizeAtSubmit = (tx: Transaction, witnesses: number): number =>
     : 0);
 
 /** Complete the builder with no output; a failure is a TxBuildError carrying the earlier traces, the failure's own and the validator labels, and so is a transaction whose size at submit, its vkey witnesses counted, is over `maxTxSize`. */
-export const completeBuilder = (
+const completeBuilder = (
   txBuilder: TxBuilder,
   commandName: string,
   limit: { readonly maxTxSize: number; readonly witnesses: number },

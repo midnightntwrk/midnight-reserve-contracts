@@ -29,7 +29,7 @@ import { upgradeScripts, upgradeStateAt } from "./two-stage";
 import {
   createRewardAccount,
   logicRedeemer,
-  planWithdrawThroughLogic,
+  withdrawThroughLogic,
 } from "../tx/scripts";
 import type { TxPlan } from "../tx/plan";
 import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
@@ -146,7 +146,7 @@ export const planMerge = (
       scripts: [inputs.forever],
       mints: [],
       outputs: [merged],
-      withdrawals: planWithdrawThroughLogic(
+      withdrawals: withdrawThroughLogic(
         inputs.logicScript,
         Option.none(),
         logicRedeemer(PlutusData.newInteger(0n), inputs.logicRound),

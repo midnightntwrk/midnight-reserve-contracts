@@ -21,8 +21,8 @@ import type { Signers } from "../datum/signers";
 import type { TxPlan } from "../tx/plan";
 import {
   logicRedeemer,
-  planMintWitnesses,
-  planWithdrawThroughLogic,
+  mintWitnesses,
+  withdrawThroughLogic,
 } from "../tx/scripts";
 import type { WitnessRequirements } from "./threshold";
 
@@ -73,7 +73,7 @@ export const planGovernedForeverUpdate = (
       inputs.twoStageUtxo,
     ],
     scripts: [inputs.forever],
-    ...planMintWitnesses(
+    ...mintWitnesses(
       [
         { ...council, signers: inputs.councilSigners, assetName: "" },
         { ...techAuth, signers: inputs.techAuthSigners, assetName: "" },
@@ -92,7 +92,7 @@ export const planGovernedForeverUpdate = (
         datum: newState.toCore(),
       }),
     ],
-    withdrawals: planWithdrawThroughLogic(
+    withdrawals: withdrawThroughLogic(
       inputs.logicScript,
       inputs.mitigationLogicScript,
       logicRedeemer(PlutusData.newInteger(0n), inputs.logicRound),

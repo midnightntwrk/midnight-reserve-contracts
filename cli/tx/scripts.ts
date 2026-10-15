@@ -57,7 +57,7 @@ export const logicRedeemer = (
     : inner;
 
 /** One witness token under each native multisig policy, as plan mints, and the signatures they demand together. */
-export const planMintWitnesses = (
+export const mintWitnesses = (
   witnesses: readonly {
     readonly required: number;
     readonly signers: Signers;
@@ -76,7 +76,7 @@ export const planMintWitnesses = (
 });
 
 /** The zero withdrawals through the logic and, when set, the mitigation logic, both with `redeemer`, as plan withdrawals. */
-export const planWithdrawThroughLogic = (
+export const withdrawThroughLogic = (
   logic: Script,
   mitigationLogic: Option.Option<Script>,
   redeemer: PlutusData,

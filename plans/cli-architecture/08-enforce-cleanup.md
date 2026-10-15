@@ -27,3 +27,22 @@ One commit per task.
 - Lint gate refuses the probe file; `just check` green.
 - Build-only QA on preview for every transaction command (no
   `sign-and-submit`): same file shape and output lines as before the plan.
+
+## Deviations
+
+- Task 1: the `TxBuilder`-taking helpers in `tx/scripts.ts` and
+  `registerScriptStake` were already gone (phases 05 and 07), and no
+  registration fragment exists: registration is the plan's `registrations`
+  field. Only `planMintWitnesses` → `mintWitnesses` and
+  `planWithdrawThroughLogic` → `withdrawThroughLogic` were renamed.
+- Task 1: `completeBuilder`, `completeChecked` and `Completion` are private
+  to `tx/compile.ts` (compile was the only caller of the last two once
+  `tx/complete-tx.ts` went). `tests/deploy.test.ts`'s size-check and labels
+  tests now go through `compile` over `emulatorProgram`; the size test sets
+  `emulator.params.maxTxSize` to the unsigned size, so the provider's
+  parameters carry the limit. The assertions are unchanged, except that
+  both transactions now carry the local UPLC evaluator, as every compiled
+  transaction does.
+- Task 1: `tx/labels.ts` keys its UTxO lookup by a private `txId#index`
+  string instead of `refOf` from `chain/utxo`, so `tx/**` no longer imports
+  `chain/utxo` (which reads `config/**` and `governance/**`).

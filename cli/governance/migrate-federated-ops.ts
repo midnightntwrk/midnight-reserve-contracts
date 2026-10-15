@@ -24,7 +24,7 @@ import { contractUtxos, deployerUtxo, deployerWallet } from "../chain/utxo";
 import { ensureRegistered } from "../chain/registration";
 import { upgradeScripts, upgradeStateAt } from "./two-stage";
 import { decodeDatum, inlineDatum } from "../datum/inline";
-import { createRewardAccount, planWithdrawThroughLogic } from "../tx/scripts";
+import { createRewardAccount, withdrawThroughLogic } from "../tx/scripts";
 import type { TxPlan } from "../tx/plan";
 import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
 import { Output } from "../output";
@@ -97,7 +97,7 @@ export const planFederatedOpsMigration = (
         datum: migratedDatum(inputs.current).toCore(),
       }),
     ],
-    withdrawals: planWithdrawThroughLogic(
+    withdrawals: withdrawThroughLogic(
       inputs.logicScript,
       inputs.mitigationLogicScript,
       MIGRATE_REDEEMER,
