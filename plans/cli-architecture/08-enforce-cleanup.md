@@ -46,3 +46,8 @@ One commit per task.
 - Task 1: `tx/labels.ts` keys its UTxO lookup by a private `txId#index`
   string instead of `refOf` from `chain/utxo`, so `tx/**` no longer imports
   `chain/utxo` (which reads `config/**` and `governance/**`).
+- Task 2: nothing to change in `cli/`. Since phase 07 `blazeFor` is read
+  only in `tx/compile.ts` and defined in `chain/provider.ts`
+  (`grep -rn blazeFor cli`). `tests/deploy.test.ts` still calls it once, to
+  test the Provider's GuardedWallet coin selection; the lint rule of task 3
+  covers `cli/**` only.
