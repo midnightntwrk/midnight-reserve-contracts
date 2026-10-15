@@ -93,6 +93,13 @@ One commit per task.
   and its `withServices` text is still right, so it stays; the new section
   follows it. The transaction file's fields are `description`, `cborHex`,
   `txHash`, `signed` (`signing/tx-file.ts`), not `txId`.
+- Review follow-up: the boundary blocks match exact specifiers, so
+  `"../config/keys.js"` (TypeScript resolves it to `keys.ts`) or
+  `"../config/../config/keys"` passed the gate. Every file under `cli/` now
+  refuses a relative specifier with a code extension, or with `./` or `../`
+  after its first segment (`no-restricted-syntax`, `CANONICAL_IMPORTS`,
+  covering imports, re-exports and `import()`). The probe showed all three
+  forms refused; a `.json` import (`../package.json`) still passes.
 
 ## Build-only QA on preview (2026-10-15)
 

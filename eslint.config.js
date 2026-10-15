@@ -32,6 +32,30 @@ const NO_BLAZE_FOR = [
   },
 ];
 
+/** The statements that name a module by a string specifier. */
+const IMPORT_SOURCES = [
+  "ImportDeclaration",
+  "ExportNamedDeclaration",
+  "ExportAllDeclaration",
+  "ImportExpression",
+];
+
+/**
+ * The boundary blocks below match exact specifiers ("../config/keys"). A relative specifier is
+ * refused unless it is in that form, so a rule cannot be dodged with "../config/keys.js" (which
+ * TypeScript resolves to keys.ts) or "../config/../config/keys".
+ */
+const CANONICAL_IMPORTS = IMPORT_SOURCES.flatMap((node) => [
+  {
+    selector: `${node}[source.value=/^\\./]:not([source.value=/^(\\.\\/|(\\.\\.\\/)+)([^.\\/][^\\/]*\\/)*[^.\\/][^\\/]*$/])`,
+    message: "Name a module as ./a/b or ../a/b: no ./ or ../ after the first segment.",
+  },
+  {
+    selector: `${node}[source.value=/^\\..*\\.[cm]?[jt]sx?$/]`,
+    message: "Name a module without its extension, as the dependency rules match it.",
+  },
+]);
+
 /** Every module of cli/ as its path under cli/ without the extension: "tx/compile". */
 const MODULES = readdirSync("cli", { recursive: true })
   .filter((file) => file.endsWith(".ts"))
@@ -185,7 +209,7 @@ export default [
           message: "A promise can reject: wrap it with Effect.tryPromise into a tagged error.",
         },
       ],
-      "no-restricted-syntax": ["error", ...NO_THROW_OR_TRY],
+      "no-restricted-syntax": ["error", ...NO_THROW_OR_TRY, ...CANONICAL_IMPORTS],
     },
   },
   ...BOUNDARY_BLOCKS,
@@ -194,7 +218,7 @@ export default [
     files: ["cli/**/*.ts"],
     ignores: ["cli/tx/**", "cli/chain/provider.ts"],
     rules: {
-      "no-restricted-syntax": ["error", ...NO_THROW_OR_TRY, ...NO_BLAZE_FOR],
+      "no-restricted-syntax": ["error", ...NO_THROW_OR_TRY, ...CANONICAL_IMPORTS, ...NO_BLAZE_FOR],
     },
   },
   {
