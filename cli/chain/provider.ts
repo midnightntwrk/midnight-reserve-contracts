@@ -36,7 +36,10 @@ import {
   environmentOf,
   publicNetworkOf,
 } from "../config/network-mapping";
-import { ProviderConfig } from "../config/provider-config";
+import {
+  blockfrostApiKeyVariable,
+  ProviderConfig,
+} from "../config/provider-config";
 import { BlockfrostUnavailable, ConfigError, ProviderError } from "../errors";
 import { type TxRef, txRef } from "../input";
 import { BLOCKFROST_NETWORK, retryableStatus, retryRead } from "./blockfrost";
@@ -243,21 +246,50 @@ const providerCall = <A>(
     }),
   );
 
+/** 401 or 403 from Blockfrost: the API key in `variable` was refused, a ConfigError naming it. */
+const refusedKey =
+  (variable: Option.Option<string>, op: string) =>
+  <A, R>(
+    call: Effect.Effect<A, ProviderError, R>,
+  ): Effect.Effect<A, ProviderError | ConfigError, R> =>
+    Option.match(variable, {
+      onNone: () => call,
+      onSome: (key) =>
+        Effect.catchIf(
+          call,
+          (error) => error.status === 401 || error.status === 403,
+          (error) =>
+            Effect.fail(
+              new ConfigError({
+                source: "env",
+                key,
+                reason: `Blockfrost refused the API key (HTTP ${error.status}) on ${op}`,
+              }),
+            ),
+        ),
+    });
+
 const providerService = (
   environment: Environment,
   acquire: Effect.Effect<BlazeProvider, ProviderError | ConfigError>,
+  /** The env variable of the API key the connection uses, when a refusal points at one. */
+  keyVariable: Option.Option<string> = Option.none(),
 ) =>
   Effect.gen(function* () {
     // One connection for the run, opened on first use: the emulator keeps its ledger, Kupmios keeps one Ogmios socket.
     const connected = yield* Effect.cached(acquire);
+    /** One provider call under `timeout`, a refused API key reported against its variable. */
+    const call = <A>(
+      op: string,
+      run: () => Promise<A>,
+      timeout?: Duration.Duration,
+    ) => refusedKey(keyVariable, op)(providerCall(op, run, timeout));
     /** One call on the connected provider under PROVIDER_TIMEOUT; `op` names it in the error. */
     const use = <A>(op: string, f: (provider: BlazeProvider) => Promise<A>) =>
-      Effect.flatMap(connected, (provider) =>
-        providerCall(op, () => f(provider)),
-      );
+      Effect.flatMap(connected, (provider) => call(op, () => f(provider)));
     const blazeFor = ({ address, reserved }: WalletContext) =>
       Effect.flatMap(connected, (provider) =>
-        providerCall("Blaze.from", () =>
+        call("Blaze.from", () =>
           Blaze.from(
             provider,
             new GuardedWallet(
@@ -279,16 +311,21 @@ const providerService = (
         ),
       unspentOutputs: (address: Address) =>
         Effect.flatMap(connected, (provider) =>
-          providerCall(
+          refusedKey(
+            keyVariable,
             "getUnspentOutputs",
-            () => provider.getUnspentOutputs(address),
-            ADDRESS_READ_TIMEOUT,
-          ).pipe(
-            retryRead(
+          )(
+            providerCall(
               "getUnspentOutputs",
-              (error) => error.retryable && error.reason !== "Timeout",
+              () => provider.getUnspentOutputs(address),
+              ADDRESS_READ_TIMEOUT,
+            ).pipe(
+              retryRead(
+                "getUnspentOutputs",
+                (error) => error.retryable && error.reason !== "Timeout",
+              ),
+              Effect.catchIf(unseenAddress, () => Effect.succeed([])),
             ),
-            Effect.catchIf(unseenAddress, () => Effect.succeed([])),
           ),
         ),
       blazeFor,
@@ -309,6 +346,9 @@ export const ProviderLive = (
       return yield* providerService(
         environment,
         Scope.extend(connect(connection, config), scope),
+        connection.type === "blockfrost"
+          ? Option.some(blockfrostApiKeyVariable(connection.cardanoNetwork))
+          : Option.none(),
       );
     }),
   );
