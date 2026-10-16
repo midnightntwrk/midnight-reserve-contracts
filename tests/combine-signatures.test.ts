@@ -191,4 +191,30 @@ describe("readSingleTransaction", () => {
     );
     expect(error.source).toBe(path);
   });
+
+  test("a malformed deployment entry is refused by the path of each bad field", async () => {
+    const path = witnessFile(
+      "broken-deployment.json",
+      JSON.stringify({
+        transactions: [
+          {
+            type: "Tx ConwayEra",
+            description: "x",
+            txHash: "00",
+            signed: "no",
+          },
+        ],
+      }),
+    );
+    const error = await expectFailure(
+      layer,
+      readTransactionFile(path),
+      "InputParseError",
+    );
+    expect(error.source).toBe(path);
+    expect(error.issues.map((issue) => issue.split(":")[0])).toEqual([
+      "transactions.0.cborHex",
+      "transactions.0.signed",
+    ]);
+  });
 });
