@@ -6,17 +6,25 @@ Blaze emulator; every MIP contract-test bullet reproduced (spec §9, §10).
 ## Tasks
 
 ### 0. Prerequisites and style
-Runs after `plans/effect/` 01–07: every command here is an Effect
-program over a typed input record, parsed at the boundary in
-`cli/commands/`, over a `cli/bridge/bridge-tx.ts` builder
-(`buildBridgeUpdateTx`, `buildBridgeTopupTx`, `buildBridgeThresholdTx`),
-typed errors from `cli/errors.ts`, and the emulator tests call the
-builders (Effect plan phase 06 rule). The deployment builders live with
-the governance ones in `cli/deploy/builders.ts` (task 1).
-Config keys to add to `NetworkConfig`/`parseNetworkConfig`
-(`cli/config/settings.ts`, read through `Settings.profile`):
-`committee_bridge_one_shot_hash/index`, `committee_threshold_one_shot_hash/index`
-(already in every `aiken.toml` profile). `ContractInstances` (read through
+Runs after `plans/effect/` 01–07 and `plans/cli-architecture/` 01–10.
+Every command here has that plan's shape: a program in `cli/bridge/`
+resolves its inputs, a pure `plan*` function (`planBridgeUpdate`,
+`planBridgeTopup`, `planBridgeThreshold`) returns a `TxPlan`
+(`cli/tx/plan.ts`), and `compile` (`cli/tx/compile.ts`) completes it.
+Blaze is built only inside `compile`, through `Provider.blazeFor`; the
+lint gate refuses `blazeFor` anywhere else in `cli/`. The dependency rules
+in `eslint.config.js` (plans/cli-architecture/00-index.md) apply; a
+`plan*` takes no services and imports only `tx/plan`, `tx/scripts` and
+`datum/**`. The commands are declared in `cli/commands.ts`; typed errors
+come from `cli/errors.ts`. Emulator tests call the plans, never a command
+program: `emulator.expectValidTransaction(blaze, toTxBuilder(blaze,
+planX(inputs, params), options))`. The deployment plans live with the
+governance ones in `cli/deploy/builders.ts` (task 1), which holds only
+pure plans.
+The one-shot keys `committee_bridge_one_shot_hash/index` and
+`committee_threshold_one_shot_hash/index` are already in `NetworkConfig`
+(`cli/config/profile.ts`, read through `Profile.config`) and in every
+`aiken.toml` profile. `ContractInstances` (read through
 `Blueprint.instances`) and `info`'s `contractList` gain the bridge
 scripts.
 
@@ -40,8 +48,9 @@ transaction (`cli/deploy/deploy.ts`):
   named: `deploy -n <env> --components committee-bridge,committee-bridge-threshold`.
   `--help` marks the default set. In code: no `--components` (None)
   selects a default list of the twelve, not every `DEPLOY_STEPS` entry.
-- The values come from the env through `Settings`, like `TECH_AUTH_SIGNERS`
-  and `PERMISSIONED_CANDIDATES`, parsed and checked once there (bootstrap
+- The values come from the env through `cli/config/intent-env.ts`, like
+  `TECH_AUTH_SIGNERS` (`newSigners`) and `PERMISSIONED_CANDIDATES`
+  (`permissionedCandidates`), parsed and checked once there (bootstrap
   rules: `next = current + 1`, both `seat_count > 0`, 32-byte roots). Names
   to settle when the step is written: the bootstrap state (the output of
   phase 07's `bridge-bootstrap`), `max_fee.base` and `max_fee.per_signer`
@@ -62,7 +71,7 @@ transaction (`cli/deploy/deploy.ts`):
   phase 07's `bridge-bootstrap` comes later. The emulator test (task 3)
   builds its own bootstrap state from the phase 05 reference.
 
-### 2. New commands (`cli/commands/bridge-*.ts`)
+### 2. New commands (declared in `cli/commands.ts`, programs in `cli/bridge/`)
 - `bridge-info`: light-client datum, threshold datum, pool balance and UTxO
   count.
 - `bridge-topup --lovelace N`: pay to the pool address.
@@ -70,8 +79,9 @@ transaction (`cli/deploy/deploy.ts`):
   JSON (the phase 05 `update.ts` shape); `--funded` adds pool inputs and
   sets the debit to the fee; otherwise the submitter pays.
 - `bridge-set-fee --base --per-signer` and `bridge-set-threshold`:
-  threshold spend under Council + Tech Auth (reuse the change-threshold
-  path of the governance commands).
+  threshold spend under Council + Tech Auth. No threshold-spend command
+  exists yet; `planGovernedForeverUpdate` and `planMultisigChange` show
+  how a plan carries the Council and Tech Auth witnesses.
 
 ### 3. Emulator test (`tests/bridge_e2e.test.ts`)
 Using the phase 05 reference to produce every update:
