@@ -14,6 +14,7 @@ import {
   PaymentAddress,
   PlutusData,
   RewardAccount,
+  type Script,
   signMessage,
   Transaction,
   TransactionId,
@@ -21,6 +22,7 @@ import {
   TxCBOR,
   VkeyWitness,
 } from "@blaze-cardano/core";
+import type { TxBuilder } from "@blaze-cardano/tx";
 import type { Signer } from "./types";
 import { parsePrivateKeys } from "./signers";
 import { writeTransactionFile } from "./output";
@@ -70,6 +72,20 @@ export function createNativeMultisigScript(
       ).toBech32();
       return NativeScripts.justAddress(bech32, networkId);
     }),
+  );
+}
+
+/** Register a script's stake credential; the Conway reg_cert needs the script witness and a cert redeemer. */
+export function registerScriptStake(
+  txBuilder: TxBuilder,
+  script: Script,
+): TxBuilder {
+  return txBuilder.provideScript(script).addRegisterStake(
+    Credential.fromCore({
+      hash: script.hash(),
+      type: CredentialType.ScriptHash,
+    }),
+    PlutusData.newInteger(0n),
   );
 }
 

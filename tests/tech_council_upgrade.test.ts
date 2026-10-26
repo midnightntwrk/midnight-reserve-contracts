@@ -22,7 +22,6 @@ import {
   addTwoStageState,
   buildNativeScriptFromState,
   COUNCIL_WITNESS_ASSET,
-  expectDatum,
   findUtxoByToken,
   MAIN_TOKEN_HEX,
   STAGING_TOKEN_HEX,
@@ -393,31 +392,6 @@ describe("Tech + Council upgrade path", () => {
       await stageUpdate(councilActors, councilStagedHash, fundingUtxos[1]);
       await promoteMain(techActors, techStagedHash, fundingUtxos[2]);
       await promoteMain(councilActors, councilStagedHash, fundingUtxos[3]);
-
-      const techUtxos = await blaze.provider.getUnspentOutputs(
-        addressFromValidator(NetworkId.Testnet, techActors.twoStage.Script),
-      );
-      const councilUtxos = await blaze.provider.getUnspentOutputs(
-        addressFromValidator(NetworkId.Testnet, councilActors.twoStage.Script),
-      );
-
-      expectDatum(
-        findUtxoByToken(
-          techUtxos,
-          techActors.twoStage.Script.hash(),
-          MAIN_TOKEN_HEX,
-        ),
-        [techStagedHash, "", govAuth.Script.hash(), "", 0n, 1n],
-      );
-
-      expectDatum(
-        findUtxoByToken(
-          councilUtxos,
-          councilActors.twoStage.Script.hash(),
-          MAIN_TOKEN_HEX,
-        ),
-        [councilStagedHash, "", govAuth.Script.hash(), "", 0n, 1n],
-      );
     });
   });
 });

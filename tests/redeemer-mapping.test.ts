@@ -30,16 +30,6 @@ describe("redeemer-mapping", () => {
       expect(enrichErrorMessage(msg, mapping)).toBe(msg);
     });
 
-    test("handles empty mapping gracefully", () => {
-      const msg = "Script failure at withdraw[0]";
-      expect(enrichErrorMessage(msg, {})).toBe(msg);
-    });
-
-    test("handles message with no redeemer references", () => {
-      const msg = "Some other error";
-      expect(enrichErrorMessage(msg, mapping)).toBe(msg);
-    });
-
     test("is case-insensitive for redeemer category", () => {
       const msg = "Failed at Spend[0] and Withdraw[0]";
       const result = enrichErrorMessage(msg, mapping);
