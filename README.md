@@ -11,8 +11,11 @@ just build
 # Run on-chain Aiken tests
 just check
 
-# Run emulator integration tests (requires build first)
+# Run the tests locally: emulator only, no network, no .env (requires build first; this is what CI runs)
 bun test
+
+# Also run the chain-facing tests against preview with the .env values (reads only)
+just test-preview
 ```
 
 ## Project Structure
@@ -20,7 +23,7 @@ bun test
 ```
 ├── validators/       # On-chain validator entry points (Aiken)
 ├── lib/              # Shared Aiken helpers
-├── cli-yargs/        # TypeScript CLI for deployment and transactions
+├── cli/              # TypeScript CLI for deployment and transactions
 ├── tests/            # Blaze emulator integration tests
 ├── deployments/      # Network-specific deployment artifacts
 ├── docs/             # Specifications, one directory per domain
@@ -33,18 +36,21 @@ bun test
 - [`docs/governance/transactions.md`](docs/governance/transactions.md) - transaction construction by operation
 - [`docs/governance/upgrade.md`](docs/governance/upgrade.md) - Forever/Two-Stage upgrade flow
 - [`docs/governance/transaction-identification.md`](docs/governance/transaction-identification.md) - CIP-20 metadata for governance transactions
-- [`CLAUDE.md`](CLAUDE.md) - development guidelines, audit boundaries, workspace docs under `.claude/docs/`
+- [`docs/governance/live-deployment.md`](docs/governance/live-deployment.md) - live deployment runbook: command order, signing, multi-party witnesses
+- [`docs/bridge/`](docs/bridge/) - BEEFY committee bridge (light client, funding pool); plan in [`plans/bridge/`](plans/bridge/)
+- [`CLAUDE.md`](CLAUDE.md) - development guidelines and audit boundaries
 
 ## CLI Commands
 
-The CLI (`cli-yargs/`, Blaze Cardano SDK) builds unsigned transactions for
-offline signing. `bun run cli-yargs/index.ts <command> --help` lists flags.
+The CLI (`cli/`, Blaze Cardano SDK) builds transactions into
+`deployments/<network>/`. Governance commands sign with the keys in `.env`
+by default; `--no-sign` writes an unsigned transaction for offline signing.
+`bun run cli/index.ts <command> --help` lists flags.
 
 | Command | Description |
 |---|---|
 | `deploy` | Generate initial deployment transactions (one-shot, always uses build blueprint) |
 | `deploy-staging-track` | Deploy staging track forever validators |
-| `deploy-cnight-minting` | Deploy cNIGHT minting two-stage upgrade contracts |
 | `change-council` | Update council multisig state |
 | `change-tech-auth` | Update technical authority multisig state |
 | `change-federated-ops` | Update federated operators state |
@@ -55,23 +61,83 @@ offline signing. `bun run cli-yargs/index.ts <command> --help` lists flags.
 | `stage-upgrade` | Stage a v2 logic upgrade |
 | `promote-upgrade` | Promote a staged upgrade to main track |
 | `register-gov-auth` | Register gov auth scripts as stake credentials |
+| `register-cnight-mint-logic` | Register the cNIGHT mint logic script as a stake credential |
+| `run-cnight-mint-mainnet` | Run the cNIGHT mint forever and logic withdrawals (always unsigned) |
+| `merge-utxos` | Merge two value-holding UTxOs at a reserve or ICS forever validator |
 | `simple-tx` | Generate dust/funding transactions |
 | `info` | Display contract addresses and deployment info |
-| `verify` | Verify on-chain state against expected configuration |
+| `verify` | Verify the deployed record (`deployed-scripts/<env>/`) against the unspent outputs on chain |
+| `dust-participants` | Count registered dust participants |
 | `generate-key` | Generate a new signing key |
 | `sign-and-submit` | Sign and submit a transaction to the network (**submits for real**) |
-| `combine-signatures` | Combine multiple signatures into a signed transaction |
-| `build` | Build Aiken contracts |
-| `build-from-deployed` | Build contract blueprint from deployed scripts |
+| `combine-signatures` | Merge external witnesses into one transaction and submit it (**submits for real**) |
+| `build` | Build Aiken contracts; `--from-deployed [--components <list>]` compiles against the deployed hashes |
 
 ```bash
-bun run cli-yargs/index.ts deploy --network preview --output deploy-tx.cbor
-# Sign with wallet, then:
-bun run cli-yargs/index.ts sign-and-submit --tx deploy-tx.cbor --network preview
+bun run cli/index.ts deploy --network preview
+# Writes deployments/preview/deployment-transactions.json; sign with SIGNING_PRIVATE_KEY and submit:
+bun run cli/index.ts sign-and-submit deployments/preview/deployment-transactions.json --network preview
 ```
 
-Adding a command: create `cli-yargs/commands/<name>/index.ts` exporting
-`command`, `describe`, `builder`, `handler`; register it in `cli-yargs/index.ts`.
+Adding a command: declare it in `cli/commands.ts` as an `@effect/cli`
+`Command.make` over its options: the shared ones from `cli/options.ts` and
+its own, each text value parsed at the boundary (`parsedText`). Its handler
+is the program. Pipe it through the `cli/run.ts` helper that gives it the
+services it reads: `withServices(source)` (the configuration services,
+Blueprint and Provider over the `"deployed"` or `"build"` blueprint),
+`withServicesUseBuild` (the same, with the blueprint from `--use-build`) or
+`withProvider` (the configuration services and Provider); a command that
+reads none of them (`build`,
+`generate-key`) takes no helper. Add it to the `commands` array at the end
+of `cli/commands.ts`. The program takes a typed input record and lives in the
+domain folder that owns it (`cli/governance/`, `cli/chain/`,
+`cli/report/`, ...).
+
+A command that builds a transaction has the same four steps in its program
+(`governance/merge-utxos.ts` is the shortest example):
+
+1. `resolve*` reads the chain, the blueprint and the profile, reports what
+   it found, and returns the plan's inputs, its domain params and the
+   change address.
+2. `plan*` is a pure function of those: it returns a `TxPlan`
+   (`cli/tx/plan.ts`: spends, references, scripts, mints, outputs,
+   withdrawals, registrations, collateral, required signatures) or a typed
+   failure. It reads no service and builds no Blaze transaction.
+3. `compile(plan, options)` (`cli/tx/compile.ts`) builds Blaze over the
+   wallet in `options` (`deployerWallet`, or the user's), runs the local
+   UPLC check, completes the transaction and checks its size with the
+   witnesses `options.expectedWitnesses` it will carry. It is the only
+   caller of `Provider.blazeFor`.
+4. `signAndWrite(tx, path, signer, description)` writes the transaction
+   file (`{description, cborHex, txHash, signed}`), signed by `signerFor` or
+   `UNSIGNED`.
+
+The dependency rules between the folders are in `eslint.config.js`, so
+`bun run lint` (part of `just check`) refuses a breach. Each module must not
+import:
+
+| Module | Must not import |
+|---|---|
+| `tx/**` | `contracts/**`, `config/**`, `signing/**`, `chain/**` other than `chain/provider` |
+| `deploy/builders` (plans only) | `chain/**`, `config/**`, `contracts/**`, `output` |
+| `signing/**` | `contracts/**` |
+| `contracts/snapshot/**`, `contracts/bindings` | `output` |
+| `contracts/snapshot/names`, `contracts/snapshot/context` | anything under `contracts/snapshot/` |
+
+and each of these is imported only by the modules listed:
+
+| Module | Imported only by |
+|---|---|
+| `config/keys` | `signing/**`, `run.ts` |
+| `config/provider-config` | `chain/provider`, `chain/blockfrost`, `chain/registration`, `run.ts` |
+| `contracts/snapshot/write` | `deploy/**`, `governance/two-stage-upgrade/logic-record` |
+| `contracts/snapshot/read` | `contracts/**`, `deploy/**`, `governance/two-stage-upgrade/**`, `report/verify` |
+| `contracts/bindings` | `contracts/build`, `contracts/snapshot/write` |
+| `contracts/snapshot/storage` | `contracts/snapshot/read`, `contracts/snapshot/write` |
+| `contracts/build-engine` | `contracts/build`, `commands` |
+
+A plan in the same file as its `resolve*` (as in `governance/`) is kept
+pure by review; the lint rule cannot separate them.
 
 ## Environment Configuration
 
@@ -79,25 +145,27 @@ The CLI maps Midnight deployment environments to their underlying Cardano networ
 
 | Environment | Cardano Network | Notes |
 |-------------|-----------------|-------|
-| `local`, `emulator` | (emulator) | Local emulator, no real network |
+| `local` | (local node) | Local Kupo/Ogmios node; default provider `kupmios` |
+| `emulator` | (emulator) | In-memory emulator, no real network |
 | `preview` | Cardano Preview | Direct mapping |
 | `qanet` | Cardano Preview | Midnight QA environment |
 | `govnet` | Cardano Preview | Midnight Governance environment |
 | `devnet` | Cardano Preview | Midnight Devnet environment |
 | `preprod` | Cardano Preprod | Direct mapping |
 | `mainnet` | Cardano Mainnet | Direct mapping |
-| (unknown) | (emulator) | Fallback with warning |
+
+Any other name is refused before the command runs: `Expected one of the following cases: local, emulator, preview, qanet, govnet, devnet, preprod, mainnet`. The names are case-sensitive.
 
 ### Using the `--network` Flag
 
-All CLI commands accept the `--network` flag with any environment name:
+Every command except `build` and `mint-tcnight` accepts the `--network` flag with any environment name above (default: `local`). `build` takes an aiken.toml profile instead (`default`, the vanilla build, or a name above other than `emulator`); `mint-tcnight` takes every name but `mainnet`, since TCnight exists only on test environments:
 
 ```bash
 bun cli deploy --network preview      # Uses Cardano Preview
 bun cli deploy --network qanet        # Uses Cardano Preview
 bun cli deploy --network govnet       # Uses Cardano Preview
 bun cli deploy --network devnet       # Uses Cardano Preview
-bun cli deploy --network preprod      # Uses Cardano Preprod
+bun cli verify --network preprod      # Uses Cardano Preprod
 bun cli info --network mainnet        # Uses Cardano Mainnet
 ```
 
@@ -105,19 +173,23 @@ bun cli info --network mainnet        # Uses Cardano Mainnet
 
 Set the appropriate API key for your target Cardano network:
 
-**Blockfrost (default provider):**
-- `BLOCKFROST_PREVIEW_API_KEY` - For preview, qanet, devnet
+**Blockfrost (default provider on public networks):**
+- `BLOCKFROST_PREVIEW_API_KEY` - For preview, qanet, govnet, devnet
 - `BLOCKFROST_PREPROD_API_KEY` - For preprod
 - `BLOCKFROST_MAINNET_API_KEY` - For mainnet
 
-**Maestro (alternative provider, use `--provider maestro`):**
-- `MAESTRO_PREVIEW_API_KEY`
-- `MAESTRO_PREPROD_API_KEY`
-- `MAESTRO_MAINNET_API_KEY`
-
-**Kupmios (self-hosted, use `--provider kupmios`):**
+**Kupmios (self-hosted, default for `local`; elsewhere use `--provider kupmios`):**
 - `KUPO_URL` - Kupo endpoint URL
 - `OGMIOS_URL` - Ogmios endpoint URL
+
+### Logs
+
+Diagnostics (a retried provider call, a failed local UPLC run) go to stderr, pretty on a terminal and logfmt otherwise; the command's own output goes to stdout. `LOG_LEVEL` (the environment or `.env`) sets the minimum level: `All`, `Trace`, `Debug`, `Info` (the default), `Warning`, `Error`, `Fatal` or `None`, in any case. A bad value fails the command before it runs. `--log-level <level>` on a command sets it for that run and wins over `LOG_LEVEL`:
+
+```bash
+LOG_LEVEL=debug bun cli verify --network preview
+bun cli verify --network preview --log-level warning
+```
 
 ### Deployment Directory Structure
 
@@ -132,7 +204,7 @@ deployments/
 
 Each directory contains transaction files and deployment metadata specific to that environment.
 
-See `cli-yargs/lib/network-mapping.ts` for the implementation details.
+See `cli/config/network-mapping.ts` for the implementation details.
 
 ## Contributing
 

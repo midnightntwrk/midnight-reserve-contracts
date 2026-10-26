@@ -169,19 +169,28 @@ This ensures:
 ## CLI Commands
 
 ```bash
-# Stage a new logic hash
+# Stage a new logic hash (--tx-hash/--tx-index: the deployer's fee UTxO)
 bun run cli stage-upgrade \
   --network preview \
-  --domain reserve \
-  --field Logic \
-  --hash <new_logic_hash>
+  --validator reserve \
+  --new-logic-hash <new_logic_hash> \
+  --tx-hash <h> \
+  --tx-index <i>
 
 # Promote staged logic to main
 bun run cli promote-upgrade \
   --network preview \
-  --domain reserve \
-  --field Logic
+  --validator reserve \
+  --tx-hash <h> \
+  --tx-index <i>
 ```
+
+Both write `deployments/preview/<command>-tx.json`, signed with
+`TECH_AUTH_PRIVATE_KEYS` and `COUNCIL_PRIVATE_KEYS`; `--no-sign` leaves it
+unsigned for external signers (`combine-signatures`). Submit with
+`bun run cli sign-and-submit deployments/preview/stage-upgrade-tx.json --network preview`.
+Building either transaction also updates the staged/promoted lists in
+`deployed-scripts/preview/versions.json`.
 
 ## Constraint Tags Reference
 

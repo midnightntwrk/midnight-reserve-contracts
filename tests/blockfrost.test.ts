@@ -1,0 +1,84 @@
+/** The Blockfrost adapter: local checks always; real requests against preview under TEST_NETWORK=preview. */
+import { describe, expect, test } from "bun:test";
+import { NetworkId } from "@blaze-cardano/core";
+import { Effect, Layer, Redacted, Schema } from "effect";
+import { Blueprint, BlueprintLive } from "../cli/contracts/contracts";
+import { rewardAccountRegistered } from "../cli/chain/registration";
+import { createRewardAccount } from "../cli/tx/scripts";
+import { blockfrostGet } from "../cli/chain/blockfrost";
+import {
+  captureOutput,
+  expectFailure,
+  LoggerCaptured,
+  onPreview,
+  PlatformLive,
+  PreviewLive,
+  runTest,
+} from "./helpers/effect";
+import { randomHash } from "./helpers/fixtures";
+
+const PREVIEW_TIMEOUT = 60_000;
+
+/** A random reward account's `/accounts` path. */
+const accountPath = () =>
+  `/accounts/${createRewardAccount(randomHash(28), NetworkId.Testnet)}`;
+
+describe("Blockfrost locally", () => {
+  test("a refused connection is a retryable transport failure, tried three times with backoff", async () => {
+    const capture = captureOutput();
+    const path = accountPath();
+    const error = await expectFailure(
+      Layer.mergeAll(PlatformLive, LoggerCaptured(capture)),
+      blockfrostGet(
+        "http://127.0.0.1:9/api/v0",
+        Redacted.make("unused"),
+        path,
+        Schema.Unknown,
+      ),
+      "ProviderError",
+    );
+    expect(error).toMatchObject({ reason: "Transport", retryable: true });
+    const op = `GET ${path}`;
+    expect(capture.logs).toEqual([
+      {
+        level: "WARN",
+        message: `${op} failed, retrying in 250ms`,
+        annotations: { op, delaySeconds: 0.25 },
+      },
+      {
+        level: "WARN",
+        message: `${op} failed, retrying in 500ms`,
+        annotations: { op, delaySeconds: 0.5 },
+      },
+    ]);
+  });
+});
+
+describe.if(onPreview)("Blockfrost on preview", () => {
+  test(
+    "the preview gov-auth reward account is registered; a random one is not",
+    async () => {
+      const layer = Layer.mergeAll(
+        PreviewLive,
+        BlueprintLive("preview", "deployed"),
+      );
+      const govAuth = await runTest(
+        layer,
+        Effect.flatMap(Blueprint, (b) =>
+          Effect.map(b.instances, (i) => i.govAuth.Script.hash()),
+        ),
+      );
+      const registered = (hash: string) =>
+        runTest(
+          layer,
+          rewardAccountRegistered(
+            createRewardAccount(hash, NetworkId.Testnet),
+            "preview",
+          ),
+        );
+      expect(await registered(govAuth)).toBe(true);
+      expect(await registered(randomHash(28))).toBe(false);
+    },
+    PREVIEW_TIMEOUT,
+  );
+});
