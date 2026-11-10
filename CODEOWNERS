@@ -15,8 +15,10 @@ SECURITY.md @midnightntwrk/mn-sre
 
 .gitignore @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
 build_contracts.sh @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
-bun.lock @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+pnpm-lock.yaml @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+pnpm-workspace.yaml @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
 package.json @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
 Justfile @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
 tsconfig.json @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
-eslint.config.js @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+vite.config.ts @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node
+lint-plugin.js @midnightntwrk/mn-sre @midnightntwrk/mn-codeowners-node

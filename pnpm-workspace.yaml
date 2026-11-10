@@ -1,0 +1,28 @@
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@1.5.1
+  vite-plus: 1.5.1
+  vitest: 5.1.0
+overrides:
+  lodash: ^4.18.1
+  picomatch: ^4.0.7
+  vite@*: "catalog:"
+  vitest@*: "catalog:"
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: "*"
+    vitest: "*"
+# NodeRedis is the only module of @effect/platform-node that needs redis, and the CLI does not use it.
+# @cardano-sdk/util's published types import type-fest's Tagged, which its manifest lists only as a devDependency.
+packageExtensions:
+  "@effect/platform-node":
+    peerDependenciesMeta:
+      redis:
+        optional: true
+  "@cardano-sdk/util":
+    dependencies:
+      type-fest: ^4.41.0
+# Lock rule (plans/effect4): the latest version in range that is at least 48 h old.
+minimumReleaseAge: 2880

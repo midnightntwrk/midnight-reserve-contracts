@@ -21,7 +21,7 @@ import {
   CnightMintingCnightMintTwoStageUpgradeElse,
   CnightMintingCnightMintLogicElse,
 } from "../contract_blueprint";
-import { describe, test } from "bun:test";
+import { describe, test } from "vite-plus/test";
 import {
   buildNativeScriptFromState,
   COUNCIL_WITNESS_ASSET,

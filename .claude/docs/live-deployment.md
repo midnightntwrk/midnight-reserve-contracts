@@ -47,65 +47,65 @@ stage-upgrade → sign-and-submit → promote-upgrade → sign-and-submit → mi
 
 ```bash
 # === Phase 1: Main deployment ===
-bun run cli simple-tx --network <env>
-bun run cli sign-and-submit <simple-tx.json> --network <env>
+just cli simple-tx --network <env>
+just cli sign-and-submit <simple-tx.json> --network <env>
 # Update *_one_shot_hash entries in aiken.toml (14 entries), then:
 just build <env>
-bun run cli deploy --network <env>
-bun run cli sign-and-submit <deployment-transactions.json> --network <env>
-bun run cli register-gov-auth --network <env>
-bun run cli sign-and-submit <register-gov-auth-tx.json> --network <env>
+just cli deploy --network <env>
+just cli sign-and-submit <deployment-transactions.json> --network <env>
+just cli register-gov-auth --network <env>
+just cli sign-and-submit <register-gov-auth-tx.json> --network <env>
 
 # Governance changes (each requires --tx-hash + --tx-index from Blockfrost)
-bun run cli change-council --network <env> --tx-hash <h> --tx-index <i>
-bun run cli sign-and-submit <change-council-tx.json> --network <env>
-bun run cli change-tech-auth --network <env> --tx-hash <h> --tx-index <i>
-bun run cli sign-and-submit <change-tech-auth-tx.json> --network <env>
-bun run cli change-federated-ops --network <env> --tx-hash <h> --tx-index <i>
-bun run cli sign-and-submit <change-federated-ops-tx.json> --network <env>
-bun run cli change-terms --network <env> --tx-hash <h> --tx-index <i> --hash <doc-hash> --url <url>
-bun run cli sign-and-submit <change-terms-tx.json> --network <env>
+just cli change-council --network <env> --tx-hash <h> --tx-index <i>
+just cli sign-and-submit <change-council-tx.json> --network <env>
+just cli change-tech-auth --network <env> --tx-hash <h> --tx-index <i>
+just cli sign-and-submit <change-tech-auth-tx.json> --network <env>
+just cli change-federated-ops --network <env> --tx-hash <h> --tx-index <i>
+just cli sign-and-submit <change-federated-ops-tx.json> --network <env>
+just cli change-terms --network <env> --tx-hash <h> --tx-index <i> --hash <doc-hash> --url <url>
+just cli sign-and-submit <change-terms-tx.json> --network <env>
 
-bun run cli mint-tcnight --amount <amount> --user-address <addr> --network <env>
-bun run cli sign-and-submit <mint-tcnight-tx.json> --network <env>
+just cli mint-tcnight --amount <amount> --user-address <addr> --network <env>
+just cli sign-and-submit <mint-tcnight-tx.json> --network <env>
 
 # === Phase 2: Staging track ===
-bun run cli simple-tx --network <env>
-bun run cli sign-and-submit <simple-tx.json> --network <env>
+just cli simple-tx --network <env>
+just cli sign-and-submit <simple-tx.json> --network <env>
 # Update *_staging_one_shot_hash + *_logic_v2_one_shot_hash (staging indices) in aiken.toml, then:
 just build <env>
-bun run cli deploy-staging-track --network <env>
-bun run cli sign-and-submit <staging-track-deployment-transactions.json> --network <env>
+just cli deploy-staging-track --network <env>
+just cli sign-and-submit <staging-track-deployment-transactions.json> --network <env>
 
 # === Phase 3: v2 logic (per validator) ===
-bun run cli simple-tx --network <env>
-bun run cli sign-and-submit <simple-tx.json> --network <env>
+just cli simple-tx --network <env>
+just cli sign-and-submit <simple-tx.json> --network <env>
 # Update *_logic_v2_one_shot_hash (6 entries) in aiken.toml, then:
 just build <env>
-bun run cli mint-staging-state --validator <name> --network <env>
-bun run cli sign-and-submit <mint-staging-state-tx.json> --network <env>
+just cli mint-staging-state --validator <name> --network <env>
+just cli sign-and-submit <mint-staging-state-tx.json> --network <env>
 IMPORTANT: do NOT pass --use-build to stage-upgrade in live deploys
-bun run cli stage-upgrade --validator <name> --network <env> --new-logic-hash <v2-logic-hash> --tx-hash <h> --tx-index <i>
-bun run cli sign-and-submit <stage-upgrade-tx.json> --network <env>
-bun run cli promote-upgrade --validator <name> --network <env> --tx-hash <h> --tx-index <i>
-bun run cli sign-and-submit <promote-upgrade-tx.json> --network <env>
-bun run cli migrate-federated-ops --network <env> --tx-hash <h> --tx-index <i>
-bun run cli sign-and-submit <migrate-federated-ops-tx.json> --network <env>
+just cli stage-upgrade --validator <name> --network <env> --new-logic-hash <v2-logic-hash> --tx-hash <h> --tx-index <i>
+just cli sign-and-submit <stage-upgrade-tx.json> --network <env>
+just cli promote-upgrade --validator <name> --network <env> --tx-hash <h> --tx-index <i>
+just cli sign-and-submit <promote-upgrade-tx.json> --network <env>
+just cli migrate-federated-ops --network <env> --tx-hash <h> --tx-index <i>
+just cli sign-and-submit <migrate-federated-ops-tx.json> --network <env>
 
 # === Phase 4: Downgrade a validator back to v1 logic ===
 # Use --new-logic-hash with the original v1 logic hash (from deployed plutus.json)
 # No --use-build needed — the v1 validator already exists in the deployed blueprint
-bun run cli stage-upgrade --validator <name> --new-logic-hash <v1-logic-hash> --tx-hash <h> --tx-index <i> --network <env>
-bun run cli sign-and-submit <stage-upgrade-tx.json> --network <env>
-bun run cli promote-upgrade --validator <name> --tx-hash <h> --tx-index <i> --network <env>
-bun run cli sign-and-submit <promote-upgrade-tx.json> --network <env>
+just cli stage-upgrade --validator <name> --new-logic-hash <v1-logic-hash> --tx-hash <h> --tx-index <i> --network <env>
+just cli sign-and-submit <stage-upgrade-tx.json> --network <env>
+just cli promote-upgrade --validator <name> --tx-hash <h> --tx-index <i> --network <env>
+just cli sign-and-submit <promote-upgrade-tx.json> --network <env>
 
 # === Phase 5: Test combine-signatures (multi-party signing flow) ===
 # Build an unsigned governance tx (change-council has multiple required signers)
-bun run cli change-council --network <env> --tx-hash <h> --tx-index <i> --output-file change-council-combine-test.json
+just cli change-council --network <env> --tx-hash <h> --tx-index <i> --output-file change-council-combine-test.json
 
 # Extract the tx hash from the unsigned transaction
-TX_HASH=$(bun -e "
+TX_HASH=$(vp node -e "
   const {Transaction, TxCBOR, HexBlob} = require('@blaze-cardano/core');
   const fs = require('fs');
   const tx = JSON.parse(fs.readFileSync('deployments/<env>/change-council-combine-test.json','utf8'));
@@ -113,16 +113,16 @@ TX_HASH=$(bun -e "
 ")
 
 # Create witness files from tech-auth + council signing keys
-bun create-witnesses.ts $TX_HASH
+# (create-witnesses.ts left with cli-yargs; plans/effect4 commit 6 brings the signing commands)
 
 # Combine witnesses and submit (--sign-deployer adds deployer sig automatically)
-bun run cli combine-signatures \
+just cli combine-signatures \
   --tx deployments/<env>/change-council-combine-test.json \
   --signatures witnesses/witness-1.json witnesses/witness-2.json witnesses/witness-3.json \
     witnesses/witness-4.json witnesses/witness-5.json witnesses/witness-6.json \
   --network <env>
 
 # === Final verification ===
-bun run cli info --network <env> --save
-bun run cli verify --network <env>
+just cli info --network <env> --save
+just cli verify --network <env>
 ```

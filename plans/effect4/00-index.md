@@ -227,3 +227,40 @@ Beyond the gate (testing layers, user 11-11):
   48 h old (`minimumReleaseAge: 2880` in `pnpm-workspace.yaml`).
 - A deviation from this plan is recorded in the commit that makes it and
   here.
+
+## Deviations
+
+Commit 1:
+
+- `cli/output.ts` holds `Output`: L1 gave it no file, and every program
+  (contracts/build.ts among them) needs it, so it cannot live in main.ts.
+- `toml` stays a dependency: `Profile` parses aiken.toml with it; Node has
+  no TOML parser of its own.
+- `mainnet_merge_transactions.test.ts` survives: its helper imported
+  `cli-yargs` only to read aiken.toml, which `Profile`'s parser now does.
+- No package.json scripts: the `vp` built-ins and the Justfile cover them.
+- `@effect/platform-node` is imported by module (`/NodeRuntime`,
+  `/NodeServices`): its barrel loads NodeRedis, which needs `redis`. The
+  `redis` peer is marked optional (`packageExtensions` in
+  `pnpm-workspace.yaml`), so pnpm does not install it.
+- `vite-plus` 1.5.1 and `vitest` 5.1.0 are exact, through the
+  `pnpm-workspace.yaml` catalog with `vite@*`/`vitest@*` overrides: Vite+'s
+  rule for one Vitest copy. Everything else is a caret range.
+- `@cardano-sdk/util`'s published types import type-fest's `Tagged`, but
+  its manifest lists type-fest only as a devDependency. Unresolved, under
+  `skipLibCheck`, every Cardano SDK opaque type (`PaymentAddress`,
+  `TransactionId`, `Hash28ByteBase16`, ...) was `any`, in the reference
+  too. `packageExtensions` gives it type-fest ^4.41.0, and
+  `mainnet_merge_transactions.test.ts` now wraps its script hash in
+  `Hash28ByteBase16`.
+- The Blaze rule bans all of `@blaze-cardano/sdk` and `@blaze-cardano/tx`
+  outside `tx.ts` and `chain.ts`. The reference used `calculateMinAda` and
+  `calculateRequiredCollateral` from `@blaze-cardano/tx` in plan and deploy
+  modules; here those go through `tx.ts`.
+- ESLint's `no-restricted-syntax` (throw, try, canonical imports,
+  `blazeFor`) is the `mrc` JS plugin in `lint-plugin.js`; Oxlint has no
+  such rule. Oxlint's default correctness category and its type-aware
+  rules also run.
+- Format and lint cover `cli/` and `tests/`, as prettier and eslint did;
+  oxfmt does not re-include a root file after `/*`, so `vite.config.ts`
+  and `lint-plugin.js` are outside `vp check`.

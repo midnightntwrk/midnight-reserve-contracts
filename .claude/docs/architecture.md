@@ -47,5 +47,5 @@ aiken build
 aiken check
 
 # Run single emulator test
-bun test tests/basic_deploy.test.ts
+vp test tests/basic_deploy.test.ts
 ```

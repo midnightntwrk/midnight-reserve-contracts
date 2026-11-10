@@ -27,7 +27,7 @@ import {
   TestCnightMintingProxyTestCnightMintingProxyElse,
   TestCnightNoAuditTcnightMintInfiniteElse,
 } from "../contract_blueprint_mainnet";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import {
   buildNativeScriptFromState,
   COUNCIL_WITNESS_ASSET,

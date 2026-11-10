@@ -170,14 +170,14 @@ This ensures:
 
 ```bash
 # Stage a new logic hash
-bun run cli stage-upgrade \
+just cli stage-upgrade \
   --network preview \
   --domain reserve \
   --field Logic \
   --hash <new_logic_hash>
 
 # Promote staged logic to main
-bun run cli promote-upgrade \
+just cli promote-upgrade \
   --network preview \
   --domain reserve \
   --field Logic

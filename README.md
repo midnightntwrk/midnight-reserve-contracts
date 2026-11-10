@@ -12,7 +12,7 @@ just build
 just check
 
 # Run emulator integration tests (requires build first)
-bun test
+vp test
 ```
 
 ## Project Structure
@@ -38,7 +38,7 @@ bun test
 ## CLI Commands
 
 The CLI (`cli-yargs/`, Blaze Cardano SDK) builds unsigned transactions for
-offline signing. `bun run cli-yargs/index.ts <command> --help` lists flags.
+offline signing. `just cli <command> --help` lists flags.
 
 | Command | Description |
 |---|---|
@@ -65,9 +65,9 @@ offline signing. `bun run cli-yargs/index.ts <command> --help` lists flags.
 | `build-from-deployed` | Build contract blueprint from deployed scripts |
 
 ```bash
-bun run cli-yargs/index.ts deploy --network preview --output deploy-tx.cbor
+just cli deploy --network preview --output deploy-tx.cbor
 # Sign with wallet, then:
-bun run cli-yargs/index.ts sign-and-submit --tx deploy-tx.cbor --network preview
+just cli sign-and-submit --tx deploy-tx.cbor --network preview
 ```
 
 Adding a command: create `cli-yargs/commands/<name>/index.ts` exporting
@@ -93,12 +93,12 @@ The CLI maps Midnight deployment environments to their underlying Cardano networ
 All CLI commands accept the `--network` flag with any environment name:
 
 ```bash
-bun cli deploy --network preview      # Uses Cardano Preview
-bun cli deploy --network qanet        # Uses Cardano Preview
-bun cli deploy --network govnet       # Uses Cardano Preview
-bun cli deploy --network devnet       # Uses Cardano Preview
-bun cli deploy --network preprod      # Uses Cardano Preprod
-bun cli info --network mainnet        # Uses Cardano Mainnet
+just cli deploy --network preview      # Uses Cardano Preview
+just cli deploy --network qanet        # Uses Cardano Preview
+just cli deploy --network govnet       # Uses Cardano Preview
+just cli deploy --network devnet       # Uses Cardano Preview
+just cli deploy --network preprod      # Uses Cardano Preprod
+just cli info --network mainnet        # Uses Cardano Mainnet
 ```
 
 ### API Key Environment Variables

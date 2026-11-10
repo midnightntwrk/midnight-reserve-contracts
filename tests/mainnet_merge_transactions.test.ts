@@ -3,6 +3,7 @@ import {
   AssetId,
   Credential,
   CredentialType,
+  Hash28ByteBase16,
   NetworkId,
   PlutusData,
   RewardAccount,
@@ -13,7 +14,7 @@ import {
 } from "@blaze-cardano/core";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { TxBuilder } from "@blaze-cardano/tx";
-import { describe, test } from "bun:test";
+import { describe, test } from "vite-plus/test";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
 import {
   cnightAssetId,
@@ -35,7 +36,7 @@ const randomAssetId = AssetId(
 function rewardAccount(scriptHash: string) {
   return RewardAccount.fromCredential(
     Credential.fromCore({
-      hash: scriptHash,
+      hash: Hash28ByteBase16(scriptHash),
       type: CredentialType.ScriptHash,
     }).toCore(),
     NetworkId.Testnet,

@@ -441,7 +441,7 @@ Changes the terms and conditions hash and URL by spending the terms and conditio
 #### CLI Command
 
 ```
-bun cli change-terms -n <network> --hash <64-hex-char-hash> --url <url> --tx-hash <tx_hash> --tx-index <tx_index>
+just cli change-terms -n <network> --hash <64-hex-char-hash> --url <url> --tx-hash <tx_hash> --tx-index <tx_index>
 ```
 
 #### Validators Fired
@@ -557,7 +557,7 @@ Mints or burns TCnight (test NIGHT) tokens on non-mainnet networks. Uses the `tc
 #### CLI Command
 
 ```
-bun cli mint-tcnight --amount <amount> --user-address <addr> --network <env>
+just cli mint-tcnight --amount <amount> --user-address <addr> --network <env>
 ```
 
 #### Validators Fired
@@ -592,7 +592,7 @@ Mints a StagingState NFT for a v2 logic validator. This NFT is required before s
 #### CLI Command
 
 ```
-bun cli mint-staging-state --validator <name> --network <env>
+just cli mint-staging-state --validator <name> --network <env>
 ```
 
 #### Validators Fired
@@ -635,7 +635,7 @@ Deploys staging track forever validators for each governance domain. Each stagin
 #### CLI Command
 
 ```
-bun cli deploy-staging-track --network <env>
+just cli deploy-staging-track --network <env>
 ```
 
 #### Validators Fired
@@ -681,7 +681,7 @@ One-time migration of the federated ops forever datum from v1 (`FederatedOps`) t
 #### CLI Command
 
 ```
-bun cli migrate-federated-ops --network <env> --tx-hash <h> --tx-index <i>
+just cli migrate-federated-ops --network <env> --tx-hash <h> --tx-index <i>
 ```
 
 #### Validators Fired

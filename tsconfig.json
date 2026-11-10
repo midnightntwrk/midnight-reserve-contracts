@@ -11,11 +11,10 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "types": ["bun-types"]
+    "types": ["node"]
   },
   "include": [
     "cli/**/*.ts",
-    "cli-yargs/**/*.ts",
     "tests/**/*.ts"
   ],
   "exclude": [

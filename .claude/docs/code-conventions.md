@@ -3,11 +3,11 @@
 ## Dependencies
 
 ```bash
-bun add <package>      # No version - let bun pick
-bun remove <package>
+vp add <package>      # No version - let the package manager (pnpm) pick
+vp remove <package>
 ```
 
-Never manually edit dependency versions in package.json - always use `bun add`.
+Never manually edit dependency versions in package.json - always use `vp add`.
 
 ## Preferred Libraries
 

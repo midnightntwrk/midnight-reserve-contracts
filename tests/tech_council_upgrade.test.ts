@@ -17,7 +17,7 @@ import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { TxBuilder } from "@blaze-cardano/tx";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
-import { describe, test } from "bun:test";
+import { describe, test } from "vite-plus/test";
 import {
   addTwoStageState,
   buildNativeScriptFromState,
