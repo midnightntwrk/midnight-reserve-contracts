@@ -1,0 +1,19 @@
+{
+  "note": "latest_height = activation - 1, next = current + 1; block 1000 accepted but unfunded",
+  "datum": {
+    "latest_mmr_root": "cb21d685c56ee400982c1e739a6be2b542529137f1a86a2b20c061f1cc62b273",
+    "latest_height": 999,
+    "beefy_activation_block": 1000,
+    "current_committee": {
+      "validator_set_id": 4,
+      "seat_count": 4,
+      "keyset_commitment": "052f9919c3c309e60ca131820fde7ce63f1d1d7d3746f066f5263b285c787096"
+    },
+    "next_committee": {
+      "validator_set_id": 5,
+      "seat_count": 9,
+      "keyset_commitment": "0c4588cadfed641a4b6041110ed35bc4d9c400154e9ded3305bcd80ece1c5d9a"
+    }
+  },
+  "datum_cbor": "d8799f5820cb21d685c56ee400982c1e739a6be2b542529137f1a86a2b20c061f1cc62b2731903e71903e8d8799f04045820052f9919c3c309e60ca131820fde7ce63f1d1d7d3746f066f5263b285c787096ffd8799f050958200c4588cadfed641a4b6041110ed35bc4d9c400154e9ded3305bcd80ece1c5d9affff"
+}

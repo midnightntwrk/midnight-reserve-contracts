@@ -1,0 +1,292 @@
+/**
+ * merge-utxos: spend two value-holding UTxOs at a reserve or ICS forever
+ * validator into one output that holds exactly their ADA and cNIGHT, keeping
+ * the first UTxO's datum, under the logic named by the two-stage main state.
+ * The program resolves the UTxOs and the logic script; planMerge is pure
+ * over them and compile completes it.
+ */
+import {
+  type Address,
+  addressFromValidator,
+  type AssetId,
+  type NetworkId,
+  PlutusData,
+  type Script,
+  TransactionOutput,
+  type TransactionUnspentOutput,
+  Value,
+} from "@blaze-cardano/core";
+import { Effect, Either, Option } from "effect";
+import { cnightAssetId, Profile } from "../config/profile";
+import { environmentOf, slotConfigOf } from "../config/network-mapping";
+import {
+  contractUtxos,
+  deployerUtxo,
+  deployerWallet,
+  findUtxoByTxRef,
+} from "../chain/utxo";
+import { upgradeScripts, upgradeStateAt } from "./two-stage";
+import {
+  createRewardAccount,
+  logicRedeemer,
+  withdrawThroughLogic,
+} from "../tx/scripts";
+import type { TxPlan } from "../tx/plan";
+import { DEPLOYER_ONLY, signAndWrite, UNSIGNED } from "../signing/signer";
+import { Output } from "../output";
+import { compile } from "../tx/compile";
+import {
+  type FeeInput,
+  type TxFileInput,
+  txFilePath,
+  type TxHash,
+  type TxIndex,
+} from "../input";
+import { Blueprint } from "../contracts/contracts";
+import {
+  DatumParseError,
+  InputParseError,
+  PreconditionFailed,
+  UtxoNotFound,
+} from "../errors";
+
+const COMMAND = "merge-utxos";
+
+/** A merge: the forever family, the two UTxOs to merge, its fee UTxO, and where the file goes. */
+export interface MergeUtxosInput extends TxFileInput, FeeInput {
+  readonly validator: "reserve" | "ics";
+  readonly utxo1Hash: TxHash;
+  readonly utxo1Index: TxIndex;
+  readonly utxo2Hash: TxHash;
+  readonly utxo2Index: TxIndex;
+}
+
+/** What the transaction is built from, resolved from the chain and the blueprint. */
+export interface MergeInputs {
+  readonly forever: Script;
+  readonly utxo1: TransactionUnspentOutput;
+  readonly utxo2: TransactionUnspentOutput;
+  readonly twoStageMainUtxo: TransactionUnspentOutput;
+  readonly userUtxo: TransactionUnspentOutput;
+  /** The logic the two-stage main state names; its logic_round selects the redeemer shape. */
+  readonly logicScript: Script;
+  readonly logicRound: number;
+}
+
+export interface MergeParams {
+  readonly cnightAssetId: AssetId;
+  readonly networkId: NetworkId;
+}
+
+interface MergeAmounts {
+  readonly ada: bigint;
+  readonly cnight1: bigint;
+  readonly cnight2: bigint;
+  readonly cnight: bigint;
+}
+
+/** The ADA and cNIGHT of both UTxOs; at least one must hold cNIGHT. */
+const mergeAmounts = (
+  utxo1: TransactionUnspentOutput,
+  utxo2: TransactionUnspentOutput,
+  cnight: AssetId,
+): Either.Either<MergeAmounts, PreconditionFailed> => {
+  const value1 = utxo1.output().amount();
+  const value2 = utxo2.output().amount();
+  const cnight1 = value1.multiasset()?.get(cnight) ?? 0n;
+  const cnight2 = value2.multiasset()?.get(cnight) ?? 0n;
+  return cnight1 === 0n && cnight2 === 0n
+    ? Either.left(
+        new PreconditionFailed({
+          command: COMMAND,
+          refusal: { _tag: "NoCnight", asset: cnight },
+        }),
+      )
+    : Either.right({
+        ada: value1.coin() + value2.coin(),
+        cnight1,
+        cnight2,
+        cnight: cnight1 + cnight2,
+      });
+};
+
+/** The merge: spend both forever UTxOs and the fee UTxO, withdraw through the logic, one output with exactly ADA + cNIGHT and the first datum. */
+export const planMerge = (
+  inputs: MergeInputs,
+  params: MergeParams,
+): Either.Either<TxPlan, PreconditionFailed | DatumParseError> =>
+  Either.gen(function* () {
+    const amounts = yield* mergeAmounts(
+      inputs.utxo1,
+      inputs.utxo2,
+      params.cnightAssetId,
+    );
+    const datum = yield* Either.fromNullable(
+      inputs.utxo1.output().datum(),
+      () =>
+        new DatumParseError({
+          what: "forever",
+          cbor: "",
+          reason: "First UTxO missing datum",
+        }),
+    );
+    const merged = new TransactionOutput(
+      addressFromValidator(params.networkId, inputs.forever),
+      new Value(amounts.ada, new Map([[params.cnightAssetId, amounts.cnight]])),
+    );
+    merged.setDatum(datum);
+    const spend = Option.some(PlutusData.newInteger(0n));
+    return {
+      spends: [
+        { utxo: inputs.utxo1, redeemer: spend },
+        { utxo: inputs.utxo2, redeemer: spend },
+        { utxo: inputs.userUtxo, redeemer: Option.none() },
+      ],
+      references: [inputs.twoStageMainUtxo],
+      scripts: [inputs.forever],
+      mints: [],
+      outputs: [merged],
+      withdrawals: withdrawThroughLogic(
+        inputs.logicScript,
+        Option.none(),
+        logicRedeemer(PlutusData.newInteger(0n), inputs.logicRound),
+        params.networkId,
+      ),
+      registrations: [],
+      collateral: [],
+      requiredSignatures: 0,
+    };
+  });
+
+/** What the merge plan is built from and where its change goes. */
+export interface ResolvedMerge {
+  readonly inputs: MergeInputs;
+  readonly params: MergeParams;
+  readonly changeAddress: Address;
+}
+
+/** Read and report everything the merge needs: the two forever UTxOs, the two-stage main state and its logic, the fee UTxO and the merged amounts. */
+export const resolveMerge = (input: MergeUtxosInput) =>
+  Effect.gen(function* () {
+    const { network, validator, utxo1Hash, utxo1Index, utxo2Hash, utxo2Index } =
+      input;
+    if (utxo1Hash === utxo2Hash && utxo1Index === utxo2Index) {
+      return yield* new InputParseError({
+        source: "--utxo2-hash/--utxo2-index",
+        issues: [
+          `UTxO 2 is UTxO 1 (${utxo1Hash}#${utxo1Index}): a merge needs two different UTxOs`,
+        ],
+      });
+    }
+    const { txHash, txIndex } = input;
+    const out = yield* Output;
+    const blueprint = yield* Blueprint;
+
+    yield* out.log(`\nMerging UTxOs on ${network} network`);
+    yield* out.log(`Validator: ${validator}`);
+    yield* out.log(`UTxO 1: ${utxo1Hash}#${utxo1Index}`);
+    yield* out.log(`UTxO 2: ${utxo2Hash}#${utxo2Index}`);
+    yield* out.log(`Fee UTxO: ${txHash}#${txIndex}`);
+
+    const { networkId } = environmentOf(network);
+    const cnight = cnightAssetId(yield* Profile.config);
+    const { twoStage, forever, logic } = yield* blueprint.twoStage(validator);
+    const foreverAddress = addressFromValidator(networkId, forever.Script);
+    yield* out.log(`\nForever address: ${foreverAddress.toBech32()}`);
+    yield* out.log(
+      `Two-stage address: ${addressFromValidator(networkId, twoStage.Script).toBech32()}`,
+    );
+
+    const found = yield* contractUtxos(
+      { forever: forever.Script, twoStage: twoStage.Script },
+      networkId,
+    );
+    yield* out.log("\nFound contract UTxOs:");
+    yield* out.log(`  Forever: ${found.at("forever").length}`);
+    yield* out.log(`  Two-stage: ${found.at("twoStage").length}`);
+    const twoStageMainUtxo = yield* found.main("twoStage");
+    const foreverUtxo = (hash: TxHash, index: TxIndex) =>
+      Either.fromNullable(
+        findUtxoByTxRef(found.at("forever"), hash, index),
+        () => UtxoNotFound.byRef(`${hash}#${index}`, foreverAddress.toBech32()),
+      );
+    const utxo1 = yield* foreverUtxo(utxo1Hash, utxo1Index);
+    const utxo2 = yield* foreverUtxo(utxo2Hash, utxo2Index);
+
+    yield* out.log("\nReading two-stage upgrade state...");
+    const { logicHash, mitigationLogicHash, logicRound } =
+      yield* upgradeStateAt(twoStageMainUtxo);
+    yield* out.log(`  Logic hash: ${logicHash}`);
+    yield* out.log(
+      `  Mitigation logic hash: ${mitigationLogicHash || "(empty)"}`,
+    );
+    yield* out.log(`  Logic round: ${logicRound}`);
+    if (mitigationLogicHash) {
+      return yield* new PreconditionFailed({
+        command: COMMAND,
+        refusal: { _tag: "MitigationActive", mitigationLogicHash },
+      });
+    }
+    const { logic: logicScript } = yield* upgradeScripts(
+      { logicHash, mitigationLogicHash },
+      logic.Script.hash(),
+    );
+    yield* out.log(
+      `\nLogic reward account: ${createRewardAccount(logicHash, networkId)}`,
+    );
+
+    const { address: changeAddress, utxo: userUtxo } = yield* deployerUtxo(
+      txHash,
+      txIndex,
+    );
+
+    yield* out.log("\nMerging values:");
+    const amounts = yield* mergeAmounts(utxo1, utxo2, cnight);
+    yield* out.log(
+      `  UTxO 1: ${utxo1.output().amount().coin()} lovelace, ${amounts.cnight1} CNIGHT`,
+    );
+    yield* out.log(
+      `  UTxO 2: ${utxo2.output().amount().coin()} lovelace, ${amounts.cnight2} CNIGHT`,
+    );
+    yield* out.log(
+      `  Merged: ${amounts.ada} lovelace, ${amounts.cnight} CNIGHT`,
+    );
+    const resolved: ResolvedMerge = {
+      inputs: {
+        forever: forever.Script,
+        utxo1,
+        utxo2,
+        twoStageMainUtxo,
+        userUtxo,
+        logicScript,
+        logicRound,
+      },
+      params: { cnightAssetId: cnight, networkId },
+      changeAddress,
+    };
+    return resolved;
+  });
+
+/** Resolve, plan, compile and write the merge transaction. */
+export const mergeUtxosProgram = (input: MergeUtxosInput) =>
+  Effect.gen(function* () {
+    const { inputs, params, changeAddress } = yield* resolveMerge(input);
+    const plan = yield* planMerge(inputs, params);
+    const tx = yield* compile(plan, {
+      commandName: COMMAND,
+      slotConfig: slotConfigOf(input.network),
+      wallet: yield* deployerWallet,
+      changeAddress,
+      feePadding: input.feePadding,
+      metadata: Option.some(COMMAND),
+      expectedWitnesses: DEPLOYER_ONLY,
+      contracts: yield* Effect.flatMap(Blueprint, (b) => b.contracts),
+    });
+    yield* signAndWrite(
+      tx,
+      txFilePath(input),
+      UNSIGNED,
+      "Merge UTxOs Transaction",
+    );
+    return tx;
+  });

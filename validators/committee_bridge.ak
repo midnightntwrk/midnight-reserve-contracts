@@ -1,14 +1,20 @@
-use bridge/beefy.{verify_consensus}
-use bridge/types.{BeefyConsensusProof, BeefyConsensusState, BeefyThreshold}
-use cardano/certificate.{RegisterCredential, UnregisterCredential}
+use aiken/builtin
+use bridge/beefy.{verify_update}
+use bridge/pool.{check_pool}
+use bridge/types.{BeefyConsensusState, BeefyThreshold, BridgeUpdate}
+use cardano/address.{Address, Script}
+use cardano/assets.{lovelace_of}
+use cardano/certificate.{RegisterCredential}
 use cardano/script_context.{Publishing, ScriptContext, Withdrawing}
-use cardano/transaction.{OutputReference, Transaction}
+use cardano/transaction.{
+  InlineDatum, Input, Output, OutputReference, Transaction,
+}
 use config
 use forever/script.{forever_contract}
 use upgradable/two_stage_upgrade.{two_stage_upgradable}
-use utils.{get_input_state_by_policy, get_output_state_by_policy}
+use utils.{get_input_state_by_policy, is_singleton, must_find}
 
-/// One-shot minting for BEEFY consensus state NFT. Requires next authority set ID > current.
+/// Light-client NFT. The bootstrap datum must be recomputable from Midnight state (MIP §Bootstrap).
 validator committee_bridge_forever {
   else(ctx: ScriptContext) {
     let one_shot_ref =
@@ -23,12 +29,22 @@ validator committee_bridge_forever {
       config.committee_bridge_two_stage_hash,
       fn(datum, _redeemer) {
         expect BeefyConsensusState {
-          current_authority_set,
-          next_authority_set,
-          ..
+          latest_mmr_root,
+          latest_height,
+          beefy_activation_block,
+          current_committee,
+          next_committee,
         }: BeefyConsensusState = datum
 
-        current_authority_set.id < next_authority_set.id
+        and {
+          next_committee.validator_set_id == current_committee.validator_set_id + 1,
+          latest_height == beefy_activation_block - 1,
+          current_committee.seat_count > 0,
+          next_committee.seat_count > 0,
+          builtin.length_of_bytearray(latest_mmr_root) == 32,
+          builtin.length_of_bytearray(current_committee.keyset_commitment) == 32,
+          builtin.length_of_bytearray(next_committee.keyset_commitment) == 32,
+        }
       },
     )
   }
@@ -49,33 +65,68 @@ validator committee_bridge_two_stage_upgrade {
   }
 }
 
-/// Verifies BEEFY consensus proofs for authority set updates.
+/// Light-client update: rule 0 here (the light client is output 0), rules 1–10 in `verify_update`, pool rules 12–17 in `check_pool`.
 validator committee_bridge_logic {
   else(ctx: ScriptContext) {
     let ScriptContext { info, transaction, redeemer } = ctx
 
     when info is {
-      Withdrawing(_) |
-      Publishing { certificate: UnregisterCredential { .. }, .. } -> {
+      Withdrawing(_) -> {
         let Transaction { inputs, outputs, reference_inputs, .. } = transaction
 
-        expect proof: BeefyConsensusProof = redeemer
+        expect update: BridgeUpdate = redeemer
 
-        let beefy_nft = config.committee_bridge_forever_hash
+        let forever = config.committee_bridge_forever_hash
 
-        expect trusted_state: BeefyConsensusState =
-          get_input_state_by_policy(inputs, beefy_nft)
+        let Input {
+          output: Output { value: value_in, datum: datum_in, .. },
+          ..
+        } =
+          must_find(
+            inputs,
+            fn(input) { is_singleton(input.output.value, forever, "") },
+          )
 
-        expect out_trusted_state: BeefyConsensusState =
-          get_output_state_by_policy(outputs, beefy_nft)
+        expect InlineDatum(state_in) = datum_in
+        expect state_in: BeefyConsensusState = state_in
 
-        expect datum: BeefyThreshold =
+        expect [
+          Output {
+            address: out_address,
+            value: value_out,
+            datum: datum_out,
+            ..
+          },
+          ..
+        ] = outputs
+
+        expect out_address == Address(Script(forever), None)
+        expect is_singleton(value_out, forever, "")
+        expect lovelace_of(value_out) >= lovelace_of(value_in)
+        expect InlineDatum(state_out) = datum_out
+        expect state_out: BeefyConsensusState = state_out
+
+        expect threshold: BeefyThreshold =
           get_input_state_by_policy(
             reference_inputs,
             config.beefy_signer_threshold_hash,
           )
 
-        verify_consensus(trusted_state, proof, datum, out_trusted_state)
+        let
+          next_state,
+          signers,
+          handover,
+        <- verify_update(state_in, update, threshold)
+
+        expect state_out == next_state
+
+        check_pool(
+          transaction,
+          config.committee_bridge_pool_hash,
+          threshold,
+          handover,
+          signers,
+        )
       }
 
       Publishing { certificate: RegisterCredential { .. }, .. } -> True

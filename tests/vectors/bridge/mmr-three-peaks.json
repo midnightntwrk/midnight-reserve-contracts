@@ -1,0 +1,17 @@
+{
+  "note": "leaf 5 of 7 sits under the middle peak; items = P1, sibling, P3; root = H(H(P3 || P2) || P1)",
+  "leaf_count": 7,
+  "leaf_index": 5,
+  "leaf_hash": "d279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535",
+  "peaks": [
+    "1d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af4907",
+    "e1c308ce661d3e6f5f8424ab903f77b257b3de11e34f9e99154c171bd9a0eb79",
+    "291bd553ea938a33785762f076cbad142bde4a0caf55fbf122ac07d7489414ed"
+  ],
+  "items": [
+    "1d37b1ee4db7470d98e135bd33fb23ce297ab6535043628dbccb9ecb64af4907",
+    "989a7025bda9312b19569d9e84e33a624e7fc007e54db23b6758d5f819647071",
+    "291bd553ea938a33785762f076cbad142bde4a0caf55fbf122ac07d7489414ed"
+  ],
+  "root": "3db772cb24eebfdf945630499544625b79c152d820e3b6996714ac0a8cbeb2e9"
+}
