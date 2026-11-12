@@ -33,7 +33,7 @@
     "cli:simple-tx": "bun run cli-yargs/index.ts simple-tx"
   },
   "devDependencies": {
-    "@blaze-cardano/blueprint": "^0.9.0",
+    "@blaze-cardano/blueprint": "^0.9.1",
     "@blaze-cardano/data": "^0.6.11",
     "@blaze-cardano/emulator": "^0.5.4",
     "@blaze-cardano/query": "^0.6.4",
@@ -41,23 +41,22 @@
     "@blaze-cardano/tx": "^0.15.4",
     "@blaze-cardano/uplc": "^0.5.4",
     "@blaze-cardano/vm": "^0.3.3",
-    "@types/bun": "^1.4.2",
-    "@typescript-eslint/eslint-plugin": "^8.70.1",
-    "@typescript-eslint/parser": "^8.70.1",
+    "@types/bun": "^1.4.4",
+    "@typescript-eslint/eslint-plugin": "^8.72.2",
+    "@typescript-eslint/parser": "^8.72.2",
     "cbor": "^10.0.12",
-    "eslint": "^10.11.0",
-    "globals": "^17.12.0",
-    "prettier": "^3.9.9",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "@types/yargs": "^17.0.35",
-    "toml": "^5.0.0",
+    "toml": "^5.0.1",
     "yargs": "^18.2.0"
   },
   "overrides": {
     "lodash": "^4.18.1",
-    "picomatch": "^4.0.7",
-    "@humanfs/node": "^0.16.8"
+    "picomatch": "^4.0.7"
   }
 }
