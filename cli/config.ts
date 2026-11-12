@@ -1,15 +1,35 @@
 /**
  * Where the CLI runs: the environment values it reads, the environments and
- * the aiken.toml profiles, and the Profile service, the aiken.toml profile
- * of an environment with its one-shot and collateral UTxO references and
- * the cNIGHT asset.
+ * the aiken.toml profiles; the Profile service (the aiken.toml profile of an
+ * environment with its one-shot and collateral UTxO references and the
+ * cNIGHT asset); the DeployerAddress service; and the env intent, the
+ * values a command installs that come from the environment.
  */
 import { resolve } from "path";
-import { AssetId, NetworkId } from "@blaze-cardano/core";
-import { ConfigProvider, Context, Effect, FileSystem, Layer } from "effect";
+import { Address, AssetId, NetworkId } from "@blaze-cardano/core";
+import {
+  Config,
+  ConfigProvider,
+  Context,
+  Effect,
+  FileSystem,
+  Layer,
+  Option,
+  Redacted,
+} from "effect";
 import * as TOML from "toml";
 import { ConfigError } from "./errors";
-import { parseTxHash, parseTxIndex, type TxHash, type TxIndex } from "./input";
+import {
+  type Hash32,
+  parseCandidates,
+  parseHash32,
+  parseSigners,
+  parseTxHash,
+  parseTxIndex,
+  type TxHash,
+  type TxIndex,
+  ZERO_HASH32,
+} from "./input";
 
 /** The repository root: aiken.toml, the build output, deployed-scripts/ and node_modules/. */
 export const PROJECT_ROOT = resolve(import.meta.dirname, "..");
@@ -227,3 +247,129 @@ export class Profile extends Context.Service<
       })),
     );
 }
+
+/** A ConfigError on an environment variable. */
+export const envError = (key: string, reason: string) =>
+  new ConfigError({ source: "env", key, reason });
+
+/**
+ * An environment variable through the fiber's ConfigProvider (envLayer in
+ * the CLI); unset and empty both read as None. The providers fail on a flat
+ * key only when it is missing, so any other failure is a defect.
+ */
+const optionalString = (name: string): Effect.Effect<Option.Option<string>> =>
+  Effect.orDie(
+    Effect.map(
+      Config.option(Config.String(name)),
+      Option.filter((value) => value !== ""),
+    ),
+  );
+
+/** An environment variable that must be set and not empty. */
+const requiredString = (name: string): Effect.Effect<string, ConfigError> =>
+  Effect.flatMap(
+    optionalString(name),
+    Option.match({
+      onNone: () => Effect.fail(envError(name, "required but not set")),
+      onSome: Effect.succeed,
+    }),
+  );
+
+/** A secret environment variable that must be set and not empty, Redacted from the read on. */
+export const requiredSecret = (
+  name: string,
+): Effect.Effect<Redacted.Redacted<string>, ConfigError> =>
+  Effect.flatMap(
+    Effect.orDie(Config.option(Config.Redacted(name))),
+    Option.match({
+      onNone: () => Effect.fail(envError(name, "required but not set")),
+      onSome: (secret) =>
+        Redacted.value(secret) === ""
+          ? Effect.fail(envError(name, "required but not set"))
+          : Effect.succeed(secret),
+    }),
+  );
+
+/** The deployer's address on local and the emulator when DEPLOYER_ADDRESS is unset. */
+const LOCAL_DEPLOYER =
+  "addr_test1qruhen60uwzpwnnr7gjs50z2v8u9zyfw6zunet4k42zrpr54mrlv55f93rs6j48wt29w90hlxt4rvpvshe55k5r9mpvqjv2wt4";
+
+/** The deployer's address. */
+export class DeployerAddress extends Context.Service<
+  DeployerAddress,
+  {
+    /** DEPLOYER_ADDRESS, read on each call. */
+    readonly address: Effect.Effect<Address, ConfigError>;
+  }
+>()("cli/DeployerAddress") {
+  /** DEPLOYER_ADDRESS, which must be on the environment's network; unset, a fixed test address on local and the emulator. */
+  static readonly layer = (environment: Environment) =>
+    Layer.succeed(this)({
+      address: Effect.gen(function* () {
+        const text = yield* optionalString("DEPLOYER_ADDRESS");
+        if (Option.isNone(text)) {
+          return environment === "local" || environment === "emulator"
+            ? Address.fromBech32(LOCAL_DEPLOYER)
+            : yield* envError(
+                "DEPLOYER_ADDRESS",
+                `required for non-local environment '${environment}'`,
+              );
+        }
+        const address = yield* Effect.try({
+          try: () => Address.fromBech32(text.value),
+          catch: (cause) =>
+            envError(
+              "DEPLOYER_ADDRESS",
+              `'${text.value}' is not a bech32 address: ${cause instanceof Error ? cause.message : String(cause)}`,
+            ),
+        });
+        const { networkId } = environmentOf(environment);
+        return address.getNetworkId() === networkId
+          ? address
+          : yield* envError(
+              "DEPLOYER_ADDRESS",
+              `'${text.value}' is a ${NetworkId[address.getNetworkId()]} address; ${environment} is on ${NetworkId[networkId]}`,
+            );
+      }),
+    });
+}
+
+/** COUNCIL_SIGNERS or TECH_AUTH_SIGNERS: the signers deploy installs, or a change command's new set. */
+export const newSigners = (variable: "COUNCIL_SIGNERS" | "TECH_AUTH_SIGNERS") =>
+  Effect.flatMap(requiredString(variable), (value) =>
+    Effect.fromResult(parseSigners(variable, value)),
+  );
+
+/** PERMISSIONED_CANDIDATES: the federated operators deploy and change-federated-ops install. */
+export const permissionedCandidates = Effect.flatMap(
+  requiredString("PERMISSIONED_CANDIDATES"),
+  (value) => Effect.fromResult(parseCandidates(value)),
+);
+
+/**
+ * The first terms and conditions a deploy installs:
+ * TERMS_AND_CONDITIONS_INITIAL_HASH (zeros when unset) and the hex of the
+ * UTF-8 TERMS_AND_CONDITIONS_INITIAL_LINK (empty when unset).
+ */
+export const initialTermsAndConditions: Effect.Effect<
+  { readonly hash: Hash32; readonly link: string },
+  ConfigError
+> = Effect.all({
+  hash: Effect.flatMap(
+    optionalString("TERMS_AND_CONDITIONS_INITIAL_HASH"),
+    Option.match({
+      onNone: () => Effect.succeed(ZERO_HASH32),
+      onSome: (text) =>
+        Effect.mapError(Effect.fromResult(parseHash32(text)), (reason) =>
+          envError("TERMS_AND_CONDITIONS_INITIAL_HASH", reason),
+        ),
+    }),
+  ),
+  link: Effect.map(
+    optionalString("TERMS_AND_CONDITIONS_INITIAL_LINK"),
+    Option.match({
+      onNone: () => "",
+      onSome: (text) => Buffer.from(text).toString("hex"),
+    }),
+  ),
+});

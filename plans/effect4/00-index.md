@@ -271,3 +271,12 @@ Commit 1:
 - Format and lint cover `cli/` and `tests/`, as prettier and eslint did;
   oxfmt does not re-include a root file after `/*`, so `vite.config.ts`
   and `lint-plugin.js` are outside `vp check`.
+
+Commit 2:
+
+- `parseSigners` and `parseCandidates` (with `Signer` and
+  `PermissionedCandidate`) live in `input.ts`, not `datum.ts`: they parse
+  environment text, and `input.ts` holds the boundary parsers. The datum
+  codecs that encode them come with `datum.ts`.
+- The aiken.toml profile tests of the reference's `tests/config.test.ts`
+  land here; commit 1 brought `Profile` without them.

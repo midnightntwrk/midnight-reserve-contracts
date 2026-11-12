@@ -30,11 +30,18 @@ export class FileWriteError extends Data.TaggedError("FileWriteError")<{
   readonly reason: string;
 }> {}
 
+/** An environment value with a structure (signers, candidates) failed to parse; one issue per line. */
+export class InputParseError extends Data.TaggedError("InputParseError")<{
+  readonly source: string;
+  readonly issues: readonly string[];
+}> {}
+
 const CLI_ERRORS = [
   ConfigError,
   BlueprintError,
   AikenBuildError,
   FileWriteError,
+  InputParseError,
 ] as const;
 
 /** Union of every expected CLI failure. */
@@ -44,7 +51,7 @@ export type CliError = InstanceType<(typeof CLI_ERRORS)[number]>;
 export const isCliError = (value: unknown): value is CliError =>
   CLI_ERRORS.some((error) => value instanceof error);
 
-/** Render a CliError as the one line the user sees. */
+/** Render a CliError as the text the user sees. */
 export function renderError(error: CliError): string {
   switch (error._tag) {
     case "ConfigError":
@@ -57,5 +64,10 @@ export function renderError(error: CliError): string {
       return `Build failed (${error.phase}): ${error.reason}`;
     case "FileWriteError":
       return `Cannot write ${error.path}: ${error.reason}`;
+    case "InputParseError":
+      return [
+        `Invalid ${error.source}:`,
+        ...error.issues.map((issue) => `  ${issue}`),
+      ].join("\n");
   }
 }
