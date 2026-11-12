@@ -49,3 +49,15 @@ use-env env:
 
 cli *args:
     vpx cli/main.ts {{args}}
+
+
+# One SVG per transaction diagram (docs/transactions/README.md); needs typst.
+tx-diagrams:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd docs/transactions
+    for area in staking registration reserve; do
+        for tx in $(typst eval 'query(<txs>).first().value.join(" ")' --in $area.typ | tr -d '"'); do
+            typst compile --input tx=$tx $area.typ svg/$area-$tx.svg
+        done
+    done
