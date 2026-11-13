@@ -166,15 +166,15 @@ global. A rule may name a module that does not exist yet.
 | `contracts/snapshot-read.ts` | imported only by `contracts/**`, `deploy.ts`, `governance/two-stage.ts`, `report.ts` |
 | `contracts/build.ts` | imported only by `commands.ts`, `contracts/snapshot-write.ts` |
 | `contracts/snapshot-read.ts`, `contracts/snapshot-write.ts` | import no `output` |
-| Blaze | `@blaze-cardano/sdk` and `@blaze-cardano/tx` are imported only by `tx.ts` and `chain.ts`; `Provider.blazeFor` is read only in `tx.ts` (defined in `chain.ts`) |
+| Blaze | `@blaze-cardano/sdk` and `@blaze-cardano/tx` are imported only by `tx.ts` (commit 3: `chain.ts` uses neither, and `Provider` has no `blazeFor`) |
 
 Plans (`plan*`) take no services; with plans living beside their commands in
 L1 that is a review rule, not a module rule.
 
-Three rules date from the architecture before the 11-11 revision: the
-`blazeFor` rule, the `tx.ts` boundary and the `contracts/snapshot-read.ts`
-importers. Each is settled in the commit that adds its module, and that
-commit message says what changed and why.
+Two rules date from the architecture before the 11-11 revision: the
+`tx.ts` boundary and the `contracts/snapshot-read.ts` importers. Each is
+settled in the commit that adds its module, and that commit message says
+what changed and why. The third, the `blazeFor` rule, went in commit 3.
 
 ## Commits
 
@@ -280,3 +280,19 @@ Commit 2:
   codecs that encode them come with `datum.ts`.
 - The aiken.toml profile tests of the reference's `tests/config.test.ts`
   land here; commit 1 brought `Profile` without them.
+
+Commit 3:
+
+- `ProviderConfig` is a value private to `chain.ts`, not a service:
+  `Provider.layer` reads the credentials itself, so no other module can
+  reach them. The lint rule on the name stays.
+- `Provider` has no `blazeFor`: compile builds Blaze from the
+  PlanningContext. Its two `blazeFor` lint selectors are gone, and
+  `@blaze-cardano/sdk` and `@blaze-cardano/tx` are now refused in
+  `chain.ts` too.
+- The reward-account read (reference `chain/registration.ts`) is
+  `Provider.rewardAccountRegistered`, so the Blockfrost key it uses stays
+  in `chain.ts`.
+- `@blaze-cardano/ogmios` ^0.0.8 is a declared dependency: Kupmios takes
+  its client, and pnpm's strict layout does not expose it through
+  `@blaze-cardano/query`.

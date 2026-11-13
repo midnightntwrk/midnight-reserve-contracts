@@ -36,12 +36,30 @@ export class InputParseError extends Data.TaggedError("InputParseError")<{
   readonly issues: readonly string[];
 }> {}
 
+/** A chain provider call failed. `status` is the HTTP status when the provider answered; `retryable` is true for a transport failure, a timeout, 429 and 5xx. */
+export class ProviderError extends Data.TaggedError("ProviderError")<{
+  readonly op: string;
+  readonly cause: unknown;
+  readonly retryable: boolean;
+  readonly status?: number;
+  readonly reason?: "Transport" | "StatusCode" | "Decode" | "Timeout";
+}> {}
+
+/** --provider blockfrost on an environment that is not a Cardano network (local, the emulator). */
+export class BlockfrostUnavailable extends Data.TaggedError(
+  "BlockfrostUnavailable",
+)<{
+  readonly environment: string;
+}> {}
+
 const CLI_ERRORS = [
   ConfigError,
   BlueprintError,
   AikenBuildError,
   FileWriteError,
   InputParseError,
+  ProviderError,
+  BlockfrostUnavailable,
 ] as const;
 
 /** Union of every expected CLI failure. */
@@ -69,5 +87,9 @@ export function renderError(error: CliError): string {
         `Invalid ${error.source}:`,
         ...error.issues.map((issue) => `  ${issue}`),
       ].join("\n");
+    case "ProviderError":
+      return `Provider call '${error.op}' failed: ${error.cause instanceof Error ? error.cause.message : String(error.cause)}`;
+    case "BlockfrostUnavailable":
+      return `Blockfrost provider requires a real Cardano network (preview/preprod/mainnet). Environment '${error.environment}' maps to local/emulator. Use --provider emulator or --provider kupmios instead.`;
   }
 }

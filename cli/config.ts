@@ -266,7 +266,9 @@ const optionalString = (name: string): Effect.Effect<Option.Option<string>> =>
   );
 
 /** An environment variable that must be set and not empty. */
-const requiredString = (name: string): Effect.Effect<string, ConfigError> =>
+export const requiredString = (
+  name: string,
+): Effect.Effect<string, ConfigError> =>
   Effect.flatMap(
     optionalString(name),
     Option.match({

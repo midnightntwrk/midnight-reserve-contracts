@@ -36,11 +36,11 @@ const NO_FILES_OR_PROCESSES = [
   message: "Files go through FileSystem, processes through ChildProcess.",
 }));
 
-/** Blaze is built in chain.ts (Provider.blazeFor) and used only by tx.ts (plans/effect4/00-index.md). */
+/** Blaze's sdk and tx packages are used only by tx.ts, in compile (plans/effect4/00-index.md). */
 const NO_BLAZE = ["@blaze-cardano/sdk", "@blaze-cardano/tx"].map((name) => ({
   name,
   message:
-    "Only tx.ts (compile) and chain.ts (Provider.blazeFor) use Blaze: a command returns a TxPlan and calls compile.",
+    "Only tx.ts (compile) uses Blaze's sdk and tx packages: a command returns a TxPlan and calls compile.",
 }));
 
 /** The syntax every file of cli/ is refused; mrc/no-restricted-syntax is replaced the same way. */
@@ -55,16 +55,6 @@ const NO_THROW_OR_TRY = [
     message: "Use Effect.try into a tagged error.",
   },
 ];
-
-/** Blaze is built by Provider.blazeFor, read only by tx.ts. */
-const NO_BLAZE_FOR = [
-  "MemberExpression[property.name='blazeFor']",
-  "ObjectPattern > Property[key.name='blazeFor']",
-].map((selector) => ({
-  selector,
-  message:
-    "Only tx.ts builds Blaze (Provider.blazeFor): a command returns a TxPlan and calls compile.",
-}));
 
 /**
  * The boundary blocks below match exact specifiers ("./keys"). A relative specifier is refused
@@ -163,13 +153,13 @@ const specifier = (from: string, to: string) => {
 
 /**
  * The no-restricted-imports paths of a module of cli/. The fs and child_process bans come
- * first, then Blaze outside tx.ts and chain.ts, then the modules the boundaries refuse it, then
+ * first, then Blaze outside tx.ts, then the modules the boundaries refuse it, then
  * ProviderConfig, which no module but chain.ts names: the provider credentials never leave
  * chain.ts.
  */
 const boundaryPaths = (from: string) => [
   ...NO_FILES_OR_PROCESSES,
-  ...(from === "tx" || from === "chain" ? [] : NO_BLAZE),
+  ...(from === "tx" ? [] : NO_BLAZE),
   ...MODULES.flatMap((to) => {
     const broken = BOUNDARIES.filter((boundary) => boundary.forbids(from, to));
     return broken.length === 0
@@ -294,7 +284,6 @@ export default defineConfig({
             "error",
             ...NO_THROW_OR_TRY,
             ...CANONICAL_IMPORTS,
-            ...NO_BLAZE_FOR,
           ],
         },
       },
@@ -308,17 +297,6 @@ export default defineConfig({
           ],
         },
       })),
-      {
-        // Blaze is built in chain.ts (blazeFor) and read in tx.ts alone.
-        files: ["cli/tx.ts", "cli/chain.ts"],
-        rules: {
-          "mrc/no-restricted-syntax": [
-            "error",
-            ...NO_THROW_OR_TRY,
-            ...CANONICAL_IMPORTS,
-          ],
-        },
-      },
       {
         // Tests: no try/catch (Effect.flip or Result for a failure).
         files: ["tests/**/*.ts"],
