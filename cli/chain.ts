@@ -78,42 +78,47 @@ const PROVIDER_TIMEOUT = Duration.seconds(30);
 /** How long one address read may take, all its pages included (Blaze reads them one at a time). */
 const ADDRESS_READ_TIMEOUT = Duration.minutes(5);
 
-/** A read is tried this many times in all, the delay doubling from READ_RETRY_DELAY_MS. */
-const READ_ATTEMPTS = 3;
-const READ_RETRY_DELAY_MS = 250;
+/** A call is tried this many times in all; a read's delay doubles from READ_RETRY_DELAY. */
+export const ATTEMPTS = 3;
+const READ_RETRY_DELAY = Duration.millis(250);
 
 /** An HTTP status worth a retry: rate limited or a server-side failure. */
 const retryableStatus = (status: number) => status === 429 || status >= 500;
 
-/** Retry a read while `retryable` holds, with a warning naming the op and the delay before each retry. */
-const retryRead =
-  (op: string, retryable: (error: ProviderError) => boolean) =>
-  <A, R>(effect: Effect.Effect<A, ProviderError, R>) =>
+/** Retry while `retryable` holds, ATTEMPTS in all, the delay doubling from `firstDelay`; `announce` runs with the delay before each retry. */
+export const retrying =
+  <E>(
+    retryable: (error: E) => boolean,
+    firstDelay: Duration.Duration,
+    announce: (delay: Duration.Duration) => Effect.Effect<void>,
+  ) =>
+  <A, R>(effect: Effect.Effect<A, E, R>) =>
     Effect.suspend(() => {
       let failures = 0;
-      const attempt: Effect.Effect<A, ProviderError, R> = Effect.tapError(
+      const attempt: Effect.Effect<A, E, R> = Effect.tapError(
         effect,
         (error) => {
           failures += 1;
-          if (!retryable(error) || failures >= READ_ATTEMPTS)
-            return Effect.void;
-          const delay = Duration.millis(
-            READ_RETRY_DELAY_MS * 2 ** (failures - 1),
-          );
-          return Effect.annotateLogs(
-            Effect.logWarning(
-              `${op} failed, retrying in ${Duration.format(delay)}`,
-            ),
-            { op, delaySeconds: Duration.toSeconds(delay) },
-          );
+          return !retryable(error) || failures >= ATTEMPTS
+            ? Effect.void
+            : announce(Duration.times(firstDelay, 2 ** (failures - 1)));
         },
       );
       return Effect.retry(attempt, {
-        times: READ_ATTEMPTS - 1,
+        times: ATTEMPTS - 1,
         while: retryable,
-        schedule: Schedule.exponential(Duration.millis(READ_RETRY_DELAY_MS)),
+        schedule: Schedule.exponential(firstDelay),
       });
     });
+
+/** Retry a read while `retryable` holds, with a warning naming the op and the delay before each retry. */
+const retryRead = (op: string, retryable: (error: ProviderError) => boolean) =>
+  retrying(retryable, READ_RETRY_DELAY, (delay) =>
+    Effect.annotateLogs(
+      Effect.logWarning(`${op} failed, retrying in ${Duration.format(delay)}`),
+      { op, delaySeconds: Duration.toSeconds(delay) },
+    ),
+  );
 
 /** Fail with a retryable Timeout ProviderError when `effect` takes longer than `timeout`. */
 const timeoutAfter =

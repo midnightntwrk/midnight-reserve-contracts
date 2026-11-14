@@ -339,3 +339,22 @@ Commit 5:
   (`logicRedeemer`, `mintWitnesses`, `withdrawThroughLogic`,
   `createRewardAccount`, the `calculateMinAda`/`calculateRequiredCollateral`
   re-exports); this commit has the CIP-20 metadata compile uses.
+
+Commit 6:
+
+- Submission with retries and the confirmation wait (reference
+  `chain/submit.ts`) live in `signing.ts`, beside their only callers.
+  `Provider.submit` stays one attempt. `chain.ts` exports the retry
+  helper (`retrying`, generalised from the read retry) so both share one
+  policy.
+- Signing and witness-file verification both go through
+  `@cardano-sdk/crypto` (libsodium), for normal and extended keys. The
+  reference verified with `@noble/curves` (`zip215: false`); libsodium's
+  verify is the one the ledger uses, and it refuses the small-order key
+  that ZIP-215 accepts. `@noble/curves` is not a dependency.
+- The transaction file is written by `signing.ts` through FileSystem;
+  `Output` gains the marked lines (`success`, `info`, `progress`) but no
+  file writing. Written files are byte-identical to the reference's for
+  the same transaction and keys (`tests/golden/signing/`).
+- The deployment-file schema here only reads `transactions`; the writer
+  comes with deploy (commit 12).

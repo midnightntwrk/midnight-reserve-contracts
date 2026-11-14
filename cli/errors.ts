@@ -66,6 +66,13 @@ export class ProviderError extends Data.TaggedError("ProviderError")<{
   readonly reason?: "Transport" | "StatusCode" | "Decode" | "Timeout";
 }> {}
 
+/** A transaction was not submitted or not confirmed (the provider refused every attempt, a lookup kept failing, or the wait ran out), or a file's run had failed transactions. */
+export class SubmitError extends Data.TaggedError("SubmitError")<{
+  readonly txId?: string;
+  readonly attempts?: number;
+  readonly cause: unknown;
+}> {}
+
 /** --provider blockfrost on an environment that is not a Cardano network (local, the emulator). */
 export class BlockfrostUnavailable extends Data.TaggedError(
   "BlockfrostUnavailable",
@@ -83,6 +90,7 @@ const CLI_ERRORS = [
   BlockfrostUnavailable,
   PinsMoved,
   TxBuildError,
+  SubmitError,
 ] as const;
 
 /** Union of every expected CLI failure. */
@@ -123,5 +131,7 @@ export function renderError(error: CliError): string {
           : `${error.command}: transaction build failed: ${error.cause instanceof Error ? error.cause.message : String(error.cause)}`,
         ...error.traces.map((trace) => `  ${trace}`),
       ].join("\n");
+    case "SubmitError":
+      return `Submission failed${error.attempts ? ` after ${error.attempts} attempt(s)` : ""}${error.txId ? ` (${error.txId})` : ""}: ${isCliError(error.cause) ? renderError(error.cause) : error.cause instanceof Error ? error.cause.message : String(error.cause)}`;
   }
 }

@@ -26,7 +26,7 @@ import {
 } from "../cli/contracts/build";
 import { DEPLOY_COMPONENT_VALIDATORS } from "../cli/contracts/resolver";
 import { PlutusJson } from "../cli/contracts/snapshot-read";
-import { Output } from "../cli/output";
+import { captureOutput } from "./helpers/output";
 
 const tmp = mkdtempSync(join(tmpdir(), "build-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
@@ -328,7 +328,7 @@ describe("build --from-deployed", () => {
         mkdirSync(root);
         const broken = `[config.preview.reserve_two_stage_hash]\nencoding = "hex"\n`;
         writeFileSync(join(root, "aiken.toml"), broken);
-        const lines: string[] = [];
+        const output = captureOutput();
         const error = yield* Effect.flip(
           buildContracts({
             network: "preview",
@@ -340,10 +340,7 @@ describe("build --from-deployed", () => {
               Layer.mergeAll(
                 NodeServices.layer,
                 DeployedScripts.layer,
-                Layer.succeed(Output)({
-                  log: (line) => Effect.sync(() => void lines.push(line)),
-                  error: (line) => Effect.sync(() => void lines.push(line)),
-                }),
+                output.layer,
               ),
             ),
           ),
@@ -355,7 +352,9 @@ describe("build --from-deployed", () => {
         expect(readFileSync(join(root, "aiken.toml"), "utf-8")).toBe(broken);
         expect(readdirSync(root)).toEqual(["aiken.toml"]);
         expect(existsSync(join(root, "plutus-preview.json"))).toBe(false);
-        expect(lines).toContain("Reading hashes from deployed scripts...");
+        expect(output.lines).toContain(
+          "Reading hashes from deployed scripts...",
+        );
       }),
   );
 });

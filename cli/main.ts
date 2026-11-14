@@ -7,10 +7,12 @@ import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Cause, Console, Effect, Exit, Layer, Option } from "effect";
 import { Command } from "effect/cli";
+import { FetchHttpClient } from "effect/http";
 import packageJson from "../package.json" with { type: "json" };
 import { commands } from "./commands";
 import { DeployedScripts, envLayer } from "./config";
 import { isCliError, renderError } from "./errors";
+import { Keys } from "./keys";
 import { Output } from "./output";
 
 const root = Command.make("midnight-reserve").pipe(
@@ -47,6 +49,8 @@ Command.run(root, { version: packageJson.version }).pipe(
   Effect.provide(
     Layer.mergeAll(
       Layer.provideMerge(envLayer(".env"), NodeServices.layer),
+      FetchHttpClient.layer,
+      Keys.layer,
       Output.layer,
       DeployedScripts.layer,
     ),

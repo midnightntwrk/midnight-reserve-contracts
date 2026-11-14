@@ -1,8 +1,8 @@
 import { NetworkId } from "@blaze-cardano/core";
 import { describe, expect, it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Effect } from "effect";
 import type { Environment } from "../cli/config";
-import { Output } from "../cli/output";
+import { captureOutput } from "./helpers/output";
 import { generateKeyProgram, keyToAddress } from "../cli/wallet";
 
 // Reference vector from cardano-cli 10.14 (`key verification-key`, `address key-hash`, `address build`); the Effect 3 CLI derives the same.
@@ -36,16 +36,13 @@ describe("generate-key", () => {
     "prints a fresh key with the address it derives on the network",
     ([network, networkId]) =>
       Effect.gen(function* () {
-        const lines: string[] = [];
+        const output = captureOutput();
         yield* generateKeyProgram({ network }).pipe(
-          Effect.provide(
-            Layer.succeed(Output, {
-              log: (line) => Effect.sync(() => void lines.push(line)),
-              error: () => Effect.void,
-            }),
-          ),
+          Effect.provide(output.layer),
         );
-        const env = Object.fromEntries(lines.map((line) => line.split("=")));
+        const env = Object.fromEntries(
+          output.lines.map((line) => line.split("=")),
+        );
         const key: string = env.SIGNING_PRIVATE_KEY;
         expect(key).toMatch(/^[0-9a-f]{64}$/);
         const derived = keyToAddress(key, networkId);
