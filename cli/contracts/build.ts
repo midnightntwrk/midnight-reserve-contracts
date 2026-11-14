@@ -2,13 +2,15 @@
  * The contract build: the multi-phase Aiken build (compile, copy the
  * validator hashes into aiken.toml, recompile, until the logic validators
  * embed the final threshold hashes), then the TypeScript bindings of its
- * blueprint, copied to contract_blueprint.ts.
+ * blueprint, copied to contract_blueprint.ts. A from-deployed build holds
+ * the hashes of the deployed record in aiken.toml for the whole build and
+ * puts aiken.toml back afterwards.
  *
  * Every step is an Effect over Output. Failures: ConfigError for aiken.toml,
  * BlueprintError for a validator missing from a blueprint or a failed
  * bindings generation, AikenBuildError for a non-zero aiken exit, a stale
- * blueprint file or stale logic bytecode, FileWriteError for
- * contract_blueprint.ts.
+ * blueprint file or stale logic bytecode, PinsMoved for a pinned validator
+ * that compiles to another hash, FileWriteError for contract_blueprint.ts.
  */
 import { createRequire } from "module";
 import { dirname, relative, resolve } from "path";
@@ -29,26 +31,18 @@ import {
   BlueprintError,
   ConfigError,
   FileWriteError,
+  InputParseError,
+  PinsMoved,
 } from "../errors";
 import { readJsonFile } from "../input";
 import { Output } from "../output";
+import { DEPLOY_COMPONENT_VALIDATORS, type DeployComponent } from "./resolver";
+import { PlutusJson, readDeployedPlutus, validatorName } from "./snapshot-read";
 
 /** The aiken trace levels, as --trace takes them. */
 export const TRACE_LEVELS = ["silent", "verbose", "compact"] as const;
 
 export type TraceLevel = (typeof TRACE_LEVELS)[number];
-
-/** A plutus.json blueprint, as far as the build reads it: its validators. */
-export const PlutusJson = Schema.Struct({
-  validators: Schema.Array(
-    Schema.Struct({
-      title: Schema.String,
-      hash: Schema.String,
-      compiledCode: Schema.String,
-    }),
-  ),
-});
-export type PlutusJson = typeof PlutusJson.Type;
 
 /** One build: where it runs, which profile, where the blueprint lands. */
 interface Build {
@@ -57,6 +51,8 @@ interface Build {
   readonly outputFile: string;
   readonly blueprintPath: string;
   readonly traceLevel: TraceLevel;
+  /** aiken.toml keys held at a deployed hash in every phase (a from-deployed build); empty for a standard build. */
+  readonly pins: ReadonlyMap<string, string>;
 }
 
 /** A validator whose hash the build copies into aiken.toml. */
@@ -298,7 +294,7 @@ export const freshBlueprint = (
     );
   });
 
-/** Copy each mapped validator's hash from the blueprint into aiken.toml. */
+/** Copy each mapped validator's hash from the blueprint into aiken.toml; a pinned key gets its pin. */
 const updateHashes = (
   build: Build,
   blueprint: PlutusJson,
@@ -312,8 +308,11 @@ const updateHashes = (
       void,
       BlueprintError | ConfigError,
       FileSystem.FileSystem
-    > =>
-      Option.match(validatorByTitle(blueprint, mapping.title), {
+    > => {
+      const pin = build.pins.get(mapping.tomlKey);
+      if (pin !== undefined)
+        return setTomlHexValue(build, mapping.tomlKey, pin);
+      return Option.match(validatorByTitle(blueprint, mapping.title), {
         onNone: () =>
           Effect.fail(
             new BlueprintError({
@@ -324,9 +323,52 @@ const updateHashes = (
           ),
         onSome: (validator) =>
           setTomlHexValue(build, mapping.tomlKey, validator.hash),
-      }),
+      });
+    },
     { discard: true },
   );
+
+/** The hashes a from-deployed build may pin: every two-stage, forever and threshold validator but cNIGHT minting's. */
+const CORE = [...TWO_STAGE, ...FOREVER, ...THRESHOLDS].filter(
+  (mapping) => !mapping.title.startsWith("cnight_minting."),
+);
+
+/** The core hashes a from-deployed build pins: each one the deployed plutus.json has, except the validators compiled from new (`fresh`, by name). */
+export const pinnedMappings = (
+  deployed: PlutusJson,
+  fresh: ReadonlySet<string>,
+) =>
+  CORE.flatMap((mapping) => {
+    const validator = validatorByTitle(deployed, mapping.title);
+    return Option.isSome(validator) && !fresh.has(validatorName(mapping.title))
+      ? [{ ...mapping, hash: validator.value.hash }]
+      : [];
+  });
+
+/** A pinned validator must compile to its deployed hash; one that does not depends on a validator compiled from new, or aiken.toml does not describe the deployment. */
+export const keepsPins = (
+  pins: ReadonlyMap<string, string>,
+  blueprint: PlutusJson,
+): Effect.Effect<void, PinsMoved> => {
+  const moved = CORE.flatMap((mapping) => {
+    const deployed = pins.get(mapping.tomlKey);
+    const built = validatorByTitle(blueprint, mapping.title);
+    return deployed !== undefined &&
+      Option.isSome(built) &&
+      built.value.hash !== deployed
+      ? [
+          {
+            validator: validatorName(mapping.title),
+            deployed,
+            built: built.value.hash,
+          },
+        ]
+      : [];
+  });
+  return moved.length === 0
+    ? Effect.void
+    : Effect.fail(new PinsMoved({ moved }));
+};
 
 /** Why the first logic validator whose bytecode does not embed its dependency's hash is stale. */
 export const staleDependency = (
@@ -455,24 +497,15 @@ const finalCompile = (build: Build, attempts: Ref.Ref<number>) =>
     }
   });
 
-/** Build the Aiken contracts of a profile in `projectRoot`: compile in phases, each copying its hashes into aiken.toml, then a verified final compilation. */
-export const buildContracts = (options: {
-  readonly network: ProfileName;
-  readonly traceLevel: TraceLevel;
-  readonly projectRoot: string;
-}) =>
+/** What a build compiles against: its own hashes (the multi-phase build), or the deployed ones, except the validators it compiles from new (`fresh`, by name). */
+export type BuildSource =
+  | { readonly kind: "standard" }
+  | { readonly kind: "fromDeployed"; readonly fresh: ReadonlySet<string> };
+
+/** The multi-phase build: compile in phases, each copying its hashes into aiken.toml (a pinned key keeps its pin), then a verified final compilation. */
+const buildStandard = (build: Build) =>
   Effect.gen(function* () {
     const output = yield* Output;
-    const outputFile = `plutus-${options.network}.json`;
-    const build: Build = {
-      ...options,
-      outputFile,
-      blueprintPath: resolve(options.projectRoot, outputFile),
-    };
-
-    yield* output.log(`Starting compilation for network: ${build.network}`);
-    yield* output.log("==========================================");
-
     yield* output.log("Initial compilation for cnight_policy...");
     yield* output.log("Building Initial Build...");
     const initial = yield* compile(build, "Initial Build");
@@ -508,6 +541,7 @@ export const buildContracts = (options: {
     yield* output.log("Phase 3: Setting up threshold validators...");
     yield* output.log("Building Threshold Validators...");
     const thresholds = yield* compile(build, "Threshold Validators");
+    yield* keepsPins(build.pins, thresholds);
     yield* output.log("Updating threshold validator hashes...");
     yield* updateHashes(build, thresholds, THRESHOLDS);
 
@@ -525,31 +559,107 @@ export const buildContracts = (options: {
     );
     yield* output.log(`Blueprint written to: ${build.outputFile}`);
     yield* output.log(
-      "All validators have been compiled and hashes updated in aiken.toml",
+      build.pins.size === 0
+        ? "All validators have been compiled and hashes updated in aiken.toml"
+        : "All validators have been compiled against the pinned hashes",
     );
   });
 
-/** Build the contracts of a profile in the repository, then generate contract_blueprint_<profile>.ts with the installed generator, the script its package.json "bin" names, run on this Node so no registry is reached (its stderr reaches the user, its one-line stdout does not), and copy it to contract_blueprint.ts. */
-export const buildProgram = (input: {
+/**
+ * Build the Aiken contracts of a profile in `projectRoot`. A from-deployed
+ * build pins the hashes of deployed-scripts/<profile>/plutus.json in
+ * aiken.toml for its one multi-phase build, and puts aiken.toml back
+ * afterwards, whatever the outcome.
+ */
+export const buildContracts = (options: {
   readonly network: ProfileName;
-  readonly trace: TraceLevel;
+  readonly traceLevel: TraceLevel;
+  readonly projectRoot: string;
+  readonly source: BuildSource;
 }) =>
   Effect.gen(function* () {
     const output = yield* Output;
-    const fs = yield* FileSystem.FileSystem;
-    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
-    const env = input.network;
-    yield* buildContracts({
-      network: env,
-      traceLevel: input.trace,
-      projectRoot: PROJECT_ROOT,
-    });
+    const outputFile = `plutus-${options.network}.json`;
+    const build: Build = {
+      projectRoot: options.projectRoot,
+      network: options.network,
+      traceLevel: options.traceLevel,
+      outputFile,
+      blueprintPath: resolve(options.projectRoot, outputFile),
+      pins: new Map(),
+    };
 
-    const plutusPath = resolve(PROJECT_ROOT, `plutus-${env}.json`);
-    const blueprintPath = resolve(PROJECT_ROOT, `contract_blueprint_${env}.ts`);
-    yield* output.log(`\nGenerating TypeScript bindings...`);
+    yield* output.log(`Starting compilation for network: ${build.network}`);
+    if (options.source.kind === "standard") {
+      yield* output.log("==========================================");
+      return yield* buildStandard(build);
+    }
+    const { fresh } = options.source;
+    yield* output.log(
+      `Mode: Building against deployed hashes from deployed-scripts/${build.network}/plutus.json`,
+    );
+    yield* output.log("==========================================");
+
+    const fs = yield* FileSystem.FileSystem;
+    const tomlPath = resolve(build.projectRoot, TOML_FILE);
+    const backupPath = `${tomlPath}.backup.${process.pid}`;
+    return yield* Effect.acquireUseRelease(
+      Effect.mapError(
+        fs.copyFile(tomlPath, backupPath),
+        (cause) =>
+          new ConfigError({
+            source: "aiken.toml",
+            key: "",
+            reason: cause.message,
+          }),
+      ),
+      () =>
+        Effect.gen(function* () {
+          yield* output.log("Reading hashes from deployed scripts...");
+          const deployed = yield* readDeployedPlutus(build.network);
+          const pinned = pinnedMappings(deployed.plutus, fresh);
+          yield* output.log(
+            `Pinning ${pinned.length} deployed hashes; compiled from new: ${
+              [...fresh].join(", ") || "(none)"
+            }`,
+          );
+          for (const mapping of pinned) {
+            yield* setTomlHexValue(build, mapping.tomlKey, mapping.hash);
+          }
+          yield* buildStandard({
+            ...build,
+            pins: new Map(pinned.map((m) => [m.tomlKey, m.hash])),
+          });
+          yield* output.log(
+            `Built against deployed hashes from: ${deployed.path}`,
+          );
+        }),
+      () =>
+        Effect.orDie(
+          Effect.andThen(
+            fs.copyFile(backupPath, tomlPath),
+            fs.remove(backupPath),
+          ),
+        ),
+    );
+  });
+
+/**
+ * Generate the TypeScript bindings of a plutus.json with the installed
+ * generator: the script its package.json "bin" names, run on this Node so
+ * no registry is reached. Its stderr reaches the user, its one-line stdout
+ * does not.
+ */
+export const generateBindings = (
+  env: string,
+  source: "deployed" | "build",
+  plutusPath: string,
+  outputPath: string,
+) =>
+  Effect.gen(function* () {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
     const failure = (reason: string) =>
-      new BlueprintError({ environment: env, source: "build", reason });
+      new BlueprintError({ environment: env, source, reason });
     const manifest = yield* Effect.try({
       try: () =>
         createRequire(import.meta.url).resolve(
@@ -567,7 +677,7 @@ export const buildProgram = (input: {
       spawner.exitCode(
         ChildProcess.make(
           process.execPath,
-          [resolve(dirname(manifest), bin), plutusPath, "-o", blueprintPath],
+          [resolve(dirname(manifest), bin), plutusPath, "-o", outputPath],
           { stderr: "inherit" },
         ),
       ),
@@ -578,6 +688,45 @@ export const buildProgram = (input: {
         `blueprint generation failed with exit code ${exitCode}`,
       );
     }
+  });
+
+/** Build the contracts of a profile in the repository, generate contract_blueprint_<profile>.ts and copy it to contract_blueprint.ts. `--components` names what a from-deployed build compiles from new, so it needs `--from-deployed`. */
+export const buildProgram = (input: {
+  readonly network: ProfileName;
+  readonly trace: TraceLevel;
+  readonly fromDeployed: boolean;
+  readonly components: Option.Option<readonly DeployComponent[]>;
+}) =>
+  Effect.gen(function* () {
+    const output = yield* Output;
+    const fs = yield* FileSystem.FileSystem;
+    const env = input.network;
+    if (!input.fromDeployed && Option.isSome(input.components)) {
+      return yield* new InputParseError({
+        source: "--components",
+        issues: ["it needs --from-deployed"],
+      });
+    }
+    yield* buildContracts({
+      network: env,
+      traceLevel: input.trace,
+      projectRoot: PROJECT_ROOT,
+      source: input.fromDeployed
+        ? {
+            kind: "fromDeployed",
+            fresh: new Set(
+              Option.getOrElse(input.components, () => []).flatMap(
+                (component) => DEPLOY_COMPONENT_VALIDATORS[component],
+              ),
+            ),
+          }
+        : { kind: "standard" },
+    });
+
+    const plutusPath = resolve(PROJECT_ROOT, `plutus-${env}.json`);
+    const blueprintPath = resolve(PROJECT_ROOT, `contract_blueprint_${env}.ts`);
+    yield* output.log(`\nGenerating TypeScript bindings...`);
+    yield* generateBindings(env, "build", plutusPath, blueprintPath);
 
     const activePath = resolve(PROJECT_ROOT, "contract_blueprint.ts");
     yield* Effect.mapError(

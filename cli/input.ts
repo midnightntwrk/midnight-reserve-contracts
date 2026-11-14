@@ -61,6 +61,26 @@ export const parseNonNegativeInteger = (
 export const parseTxIndex = (text: string): Result.Result<TxIndex, string> =>
   Result.map(parseNonNegativeInteger(text), Brand.nominal<TxIndex>());
 
+/** Comma-separated names, each one of `valid`, blanks dropped; at least one. */
+export const parseNameList =
+  <A extends string>(valid: readonly A[]) =>
+  (text: string): Result.Result<Arr.NonEmptyReadonlyArray<A>, string> => {
+    const names = text
+      .split(",")
+      .map((name) => name.trim())
+      .filter((name) => name !== "");
+    const isValid = (name: string): name is A => valid.some((v) => v === name);
+    const known = names.filter(isValid);
+    const unknown = names.filter((name) => !isValid(name));
+    return unknown.length > 0
+      ? Result.fail(
+          `unknown: ${unknown.join(", ")}; valid: ${valid.join(", ")}`,
+        )
+      : Arr.isReadonlyArrayNonEmpty(known)
+        ? Result.succeed(known)
+        : Result.fail(`no name given; valid: ${valid.join(", ")}`);
+  };
+
 /** A council or tech-auth member: payment key hash and sr25519 key, both lower-case hex. */
 export interface Signer {
   readonly paymentHash: string;

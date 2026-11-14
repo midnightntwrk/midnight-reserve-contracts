@@ -55,6 +55,19 @@ export const envLayer = (dotEnvPath: string) =>
     ),
   );
 
+/** The directory that holds each environment's record, `<root>/<env>/`: the repository's deployed-scripts/, or a temporary directory in tests. */
+export class DeployedScripts extends Context.Service<
+  DeployedScripts,
+  { readonly root: string }
+>()("cli/DeployedScripts") {
+  static readonly layer = Layer.succeed(this)({
+    root: resolve(PROJECT_ROOT, "deployed-scripts"),
+  });
+
+  /** Records under `root`. */
+  static readonly at = (root: string) => Layer.succeed(this)({ root });
+}
+
 /** The environments a command runs against, as `--network` takes them. */
 export const ENVIRONMENTS = [
   "local",

@@ -1,5 +1,8 @@
 import {
+  existsSync,
+  mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   utimesSync,
@@ -9,15 +12,21 @@ import { tmpdir } from "os";
 import { join } from "path";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { afterAll, describe, expect, it } from "@effect/vitest";
-import { Effect, Exit, Fiber, Option, Result } from "effect";
+import { Effect, Exit, Fiber, Layer, Option, Result, Schema } from "effect";
+import { DeployedScripts } from "../cli/config";
 import {
+  buildContracts,
   freshBlueprint,
-  type PlutusJson,
+  keepsPins,
+  pinnedMappings,
   processExitCode,
   processFailure,
   staleDependency,
   withTomlHexValue,
 } from "../cli/contracts/build";
+import { DEPLOY_COMPONENT_VALIDATORS } from "../cli/contracts/resolver";
+import { PlutusJson } from "../cli/contracts/snapshot-read";
+import { Output } from "../cli/output";
 
 const tmp = mkdtempSync(join(tmpdir(), "build-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
@@ -115,6 +124,7 @@ describe("staleDependency", () => {
       validator("permissioned.federated_ops_logic.else", "", "00cc00"),
       validator("gov_auth.main_gov_auth.else", "", "00dd00"),
     ],
+    definitions: {},
   };
 
   it("every logic validator embedding its dependency is fresh", () => {
@@ -123,6 +133,7 @@ describe("staleDependency", () => {
 
   it("a logic validator without its dependency hash names both", () => {
     const stale = {
+      ...complete,
       validators: complete.validators.map((v) =>
         v.title === "gov_auth.main_gov_auth.else"
           ? { ...v, compiledCode: "0000" }
@@ -137,7 +148,10 @@ describe("staleDependency", () => {
   });
 
   it("a missing dependency validator is reported first", () => {
-    const missing = { validators: complete.validators.slice(1) };
+    const missing = {
+      ...complete,
+      validators: complete.validators.slice(1),
+    };
     expect(staleDependency(missing)).toEqual(
       Option.some(
         "dependency thresholds.main_council_update_threshold.else not found in blueprint",
@@ -237,5 +251,111 @@ describe("processExitCode", () => {
       expect(Exit.hasInterrupts(yield* Fiber.await(fiber))).toBe(true);
       expect(Date.now() - started).toBeLessThan(5_000);
     }).pipe(Effect.provide(NodeServices.layer)),
+  );
+});
+
+describe("build --from-deployed", () => {
+  const plutus = Schema.decodeUnknownSync(PlutusJson)(
+    JSON.parse(readFileSync("plutus-default.json", "utf-8")),
+  );
+  const tomlKeys = (fresh: ReadonlySet<string>, deployed = plutus) =>
+    pinnedMappings(deployed, fresh).map((m) => m.tomlKey);
+  const pins = new Map(
+    pinnedMappings(plutus, new Set()).map((m) => [m.tomlKey, m.hash]),
+  );
+
+  it("pins the 18 core hashes a full record has, with their deployed hashes", () => {
+    const pinned = pinnedMappings(plutus, new Set());
+    expect(pinned).toHaveLength(18);
+    expect(
+      pinned.find((m) => m.tomlKey === "reserve_two_stage_hash")?.hash,
+    ).toBe(
+      plutus.validators.find(
+        (v) => v.title === "reserve.reserve_two_stage_upgrade.else",
+      )?.hash,
+    );
+    expect(tomlKeys(new Set())).not.toContain("cnight_minting_forever_hash");
+  });
+
+  it("a title the record lacks is compiled from new", () => {
+    const keys = tomlKeys(new Set(), {
+      ...plutus,
+      validators: plutus.validators.filter(
+        (v) => v.title !== "thresholds.terms_and_conditions_threshold.else",
+      ),
+    });
+    expect(keys).not.toContain("terms_and_conditions_threshold_hash");
+    expect(keys).toHaveLength(17);
+  });
+
+  it("the validators of the named components are compiled from new", () => {
+    const keys = tomlKeys(new Set(DEPLOY_COMPONENT_VALIDATORS.reserve));
+    expect(keys).toHaveLength(16);
+    expect(keys).not.toContain("reserve_two_stage_hash");
+    expect(keys).not.toContain("reserve_forever_hash");
+  });
+
+  it.live(
+    "a build that compiles every pinned validator to its deployed hash passes",
+    () => keepsPins(pins, plutus),
+  );
+
+  it.live(
+    "a pinned validator that compiles to another hash is PinsMoved with both hashes",
+    () =>
+      Effect.gen(function* () {
+        const error = yield* Effect.flip(
+          keepsPins(
+            new Map(pins).set("main_gov_threshold_hash", "ff".repeat(28)),
+            plutus,
+          ),
+        );
+        expect(error.moved).toEqual([
+          {
+            validator: "main_gov_threshold",
+            deployed: "ff".repeat(28),
+            built: pins.get("main_gov_threshold_hash"),
+          },
+        ]);
+      }),
+  );
+
+  it.live(
+    "a failing hash update puts aiken.toml back and leaves no backup",
+    () =>
+      Effect.gen(function* () {
+        const root = join(tmp, "from-deployed");
+        mkdirSync(root);
+        const broken = `[config.preview.reserve_two_stage_hash]\nencoding = "hex"\n`;
+        writeFileSync(join(root, "aiken.toml"), broken);
+        const lines: string[] = [];
+        const error = yield* Effect.flip(
+          buildContracts({
+            network: "preview",
+            traceLevel: "silent",
+            projectRoot: root,
+            source: { kind: "fromDeployed", fresh: new Set() },
+          }).pipe(
+            Effect.provide(
+              Layer.mergeAll(
+                NodeServices.layer,
+                DeployedScripts.layer,
+                Layer.succeed(Output)({
+                  log: (line) => Effect.sync(() => void lines.push(line)),
+                  error: (line) => Effect.sync(() => void lines.push(line)),
+                }),
+              ),
+            ),
+          ),
+        );
+        expect(error).toMatchObject({
+          _tag: "ConfigError",
+          key: "config.preview.reserve_two_stage_hash",
+        });
+        expect(readFileSync(join(root, "aiken.toml"), "utf-8")).toBe(broken);
+        expect(readdirSync(root)).toEqual(["aiken.toml"]);
+        expect(existsSync(join(root, "plutus-preview.json"))).toBe(false);
+        expect(lines).toContain("Reading hashes from deployed scripts...");
+      }),
   );
 });

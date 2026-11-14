@@ -163,7 +163,7 @@ global. A rule may name a module that does not exist yet.
 | `keys.ts` | imported only by `signing.ts` and `main.ts` |
 | `ProviderConfig` | named by no module but `chain.ts` |
 | `contracts/snapshot-write.ts` | imported only by `deploy.ts`, `governance/two-stage.ts` |
-| `contracts/snapshot-read.ts` | imported only by `contracts/**`, `deploy.ts`, `governance/two-stage.ts`, `report.ts` |
+| `contracts/snapshot-read.ts` | imported only by `contracts/**` (commit 4: a command reads the record through `ContractResolver`) |
 | `contracts/build.ts` | imported only by `commands.ts`, `contracts/snapshot-write.ts` |
 | `contracts/snapshot-read.ts`, `contracts/snapshot-write.ts` | import no `output` |
 | Blaze | `@blaze-cardano/sdk` and `@blaze-cardano/tx` are imported only by `tx.ts` (commit 3: `chain.ts` uses neither, and `Provider` has no `blazeFor`) |
@@ -171,10 +171,11 @@ global. A rule may name a module that does not exist yet.
 Plans (`plan*`) take no services; with plans living beside their commands in
 L1 that is a review rule, not a module rule.
 
-Two rules date from the architecture before the 11-11 revision: the
-`tx.ts` boundary and the `contracts/snapshot-read.ts` importers. Each is
-settled in the commit that adds its module, and that commit message says
-what changed and why. The third, the `blazeFor` rule, went in commit 3.
+One rule dates from the architecture before the 11-11 revision: the
+`tx.ts` boundary. It is settled in the commit that adds `tx.ts`, and that
+commit message says what changed and why. The `blazeFor` rule went in
+commit 3; the `contracts/snapshot-read.ts` importers were settled in
+commit 4.
 
 ## Commits
 
@@ -296,3 +297,24 @@ Commit 3:
 - `@blaze-cardano/ogmios` ^0.0.8 is a declared dependency: Kupmios takes
   its client, and pnpm's strict layout does not expose it through
   `@blaze-cardano/query`.
+
+Commit 4:
+
+- `contracts/snapshot-read.ts` is imported only by `contracts/**`. A
+  command reads the record through `ContractResolver` (`isPromoted`,
+  `promotedAmong`, `liveHashOf`), so one module decides where contracts
+  come from. `deploy.ts`, `governance/two-stage.ts` and `report.ts` lose
+  their direct access; `snapshot-write.ts` stays theirs.
+- `DeployedScripts` (where the record lives) is in `config.ts`, so
+  `main.ts` can provide it without importing a record module.
+- `ContractResolver.contracts("actsOn")` on local and the emulator reads
+  the build. The reference refused there unless `--use-build` was given;
+  the 11-11 architecture has no `--use-build` source toggle.
+- A plutus.json is written back with its keys in the order it was read
+  (aiken's: preamble, validators, definitions). The reference decoded it
+  through its schema, which moved `preamble` last.
+- `build --components` without `--from-deployed` is an InputParseError
+  from the build, not effect/cli's validation error with help.
+- The record reads only commands 7 and 11 use (`readRecord`,
+  `validatorNameByHash`, `buildValidatorNameByHash`, `isTrackLogic`) and
+  the stage and promote record steps come with those commands.

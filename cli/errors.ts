@@ -24,6 +24,15 @@ export class AikenBuildError extends Data.TaggedError("AikenBuildError")<{
   readonly reason: string;
 }> {}
 
+/** A `build --from-deployed` compiled pinned validators to other hashes than the deployed ones. */
+export class PinsMoved extends Data.TaggedError("PinsMoved")<{
+  readonly moved: readonly {
+    readonly validator: string;
+    readonly deployed: string;
+    readonly built: string;
+  }[];
+}> {}
+
 /** A file the CLI writes (transaction, snapshot, report) could not be written. */
 export class FileWriteError extends Data.TaggedError("FileWriteError")<{
   readonly path: string;
@@ -60,6 +69,7 @@ const CLI_ERRORS = [
   InputParseError,
   ProviderError,
   BlockfrostUnavailable,
+  PinsMoved,
 ] as const;
 
 /** Union of every expected CLI failure. */
@@ -91,5 +101,7 @@ export function renderError(error: CliError): string {
       return `Provider call '${error.op}' failed: ${error.cause instanceof Error ? error.cause.message : String(error.cause)}`;
     case "BlockfrostUnavailable":
       return `Blockfrost provider requires a real Cardano network (preview/preprod/mainnet). Environment '${error.environment}' maps to local/emulator. Use --provider emulator or --provider kupmios instead.`;
+    case "PinsMoved":
+      return `Build failed (pins): the build changes the deployed ${error.moved.map((m) => m.validator).join(", ")}: they depend on a component compiled from new, or aiken.toml does not describe the deployment; add the components that create them to --components, or build without the new ones`;
   }
 }

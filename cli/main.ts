@@ -9,7 +9,7 @@ import { Cause, Console, Effect, Exit, Layer, Option } from "effect";
 import { Command } from "effect/cli";
 import packageJson from "../package.json" with { type: "json" };
 import { commands } from "./commands";
-import { envLayer } from "./config";
+import { DeployedScripts, envLayer } from "./config";
 import { isCliError, renderError } from "./errors";
 import { Output } from "./output";
 
@@ -48,6 +48,7 @@ Command.run(root, { version: packageJson.version }).pipe(
     Layer.mergeAll(
       Layer.provideMerge(envLayer(".env"), NodeServices.layer),
       Output.layer,
+      DeployedScripts.layer,
     ),
   ),
   // Exit code 1 on any failure, an interrupt included.

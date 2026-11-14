@@ -124,10 +124,9 @@ const BOUNDARIES: {
   },
   {
     message:
-      "contracts/snapshot-read is imported only by contracts/**, deploy, governance/two-stage and report.",
+      "contracts/snapshot-read is imported only by contracts/**: a command reads the record through ContractResolver.",
     forbids: (from, to) =>
-      to === "contracts/snapshot-read" &&
-      !within(from, "contracts", "deploy", "governance/two-stage", "report"),
+      to === "contracts/snapshot-read" && !within(from, "contracts"),
   },
   {
     message:
