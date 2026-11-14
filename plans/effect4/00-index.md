@@ -158,7 +158,7 @@ global. A rule may name a module that does not exist yet.
 
 | Module | Rule |
 |---|---|
-| `tx.ts` | imports no `contracts/**`, `config`, `keys`, `signing` |
+| `tx.ts` | imports no `cli/` module but `errors` (commit 5: compile takes no service; everything it reads is in its `TxPlan` and `PlanningContext`) |
 | `signing.ts` | imports no `contracts/**` |
 | `keys.ts` | imported only by `signing.ts` and `main.ts` |
 | `ProviderConfig` | named by no module but `chain.ts` |
@@ -171,11 +171,10 @@ global. A rule may name a module that does not exist yet.
 Plans (`plan*`) take no services; with plans living beside their commands in
 L1 that is a review rule, not a module rule.
 
-One rule dates from the architecture before the 11-11 revision: the
-`tx.ts` boundary. It is settled in the commit that adds `tx.ts`, and that
-commit message says what changed and why. The `blazeFor` rule went in
-commit 3; the `contracts/snapshot-read.ts` importers were settled in
-commit 4.
+The three rules that dated from the architecture before the 11-11
+revision are settled: the `blazeFor` rule in commit 3, the
+`contracts/snapshot-read.ts` importers in commit 4 and the `tx.ts`
+boundary in commit 5.
 
 ## Commits
 
@@ -318,3 +317,25 @@ Commit 4:
 - The record reads only commands 7 and 11 use (`readRecord`,
   `validatorNameByHash`, `buildValidatorNameByHash`, `isTrackLogic`) and
   the stage and promote record steps come with those commands.
+
+Commit 5:
+
+- compile always evaluates scripts on the local Blaze VM with the
+  context's parameters. The reference ran the local VM as an advisory
+  check and fell back to the provider's evaluation when it failed; a
+  failure is now a TxBuildError with the traces.
+- compile prints nothing; the command prints "Building transaction" and
+  the transaction id. `tx.ts` therefore imports no `output`.
+- The coin selection guard (no reserved UTxO, no UTxO carrying a
+  reference script) filters the context's wallet UTxOs in compile; the
+  reference did it in a `ColdWallet` subclass in the provider.
+- `CompileOptions` is gone: the command name is in `PlanningContext`,
+  and metadata, fee padding and the expected vkey witnesses are in
+  `TxPlan`.
+- Building a `PlanningContext` from the services (parameters and wallet
+  UTxOs from `Provider`, reserved refs from `Profile`, contracts from
+  `ContractResolver`) comes with the first transaction commands (commit
+  8), with `reservedRefs` and its tests. So do the script helpers
+  (`logicRedeemer`, `mintWitnesses`, `withdrawThroughLogic`,
+  `createRewardAccount`, the `calculateMinAda`/`calculateRequiredCollateral`
+  re-exports); this commit has the CIP-20 metadata compile uses.

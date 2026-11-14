@@ -33,6 +33,18 @@ export class PinsMoved extends Data.TaggedError("PinsMoved")<{
   }[];
 }> {}
 
+/** compile could not complete a transaction: Blaze failed (`traces` name the validators), or the transaction with its vkey witnesses is over the protocol maximum (`size`). */
+export class TxBuildError extends Data.TaggedError("TxBuildError")<{
+  readonly command: string;
+  readonly traces: readonly string[];
+  readonly cause: unknown;
+  readonly size?: {
+    readonly bytes: number;
+    readonly witnesses: number;
+    readonly max: number;
+  };
+}> {}
+
 /** A file the CLI writes (transaction, snapshot, report) could not be written. */
 export class FileWriteError extends Data.TaggedError("FileWriteError")<{
   readonly path: string;
@@ -70,6 +82,7 @@ const CLI_ERRORS = [
   ProviderError,
   BlockfrostUnavailable,
   PinsMoved,
+  TxBuildError,
 ] as const;
 
 /** Union of every expected CLI failure. */
@@ -103,5 +116,12 @@ export function renderError(error: CliError): string {
       return `Blockfrost provider requires a real Cardano network (preview/preprod/mainnet). Environment '${error.environment}' maps to local/emulator. Use --provider emulator or --provider kupmios instead.`;
     case "PinsMoved":
       return `Build failed (pins): the build changes the deployed ${error.moved.map((m) => m.validator).join(", ")}: they depend on a component compiled from new, or aiken.toml does not describe the deployment; add the components that create them to --components, or build without the new ones`;
+    case "TxBuildError":
+      return [
+        error.size
+          ? `${error.command}: the transaction is ${error.size.bytes} bytes with its ${error.size.witnesses} signatures, over the protocol maximum of ${error.size.max}`
+          : `${error.command}: transaction build failed: ${error.cause instanceof Error ? error.cause.message : String(error.cause)}`,
+        ...error.traces.map((trace) => `  ${trace}`),
+      ].join("\n");
   }
 }

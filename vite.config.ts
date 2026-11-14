@@ -103,9 +103,8 @@ const BOUNDARIES: {
 }[] = [
   {
     message:
-      "tx imports no contracts, config, keys or signing: compile gets everything in its TxPlan and CompileOptions.",
-    forbids: (from, to) =>
-      from === "tx" && within(to, "contracts", "config", "keys", "signing"),
+      "tx imports no cli module but errors: compile takes no service, and everything it reads is in its TxPlan and PlanningContext.",
+    forbids: (from, to) => from === "tx" && to !== "errors",
   },
   {
     message: "signing imports no contracts.",
