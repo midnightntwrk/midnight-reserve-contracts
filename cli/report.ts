@@ -145,7 +145,7 @@ const SUMMARY_ONLY_COMPONENTS: ReadonlySet<ContractComponent> = new Set([
   "cnight-generates-dust",
 ]);
 
-/** Every contract info shows, in display order; the cNIGHT minting ones only where the blueprint has them. */
+/** Every contract info shows, in display order; the cNIGHT minting ones and the registered candidate only where the blueprint has them. */
 const CONTRACTS: readonly (readonly [
   string,
   ContractComponent,

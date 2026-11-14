@@ -118,6 +118,12 @@ const FOREVER: readonly ValidatorMapping[] = [
     title: "cnight_minting.cnight_mint_forever.else",
     tomlKey: "cnight_minting_forever_hash",
   },
+  // Not a forever validator: night_staking embeds night_registration's hash (rule 2a, Pool),
+  // and this phase sets it before the final compilation.
+  {
+    title: "night_registration.night_registration.else",
+    tomlKey: "night_registration_hash",
+  },
 ];
 
 const THRESHOLDS: readonly ValidatorMapping[] = [
@@ -147,7 +153,7 @@ const THRESHOLDS: readonly ValidatorMapping[] = [
   },
 ];
 
-/** Logic validators that must embed specific threshold hashes. */
+/** Validators that must embed the hash of another validator (thresholds, night_registration). */
 const LOGIC_DEPENDENCIES = [
   {
     logicValidator: "permissioned.council_logic.else",
@@ -164,6 +170,10 @@ const LOGIC_DEPENDENCIES = [
   {
     logicValidator: "gov_auth.main_gov_auth.else",
     dependencyValidator: "thresholds.main_gov_threshold.else",
+  },
+  {
+    logicValidator: "night_staking.night_staking.else",
+    dependencyValidator: "night_registration.night_registration.else",
   },
 ] as const;
 
@@ -486,13 +496,13 @@ const finalCompile = (build: Build, attempts: Ref.Ref<number>) =>
     yield* updateHashes(build, blueprint, FOREVER);
     yield* updateHashes(build, blueprint, THRESHOLDS);
     yield* output.log(
-      "Verifying logic validators reference updated threshold hashes...",
+      "Verifying logic validators reference updated dependency hashes...",
     );
     const stale = staleDependency(blueprint);
     if (Option.isSome(stale)) {
       return yield* new AikenBuildError({
         phase: VERIFY_PHASE,
-        reason: `Logic validators still reference stale threshold hashes: ${stale.value}`,
+        reason: `Logic validators still reference stale dependency hashes: ${stale.value}`,
       });
     }
   });

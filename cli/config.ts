@@ -168,6 +168,7 @@ const ONE_SHOTS = [
   "technical_authority_logic_v2_one_shot",
   "federated_operators_logic_v2_one_shot",
   "terms_and_conditions_logic_v2_one_shot",
+  "night_registration_one_shot",
 ] as const;
 
 type OneShot = (typeof ONE_SHOTS)[number];

@@ -52,10 +52,18 @@ federated_operators_staging_one_shot_index = 0
 terms_and_conditions_staging_one_shot_index = 0
 collateral_utxo_index = 14
 
+# night_registration's initialization UTxO (rule 9, Nodes), the script's one parameter.
+# A placeholder until the registration set is initialized on this network.
+night_registration_one_shot_index = 0
+
+[config.default.night_registration_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
+encoding = "hex"
+
 # night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.default.night_registration_hash]
-bytes = "00000000000000000000000000000000000000000000000000000a11"
+bytes = "b699162e30be2d6d378abd832cd5a67460cd5e5044e11835d311b3a8"
 encoding = "hex"
 
 [config.default.reserve_logic_v2_one_shot_hash]
@@ -305,6 +313,14 @@ technical_authority_staging_one_shot_index = 0
 federated_operators_staging_one_shot_index = 0
 terms_and_conditions_staging_one_shot_index = 0
 collateral_utxo_index = 15
+
+# night_registration's initialization UTxO (rule 9, Nodes), the script's one parameter.
+# A placeholder until the registration set is initialized on this network.
+night_registration_one_shot_index = 0
+
+[config.preview.night_registration_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
+encoding = "hex"
 
 # night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
 # until night_registration is built; its build writes the real hash here.
@@ -560,6 +576,14 @@ federated_operators_staging_one_shot_index = 0
 terms_and_conditions_staging_one_shot_index = 0
 collateral_utxo_index = 15
 
+# night_registration's initialization UTxO (rule 9, Nodes), the script's one parameter.
+# A placeholder until the registration set is initialized on this network.
+night_registration_one_shot_index = 0
+
+[config.qanet.night_registration_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
+encoding = "hex"
+
 # night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.qanet.night_registration_hash]
@@ -814,6 +838,14 @@ federated_operators_staging_one_shot_index = 4
 terms_and_conditions_staging_one_shot_index = 5
 collateral_utxo_index = 15
 
+# night_registration's initialization UTxO (rule 9, Nodes), the script's one parameter.
+# A placeholder until the registration set is initialized on this network.
+night_registration_one_shot_index = 0
+
+[config.govnet.night_registration_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
+encoding = "hex"
+
 # night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.govnet.night_registration_hash]
@@ -1067,6 +1099,14 @@ technical_authority_staging_one_shot_index = 0
 federated_operators_staging_one_shot_index = 0
 terms_and_conditions_staging_one_shot_index = 0
 collateral_utxo_index = 15
+
+# night_registration's initialization UTxO (rule 9, Nodes), the script's one parameter.
+# A placeholder until the registration set is initialized on this network.
+night_registration_one_shot_index = 0
+
+[config.devnet.night_registration_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
+encoding = "hex"
 
 # night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
 # until night_registration is built; its build writes the real hash here.
@@ -1323,6 +1363,14 @@ federated_operators_staging_one_shot_index = 0
 terms_and_conditions_staging_one_shot_index = 0
 collateral_utxo_index = 15
 
+# night_registration's initialization UTxO (rule 9, Nodes), the script's one parameter.
+# A placeholder until the registration set is initialized on this network.
+night_registration_one_shot_index = 0
+
+[config.preprod.night_registration_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
+encoding = "hex"
+
 # night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.preprod.night_registration_hash]
@@ -1578,6 +1626,14 @@ federated_operators_staging_one_shot_index = 0
 terms_and_conditions_staging_one_shot_index = 0
 collateral_utxo_index = 15
 
+# night_registration's initialization UTxO (rule 9, Nodes), the script's one parameter.
+# A placeholder until the registration set is initialized on this network.
+night_registration_one_shot_index = 0
+
+[config.mainnet.night_registration_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
+encoding = "hex"
+
 # night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.mainnet.night_registration_hash]
@@ -1832,6 +1888,14 @@ technical_authority_staging_one_shot_index = 3
 federated_operators_staging_one_shot_index = 4
 terms_and_conditions_staging_one_shot_index = 5
 collateral_utxo_index = 15
+
+# night_registration's initialization UTxO (rule 9, Nodes), the script's one parameter.
+# A placeholder until the registration set is initialized on this network.
+night_registration_one_shot_index = 0
+
+[config.local.night_registration_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
+encoding = "hex"
 
 # night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
 # until night_registration is built; its build writes the real hash here.

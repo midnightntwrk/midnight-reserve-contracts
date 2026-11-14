@@ -22,3 +22,14 @@ pub type Node {
     attributes: Pairs<ByteArray, Data>,
   }
 }
+
+/// The redeemer of night_registration's withdrawal, which checks every transaction at the
+/// set: the action, each with one transaction shape (user decision, 11-17). The mint and the
+/// spends read no redeemer.
+pub type RegistrationAction {
+  Init
+  CreateTwoAnchors
+  CreateOneAnchor
+  Update
+  Deactivate
+}
