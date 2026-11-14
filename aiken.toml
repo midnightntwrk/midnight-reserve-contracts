@@ -16,6 +16,17 @@ version = "v2.2.0"
 source = "github"
 
 [config.default]
+# Reserve release (PR 406), tests: the first interval starts at time 0.
+release_initial_reserve_star = 6000000000873988
+release_factor_n = 57534246576
+release_factor_d = 1000000000000000
+release_interval_ms = 21600000
+release_anchor_posix_ms = 0
+release_max_validity_window_ms = 3600000
+# reserve_logic_v2 init tokens' seed UTxO (diagram 10): a placeholder until the deploy picks one.
+reserve_logic_v2_init_one_shot_index = 0
+# reserve_staging_params NFT's seed UTxO (diagram 11): a placeholder until the deploy picks one.
+reserve_staging_params_one_shot_index = 0
 cnight_name = "NIGHT"
 # night_staking: the ADA floor of a lock, and UNBONDING_DELAY, 4 Cardano epochs in ms (vectors use mainnet's).
 lock_deposit_lovelace = 2000000
@@ -38,7 +49,6 @@ committee_threshold_one_shot_index = 1
 terms_and_conditions_one_shot_index = 1
 terms_and_conditions_threshold_one_shot_index = 1
 cnight_minting_one_shot_index = 1
-reserve_logic_v2_one_shot_index = 0
 ics_logic_v2_one_shot_index = 0
 council_logic_v2_one_shot_index = 0
 technical_authority_logic_v2_one_shot_index = 0
@@ -66,8 +76,20 @@ encoding = "hex"
 bytes = "b699162e30be2d6d378abd832cd5a67460cd5e5044e11835d311b3a8"
 encoding = "hex"
 
-[config.default.reserve_logic_v2_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000101"
+[config.default.reserve_logic_v2_init_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000102"
+encoding = "hex"
+
+[config.default.staging_gov_auth_hash]
+bytes = "d9d4b82b1a21cae880a064ecf72b3ddb4a863f2c43e764f4d742386f"
+encoding = "hex"
+
+[config.default.reserve_staging_params_hash]
+bytes = "4ede1c1eacddb360e7a9b8d76ea67f9ccc5c95106d840d201d075ec3"
+encoding = "hex"
+
+[config.default.reserve_staging_params_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000103"
 encoding = "hex"
 
 [config.default.ics_logic_v2_one_shot_hash]
@@ -279,6 +301,17 @@ bytes = "838d4108da4e847ee20275254af2c2134d27e4b30647803de3bdb737"
 encoding = "hex"
 
 [config.preview]
+# Reserve release (PR 406): placeholders until ratified; the 2100-01-01 anchor releases nothing.
+release_initial_reserve_star = 6000000000873988
+release_factor_n = 57534246576
+release_factor_d = 1000000000000000
+release_interval_ms = 21600000
+release_anchor_posix_ms = 4102444800000
+release_max_validity_window_ms = 3600000
+# reserve_logic_v2 init tokens' seed UTxO (diagram 10): a placeholder until the deploy picks one.
+reserve_logic_v2_init_one_shot_index = 0
+# reserve_staging_params NFT's seed UTxO (diagram 11): a placeholder until the deploy picks one.
+reserve_staging_params_one_shot_index = 0
 candidate_nonce="preview"
 cnight_name = "NIGHT"
 # night_staking: UNBONDING_DELAY is 4 Cardano epochs of preview (1 day each), in ms.
@@ -300,7 +333,6 @@ committee_threshold_one_shot_index = 11
 terms_and_conditions_one_shot_index = 12
 terms_and_conditions_threshold_one_shot_index = 13
 cnight_minting_one_shot_index = 14
-reserve_logic_v2_one_shot_index = 0
 ics_logic_v2_one_shot_index = 1
 council_logic_v2_one_shot_index = 2
 technical_authority_logic_v2_one_shot_index = 3
@@ -328,8 +360,20 @@ encoding = "hex"
 bytes = "00000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-[config.preview.reserve_logic_v2_one_shot_hash]
-bytes = "b585c885339e8eee0fbebe6ae11c074c453ddef3c8e290393a63798b305958b4"
+[config.preview.reserve_logic_v2_init_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000102"
+encoding = "hex"
+
+[config.preview.staging_gov_auth_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.preview.reserve_staging_params_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.preview.reserve_staging_params_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000103"
 encoding = "hex"
 
 [config.preview.ics_logic_v2_one_shot_hash]
@@ -541,6 +585,17 @@ bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.qanet]
+# Reserve release (PR 406): placeholders until ratified; the 2100-01-01 anchor releases nothing.
+release_initial_reserve_star = 6000000000873988
+release_factor_n = 57534246576
+release_factor_d = 1000000000000000
+release_interval_ms = 21600000
+release_anchor_posix_ms = 4102444800000
+release_max_validity_window_ms = 3600000
+# reserve_logic_v2 init tokens' seed UTxO (diagram 10): a placeholder until the deploy picks one.
+reserve_logic_v2_init_one_shot_index = 0
+# reserve_staging_params NFT's seed UTxO (diagram 11): a placeholder until the deploy picks one.
+reserve_staging_params_one_shot_index = 0
 candidate_nonce="qanet"
 cnight_name = "NIGHT"
 # night_staking: UNBONDING_DELAY is 4 Cardano epochs of preview (1 day each), in ms.
@@ -562,7 +617,6 @@ committee_threshold_one_shot_index = 11
 terms_and_conditions_one_shot_index = 12
 terms_and_conditions_threshold_one_shot_index = 13
 cnight_minting_one_shot_index = 14
-reserve_logic_v2_one_shot_index = 0
 ics_logic_v2_one_shot_index = 1
 council_logic_v2_one_shot_index = 2
 technical_authority_logic_v2_one_shot_index = 3
@@ -590,8 +644,20 @@ encoding = "hex"
 bytes = "00000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-[config.qanet.reserve_logic_v2_one_shot_hash]
-bytes = "38be5d1fb3923502c4dc01bf8089b28d1cab6afd13d1bd64653a8f9b9f9ef05d"
+[config.qanet.reserve_logic_v2_init_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000102"
+encoding = "hex"
+
+[config.qanet.staging_gov_auth_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.qanet.reserve_staging_params_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.qanet.reserve_staging_params_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000103"
 encoding = "hex"
 
 [config.qanet.ics_logic_v2_one_shot_hash]
@@ -803,6 +869,17 @@ bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.govnet]
+# Reserve release (PR 406): placeholders until ratified; the 2100-01-01 anchor releases nothing.
+release_initial_reserve_star = 6000000000873988
+release_factor_n = 57534246576
+release_factor_d = 1000000000000000
+release_interval_ms = 21600000
+release_anchor_posix_ms = 4102444800000
+release_max_validity_window_ms = 3600000
+# reserve_logic_v2 init tokens' seed UTxO (diagram 10): a placeholder until the deploy picks one.
+reserve_logic_v2_init_one_shot_index = 0
+# reserve_staging_params NFT's seed UTxO (diagram 11): a placeholder until the deploy picks one.
+reserve_staging_params_one_shot_index = 0
 candidate_nonce="govnet"
 cnight_name = "NIGHT"
 # night_staking: UNBONDING_DELAY is 4 Cardano epochs of preview (1 day each), in ms.
@@ -824,7 +901,6 @@ committee_threshold_one_shot_index = 11
 terms_and_conditions_one_shot_index = 12
 terms_and_conditions_threshold_one_shot_index = 13
 cnight_minting_one_shot_index = 14
-reserve_logic_v2_one_shot_index = 3
 ics_logic_v2_one_shot_index = 1
 council_logic_v2_one_shot_index = 2
 technical_authority_logic_v2_one_shot_index = 3
@@ -852,8 +928,20 @@ encoding = "hex"
 bytes = "00000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-[config.govnet.reserve_logic_v2_one_shot_hash]
-bytes = "121ac516fbea0a99f704bd4510d90ce5eaac4dc5ea9e895bd8865d15bfb53d09"
+[config.govnet.reserve_logic_v2_init_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000102"
+encoding = "hex"
+
+[config.govnet.staging_gov_auth_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.govnet.reserve_staging_params_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.govnet.reserve_staging_params_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000103"
 encoding = "hex"
 
 [config.govnet.ics_logic_v2_one_shot_hash]
@@ -1065,6 +1153,17 @@ bytes = "c3e7b0d1957d579d9fbf1aa65edbbe7902c3f0c884db1bf373eba314"
 encoding = "hex"
 
 [config.devnet]
+# Reserve release (PR 406): placeholders until ratified; the 2100-01-01 anchor releases nothing.
+release_initial_reserve_star = 6000000000873988
+release_factor_n = 57534246576
+release_factor_d = 1000000000000000
+release_interval_ms = 21600000
+release_anchor_posix_ms = 4102444800000
+release_max_validity_window_ms = 3600000
+# reserve_logic_v2 init tokens' seed UTxO (diagram 10): a placeholder until the deploy picks one.
+reserve_logic_v2_init_one_shot_index = 0
+# reserve_staging_params NFT's seed UTxO (diagram 11): a placeholder until the deploy picks one.
+reserve_staging_params_one_shot_index = 0
 candidate_nonce="devnet"
 cnight_name = "NIGHT"
 # night_staking: UNBONDING_DELAY is 4 Cardano epochs of preview (1 day each), in ms.
@@ -1086,7 +1185,6 @@ committee_threshold_one_shot_index = 11
 terms_and_conditions_one_shot_index = 12
 terms_and_conditions_threshold_one_shot_index = 13
 cnight_minting_one_shot_index = 14
-reserve_logic_v2_one_shot_index = 0
 ics_logic_v2_one_shot_index = 1
 council_logic_v2_one_shot_index = 2
 technical_authority_logic_v2_one_shot_index = 3
@@ -1114,8 +1212,20 @@ encoding = "hex"
 bytes = "00000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-[config.devnet.reserve_logic_v2_one_shot_hash]
-bytes = "da6e64e3ebd983b5ea1b027a2e4e1b98af5944958fe0b568d20a640e5c93d14f"
+[config.devnet.reserve_logic_v2_init_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000102"
+encoding = "hex"
+
+[config.devnet.staging_gov_auth_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.devnet.reserve_staging_params_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.devnet.reserve_staging_params_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000103"
 encoding = "hex"
 
 [config.devnet.ics_logic_v2_one_shot_hash]
@@ -1327,6 +1437,17 @@ bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.preprod]
+# Reserve release (PR 406): placeholders until ratified; the 2100-01-01 anchor releases nothing.
+release_initial_reserve_star = 6000000000873988
+release_factor_n = 57534246576
+release_factor_d = 1000000000000000
+release_interval_ms = 21600000
+release_anchor_posix_ms = 4102444800000
+release_max_validity_window_ms = 3600000
+# reserve_logic_v2 init tokens' seed UTxO (diagram 10): a placeholder until the deploy picks one.
+reserve_logic_v2_init_one_shot_index = 0
+# reserve_staging_params NFT's seed UTxO (diagram 11): a placeholder until the deploy picks one.
+reserve_staging_params_one_shot_index = 0
 candidate_nonce="preprod"
 cnight_name = "NIGHT"
 # night_staking: UNBONDING_DELAY is 4 Cardano epochs of preprod (5 days each), in ms.
@@ -1349,7 +1470,6 @@ committee_threshold_one_shot_index = 11
 terms_and_conditions_one_shot_index = 12
 terms_and_conditions_threshold_one_shot_index = 13
 cnight_minting_one_shot_index = 14
-reserve_logic_v2_one_shot_index = 0
 ics_logic_v2_one_shot_index = 1
 council_logic_v2_one_shot_index = 2
 technical_authority_logic_v2_one_shot_index = 3
@@ -1377,8 +1497,20 @@ encoding = "hex"
 bytes = "00000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-[config.preprod.reserve_logic_v2_one_shot_hash]
-bytes = "3825fef10f3e5aaa2b65a657c7c6056cf61199a5ea7ead80654e63ab1ec4252b"
+[config.preprod.reserve_logic_v2_init_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000102"
+encoding = "hex"
+
+[config.preprod.staging_gov_auth_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.preprod.reserve_staging_params_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.preprod.reserve_staging_params_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000103"
 encoding = "hex"
 
 [config.preprod.ics_logic_v2_one_shot_hash]
@@ -1590,6 +1722,18 @@ bytes = "00000000000000000000000000000000000000000000000000000000"
 encoding = "hex"
 
 [config.mainnet]
+# Reserve release (PR 406): placeholders until ratified; the 2100-01-01 anchor releases nothing.
+# release_initial_reserve_star is PR 406's provisional initial_reward_reserve (Reserve NIGHT, 2026-10-26).
+release_initial_reserve_star = 6000000000873988
+release_factor_n = 57534246576
+release_factor_d = 1000000000000000
+release_interval_ms = 21600000
+release_anchor_posix_ms = 4102444800000
+release_max_validity_window_ms = 3600000
+# reserve_logic_v2 init tokens' seed UTxO (diagram 10): a placeholder until the deploy picks one.
+reserve_logic_v2_init_one_shot_index = 0
+# reserve_staging_params NFT's seed UTxO (diagram 11): a placeholder until the deploy picks one.
+reserve_staging_params_one_shot_index = 0
 candidate_nonce="mainnet"
 cnight_name = "NIGHT"
 # night_staking: UNBONDING_DELAY is 4 Cardano epochs of mainnet (5 days each), in ms.
@@ -1612,7 +1756,6 @@ committee_threshold_one_shot_index = 11
 terms_and_conditions_one_shot_index = 12
 terms_and_conditions_threshold_one_shot_index = 13
 cnight_minting_one_shot_index = 14
-reserve_logic_v2_one_shot_index = 0
 ics_logic_v2_one_shot_index = 1
 council_logic_v2_one_shot_index = 2
 technical_authority_logic_v2_one_shot_index = 3
@@ -1640,8 +1783,20 @@ encoding = "hex"
 bytes = "00000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-[config.mainnet.reserve_logic_v2_one_shot_hash]
-bytes = "d514e2ca336b1b6bb962433c4730fe7cab593b7ca230208a73896cf2145cb717"
+[config.mainnet.reserve_logic_v2_init_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000102"
+encoding = "hex"
+
+[config.mainnet.staging_gov_auth_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.mainnet.reserve_staging_params_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.mainnet.reserve_staging_params_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000103"
 encoding = "hex"
 
 [config.mainnet.ics_logic_v2_one_shot_hash]
@@ -1853,6 +2008,17 @@ bytes = "cfc7d1730dc062475ab8ec0c132e6dddadcbda5845166a003b31dfea"
 encoding = "hex"
 
 [config.local]
+# Reserve release (PR 406), local devnet: one-minute intervals from time 0.
+release_initial_reserve_star = 6000000000873988
+release_factor_n = 159817352
+release_factor_d = 1000000000000000
+release_interval_ms = 60000
+release_anchor_posix_ms = 0
+release_max_validity_window_ms = 600000
+# reserve_logic_v2 init tokens' seed UTxO (diagram 10): a placeholder until the deploy picks one.
+reserve_logic_v2_init_one_shot_index = 0
+# reserve_staging_params NFT's seed UTxO (diagram 11): a placeholder until the deploy picks one.
+reserve_staging_params_one_shot_index = 0
 candidate_nonce="local"
 cnight_name = "NIGHT"
 # night_staking: UNBONDING_DELAY is 4 Cardano epochs of the local-env devnet (60 s each, midnight-node
@@ -1875,7 +2041,6 @@ committee_threshold_one_shot_index = 11
 terms_and_conditions_one_shot_index = 12
 terms_and_conditions_threshold_one_shot_index = 13
 cnight_minting_one_shot_index = 14
-reserve_logic_v2_one_shot_index = 0
 ics_logic_v2_one_shot_index = 1
 council_logic_v2_one_shot_index = 2
 technical_authority_logic_v2_one_shot_index = 3
@@ -1903,8 +2068,20 @@ encoding = "hex"
 bytes = "00000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-[config.local.reserve_logic_v2_one_shot_hash]
-bytes = "0000000000000000000000000000000000000000000000000000000000000000"
+[config.local.reserve_logic_v2_init_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000102"
+encoding = "hex"
+
+[config.local.staging_gov_auth_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.local.reserve_staging_params_hash]
+bytes = "00000000000000000000000000000000000000000000000000000000"
+encoding = "hex"
+
+[config.local.reserve_staging_params_one_shot_hash]
+bytes = "0000000000000000000000000000000000000000000000000000000000000103"
 encoding = "hex"
 
 [config.local.ics_logic_v2_one_shot_hash]

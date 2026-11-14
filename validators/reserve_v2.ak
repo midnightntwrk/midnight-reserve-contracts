@@ -1,23 +1,82 @@
-use cardano/script_context.{ScriptContext}
-use cardano/transaction.{OutputReference}
+use aiken/builtin
+use aiken/collection/list
+use cardano/address.{Address, Script}
+use cardano/script_context.{Minting, ScriptContext, Spending}
+use cardano/transaction.{OutputReference, Transaction}
 use config
-use logic/next_version.{logic_merge_v2}
+use logic/reserve.{reserve_release}
+use logic/types_v2.{ReserveStagingParams}
+use utils.{input_linked_mint}
 
-/// Handles reserve withdrawal operations (v2).
+/// PR 406's Cardano Reserve Release (diagrams 10 and 12–15).
 validator reserve_logic_v2 {
   else(ctx: ScriptContext) {
-    let ScriptContext { transaction, info, .. } = ctx
-    let one_shot_ref =
+    let ScriptContext { transaction, redeemer, info } = ctx
+
+    let init_one_shot_ref =
       OutputReference(
-        config.reserve_logic_v2_one_shot_hash,
-        config.reserve_logic_v2_one_shot_index,
+        config.reserve_logic_v2_init_one_shot_hash,
+        config.reserve_logic_v2_init_one_shot_index,
       )
-    logic_merge_v2(
+
+    reserve_release(
       transaction,
+      redeemer,
       info,
-      config.reserve_forever_hash,
       config.reserve_two_stage_hash,
-      one_shot_ref,
+      config.reserve_forever_hash,
+      config.ics_forever_hash,
+      config.reserve_staging_params_hash,
+      init_one_shot_ref,
     )
+  }
+}
+
+/// Test-only (diagrams 11 and 11b): holds the staging track's params.
+validator reserve_staging_params {
+  else(ctx: ScriptContext) {
+    let ScriptContext { transaction, info, .. } = ctx
+
+    let Transaction { inputs, outputs, mint, withdrawals, .. } = transaction
+
+    when info is {
+      Minting(own_policy) -> {
+        let one_shot_ref =
+          OutputReference(
+            config.reserve_staging_params_one_shot_hash,
+            config.reserve_staging_params_one_shot_index,
+          )
+
+        expect ReserveStagingParams {
+          cnight_test_policy,
+          forever_script_hash,
+          destination_hash,
+        } = input_linked_mint(inputs, mint, outputs, own_policy, one_shot_ref)
+
+        // Diagram 11: the params output comes first.
+        expect [params_out, ..] = outputs
+
+        and {
+          params_out.address == Address(Script(own_policy), None),
+          builtin.length_of_bytearray(cnight_test_policy) == 28,
+          builtin.length_of_bytearray(forever_script_hash) == 28,
+          builtin.length_of_bytearray(destination_hash) == 28,
+          // Touch cnight_policy so it contributes to the script hash
+          own_policy != config.cnight_policy,
+        }
+      }
+
+      // Diagram 11b
+      Spending { .. } -> {
+        let staging_gov_auth = Script(config.staging_gov_auth_hash)
+
+        list.any(
+          withdrawals,
+          fn(withdrawal) { withdrawal.1st == staging_gov_auth },
+        )
+      }
+
+      _ -> fail
+    }
   }
 }

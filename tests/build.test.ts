@@ -124,8 +124,11 @@ describe("staleDependency", () => {
       validator("permissioned.tech_auth_logic.else", "", "00bb00"),
       validator("permissioned.federated_ops_logic.else", "", "00cc00"),
       validator("gov_auth.main_gov_auth.else", "", "00dd00"),
-      validator("night_registration.night_registration.else", "ee", ""),
-      validator("night_staking.night_staking.else", "", "00ee00"),
+      validator("night_registration.night_registration.else", "1a", ""),
+      validator("night_staking.night_staking.else", "", "001a00"),
+      validator("gov_auth.staging_gov_auth.else", "ee", ""),
+      validator("reserve_v2.reserve_staging_params.else", "ff", "00ee00"),
+      validator("reserve_v2.reserve_logic_v2.else", "", "00ff00"),
     ],
     definitions: {},
   };
