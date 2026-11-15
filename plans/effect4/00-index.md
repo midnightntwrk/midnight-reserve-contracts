@@ -358,3 +358,22 @@ Commit 6:
   the same transaction and keys (`tests/golden/signing/`).
 - The deployment-file schema here only reads `transactions`; the writer
   comes with deploy (commit 12).
+
+Commit 7:
+
+- verify reads the record through `ContractResolver.record`, whose
+  validators carry their names, so `report.ts` imports no snapshot module.
+- `governance/two-stage.ts` and `datum.ts` start here with what info and
+  verify need (the NFT names, `findMainUtxo`, the UpgradeState decode,
+  `isTrackLogic`, the inline-datum decode); the rest comes with their
+  commands (9–11).
+- verify's UpgradeState check is an Effect: Effect 4's `Result` has no
+  `try`, so the datum decode is `Effect.try`. The checks still read no
+  service.
+- info and verify write their files through FileSystem in `report.ts`;
+  `Output` has no file writing (commit 6).
+- `info --use-build` shows the build (`contracts("creates")`); without it,
+  the record (the build on local and the emulator, commit 4).
+- dust-participants has no `--use-build`: the architecture keeps the flag
+  only for info and promote. It reads `cnight_generates_dust` from the
+  record.

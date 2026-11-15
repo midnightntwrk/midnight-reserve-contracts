@@ -33,6 +33,18 @@ export class PinsMoved extends Data.TaggedError("PinsMoved")<{
   }[];
 }> {}
 
+/** A UTxO's inline datum is missing or does not decode as `what`. */
+export class DatumParseError extends Data.TaggedError("DatumParseError")<{
+  readonly what: string;
+  readonly cbor: string;
+  readonly reason: string;
+}> {}
+
+/** verify found `failed` checks failing. */
+export class VerificationFailed extends Data.TaggedError("VerificationFailed")<{
+  readonly failed: number;
+}> {}
+
 /** compile could not complete a transaction: Blaze failed (`traces` name the validators), or the transaction with its vkey witnesses is over the protocol maximum (`size`). */
 export class TxBuildError extends Data.TaggedError("TxBuildError")<{
   readonly command: string;
@@ -91,6 +103,8 @@ const CLI_ERRORS = [
   PinsMoved,
   TxBuildError,
   SubmitError,
+  DatumParseError,
+  VerificationFailed,
 ] as const;
 
 /** Union of every expected CLI failure. */
@@ -131,6 +145,10 @@ export function renderError(error: CliError): string {
           : `${error.command}: transaction build failed: ${error.cause instanceof Error ? error.cause.message : String(error.cause)}`,
         ...error.traces.map((trace) => `  ${trace}`),
       ].join("\n");
+    case "DatumParseError":
+      return `Cannot parse ${error.what} datum: ${error.reason}`;
+    case "VerificationFailed":
+      return `VERIFICATION FAILED: ${error.failed} check(s) failed.`;
     case "SubmitError":
       return `Submission failed${error.attempts ? ` after ${error.attempts} attempt(s)` : ""}${error.txId ? ` (${error.txId})` : ""}: ${isCliError(error.cause) ? renderError(error.cause) : error.cause instanceof Error ? error.cause.message : String(error.cause)}`;
   }

@@ -16,7 +16,12 @@ import {
   PROJECT_ROOT,
 } from "../config";
 import { BlueprintError } from "../errors";
-import { isPromoted, liveHashOf, promotedAmong } from "./snapshot-read";
+import {
+  isPromoted,
+  liveHashOf,
+  promotedAmong,
+  readRecord,
+} from "./snapshot-read";
 
 /** The validators with a two-stage upgrade triple, as --validator takes them. */
 export const UPGRADABLE_VALIDATORS = [
@@ -284,6 +289,19 @@ const blueprintAt = (
   };
 };
 
+/** An environment's deployed record: each plutus.json validator by name, and versions.json. */
+export interface DeployedRecord {
+  readonly validators: readonly {
+    readonly name: string;
+    readonly hash: string;
+    readonly compiledCode: string;
+  }[];
+  readonly versions: {
+    readonly promoted: readonly string[];
+    readonly staged: readonly string[];
+  };
+}
+
 /** How a deploy updates the record: "replace" starts it again from the build output; "extend" keeps it and records the deployed validators. */
 export type SnapshotRule = "replace" | "extend";
 
@@ -307,6 +325,8 @@ export class ContractResolver extends Context.Service<
     readonly promotedAmong: (
       hashes: ReadonlySet<string>,
     ) => Effect.Effect<string[], BlueprintError>;
+    /** The deployed record (plutus.json and versions.json); a BlueprintError where it is missing, local and the emulator included. */
+    readonly record: Effect.Effect<DeployedRecord, BlueprintError>;
     /** The record's hash of the promoted validator this build hash stands for. */
     readonly liveHashOf: (
       buildHash: string,
@@ -360,6 +380,7 @@ export class ContractResolver extends Context.Service<
                     ? "replace"
                     : "extend",
                 ),
+          record: record(readRecord(environment)),
           isPromoted: (name) => record(isPromoted(environment, name)),
           promotedAmong: (hashes) =>
             record(promotedAmong(environment, plutusPath, hashes)),

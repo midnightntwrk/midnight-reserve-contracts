@@ -138,6 +138,29 @@ export const readDeployedPlutus = (env: string) =>
         });
   });
 
+/** The deployed record of an environment: each plutus.json validator with its name, and versions.json; a missing file is a BlueprintError. */
+export const readRecord = (env: string) =>
+  Effect.gen(function* () {
+    const { plutus } = yield* readDeployedPlutus(env);
+    const files = yield* filesOf(env);
+    const versions = yield* readVersions(env);
+    if (Option.isNone(versions)) {
+      return yield* new BlueprintError({
+        environment: env,
+        source: "deployed",
+        reason: `${files.versions} does not exist`,
+      });
+    }
+    return {
+      validators: plutus.validators.map(({ title, hash, compiledCode }) => ({
+        name: validatorName(title),
+        hash,
+        compiledCode,
+      })),
+      versions: versions.value,
+    };
+  });
+
 /** The build plutus.json at `plutusPath`; a missing file names the build to run. */
 export const readBuildPlutus = (env: string, plutusPath: string) =>
   Effect.flatMap(

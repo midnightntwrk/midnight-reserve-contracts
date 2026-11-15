@@ -1,11 +1,18 @@
 /** Every command: its flags, parsed at the boundary, and the program it runs. */
-import { Effect, Option, Result } from "effect";
+import { Effect, Layer, Option, Result } from "effect";
 import { Argument, CliError, Command, Flag } from "effect/cli";
 import { Provider, PROVIDERS, type ProviderType } from "./chain";
 import { type Environment, ENVIRONMENTS, PROFILES } from "./config";
 import { buildProgram, TRACE_LEVELS } from "./contracts/build";
-import { DEPLOY_COMPONENTS } from "./contracts/resolver";
+import { ContractResolver, DEPLOY_COMPONENTS } from "./contracts/resolver";
 import { parseNameList } from "./input";
+import {
+  dustParticipantsProgram,
+  FORMATS,
+  INFO_COMPONENT_CHOICES,
+  infoProgram,
+  verifyProgram,
+} from "./report";
 import { combineSignaturesProgram, signAndSubmitProgram } from "./signing";
 import { generateKeyProgram } from "./wallet";
 
@@ -37,6 +44,31 @@ const withProvider = <
   Command.provide(command, (input: Input) =>
     Provider.layer(input.network, Option.getOrUndefined(input.provider)),
   );
+
+/** Run a command on the Provider and the ContractResolver of its --network and --provider. */
+const withServices = <
+  const Name extends string,
+  Input extends {
+    readonly network: Environment;
+    readonly provider: Option.Option<ProviderType>;
+  },
+  ContextInput,
+  E,
+  R,
+>(
+  command: Command.Command<Name, Input, ContextInput, E, R>,
+) =>
+  Command.provide(command, (input: Input) =>
+    Layer.merge(
+      Provider.layer(input.network, Option.getOrUndefined(input.provider)),
+      ContractResolver.layer(input.network),
+    ),
+  );
+
+const format = Flag.Literals("format", FORMATS).pipe(
+  Flag.withDescription("Output format (default: table)"),
+  Flag.withDefault("table"),
+);
 
 /** --signing-key and --no-sign-deployer: the deployer's signature at submit. */
 const deployerSigning = {
@@ -149,10 +181,61 @@ const combineSignatures = Command.make(
   withProvider,
 );
 
+const info = Command.make(
+  "info",
+  {
+    network,
+    provider,
+    useBuild: Flag.Boolean("use-build").pipe(
+      Flag.withDescription("Use build output instead of deployed blueprint"),
+      Flag.withDefault(false),
+    ),
+    format,
+    component: Flag.Literals("component", INFO_COMPONENT_CHOICES).pipe(
+      Flag.withDescription("Filter by component (default: all)"),
+      Flag.withDefault("all"),
+    ),
+    save: Flag.Boolean("save").pipe(
+      Flag.withDescription(
+        "Fetch on-chain data and save the report to the release directory",
+      ),
+      Flag.withDefault(false),
+    ),
+    releaseDir: Flag.String("release-dir").pipe(
+      Flag.withDescription(
+        "Base directory for --save output (default: ./release)",
+      ),
+      Flag.withDefault("./release"),
+    ),
+  },
+  infoProgram,
+).pipe(Command.withDescription("Display contract information"), withServices);
+
+const verify = Command.make(
+  "verify",
+  { network, provider },
+  verifyProgram,
+).pipe(
+  Command.withDescription("Verify the deployed record against the chain"),
+  withServices,
+);
+
+const dustParticipants = Command.make(
+  "dust-participants",
+  { network, provider, format },
+  dustParticipantsProgram,
+).pipe(
+  Command.withDescription("Count registered dust participants"),
+  withServices,
+);
+
 /** Every command, in the order `--help` lists them. */
 export const commands = [
+  info,
+  verify,
   generateKey,
   signAndSubmit,
   combineSignatures,
+  dustParticipants,
   build,
 ] as const;
