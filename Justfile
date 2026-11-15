@@ -14,6 +14,7 @@ aiken-check verbosity="verbose":
 
 check: aiken-check
     vp check
+    vp exec tsc --noEmit
 
 
 lint:

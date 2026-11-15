@@ -23,4 +23,5 @@ jobs:
           cache: true
           run-install: "{ args: ['--frozen-lockfile'] }"
       - run: vp check
+      - run: vp exec tsc --noEmit
       - run: vp test

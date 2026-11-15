@@ -91,8 +91,8 @@ fallback. Help is effect/cli's built-in help (no custom formatter).
 | Tests | `vp test` (vitest 5.1 from vite-plus) with `@effect/vitest` 4 |
 | Lint | `vp lint` (oxlint), configured in the `lint` block of `vite.config.ts`; what oxlint lacks is a JS plugin |
 | Format | `vp fmt` (oxfmt), in the `fmt` block of `vite.config.ts` |
-| Type check | `vp check` with `typeAware` and `typeCheck` (TypeScript 7 through tsgolint) |
-| CI | `voidzero-dev/setup-vp` at an exact release, pinned by SHA; then `vp check`, `vp test` |
+| Type check | `tsc --noEmit` (TypeScript 6) in `just check` and CI; `vp check` keeps oxlint's type-aware rules (`typeAware`, through oxlint-tsgolint) with `typeCheck` off (D8) |
+| CI | `voidzero-dev/setup-vp` at an exact release, pinned by SHA; then `vp check`, `tsc --noEmit`, `vp test` |
 
 ## Layout (L1)
 
@@ -135,11 +135,17 @@ cli/deploy.ts      cli/wallet.ts      cli/report.ts
 - **D7 Vite+ for everything (user, 11-11), in commit 1.** Node instead of
   Bun for the CLI and the tests; pnpm instead of bun as the package
   manager; `vp test`, `vp lint` (oxlint instead of eslint), `vp fmt` (oxfmt
-  instead of prettier) and `vp check` (TypeScript 7 instead of `tsc`); CI on
+  instead of prettier) and `vp check` (TypeScript 7 instead of `tsc`; D8
+  brings `tsc` back for type errors); CI on
   `setup-vp`. Bun leaves the project. New orgs: voidzero-dev (vite-plus),
   oxc, pnpm.
 - **Plan purity (user, 11-11): review-only.** `plan*` functions take no
   services and no Blaze; review enforces it, not lint.
+- **D8 TypeScript 6 type check (user, 11-15 14:27 and 14:31), in the
+  commit after 1.** `typescript` ^6.0.3 as a devDependency, matching main;
+  `just check` and CI run `tsc --noEmit`. Oxlint's `typeCheck` is off, so
+  TypeScript 7 no longer reports type errors; `typeAware` stays on, and
+  oxlint-tsgolint stays for the type-aware rules (the user's exception).
 
 ## Dependency rules (lint, from commit 1)
 
@@ -180,6 +186,7 @@ test` with no diff produced by the gate, and leaves Aiken and
 |---|---|---|---|
 | 0 | plans(effect4) | this architecture, the dependency rules, the commit plan, the oracles | the user's review |
 | 1 | cli: Effect 4 switch with `build` | deletes `cli-yargs/` and every test that imports it. Deps: effect and @effect/platform-node ^4.1.3, vitest 5.1.0, @effect/vitest ^4.1.3; drops yargs, @types/yargs, cbor, globals, eslint, prettier and typescript; keeps toml. main.ts, errors, input, Output. `Profile` (config.ts). contracts/build.ts (build engine + bindings, via ChildProcess for aiken) and the `build` command; `generate-key`. Node 26, pnpm and Vite+ (D7): no package.json scripts; the Justfile `build`, `cli`, `use-env`, `fmt` and `check` recipes call `vp`/`vpx`. CI runs `vp check` and `vp test` through setup-vp. CLAUDE.md gate line; surviving tests converted to vitest. Dependency rules in oxlint: vite.config.ts plus the `mrc` JS plugin (ported from the reference `eslint.config.js`, adapted to the L1 modules). pnpm `minimumReleaseAge` 2880 and the type-fest packageExtensions fix | **Build output equal to the reference's**, per profile, in fresh scratch trees: every file either writes, including `contract_blueprint.ts`, which a non-default build overwrites by design (reference `cli/contracts/build.ts:39-47`). Only the default build (the gate's `just build`) must leave the tree clean. Also: build-engine tests (intent of `tests/build-engine.test.ts`); generate-key and input tests; 42 planted lint violations fire (throwaway); the CI steps reproduced |
+| 1a | tooling: TypeScript 6 type check | typescript ^6.0.3 (devDependency); `just check` and CI run `tsc --noEmit`; oxlint `typeCheck` off, `typeAware` and oxlint-tsgolint kept (D8); pnpm-lock.yaml regenerated | `tsc --noEmit` clean on this commit and on every later one; gate |
 | 2 | cli: environment services | DeployerAddress and env intent (config.ts); Keys (keys.ts) | config tests (intent of `tests/config.test.ts`); lint: keys.ts importable only by signing.ts and main.ts (planted violation fails) |
 | 3 | cli: ChainQuery | Provider over Blockfrost/Kupmios/emulator: named reads, parameters, submit, isConfirmed | blockfrost tests (401/403 at once, 429/5xx retry), emulator confirmation |
 | 4 | cli: contract system and ContractResolver | Blueprint, DeploymentRegistry (snapshot read, snapshot write + RecordUpdate), ContractResolver with the per-intent source rule, `build --from-deployed` | snapshot tests; resolver tests per rule case (acts-on → record; creates → build; full deploy → build only; local/emulator → build); `build --from-deployed` pins equal to the reference |

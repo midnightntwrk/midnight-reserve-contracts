@@ -203,7 +203,8 @@ export default defineConfig({
   lint: {
     // Linted: the CLI and the tests.
     ignorePatterns: ["/*", "!/cli/", "!/tests/"],
-    options: { typeAware: true, typeCheck: true },
+    // Type-aware rules run through oxlint-tsgolint; type errors come from tsc (TypeScript 6) in `just check`.
+    options: { typeAware: true, typeCheck: false },
     jsPlugins: [
       "./lint-plugin.js",
       { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
