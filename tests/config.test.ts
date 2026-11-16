@@ -9,11 +9,16 @@ import {
   ENVIRONMENTS,
   type Environment,
   envLayer,
+  environmentOf,
+  envOr,
   initialTermsAndConditions,
   newSigners,
   parseNetworkConfig,
   permissionedCandidates,
+  reservedRefs,
 } from "../cli/config";
+import { parsePositiveInteger } from "../cli/input";
+import * as TOML from "toml";
 import { renderError } from "../cli/errors";
 import { type KeyGroup, Keys } from "../cli/keys";
 
@@ -474,5 +479,60 @@ describe("aiken.toml profile parsing", () => {
       const parsed = yield* parseNetworkConfig("mainnet", upper);
       expect(parsed.cnight_policy).toBe(cnight_policy);
     }),
+  );
+});
+
+describe("reservedRefs", () => {
+  it.live.each(ENVIRONMENTS)(
+    "%s: holds every UTxO reference its profile names, the bridge one-shots included",
+    (environment) =>
+      Effect.gen(function* () {
+        const text = readFileSync("aiken.toml", "utf-8");
+        const profile = (
+          TOML.parse(text) as {
+            config: Record<string, Record<string, unknown>>;
+          }
+        ).config[environmentOf(environment).aikenConfigSection];
+        const named = Object.keys(profile)
+          .filter((key) => key.endsWith("_index"))
+          .map((key) => {
+            const hash = profile[key.replace(/_index$/, "_hash")] as {
+              bytes: string;
+            };
+            return `${hash.bytes.toLowerCase()}#${String(profile[key])}`;
+          });
+        const reserved = reservedRefs(
+          yield* parseNetworkConfig(environment, text),
+        );
+        expect([...new Set(named)].sort()).toEqual([...reserved].sort());
+      }),
+  );
+});
+
+describe("envOr", () => {
+  const read = (values: Record<string, string>) =>
+    Effect.provide(
+      envOr("SIMPLE_TX_COUNT", parsePositiveInteger, 16),
+      ConfigProvider.layer(ConfigProvider.fromUnknown(values)),
+    );
+
+  it.live("an unset or empty value is the fallback; a set one is parsed", () =>
+    Effect.gen(function* () {
+      expect(yield* read({})).toBe(16);
+      expect(yield* read({ SIMPLE_TX_COUNT: "" })).toBe(16);
+      expect(yield* read({ SIMPLE_TX_COUNT: "3" })).toBe(3);
+    }),
+  );
+
+  it.live(
+    "a value the parser refuses is a ConfigError naming the variable",
+    () =>
+      Effect.gen(function* () {
+        const error = yield* Effect.flip(read({ SIMPLE_TX_COUNT: "0" }));
+        expect(error).toMatchObject({
+          _tag: "ConfigError",
+          key: "SIMPLE_TX_COUNT",
+        });
+      }),
   );
 });

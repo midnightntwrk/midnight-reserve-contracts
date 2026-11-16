@@ -33,6 +33,43 @@ export class PinsMoved extends Data.TaggedError("PinsMoved")<{
   }[];
 }> {}
 
+/** What a UTxO lookup searched for. */
+type UtxoLookup =
+  | { readonly by: "address"; readonly address: string }
+  | { readonly by: "asset"; readonly address: string; readonly asset: string }
+  | { readonly by: "ref"; readonly ref: string; readonly address?: string };
+
+/** The lookup found no UTxO. */
+export class UtxoNotFound extends Data.TaggedError("UtxoNotFound")<{
+  readonly lookup: UtxoLookup;
+}> {
+  static at(address: string): UtxoNotFound {
+    return new UtxoNotFound({ lookup: { by: "address", address } });
+  }
+  static holding(address: string, asset: string): UtxoNotFound {
+    return new UtxoNotFound({ lookup: { by: "asset", address, asset } });
+  }
+  static byRef(ref: string, address?: string): UtxoNotFound {
+    return new UtxoNotFound({ lookup: { by: "ref", ref, address } });
+  }
+}
+
+/** Why the chain state or the record does not admit a command. */
+export type Refusal =
+  | {
+      readonly _tag: "NightTooLow";
+      readonly held: bigint;
+      readonly required: bigint;
+    }
+  | { readonly _tag: "NoCnight"; readonly asset: string }
+  | { readonly _tag: "MitigationActive"; readonly mitigationLogicHash: string };
+
+/** The chain state or the record does not admit the command. */
+export class PreconditionFailed extends Data.TaggedError("PreconditionFailed")<{
+  readonly command: string;
+  readonly refusal: Refusal;
+}> {}
+
 /** A UTxO's inline datum is missing or does not decode as `what`. */
 export class DatumParseError extends Data.TaggedError("DatumParseError")<{
   readonly what: string;
@@ -105,6 +142,8 @@ const CLI_ERRORS = [
   SubmitError,
   DatumParseError,
   VerificationFailed,
+  UtxoNotFound,
+  PreconditionFailed,
 ] as const;
 
 /** Union of every expected CLI failure. */
@@ -145,6 +184,20 @@ export function renderError(error: CliError): string {
           : `${error.command}: transaction build failed: ${error.cause instanceof Error ? error.cause.message : String(error.cause)}`,
         ...error.traces.map((trace) => `  ${trace}`),
       ].join("\n");
+    case "UtxoNotFound":
+      return error.lookup.by === "address"
+        ? `No UTxO at ${error.lookup.address}`
+        : error.lookup.by === "asset"
+          ? `No UTxO holding ${error.lookup.asset} at ${error.lookup.address}`
+          : `UTxO ${error.lookup.ref} not found${error.lookup.address ? ` at ${error.lookup.address}` : ""}`;
+    case "PreconditionFailed":
+      return `${error.command}: ${
+        error.refusal._tag === "NightTooLow"
+          ? `Insufficient TCnight tokens. Found: ${error.refusal.held}, Required: ${error.refusal.required}`
+          : error.refusal._tag === "NoCnight"
+            ? `Neither UTxO contains CNIGHT asset ${error.refusal.asset}`
+            : `Mitigation logic is active (hash: ${error.refusal.mitigationLogicHash}). merge-utxos does not support mitigation logic — the forever contract requires both logic and mitigation_logic withdrawals when mitigation is set.`
+      }`;
     case "DatumParseError":
       return `Cannot parse ${error.what} datum: ${error.reason}`;
     case "VerificationFailed":

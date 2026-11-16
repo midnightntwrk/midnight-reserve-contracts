@@ -2,10 +2,25 @@
 import { Effect, Layer, Option, Result } from "effect";
 import { Argument, CliError, Command, Flag } from "effect/cli";
 import { Provider, PROVIDERS, type ProviderType } from "./chain";
-import { type Environment, ENVIRONMENTS, PROFILES } from "./config";
+import {
+  DeployerAddress,
+  type Environment,
+  ENVIRONMENTS,
+  Profile,
+  PROFILES,
+} from "./config";
 import { buildProgram, TRACE_LEVELS } from "./contracts/build";
 import { ContractResolver, DEPLOY_COMPONENTS } from "./contracts/resolver";
-import { parseNameList } from "./input";
+import {
+  parseBech32Address,
+  parseKeyAddress,
+  parseNameList,
+  parseNonNegativeInteger,
+  parsePositiveBigInt,
+  parsePositiveInteger,
+  parseTxHash,
+  parseTxIndex,
+} from "./input";
 import {
   dustParticipantsProgram,
   FORMATS,
@@ -14,7 +29,12 @@ import {
   verifyProgram,
 } from "./report";
 import { combineSignaturesProgram, signAndSubmitProgram } from "./signing";
-import { generateKeyProgram } from "./wallet";
+import {
+  generateKeyProgram,
+  mergeUtxosProgram,
+  mintTcnightProgram,
+  simpleTxProgram,
+} from "./wallet";
 
 const network = Flag.Literals("network", ENVIRONMENTS).pipe(
   Flag.withAlias("n"),
@@ -59,10 +79,46 @@ const withServices = <
   command: Command.Command<Name, Input, ContextInput, E, R>,
 ) =>
   Command.provide(command, (input: Input) =>
-    Layer.merge(
+    Layer.mergeAll(
       Provider.layer(input.network, Option.getOrUndefined(input.provider)),
       ContractResolver.layer(input.network),
+      Profile.layer(input.network),
+      DeployerAddress.layer(input.network),
     ),
+  );
+
+/** A flag whose text `parse` turns into its value; a refused text is an invalid value naming the reason. */
+const parsed = <A>(
+  name: string,
+  parse: (text: string) => Effect.Effect<A, string>,
+) =>
+  Flag.String(name).pipe(
+    Flag.mapEffect((text) =>
+      Effect.mapError(
+        parse(text),
+        (expected) =>
+          new CliError.InvalidValue({
+            option: name,
+            value: text,
+            expected,
+            kind: "flag",
+          }),
+      ),
+    ),
+  );
+
+/** -o/--output: the directory the environment's files go under. */
+const outputDir = Flag.String("output").pipe(
+  Flag.withAlias("o"),
+  Flag.withDescription("Output directory (default: ./deployments)"),
+  Flag.withDefault("./deployments"),
+);
+
+/** --output-file: the transaction file's name. */
+const outputFile = (fallback: string) =>
+  Flag.String("output-file").pipe(
+    Flag.withDescription(`Output file name (default: ${fallback})`),
+    Flag.withDefault(fallback),
   );
 
 const format = Flag.Literals("format", FORMATS).pipe(
@@ -229,13 +285,163 @@ const dustParticipants = Command.make(
   withServices,
 );
 
+const simpleTx = Command.make(
+  "simple-tx",
+  {
+    network,
+    provider,
+    outputDir,
+    count: parsed("count", (text) =>
+      Effect.fromResult(parsePositiveInteger(text)),
+    ).pipe(
+      Flag.withAlias("c"),
+      Flag.withDescription(
+        "Number of outputs to create (default: SIMPLE_TX_COUNT, else 16)",
+      ),
+      Flag.optional,
+    ),
+    amount: parsed("amount", (text) =>
+      Effect.fromResult(parsePositiveBigInt(text)),
+    ).pipe(
+      Flag.withDescription(
+        "Lovelace per output (default: SIMPLE_TX_AMOUNT, else 20 ADA)",
+      ),
+      Flag.optional,
+    ),
+    to: parsed("to", parseKeyAddress).pipe(
+      Flag.withDescription(
+        "Recipient key address, not a script (default: DEPLOYER_ADDRESS)",
+      ),
+      Flag.optional,
+    ),
+    outputFile: outputFile("simple-tx.json"),
+  },
+  simpleTxProgram,
+).pipe(
+  Command.withDescription("Create simple transactions for testing"),
+  withServices,
+);
+
+const mintTcnight = Command.make(
+  "mint-tcnight",
+  {
+    network: network.pipe(
+      Flag.withDescription(
+        "The test environment (default: local; mainnet is refused)",
+      ),
+      Flag.mapEffect((environment) =>
+        environment === "mainnet"
+          ? Effect.fail(
+              new CliError.InvalidValue({
+                option: "network",
+                value: environment,
+                expected:
+                  "a test environment; mainnet is refused, this command runs only on a test environment",
+                kind: "flag",
+              }),
+            )
+          : Effect.succeed(environment),
+      ),
+    ),
+    provider,
+    outputDir,
+    amount: parsed("amount", (text) =>
+      Effect.fromResult(parsePositiveBigInt(text)),
+    ).pipe(Flag.withDescription("Amount of NIGHT tokens to mint or burn")),
+    userAddress: parsed("user-address", parseBech32Address).pipe(
+      Flag.withAlias("u"),
+      Flag.withDescription("User address (wallet for signing and burn source)"),
+    ),
+    destination: parsed("destination", parseBech32Address).pipe(
+      Flag.withAlias("d"),
+      Flag.withDescription(
+        "Destination address, mint only (default: user address)",
+      ),
+      Flag.optional,
+    ),
+    burn: Flag.Boolean("burn").pipe(
+      Flag.withAlias("b"),
+      Flag.withDescription("Burn tokens instead of minting"),
+      Flag.withDefault(false),
+    ),
+    outputFile: outputFile("mint-tcnight-tx.json"),
+  },
+  mintTcnightProgram,
+).pipe(
+  Command.withDescription("Mint or burn TCnight tokens (non-mainnet only)"),
+  withServices,
+);
+
+const txHashFlag = (name: string, description: string) =>
+  parsed(name, (text) => Effect.fromResult(parseTxHash(text))).pipe(
+    Flag.withDescription(description),
+  );
+
+const txIndexFlag = (name: string, description: string) =>
+  parsed(name, (text) => Effect.fromResult(parseTxIndex(text))).pipe(
+    Flag.withDescription(description),
+  );
+
+const mergeUtxos = Command.make(
+  "merge-utxos",
+  {
+    network,
+    provider,
+    outputDir,
+    validator: Flag.Literals("validator", ["reserve", "ics"]).pipe(
+      Flag.withDescription("Forever validator family: reserve or ics"),
+    ),
+    utxo1Hash: txHashFlag(
+      "utxo1-hash",
+      "Transaction hash of the first UTxO to merge",
+    ),
+    utxo1Index: txIndexFlag(
+      "utxo1-index",
+      "Output index of the first UTxO to merge",
+    ),
+    utxo2Hash: txHashFlag(
+      "utxo2-hash",
+      "Transaction hash of the second UTxO to merge",
+    ),
+    utxo2Index: txIndexFlag(
+      "utxo2-index",
+      "Output index of the second UTxO to merge",
+    ),
+    txHash: txHashFlag("tx-hash", "Transaction hash for the fee-paying UTxO"),
+    txIndex: txIndexFlag(
+      "tx-index",
+      "Transaction index for the fee-paying UTxO",
+    ),
+    feePadding: parsed("fee-padding", (text) =>
+      Effect.fromResult(
+        Result.map(parseNonNegativeInteger(text), (n) => BigInt(n)),
+      ),
+    ).pipe(
+      Flag.withDescription(
+        "Fee padding in lovelace, 0 or greater (default: 50000)",
+      ),
+      Flag.withDefault(50_000n),
+    ),
+    outputFile: outputFile("merge-utxos-tx.json"),
+  },
+  mergeUtxosProgram,
+).pipe(
+  Command.withDescription(
+    "Merge two value-holding UTxOs at a forever validator into one",
+  ),
+  withServices,
+);
+
 /** Every command, in the order `--help` lists them. */
 export const commands = [
+  simpleTx,
   info,
   verify,
   generateKey,
   signAndSubmit,
   combineSignatures,
+  mintTcnight,
   dustParticipants,
+  mergeUtxos,
   build,
 ] as const;

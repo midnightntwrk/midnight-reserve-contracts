@@ -15,6 +15,7 @@ import {
   AssetId,
   Credential,
   CredentialType,
+  Hash28ByteBase16,
   Metadata,
   Metadatum,
   MetadatumList,
@@ -32,7 +33,7 @@ import {
   TxCBOR,
   type AssetName,
 } from "@blaze-cardano/core";
-import { TxBuilder } from "@blaze-cardano/tx";
+import { calculateMinAda, TxBuilder } from "@blaze-cardano/tx";
 import { makeUplcEvaluator } from "@blaze-cardano/vm";
 import { Effect, Option } from "effect";
 import { TxBuildError } from "./errors";
@@ -194,6 +195,45 @@ export const createTxMetadata = (txType: string): Metadata => {
   message.insert(Metadatum.newText("msg"), Metadatum.newList(messages));
   return new Metadata(new Map([[674n, Metadatum.newMap(message)]]));
 };
+
+/** The script reward account of a script hash on the network. */
+export const createRewardAccount = (
+  scriptHash: string,
+  networkId: NetworkId,
+): RewardAccount =>
+  RewardAccount.fromCredential(
+    { type: CredentialType.ScriptHash, hash: Hash28ByteBase16(scriptHash) },
+    networkId,
+  );
+
+/** LogicRedeemer::Normal(inner) for a v2 logic (logic_round >= 1); the bare inner redeemer for v1. */
+export const logicRedeemer = (
+  inner: PlutusData,
+  logicRound: number,
+): PlutusData =>
+  logicRound >= 1
+    ? PlutusData.fromCore({
+        constructor: 0n,
+        fields: { items: [inner.toCore()] },
+      })
+    : inner;
+
+/** The zero withdrawals through the logic and, when set, the mitigation logic, both with `redeemer`, as plan withdrawals. */
+export const withdrawThroughLogic = (
+  logic: Script,
+  mitigationLogic: Option.Option<Script>,
+  redeemer: PlutusData,
+  networkId: NetworkId,
+): TxPlan["withdrawals"] =>
+  [logic, ...Option.toArray(mitigationLogic)].map((script) => ({
+    rewardAccount: createRewardAccount(script.hash(), networkId),
+    script,
+    redeemer,
+  }));
+
+/** The minimum ADA of an output, for plans that set an output's coin themselves. */
+export const minAda = (output: TransactionOutput, coinsPerUtxoByte: number) =>
+  calculateMinAda(output, coinsPerUtxoByte);
 
 /** One vkey witness in the witness set: [vkey (32 bytes), signature (64 bytes)] with its CBOR headers. */
 const VKEY_WITNESS_BYTES = 101;

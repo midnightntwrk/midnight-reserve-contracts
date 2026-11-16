@@ -6,7 +6,13 @@
  * values a command installs that come from the environment.
  */
 import { resolve } from "path";
-import { Address, AssetId, NetworkId } from "@blaze-cardano/core";
+import {
+  Address,
+  AssetId,
+  NetworkId,
+  SLOT_CONFIG_NETWORK,
+  type SlotConfig,
+} from "@blaze-cardano/core";
 import {
   Config,
   ConfigProvider,
@@ -16,6 +22,7 @@ import {
   Layer,
   Option,
   Redacted,
+  Result,
 } from "effect";
 import * as TOML from "toml";
 import { ConfigError } from "./errors";
@@ -107,6 +114,27 @@ export const environmentOf = (
   aikenConfigSection: environment === "emulator" ? "default" : environment,
 });
 
+/** The slot configuration of an environment's Cardano network: mainnet, preprod, or preview for every other environment. */
+export const slotConfigOf = (environment: Environment): SlotConfig =>
+  environment === "mainnet"
+    ? SLOT_CONFIG_NETWORK.Mainnet
+    : environment === "preprod"
+      ? SLOT_CONFIG_NETWORK.Preprod
+      : SLOT_CONFIG_NETWORK.Preview;
+
+/** The address when it is on the environment's network; the failure is the reason. */
+export const addressOn = (
+  address: Address,
+  environment: Environment,
+): Effect.Effect<Address, string> => {
+  const { networkId } = environmentOf(environment);
+  return address.getNetworkId() === networkId
+    ? Effect.succeed(address)
+    : Effect.fail(
+        `'${address.toBech32()}' is a ${NetworkId[address.getNetworkId()]} address; ${environment} is on ${NetworkId[networkId]}`,
+      );
+};
+
 /** The UTxO references of an aiken.toml profile: `<name>_hash` (hex bytes) and `<name>_index` each. */
 const ONE_SHOTS = [
   "technical_authority_one_shot",
@@ -150,6 +178,14 @@ export type NetworkConfig = {
   readonly cnight_policy: string;
   readonly cnight_name: string;
 };
+
+/** Every UTxO the profile names, its one-shots and its collateral, as "txId#index": coin selection never spends them. */
+export const reservedRefs = (config: NetworkConfig): ReadonlySet<string> =>
+  new Set(
+    ONE_SHOTS.map(
+      (name) => `${config[`${name}_hash`]}#${config[`${name}_index`]}`,
+    ),
+  );
 
 /** The cNIGHT asset of a profile: cnight_policy plus the UTF-8 cnight_name. */
 export const cnightAssetId = (config: NetworkConfig): AssetId =>
@@ -276,6 +312,23 @@ const optionalString = (name: string): Effect.Effect<Option.Option<string>> =>
       Config.option(Config.String(name)),
       Option.filter((value) => value !== ""),
     ),
+  );
+
+/** An environment variable through `parse`, or `fallback` when it is unset or empty; a value `parse` refuses is a ConfigError naming it. */
+export const envOr = <A>(
+  name: string,
+  parse: (text: string) => Result.Result<A, string>,
+  fallback: A,
+): Effect.Effect<A, ConfigError> =>
+  Effect.flatMap(
+    optionalString(name),
+    Option.match({
+      onNone: () => Effect.succeed(fallback),
+      onSome: (text) =>
+        Effect.mapError(Effect.fromResult(parse(text)), (reason) =>
+          envError(name, reason),
+        ),
+    }),
   );
 
 /** An environment variable that must be set and not empty. */

@@ -5,6 +5,7 @@
  * variable. Commands parse their flags through them at the boundary, the
  * configuration its aiken.toml and environment values.
  */
+import { Address, AddressType, CredentialType } from "@blaze-cardano/core";
 import {
   Array as Arr,
   Brand,
@@ -13,6 +14,7 @@ import {
   Result,
   Schema,
 } from "effect";
+import { resolve } from "path";
 import { InputParseError } from "./errors";
 
 /** A 32-byte transaction id as 64 lower-case hex characters. */
@@ -56,6 +58,49 @@ export const parseNonNegativeInteger = (
     ? Result.succeed(value)
     : Result.fail(`'${text}' is not a non-negative base-10 integer`);
 };
+
+/** A positive safe integer from its base-10 text. */
+export const parsePositiveInteger = (
+  text: string,
+): Result.Result<number, string> =>
+  Result.filterOrFail(
+    parseNonNegativeInteger(text),
+    (value) => value >= 1,
+    () => `'${text}' is not a positive base-10 integer`,
+  );
+
+/** A positive amount (lovelace, tokens) from its base-10 text. */
+export const parsePositiveBigInt = (
+  text: string,
+): Result.Result<bigint, string> =>
+  DECIMAL.test(text) && BigInt(text) > 0n
+    ? Result.succeed(BigInt(text))
+    : Result.fail(`'${text}' is not a positive base-10 integer`);
+
+/** A bech32 address; the failure is the reason. */
+export const parseBech32Address = (
+  text: string,
+): Effect.Effect<Address, string> =>
+  Effect.try({
+    try: () => Address.fromBech32(text),
+    catch: (cause) =>
+      `'${text}' is not a bech32 address: ${cause instanceof Error ? cause.message : String(cause)}`,
+  });
+
+/** A payment key address: neither a script address nor a reward address; the failure is the reason. */
+export const parseKeyAddress = (text: string): Effect.Effect<Address, string> =>
+  Effect.flatMap(parseBech32Address(text), (address) =>
+    address.getType() === AddressType.RewardKey ||
+    address.getType() === AddressType.RewardScript
+      ? Effect.fail(
+          `'${text}' is a reward (stake) address; a payment key address is required`,
+        )
+      : address.getProps().paymentPart?.type === CredentialType.KeyHash
+        ? Effect.succeed(address)
+        : Effect.fail(
+            `'${text}' is a script address; a key address is required`,
+          ),
+  );
 
 /** A transaction output index from its base-10 text. */
 export const parseTxIndex = (text: string): Result.Result<TxIndex, string> =>
@@ -258,3 +303,10 @@ export const readJsonFile = <A, E>(
       Result.mapError(decodeJson(schema)(text), onError),
     );
   });
+
+/** The path a transaction command writes: `<outputDir>/<network>/<outputFile>`. */
+export const txFilePath = (input: {
+  readonly outputDir: string;
+  readonly network: string;
+  readonly outputFile: string;
+}): string => resolve(input.outputDir, input.network, input.outputFile);

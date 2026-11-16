@@ -377,3 +377,36 @@ Commit 7:
 - dust-participants has no `--use-build`: the architecture keeps the flag
   only for info and promote. It reads `cnight_generates_dust` from the
   record.
+
+Commit 8:
+
+- `planningContext` (parameters, the wallet's UTxOs, the profile's
+  reserved refs, slot config, network, contracts, resolved inputs) and
+  `deployerUtxo` live in `chain.ts`, beside the reads they make;
+  `reservedRefs`, `slotConfigOf`, `addressOn` and `envOr` in `config.ts`;
+  the script helpers (`createRewardAccount`, `logicRedeemer`,
+  `withdrawThroughLogic`, `minAda` over Blaze's `calculateMinAda`) in
+  `tx.ts`. A plan takes its PlanningContext (`planX(ctx)`, inputs in
+  `ctx.resolved`).
+- merge-utxos is in `wallet.ts` with the other row-8 commands, not in
+  `governance/`.
+- The commands print the reference's build lines ("Building
+  transaction...", the local check when the plan spends, references or
+  offers UTxOs, "Transaction built: <id>") from `compileReported` in
+  `wallet.ts`; the governance commands will share it.
+- mint-tcnight and merge-utxos have no `--use-build` (the architecture
+  keeps it for info and promote only): they act on the record, or on the
+  build on local and the emulator.
+- `--count`/`--amount` fall back to SIMPLE_TX_COUNT/SIMPLE_TX_AMOUNT in
+  the program (`envOr`): a bad value is a ConfigError naming the
+  variable, not a flag error. `--burn` with `--destination` is an
+  InputParseError from the program, before any read; the reference
+  refused it at flag parsing.
+- mint-tcnight's closing hint names `just cli sign-and-submit` (the
+  reference: `bun cli`).
+- Tx ids against the reference on one emulator state (same UTxOs, same
+  default build): simple-tx, the burn and merge-utxos are identical; the
+  mint differs as row 30 foresaw: the reference had the provider evaluate
+  a plan with no spends (ex units mem 5245, steps 3539866), compile runs
+  the local VM with the 1.2 margin (6294, 4247839), so the fee is 112
+  lovelace higher. Inputs and outputs are the same.

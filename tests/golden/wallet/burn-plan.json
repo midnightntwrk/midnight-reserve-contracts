@@ -1,0 +1,56 @@
+{
+  "spends": [
+    {
+      "utxo": [
+        {
+          "index": 0,
+          "txId": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+        },
+        {
+          "address": "addr_test1vqcgtlp39ecr6dxq7jq58fagr0384fpuk0u8mcd3dyqr2lg4dkvv3",
+          "value": {
+            "assets": [
+              [
+                "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af14e49474854",
+                "10"
+              ]
+            ],
+            "coins": "5000000"
+          }
+        }
+      ],
+      "redeemer": null
+    }
+  ],
+  "references": [],
+  "scripts": [],
+  "mints": [
+    {
+      "policy": "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af1",
+      "assets": [
+        [
+          "4e49474854",
+          "-4"
+        ]
+      ],
+      "redeemer": "00"
+    }
+  ],
+  "outputs": [
+    {
+      "address": "addr_test1vqcgtlp39ecr6dxq7jq58fagr0384fpuk0u8mcd3dyqr2lg4dkvv3",
+      "value": {
+        "assets": [
+          [
+            "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af14e49474854",
+            "6"
+          ]
+        ],
+        "coins": "1004230"
+      }
+    }
+  ],
+  "withdrawals": [],
+  "registrations": [],
+  "collateral": []
+}

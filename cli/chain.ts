@@ -31,16 +31,25 @@ import {
 } from "effect";
 import { HttpClient, HttpClientRequest } from "effect/http";
 import {
+  DeployerAddress,
   type Environment,
+  environmentOf,
   envError,
+  Profile,
   requiredSecret,
   requiredString,
+  reservedRefs,
+  slotConfigOf,
 } from "./config";
 import {
   BlockfrostUnavailable,
   type ConfigError,
+  InputParseError,
   ProviderError,
+  UtxoNotFound,
 } from "./errors";
+import type { TxHash, TxIndex } from "./input";
+import type { NamedContract, PlanningContext } from "./tx";
 
 /** A Cardano network Blockfrost serves. */
 type PublicNetwork = "preview" | "preprod" | "mainnet";
@@ -447,3 +456,66 @@ export class Provider extends Context.Service<
   ) =>
     Layer.effect(this, make(environment, Effect.succeed(provider), undefined));
 }
+
+/**
+ * The PlanningContext of a command: the protocol parameters, the wallet's
+ * address and its UTxOs, the profile's reserved UTxO references, the slot
+ * configuration and network of the environment, the contracts that name
+ * validators in traces, and the command's own resolved inputs. Every chain
+ * read a plan needs happens here or before; compile reads none.
+ */
+export const planningContext = <Resolved>(options: {
+  readonly command: string;
+  readonly environment: Environment;
+  readonly wallet: Address;
+  readonly contracts: readonly NamedContract[];
+  readonly resolved: Resolved;
+}): Effect.Effect<
+  PlanningContext<Resolved>,
+  ConfigError | ProviderError,
+  Provider | Profile
+> =>
+  Effect.gen(function* () {
+    const provider = yield* Provider;
+    const parameters = yield* provider.parameters;
+    const utxos = yield* provider.unspentOutputs(options.wallet);
+    const config = yield* (yield* Profile).config;
+    return {
+      command: options.command,
+      networkId: environmentOf(options.environment).networkId,
+      slotConfig: slotConfigOf(options.environment),
+      parameters,
+      wallet: { address: options.wallet, utxos },
+      reserved: reservedRefs(config),
+      contracts: options.contracts,
+      resolved: options.resolved,
+    };
+  });
+
+/** The deployer's address and its UTxO with this reference, which must carry no reference script. */
+export const deployerUtxo = (txHash: TxHash, txIndex: TxIndex) =>
+  Effect.gen(function* () {
+    const address = yield* (yield* DeployerAddress).address;
+    const utxos = yield* (yield* Provider).unspentOutputs(address);
+    const utxo = utxos.find(
+      (u) =>
+        String(u.input().transactionId()) === txHash &&
+        u.input().index() === BigInt(txIndex),
+    );
+    if (utxo === undefined) {
+      return yield* UtxoNotFound.byRef(
+        `${txHash}#${txIndex}`,
+        address.toBech32(),
+      );
+    }
+    const script = utxo.output().scriptRef();
+    if (script !== undefined) {
+      return yield* new InputParseError({
+        source: "--tx-hash/--tx-index",
+        issues: [
+          `${txHash}#${txIndex} carries reference script ${script.hash()}; the CLI never spends a reference script, so pick another fee UTxO`,
+        ],
+      });
+    }
+    return { address, utxo };
+  });

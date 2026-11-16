@@ -38,7 +38,7 @@ import {
   type UpgradeState,
   upgradeStateAt,
 } from "./governance/two-stage";
-import { Output } from "./output";
+import { formatLovelaceToAda, Output } from "./output";
 
 /** The output formats of info and dust-participants. */
 export const FORMATS = ["json", "table"] as const;
@@ -77,10 +77,6 @@ const writeReport = (path: string, text: string) =>
       (cause) => new FileWriteError({ path, reason: cause.message }),
     ),
   );
-
-/** Lovelace as ADA with six decimals. */
-export const formatLovelaceToAda = (lovelace: bigint): string =>
-  `${lovelace / 1_000_000n}.${(lovelace % 1_000_000n).toString().padStart(6, "0")}`;
 
 /** A text table: separator, header, separator, rows, separator. */
 export const formatTable = (

@@ -25,3 +25,7 @@ export class Output extends Context.Service<
     progress: (message) => Console.log(`⏳ ${message}`),
   });
 }
+
+/** Lovelace as ADA with six decimals. */
+export const formatLovelaceToAda = (lovelace: bigint): string =>
+  `${lovelace / 1_000_000n}.${(lovelace % 1_000_000n).toString().padStart(6, "0")}`;

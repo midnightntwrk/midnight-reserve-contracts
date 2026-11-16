@@ -106,6 +106,30 @@ export const readTransactionFile = (
     );
   });
 
+/** Write one transaction file, creating its directory. */
+export const writeTransactionFile = (
+  path: string,
+  tx: Transaction,
+  signed: boolean,
+  description: string,
+): Effect.Effect<void, FileWriteError, FileSystem.FileSystem> =>
+  Effect.flatMap(FileSystem.FileSystem, (fs) => {
+    const file: TransactionFile = {
+      type: "Tx ConwayEra",
+      description,
+      cborHex: tx.toCbor(),
+      txHash: tx.getId(),
+      signed,
+    };
+    return Effect.mapError(
+      Effect.andThen(
+        fs.makeDirectory(dirname(path), { recursive: true }),
+        fs.writeFileString(path, JSON.stringify(file, null, 2)),
+      ),
+      (cause) => new FileWriteError({ path, reason: cause.message }),
+    );
+  });
+
 /** Write one transaction file, creating its directory, and print its path. */
 export const writeTransaction = (
   path: string,
@@ -114,23 +138,8 @@ export const writeTransaction = (
   description: string,
 ): Effect.Effect<void, FileWriteError, FileSystem.FileSystem | Output> =>
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const output = yield* Output;
-    const file: TransactionFile = {
-      type: "Tx ConwayEra",
-      description,
-      cborHex: tx.toCbor(),
-      txHash: tx.getId(),
-      signed,
-    };
-    yield* Effect.mapError(
-      Effect.andThen(
-        fs.makeDirectory(dirname(path), { recursive: true }),
-        fs.writeFileString(path, JSON.stringify(file, null, 2)),
-      ),
-      (cause) => new FileWriteError({ path, reason: cause.message }),
-    );
-    yield* output.log(`Transaction written to ${path}`);
+    yield* writeTransactionFile(path, tx, signed, description);
+    yield* (yield* Output).log(`Transaction written to ${path}`);
   });
 
 /** A public key and its signature of a transaction id. */

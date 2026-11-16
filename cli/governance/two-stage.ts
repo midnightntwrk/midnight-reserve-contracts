@@ -5,14 +5,16 @@
  */
 import {
   AssetId,
+  type Script,
   toHex,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import { parse } from "@blaze-cardano/data";
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 import * as Contracts from "../../contract_blueprint";
+import type { Blueprint } from "../contracts/resolver";
 import { decodeInlineDatum } from "../datum";
-import type { DatumParseError } from "../errors";
+import type { BlueprintError, DatumParseError } from "../errors";
 
 /** Hex of the "main" NFT name every two-stage contract mints. */
 export const MAIN_TOKEN_HEX = toHex(new TextEncoder().encode("main"));
@@ -67,3 +69,31 @@ export const upgradeStateAt = (
 export const isTrackLogic = (track: string, name: string): boolean =>
   name === `${track}_logic` ||
   new RegExp(`^${track}_logic_v([2-9]|[1-9][0-9]+)$`).test(name);
+
+/** The logic and mitigation logic scripts an UpgradeState names, from the blueprint; `expected` describes the logic the unknown-logic error asks for. */
+export const upgradeScripts = (
+  blueprint: Blueprint,
+  state: Pick<UpgradeState, "logicHash" | "mitigationLogicHash">,
+  expected: string,
+): Effect.Effect<
+  {
+    readonly logic: Script;
+    readonly mitigationLogic: Option.Option<Script>;
+  },
+  BlueprintError
+> =>
+  Effect.all({
+    logic: blueprint.scriptByHash(
+      state.logicHash,
+      `Unknown logic script hash in UpgradeState: ${state.logicHash}. Expected: ${expected}`,
+    ),
+    mitigationLogic: state.mitigationLogicHash
+      ? Effect.map(
+          blueprint.scriptByHash(
+            state.mitigationLogicHash,
+            `Unknown mitigation logic script hash in UpgradeState: ${state.mitigationLogicHash}`,
+          ),
+          Option.some,
+        )
+      : Effect.succeed(Option.none<Script>()),
+  });
