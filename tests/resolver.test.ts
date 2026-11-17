@@ -188,6 +188,53 @@ describe("ContractResolver.contracts", () => {
   );
 });
 
+describe("ContractResolver.toRegister", () => {
+  const CNIGHT_MINT_LOGIC = "cnight_minting.cnight_mint_logic.else";
+
+  it.live(
+    "a logic the record holds is acted on: mainnet's cNIGHT mint logic comes from its record",
+    () =>
+      Effect.gen(function* () {
+        const blueprint = yield* (yield* resolverOf("mainnet")).toRegister(
+          "cnightMintLogic",
+        );
+        expect(blueprint.source).toBe("deployed");
+        const { cnightMintLogic } = yield* blueprint.instances;
+        expect(cnightMintLogic?.Script.hash()).toBe(
+          hashIn("deployed-scripts/mainnet/plutus.json", CNIGHT_MINT_LOGIC),
+        );
+      }),
+  );
+
+  it.live(
+    "a logic the record lacks is created: govnet's cNIGHT mint logic comes from its build",
+    () =>
+      Effect.gen(function* () {
+        const resolver = yield* resolverOf("govnet");
+        expect(
+          (yield* resolver.contracts("actsOn").instances).cnightMintLogic,
+        ).toBeUndefined();
+        const blueprint = yield* resolver.toRegister("cnightMintLogic");
+        expect(blueprint.source).toBe("build");
+        const { cnightMintLogic } = yield* blueprint.instances;
+        expect(cnightMintLogic?.Script.hash()).toBe(
+          hashIn("plutus-govnet.json", CNIGHT_MINT_LOGIC),
+        );
+      }),
+  );
+
+  it.live("local and the emulator read the build", () =>
+    Effect.gen(function* () {
+      for (const environment of ["local", "emulator"] as const) {
+        const blueprint = yield* (yield* resolverOf(environment)).toRegister(
+          "cnightMintLogic",
+        );
+        expect(blueprint.source).toBe("build");
+      }
+    }),
+  );
+});
+
 describe("ContractResolver.deployRule", () => {
   it.live.each(["preview", "qanet", "govnet", "devnet"] as const)(
     "a full deploy on %s replaces the record; a --components deploy extends it",

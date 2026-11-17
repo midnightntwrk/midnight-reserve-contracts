@@ -33,7 +33,11 @@ import {
   TxCBOR,
   type AssetName,
 } from "@blaze-cardano/core";
-import { calculateMinAda, TxBuilder } from "@blaze-cardano/tx";
+import {
+  calculateMinAda,
+  calculateRequiredCollateral,
+  TxBuilder,
+} from "@blaze-cardano/tx";
 import { makeUplcEvaluator } from "@blaze-cardano/vm";
 import { Effect, Option } from "effect";
 import { TxBuildError } from "./errors";
@@ -234,6 +238,13 @@ export const withdrawThroughLogic = (
 /** The minimum ADA of an output, for plans that set an output's coin themselves. */
 export const minAda = (output: TransactionOutput, coinsPerUtxoByte: number) =>
   calculateMinAda(output, coinsPerUtxoByte);
+
+/** The fee a collateral is sized against: no transaction of the CLI's costs more. */
+export const ESTIMATED_MAX_FEE = 5_000_000n;
+
+/** The collateral a transaction with the estimated maximum fee needs at the protocol's collateral percentage. */
+export const requiredCollateral = (collateralPercentage: number): bigint =>
+  calculateRequiredCollateral(ESTIMATED_MAX_FEE, collateralPercentage);
 
 /** One vkey witness in the witness set: [vkey (32 bytes), signature (64 bytes)] with its CBOR headers. */
 const VKEY_WITNESS_BYTES = 101;

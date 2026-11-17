@@ -12,10 +12,20 @@ import {
 import { buildProgram, TRACE_LEVELS } from "./contracts/build";
 import { ContractResolver, DEPLOY_COMPONENTS } from "./contracts/resolver";
 import {
+  registerCnightMintLogicProgram,
+  runCnightMintProgram,
+} from "./governance/cnight";
+import {
   federatedOpsChangeProgram,
   termsChangeProgram,
 } from "./governance/forever";
 import { multisigChangeProgram } from "./governance/multisig";
+import {
+  migrateFederatedOpsProgram,
+  mintStagingStateProgram,
+  V2_TRACK_VALIDATORS,
+} from "./governance/staging";
+import { registerGovAuthProgram } from "./governance/two-stage";
 import {
   parseBech32Address,
   parseKeyAddress,
@@ -404,6 +414,16 @@ const feeUtxo = {
   ),
 };
 
+/** --no-sign: leave the transaction unsigned; the value is whether to sign, which reads the `keys` variables. */
+const sign = (keys: string) =>
+  Flag.Boolean("no-sign").pipe(
+    Flag.withDescription(
+      `Leave the transaction unsigned (signing reads ${keys})`,
+    ),
+    Flag.withDefault(false),
+    Flag.map((unsigned) => !unsigned),
+  );
+
 /** A governance transaction's flags in help order: --network, --provider, -o/--output, the fee UTxO, `afterFee`, --no-sign (both authorities) and --output-file <name>-tx.json. */
 const governanceTxFlags = <
   AfterFee extends Record<string, Flag.Flag<unknown>> = Record<never, never>,
@@ -416,13 +436,16 @@ const governanceTxFlags = <
   outputDir,
   ...feeUtxo,
   ...afterFee,
-  sign: Flag.Boolean("no-sign").pipe(
-    Flag.withDescription(
-      "Leave the transaction unsigned (signing reads TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
-    ),
-    Flag.withDefault(false),
-    Flag.map((unsigned) => !unsigned),
-  ),
+  sign: sign("TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS"),
+  outputFile: outputFile(`${name}-tx.json`),
+});
+
+/** An unsigned transaction paid from the fee UTxO: --network, --provider, -o/--output, the fee UTxO and --output-file <name>-tx.json. */
+const feeTxFlags = (name: string) => ({
+  network,
+  provider,
+  outputDir,
+  ...feeUtxo,
   outputFile: outputFile(`${name}-tx.json`),
 });
 
@@ -449,6 +472,72 @@ const changeFederatedOps = Command.make(
   governanceTxFlags("change-federated-ops"),
   federatedOpsChangeProgram,
 ).pipe(Command.withDescription("Update federated ops members"), withServices);
+
+const migrateFederatedOps = Command.make(
+  "migrate-federated-ops",
+  feeTxFlags("migrate-federated-ops"),
+  migrateFederatedOpsProgram,
+).pipe(
+  Command.withDescription("Migrate federated ops datum from v1 to v2"),
+  withServices,
+);
+
+// The v2 logic and the staging forever come from the build (ContractResolver "creates").
+const mintStagingState = Command.make(
+  "mint-staging-state",
+  {
+    network,
+    provider,
+    outputDir,
+    validator: Flag.Literals("validator", V2_TRACK_VALIDATORS).pipe(
+      Flag.withAlias("v"),
+      Flag.withDescription("Validator to mint StagingState NFT for"),
+    ),
+    feePadding: feeUtxo.feePadding,
+    sign: sign("TECH_AUTH_PRIVATE_KEYS"),
+    outputFile: outputFile("mint-staging-state-tx.json"),
+  },
+  mintStagingStateProgram,
+).pipe(
+  Command.withDescription("Mint StagingState NFT for a v2 logic contract"),
+  withServices,
+);
+
+const registerGovAuth = Command.make(
+  "register-gov-auth",
+  {
+    network,
+    provider,
+    outputDir,
+    outputFile: outputFile("register-gov-auth-tx.json"),
+  },
+  registerGovAuthProgram,
+).pipe(
+  Command.withDescription(
+    "Register main and staging gov auth scripts as stake credentials",
+  ),
+  withServices,
+);
+
+const registerCnightMintLogic = Command.make(
+  "register-cnight-mint-logic",
+  feeTxFlags("register-cnight-mint-logic"),
+  registerCnightMintLogicProgram,
+).pipe(
+  Command.withDescription(
+    "Register cNIGHT mint logic script as a stake credential",
+  ),
+  withServices,
+);
+
+const runCnightMintMainnet = Command.make(
+  "run-cnight-mint-mainnet",
+  feeTxFlags("run-cnight-mint-mainnet"),
+  runCnightMintProgram,
+).pipe(
+  Command.withDescription("Run the cNIGHT mint forever and logic withdrawals"),
+  withServices,
+);
 
 const changeTerms = Command.make(
   "change-terms",
@@ -509,9 +598,14 @@ export const commands = [
   changeCouncil,
   changeTechAuth,
   changeFederatedOps,
+  migrateFederatedOps,
+  mintStagingState,
   simpleTx,
   info,
   verify,
+  registerGovAuth,
+  registerCnightMintLogic,
+  runCnightMintMainnet,
   generateKey,
   signAndSubmit,
   combineSignatures,

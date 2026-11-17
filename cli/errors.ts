@@ -67,6 +67,23 @@ export type Refusal =
       readonly _tag: "DatumNotMigrated";
       readonly datumRound: number;
       readonly logicRound: number;
+    }
+  | { readonly _tag: "LogicNotV2"; readonly logicHash: string }
+  | { readonly _tag: "DatumAlreadyMigrated" }
+  | {
+      readonly _tag: "AlreadyRegistered";
+      readonly environment: string;
+      readonly scripts: readonly {
+        readonly label: string;
+        readonly scriptHash: string;
+      }[];
+    }
+  | {
+      readonly _tag: "CollateralTooSmall";
+      readonly lovelace: bigint;
+      readonly required: bigint;
+      readonly collateralPercentage: number;
+      readonly estimatedMaxFee: bigint;
     };
 
 /** What a refusal says. */
@@ -83,6 +100,16 @@ const refusalText = (refusal: Refusal): string => {
         `datum has logic_round=${refusal.datumRound} but v2 logic is active (logicRound=${refusal.logicRound}). ` +
         `Run 'migrate-federated-ops' first to update the datum to the v2 format.`
       );
+    case "LogicNotV2":
+      return `Active logic is still v1 (${refusal.logicHash}). Migration requires v2 logic to be promoted. Run promote-upgrade first.`;
+    case "DatumAlreadyMigrated":
+      return "Federated ops datum already has 4+ elements (already FederatedOpsV2). Migration is not needed.";
+    case "AlreadyRegistered":
+      return `already registered on ${refusal.environment}: ${refusal.scripts
+        .map(({ label, scriptHash }) => `${label} ${scriptHash}`)
+        .join(", ")}`;
+    case "CollateralTooSmall":
+      return `Collateral UTxO has ${refusal.lovelace} lovelace but requires at least ${refusal.required} lovelace (collateralPercentage: ${refusal.collateralPercentage}%, estimated max fee: ${refusal.estimatedMaxFee} lovelace)`;
   }
 };
 
@@ -151,6 +178,16 @@ export class BlockfrostUnavailable extends Data.TaggedError(
   readonly environment: string;
 }> {}
 
+/** Reward accounts a transaction withdraws from are not registered on chain. */
+export class StakeNotRegistered extends Data.TaggedError("StakeNotRegistered")<{
+  readonly environment: string;
+  readonly accounts: readonly {
+    readonly label: string;
+    readonly rewardAccount: string;
+    readonly scriptHash: string;
+  }[];
+}> {}
+
 const CLI_ERRORS = [
   ConfigError,
   BlueprintError,
@@ -166,6 +203,7 @@ const CLI_ERRORS = [
   VerificationFailed,
   UtxoNotFound,
   PreconditionFailed,
+  StakeNotRegistered,
 ] as const;
 
 /** Union of every expected CLI failure. */
@@ -220,5 +258,16 @@ export function renderError(error: CliError): string {
       return `VERIFICATION FAILED: ${error.failed} check(s) failed.`;
     case "SubmitError":
       return `Submission failed${error.attempts ? ` after ${error.attempts} attempt(s)` : ""}${error.txId ? ` (${error.txId})` : ""}: ${isCliError(error.cause) ? renderError(error.cause) : error.cause instanceof Error ? error.cause.message : String(error.cause)}`;
+    case "StakeNotRegistered":
+      return [
+        "The following reward accounts are not registered on-chain:",
+        ...error.accounts.map(
+          (a) => `  - ${a.label}: ${a.scriptHash} (${a.rewardAccount})`,
+        ),
+        "",
+        "Register them first with:",
+        `  just cli register-gov-auth -n ${error.environment}`,
+        "Or for v2 logic scripts, register the stake credential manually.",
+      ].join("\n");
   }
 }

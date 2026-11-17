@@ -3,6 +3,8 @@
  * two-stage UTxO's inline datum, which validator names are a track's
  * logic, and the logic scripts a main state names. twoStageLogic serves
  * change-council, change-tech-auth, change-terms and change-federated-ops.
+ * register-gov-auth registers the stake credentials of the main and
+ * staging gov auth, which every upgrade runs through.
  */
 import {
   addressFromValidator,
@@ -15,15 +17,24 @@ import {
 import { parse } from "@blaze-cardano/data";
 import { Effect, Option } from "effect";
 import * as Contracts from "../../contract_blueprint";
-import type { Blueprint } from "../contracts/resolver";
+import { planningContext, refuseRegistered } from "../chain";
+import { DeployerAddress, type Environment } from "../config";
+import { type Blueprint, ContractResolver } from "../contracts/resolver";
 import { decodeInlineDatum } from "../datum";
 import {
   type BlueprintError,
   type DatumParseError,
   UtxoNotFound,
 } from "../errors";
+import { txFilePath } from "../input";
 import { Output } from "../output";
-import { createRewardAccount } from "../tx";
+import {
+  compileReported,
+  signAndWrite,
+  UNSIGNED,
+  witnessCount,
+} from "../signing";
+import { createRewardAccount, type PlanningContext, type TxPlan } from "../tx";
 
 /** Hex of the "main" NFT name every two-stage contract mints. */
 export const MAIN_TOKEN_HEX = toHex(new TextEncoder().encode("main"));
@@ -160,4 +171,68 @@ export const twoStageLogic = (
       logicScript: logic,
       mitigationLogicScript: mitigationLogic,
     };
+  });
+
+// register-gov-auth
+
+/** The gov-auth scripts every two-stage contract's upgrades run through. */
+export interface GovAuthScripts {
+  readonly govAuth: Script;
+  readonly stagingGovAuth: Script;
+}
+
+/** Register the main and staging gov-auth scripts as stake credentials in one transaction; the wallet pays. */
+export const planRegisterGovAuth = (
+  ctx: PlanningContext<GovAuthScripts>,
+): TxPlan => ({
+  spends: [],
+  references: [],
+  scripts: [],
+  mints: [],
+  outputs: [],
+  withdrawals: [],
+  registrations: [ctx.resolved.govAuth, ctx.resolved.stagingGovAuth],
+  collateral: [],
+  metadata: Option.none(),
+  feePadding: 0n,
+  expectedWitnesses: witnessCount(UNSIGNED, 0),
+});
+
+/** Register the main and staging gov-auth stake credentials, refused when the chain already has either; the deployer wallet pays and takes the change; built (never submitted), unsigned, and written to a file. */
+export const registerGovAuthProgram = (input: {
+  readonly network: Environment;
+  readonly outputDir: string;
+  readonly outputFile: string;
+}) =>
+  Effect.gen(function* () {
+    const { network } = input;
+    const output = yield* Output;
+    yield* output.log(`\nRegistering Gov Auth scripts on ${network} network`);
+
+    const blueprint = (yield* ContractResolver).contracts("actsOn");
+    const instances = yield* blueprint.instances;
+    const govAuth = instances.govAuth.Script;
+    const stagingGovAuth = instances.stagingGovAuth.Script;
+    yield* output.log(`\nMain Gov Auth script hash: ${govAuth.hash()}`);
+    yield* output.log(`Staging Gov Auth script hash: ${stagingGovAuth.hash()}`);
+    yield* refuseRegistered("register-gov-auth", network, [
+      { label: "Main Gov Auth", scriptHash: govAuth.hash() },
+      { label: "Staging Gov Auth", scriptHash: stagingGovAuth.hash() },
+    ]);
+
+    const ctx = yield* planningContext({
+      command: "register-gov-auth",
+      environment: network,
+      wallet: yield* (yield* DeployerAddress).address,
+      contracts: yield* blueprint.contracts,
+      resolved: { govAuth, stagingGovAuth },
+    });
+    const tx = yield* compileReported(planRegisterGovAuth(ctx), ctx);
+    yield* signAndWrite(
+      tx,
+      txFilePath(input),
+      UNSIGNED,
+      "Register Government Authority Transaction",
+    );
+    return tx;
   });

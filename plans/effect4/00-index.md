@@ -443,3 +443,48 @@ Commit 9:
 - Against the reference on one emulator state (signed with both
   authorities, as by default): the transaction CBOR, so the id, and every
   printed line are identical for all four commands.
+
+Commit 10:
+
+- Placement: migrate-federated-ops and mint-staging-state (the v2 logic
+  track) are in `governance/staging.ts`; register-cnight-mint-logic and
+  run-cnight-mint-mainnet in `governance/cnight.ts`; register-gov-auth in
+  `governance/two-stage.ts`, beside the gov auth every upgrade runs
+  through. `ensureRegistered`, `refuseRegistered`, `deployerUtxoAt` and
+  `profileCollateral` are in `chain.ts`, through
+  `Provider.rewardAccountRegistered` (commit 3); `requiredCollateral` over
+  Blaze's `calculateRequiredCollateral` is in `tx.ts` (the Blaze rule).
+- The plan row's "run-cnight-mint(-mainnet)" is one command,
+  run-cnight-mint-mainnet, as in the reference.
+- None of the five commands has `--use-build`. migrate-federated-ops,
+  register-gov-auth and run-cnight-mint-mainnet act on the record, or on
+  the build on local and the emulator. mint-staging-state reads the
+  build (`contracts("creates")`): its v2 logic and staging forever are not
+  deployed until promoted. register-cnight-mint-logic follows the
+  per-intent rule through `ContractResolver.toRegister` (LEAD, 11-17):
+  registering the credential of a logic the record holds acts on it and
+  reads the record; one the record does not hold yet is a creation and
+  reads the build (every record but mainnet's lacks the cNIGHT mint
+  logic). Local and the emulator read the build. The reference needed
+  `--use-build` for the second case.
+- StakeNotRegistered ends with `just cli register-gov-auth -n <env>` (the
+  reference: `bun cli/index.ts`).
+- L3 submits mint-staging-state unsigned, as commit 9's commands: the
+  Blaze emulator refuses the tech authority's vkeys as extraneous.
+- The registration checks are tested at function level with a Provider
+  that answers `rewardAccountRegistered`. Through sign-and-submit the
+  Blaze emulator cannot show a refused re-registration: its
+  `acceptTransaction` puts the transaction in the mempool and then applies
+  the certificates, which throw "already registered", so the submit
+  fails; but the mempool entry stays, and submitTransaction's recovery
+  (`isConfirmed`, i.e. `awaitTransactionConfirmation`) produces a block
+  from it, and the run reports "Transaction already confirmed on-chain".
+- Against the reference on one emulator state: migrate-federated-ops,
+  mint-staging-state, register-cnight-mint-logic and
+  run-cnight-mint-mainnet give the same transaction CBOR, so the same id,
+  and every printed line the same. register-gov-auth differs as
+  mint-tcnight did in commit 8 (row 30): a plan with no spends was
+  evaluated by the reference's provider (ex units 24169/7060496 and
+  24569/7124496), here by the local VM with the 1.2 margin (29003/8472595
+  and 29483/8549395), so the fee is 767 lovelace higher. Inputs, outputs
+  and certificates are the same.

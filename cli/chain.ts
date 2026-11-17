@@ -38,6 +38,7 @@ import {
   type Environment,
   environmentOf,
   envError,
+  type NetworkConfig,
   Profile,
   requiredSecret,
   requiredString,
@@ -48,11 +49,19 @@ import {
   BlockfrostUnavailable,
   type ConfigError,
   InputParseError,
+  PreconditionFailed,
   ProviderError,
+  StakeNotRegistered,
   UtxoNotFound,
 } from "./errors";
 import type { TxHash, TxIndex } from "./input";
-import type { NamedContract, PlanningContext } from "./tx";
+import {
+  createRewardAccount,
+  ESTIMATED_MAX_FEE,
+  type NamedContract,
+  type PlanningContext,
+  requiredCollateral,
+} from "./tx";
 
 /** A Cardano network Blockfrost serves. */
 type PublicNetwork = "preview" | "preprod" | "mainnet";
@@ -499,18 +508,7 @@ export const planningContext = <Resolved>(options: {
 export const deployerUtxo = (txHash: TxHash, txIndex: TxIndex) =>
   Effect.gen(function* () {
     const address = yield* (yield* DeployerAddress).address;
-    const utxos = yield* (yield* Provider).unspentOutputs(address);
-    const utxo = utxos.find(
-      (u) =>
-        String(u.input().transactionId()) === txHash &&
-        u.input().index() === BigInt(txIndex),
-    );
-    if (utxo === undefined) {
-      return yield* UtxoNotFound.byRef(
-        `${txHash}#${txIndex}`,
-        address.toBech32(),
-      );
-    }
+    const utxo = yield* deployerUtxoAt(txHash, txIndex);
     const script = utxo.output().scriptRef();
     if (script !== undefined) {
       return yield* new InputParseError({
@@ -559,3 +557,107 @@ export const firstUtxoAt = (
         UtxoNotFound.at(addressFromValidator(networkId, script).toBech32()),
       )
     : Effect.succeed(utxos[0]);
+
+/** Every script's reward account must be registered on chain (local and the emulator count as registered); the failure lists the ones that are not. */
+export const ensureRegistered = (
+  environment: Environment,
+  scripts: readonly { readonly label: string; readonly scriptHash: string }[],
+) =>
+  Effect.gen(function* () {
+    const provider = yield* Provider;
+    const { networkId } = environmentOf(environment);
+    const accounts = scripts.map((script) => ({
+      ...script,
+      rewardAccount: createRewardAccount(script.scriptHash, networkId),
+    }));
+    const unregistered = yield* Effect.filter(
+      accounts,
+      ({ rewardAccount }) =>
+        Effect.map(
+          provider.rewardAccountRegistered(rewardAccount),
+          (registered) => !Option.getOrElse(registered, () => true),
+        ),
+      { concurrency: "unbounded" },
+    );
+    if (unregistered.length > 0) {
+      return yield* new StakeNotRegistered({
+        environment,
+        accounts: unregistered,
+      });
+    }
+  });
+
+/** A registration command refuses a script whose reward account is already registered on chain (local and the emulator cannot tell, and build). */
+export const refuseRegistered = (
+  command: string,
+  environment: Environment,
+  scripts: readonly { readonly label: string; readonly scriptHash: string }[],
+) =>
+  Effect.gen(function* () {
+    const provider = yield* Provider;
+    const { networkId } = environmentOf(environment);
+    const registered = yield* Effect.filter(
+      scripts,
+      ({ scriptHash }) =>
+        Effect.map(
+          provider.rewardAccountRegistered(
+            createRewardAccount(scriptHash, networkId),
+          ),
+          (registered) => Option.getOrElse(registered, () => false),
+        ),
+      { concurrency: "unbounded" },
+    );
+    if (registered.length > 0) {
+      return yield* new PreconditionFailed({
+        command,
+        refusal: {
+          _tag: "AlreadyRegistered",
+          environment,
+          scripts: registered,
+        },
+      });
+    }
+  });
+
+/** The deployer's UTxO at a reference the profile names (a one-shot, the collateral); one that is not among its unspent outputs is UtxoNotFound naming it. */
+export const deployerUtxoAt = (txHash: TxHash, txIndex: TxIndex) =>
+  Effect.gen(function* () {
+    const address = yield* (yield* DeployerAddress).address;
+    const utxos = yield* (yield* Provider).unspentOutputs(address);
+    const utxo = utxos.find(
+      (u) =>
+        String(u.input().transactionId()) === txHash &&
+        u.input().index() === BigInt(txIndex),
+    );
+    return utxo === undefined
+      ? yield* UtxoNotFound.byRef(`${txHash}#${txIndex}`, address.toBech32())
+      : utxo;
+  });
+
+/** The profile's collateral UTxO, unspent at the deployer address, holding what a transaction with the estimated maximum fee needs at the protocol's collateral percentage. */
+export const profileCollateral = (
+  command: string,
+  config: NetworkConfig,
+  collateralPercentage: number,
+) =>
+  Effect.gen(function* () {
+    const collateral = yield* deployerUtxoAt(
+      config.collateral_utxo_hash,
+      config.collateral_utxo_index,
+    );
+    const lovelace = collateral.output().amount().coin();
+    const required = requiredCollateral(collateralPercentage);
+    if (lovelace < required) {
+      return yield* new PreconditionFailed({
+        command,
+        refusal: {
+          _tag: "CollateralTooSmall",
+          lovelace,
+          required,
+          collateralPercentage,
+          estimatedMaxFee: ESTIMATED_MAX_FEE,
+        },
+      });
+    }
+    return { collateral, lovelace, required };
+  });

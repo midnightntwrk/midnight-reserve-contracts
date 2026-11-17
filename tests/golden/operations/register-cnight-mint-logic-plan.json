@@ -1,0 +1,28 @@
+{
+  "spends": [
+    {
+      "utxo": [
+        {
+          "index": 0,
+          "txId": "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
+        },
+        {
+          "address": "addr_test1vr84zzv6wnd6n0a7a6k0myhufy2wuzxyk6m20896rvz46ucdqcy8t",
+          "value": {
+            "coins": "100000000"
+          }
+        }
+      ],
+      "redeemer": null
+    }
+  ],
+  "references": [],
+  "scripts": [],
+  "mints": [],
+  "outputs": [],
+  "withdrawals": [],
+  "registrations": [
+    "33d5840ab19fcfcff60c2ff509d5371124ee1c2670abd96db9e79064"
+  ],
+  "collateral": []
+}

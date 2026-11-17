@@ -315,6 +315,15 @@ export class ContractResolver extends Context.Service<
      * which have none. A command that creates contracts reads the build.
      */
     readonly contracts: (intent: "actsOn" | "creates") => Blueprint;
+    /**
+     * The blueprint a stake registration reads its script from, by the same
+     * rule: the record when it holds the contract (the registration acts on
+     * it), else the build (it prepares one the record does not hold yet).
+     * Local and the emulator read the build.
+     */
+    readonly toRegister: (
+      name: keyof ContractInstances,
+    ) => Effect.Effect<Blueprint, BlueprintError>;
     /** How a deploy updates the record: None on local and the emulator; a full deploy on a test environment replaces it; any other deploy extends it (preprod and mainnet are always extended). */
     readonly deployRule: (full: boolean) => Option.Option<SnapshotRule>;
     /** Whether versions.json promotes the validator with this name. */
@@ -369,9 +378,16 @@ export class ContractResolver extends Context.Service<
             Effect.provideService(FileSystem.FileSystem, fs),
             Effect.provideService(DeployedScripts, deployedScripts),
           );
+        const contracts = (intent: "actsOn" | "creates") =>
+          intent === "actsOn" && hasRecord ? deployed : build;
         return {
-          contracts: (intent) =>
-            intent === "actsOn" && hasRecord ? deployed : build,
+          contracts,
+          toRegister: (name) =>
+            hasRecord
+              ? Effect.map(deployed.instances, (instances) =>
+                  instances[name] === undefined ? build : deployed,
+                )
+              : Effect.succeed(build),
           deployRule: (full) =>
             !hasRecord
               ? Option.none()
