@@ -199,7 +199,7 @@ test` with no diff produced by the gate, and leaves Aiken and
 | 11 | cli: two-stage upgrade | stage-upgrade (row 17 fixed by the resolver rule), promote-upgrade, record writes | same as 8, plus the mainnet upgrade transaction tests; row-17 test: on preprod the forevers/threshold/gov auth come from the record |
 | 12 | cli: deploy | deploy (`--components`, full deploy replaces the record), deploy-staging-track; chained txs as a fold over the context | same as 8, plus the deploy tests |
 | 13 | docs: architecture and finish | docs/architecture/cli.md (this architecture, one page with the diagram); README quick start + command table; docs/governance runbook; CLAUDE.md points at docs/architecture; removes `.claude/docs/`, `plans/effect/` and `plans/effect4/` (their lasting decisions moved into docs/architecture/cli.md); removes `extract-witnesses.ts` (row 53); no `cli-yargs` reference left | gate; CI steps reproduced; root and per-command help (manual) |
-| Q | **Live QA on preview** (user, 11-11): not a commit; runs after 13, before the PR opens. Anything it finds is fixed in the commit it belongs to. **The test deployment is temporary** (user, 11-11): afterwards the old preview record is restored. Q runs in a fresh empty change on top of commit 13, so every file it writes lands only in that change. Afterwards that change is restored to its parent (`jj restore`, i.e. back to commit 13) and abandoned. This keeps the series' own intended record changes (e.g. row 79 drops `beefy_signer_threshold.else` from deployed-scripts/preview); restoring to the pre-series base would undo them. None of the run's record writes enter any commit. | Read-only `info`/`verify` on preview and mainnet. Then submitted on preview: a fresh test deployment (12 governance txs + cNIGHT minting), `verify`, `register-gov-auth`, `mint-tcnight`, one `change-*` command, and a stage → promote cycle on that test deployment. The worker builds, signs and submits with the preview keys from the user's .env (copied into its workspace; gitignored, never committed), and **asks for the user's go before each submission**. | every tx confirmed; `verify` passes on the test deployment; afterwards the commit-13 tree is unchanged (`jj diff --from <commit 13> --to @` empty, the commit-13 id unchanged); results recorded in the PR body, as in #116 |
+| Q | **Live QA on preview** (user, 11-11): not a commit; runs after 13, before the PR opens. Anything it finds is fixed in the commit it belongs to. **The test deployment is temporary** (user, 11-11): afterwards the old preview record is restored. Q runs in a fresh empty change on top of commit 13, so every file it writes lands only in that change. Q begins with `just build preview` in that change (LEAD, 11-17), so the full deploy reads a fresh build: the committed preview build predates cNIGHT minting (2026-01-23) and has no cNIGHT minting validators. The restore drops the regenerated `aiken.toml`, `plutus-preview.json` and bindings with the rest; refreshing the committed network builds is outside the series. Afterwards that change is restored to its parent (`jj restore`, i.e. back to commit 13) and abandoned. This keeps the series' own intended record changes (e.g. row 79 drops `beefy_signer_threshold.else` from deployed-scripts/preview); restoring to the pre-series base would undo them. None of the run's record writes enter any commit. | Read-only `info`/`verify` on preview and mainnet. Then submitted on preview: a fresh test deployment (12 governance txs + cNIGHT minting), `verify`, `register-gov-auth`, `mint-tcnight`, one `change-*` command, and a stage → promote cycle on that test deployment. The worker builds, signs and submits with the preview keys from the user's .env (copied into its workspace; gitignored, never committed), and **asks for the user's go before each submission**. | every tx confirmed; `verify` passes on the test deployment; afterwards the commit-13 tree is unchanged (`jj diff --from <commit 13> --to @` empty, the commit-13 id unchanged); results recorded in the PR body, as in #116 |
 
 ## Oracles
 
@@ -488,3 +488,36 @@ Commit 10:
   24569/7124496), here by the local VM with the 1.2 margin (29003/8472595
   and 29483/8549395), so the fee is 767 lovelace higher. Inputs, outputs
   and certificates are the same.
+
+Commit 11:
+
+- stage-upgrade and promote-upgrade are in `governance/two-stage.ts`
+  (one of the two importers of `contracts/snapshot-write.ts`), with the
+  UpgradeState transitions and the record updates; the governance
+  authority (`governanceAuthorityPlan`, `resolveAuthority`) is in
+  `governance/multisig.ts` with the other multisig pieces. two-stage.ts is
+  about 850 lines, over L1's ~700, like report.ts and signing.ts.
+- A plan reads the target's main and staging UpgradeStates from its
+  resolved inputs (`TwoStageTarget.mainState`/`stagingState`), decoded by
+  the program, so the plan is pure and cannot fail on a datum. The
+  reference's `scriptRef` option (always None) is gone.
+- stage-upgrade has no `--use-build`: the validator's contracts, the
+  forevers, the staging threshold and gov auth come from the record (the
+  build on local and the emulator): row 17. The logic is looked up in the
+  record, else in the build (`ContractResolver.recordedNameOf` /
+  `builtNameOf`); a build-only logic is copied into the record. Refused up
+  front: a hash in neither (LogicNotFound, row 19), a build logic whose
+  name the record promotes under another hash (PromotedLogicMoved).
+- promote-upgrade keeps `--use-build` for the staged-logic lookup only (the
+  script it registers); everything else comes from the record.
+- Local and the emulator keep no record, so stage and promote write
+  nothing there and print no "Could not track" warning (row 18); the
+  reference tried and warned.
+- The main authority reads only the two forevers and the main gov
+  threshold; the council two-stage main is read only for the staging
+  authority.
+- `Output.stderr` (a plain line on stderr) carries the record warning.
+- Against the reference on one emulator state (signed with both
+  authorities): stage-upgrade 781d0221… and promote-upgrade e4226870…
+  give the same transaction CBOR; the output is the same but for the
+  reference's "Could not track" warning on the emulator.

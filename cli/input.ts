@@ -23,6 +23,8 @@ export type TxHash = string & Brand.Brand<"TxHash">;
 export type TxIndex = number & Brand.Brand<"TxIndex">;
 /** A 32-byte hash as 64 lower-case hex characters. */
 export type Hash32 = string & Brand.Brand<"Hash32">;
+/** A 28-byte script hash as 56 lower-case hex characters. */
+export type ScriptHash = string & Brand.Brand<"ScriptHash">;
 
 const HEX = /^[a-fA-F0-9]+$/;
 
@@ -43,6 +45,12 @@ export const parseTxHash = (value: string): Result.Result<TxHash, string> =>
 /** A 32-byte hash from its hex. */
 export const parseHash32 = (value: string): Result.Result<Hash32, string> =>
   Result.map(hexOfLength(64)(value), Brand.nominal<Hash32>());
+
+/** A script hash from its hex. */
+export const parseScriptHash = (
+  value: string,
+): Result.Result<ScriptHash, string> =>
+  Result.map(hexOfLength(56)(value), Brand.nominal<ScriptHash>());
 
 /** The all-zero 32-byte hash: the terms-and-conditions hash before a document is set. */
 export const ZERO_HASH32 = Brand.nominal<Hash32>()("00".repeat(32));

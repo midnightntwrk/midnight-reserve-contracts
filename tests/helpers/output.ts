@@ -10,6 +10,7 @@ export const captureOutput = () => {
     layer: Layer.succeed(Output)({
       log: keep,
       error: keep,
+      stderr: keep,
       success: keep,
       info: keep,
       progress: keep,

@@ -371,3 +371,26 @@ export const liveHashOf = (
           reason: `versions.json promotes ${name}, but plutus.json has no ${entry.title}`,
         });
   });
+
+/** The name of the record's validator with this hash; None where the environment has no plutus.json or the hash is not in it. */
+export const recordedNameOf = (env: string, hash: string) =>
+  Effect.gen(function* () {
+    const { plutus: path } = yield* filesOf(env);
+    return Option.flatMap(
+      yield* readFile(env, "deployed", path, PlutusJson),
+      (plutus) =>
+        Option.map(
+          Option.fromNullishOr(plutus.validators.find((v) => v.hash === hash)),
+          (v) => validatorName(v.title),
+        ),
+    );
+  });
+
+/** The name of the build validator with this hash in the plutus.json at `plutusPath`; None when the build lacks it. */
+export const builtNameOf = (env: string, plutusPath: string, hash: string) =>
+  Effect.map(readBuildPlutus(env, plutusPath), (build) =>
+    Option.map(
+      Option.fromNullishOr(build.validators.find((v) => v.hash === hash)),
+      (v) => validatorName(v.title),
+    ),
+  );

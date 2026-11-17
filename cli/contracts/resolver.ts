@@ -17,10 +17,12 @@ import {
 } from "../config";
 import { BlueprintError } from "../errors";
 import {
+  builtNameOf,
   isPromoted,
   liveHashOf,
   promotedAmong,
   readRecord,
+  recordedNameOf,
 } from "./snapshot-read";
 
 /** The validators with a two-stage upgrade triple, as --validator takes them. */
@@ -324,6 +326,18 @@ export class ContractResolver extends Context.Service<
     readonly toRegister: (
       name: keyof ContractInstances,
     ) => Effect.Effect<Blueprint, BlueprintError>;
+    /** Whether the environment keeps a record: false on local and the emulator. */
+    readonly hasRecord: boolean;
+    /** The aiken.toml profile the environment builds, and its build plutus.json. */
+    readonly build: { readonly profile: string; readonly plutusPath: string };
+    /** The record's name of the validator with this hash; None without a record or when the record lacks it. */
+    readonly recordedNameOf: (
+      hash: string,
+    ) => Effect.Effect<Option.Option<string>, BlueprintError>;
+    /** The build's name of the validator with this hash; None when the build lacks it. */
+    readonly builtNameOf: (
+      hash: string,
+    ) => Effect.Effect<Option.Option<string>, BlueprintError>;
     /** How a deploy updates the record: None on local and the emulator; a full deploy on a test environment replaces it; any other deploy extends it (preprod and mainnet are always extended). */
     readonly deployRule: (full: boolean) => Option.Option<SnapshotRule>;
     /** Whether versions.json promotes the validator with this name. */
@@ -382,6 +396,14 @@ export class ContractResolver extends Context.Service<
           intent === "actsOn" && hasRecord ? deployed : build;
         return {
           contracts,
+          hasRecord,
+          build: { profile: section, plutusPath },
+          recordedNameOf: (hash) =>
+            hasRecord
+              ? record(recordedNameOf(environment, hash))
+              : Effect.succeedNone,
+          builtNameOf: (hash) =>
+            record(builtNameOf(environment, plutusPath, hash)),
           toRegister: (name) =>
             hasRecord
               ? Effect.map(deployed.instances, (instances) =>

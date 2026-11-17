@@ -8,6 +8,8 @@ export class Output extends Context.Service<
     readonly log: (line: string) => Effect.Effect<void>;
     /** A line with the error marker, on stderr. */
     readonly error: (message: string) => Effect.Effect<void>;
+    /** A plain line on stderr. */
+    readonly stderr: (line: string) => Effect.Effect<void>;
     /** A line with the success marker. */
     readonly success: (message: string) => Effect.Effect<void>;
     /** A line with the info marker. */
@@ -20,6 +22,7 @@ export class Output extends Context.Service<
   static readonly layer = Layer.succeed(this, {
     log: (line) => Console.log(line),
     error: (message) => Console.error(`❌ ${message}\n`),
+    stderr: (line) => Console.error(line),
     success: (message) => Console.log(`✅ ${message}\n`),
     info: (message) => Console.log(`ℹ️  ${message}`),
     progress: (message) => Console.log(`⏳ ${message}`),

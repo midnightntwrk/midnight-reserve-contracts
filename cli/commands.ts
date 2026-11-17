@@ -10,7 +10,11 @@ import {
   PROFILES,
 } from "./config";
 import { buildProgram, TRACE_LEVELS } from "./contracts/build";
-import { ContractResolver, DEPLOY_COMPONENTS } from "./contracts/resolver";
+import {
+  ContractResolver,
+  DEPLOY_COMPONENTS,
+  UPGRADABLE_VALIDATORS,
+} from "./contracts/resolver";
 import {
   registerCnightMintLogicProgram,
   runCnightMintProgram,
@@ -25,13 +29,18 @@ import {
   mintStagingStateProgram,
   V2_TRACK_VALIDATORS,
 } from "./governance/staging";
-import { registerGovAuthProgram } from "./governance/two-stage";
+import {
+  promoteUpgradeProgram,
+  registerGovAuthProgram,
+  stageUpgradeProgram,
+} from "./governance/two-stage";
 import {
   parseBech32Address,
   parseKeyAddress,
   parseNameList,
   parseHash32,
   parseNonNegativeInteger,
+  parseScriptHash,
   parsePositiveBigInt,
   parsePositiveInteger,
   parseTxHash,
@@ -424,16 +433,19 @@ const sign = (keys: string) =>
     Flag.map((unsigned) => !unsigned),
   );
 
-/** A governance transaction's flags in help order: --network, --provider, -o/--output, the fee UTxO, `afterFee`, --no-sign (both authorities) and --output-file <name>-tx.json. */
+/** A governance transaction's flags in help order: --network, --provider, -o/--output, `head`, the fee UTxO, `afterFee`, --no-sign (both authorities) and --output-file <name>-tx.json. */
 const governanceTxFlags = <
   AfterFee extends Record<string, Flag.Flag<unknown>> = Record<never, never>,
+  Head extends Record<string, Flag.Flag<unknown>> = Record<never, never>,
 >(
   name: string,
   afterFee = {} as AfterFee,
+  head = {} as Head,
 ) => ({
   network,
   provider,
   outputDir,
+  ...head,
   ...feeUtxo,
   ...afterFee,
   sign: sign("TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS"),
@@ -472,6 +484,60 @@ const changeFederatedOps = Command.make(
   governanceTxFlags("change-federated-ops"),
   federatedOpsChangeProgram,
 ).pipe(Command.withDescription("Update federated ops members"), withServices);
+
+const upgradeValidator = (what: string) =>
+  Flag.Literals("validator", UPGRADABLE_VALIDATORS).pipe(
+    Flag.withAlias("v"),
+    Flag.withDescription(`Validator to ${what}`),
+  );
+
+// The validator's contracts, the forevers, the threshold and gov auth come from the record (row 17); the logic from the record, else the build.
+const stageUpgrade = Command.make(
+  "stage-upgrade",
+  governanceTxFlags(
+    "stage-upgrade",
+    {},
+    {
+      validator: upgradeValidator("upgrade"),
+      newLogicHash: parsed("new-logic-hash", (text) =>
+        Effect.fromResult(parseScriptHash(text)),
+      ).pipe(
+        Flag.withDescription(
+          "New logic script hash to stage (56 hex chars, 28 bytes)",
+        ),
+      ),
+    },
+  ),
+  stageUpgradeProgram,
+).pipe(
+  Command.withDescription(
+    "Stage a new logic hash for a two-stage upgrade validator",
+  ),
+  withServices,
+);
+
+const promoteUpgrade = Command.make(
+  "promote-upgrade",
+  governanceTxFlags(
+    "promote-upgrade",
+    {},
+    {
+      useBuild: Flag.Boolean("use-build").pipe(
+        Flag.withDescription(
+          "Look the staged logic up in the build output instead of the deployed record",
+        ),
+        Flag.withDefault(false),
+      ),
+      validator: upgradeValidator("promote"),
+    },
+  ),
+  promoteUpgradeProgram,
+).pipe(
+  Command.withDescription(
+    "Promote staged logic to main for a two-stage upgrade validator",
+  ),
+  withServices,
+);
 
 const migrateFederatedOps = Command.make(
   "migrate-federated-ops",
@@ -603,6 +669,8 @@ export const commands = [
   simpleTx,
   info,
   verify,
+  stageUpgrade,
+  promoteUpgrade,
   registerGovAuth,
   registerCnightMintLogic,
   runCnightMintMainnet,

@@ -69,6 +69,20 @@ export type Refusal =
       readonly logicRound: number;
     }
   | { readonly _tag: "LogicNotV2"; readonly logicHash: string }
+  | {
+      readonly _tag: "PromotedLogicMoved";
+      readonly name: string;
+      readonly logicHash: string;
+      readonly environment: string;
+      readonly profile: string;
+    }
+  | {
+      readonly _tag: "LogicNotFound";
+      readonly logicHash: string;
+      readonly environment: string;
+      readonly profile: string;
+      readonly buildPath: string;
+    }
   | { readonly _tag: "DatumAlreadyMigrated" }
   | {
       readonly _tag: "AlreadyRegistered";
@@ -102,6 +116,10 @@ const refusalText = (refusal: Refusal): string => {
       );
     case "LogicNotV2":
       return `Active logic is still v1 (${refusal.logicHash}). Migration requires v2 logic to be promoted. Run promote-upgrade first.`;
+    case "PromotedLogicMoved":
+      return `${refusal.name} is promoted in deployed-scripts/${refusal.environment} under another hash, and the ${refusal.profile} build has it as ${refusal.logicHash}; a promoted validator keeps its hash: stage its recorded hash, or a logic whose name is not promoted`;
+    case "LogicNotFound":
+      return `logic ${refusal.logicHash} is not in deployed-scripts/${refusal.environment} or in the ${refusal.profile} build (${refusal.buildPath}); check the hash, or build first: just build ${refusal.profile}`;
     case "DatumAlreadyMigrated":
       return "Federated ops datum already has 4+ elements (already FederatedOpsV2). Migration is not needed.";
     case "AlreadyRegistered":
