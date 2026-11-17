@@ -108,6 +108,38 @@ export const readTransactionFile = (
     );
   });
 
+/** The file entry of one transaction. */
+export const transactionFileOf = (
+  tx: Transaction,
+  signed: boolean,
+  description: string,
+): TransactionFile => ({
+  type: "Tx ConwayEra",
+  description,
+  cborHex: tx.toCbor(),
+  txHash: tx.getId(),
+  signed,
+});
+
+/** Write a deployment file, `{network, timestamp, transactions}`, creating its directory. */
+export const writeDeploymentFile = (
+  path: string,
+  file: {
+    readonly network: string;
+    readonly timestamp: string;
+    readonly transactions: readonly TransactionFile[];
+  },
+): Effect.Effect<void, FileWriteError, FileSystem.FileSystem> =>
+  Effect.flatMap(FileSystem.FileSystem, (fs) =>
+    Effect.mapError(
+      Effect.andThen(
+        fs.makeDirectory(dirname(path), { recursive: true }),
+        fs.writeFileString(path, JSON.stringify(file, null, 2)),
+      ),
+      (cause) => new FileWriteError({ path, reason: cause.message }),
+    ),
+  );
+
 /** Write one transaction file, creating its directory. */
 export const writeTransactionFile = (
   path: string,
@@ -116,13 +148,7 @@ export const writeTransactionFile = (
   description: string,
 ): Effect.Effect<void, FileWriteError, FileSystem.FileSystem> =>
   Effect.flatMap(FileSystem.FileSystem, (fs) => {
-    const file: TransactionFile = {
-      type: "Tx ConwayEra",
-      description,
-      cborHex: tx.toCbor(),
-      txHash: tx.getId(),
-      signed,
-    };
+    const file = transactionFileOf(tx, signed, description);
     return Effect.mapError(
       Effect.andThen(
         fs.makeDirectory(dirname(path), { recursive: true }),

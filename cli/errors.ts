@@ -70,6 +70,11 @@ export type Refusal =
     }
   | { readonly _tag: "LogicNotV2"; readonly logicHash: string }
   | {
+      readonly _tag: "Promoted";
+      readonly environment: string;
+      readonly validators: readonly string[];
+    }
+  | {
       readonly _tag: "PromotedLogicMoved";
       readonly name: string;
       readonly logicHash: string;
@@ -114,6 +119,8 @@ const refusalText = (refusal: Refusal): string => {
         `datum has logic_round=${refusal.datumRound} but v2 logic is active (logicRound=${refusal.logicRound}). ` +
         `Run 'migrate-federated-ops' first to update the datum to the v2 format.`
       );
+    case "Promoted":
+      return `${refusal.environment} has already promoted ${refusal.validators.join(", ")}; promoted validators are permanent`;
     case "LogicNotV2":
       return `Active logic is still v1 (${refusal.logicHash}). Migration requires v2 logic to be promoted. Run promote-upgrade first.`;
     case "PromotedLogicMoved":

@@ -373,3 +373,12 @@ export const encodeFederatedOps = ({
         candidates.map(candidateToPermissionedDatum),
         2n,
       ]);
+
+/** The FederatedOps datum a deployment creates: [Unit, the candidates' appendix, logic round 1]. */
+export const initialFederatedOpsDatum = (
+  candidates: readonly PermissionedCandidate[],
+): PlutusData =>
+  encodeFederatedOps({
+    data: PlutusData.fromCore({ constructor: 0n, fields: { items: [] } }),
+    candidates,
+  });

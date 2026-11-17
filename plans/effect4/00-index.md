@@ -521,3 +521,29 @@ Commit 11:
   authorities): stage-upgrade 781d0221… and promote-upgrade e4226870…
   give the same transaction CBOR; the output is the same but for the
   reference's "Could not track" warning on the emulator.
+
+Commit 12:
+
+- `cli/deploy.ts` holds deploy and deploy-staging-track: the steps, one
+  `planDeployment` over a tagged `Deployment` (two-stage, cNIGHT minting,
+  or a single NFT: a threshold or a staging forever), and the run they
+  share. It is about 980 lines, over L1's ~700.
+- The transactions are a fold over the PlanningContext: each step is
+  planned and compiled in the context the previous one leaves
+  (`afterTransaction` in tx.ts: the wallet without what it spent, with the
+  change it paid back); the one-shots and the collateral are found among
+  the first context's wallet UTxOs (`utxoAmong`, `collateralAmong` in
+  chain.ts), so a deploy reads the chain twice (parameters, the deployer's
+  UTxOs). With one-shots that pay their own way the transactions are the
+  reference's; with one-shots too small, each spends the change of the one
+  before, where the reference's would all spend the same wallet UTxO.
+- sign-and-submit submits every transaction of a file before it waits;
+  a node takes a chain from its mempool, the Blaze emulator does not, so
+  the chained-deploy test submits one transaction at a time.
+- The four threshold flags fall back to their variables in the program
+  (`envOr`), as simple-tx's do (commit 8).
+- "Deployment scripts saved to" names the record directory relative to
+  the repository root, not the working directory.
+- Against the reference on one emulator state (a full deploy, a
+  cnight-minting deploy, the staging track): every one of the 19
+  transactions has the same CBOR, and the output is the same.

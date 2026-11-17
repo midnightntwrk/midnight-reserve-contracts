@@ -28,6 +28,7 @@ import {
   Layer,
   Option,
   Redacted,
+  Result,
   Schedule,
   Schema,
   Scope,
@@ -619,45 +620,83 @@ export const refuseRegistered = (
     }
   });
 
+/** The UTxO at this reference among a wallet's UTxOs, or UtxoNotFound naming it at the wallet's address. */
+export const utxoAmong = (
+  wallet: {
+    readonly address: Address;
+    readonly utxos: readonly TransactionUnspentOutput[];
+  },
+  txHash: TxHash,
+  txIndex: TxIndex,
+): Result.Result<TransactionUnspentOutput, UtxoNotFound> => {
+  const utxo = wallet.utxos.find(
+    (u) =>
+      String(u.input().transactionId()) === txHash &&
+      u.input().index() === BigInt(txIndex),
+  );
+  return utxo === undefined
+    ? Result.fail(
+        UtxoNotFound.byRef(`${txHash}#${txIndex}`, wallet.address.toBech32()),
+      )
+    : Result.succeed(utxo);
+};
+
 /** The deployer's UTxO at a reference the profile names (a one-shot, the collateral); one that is not among its unspent outputs is UtxoNotFound naming it. */
 export const deployerUtxoAt = (txHash: TxHash, txIndex: TxIndex) =>
   Effect.gen(function* () {
     const address = yield* (yield* DeployerAddress).address;
     const utxos = yield* (yield* Provider).unspentOutputs(address);
-    const utxo = utxos.find(
-      (u) =>
-        String(u.input().transactionId()) === txHash &&
-        u.input().index() === BigInt(txIndex),
+    return yield* Effect.fromResult(
+      utxoAmong({ address, utxos }, txHash, txIndex),
     );
-    return utxo === undefined
-      ? yield* UtxoNotFound.byRef(`${txHash}#${txIndex}`, address.toBech32())
-      : utxo;
   });
 
-/** The profile's collateral UTxO, unspent at the deployer address, holding what a transaction with the estimated maximum fee needs at the protocol's collateral percentage. */
+/** The profile's collateral among the wallet's UTxOs, holding what a transaction with the estimated maximum fee needs at the protocol's collateral percentage. */
+export const collateralAmong = (
+  command: string,
+  config: NetworkConfig,
+  collateralPercentage: number,
+  wallet: Parameters<typeof utxoAmong>[0],
+) =>
+  Result.flatMap(
+    utxoAmong(
+      wallet,
+      config.collateral_utxo_hash,
+      config.collateral_utxo_index,
+    ),
+    (collateral) => {
+      const lovelace = collateral.output().amount().coin();
+      const required = requiredCollateral(collateralPercentage);
+      return lovelace < required
+        ? Result.fail(
+            new PreconditionFailed({
+              command,
+              refusal: {
+                _tag: "CollateralTooSmall",
+                lovelace,
+                required,
+                collateralPercentage,
+                estimatedMaxFee: ESTIMATED_MAX_FEE,
+              },
+            }),
+          )
+        : Result.succeed({ collateral, lovelace, required });
+    },
+  );
+
+/** The profile's collateral UTxO, unspent at the deployer address, checked as collateralAmong checks it. */
 export const profileCollateral = (
   command: string,
   config: NetworkConfig,
   collateralPercentage: number,
 ) =>
   Effect.gen(function* () {
-    const collateral = yield* deployerUtxoAt(
-      config.collateral_utxo_hash,
-      config.collateral_utxo_index,
+    const address = yield* (yield* DeployerAddress).address;
+    const utxos = yield* (yield* Provider).unspentOutputs(address);
+    return yield* Effect.fromResult(
+      collateralAmong(command, config, collateralPercentage, {
+        address,
+        utxos,
+      }),
     );
-    const lovelace = collateral.output().amount().coin();
-    const required = requiredCollateral(collateralPercentage);
-    if (lovelace < required) {
-      return yield* new PreconditionFailed({
-        command,
-        refusal: {
-          _tag: "CollateralTooSmall",
-          lovelace,
-          required,
-          collateralPercentage,
-          estimatedMaxFee: ESTIMATED_MAX_FEE,
-        },
-      });
-    }
-    return { collateral, lovelace, required };
   });

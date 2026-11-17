@@ -328,8 +328,12 @@ export class ContractResolver extends Context.Service<
     ) => Effect.Effect<Blueprint, BlueprintError>;
     /** Whether the environment keeps a record: false on local and the emulator. */
     readonly hasRecord: boolean;
-    /** The aiken.toml profile the environment builds, and its build plutus.json. */
-    readonly build: { readonly profile: string; readonly plutusPath: string };
+    /** The aiken.toml profile the environment builds, its build plutus.json and bindings. */
+    readonly build: {
+      readonly profile: string;
+      readonly plutusPath: string;
+      readonly blueprintPath: string;
+    };
     /** The record's name of the validator with this hash; None without a record or when the record lacks it. */
     readonly recordedNameOf: (
       hash: string,
@@ -365,11 +369,15 @@ export class ContractResolver extends Context.Service<
         const section = environmentOf(environment).aikenConfigSection;
         const hasRecord = environment !== "local" && environment !== "emulator";
         const plutusPath = resolve(PROJECT_ROOT, `plutus-${section}.json`);
+        const blueprintPath = resolve(
+          PROJECT_ROOT,
+          `contract_blueprint_${section}.ts`,
+        );
         const build = blueprintAt(
           fs,
           environment,
           "build",
-          resolve(PROJECT_ROOT, `contract_blueprint_${section}.ts`),
+          blueprintPath,
           `no build output for ${section}; build it first: just build ${section}`,
         );
         // The record's bindings come from the same root as its other files.
@@ -397,7 +405,7 @@ export class ContractResolver extends Context.Service<
         return {
           contracts,
           hasRecord,
-          build: { profile: section, plutusPath },
+          build: { profile: section, plutusPath, blueprintPath },
           recordedNameOf: (hash) =>
             hasRecord
               ? record(recordedNameOf(environment, hash))

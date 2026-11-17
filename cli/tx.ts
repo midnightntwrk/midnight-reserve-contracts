@@ -28,6 +28,7 @@ import {
   Script,
   type SlotConfig,
   Transaction,
+  TransactionInput,
   TransactionOutput,
   TransactionUnspentOutput,
   TxCBOR,
@@ -234,6 +235,49 @@ export const withdrawThroughLogic = (
     script,
     redeemer,
   }));
+
+/** The context after `tx`, for a transaction chained on it: the wallet without the UTxOs `tx` spends, with the outputs `tx` pays to the wallet's address. */
+export const afterTransaction = <Resolved>(
+  ctx: PlanningContext<Resolved>,
+  tx: Transaction,
+): PlanningContext<Resolved> => {
+  const spent = new Set(
+    tx
+      .body()
+      .inputs()
+      .values()
+      .map((input) => `${input.transactionId()}#${input.index()}`),
+  );
+  const address = ctx.wallet.address.toBech32();
+  const txId = tx.getId();
+  return {
+    ...ctx,
+    wallet: {
+      address: ctx.wallet.address,
+      utxos: [
+        ...ctx.wallet.utxos.filter(
+          (utxo) =>
+            !spent.has(
+              `${utxo.input().transactionId()}#${utxo.input().index()}`,
+            ),
+        ),
+        ...tx
+          .body()
+          .outputs()
+          .flatMap((output, index) =>
+            output.address().toBech32() === address
+              ? [
+                  new TransactionUnspentOutput(
+                    new TransactionInput(txId, BigInt(index)),
+                    TransactionOutput.fromCbor(output.toCbor()),
+                  ),
+                ]
+              : [],
+          ),
+      ],
+    },
+  };
+};
 
 /** The minimum ADA of an output, for plans that set an output's coin themselves. */
 export const minAda = (output: TransactionOutput, coinsPerUtxoByte: number) =>

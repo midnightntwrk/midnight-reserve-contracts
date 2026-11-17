@@ -11,6 +11,12 @@ import {
 } from "./config";
 import { buildProgram, TRACE_LEVELS } from "./contracts/build";
 import {
+  DEPLOY_THRESHOLDS,
+  deployProgram,
+  deployStagingTrackProgram,
+  STAGING_TRACK_COMPONENTS,
+} from "./deploy";
+import {
   ContractResolver,
   DEPLOY_COMPONENTS,
   UPGRADABLE_VALIDATORS,
@@ -23,7 +29,7 @@ import {
   federatedOpsChangeProgram,
   termsChangeProgram,
 } from "./governance/forever";
-import { multisigChangeProgram } from "./governance/multisig";
+import { multisigChangeProgram, parseThreshold } from "./governance/multisig";
 import {
   migrateFederatedOpsProgram,
   mintStagingStateProgram,
@@ -485,6 +491,82 @@ const changeFederatedOps = Command.make(
   federatedOpsChangeProgram,
 ).pipe(Command.withDescription("Update federated ops members"), withServices);
 
+/** A deploy threshold flag: numerator/denominator, else its environment variable, else its fallback. */
+const deployThreshold = (
+  name: string,
+  what: string,
+  setting: (typeof DEPLOY_THRESHOLDS)[keyof typeof DEPLOY_THRESHOLDS],
+) =>
+  parsed(name, (text) => Effect.fromResult(parseThreshold(text))).pipe(
+    Flag.withDescription(
+      `${what} threshold as numerator/denominator, e.g. 2/3 (default: ${setting.variable}, else ${setting.fallback[0]}/${setting.fallback[1]})`,
+    ),
+    Flag.optional,
+  );
+
+/** --components: names from `all`, comma-separated. */
+const componentsFlag = <const Name extends string>(
+  all: readonly Name[],
+  defaults: string,
+) =>
+  parsed("components", (text) =>
+    Effect.fromResult(parseNameList(all)(text)),
+  ).pipe(
+    Flag.withDescription(
+      `Components, comma-separated (default: ${defaults}): ${all.join(", ")}`,
+    ),
+    Flag.optional,
+  );
+
+// The contracts a deploy creates come from the build (ContractResolver "creates").
+const deploy = Command.make(
+  "deploy",
+  {
+    network,
+    provider,
+    outputDir,
+    techAuthThreshold: deployThreshold(
+      "tech-auth-threshold",
+      "Tech auth",
+      DEPLOY_THRESHOLDS.techAuth,
+    ),
+    councilThreshold: deployThreshold(
+      "council-threshold",
+      "Council",
+      DEPLOY_THRESHOLDS.council,
+    ),
+    councilStagingThreshold: deployThreshold(
+      "council-staging-threshold",
+      "Council staging",
+      DEPLOY_THRESHOLDS.councilStaging,
+    ),
+    techAuthStagingThreshold: deployThreshold(
+      "tech-auth-staging-threshold",
+      "Tech auth staging",
+      DEPLOY_THRESHOLDS.techAuthStaging,
+    ),
+    components: componentsFlag(DEPLOY_COMPONENTS, "all but cnight-minting"),
+  },
+  deployProgram,
+).pipe(
+  Command.withDescription("Generate deployment transactions"),
+  withServices,
+);
+
+const deployStagingTrack = Command.make(
+  "deploy-staging-track",
+  {
+    network,
+    provider,
+    outputDir,
+    components: componentsFlag(STAGING_TRACK_COMPONENTS, "all"),
+  },
+  deployStagingTrackProgram,
+).pipe(
+  Command.withDescription("Generate staging track deployment transactions"),
+  withServices,
+);
+
 const upgradeValidator = (what: string) =>
   Flag.Literals("validator", UPGRADABLE_VALIDATORS).pipe(
     Flag.withAlias("v"),
@@ -661,6 +743,8 @@ const mergeUtxos = Command.make(
 
 /** Every command, in the order `--help` lists them. */
 export const commands = [
+  deploy,
+  deployStagingTrack,
   changeCouncil,
   changeTechAuth,
   changeFederatedOps,

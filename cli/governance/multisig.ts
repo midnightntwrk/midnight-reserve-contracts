@@ -91,6 +91,21 @@ const checkedThreshold = (
         ? Result.fail("numerator must be less than denominator")
         : Result.succeed({ numerator, denominator });
 
+const INTEGER = /^-?[0-9]+$/;
+
+/** "numerator/denominator" by the on-chain rule; the failure is the reason. */
+export const parseThreshold = (
+  text: string,
+): Result.Result<Threshold, string> => {
+  const parts = text.split("/").map((part) => part.trim());
+  const [numerator = "", denominator = ""] = parts;
+  return parts.length !== 2 ||
+    !INTEGER.test(numerator) ||
+    !INTEGER.test(denominator)
+    ? Result.fail("expected 'numerator/denominator' (e.g. '2/3')")
+    : checkedThreshold(BigInt(numerator), BigInt(denominator));
+};
+
 /** The fractions of a [tech_num, tech_denom, council_num, council_denom] datum; the failure is the reason. */
 export const authorityThreshold = ([
   techAuthNum,
