@@ -547,3 +547,31 @@ Commit 12:
 - Against the reference on one emulator state (a full deploy, a
   cnight-minting deploy, the staging track): every one of the 19
   transactions has the same CBOR, and the output is the same.
+
+Commit 13 (LEAD, 11-17):
+
+- docs/architecture/cli.md is the one page of this architecture (the
+  flow, services, contract sources, record, layout, dependency rules,
+  tests, toolchain). docs/architecture/contracts.md and testing.md come
+  from the docs/architecture bookmark (c5630b51), as the plan says (user,
+  11-14; LEAD reversed a brief instruction to leave them out): contracts.md
+  with its build and promote references moved from cli-yargs to
+  cli/contracts/build.ts, cli/governance/two-stage.ts and cli/tx.ts (and
+  `build --from-deployed`, which pins and runs the phased build), testing.md
+  with the counts, rules, goldens and emulator acceptance of this CLI
+  (vitest 331 tests in 25 files, 34 plan goldens) and its gate and CI
+  steps. The staking line's later edits to those pages rebase on top.
+- The live deployment runbook moves from `.claude/docs/live-deployment.md`
+  to `docs/governance/runbook.md`, rewritten for this CLI (no
+  create-witnesses.ts; combine-signatures takes cardano-cli or CIP-30
+  witnesses; stage-upgrade has no `--use-build`). docs/governance/upgrade.md's
+  stage/promote example uses the real flags.
+- Removed: `.claude/docs/` (its lasting content is in cli.md, the runbook
+  and the README), `plans/effect/` (the Effect 3 plans) and the unused
+  root `extract-witnesses.ts` (row 53). `plans/effect4/` stays until the
+  PR, while the series is in flight.
+- README: quick start (vp install, just build, just check, vp test, just
+  cli --help, the .env values), the project structure with `cli/` and
+  `deployed-scripts/`, and the command table of all 23 commands; Maestro
+  and the unknown-environment fallback are gone (neither exists).
+- CLAUDE.md's Additional Docs point at cli.md and the runbook.

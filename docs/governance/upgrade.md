@@ -169,18 +169,18 @@ This ensures:
 ## CLI Commands
 
 ```bash
-# Stage a new logic hash
+# Stage a new logic hash (the CLI stages the Logic field)
 just cli stage-upgrade \
   --network preview \
-  --domain reserve \
-  --field Logic \
-  --hash <new_logic_hash>
+  --validator reserve \
+  --new-logic-hash <new_logic_hash> \
+  --tx-hash <fee_tx_hash> --tx-index <fee_tx_index>
 
-# Promote staged logic to main
+# Promote the staged logic to main
 just cli promote-upgrade \
   --network preview \
-  --domain reserve \
-  --field Logic
+  --validator reserve \
+  --tx-hash <fee_tx_hash> --tx-index <fee_tx_index>
 ```
 
 ## Constraint Tags Reference
