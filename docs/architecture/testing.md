@@ -100,7 +100,7 @@ The committee bridge has one, on bookmark `bridge/aiken` (also on `feat/committe
 - the Aiken fixtures that consume them, `lib/fixtures/bridge/vectors.ak`;
 - the plan, `plans/bridge/05-ts-reference-vectors.md`.
 
-Staking: TS reference and emulator tests: follow-up PR (bookmark `staking/ts-tests`). On `staking/contracts` the staking and reserve v2 contracts are tested by their Aiken modules only.
+Staking gets one later.
 
 ### L6 manual QA
 
