@@ -39,7 +39,7 @@ import {
   envOr,
   Profile,
 } from "./config";
-import { type Blueprint, ContractResolver } from "./contracts/resolver";
+import { ContractResolver } from "./contracts/resolver";
 import {
   BlueprintError,
   DatumParseError,
@@ -61,13 +61,13 @@ import {
 } from "./input";
 import { formatLovelaceToAda, Output } from "./output";
 import {
+  compileReported,
   signAndWrite,
   UNSIGNED,
   writeTransaction,
   writeTransactionFile,
 } from "./signing";
 import {
-  compile,
   createRewardAccount,
   logicRedeemer,
   minAda,
@@ -112,23 +112,6 @@ export const generateKeyProgram = (input: { readonly network: Environment }) =>
     return key;
   });
 
-/** The transaction compile builds, reported as the reference CLI reports it: a local check when the plan spends, references or offers UTxOs, and the transaction id. */
-const compileReported = <Resolved>(
-  plan: TxPlan,
-  ctx: PlanningContext<Resolved>,
-) =>
-  Effect.gen(function* () {
-    const output = yield* Output;
-    yield* output.log("\nBuilding transaction...");
-    const checked =
-      plan.spends.length + plan.references.length + plan.collateral.length > 0;
-    if (checked) yield* output.log("  Testing transaction locally (UPLC)...");
-    const tx = yield* compile(plan, ctx);
-    if (checked) yield* output.success("Local UPLC test passed");
-    yield* output.success(`Transaction built: ${tx.getId()}`);
-    return tx;
-  });
-
 /** A plan with nothing in it, which the commands fill. */
 const EMPTY_PLAN: TxPlan = {
   spends: [],
@@ -143,12 +126,6 @@ const EMPTY_PLAN: TxPlan = {
   feePadding: 0n,
   expectedWitnesses: 1,
 };
-
-/** The contract names a context carries for trace labels. */
-const namedContracts = (blueprint: Blueprint) =>
-  Effect.map(blueprint.contracts, (contracts) =>
-    contracts.map(({ className, hash }) => ({ className, hash })),
-  );
 
 /** An address on the environment's network; another network's is an InputParseError for `source`. */
 const onNetwork = (address: Address, network: Environment, source: string) =>
@@ -372,7 +349,7 @@ export const mintTcnightProgram = (input: {
       command: "mint-tcnight",
       environment: network,
       wallet: user,
-      contracts: yield* namedContracts(blueprint),
+      contracts: yield* blueprint.contracts,
       resolved: undefined,
     });
     const userUtxos = ctx.wallet.utxos;
@@ -650,7 +627,7 @@ export const mergeUtxosProgram = (input: {
       command: MERGE,
       environment: network,
       wallet: deployer,
-      contracts: yield* namedContracts(blueprint),
+      contracts: yield* blueprint.contracts,
       resolved: {
         forever: forever.Script,
         utxo1,

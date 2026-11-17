@@ -12,9 +12,15 @@ import {
 import { buildProgram, TRACE_LEVELS } from "./contracts/build";
 import { ContractResolver, DEPLOY_COMPONENTS } from "./contracts/resolver";
 import {
+  federatedOpsChangeProgram,
+  termsChangeProgram,
+} from "./governance/forever";
+import { multisigChangeProgram } from "./governance/multisig";
+import {
   parseBech32Address,
   parseKeyAddress,
   parseNameList,
+  parseHash32,
   parseNonNegativeInteger,
   parsePositiveBigInt,
   parsePositiveInteger,
@@ -382,6 +388,86 @@ const txIndexFlag = (name: string, description: string) =>
     Flag.withDescription(description),
   );
 
+/** --tx-hash, --tx-index and --fee-padding: the deployer UTxO that pays the fee. */
+const feeUtxo = {
+  txHash: txHashFlag("tx-hash", "Transaction hash for the fee-paying UTxO"),
+  txIndex: txIndexFlag("tx-index", "Transaction index for the fee-paying UTxO"),
+  feePadding: parsed("fee-padding", (text) =>
+    Effect.fromResult(
+      Result.map(parseNonNegativeInteger(text), (n) => BigInt(n)),
+    ),
+  ).pipe(
+    Flag.withDescription(
+      "Fee padding in lovelace, 0 or greater (default: 50000)",
+    ),
+    Flag.withDefault(50_000n),
+  ),
+};
+
+/** A governance transaction's flags in help order: --network, --provider, -o/--output, the fee UTxO, `afterFee`, --no-sign (both authorities) and --output-file <name>-tx.json. */
+const governanceTxFlags = <
+  AfterFee extends Record<string, Flag.Flag<unknown>> = Record<never, never>,
+>(
+  name: string,
+  afterFee = {} as AfterFee,
+) => ({
+  network,
+  provider,
+  outputDir,
+  ...feeUtxo,
+  ...afterFee,
+  sign: Flag.Boolean("no-sign").pipe(
+    Flag.withDescription(
+      "Leave the transaction unsigned (signing reads TECH_AUTH_PRIVATE_KEYS and COUNCIL_PRIVATE_KEYS)",
+    ),
+    Flag.withDefault(false),
+    Flag.map((unsigned) => !unsigned),
+  ),
+  outputFile: outputFile(`${name}-tx.json`),
+});
+
+const changeCouncil = Command.make(
+  "change-council",
+  governanceTxFlags("change-council"),
+  (input) => multisigChangeProgram("council", input),
+).pipe(
+  Command.withDescription("Update council multisig members"),
+  withServices,
+);
+
+const changeTechAuth = Command.make(
+  "change-tech-auth",
+  governanceTxFlags("change-tech-auth"),
+  (input) => multisigChangeProgram("tech-auth", input),
+).pipe(
+  Command.withDescription("Update tech auth multisig members"),
+  withServices,
+);
+
+const changeFederatedOps = Command.make(
+  "change-federated-ops",
+  governanceTxFlags("change-federated-ops"),
+  federatedOpsChangeProgram,
+).pipe(Command.withDescription("Update federated ops members"), withServices);
+
+const changeTerms = Command.make(
+  "change-terms",
+  governanceTxFlags("change-terms", {
+    hash: parsed("hash", (text) => Effect.fromResult(parseHash32(text))).pipe(
+      Flag.withDescription(
+        "New terms and conditions hash (64 hex chars, 32 bytes SHA-256)",
+      ),
+    ),
+    url: Flag.String("url").pipe(
+      Flag.withDescription("New terms and conditions URL (plain text)"),
+    ),
+  }),
+  termsChangeProgram,
+).pipe(
+  Command.withDescription("Change terms and conditions hash and URL"),
+  withServices,
+);
+
 const mergeUtxos = Command.make(
   "merge-utxos",
   {
@@ -407,21 +493,7 @@ const mergeUtxos = Command.make(
       "utxo2-index",
       "Output index of the second UTxO to merge",
     ),
-    txHash: txHashFlag("tx-hash", "Transaction hash for the fee-paying UTxO"),
-    txIndex: txIndexFlag(
-      "tx-index",
-      "Transaction index for the fee-paying UTxO",
-    ),
-    feePadding: parsed("fee-padding", (text) =>
-      Effect.fromResult(
-        Result.map(parseNonNegativeInteger(text), (n) => BigInt(n)),
-      ),
-    ).pipe(
-      Flag.withDescription(
-        "Fee padding in lovelace, 0 or greater (default: 50000)",
-      ),
-      Flag.withDefault(50_000n),
-    ),
+    ...feeUtxo,
     outputFile: outputFile("merge-utxos-tx.json"),
   },
   mergeUtxosProgram,
@@ -434,6 +506,9 @@ const mergeUtxos = Command.make(
 
 /** Every command, in the order `--help` lists them. */
 export const commands = [
+  changeCouncil,
+  changeTechAuth,
+  changeFederatedOps,
   simpleTx,
   info,
   verify,
@@ -441,6 +516,7 @@ export const commands = [
   signAndSubmit,
   combineSignatures,
   mintTcnight,
+  changeTerms,
   dustParticipants,
   mergeUtxos,
   build,

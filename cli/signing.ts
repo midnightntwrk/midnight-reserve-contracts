@@ -1,8 +1,9 @@
 /**
  * Signing and submission: the transaction file, vkey witnesses of a
- * transaction id, signAndWrite, and the sign-and-submit and
- * combine-signatures programs, which submit through Provider. Only this
- * module and main.ts import keys.ts.
+ * transaction id, the output pipeline of a transaction command
+ * (compileReported, then signAndWrite or writeTransaction), and the
+ * sign-and-submit and combine-signatures programs, which submit through
+ * Provider. Only this module and main.ts import keys.ts.
  */
 import { dirname } from "path";
 import {
@@ -44,6 +45,7 @@ import {
 import { readJsonFile } from "./input";
 import { type KeyGroup, Keys, type PrivateKey } from "./keys";
 import { Output } from "./output";
+import { compile, type PlanningContext, type TxPlan } from "./tx";
 
 /** One transaction, as the CLI writes it and sign-and-submit and combine-signatures read it. */
 const TransactionFile = Schema.Struct({
@@ -280,6 +282,33 @@ export const signAndWrite = (
       yield* writeTransaction(path, signed, true, description);
     }
     yield* output.log(`\nTransaction ID: ${txId}`);
+  });
+
+/** The deployer's vkey witness, which sign-and-submit adds to every transaction. */
+const DEPLOYER_ONLY = 1;
+
+/** The vkey witnesses a transaction carries at submit: every key of a Signed signer or, for an unsigned file, the `required` signatures its multisig witnesses need; and the deployer's. */
+export const witnessCount = (signer: Signer, required: number): number =>
+  DEPLOYER_ONLY +
+  (signer._tag === "Signed"
+    ? signer.groups.reduce((n, { keys }) => n + keys.length, 0)
+    : required);
+
+/** Compile a plan in its context, reported as the reference CLI reports it: a local check when the plan spends, references or offers UTxOs, and the transaction id. The file write that follows (signAndWrite, writeTransaction) ends the same output. */
+export const compileReported = <Resolved>(
+  plan: TxPlan,
+  ctx: PlanningContext<Resolved>,
+) =>
+  Effect.gen(function* () {
+    const output = yield* Output;
+    yield* output.log("\nBuilding transaction...");
+    const checked =
+      plan.spends.length + plan.references.length + plan.collateral.length > 0;
+    if (checked) yield* output.log("  Testing transaction locally (UPLC)...");
+    const tx = yield* compile(plan, ctx);
+    if (checked) yield* output.success("Local UPLC test passed");
+    yield* output.success(`Transaction built: ${tx.getId()}`);
+    return tx;
   });
 
 /** The first delay between submission attempts; it doubles. */

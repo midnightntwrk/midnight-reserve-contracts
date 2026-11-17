@@ -392,8 +392,8 @@ Commit 8:
   `governance/`.
 - The commands print the reference's build lines ("Building
   transaction...", the local check when the plan spends, references or
-  offers UTxOs, "Transaction built: <id>") from `compileReported` in
-  `wallet.ts`; the governance commands will share it.
+  offers UTxOs, "Transaction built: <id>") from `compileReported`, first
+  in `wallet.ts` (commit 9 moves it to `signing.ts`).
 - mint-tcnight and merge-utxos have no `--use-build` (the architecture
   keeps it for info and promote only): they act on the record, or on the
   build on local and the emulator.
@@ -410,3 +410,36 @@ Commit 8:
   a plan with no spends (ex units mem 5245, steps 3539866), compile runs
   the local VM with the 1.2 margin (6294, 4247839), so the fee is 112
   lovelace higher. Inputs and outputs are the same.
+
+Commit 9:
+
+- `compileReported` moves from `wallet.ts` to `signing.ts` (LEAD, 11-17):
+  compile then write is one output pipeline, and `signing.ts` already
+  prints the "Transaction written to" line. No new file.
+- The datum codecs (signers, terms, FederatedOps, logic_round) are one
+  `datum.ts`, as L1 lists it; they return `Result` where they cannot
+  throw and `Effect` where Blaze's CBOR reader or `parse` can. The
+  threshold rule, the signer and threshold readers and the native-script
+  witnesses are in `governance/multisig.ts` with change-council and
+  change-tech-auth; the governed forever update with change-terms and
+  change-federated-ops in `governance/forever.ts`.
+- `scriptUtxos` and `firstUtxoAt` live in `chain.ts`, `mainUtxoAt` and
+  `twoStageLogic` in `governance/two-stage.ts` (the reference's
+  `contractUtxos` record). The PlanningContext's `contracts` are the
+  blueprint's own list; wallet.ts's `namedContracts` copy is gone.
+- The four commands have no `--use-build` (the architecture keeps it for
+  info and promote only): they act on the record, or on the build on
+  local and the emulator. The flags are otherwise the reference's, in its
+  help order.
+- TxPlan has no `requiredSignatures`: the program counts the witnesses
+  (`witnessCount` in `signing.ts`) and the plan carries
+  `expectedWitnesses`, read from its resolved inputs.
+- L3 submits the files unsigned (`--no-sign`), then sign-and-submit adds
+  the deployer: the Blaze emulator does not run native scripts, so it
+  refuses the authorities' vkey witnesses as extraneous ("has not been
+  consumed"); the real ledger takes them. A separate test checks that a
+  signed file carries one witness from each authority key over the same
+  transaction id.
+- Against the reference on one emulator state (signed with both
+  authorities, as by default): the transaction CBOR, so the id, and every
+  printed line are identical for all four commands.

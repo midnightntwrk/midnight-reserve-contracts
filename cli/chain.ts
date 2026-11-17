@@ -3,13 +3,16 @@
  * with its named reads, submit and isConfirmed. ProviderConfig, the
  * credentials it connects with, stays inside this module.
  */
-import type {
-  Address,
-  ProtocolParameters,
-  RewardAccount,
-  Transaction,
-  TransactionId,
-  TransactionUnspentOutput,
+import {
+  type Address,
+  addressFromValidator,
+  type NetworkId,
+  type ProtocolParameters,
+  type RewardAccount,
+  type Script,
+  type Transaction,
+  type TransactionId,
+  type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
 import { Emulator, EmulatorProvider } from "@blaze-cardano/emulator";
 import { Unwrapped } from "@blaze-cardano/ogmios";
@@ -519,3 +522,40 @@ export const deployerUtxo = (txHash: TxHash, txIndex: TxIndex) =>
     }
     return { address, utxo };
   });
+
+/** The UTxOs at each script's address on the network, read in parallel; the result gives a script's UTxOs by its name. */
+export const scriptUtxos = <K extends string>(
+  scripts: Record<K, Script>,
+  networkId: NetworkId,
+): Effect.Effect<
+  (name: K) => readonly TransactionUnspentOutput[],
+  ConfigError | ProviderError,
+  Provider
+> =>
+  Effect.gen(function* () {
+    const provider = yield* Provider;
+    const read = new Map(
+      yield* Effect.forEach(
+        Object.entries<Script>(scripts),
+        ([name, script]) =>
+          Effect.map(
+            provider.unspentOutputs(addressFromValidator(networkId, script)),
+            (utxos) => [name, utxos] as const,
+          ),
+        { concurrency: "unbounded" },
+      ),
+    );
+    return (name: K) => read.get(name) ?? [];
+  });
+
+/** The first of `utxos`, read at the script's address, or UtxoNotFound there. */
+export const firstUtxoAt = (
+  utxos: readonly TransactionUnspentOutput[],
+  script: Script,
+  networkId: NetworkId,
+): Effect.Effect<TransactionUnspentOutput, UtxoNotFound> =>
+  utxos[0] === undefined
+    ? Effect.fail(
+        UtxoNotFound.at(addressFromValidator(networkId, script).toBech32()),
+      )
+    : Effect.succeed(utxos[0]);

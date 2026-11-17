@@ -62,7 +62,29 @@ export type Refusal =
       readonly required: bigint;
     }
   | { readonly _tag: "NoCnight"; readonly asset: string }
-  | { readonly _tag: "MitigationActive"; readonly mitigationLogicHash: string };
+  | { readonly _tag: "MitigationActive"; readonly mitigationLogicHash: string }
+  | {
+      readonly _tag: "DatumNotMigrated";
+      readonly datumRound: number;
+      readonly logicRound: number;
+    };
+
+/** What a refusal says. */
+const refusalText = (refusal: Refusal): string => {
+  switch (refusal._tag) {
+    case "NightTooLow":
+      return `Insufficient TCnight tokens. Found: ${refusal.held}, Required: ${refusal.required}`;
+    case "NoCnight":
+      return `Neither UTxO contains CNIGHT asset ${refusal.asset}`;
+    case "MitigationActive":
+      return `Mitigation logic is active (hash: ${refusal.mitigationLogicHash}). merge-utxos does not support mitigation logic — the forever contract requires both logic and mitigation_logic withdrawals when mitigation is set.`;
+    case "DatumNotMigrated":
+      return (
+        `datum has logic_round=${refusal.datumRound} but v2 logic is active (logicRound=${refusal.logicRound}). ` +
+        `Run 'migrate-federated-ops' first to update the datum to the v2 format.`
+      );
+  }
+};
 
 /** The chain state or the record does not admit the command. */
 export class PreconditionFailed extends Data.TaggedError("PreconditionFailed")<{
@@ -191,13 +213,7 @@ export function renderError(error: CliError): string {
           ? `No UTxO holding ${error.lookup.asset} at ${error.lookup.address}`
           : `UTxO ${error.lookup.ref} not found${error.lookup.address ? ` at ${error.lookup.address}` : ""}`;
     case "PreconditionFailed":
-      return `${error.command}: ${
-        error.refusal._tag === "NightTooLow"
-          ? `Insufficient TCnight tokens. Found: ${error.refusal.held}, Required: ${error.refusal.required}`
-          : error.refusal._tag === "NoCnight"
-            ? `Neither UTxO contains CNIGHT asset ${error.refusal.asset}`
-            : `Mitigation logic is active (hash: ${error.refusal.mitigationLogicHash}). merge-utxos does not support mitigation logic — the forever contract requires both logic and mitigation_logic withdrawals when mitigation is set.`
-      }`;
+      return `${error.command}: ${refusalText(error.refusal)}`;
     case "DatumParseError":
       return `Cannot parse ${error.what} datum: ${error.reason}`;
     case "VerificationFailed":
