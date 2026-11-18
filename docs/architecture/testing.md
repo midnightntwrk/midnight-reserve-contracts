@@ -39,8 +39,8 @@ flowchart LR
 | L1 contracts | Aiken unit tests; a mutation table per "Fail if" clause; property tests (aiken-lang/fuzz) for MIP rules | the script under mutation | 64 unit tests in 5 modules; no mutation table; no property tests |
 | L2 pure goldens | `(input, frozen PlanningContext) → TxPlan` per command | plans written by the Effect 3 CLI for the same inputs | 34 plan goldens in 5 files |
 | L3 ledger acceptance | build the transaction and apply it on the Blaze emulator, phase 1 and phase 2 | the emulator ledger | builders in 9 files; command programs in 6 |
-| L4 budgets | size and ex-unit snapshot per command at its largest shape, failing over the protocol limits | protocol parameters | planned, not built |
-| L5 independent references | TS references for MIP rules, golden vectors shared with Aiken | an independent implementation | committee bridge, on its branch only |
+| L4 budgets | size and ex-unit snapshot per command at its largest shape, failing over the protocol limits | protocol parameters | one size test: the largest night_registration Create |
+| L5 independent references | TS references for MIP rules, golden vectors shared with Aiken | an independent implementation | staking (MIP #421); committee bridge, on its branch only |
 | L6 manual QA | builds on preview, and submits on preview by hand with the user's go for each transaction (#128's live QA, 11-17); never automated against a public network | the real ledger | by hand; no devnet tooling in the repository |
 
 ### L1 contracts
@@ -87,7 +87,7 @@ Planning is a pure function of the input and a frozen PlanningContext, so a test
 
 ### L4 budgets
 
-Planned, not built: no test records a size or ex-unit budget per command.
+One test, not yet per command: a CreateTwoAnchors of three nodes at `NODE_DATUM_MAX`, with night_registration by reference script, collateral, fee and a key witness per signer, fits in 16,384 bytes (`tests/staking/night_registration.test.ts`, the "L4 budget" block; 14,793 B on 2026-11-18). No test records an ex-unit budget.
 - L3 rejects only the transactions a test happens to build. The federated-ops v2 promote at 17,147 B, over the 16,384 B limit, was found on a live network (`plans/effect/05-commands-deploy-submit.md:330-334` on `feat/committee-bridge-block-rewards-impl`; see [contracts.md](contracts.md#known-structural-issues)).
 - `compile` refuses a transaction over the protocol's `maxTxSize` once it carries its expected vkey witnesses (`cli/tx.ts`, `sizeAtSubmit`), so the CLI does not write such a file; no test pins the size of each command's largest shape.
 - The interactive harness in `pi-code/test-plan` raises `maxTxSize` to 50,000 (`pi-code/test-plan/lib/provider.ts:114`, `:316`), so it cannot see an oversized transaction.
@@ -100,7 +100,7 @@ The committee bridge has one, on bookmark `bridge/aiken` (also on `feat/committe
 - the Aiken fixtures that consume them, `lib/fixtures/bridge/vectors.ak`;
 - the plan, `plans/bridge/05-ts-reference-vectors.md`.
 
-Staking gets one later.
+Staking has one: the reference of MIP #421 rules 1 to 10 and the user's decisions, `tests/staking/reference.ts`, over the golden vectors in `tests/vectors/staking/`; the compiled night_staking and night_registration must agree with every vector (`tests/staking/night_staking.test.ts`, `tests/staking/night_registration.test.ts`).
 
 ### L6 manual QA
 

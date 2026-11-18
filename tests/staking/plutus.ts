@@ -127,20 +127,20 @@ export const lockDatum = (d: DelegationLock): Cardano.PlutusData => ({
     ],
   },
 });
-/** A registration node: Head 0, Reserved 1, Registration 2, as in lib/registration/types.ak. */
+/** A registration node: Tail 0, Reserved 1, Registration 2, in the order MIP #421 declares them. */
 export const nodeDatum = (n: Node): Cardano.PlutusData => {
-  if ("Head" in n)
+  if ("Tail" in n)
     return {
       constructor: 0n,
       fields: {
-        items: [fromHex(n.Head.next_crch), fromHex(n.Head.next_pool)],
+        items: [fromHex(n.Tail.prev_crch), fromHex(n.Tail.prev_pool)],
       },
     };
   if ("Reserved" in n)
     return {
       constructor: 1n,
       fields: {
-        items: [fromHex(n.Reserved.crch), fromHex(n.Reserved.next_crch)],
+        items: [fromHex(n.Reserved.crch), fromHex(n.Reserved.prev_crch)],
       },
     };
   const r = n.Registration;
@@ -150,9 +150,9 @@ export const nodeDatum = (n: Node): Cardano.PlutusData => {
       items: [
         { constructor: r.active ? 1n : 0n, fields: { items: [] } },
         fromHex(r.crch),
-        fromHex(r.next_crch),
+        fromHex(r.prev_crch),
         fromHex(r.pool_id),
-        fromHex(r.next_pool),
+        fromHex(r.prev_pool),
         credential(r.owner),
         fromHex(r.crch_signature),
         pairs(r.keys),
@@ -166,15 +166,16 @@ export const nodeDatum = (n: Node): Cardano.PlutusData => {
 };
 
 /**
- * Runs every script the vector's transaction names; fails with the evaluator's message. `datum`
- * encodes the datum of the transaction's inputs and outputs; reference inputs hold nodes.
- * `redeemer` is every script's redeemer: the action the vector names.
+ * The Conway transaction body and redeemers for a vector's transaction, the inputs and reference
+ * inputs it spends or reads with their outputs, and the scripts it runs. `datum` encodes the datum
+ * of the transaction's inputs and outputs; reference inputs hold nodes. `redeemer` is every
+ * script's redeemer: the action the vector names. The body carries no fee, collateral or script
+ * data hash, and the witness set no script and no key: the evaluator needs none of them.
  */
-export const evaluate = <D>(
+export const conway = <D>(
   tx: Tx<D>,
   datum: (d: D) => Cardano.PlutusData,
   rename: (hex: string) => string,
-  script: (hash: string) => Uint8Array,
   redeemer: Cardano.PlutusData,
 ) => {
   const ledgerCredential = (c: Credential) =>
@@ -358,9 +359,6 @@ export const evaluate = <D>(
   tx.guardrails.forEach((_, index) =>
     redeem(Cardano.RedeemerPurpose.propose, index),
   );
-  const witnesses = new TransactionWitnessSet();
-  witnesses.setRedeemers(Redeemers.fromCore(redeemers));
-
   const scripts = [
     ...new Set([
       ...policies,
@@ -373,21 +371,46 @@ export const evaluate = <D>(
       ...tx.guardrails.map(rename),
     ]),
   ];
+  const utxos: [TransactionInput, TransactionOutput][] = [
+    ...inputs.map((i): [TransactionInput, TransactionOutput] => [
+      input(i),
+      output(i.output, datum),
+    ]),
+    ...references.map((i): [TransactionInput, TransactionOutput] => [
+      input(i),
+      output(i.output, nodeDatum),
+    ]),
+  ];
+  return { body, redeemers, utxos, scripts };
+};
+
+/**
+ * Runs every script the vector's transaction names; fails with the evaluator's message. `script`
+ * gives the flat bytes the evaluator runs for a (renamed) script hash.
+ */
+export const evaluate = <D>(
+  tx: Tx<D>,
+  datum: (d: D) => Cardano.PlutusData,
+  rename: (hex: string) => string,
+  script: (hash: string) => Uint8Array,
+  redeemer: Cardano.PlutusData,
+) => {
+  const { body, redeemers, utxos, scripts } = conway(
+    tx,
+    datum,
+    rename,
+    redeemer,
+  );
+  const witnesses = new TransactionWitnessSet();
+  witnesses.setRedeemers(Redeemers.fromCore(redeemers));
   return Effect.try({
     try: () =>
       eval_phase_two_raw_with_override(
         fromHex(
           new Transaction(TransactionBody.fromCore(body), witnesses).toCbor(),
         ),
-        [...inputs.map(input), ...references.map(input)].map((i) =>
-          fromHex(i.toCbor()),
-        ),
-        [
-          ...inputs.map((i) => fromHex(output(i.output, datum).toCbor())),
-          ...references.map((i) =>
-            fromHex(output(i.output, nodeDatum).toCbor()),
-          ),
-        ],
+        utxos.map(([i]) => fromHex(i.toCbor())),
+        utxos.map(([, o]) => fromHex(o.toCbor())),
         fromHex(Costmdls.fromCore(hardCodedProtocolParams.costModels).toCbor()),
         BigInt(hardCodedProtocolParams.maxExecutionUnitsPerTransaction.steps),
         BigInt(hardCodedProtocolParams.maxExecutionUnitsPerTransaction.memory),
