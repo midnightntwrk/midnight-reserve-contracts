@@ -1,5 +1,4 @@
 use aiken/builtin
-use aiken/collection/list
 use cardano/address.{Address, Script}
 use cardano/script_context.{Minting, ScriptContext, Spending}
 use cardano/transaction.{OutputReference, Transaction}
@@ -7,6 +6,7 @@ use config
 use logic/reserve.{reserve_release}
 use logic/types_v2.{ReserveStagingParams}
 use utils.{input_linked_mint}
+use utils_v2.{has_key}
 
 /// PR 406's Cardano Reserve Release (diagrams 10 and 12–15).
 validator reserve_logic_v2 {
@@ -67,14 +67,8 @@ validator reserve_staging_params {
       }
 
       // Diagram 11b
-      Spending { .. } -> {
-        let staging_gov_auth = Script(config.staging_gov_auth_hash)
-
-        list.any(
-          withdrawals,
-          fn(withdrawal) { withdrawal.1st == staging_gov_auth },
-        )
-      }
+      Spending { .. } ->
+        has_key(withdrawals, Script(config.staging_gov_auth_hash))
 
       _ -> fail
     }

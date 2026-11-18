@@ -1,7 +1,5 @@
 use aiken/builtin
 use aiken/collection/dict.{to_pairs}
-use aiken/collection/list
-use aiken/primitive/bytearray
 use cardano/address.{Address, Script, VerificationKey}
 use cardano/assets.{PolicyId, to_dict}
 use cardano/certificate.{
@@ -21,6 +19,7 @@ use registration/types.{
 }
 use staking/script.{check_auth, no_script_output}
 use utils.{foldr2, is_singleton, must_find}
+use utils_v2.{find_key, has, has_key}
 
 /// The registration set of NIGHT staking pools (MIP 421, rules 9 and 10): one script is the
 /// nodes' address, the token's policy and the stake credential whose withdrawal checks
@@ -41,11 +40,7 @@ validator night_registration {
 
     when info is {
       // Gate.
-      Minting(own_policy) -> {
-        let own_cred = Script(own_policy)
-
-        list.any(withdrawals, fn(withdraw) { withdraw.1st == own_cred })
-      }
+      Minting(own_policy) -> has_key(withdrawals, Script(own_policy))
 
       // Gate.
       Spending { output, .. } -> {
@@ -57,7 +52,7 @@ validator night_registration {
 
         let own_cred = own_input.output.address.payment_credential
 
-        list.any(withdrawals, fn(withdraw) { withdraw.1st == own_cred })
+        has_key(withdrawals, own_cred)
       }
 
       Withdrawing(own_cred) -> {
@@ -146,13 +141,15 @@ validator night_registration {
                 },
               )
 
+            expect _ =
+              must_find(
+                inputs,
+                fn(input: Input) { input.output_reference == one_shot_ref },
+              )
+
             and {
               // Touch cnight_policy so it contributes to the script hash
               own_hash != config.cnight_policy,
-              list.any(
-                inputs,
-                fn(input: Input) { input.output_reference == one_shot_ref },
-              ),
               // Rule 9, Nodes.
               first == None,
               to_pairs(tokens) == [Pair("", nodes)],
@@ -191,11 +188,7 @@ validator night_registration {
             } = after
 
             // Rule 10, Changes.
-            expect None =
-              list.find(
-                mint |> to_dict |> to_pairs,
-                fn(pair) { pair.1st == own_hash },
-              )
+            expect None = find_key(mint |> to_dict |> to_pairs, own_hash)
 
             expect and {
                 no_script_output(rest, own_hash),
@@ -218,7 +211,7 @@ validator night_registration {
 
             // Rule 10, Changes: the owner may not hand the node to a new owner.
             or {
-              list.has(extra_signatories, pool_id),
+              has(extra_signatories, pool_id),
               and {
                 new_owner == owner,
                 check_auth(owner, extra_signatories, withdrawals),
@@ -260,11 +253,7 @@ validator night_registration {
             expect pool_link(anchor_node) == pool_id
 
             // Rule 10, Changes: a deactivated node leaves the pool list for good.
-            expect None =
-              list.find(
-                mint |> to_dict |> to_pairs,
-                fn(pair) { pair.1st == own_hash },
-              )
+            expect None = find_key(mint |> to_dict |> to_pairs, own_hash)
 
             expect and {
                 no_script_output(rest, own_hash),
@@ -290,7 +279,7 @@ validator night_registration {
               }
 
             // Rule 10, Changes.
-            list.has(extra_signatories, pool_id)
+            has(extra_signatories, pool_id)
           }
 
           // CreateOneAnchor or CreateTwoAnchors. An or-pattern would compile this body
@@ -321,12 +310,35 @@ validator night_registration {
                 and {
                   crch_less(crch_link(crch_anchor), crch),
                   crch_below(crch, crch_anchor),
-                  bytearray.compare(pool_link(pool_anchor), pool_id) == Less,
+                  builtin.less_than_bytearray(pool_link(pool_anchor), pool_id),
                   pool_below(pool_id, pool_anchor),
                   prev_crch == crch_link(crch_anchor),
                   prev_pool == pool_link(pool_anchor),
                 }
               }
+
+            // Rule 10, Changes.
+            expect _ =
+              must_find(
+                certificates,
+                fn(certificate) {
+                  let delegate =
+                    when certificate is {
+                      DelegateCredential { delegate, .. } -> Some(delegate)
+                      RegisterAndDelegateCredential { delegate, .. } ->
+                        Some(delegate)
+                      _ -> None
+                    }
+
+                  when delegate is {
+                    Some(DelegateBlockProduction { stake_pool }) ->
+                      stake_pool == pool_id
+                    Some(DelegateBoth { stake_pool, .. }) ->
+                      stake_pool == pool_id
+                    _ -> False
+                  }
+                },
+              )
 
             and {
               // Rule 10, Changes.
@@ -391,27 +403,7 @@ validator night_registration {
                 _ -> fail
               },
               // Rule 10, Changes.
-              list.has(extra_signatories, pool_id),
-              list.any(
-                certificates,
-                fn(certificate) {
-                  let delegate =
-                    when certificate is {
-                      DelegateCredential { delegate, .. } -> Some(delegate)
-                      RegisterAndDelegateCredential { delegate, .. } ->
-                        Some(delegate)
-                      _ -> None
-                    }
-
-                  when delegate is {
-                    Some(DelegateBlockProduction { stake_pool }) ->
-                      stake_pool == pool_id
-                    Some(DelegateBoth { stake_pool, .. }) ->
-                      stake_pool == pool_id
-                    _ -> False
-                  }
-                },
-              ),
+              has(extra_signatories, pool_id),
             }
           }
         }
@@ -494,12 +486,10 @@ fn crch_less(a: ByteArray, b: ByteArray) -> Bool {
 
   let length_b = builtin.length_of_bytearray(b)
 
-  or {
-    length_a < length_b,
-    and {
-      length_a == length_b,
-      bytearray.compare(a, b) == Less,
-    },
+  if length_a == length_b {
+    builtin.less_than_bytearray(a, b)
+  } else {
+    length_a < length_b
   }
 }
 
@@ -543,7 +533,7 @@ fn pool_link(node: Node) -> ByteArray {
 /// the pool list, which `pool_link` accepts, come here.
 fn pool_below(key: ByteArray, node: Node) -> Bool {
   when node is {
-    Registration { pool_id, .. } -> bytearray.compare(key, pool_id) == Less
+    Registration { pool_id, .. } -> builtin.less_than_bytearray(key, pool_id)
     _ -> True
   }
 }

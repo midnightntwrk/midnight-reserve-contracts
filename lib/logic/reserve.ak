@@ -1,9 +1,7 @@
 use aiken/builtin
 use aiken/collection/dict.{to_pairs}
-use aiken/collection/list
 use aiken/crypto.{ScriptHash}
 use aiken/interval.{Finite}
-use aiken/math
 use cardano/address.{Address, Script}
 use cardano/assets.{PolicyId, to_dict}
 use cardano/certificate.{RegisterCredential}
@@ -19,6 +17,7 @@ use logic/types_v2.{
 }
 use upgradable/two_stage_upgrade.{logic_is_on_main, validate_running}
 use utils.{foldr2, get_input_state_by_policy, is_singleton, must_find}
+use utils_v2.{find_key, foldr}
 
 /// The state Init writes: PR 406, Backwards Compatibility.
 pub fn initial_state() -> ReserveRewardState {
@@ -65,21 +64,20 @@ pub fn reserve_release(
 
       when action is {
         // Diagram 10: each token is minted once, against the seed UTxO.
-        MintInitTokens -> and {
-            ( own_tokens |> to_pairs ) == [Pair("main", 1), Pair("staging", 1)],
-            list.any(
+        MintInitTokens -> {
+          expect _ =
+            must_find(
               inputs,
               fn(input) { input.output_reference == init_one_shot_ref },
-            ),
-          }
+            )
+
+          ( own_tokens |> to_pairs ) == [Pair("main", 1), Pair("staging", 1)]
+        }
 
         // Diagram 12: the withdrawal's Init checks exactly what is burned.
         BurnInitToken -> {
-          expect Some(Pair(_, withdraw_redeemer)) =
-            list.find(
-              redeemers,
-              fn(pair) { pair.1st == Withdraw(Script(own_policy)) },
-            )
+          expect Some(withdraw_redeemer) =
+            find_key(redeemers, Withdraw(Script(own_policy)))
 
           withdraw_redeemer == as_data(Init)
         }
@@ -118,11 +116,7 @@ pub fn reserve_release(
 
       let destination_cred = Script(destination)
 
-      let own_tokens =
-        list.find(
-          mint |> to_dict |> to_pairs,
-          fn(pair) { pair.1st == own_hash },
-        )
+      let own_tokens = find_key(mint |> to_dict |> to_pairs, own_hash)
 
       // At the forever address the transaction spends the state (only ADA and
       // the forever NFT) and at most one reserve NIGHT UTxO. Release spends
@@ -135,7 +129,7 @@ pub fn reserve_release(
         foldr2(
           inputs,
           None,
-          assets.zero,
+          None,
           fn(input, found, night, return) {
             let Output { address, value, .. } = input.output
 
@@ -145,9 +139,9 @@ pub fn reserve_release(
 
                 return(Some(input.output), night)
               } else {
-                expect [] = night |> to_dict |> to_pairs
+                expect None = night
 
-                return(found, value)
+                return(found, Some(value))
               }
             } else if address.payment_credential == destination_cred {
               expect action != Release
@@ -192,7 +186,7 @@ pub fn reserve_release(
       // Each output is drawn: none after them at the forever address, and in
       // Release none at the destination.
       expect _ =
-        list.foldr(
+        foldr(
           rest,
           Void,
           fn(output, done) {
@@ -218,9 +212,9 @@ pub fn reserve_release(
           // Init ignores the state input's datum. It runs once per track
           // because its init token is one-shot and Init burns it.
           Init -> {
-            expect Some(Pair(_, burned)) = own_tokens
+            expect Some(burned) = own_tokens
 
-            expect [] = night_in |> to_dict |> to_pairs
+            expect None = night_in
 
             // PR 406's initial_reward_reserve, read by reference.
             expect _ =
@@ -285,9 +279,11 @@ pub fn reserve_release(
             expect [destination_out, night_out, ..] = outputs
 
             // Rule 7: the NIGHT input holds only ADA and the compiled NIGHT.
+            expect Some(night_value) = night_in
+
             expect [
               Pair(_, night_in_ada), Pair(night_in_policy, night_in_tokens),
-            ] = night_in |> to_dict |> to_pairs
+            ] = night_value |> to_dict |> to_pairs
 
             expect [Pair(_, night_in_lovelace)] = night_in_ada |> to_pairs
 
@@ -308,13 +304,18 @@ pub fn reserve_release(
             expect Finite(upper) = validity_range.upper_bound.bound_type
 
             // Rule 4. Plutus integers are unbounded, so no step overflows.
-            let release_delta =
-              math.min(
-                curve_remaining_star,
+            let release_delta = {
+              let ceiling =
                 (
                   curve_remaining_star * config.release_factor_n + config.release_factor_d - 1
-                ) / config.release_factor_d,
-              )
+                ) / config.release_factor_d
+
+              if ceiling < curve_remaining_star {
+                ceiling
+              } else {
+                curve_remaining_star
+              }
+            }
 
             and {
               // Rule 7
@@ -362,7 +363,7 @@ pub fn reserve_release(
 
             expect None = own_tokens
 
-            expect [] = night_in |> to_dict |> to_pairs
+            expect None = night_in
 
             expect ReserveRewardState {
               curve_remaining_star,

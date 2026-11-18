@@ -1,6 +1,5 @@
 use aiken/builtin
 use aiken/collection/dict.{to_pairs}
-use aiken/collection/list
 use aiken/interval.{Finite}
 use cardano/address.{Address, Credential, Script, VerificationKey}
 use cardano/assets.{PolicyId, Value, to_dict}
@@ -13,6 +12,7 @@ use config
 use registration/types.{Node, Registration}
 use staking/script.{check_auth, no_script_output}
 use utils.{is_singleton, must_find}
+use utils_v2.{find_key, foldr, has_key}
 
 /// The inline datum of a delegation lock.
 pub type DelegationLock {
@@ -59,11 +59,7 @@ validator night_staking {
 
     when info is {
       // Rule 6, Gate.
-      Minting(own_policy) -> {
-        let own_cred = Script(own_policy)
-
-        list.any(withdrawals, fn(withdraw) { withdraw.1st == own_cred })
-      }
+      Minting(own_policy) -> has_key(withdrawals, Script(own_policy))
 
       // Rule 6, Gate.
       Spending { output, .. } -> {
@@ -75,7 +71,7 @@ validator night_staking {
 
         let own_cred = own_input.output.address.payment_credential
 
-        list.any(withdrawals, fn(withdraw) { withdraw.1st == own_cred })
+        has_key(withdrawals, own_cred)
       }
 
       Withdrawing(own_cred) -> {
@@ -85,7 +81,7 @@ validator night_staking {
 
         // Rule 7, Withdrawal: at most one input at the address.
         let spent =
-          list.foldr(
+          foldr(
             inputs,
             None,
             fn(input, spent) {
@@ -139,11 +135,7 @@ validator night_staking {
 
               // Rule 7, Withdrawal: the new lock is the first output, and nothing is
               // minted.
-              expect None =
-                list.find(
-                  mint |> to_dict |> to_pairs,
-                  fn(pair) { pair.1st == own_hash },
-                )
+              expect None = find_key(mint |> to_dict |> to_pairs, own_hash)
 
               expect and {
                   output.address.payment_credential == own_cred,
@@ -189,11 +181,7 @@ validator night_staking {
 
               // Rule 7, Withdrawal: the unbonding lock is the first output, and nothing
               // is minted.
-              expect None =
-                list.find(
-                  mint |> to_dict |> to_pairs,
-                  fn(pair) { pair.1st == own_hash },
-                )
+              expect None = find_key(mint |> to_dict |> to_pairs, own_hash)
 
               expect and {
                   output.address.payment_credential == own_cred,
@@ -349,23 +337,41 @@ fn lock_output(
   return(lock, ada, cnight)
 }
 
-/// Rule 2, Output: a lock holds ADA, the token and cNIGHT, nothing else. The token is taken
-/// off first because its policy and cNIGHT's sort either way. Returns the ADA and the
-/// cNIGHT.
+/// Rule 2, Output: a lock holds ADA, the token and cNIGHT, nothing else. Returns the ADA and
+/// the cNIGHT.
 fn lock_value(
   value: Value,
   own_hash: PolicyId,
   return: fn(Int, Int) -> result,
 ) -> result {
-  expect [Pair("", ada_tokens), ..cnight_pairs] =
-    assets.add(value, own_hash, "", -1) |> to_dict |> to_pairs
+  expect [Pair("", ada_tokens), ..pairs] = value |> to_dict |> to_pairs
 
   expect [Pair(_, ada)] = to_pairs(ada_tokens)
 
-  when cnight_pairs is {
-    [] -> return(ada, 0)
+  when pairs is {
+    [Pair(token_policy, token)] -> {
+      expect token_policy == own_hash
 
-    [Pair(cnight_policy, cnight_tokens)] -> {
+      expect [Pair("", 1)] = to_pairs(token)
+
+      return(ada, 0)
+    }
+
+    // The token's policy and cNIGHT's sort either way.
+    [Pair(policy_a, tokens_a), Pair(policy_b, tokens_b)] -> {
+      let token, cnight_policy, cnight_tokens <-
+        fn(return) {
+          if policy_a == own_hash {
+            return(tokens_a, policy_b, tokens_b)
+          } else {
+            expect policy_b == own_hash
+
+            return(tokens_b, policy_a, tokens_a)
+          }
+        }
+
+      expect [Pair("", 1)] = to_pairs(token)
+
       expect [Pair(cnight_name, cnight)] = to_pairs(cnight_tokens)
 
       expect and {
