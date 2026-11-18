@@ -72,7 +72,7 @@ night_registration_one_shot_index = 0
 bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-# night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
+# night_staking reads the registration set at this script hash (rule 2, Output). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.default.night_registration_hash]
 bytes = "01a36beabc9f1f2b54963971dc2f9b7b96d90b513b39b4c3b7032fd3"
@@ -358,7 +358,7 @@ night_registration_one_shot_index = 0
 bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-# night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
+# night_staking reads the registration set at this script hash (rule 2, Output). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.preview.night_registration_hash]
 bytes = "00000000000000000000000000000000000000000000000000000a11"
@@ -644,7 +644,7 @@ night_registration_one_shot_index = 0
 bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-# night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
+# night_staking reads the registration set at this script hash (rule 2, Output). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.qanet.night_registration_hash]
 bytes = "00000000000000000000000000000000000000000000000000000a11"
@@ -930,7 +930,7 @@ night_registration_one_shot_index = 0
 bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-# night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
+# night_staking reads the registration set at this script hash (rule 2, Output). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.govnet.night_registration_hash]
 bytes = "00000000000000000000000000000000000000000000000000000a11"
@@ -1216,7 +1216,7 @@ night_registration_one_shot_index = 0
 bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-# night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
+# night_staking reads the registration set at this script hash (rule 2, Output). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.devnet.night_registration_hash]
 bytes = "00000000000000000000000000000000000000000000000000000a11"
@@ -1503,7 +1503,7 @@ night_registration_one_shot_index = 0
 bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-# night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
+# night_staking reads the registration set at this script hash (rule 2, Output). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.preprod.night_registration_hash]
 bytes = "00000000000000000000000000000000000000000000000000000a11"
@@ -1791,7 +1791,7 @@ night_registration_one_shot_index = 0
 bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-# night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
+# night_staking reads the registration set at this script hash (rule 2, Output). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.mainnet.night_registration_hash]
 bytes = "00000000000000000000000000000000000000000000000000000a11"
@@ -2078,7 +2078,7 @@ night_registration_one_shot_index = 0
 bytes = "0000000000000000000000000000000000000000000000000000000000000a11"
 encoding = "hex"
 
-# night_staking reads the registration set at this script hash (rule 2a, Pool). A placeholder
+# night_staking reads the registration set at this script hash (rule 2, Output). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.local.night_registration_hash]
 bytes = "00000000000000000000000000000000000000000000000000000a11"

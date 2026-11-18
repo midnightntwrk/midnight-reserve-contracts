@@ -80,7 +80,7 @@ fn value(lovelace: Int, token: Int, cnight: Int) -> Value {
     |> assets.add(config.cnight_policy, config.cnight_name, cnight)
 }
 
-/// A node of the registration set for `pool_id` (rule 2a, Pool), read as a reference input.
+/// A node of the registration set for `pool_id` (rule 2, Output), read as a reference input.
 fn registered(pool_id: ByteArray, active: Bool) -> Input {
   let hash = config.night_registration_hash
   Input {
@@ -383,8 +383,8 @@ test lock_unbonding() fail {
   locks(unbonding)
 }
 
-// Pool (rule 2a): Lock and Update read the pool's active registration node; Unbond and
-// Unlock do not.
+// Pool (rules 2 and 3): a Lock, and an Update that changes pool_id, read the pool's active
+// registration node.
 
 fn lock_reading(reference_inputs: List<Input>) -> Bool {
   let tx =
@@ -435,13 +435,38 @@ test lock_node_at_another_address() fail {
   )
 }
 
-test update_without_pool_node() fail {
+test update_keeps_pool_id_without_pool_node() {
   let tx =
     update_tx(
       lock_input(deposit, 1_000, staking),
       lock_output(deposit, 1_000, staking),
     )
   withdraw(Transaction { ..tx, reference_inputs: [] })
+}
+
+fn re_points(reference_inputs: List<Input>) -> Bool {
+  let tx =
+    update_tx(
+      lock_input(deposit, 1_000, staking),
+      lock_output(
+        deposit,
+        1_000,
+        DelegationLock { ..staking, pool_id: other_pool },
+      ),
+    )
+  withdraw(Transaction { ..tx, reference_inputs })
+}
+
+test update_re_points_with_new_pool_node() {
+  re_points([registered(other_pool, True)])
+}
+
+test update_re_points_without_pool_node() fail {
+  re_points([])
+}
+
+test update_re_points_with_old_pool_node() fail {
+  re_points([registered(pool, True)])
 }
 
 test update_re_points_to_inactive_pool() fail {
@@ -664,7 +689,7 @@ test unbond_at_upper_bound() {
   unbonds(unbonding)
 }
 
-test unbond_above_upper_bound() {
+test unbond_one_ms_above_upper_bound() fail {
   unbonds(DelegationLock { ..staking, unbond_at: Some(t + 1) })
 }
 
@@ -679,6 +704,20 @@ test unbond_without_upper_bound() fail {
       lock_output(deposit, 1_000, unbonding),
     )
   withdraw(Transaction { ..tx, validity_range: interval.after(t - 600_000) })
+}
+
+test unbond_also_changes_owner() fail {
+  // Signed by both owners: an Unbond changes nothing but unbond_at.
+  let tx =
+    unbond_tx(
+      lock_input(deposit, 1_000, staking),
+      lock_output(
+        deposit,
+        1_000,
+        DelegationLock { ..unbonding, owner: VerificationKey(other_key) },
+      ),
+    )
+  withdraw(Transaction { ..tx, extra_signatories: [key, other_key] })
 }
 
 test unbond_also_changes_pool_id() fail {
@@ -836,6 +875,11 @@ test unlock_without_lower_bound() fail {
 
 test unlock_without_cnight_at_once() {
   withdraw(unlock_tx(lock_input(deposit, 0, staking), t))
+}
+
+test unlock_without_cnight_after_an_unbond() {
+  // Before UNBONDING_DELAY has passed: a lock without cNIGHT ignores its unbond_at.
+  withdraw(unlock_tx(lock_input(deposit, 0, unbonding), t))
 }
 
 test unlock_returns_deposit_and_cnight() {
@@ -1366,18 +1410,8 @@ test lock_reads_padded_pool_node() fail {
 }
 
 test update_reads_padded_pool_node() fail {
-  let node = registered(pool, True)
-  let tx =
-    update_tx(
-      lock_input(deposit, 1_000, staking),
-      lock_output(deposit, 1_000, staking),
-    )
-  withdraw(
-    Transaction {
-      ..tx,
-      reference_inputs: [Input { ..node, output: padded(node.output) }],
-    },
-  )
+  let node = registered(other_pool, True)
+  re_points([Input { ..node, output: padded(node.output) }])
 }
 
 test unlock_pays_padded_return_output() fail {

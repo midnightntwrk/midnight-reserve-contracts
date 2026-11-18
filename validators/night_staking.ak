@@ -126,7 +126,7 @@ validator night_staking {
               // Rule 2, Output: a new lock is not unbonding.
               expect None = lock.unbond_at
 
-              // Rule 2a, Pool.
+              // Rule 2, Output.
               expect pool_registered(reference_inputs, lock.pool_id)
 
               lock.owner
@@ -172,8 +172,11 @@ validator night_staking {
                       withdrawals,
                     ),
                   },
-                  // Rule 2a, Pool.
-                  pool_registered(reference_inputs, after.pool_id),
+                  // Rule 3, Output: only a change of pool_id reads a pool's node.
+                  or {
+                    after.pool_id == before.pool_id,
+                    pool_registered(reference_inputs, after.pool_id),
+                  },
                 }
 
               before.owner
@@ -217,7 +220,7 @@ validator night_staking {
               // change.
               expect and {
                   before.unbond_at == None,
-                  t >= upper,
+                  t == upper,
                   after == DelegationLock {
                     owner: before.owner,
                     pool_id: before.pool_id,
@@ -377,8 +380,7 @@ fn lock_value(
   }
 }
 
-/// Rule 2a, Pool: a reference input is an active Registration node of the pool. Unbond and
-/// Unlock do not check it, so a lock behind a pool that deactivates can still leave.
+/// Rule 2, Output: a reference input is an active Registration node of the pool.
 fn pool_registered(reference_inputs: List<Input>, pool_id: ByteArray) -> Bool {
   expect _ =
     must_find(

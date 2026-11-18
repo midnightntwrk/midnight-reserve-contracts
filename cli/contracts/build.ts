@@ -118,7 +118,7 @@ const FOREVER: readonly ValidatorMapping[] = [
     title: "cnight_minting.cnight_mint_forever.else",
     tomlKey: "cnight_minting_forever_hash",
   },
-  // Not a forever validator: night_staking embeds night_registration's hash (rule 2a, Pool),
+  // Not a forever validator: night_staking embeds night_registration's hash (rule 2, Output),
   // and this phase sets it before the final compilation.
   {
     title: "night_registration.night_registration.else",
