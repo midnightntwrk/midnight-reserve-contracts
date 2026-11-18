@@ -1418,6 +1418,79 @@ test unlock_pays_padded_return_output() fail {
   unlock_paying([padded(paid(returns, 1_500_000, 1_000))])
 }
 
+// Exact values, by the token's policy (lock_value): a spent lock must hold the token, and
+// the token's and cNIGHT's policies sort either way.
+
+fn spending(value: Value, cnight: Int) -> Bool {
+  let input = lock_input(deposit, cnight, staking)
+  withdraw(
+    update_tx(
+      Input { ..input, output: Output { ..input.output, value } },
+      lock_output(deposit, cnight, staking),
+    ),
+  )
+}
+
+test update_spends_a_foreign_token_without_cnight() fail {
+  spending(assets.from_lovelace(deposit) |> assets.add(foreign, "", 1), 0)
+}
+
+test update_spends_two_tokens_without_cnight() fail {
+  spending(value(deposit, 2, 0), 0)
+}
+
+test update_spends_cnight_and_a_foreign_token_named_empty() fail {
+  spending(
+    assets.from_lovelace(deposit)
+      |> assets.add(config.cnight_policy, config.cnight_name, 1_000)
+      |> assets.add(foreign, "", 1),
+    1_000,
+  )
+}
+
+/// A script hash that sorts after cNIGHT's policy, so a lock's value lists cNIGHT first.
+const late = #"e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5"
+
+/// A lock at `late`'s address with its token and 1,000 cNIGHT.
+const late_lock =
+  Output {
+    address: Address(Script(late), None),
+    value: assets.from_lovelace(deposit)
+      |> assets.add(late, "", 1)
+      |> assets.add(config.cnight_policy, config.cnight_name, 1_000),
+    datum: InlineDatum(staking),
+    reference_script: None,
+  }
+
+/// `tx` with `late`'s withdrawal, as the ledger passes it to `late` for `action`.
+fn withdraw_late(tx: Transaction, action: StakingAction) -> Bool {
+  night_staking.night_staking.else(
+    ScriptContext {
+      transaction: Transaction {
+        ..tx,
+        withdrawals: [Pair(Script(late), 0)],
+        redeemers: [Pair(Withdraw(Script(late)), as_data(action))],
+      },
+      redeemer: as_data(action),
+      info: Withdrawing(Script(late)),
+    },
+  )
+}
+
+test lock_with_the_token_sorting_after_cnight() {
+  withdraw_late(lock_tx(late_lock, assets.from_asset(late, "", 1)), Lock)
+}
+
+test update_with_the_token_sorting_after_cnight() {
+  withdraw_late(
+    update_tx(
+      Input { output_reference: OutputReference(#"01", 0), output: late_lock },
+      late_lock,
+    ),
+    Update,
+  )
+}
+
 // Redeemer (user decision, 11-17): the redeemer names the action, and each action accepts
 // one transaction shape. Every valid transaction below is refused under each other action.
 
