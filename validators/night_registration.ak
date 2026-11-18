@@ -16,8 +16,8 @@ use cardano/transaction.{
 }
 use config
 use registration/types.{
-  CreateOneAnchor, CreateTwoAnchors, Deactivate, Head, Init, Node, Registration,
-  RegistrationAction, Reserved, Update,
+  CreateOneAnchor, CreateTwoAnchors, Deactivate, Init, Node, Registration,
+  RegistrationAction, Reserved, Tail, Update,
 }
 use staking/script.{check_auth, no_script_output}
 use utils.{foldr2, is_singleton, must_find}
@@ -103,11 +103,10 @@ validator night_registration {
                 |> to_pairs
                 |> must_find(fn(pair) { pair.1st == own_hash })
 
-            // Rule 9, Nodes: the Head at outputs[0], then Reserved nodes in strictly
-            // rising crch order, each linked to the next. The fold runs from the last
-            // output back, so `link` is the crch of the node to the right, #"" past the
-            // last node and past a Head; a node left of the Head therefore fails, and so
-            // does an output between or before the nodes.
+            // Rule 9, Nodes: the first outputs are the Reserved nodes in rising crch order,
+            // then the Tail. The fold runs from the last output back, so `link` is the
+            // prev_crch of the node to the right; an output left of or between the nodes
+            // fails.
             let
               link,
               nodes,
@@ -119,29 +118,19 @@ validator night_registration {
                 fn(output, link, nodes, return) {
                   if output.address.payment_credential == own_cred {
                     when node_output(output, own_hash) is {
-                      Head { next_crch, next_pool: #"" } -> {
-                        expect and {
-                            next_crch == link,
-                            or {
-                              nodes == 0,
-                              link != #"",
-                            },
-                          }
+                      Tail { prev_crch, prev_pool: #"" } -> {
+                        expect nodes == 0
 
-                        return(#"", nodes + 1)
+                        return(prev_crch, nodes + 1)
                       }
 
-                      Reserved { crch, next_crch } -> {
+                      Reserved { crch, prev_crch } -> {
                         expect and {
-                            next_crch == link,
-                            bytearray.compare(#"", crch) == Less,
-                            or {
-                              nodes == 0,
-                              bytearray.compare(crch, link) == Less,
-                            },
+                            crch == link,
+                            crch_less(prev_crch, crch),
                           }
 
-                        return(crch, nodes + 1)
+                        return(prev_crch, nodes + 1)
                       }
 
                       _ -> fail
@@ -179,9 +168,9 @@ validator night_registration {
             expect Registration {
               active: True,
               crch,
-              next_crch,
+              prev_crch,
               pool_id,
-              next_pool,
+              prev_pool,
               owner,
               crch_signature,
               ..
@@ -213,9 +202,9 @@ validator night_registration {
                 after == Registration {
                   active: True,
                   crch,
-                  next_crch,
+                  prev_crch,
                   pool_id,
-                  next_pool,
+                  prev_pool,
                   owner: new_owner,
                   crch_signature,
                   keys,
@@ -247,13 +236,9 @@ validator night_registration {
 
             let after = node_output(node_output_after, own_hash)
 
-            let key_a, _ <- crch_link(node_datum(node_a))
-
-            let key_after, _ <- crch_link(after)
-
             let node, anchor <-
               fn(return) {
-                if key_a == key_after {
+                if crch_key(node_datum(node_a)) == crch_key(after) {
                   return(node_a, node_b)
                 } else {
                   return(node_b, node_a)
@@ -263,18 +248,16 @@ validator night_registration {
             expect Registration {
               active: True,
               crch,
-              next_crch,
+              prev_crch,
               pool_id,
-              next_pool,
+              prev_pool,
               ..
             } = node_datum(node)
 
             let anchor_node = node_datum(anchor)
 
-            let _, anchor_next_pool <- pool_link(anchor_node)
-
             // Rule 9, Nodes.
-            expect anchor_next_pool == pool_id
+            expect pool_link(anchor_node) == pool_id
 
             // Rule 10, Changes: a deactivated node leaves the pool list for good.
             expect None =
@@ -288,9 +271,9 @@ validator night_registration {
                 after == Registration {
                   active: False,
                   crch,
-                  next_crch,
+                  prev_crch,
                   pool_id: #"",
-                  next_pool: #"",
+                  prev_pool: #"",
                   owner: VerificationKey(#""),
                   crch_signature: #"",
                   keys: [],
@@ -299,9 +282,9 @@ validator night_registration {
                   fixed_cost: 0,
                   attributes: [],
                 },
-                node_output(anchor_output, own_hash) == with_next_pool(
+                node_output(anchor_output, own_hash) == with_prev_pool(
                   anchor_node,
-                  next_pool,
+                  prev_pool,
                 ),
                 node_ada(anchor_output) >= node_ada(anchor),
               }
@@ -318,9 +301,9 @@ validator night_registration {
             expect Registration {
               active: True,
               crch,
-              next_crch,
+              prev_crch,
               pool_id,
-              next_pool,
+              prev_pool,
               ..
             } = node_output(new_output, own_hash)
 
@@ -330,27 +313,18 @@ validator night_registration {
                 |> to_pairs
                 |> must_find(fn(pair) { pair.1st == own_hash })
 
-            // Rule 9, Nodes: sorting between the anchor and its next node in both lists
-            // keeps every crch, and every active pool_id, unique.
+            // Rule 10, Changes: in each list the new key sorts above the anchor's old link
+            // and below the anchor's key, and the new node takes the old link, so every crch,
+            // and every active pool_id, stays unique.
             let inserted =
               fn(crch_anchor: Node, pool_anchor: Node) {
-                let crch_key, crch_next <- crch_link(crch_anchor)
-
-                let pool_key, pool_next <- pool_link(pool_anchor)
-
                 and {
-                  bytearray.compare(crch_key, crch) == Less,
-                  or {
-                    crch_next == #"",
-                    bytearray.compare(crch, crch_next) == Less,
-                  },
-                  bytearray.compare(pool_key, pool_id) == Less,
-                  or {
-                    pool_next == #"",
-                    bytearray.compare(pool_id, pool_next) == Less,
-                  },
-                  next_crch == crch_next,
-                  next_pool == pool_next,
+                  crch_less(crch_link(crch_anchor), crch),
+                  crch_below(crch, crch_anchor),
+                  bytearray.compare(pool_link(pool_anchor), pool_id) == Less,
+                  pool_below(pool_id, pool_anchor),
+                  prev_crch == crch_link(crch_anchor),
+                  prev_pool == pool_link(pool_anchor),
                 }
               }
 
@@ -369,8 +343,8 @@ validator night_registration {
 
                   and {
                     no_script_output(other_outputs, own_hash),
-                    node_output(crch_output, own_hash) == with_next_pool(
-                      with_next_crch(anchor_node, crch),
+                    node_output(crch_output, own_hash) == with_prev_pool(
+                      with_prev_crch(anchor_node, crch),
                       pool_id,
                     ),
                     node_ada(crch_output) >= node_ada(anchor),
@@ -388,13 +362,9 @@ validator night_registration {
 
                   let crch_after = node_output(crch_output, own_hash)
 
-                  let key_a, _ <- crch_link(node_datum(anchor_a))
-
-                  let key_after, _ <- crch_link(crch_after)
-
                   let crch_input, pool_input <-
                     fn(return) {
-                      if key_a == key_after {
+                      if crch_key(node_datum(anchor_a)) == crch_key(crch_after) {
                         return(anchor_a, anchor_b)
                       } else {
                         return(anchor_b, anchor_a)
@@ -407,8 +377,8 @@ validator night_registration {
 
                   and {
                     no_script_output(rest, own_hash),
-                    crch_after == with_next_crch(crch_node, crch),
-                    node_output(pool_output, own_hash) == with_next_pool(
+                    crch_after == with_prev_crch(crch_node, crch),
+                    node_output(pool_output, own_hash) == with_prev_pool(
                       pool_node,
                       pool_id,
                     ),
@@ -455,6 +425,9 @@ validator night_registration {
   }
 }
 
+/// 2^128 - 1, the largest fixed_cost (rule 9).
+const max_fixed_cost = 340_282_366_920_938_463_463_374_607_431_768_211_455
+
 /// Rule 9, Nodes: every node output is checked here.
 fn node_output(output: Output, own_hash: PolicyId) -> Node {
   expect InlineDatum(datum) = output.datum
@@ -464,19 +437,20 @@ fn node_output(output: Output, own_hash: PolicyId) -> Node {
   expect and {
       output.address == Address(Script(own_hash), None),
       is_singleton(output.value, own_hash, ""),
+      {
+        let unlinked_datum: Data = unlinked(node)
+
+        builtin.length_of_bytearray(builtin.serialise_data(unlinked_datum)) <= config.node_datum_max
+      },
       when node is {
         Registration {
           active: True,
-          crch,
           pool_id,
           owner,
-          crch_signature,
           reward_address,
           fixed_cost,
           ..
         } -> and {
-            builtin.length_of_bytearray(crch) == 32,
-            builtin.length_of_bytearray(crch_signature) == 64,
             builtin.length_of_bytearray(pool_id) == 28,
             builtin.length_of_bytearray(
               when owner is {
@@ -486,9 +460,8 @@ fn node_output(output: Output, own_hash: PolicyId) -> Node {
             ) == 28,
             builtin.length_of_bytearray(reward_address) == 32,
             fixed_cost >= 0,
+            fixed_cost <= max_fixed_cost,
           }
-        Registration { active: False, crch, .. } ->
-          builtin.length_of_bytearray(crch) == 32
         _ -> True
       },
     }
@@ -514,36 +487,77 @@ fn node_ada(output: Output) -> Int {
   ada
 }
 
-/// A node's key and link in the crch list; the Head's key is #"".
-fn crch_link(node: Node, return: fn(ByteArray, ByteArray) -> result) -> result {
-  when node is {
-    Head { next_crch, .. } -> return(#"", next_crch)
-    Reserved { crch, next_crch } -> return(crch, next_crch)
-    Registration { crch, next_crch, .. } -> return(crch, next_crch)
+/// The order of the crch list: by length, then by bytes, so `#""` is the smallest key
+/// (user decision, 11-18).
+fn crch_less(a: ByteArray, b: ByteArray) -> Bool {
+  let length_a = builtin.length_of_bytearray(a)
+
+  let length_b = builtin.length_of_bytearray(b)
+
+  or {
+    length_a < length_b,
+    and {
+      length_a == length_b,
+      bytearray.compare(a, b) == Less,
+    },
   }
 }
 
-/// A node's key and link in the pool list; the Head's key is #"". Reserved nodes and
-/// inactive Registrations are not in the pool list.
-fn pool_link(node: Node, return: fn(ByteArray, ByteArray) -> result) -> result {
+/// A node's key in the crch list. The Tail has none and gives `#""`, which no other node
+/// holds.
+fn crch_key(node: Node) -> ByteArray {
   when node is {
-    Head { next_pool, .. } -> return(#"", next_pool)
-    Registration { active: True, pool_id, next_pool, .. } ->
-      return(pool_id, next_pool)
+    Tail { .. } -> #""
+    Reserved { crch, .. } -> crch
+    Registration { crch, .. } -> crch
+  }
+}
+
+/// A node's link in the crch list.
+fn crch_link(node: Node) -> ByteArray {
+  when node is {
+    Tail { prev_crch, .. } -> prev_crch
+    Reserved { prev_crch, .. } -> prev_crch
+    Registration { prev_crch, .. } -> prev_crch
+  }
+}
+
+/// Whether `key` sorts below the node's key in the crch list; the Tail is above every key.
+fn crch_below(key: ByteArray, node: Node) -> Bool {
+  when node is {
+    Tail { .. } -> True
+    _ -> crch_less(key, crch_key(node))
+  }
+}
+
+/// A node's link in the pool list. Reserved nodes and inactive Registrations are not in it.
+fn pool_link(node: Node) -> ByteArray {
+  when node is {
+    Tail { prev_pool, .. } -> prev_pool
+    Registration { active: True, prev_pool, .. } -> prev_pool
     _ -> fail
   }
 }
 
-/// The node with its crch link set to `link`.
-fn with_next_crch(node: Node, link: ByteArray) -> Node {
+/// Whether `key` sorts below the node's pool_id; the Tail is above every key. Only nodes of
+/// the pool list, which `pool_link` accepts, come here.
+fn pool_below(key: ByteArray, node: Node) -> Bool {
   when node is {
-    Head { next_pool, .. } -> Head { next_crch: link, next_pool }
-    Reserved { crch, .. } -> Reserved { crch, next_crch: link }
+    Registration { pool_id, .. } -> bytearray.compare(key, pool_id) == Less
+    _ -> True
+  }
+}
+
+/// The node with its crch link set to `link`.
+fn with_prev_crch(node: Node, link: ByteArray) -> Node {
+  when node is {
+    Tail { prev_pool, .. } -> Tail { prev_crch: link, prev_pool }
+    Reserved { crch, .. } -> Reserved { crch, prev_crch: link }
     Registration {
       active,
       crch,
       pool_id,
-      next_pool,
+      prev_pool,
       owner,
       crch_signature,
       keys,
@@ -556,9 +570,9 @@ fn with_next_crch(node: Node, link: ByteArray) -> Node {
       Registration {
         active,
         crch,
-        next_crch: link,
+        prev_crch: link,
         pool_id,
-        next_pool,
+        prev_pool,
         owner,
         crch_signature,
         keys,
@@ -571,13 +585,13 @@ fn with_next_crch(node: Node, link: ByteArray) -> Node {
 }
 
 /// The node with its pool link set to `link`. A Reserved node has no pool link.
-fn with_next_pool(node: Node, link: ByteArray) -> Node {
+fn with_prev_pool(node: Node, link: ByteArray) -> Node {
   when node is {
-    Head { next_crch, .. } -> Head { next_crch, next_pool: link }
+    Tail { prev_crch, .. } -> Tail { prev_crch, prev_pool: link }
     Registration {
       active,
       crch,
-      next_crch,
+      prev_crch,
       pool_id,
       owner,
       crch_signature,
@@ -591,9 +605,9 @@ fn with_next_pool(node: Node, link: ByteArray) -> Node {
       Registration {
         active,
         crch,
-        next_crch,
+        prev_crch,
         pool_id,
-        next_pool: link,
+        prev_pool: link,
         owner,
         crch_signature,
         keys,
@@ -603,5 +617,13 @@ fn with_next_pool(node: Node, link: ByteArray) -> Node {
         attributes,
       }
     _ -> fail
+  }
+}
+
+/// The node with both links `#""`: NODE_DATUM_MAX leaves the links out (rule 9).
+fn unlinked(node: Node) -> Node {
+  when node is {
+    Reserved { crch, .. } -> Reserved { crch, prev_crch: #"" }
+    _ -> with_prev_pool(with_prev_crch(node, #""), #"")
   }
 }

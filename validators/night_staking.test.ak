@@ -92,9 +92,9 @@ fn registered(pool_id: ByteArray, active: Bool) -> Input {
         Registration {
           active,
           crch: bytes(32),
-          next_crch: "",
+          prev_crch: "",
           pool_id,
-          next_pool: "",
+          prev_pool: "",
           owner: VerificationKey(key),
           crch_signature: bytes(64),
           keys: [],

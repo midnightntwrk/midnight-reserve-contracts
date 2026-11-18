@@ -1,18 +1,18 @@
 use cardano/address.{Credential}
 
-/// The datum of a node of the registration set (MIP 421). The fields a node keeps come
-/// first, then the fields Deactivate clears (user decision, 11-14). `#""` in `next_crch` or
-/// `next_pool` ends that list.
+/// The datum of a node of the registration set (MIP 421). Each link names the node before
+/// its own, `#""` on the first node of a list; the Tail is the last node of both lists. The
+/// fields a node keeps come first, then the fields Deactivate clears (user decision, 11-14).
 pub type Node {
-  Head { next_crch: ByteArray, next_pool: ByteArray }
+  Tail { prev_crch: ByteArray, prev_pool: ByteArray }
   /// A permissioned candidate's crch, created at initialization only.
-  Reserved { crch: ByteArray, next_crch: ByteArray }
+  Reserved { crch: ByteArray, prev_crch: ByteArray }
   Registration {
     active: Bool,
     crch: ByteArray,
-    next_crch: ByteArray,
+    prev_crch: ByteArray,
     pool_id: ByteArray,
-    next_pool: ByteArray,
+    prev_pool: ByteArray,
     owner: Credential,
     crch_signature: ByteArray,
     keys: Pairs<ByteArray, ByteArray>,
