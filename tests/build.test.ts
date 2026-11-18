@@ -1,4 +1,5 @@
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -356,5 +357,51 @@ describe("build --from-deployed", () => {
           "Reading hashes from deployed scripts...",
         );
       }),
+  );
+});
+
+describe("the standard build", () => {
+  it.live(
+    "converges in one final compile when main_gov_threshold's hash moves",
+    () =>
+      Effect.gen(function* () {
+        const root = join(tmp, "standard");
+        for (const path of [
+          "aiken.lock",
+          "validators",
+          "lib",
+          "build/packages",
+        ]) {
+          cpSync(path, join(root, path), { recursive: true });
+        }
+        // main_gov_threshold compiles in its one-shot, so its hash moves; the five other
+        // thresholds compile in that hash.
+        const fixpoint = readFileSync("aiken.toml", "utf-8");
+        const moved = fixpoint.replace(
+          /^main_gov_one_shot_index = 1$/m,
+          "main_gov_one_shot_index = 2",
+        );
+        expect(moved).not.toBe(fixpoint);
+        writeFileSync(join(root, "aiken.toml"), moved);
+        const output = captureOutput();
+        yield* buildContracts({
+          network: "default",
+          traceLevel: "verbose",
+          projectRoot: root,
+          source: { kind: "standard" },
+        }).pipe(
+          Effect.provide(
+            Layer.mergeAll(
+              NodeServices.layer,
+              DeployedScripts.layer,
+              output.layer,
+            ),
+          ),
+        );
+        expect(output.lines).not.toContain(
+          "Detected stale logic bytecode; rebuilding with refreshed hashes...",
+        );
+      }),
+    120_000,
   );
 });

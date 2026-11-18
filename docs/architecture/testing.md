@@ -2,7 +2,7 @@
 
 The test layers decided on 2026-11-11, and what exists of each with the Effect 4 CLI. Counts come from one run of the gate `just fmt && just build && just check && vp test` on `cli/effect4` (the commit that adds this page):
 - `aiken check`: 64 tests (64 unit, 0 property).
-- `vp test --reporter=json`: 331 tests (331 pass, 0 fail, 0 skipped), 25 files.
+- `vp test --reporter=json`: 332 tests (332 pass, 0 fail, 0 skipped), 25 files.
 
 ```mermaid
 flowchart LR
@@ -82,7 +82,7 @@ Planning is a pure function of the input and a frozen PlanningContext, so a test
   - it takes no transaction that spends from its mempool, so chained deployment transactions are submitted one at a time (`tests/deploy.test.ts`).
 - **Mainnet scripts.** `tests/mainnet_merge_transactions.test.ts` and the "Mainnet snapshot upgrade transactions" of `tests/upgrade.test.ts` run against the deployed mainnet scripts and snapshot UTxOs (`tests/helpers/mainnet-snapshot.ts`).
 - **Parameters.** Tests construct `new Emulator([])`, which uses Blaze's hard-coded parameters, `maxTxSize: 16384` (`node_modules/@blaze-cardano/core/dist/index.mjs:351`).
-- **Function-level unit tests.** The other files call parsers, codecs and services directly: `build` 22, `chain` 16, `config` 46, `datum` 18, `generate-key` 4, `input` 11, `report` 26, `resolver` 29, `snapshot` 22, `tx` 12 (tests per file).
+- **Function-level unit tests.** The other files call parsers, codecs and services directly: `build` 23 (one runs the standard build on a scratch copy), `chain` 16, `config` 46, `datum` 18, `generate-key` 4, `input` 11, `report` 26, `resolver` 29, `snapshot` 22, `tx` 12 (tests per file).
 - **Build first.** Tests read the build output: 24 files under `tests/` reference `contract_blueprint*` or `plutus*.json`. Run `just build` before `vp test`, and again after any validator or `aiken.toml` change; the gate does both, in that order.
 
 ### L4 budgets

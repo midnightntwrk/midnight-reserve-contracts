@@ -165,7 +165,7 @@ Editing any validator changes its script hash. Deployed hashes live in `deployed
 - **Hash touches.** Validators that would otherwise not depend on `cnight_policy` still compare it against something, so that it feeds the script hash (e.g. `lib/forever/script.ak:31-32`, `lib/upgradable/two-stage-upgrade.ak:452-453`).
 - **Hand-set values.** One-shot hashes and indices are set by hand per profile, e.g. `aiken.toml:20-49` for `default`.
 
-The standard build (`buildStandard`, `cli/contracts/build.ts:505-566`) compiles the whole project five or more times and writes hashes back into the profile between compiles:
+The standard build (`buildStandard`, `cli/contracts/build.ts:505-570`) compiles the whole project six or more times and writes hashes back into the profile between compiles:
 
 ```mermaid
 flowchart LR
@@ -173,7 +173,8 @@ flowchart LR
   p0 --> c1["compile"] --> p1["two-stage hashes (6 core + cnight_minting)"]
   p1 --> c2["compile"] --> p2["forever hashes (6 core + cnight_minting)"]
   p2 --> c3["compile"] --> p3["threshold hashes (6)"]
-  p3 --> c4["final compile"] --> p4["refresh all three groups"]
+  p3 --> c3b["compile"] --> p3b["threshold hashes again (6)"]
+  p3b --> c4["final compile"] --> p4["refresh all three groups"]
   p4 --> v["verify logic bytecode embeds threshold hashes; rebuild once if stale"]
 ```
 
@@ -182,14 +183,14 @@ flowchart LR
 | initial compile | `cnight_policy` := `tcnight_mint_infinite`'s hash; skipped on mainnet | `cli/contracts/build.ts:509-527`, `:245-269` |
 | phase 1 | `<c>_two_stage_hash` for the six core components and cNIGHT minting | `cli/contracts/build.ts:529-533`, `:64-93` |
 | phase 2 | `<c>_forever_hash`, same set | `cli/contracts/build.ts:535-539`, `:95-121` |
-| phase 3 | the six `*_threshold_hash` keys except BEEFY | `cli/contracts/build.ts:541-546`, `:123-148` |
-| final | recompiles and refreshes all three groups | `cli/contracts/build.ts:548-554`, `:463-498` |
+| phase 3 | the six `*_threshold_hash` keys except BEEFY, compiled and written twice: the other five compile in `main_gov_threshold_hash`, which the first pass may move | `cli/contracts/build.ts:541-550`, `:123-148` |
+| final | recompiles and refreshes all three groups | `cli/contracts/build.ts:552-558`, `:463-498` |
 | verify | `council_logic`, `tech_auth_logic`, `federated_ops_logic` and `main_gov_auth` bytecode must contain their threshold hash; one rebuild, then fail | `cli/contracts/build.ts:463-498`, `:150-168`, `:373-401` |
 
 The order follows the compile-time dependencies:
 - **two-stage** depends only on its one-shot and `cnight_policy`.
 - **forever** depends on the two-stage hash (`reserve.ak:25`).
-- **thresholds** depend on the TA and council forever hashes (`thresholds.ak:90,97`).
+- **thresholds** depend on the TA and council forever hashes (`thresholds.ak:90,97`), and all but `main_gov_threshold` on `main_gov_threshold_hash` (`lib/multisig/script.ak:159`).
 - **logic and auth** depend on forever and threshold hashes (`permissioned.ak:96-98`, `lib/auth/script.ak:20`).
 
 The would-be cycle between forever and logic is broken at run time: the forever reads the logic hash from the main upgrade datum instead of compiling it in (`lib/forever/script.ak:40-60`).
@@ -198,7 +199,7 @@ Not pinned by the engine:
 - the committee bridge's `committee_bridge_two_stage_hash`, `committee_bridge_forever_hash` and `beefy_signer_threshold_hash`, and `bridge_signer_threshold_hash` (absent from the mappings, `cli/contracts/build.ts:64-148`);
 - every v2 state-logic and staging one-shot (hand-set per profile).
 
-The verify step does not cover `terms_and_conditions_logic` or any v2 logic (`cli/contracts/build.ts:150-168`). `build --from-deployed` pins the core two-stage, forever and threshold hashes from `deployed-scripts/<env>/plutus.json` in `aiken.toml`, runs the phased build with them (a pinned key keeps its pin; `--components` compiles the named components from new; a pinned validator that compiles to another hash fails the build), and restores `aiken.toml` (`cli/contracts/build.ts:568-645`, `:331-371`).
+The verify step does not cover `terms_and_conditions_logic` or any v2 logic (`cli/contracts/build.ts:150-168`). `build --from-deployed` pins the core two-stage, forever and threshold hashes from `deployed-scripts/<env>/plutus.json` in `aiken.toml`, runs the phased build with them (a pinned key keeps its pin; `--components` compiles the named components from new; a pinned validator that compiles to another hash fails the build), and restores `aiken.toml` (`cli/contracts/build.ts:572-649`, `:331-371`).
 
 ## Known structural issues
 

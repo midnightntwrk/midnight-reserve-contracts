@@ -544,6 +544,10 @@ const buildStandard = (build: Build) =>
     yield* keepsPins(build.pins, thresholds);
     yield* output.log("Updating threshold validator hashes...");
     yield* updateHashes(build, thresholds, THRESHOLDS);
+    // The other thresholds compile in main_gov_threshold_hash, which the line above may move.
+    const thresholdsAgain = yield* compile(build, "Threshold Validators (2)");
+    yield* keepsPins(build.pins, thresholdsAgain);
+    yield* updateHashes(build, thresholdsAgain, THRESHOLDS);
 
     yield* output.log("Final compilation...");
     const attempts = yield* Ref.make(0);
