@@ -1,4 +1,4 @@
-// night_staking transactions (staking MIP, PR 421, rules 1-8, and rule 2a, Pool, MIP change 16).
+// night_staking transactions (staking MIP, PR 421, rules 1-8).
 // `just tx-diagrams` renders one SVG per entry of `txs` into svg/.
 #import "tx.typ": *
 
@@ -29,9 +29,10 @@
 #let owner_key = [`h`, if `owner = VerificationKey(h)`]
 #let token_mint = "night_staking token (Void)"
 
-/// The pool's node in the registration set, read by Lock and Update (rule 2a, Pool).
-#let pool_node(pool) = (
-  name: "Pool's node",
+/// The pool's node in the registration set, read by a Lock and by an Update that changes
+/// pool_id (rules 2 and 3, Output).
+#let pool_node(pool, name: "Pool's node") = (
+  name: name,
   address: [`night_registration`],
   reference: true,
   value: (ada: "any", "night_registration token": "1"),
@@ -105,7 +106,7 @@
         the lock may hold more ADA and must also meet the ledger's min UTxO.
         No other output carries the token. `ret` is the Cardano address that
         receives the cNIGHT at the Unlock (rule 4, diagram 5). \
-        Rule 2a, Pool (user decision, 11-14; MIP change 16): a reference input
+        Rule 2, Output (user decision, 11-14; MIP 421): a reference input
         at night_registration's address holds the set's token and an active
         Registration whose `pool_id` is the lock's `p`. night_staking compiles
         in night_registration's hash (aiken.toml), so night_registration is
@@ -125,7 +126,7 @@
       inputs: (
         lock_in(datum: lock_datum + ("unbond_at": [`None`])),
         (name: "Owner's funds", address: "any wallet", value: (ada: [`F`], "cNIGHT": [`d` $>=$ 0])),
-        pool_node([`p'`]),
+        pool_node([`p'`], name: [Pool's node, if `p'` $!=$ `p`]),
       ),
       outputs: (
         (
@@ -150,14 +151,14 @@
       withdraws: (gate([`Update`]), owner_script, [`k`: any amount, if `ret'` $!=$ `ret` and \ `ret`'s payment credential is `Script(k)`]),
       signatures: (owner_key, [`k`, if `ret'` $!=$ `ret` and `ret`'s payment \ credential is `VerificationKey(k)`]),
       notes: note[
-        Rules 2a, 3, 5, 6, 7. An Update may re-point the lock, add cNIGHT, and
+        Rules 2, 3, 5, 6, 7. An Update may re-point the lock, add cNIGHT, and
         change `reward_address` or `attributes`, in any mix. An Update mints
         nothing, and the cNIGHT never falls. `unbond_at` is `None` on both
         the input and the output, so an unbonded lock can only be unlocked
         (user decision, 11-13; the MIP will say so). The transaction reads
-        the active node of the output's pool `p'` (rule 2a). Unbond and
-        Unlock read no node, so a lock behind a pool that deactivates can
-        still leave. \
+        the active node of the output's pool `p'` only when `p'` differs
+        from `p` (rule 3). Unbond and Unlock read no node, so a lock behind
+        a pool that deactivates can still leave. \
         Rule 3 (MIP 421): `return_address` changes only if the payment
         credential of the input's `ret` authorizes the transaction, as rule 5
         authorizes an owner, and the owner still authorizes it too. The new
@@ -194,15 +195,15 @@
       ),
       withdraws: (gate([`Unbond`]), owner_script),
       signatures: (owner_key,),
-      validRange: (upper: [`U` ($<=$ `t`)]),
+      validRange: (upper: [`U` $= t$]),
       notes: note[
         Rule 3, Unbond. `unbond_at` goes from `None` to `Some(t)`. The rest
         of the output equals the input: address, token, cNIGHT, `owner`,
         `pool_id`, `reward_address`, `return_address` and `attributes`. Only the ADA may
         change: `l'` is at least `l`, which is at least
         `lock_deposit_lovelace`, and `l'` may rise to the min UTxO of the
-        larger datum. `t` is POSIX ms; the upper bound must be finite and no
-        later than `t`. After an Unbond the lock can only be unlocked
+        larger datum. `t` is POSIX ms; the upper bound must be finite and
+        equal to `t`. After an Unbond the lock can only be unlocked
         (diagram 5); no rule clears `unbond_at` (MIP Open Question 3). \
         The withdrawal's redeemer is `Unbond` (user decision, 11-17). The
         contract checks the order by position: the unbonding lock is the first

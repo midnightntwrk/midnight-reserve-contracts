@@ -72,8 +72,8 @@ Every hash and one-shot is a `config.*` constant, so it is part of the script ha
 | v2 state logic (the five `*_logic_v2` of ICS, council, TA, fed ops, T&C) | `<c>_logic_v2_one_shot_hash`, `<c>_logic_v2_one_shot_index`, `<c>_forever_hash`, `<c>_two_stage_hash`, `cnight_policy`; multisig v2 also the threshold, TA and council forever hashes; merge v2 also `cnight_name` | `illiquid_circulation_supply_v2.ak:10-21`; `permissioned_v2.ak:89-105`; `lib/logic/next_version.ak:74,83,102,167-184,216` |
 | `reserve_logic_v2` | `reserve_logic_v2_init_one_shot_hash` and `_index`, `reserve_two_stage_hash`, `reserve_forever_hash`, `ics_forever_hash` and `reserve_staging_params_hash`, passed by the validator; `cnight_policy`, `cnight_name` and the `release_*` constants, read by the library | `reserve_v2.ak:18-19,26-29`; `lib/logic/reserve.ak:26,28,100,243-244,315-316,322,326-327,333,339,346` |
 | `reserve_staging_params` | `reserve_staging_params_one_shot_hash` and `_index`, `staging_gov_auth_hash`, `cnight_policy` (main's marker, so the hash differs per network) | `reserve_v2.ak:46-47,65,71` |
-| `night_staking` | `cnight_policy`, `cnight_name`, `lock_deposit_lovelace`, `unbonding_delay_ms`, `night_registration_hash` | `night_staking.ak:263,285-286,337,369-370,390-391` |
-| `night_registration` | `night_registration_one_shot_hash`, `night_registration_one_shot_index`, `cnight_policy` (the marker) | `night_registration.ak:96-97,162` |
+| `night_staking` | `cnight_policy`, `cnight_name`, `lock_deposit_lovelace`, `unbonding_delay_ms`, `night_registration_hash` | `night_staking.ak:266,288-289,340,372-373,392-393` |
+| `night_registration` | `night_registration_one_shot_hash`, `night_registration_one_shot_index`, `cnight_policy` (the marker), `node_datum_max` (`NODE_DATUM_MAX`, 4,500) | `night_registration.ak:96-97,151,443` |
 | `cnight_mint_logic_v2` | nothing; it always fails | `cnight_minting_v2.ak:1-8` |
 | staging forever | `<c>_staging_one_shot_hash`, `<c>_staging_one_shot_index`, `<c>_two_stage_hash`, `cnight_policy` | `staging_reserve_ics.ak:23-33`; `lib/forever/staging.ak:30` |
 | `main_gov_auth` | `main_gov_threshold_hash`, `technical_authority_forever_hash`, `council_forever_hash`, `cnight_policy` | `lib/auth/script.ak:20,34,41,57` |
@@ -112,34 +112,35 @@ Each transaction these four contracts take part in is drawn, with its rules, in 
 ### night_staking
 
 - **Role.** Holds delegation locks, the cNIGHT a holder stakes behind one pool (staking MIP, PR 421, rules 1 to 8). One script is the token's policy, the locks' address and a stake credential (`night_staking.ak:42-44`).
-- **Shape.** One `else(ctx)` with `when info is`, as main's validators (`night_staking.ak:45-307`):
+- **Shape.** One `else(ctx)` with `when info is`, as main's validators (`night_staking.ak:45-310`):
   - `Minting` and `Spending` only require the script's own withdrawal (rule 6, `:61-79`).
-  - `Withdrawing` reads the redeemer `StakingAction` (`:35-40`): `Lock`, `Update`, `Unbond` or `Unlock`, each with one transaction shape (user decision, 11-17; it replaces the MIP's rule 7 reading of the kind from the shape), and runs every other rule once per transaction (`:81-298`).
-  - `Publishing` accepts a stake credential registration; everything else fails, so no vote or proposal passes (rule 8, `:300-304`).
+  - `Withdrawing` reads the redeemer `StakingAction` (`:35-40`): `Lock`, `Update`, `Unbond` or `Unlock`, each with one transaction shape (MIP 421 rule 7), and runs every other rule once per transaction (`:81-301`).
+  - `Publishing` accepts a stake credential registration; everything else fails, so no vote or proposal passes (rule 8, `:303-307`).
 - **Where each rule lives**, in `Withdrawing` and its three helpers:
   - Rule 7: one `foldr` over the inputs finds at most one input at the address (`:86-100`); each action expects none (`Lock`) or one, places the lock first among the outputs, and refuses any other output at the address or carrying the token with `no_script_output` (`lib/staking/script.ak:23-44`).
-  - Lock (`:104-133`): rule 1 (`:115-116`), rule 2 (the helper `lock_output` at `:309-347`), rule 2a, Pool (`:129-130`, the helper `pool_registered` at `:380-410`, which finds the node with `must_find` and `is_singleton`).
-  - A lock's value is matched whole, ADA, the token and cNIGHT and nothing else, by `to_dict |> to_pairs` in the helper `lock_value` (`:349-378`), for the spent lock and every new one.
-  - Update (`:135-180`): rule 3, and the pool's node (rule 2a, `:175-176`); `return_address` changes only under the input return address's payment credential (`:167-173`).
-  - Unbond (`:182-234`): rule 3, the datum rebuilt field by field.
-  - Unlock (`:236-294`): rule 4, the burn and the delay (`:254-268`), and the payout as the first output, exactly ADA and cNIGHT (`:271-292`).
-  - Rule 5, the owner authorizes every action through `check_auth` (`:296-297`, `lib/staking/script.ak:8-21`).
+  - Lock (`:104-133`): rule 1 (`:115-116`), rule 2 (the helper `lock_output` at `:312-350`), and rule 2's reference input of the pool's node (`:129-130`, the helper `pool_registered` at `:383-412`, which finds the node with `must_find` and `is_singleton`).
+  - A lock's value is matched whole, ADA, the token and cNIGHT and nothing else, by `to_dict |> to_pairs` in the helper `lock_value` (`:352-381`), for the spent lock and every new one.
+  - Update (`:135-183`): rule 3; the pool's node is read only when `pool_id` changes (`:175-179`); `return_address` changes only under the input return address's payment credential (`:167-174`).
+  - Unbond (`:185-237`): rule 3, `unbond_at` set to exactly the validity upper bound (`:223`), the datum rebuilt field by field.
+  - Unlock (`:239-296`): rule 4, the burn and the delay (`:257-272`), and the payout as the first output, exactly ADA and cNIGHT (`:274-293`); a lock without cNIGHT unlocks at once, whatever its `unbond_at`.
+  - Rule 5, the owner authorizes every action through `check_auth` (`:299-300`, `lib/staking/script.ak:8-21`).
 - **The types** are the datum `DelegationLock`, with `return_address` between `reward_address` and `unbond_at` as #421 orders it (`night_staking.ak:17-31`), and the redeemer `StakingAction`; `z_night_staking_types` puts both in the blueprint (`validator_types_v2.ak:15-23`).
 
 ### night_registration
 
-- **Role.** Holds the registration set: the nodes of two sorted linked lists, by `crch` over every node and by `pool_id` over the active pools (rules 9 and 10). One script is the nodes' address, the token's policy and a stake credential; its one parameter is the initialization UTxO (`night_registration.ak:25-27`, `:94-98`).
-- **Shape.** One `else(ctx)` with `when info is` (`night_registration.ak:28-456`), the withdrawal pattern (user decision, 11-17: "withdraw checks everything"):
+- **Role.** Holds the registration set: the nodes of two sorted linked lists, by `crch` over every node and by `pool_id` over the active pools (rules 9 and 10). Each link names the node before; the first node of a list links to `#""`, and the `Tail` is the last node of both lists (MIP 421 ab25a20d). One script is the nodes' address, the token's policy and a stake credential; its one parameter is the initialization UTxO (`night_registration.ak:25-27`, `:94-98`).
+- **Shape.** One `else(ctx)` with `when info is` (`night_registration.ak:28-426`), the withdrawal pattern (MIP 421 rule 10; user decision, 11-17: "withdraw checks everything"):
   - `Minting` and `Spending` only require the script's own withdrawal (`:43-61`), as night_staking's rule 6 and main's `cnight_generates_dust.ak:101-155`.
-  - `Withdrawing` reads the redeemer `RegistrationAction` (`lib/registration/types.ak:26-35`): `Init`, `CreateTwoAnchors` (diagram 7a), `CreateOneAnchor` (diagram 7b), `Update` or `Deactivate`, each with one transaction shape, and runs every rule once per transaction (`:63-448`). It finds the spent nodes with one `foldr2` over the inputs, which also refuses an input at the address that is not a node (`:68-90`), then checks `Init` (`:93-172`), `Update` (`:174-238`), `Deactivate` (`:240-311`) or the two Creates, which share the new node's checks and differ in the anchors (`:313-446`).
-  - `Publishing` accepts the registration of the credential; everything else fails (`:450-453`). The deploy registers the credential before the initialization (diagram 0).
-  - `Init` carries main's `own_hash != config.cnight_policy` marker (`:161-162`), one per script as in main.
+  - `Withdrawing` reads the redeemer `RegistrationAction` (`lib/registration/types.ak:26-35`): `Init`, `CreateTwoAnchors` (diagram 7a), `CreateOneAnchor` (diagram 7b), `Update` or `Deactivate`, each with one transaction shape, and runs every rule once per transaction (`:63-418`). It finds the spent nodes with one `foldr2` over the inputs, which also refuses an input with the script's payment credential, whatever its stake part, that is not a node (`:68-90`), then checks `Init` (`:93-161`), `Update` (`:163-227`), `Deactivate` (`:229-294`) or the two Creates, which share the new node's checks and differ in the anchors (`:296-416`).
+  - `Publishing` accepts the registration of the credential; everything else fails (`:419-423`). The deploy registers the credential before the initialization (diagram 0).
+  - `Init` carries main's `own_hash != config.cnight_policy` marker (`:150-151`), one per script as in main.
 - **Where each rule lives.**
-  - Rule 9, node shape, in the helper `node_output`, used for every node output (`night_registration.ak:458-497`); a node's value is `is_singleton`, ADA and the token and nothing else, for spent nodes too (`:81`).
-  - Rule 9, sorted lists: Init, in one `foldr2` over the outputs that also places the Head first and the Reserved nodes after it (`:106-158`), Create (`:333-355`), Deactivate (`:274-277`), and the pool-list membership in `pool_link` (`:526-535`).
-  - Rule 10, Create: one mint (`:358-359`), output order and relinked anchors, one anchor for `CreateOneAnchor` and two for `CreateTwoAnchors` (`:360-422`), cold key and delegation certificate (`:423-444`).
-  - Rule 10, Update (`:204-237`) and Deactivate (`:279-310`); outputs after the nodes go through `no_script_output` (`lib/staking/script.ak:23-44`).
-- **The types** are the datum `Node` and the redeemer `RegistrationAction` (`lib/registration/types.ak:3-35`); `z_night_registration_types` puts both in the blueprint (`validator_types_v2.ak:25-33`).
+  - Rule 9, node shape, in the helper `node_output`, used for every node output, anchors included (`night_registration.ak:428-470`): a node's value is `is_singleton`, ADA and the token and nothing else, for spent nodes too (`:81`); its datum, with both links set to `#""` by the helper `unlinked` (`:623-629`), is at most `NODE_DATUM_MAX` when `serialise_data` encodes it (`:440-444`); an active node's `pool_id` and owner hash are 28 bytes, `reward_address` 32, and `fixed_cost` from 0 to 2^128 − 1. No length is checked on `crch` or `crch_signature`.
+  - Rule 9, the crch order: one helper, `crch_less` (`:490-504`), sorts by length, then by bytes, so `#""` is the smallest key (user decision, 11-18). Every comparison in the crch list goes through it: Init (`:130`) and Create (`:322-323`, with `crch_below` at `:525-531`). The pool list compares `pool_id` by bytes (`:324-325`, `pool_below` at `:542-549`).
+  - Rule 9, sorted lists: Init, in one `foldr2` over the outputs that places the Reserved nodes first, in crch order, and the Tail last (`:106-147`); Create, where each new key sorts above its anchor's old link and below its anchor's key and the new node takes the old links (`:316-329`); Deactivate, whose anchor's `prev_pool` is the node's `pool_id` (`:259-260`); and the pool-list membership in `pool_link` (`:533-540`).
+  - Rule 10, Create: one mint (`:332-333`), output order and relinked anchors, one anchor for `CreateOneAnchor` and two for `CreateTwoAnchors` (`:334-392`), cold key and delegation certificate (`:393-414`).
+  - Rule 10, Update (`:193-226`) and Deactivate (`:262-293`); outputs after the nodes go through `no_script_output` (`lib/staking/script.ak:23-44`). A spent node never comes back with less ADA, except the node a Deactivate empties.
+- **The types** are the datum `Node` (`Tail`, `Reserved`, `Registration`, with `prev_crch` and `prev_pool` links) and the redeemer `RegistrationAction` (`lib/registration/types.ak:3-35`); `z_night_registration_types` puts both in the blueprint (`validator_types_v2.ak:25-33`).
 
 ### reserve_logic_v2
 

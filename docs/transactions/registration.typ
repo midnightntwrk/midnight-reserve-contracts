@@ -15,16 +15,16 @@
 /// A Registration datum in the decided field order (user decision, 11-14): the fields a node
 /// keeps first, then the fields Deactivate clears.
 #let registration(
-  next_pool: [`np`],
+  prev_pool: [`pp`],
   owner: [`o`],
   rest: ([`k`], [`s`], [`ra`], [`fc`], [`at`]),
 ) = (
   "Registration": "",
   "active": [`True`],
   "crch": [`cr`],
-  "next_crch": [`nc`],
+  "prev_crch": [`pc`],
   "pool_id": [`p`],
-  "next_pool": next_pool,
+  "prev_pool": prev_pool,
   "owner": owner,
   "crch_signature": [`cs`],
   "keys": rest.at(0),
@@ -42,16 +42,16 @@
   datum: (
     "Registration": "",
     "active": [`True`],
-    "crch": [`cr`, 32 bytes],
-    "next_crch": [`nc`],
+    "crch": [`cr`, any length, not `#""`],
+    "prev_crch": [`pc`, the crch anchor's old `prev_crch`],
     "pool_id": [`p`, 28 bytes],
-    "next_pool": [`np`],
+    "prev_pool": [`pp`, the pool anchor's old `prev_pool`],
     "owner": [`VerificationKey(h)` | `Script(h)`, 28 bytes],
-    "crch_signature": [64 bytes],
+    "crch_signature": [any length],
     "keys": [any (not checked)],
     "signatures": [any (not checked)],
     "reward_address": [32 bytes],
-    "fixed_cost": [$>=$ 0],
+    "fixed_cost": [0 to $2^128 - 1$],
     "attributes": [any (not checked)],
   ),
 )
@@ -78,12 +78,16 @@
     it is a separate UTxO, are the first outputs (user decision, 11-13).
     Change and any other outputs follow; none sits at night_registration's
     address or carries its token. The crch anchor
-    is the new node's predecessor in the crch list, and the pool anchor its
-    predecessor in the pool list. The Head is always first and holds no key:
-    `Head.next_crch` points at the first node of the crch list, and
-    `Head.next_pool` at the first active Registration. An anchor is the Head
-    when the new key sorts before the first node of that list. The sort
-    order proves that no node holds `cr` and no active node holds `p`. The
+    is the node after the new one in the crch list, and the pool anchor the
+    node after it in the pool list. Each link names the node before; the
+    first node of a list links to `#""`. The Tail is always the last node
+    of both lists, holds no key and sorts above every key: an anchor is the
+    Tail when the new key sorts after the last node of that list. In each
+    list the new key sorts above the anchor's old link and below the
+    anchor's key, so no node holds `cr` and no active node holds `p`. The
+    crch list sorts by length, then by bytes (user decision, 11-18); the
+    pool list sorts `pool_id` by bytes. Every node datum, with both links
+    set to `#""`, is at most `NODE_DATUM_MAX` (4,500) bytes. The
     transaction carries one certificate that delegates `d` to the pool `p`:
     a delegation certificate or a register-and-delegate certificate (user
     decision, 11-13), whose delegatee is `DelegateBlockProduction(p)` or
@@ -138,23 +142,23 @@
       ),
       outputs: (
         (
-          name: "Head",
-          address: node_address,
-          value: node_value,
-          datum: ("Head": "", "next_crch": [`c1` (`#""` if `N` = 0)], "next_pool": [`#""`]),
-        ),
-        (
           name: "Reserved c1",
           address: node_address,
           value: node_value,
-          datum: ("Reserved": "", "crch": [`c1`], "next_crch": [`c2`]),
+          datum: ("Reserved": "", "crch": [`c1`], "prev_crch": [`#""`]),
         ),
         (name: "...", dots: true),
         (
           name: "Reserved cN",
           address: node_address,
           value: node_value,
-          datum: ("Reserved": "", "crch": [`cN`], "next_crch": [`#""`]),
+          datum: ("Reserved": "", "crch": [`cN`], "prev_crch": [`c(N−1)`]),
+        ),
+        (
+          name: "Tail",
+          address: node_address,
+          value: node_value,
+          datum: ("Tail": "", "prev_crch": [`cN` (`#""` if `N` = 0)], "prev_pool": [`#""`]),
         ),
         (name: "Change", address: "any wallet", value: (ada: "rest")),
       ),
@@ -164,21 +168,23 @@
       notes: note[
         Rule 9. The transaction spends the initialization UTxO, the script's
         parameter (aiken.toml), so the transaction can run only once. The
-        transaction creates the Head and one Reserved node per permissioned
-        candidate, sorted: `c1 < c2 < ... < cN`. Every node holds only ADA
-        and one token with the empty name. \
-        `next_pool` is a plain ByteArray on every node (user decision, 11-13;
-        the MIP has `Option<ByteArray>`). `#""` ends both lists, and an
-        inactive node holds `next_pool = #""` with `active: False`. Node
-        addresses have no stake part (rule 9, user decision, 11-14). \
+        transaction creates one Reserved node per permissioned candidate and
+        the Tail, sorted: `c1 < c2 < ... < cN`, by length, then by bytes
+        (user decision, 11-18). Every node holds only ADA and one token with
+        the empty name. \
+        `prev_pool` is a plain ByteArray on every node (user decision, 11-13;
+        the MIP has `Option<ByteArray>`). `#""` is the link of the first node
+        of each list, and an inactive node holds `prev_pool = #""` with
+        `active: False`. Node addresses have no stake part (rule 9, user
+        decision, 11-14). \
         Whoever builds the initialization transaction chooses `c1 ... cN`;
         the CLI reads them from the federated-ops data (user decision,
         11-14). night_registration keeps one parameter, the initialization
         UTxO, and checks only the order and the node shape. \
         The withdrawal's redeemer is `Init` (user decision, 11-17). The contract
-        checks the order by position: the Head is the first output and
-        Reserved `c1 ... cN` are outputs 1 to `N`; change and any other
-        outputs follow, and none sits at night_registration's address.
+        checks the order by position: Reserved `c1 ... cN` are outputs 0 to
+        `N − 1` and the Tail is output `N`; change and any other outputs
+        follow, and none sits at night_registration's address.
       ],
     ),
   ),
@@ -193,14 +199,14 @@
           address: node_in,
           redeemer: [`Void`],
           value: node_value,
-          datum: ("Head, Reserved or any Registration": "", "crch": [`kc` < `cr` (not on the Head)], "next_crch": [`nc` (`cr` < `nc`, or `nc = #""`)]),
+          datum: ("Tail, Reserved or any Registration": "", "crch": [`kc` > `cr` (none on the Tail)], "prev_crch": [`pc` < `cr`]),
         ),
         (
           name: "pool anchor",
           address: node_in,
           redeemer: [`Void`],
           value: node_value,
-          datum: ("Head or active Registration": "", "pool_id": [`kp` < `p` (not on the Head)], "next_pool": [`np` (`p` < `np`, or `np = #""`)]),
+          datum: ("Tail or active Registration": "", "pool_id": [`kp` > `p` (none on the Tail)], "prev_pool": [`pp` < `p`]),
         ),
       ),
       (
@@ -208,16 +214,16 @@
           name: "crch anchor",
           address: node_address,
           value: (ada: [$>=$ `n`], "night_registration token": "1"),
-          datum: ("next_crch": [`cr`], "every other field": [unchanged]),
+          datum: ("prev_crch": [`cr`], "every other field": [unchanged]),
         ),
         (
           name: "pool anchor",
           address: node_address,
           value: (ada: [$>=$ `n`], "night_registration token": "1"),
-          datum: ("next_pool": [`p`], "every other field": [unchanged]),
+          datum: ("prev_pool": [`p`], "every other field": [unchanged]),
         ),
       ),
-      [The crch anchor and the pool anchor are two different UTxOs here; diagram 7b shows one UTxO that is both. The crch anchor may be the Head, a Reserved node or a Registration, active or not. The pool anchor may be the Head or an active Registration.],
+      [The crch anchor and the pool anchor are two different UTxOs here; diagram 7b shows one UTxO that is both. The crch anchor may be the Tail, a Reserved node or a Registration, active or not. The pool anchor may be the Tail or an active Registration.],
     ),
   ),
   (
@@ -232,11 +238,11 @@
           redeemer: [`Void`],
           value: node_value,
           datum: (
-            "Head or active Registration": "",
-            "crch": [`kc` < `cr` (not on the Head)],
-            "next_crch": [`nc` (`cr` < `nc`, or `#""`)],
-            "pool_id": [`kp` < `p` (not on the Head)],
-            "next_pool": [`np` (`p` < `np`, or `#""`)],
+            "Tail or active Registration": "",
+            "crch": [`kc` > `cr` (none on the Tail)],
+            "prev_crch": [`pc` < `cr`],
+            "pool_id": [`kp` > `p` (none on the Tail)],
+            "prev_pool": [`pp` < `p`],
           ),
         ),
       ),
@@ -246,13 +252,13 @@
           address: node_address,
           value: (ada: [$>=$ `n`], "night_registration token": "1"),
           datum: (
-            "next_crch": [`cr`],
-            "next_pool": [`p`],
+            "prev_crch": [`cr`],
+            "prev_pool": [`p`],
             "every other field": [unchanged],
           ),
         ),
       ),
-      [One UTxO is both the crch anchor and the pool anchor, so the transaction spends that node once, its output carries both link changes, and there is no third node output. Only the Head or an active Registration can be both, because only those nodes are in both lists. The Head is the anchor when `cr` and `p` both sort before the first node of their lists. A Reserved node or an inactive Registration is never in the pool list, so when the crch anchor is one of those, the Create needs two anchors (diagram 7a).],
+      [One UTxO is both the crch anchor and the pool anchor, so the transaction spends that node once, its output carries both link changes, and there is no third node output. Only the Tail or an active Registration can be both, because only those nodes are in both lists. The Tail is the anchor of a new last node, when `cr` and `p` both sort after the last node of their lists. A Reserved node or an inactive Registration is never in the pool list, so when the crch anchor is one of those, the Create needs two anchors (diagram 7a).],
     ),
   ),
   (
@@ -310,7 +316,7 @@
           address: node_in,
           redeemer: [`Void`],
           value: node_value,
-          datum: ("Head or active Registration": "", "next_pool": [`p`]),
+          datum: ("Tail or active Registration": "", "prev_pool": [`p`]),
         ),
         (
           name: "Node",
@@ -329,9 +335,9 @@
             "Registration": "",
             "active": [`False`],
             "crch": [`cr`],
-            "next_crch": [`nc`],
+            "prev_crch": [`pc`],
             "pool_id": [`#""`],
-            "next_pool": [`#""`],
+            "prev_pool": [`#""`],
             "owner": [`VerificationKey(#"")`],
             "crch_signature": [`#""`],
             "keys": [`[]`],
@@ -345,7 +351,7 @@
           name: "pool anchor",
           address: node_address,
           value: node_value,
-          datum: ("next_pool": [`np`], "every other field": [unchanged]),
+          datum: ("prev_pool": [`pp`], "every other field": [unchanged]),
         ),
         (name: "Refund", address: "anywhere", value: (ada: [`n − n'` − fee])),
       ),
@@ -355,13 +361,13 @@
         Rule 10. Only the cold key may deactivate a node. The withdrawal's
         redeemer is `Deactivate` (user decision, 11-17). The contract checks the order
         by position: the first two outputs are, in this order (user decision,
-        11-13), the deactivated node, then the pool anchor, the node's
-        predecessor in the pool list, whose
-        `next_pool` now skips the node (`np`, the node's old `next_pool`).
+        11-13), the deactivated node, then the pool anchor, the node after it
+        in the pool list, whose `prev_pool` now skips the node (`pp`, the
+        node's old `prev_pool`).
         The transaction always spends these two nodes. The node leaves the
         pool list for good but stays in the crch list, so `cr` stays taken.
         The transaction mints nothing. The deactivated node keeps `active`
-        (now `False`), `crch` and `next_crch`; the rest are cleared, as drawn,
+        (now `False`), `crch` and `prev_crch`; the rest are cleared, as drawn,
         and the contract checks every cleared field (user decision, 11-14). \
         #unordered
       ],

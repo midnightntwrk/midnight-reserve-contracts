@@ -4,7 +4,7 @@ These diagrams show every transaction of `night_staking`, `night_registration` a
 
 Sources:
 
-- Diagrams 1–9: the staking MIP (midnight-improvement-proposals PR 421, at commit 81d68c99).
+- Diagrams 1–9: the staking MIP (midnight-improvement-proposals PR 421, at commit ab25a20d).
 - Diagrams 10–15: the Cardano Reserve Release MIP (PR 406) and change `pmlmqpwo`.
 - Diagrams 16–19: the two-stage upgrade code (`lib/upgradable/two-stage-upgrade.ak`, `validators/reserve.ak`, `validators/gov_auth.ak`).
 
@@ -40,7 +40,7 @@ Sources:
 
 - Rule 1: the mint is exactly one token with the empty name, quantity 1.
 - Rule 2: the output carries the token and an inline `DelegationLock`, and its address has no stake part. `owner` holds a 28-byte hash and is not `Script(night_staking)`. `pool_id` is 28 bytes and `reward_address` 32. The payment credential of `return_address` holds a 28-byte hash and is not `Script(night_staking)`; its stake part may be anything (MIP 421). `unbond_at` is `None`. The contract does not check `attributes` (user decision, 11-13). The value holds only ADA, the token and cNIGHT, with at least `lock_deposit_lovelace` (2,000,000 lovelace, a floor) of ADA.
-- Rule 2a, Pool (user decision, 11-14; MIP change 16): a reference input at night_registration's address holds only ADA and the set's token, and an active Registration whose `pool_id` is the lock's (exact value: user decision, 11-17). night_staking compiles in `night_registration_hash`, so night_registration is built first.
+- Rule 2, Output (user decision, 11-14; MIP 421): a reference input at night_registration's address holds only ADA and the set's token, and an active Registration whose `pool_id` is the lock's (exact value: user decision, 11-17). night_staking compiles in `night_registration_hash`, so night_registration is built first.
 - Rule 5: the output datum's `owner` authorizes the transaction.
 - Rule 6: the mint needs the withdrawal from `Script(night_staking)`.
 - Rule 7: the redeemer is `Lock`. The transaction spends nothing at night_staking, its first output is the lock, no other output sits at night_staking or carries the token, and the contract checks that order (user decision, 11-17). In every transaction, an input at night_staking must be a lock whose value holds only ADA, the token and cNIGHT (user decision, 11-17).
@@ -51,7 +51,7 @@ Sources:
 
 - Rule 3, Update (user decision, 11-13; the MIP will say so): `unbond_at` is `None` on both the input and the output. The output meets rule 2. `owner` does not change, and the cNIGHT does not fall.
 - Rule 3, return address (MIP 421): `return_address` changes only if the payment credential of the input's `return_address` authorizes the transaction, a key by its signature and a script by a withdrawal from it. The owner must authorize as well; the new return address authorizes nothing.
-- Rule 2a, Pool: the transaction reads the active node of the output's pool. Unbond and Unlock read no node, so a lock behind a pool that deactivates can still leave.
+- Rule 3, Output: the transaction reads the active node of the output's pool only when the Update changes `pool_id`. Unbond and Unlock read no node, so a lock behind a pool that deactivates can still leave.
 - Rule 5: the input datum's `owner` authorizes the transaction.
 - Rules 6 and 7: the spend needs the withdrawal, whose redeemer is `Update`. The transaction spends one lock, its first output is the new lock, no other output sits at night_staking or carries the token, and it mints nothing; the contract checks that order (user decision, 11-17).
 
@@ -59,7 +59,7 @@ Sources:
 
 ![Unbond a lock](svg/staking-4-unbond.svg)
 
-- Rule 3, Unbond (user decision, 11-13): `unbond_at` goes from `None` to `Some(t)`, and `t` is no earlier than the upper bound of the validity interval. The rest of the output equals the input: address, token, cNIGHT, `owner`, `pool_id`, `reward_address`, `return_address` and `attributes`. Only the ADA may change, and the output's ADA is no less than the input's: the larger datum may need a higher min UTxO.
+- Rule 3, Unbond (MIP 421): `unbond_at` goes from `None` to `Some(t)`, and `t` is the upper bound of the validity interval. The rest of the output equals the input: address, token, cNIGHT, `owner`, `pool_id`, `reward_address`, `return_address` and `attributes`. Only the ADA may change, and the output's ADA is no less than the input's: the larger datum may need a higher min UTxO.
 - After an Unbond the lock can only be unlocked (diagram 5).
 - Rules 5, 6 and 7 apply as in diagram 3, with redeemer `Unbond`.
 
@@ -67,26 +67,28 @@ Sources:
 
 ![Unlock a lock](svg/staking-5-unlock.svg)
 
-- Rule 4, Burn: the mint is exactly the spent token, quantity −1. A lock with cNIGHT needs `unbond_at = Some(t)` and a lower bound of at least `t + UNBONDING_DELAY`. A lock without cNIGHT can be unlocked at once.
+- Rule 4, Burn: the mint is exactly the spent token, quantity −1. A lock with cNIGHT needs `unbond_at = Some(t)` and a lower bound of at least `t + UNBONDING_DELAY`. A lock without cNIGHT can be unlocked at once, whatever its `unbond_at`.
 - Rule 4, payout (MIP 421): a lock with cNIGHT pays all of it to one output whose address equals the input datum's `return_address`, stake part included, and whose value holds only ADA and cNIGHT (user decision, 11-17). The ADA goes anywhere. A lock without cNIGHT has no payout rule.
 - Rule 5: the input datum's `owner` authorizes the transaction.
 - Rules 6 and 7: the spend and the burn need the withdrawal, whose redeemer is `Unlock`. The transaction spends one lock and creates no output at night_staking. A lock with cNIGHT pays it in the first output, and the contract checks that order (user decision, 11-17).
 
 ## night_registration
 
-The set is two sorted linked lists. The Head is always first and holds no key. `Head.next_crch` points at the first node of the crch list, which holds every node: Reserved and Registration, active or not. `Head.next_pool` points at the first active Registration of the pool list. For example, with active Registrations 1 and 4 and Reserved nodes 2 and 3:
+The set is two sorted linked lists. Each link names the node before; the first node of a list links to `#""`. The Tail is always the last node of both lists and holds no key: `Tail.prev_crch` names the last node of the crch list, which holds every node, Reserved and Registration, active or not, and `Tail.prev_pool` the last active Registration of the pool list. For example, with active Registrations 1 and 4 and Reserved nodes 2 and 3:
 
 ```
-crch list: Head → node 1 → Reserved 2 → Reserved 3 → node 4
-pool list: Head → node 1 → node 4
+crch list: node 1 ← Reserved 2 ← Reserved 3 ← node 4 ← Tail
+pool list: node 1 ← node 4 ← Tail
 ```
 
-A new node's anchor in a list is its predecessor there. The anchor is the Head when the new key sorts before the first node in that list.
+A new node's anchor in a list is the node after it there. The anchor is the Tail when the new key sorts after the last node in that list.
 
-- `next_pool` is a plain ByteArray on every node, Head and Registration (user decision, 11-13; the MIP has `Option<ByteArray>`). `#""` ends both lists. An inactive node holds `next_pool = #""`, and `active: False` marks the node as outside the pool list.
-- A Registration's fields come in this order (user decision, 11-14): `active`, `crch`, `next_crch`, `pool_id`, `next_pool`, `owner`, `crch_signature`, `keys`, `signatures`, `reward_address`, `fixed_cost`, `attributes`: the fields a node keeps first, then the fields Deactivate clears.
+- The crch list sorts by length, then by bytes, so `#""` is the smallest key and a longer `crch` comes after a shorter one (user decision, 11-18). The pool list sorts `pool_id`, always 28 bytes, by bytes.
+- `prev_pool` is a plain ByteArray on every node, Tail and Registration (user decision, 11-13; the MIP has `Option<ByteArray>`). An inactive node holds `prev_pool = #""`, and `active: False` marks the node as outside the pool list.
+- A Registration's fields come in this order (user decision, 11-14): `active`, `crch`, `prev_crch`, `pool_id`, `prev_pool`, `owner`, `crch_signature`, `keys`, `signatures`, `reward_address`, `fixed_cost`, `attributes`: the fields a node keeps first, then the fields Deactivate clears.
 - Node addresses have no stake part (rule 9, user decision, 11-14).
-- A node holds only ADA and one token with the empty name, whether it is created, spent or read; a UTxO at the address with anything else cannot be spent (rule 9, user decisions, 11-16 and 11-17).
+- A node holds only ADA and one token with the empty name, whether it is created, spent or read; a UTxO with night_registration's payment credential and anything else, whatever its stake part, cannot be spent (rule 9, user decisions, 11-16 and 11-17).
+- Rule 9, size: every node datum, as `serialise_data` encodes it with `prev_crch` and `prev_pool` set to `#""`, is at most `NODE_DATUM_MAX` (4,500 bytes, `aiken.toml`). The contract checks no length for `crch` or `crch_signature`; `pool_id` and the owner hash are 28 bytes, `reward_address` 32, and `fixed_cost` is from 0 to 2^128 − 1.
 - Withdrawal (user decision, 11-17: "withdraw checks everything"): every transaction at night_registration withdraws 0 from `Script(night_registration)`. That withdrawal runs every rule once; the mint and every spend only require it, as night_staking's rule 6. Its redeemer is `Init`, `CreateTwoAnchors` (diagram 7a), `CreateOneAnchor` (diagram 7b), `Update` or `Deactivate`, and each accepts exactly one transaction shape. The mint and spends read no redeemer. Outputs that are not nodes never sit at night_registration's address or carry its token.
 
 ### 0. Register the stake credential
@@ -99,9 +101,9 @@ A new node's anchor in a list is its predecessor there. The anchor is the Head w
 
 ![Initialize the registration set](svg/registration-6-initialize.svg)
 
-- Rule 9: the transaction spends the initialization UTxO, the script's parameter, and creates the Head and one Reserved node per permissioned candidate. Every node holds only ADA, one token with the empty name and an inline `Node` datum. The crch list is sorted.
+- Rule 9: the transaction spends the initialization UTxO, the script's parameter, and creates one Reserved node per permissioned candidate and the Tail. Every node holds only ADA, one token with the empty name and an inline `Node` datum. The crch list is sorted.
 - Whoever builds the initialization transaction chooses the permissioned candidates' `crch` values; the CLI reads them from the federated-ops data (user decision, 11-14). night_registration keeps one parameter, the initialization UTxO, and checks only the order and the node shape.
-- The withdrawal's redeemer is `Init`. The contract checks the order by position (user decision, 11-17): the Head is the first output, the Reserved nodes are the next ones in crch order, and change follows.
+- The withdrawal's redeemer is `Init`. The contract checks the order by position (MIP 421): the Reserved nodes are the first outputs, in crch order, then the Tail, and change follows.
 
 ### 7a. Register a pool (Create), two anchors
 
@@ -111,13 +113,13 @@ A new node's anchor in a list is its predecessor there. The anchor is the Head w
 
 ![Register a pool, one anchor](svg/registration-7b-create-one-anchor.svg)
 
-The crch anchor is the new node's predecessor in the crch list; the pool anchor is the new node's predecessor in the pool list. The two anchors are either two UTxOs (7a, redeemer `CreateTwoAnchors`) or one UTxO in both lists (7b, redeemer `CreateOneAnchor`), so a Create spends one or two anchor nodes. In 7a the crch anchor may be the Head, a Reserved node or a Registration, active or not, and the pool anchor may be the Head or an active Registration. In 7b the one anchor is the Head or an active Registration. A Reserved node or an inactive Registration is never in the pool list, so when the crch anchor is one of those, the Create needs two anchors (7a). The transaction's first outputs are, in this order (user decision, 11-13); change and any other outputs follow:
+The crch anchor is the node after the new one in the crch list; the pool anchor is the node after it in the pool list. The two anchors are either two UTxOs (7a, redeemer `CreateTwoAnchors`) or one UTxO in both lists (7b, redeemer `CreateOneAnchor`), so a Create spends one or two anchor nodes. In 7a the crch anchor may be the Tail, a Reserved node or a Registration, active or not, and the pool anchor may be the Tail or an active Registration. In 7b the one anchor is the Tail or an active Registration. A Reserved node or an inactive Registration is never in the pool list, so when the crch anchor is one of those, the Create needs two anchors (7a). In each list the new key sorts above the anchor's old link and below the anchor's key (the Tail has no key), and the new node takes the anchors' old links. The transaction's first outputs are, in this order (user decision, 11-13); change and any other outputs follow:
 
 1. the new node;
-2. the crch anchor, with `next_crch` set to the new node's `crch`;
-3. the pool anchor, with `next_pool` set to the new node's `pool_id`. In 7b there is no third output: output 2 carries both changes.
+2. the crch anchor, with `prev_crch` set to the new node's `crch`;
+3. the pool anchor, with `prev_pool` set to the new node's `pool_id`. In 7b there is no third output: output 2 carries both changes.
 
-- Rule 9: both lists stay sorted. The new node's fields have the lengths rule 9 gives, and `fixed_cost` is not negative. The contract checks nothing inside `keys`, `signatures` or `attributes`; Midnight validates them (user decision, 11-14).
+- Rule 9: both lists stay sorted. The new node's fields meet rule 9 (above), and the anchors, whose links grow, still meet `NODE_DATUM_MAX`, which leaves the links out. The contract checks nothing inside `keys`, `signatures` or `attributes`; Midnight validates them (user decision, 11-14).
 - Rule 10: the transaction inserts one Registration node into both lists, with `active` True. The cold key (`pool_id`) signs, and the transaction delegates a stake credential to `pool_id` with either a delegation certificate (`DelegateCredential`) or a register-and-delegate certificate (`RegisterAndDelegateCredential`), whose delegatee names the pool (user decision, 11-13). The certificate may delegate any stake credential; the contract checks only that it names `pool_id`, and the CLI delegates the operator's own stake key by default (user decision, 11-14). No node changes except the new node and the anchors' links.
 
 ### 8. Update a registration
@@ -133,9 +135,9 @@ The crch anchor is the new node's predecessor in the crch list; the pool anchor 
 ![Deactivate a registration](svg/registration-9-deactivate.svg)
 
 - Rule 9: the pool list stays sorted after the node leaves it.
-- Rule 10: only the cold key may deactivate. The node leaves the pool list for good and keeps `active` (now False), `crch` and `next_crch`. The rest are cleared (user decision, 11-14): `pool_id`, `next_pool`, `crch_signature` and `reward_address` become `#""`, `owner` becomes `VerificationKey(#"")`, `keys`, `signatures` and `attributes` become empty, and `fixed_cost` becomes 0. The contract checks every cleared field.
-- A Deactivate always spends two nodes: the node and its predecessor in the pool list (the pool anchor). The node stays in the crch list, so no crch link changes, and the predecessor can never be the node itself.
-- The transaction's first two outputs are, in this order (user decision, 11-13): the deactivated node, then the pool anchor, whose `next_pool` now skips the node. Change and any other outputs follow.
+- Rule 10: only the cold key may deactivate. The node leaves the pool list for good and keeps `active` (now False), `crch` and `prev_crch`. The rest are cleared (user decision, 11-14): `pool_id`, `prev_pool`, `crch_signature` and `reward_address` become `#""`, `owner` becomes `VerificationKey(#"")`, `keys`, `signatures` and `attributes` become empty, and `fixed_cost` becomes 0. The contract checks every cleared field.
+- A Deactivate always spends two nodes: the node and the node after it in the pool list (the pool anchor), whose `prev_pool` is the node's `pool_id`. The node stays in the crch list, so no crch link changes, and the anchor can never be the node itself.
+- The transaction's first two outputs are, in this order (user decision, 11-13): the deactivated node, then the pool anchor, whose `prev_pool` is now the node's old `prev_pool`. Change and any other outputs follow.
 
 ## Reserve logic v2
 
