@@ -1,6 +1,6 @@
 /**
  * An independent reference of rules 1 to 10 of the NIGHT staking MIP (midnight-improvement-proposals
- * PR #421, head 42056a66) and the user's decisions on it, written from that text alone, to check
+ * PR #421, head ab25a20d) and the user's decisions on it, written from that text alone, to check
  * the Aiken contracts night_staking and night_registration against. Each check takes a transaction
  * as the scripts see it and returns accept, or reject with every rule the transaction breaks. Bytes
  * are lowercase hex, amounts and POSIX times in milliseconds are decimal strings.
@@ -52,19 +52,20 @@ export type DelegationLock = {
   attributes: Pairs<unknown>;
 };
 
-export type Head = { next_crch: Hex; next_pool: Hex };
-export type Reserved = { crch: Hex; next_crch: Hex };
+/** The last node of both lists; its links name the last node of each, "" while that list is empty. */
+export type Tail = { prev_crch: Hex; prev_pool: Hex };
+export type Reserved = { crch: Hex; prev_crch: Hex };
 /**
- * Field order (user decision 11-14): the fields a node keeps, then those a Deactivate clears. A
- * list ends at "": `next_pool` is a plain ByteArray, "" on the last active node and on every
- * inactive one.
+ * Field order (MIP #421 ab25a20d): the fields a node keeps, then those a Deactivate clears. Each
+ * link names the node before, the next smaller key; "" on the first node of a list, and
+ * `prev_pool` is "" on an inactive node.
  */
 export type Registration = {
   active: boolean;
   crch: Hex;
-  next_crch: Hex;
+  prev_crch: Hex;
   pool_id: Hex;
-  next_pool: Hex;
+  prev_pool: Hex;
   owner: Credential;
   crch_signature: Hex;
   keys: Pairs<Hex>;
@@ -73,9 +74,8 @@ export type Registration = {
   fixed_cost: string;
   attributes: Pairs<unknown>;
 };
-/** A list ends at the empty ByteArray: a `next_crch` or `next_pool` of "" points past the last node. */
 export type Node =
-  | { Head: Head }
+  | { Tail: Tail }
   | { Reserved: Reserved }
   | { Registration: Registration };
 
@@ -89,7 +89,12 @@ export type StakingConstants = {
   registration_script_hash: Hex;
   unbonding_delay_ms: string;
 };
-export type RegistrationConstants = { script_hash: Hex; init_utxo: OutRef };
+export type RegistrationConstants = {
+  script_hash: Hex;
+  init_utxo: OutRef;
+  /** The most bytes a node's datum holds with both links "" (MIP #421 ab25a20d, rule 9). */
+  node_datum_max: string;
+};
 export type Result =
   | { result: "accept" }
   | { result: "reject"; rules: number[] };
@@ -252,10 +257,10 @@ export function checkStaking(
     if (output.datum !== null && !authorizes(tx, output.datum.owner))
       failed.add(5);
   } else if (redeemer === "Update") {
-    // Rule 3 (user decisions 2026-11-13 and 11-17, MIP edit pending): an Update keeps unbond_at
-    // None, may change pool_id, reward_address and attributes, and return_address only under its
-    // own payment credential; the lock is outputs[0]. A lock whose unbond_at is Some can only be
-    // unlocked.
+    // Rule 3: an Update keeps unbond_at None, may change pool_id, reward_address and attributes, and
+    // return_address only under its own payment credential; it needs the pool's node as a
+    // reference input only when pool_id changes; the lock is outputs[0]. A lock whose unbond_at is
+    // Some can only be unlocked.
     const before = input.datum;
     const after = output.datum;
     if (
@@ -266,16 +271,16 @@ export function checkStaking(
       before.unbond_at !== null ||
       !same(before.owner, after.owner) ||
       cnight(output.value) < cnight(input.value) ||
-      !registered(after.pool_id) ||
+      (!same(before.pool_id, after.pool_id) && !registered(after.pool_id)) ||
       (!same(before.return_address, after.return_address) &&
         !authorizes(tx, before.return_address.payment))
     )
       failed.add(3);
     if (before === null || !authorizes(tx, before.owner)) failed.add(5);
   } else if (redeemer === "Unbond") {
-    // Rule 3 (user decisions 2026-11-13 and 11-17, MIP edit pending): an Unbond sets unbond_at from
-    // None to a time no earlier than the validity upper bound and changes nothing else but its ADA,
-    // which may rise to the new min-UTxO and never falls; the lock is outputs[0].
+    // Rule 3: an Unbond sets unbond_at from None to exactly the validity upper bound and changes
+    // nothing else but its ADA, which may rise to the new min-UTxO and never falls; the lock is
+    // outputs[0].
     const before = input.datum;
     const after = output.datum;
     const upper = tx.validity.upper;
@@ -300,7 +305,7 @@ export function checkStaking(
       before.unbond_at !== null ||
       after.unbond_at === null ||
       upper === null ||
-      BigInt(after.unbond_at) < BigInt(upper) ||
+      BigInt(after.unbond_at) !== BigInt(upper) ||
       // The token and the cNIGHT stay the same; the ADA may only rise.
       BigInt(output.value.lovelace) < BigInt(input.value.lovelace) ||
       assets(output.value) !== assets(input.value) ||
@@ -344,23 +349,160 @@ export function checkStaking(
   return verdict(failed);
 }
 
-/** A link of one list: from a node's key (null for the head) to the next key ("" past the end). */
-type Edge = [Hex | null, Hex];
+/** Plutus data, as `serialise_data` encodes it. */
+type PlutusData =
+  | { int: bigint }
+  | { bytes: Hex }
+  | { list: PlutusData[] }
+  | { map: [PlutusData, PlutusData][] }
+  | { constr: number; fields: PlutusData[] };
+
+/**
+ * The Plutus CBOR encoding of `serialise_data`: minimal heads; integers outside 64 bits as
+ * bignum tags; byte strings over 64 bytes as indefinite 64-byte chunks; a non-empty list or
+ * constructor field list indefinite, an empty one definite; maps definite; constructors 0 to 6 as
+ * tags 121 to 127, 7 to 127 as tags 1280 onward, any other as tag 102.
+ */
+const cbor = (d: PlutusData): Hex => {
+  const head = (major: number, n: bigint) => {
+    const initial = (extra: number) =>
+      (major * 32 + extra).toString(16).padStart(2, "0");
+    const width =
+      n < 24n
+        ? 0
+        : n < 0x100n
+          ? 1
+          : n < 0x10000n
+            ? 2
+            : n < 0x100000000n
+              ? 4
+              : 8;
+    return width === 0
+      ? initial(Number(n))
+      : initial({ 1: 24, 2: 25, 4: 26, 8: 27 }[width]!) +
+          n.toString(16).padStart(width * 2, "0");
+  };
+  const bytestring = (h: Hex): Hex =>
+    h.length <= 128
+      ? head(2, BigInt(h.length / 2)) + h
+      : "5f" +
+        (h.match(/.{1,128}/g) ?? [])
+          .map((c) => head(2, BigInt(c.length / 2)) + c)
+          .join("") +
+        "ff";
+  const items = (xs: PlutusData[]) =>
+    xs.length === 0 ? "80" : "9f" + xs.map(cbor).join("") + "ff";
+  if ("int" in d) {
+    const n = d.int;
+    if (n >= 0n && n < 2n ** 64n) return head(0, n);
+    if (n < 0n && n >= -(2n ** 64n)) return head(1, -1n - n);
+    const magnitude = (n >= 0n ? n : -1n - n).toString(16);
+    return (
+      head(6, n >= 0n ? 2n : 3n) +
+      bytestring(magnitude.length % 2 === 0 ? magnitude : "0" + magnitude)
+    );
+  }
+  if ("bytes" in d) return bytestring(d.bytes);
+  if ("list" in d) return items(d.list);
+  if ("map" in d)
+    return (
+      head(5, BigInt(d.map.length)) +
+      d.map.map(([key, value]) => cbor(key) + cbor(value)).join("")
+    );
+  return d.constr <= 6
+    ? head(6, BigInt(121 + d.constr)) + items(d.fields)
+    : d.constr <= 127
+      ? head(6, BigInt(1280 + d.constr - 7)) + items(d.fields)
+      : head(6, 102n) + "82" + head(0, BigInt(d.constr)) + items(d.fields);
+};
+
+/** An attribute value, in the detailed JSON schema the vectors write. */
+const detailed = (x: unknown): PlutusData => {
+  const d = x as Record<string, unknown>;
+  return "int" in d
+    ? { int: BigInt(d.int as string) }
+    : "bytes" in d
+      ? { bytes: d.bytes as Hex }
+      : "list" in d
+        ? { list: (d.list as unknown[]).map(detailed) }
+        : "map" in d
+          ? {
+              map: (d.map as { k: unknown; v: unknown }[]).map(
+                (e): [PlutusData, PlutusData] => [detailed(e.k), detailed(e.v)],
+              ),
+            }
+          : {
+              constr: Number(d.constructor),
+              fields: (d.fields as unknown[]).map(detailed),
+            };
+};
+
+/**
+ * Rule 9: the bytes of a node's datum with both links "", as `serialise_data` encodes the Node
+ * type: Tail 0, Reserved 1, Registration 2 with its fields in order; False 0 and True 1;
+ * VerificationKey 0 and Script 1.
+ */
+const unlinkedSize = (n: Node) => {
+  const b = (bytes: Hex): PlutusData => ({ bytes });
+  const map = (entries: Pairs<unknown>): PlutusData => ({
+    map: entries.map(([name, value]): [PlutusData, PlutusData] => [
+      b(name),
+      typeof value === "string" ? b(value) : detailed(value),
+    ]),
+  });
+  const data: PlutusData =
+    "Tail" in n
+      ? { constr: 0, fields: [b(""), b("")] }
+      : "Reserved" in n
+        ? { constr: 1, fields: [b(n.Reserved.crch), b("")] }
+        : {
+            constr: 2,
+            fields: [
+              { constr: n.Registration.active ? 1 : 0, fields: [] },
+              b(n.Registration.crch),
+              b(""),
+              b(n.Registration.pool_id),
+              b(""),
+              {
+                constr: "VerificationKey" in n.Registration.owner ? 0 : 1,
+                fields: [b(hashOf(n.Registration.owner))],
+              },
+              b(n.Registration.crch_signature),
+              map(n.Registration.keys),
+              map(n.Registration.signatures),
+              b(n.Registration.reward_address),
+              { int: BigInt(n.Registration.fixed_cost) },
+              map(n.Registration.attributes),
+            ],
+          };
+  return BigInt(cbor(data).length / 2);
+};
+
+/**
+ * The key order of the crch list: by length, then by bytes, so "" is the smallest key (user
+ * decision 11-18; the MIP says bytes). The pool list orders its 28-byte keys by bytes.
+ */
+const crchBelow = (a: Hex, b: Hex) =>
+  a.length < b.length || (a.length === b.length && a < b);
+const poolBelow = (a: Hex, b: Hex) => a < b;
+
+/** A link of one list: from the key before (the link) to a node's key, null for the Tail. */
+type Edge = [Hex, Hex | null];
 
 const crchEdges = (nodes: Node[]) =>
   nodes.map((n): Edge =>
-    "Head" in n
-      ? [null, n.Head.next_crch]
+    "Tail" in n
+      ? [n.Tail.prev_crch, null]
       : "Reserved" in n
-        ? [n.Reserved.crch, n.Reserved.next_crch]
-        : [n.Registration.crch, n.Registration.next_crch],
+        ? [n.Reserved.prev_crch, n.Reserved.crch]
+        : [n.Registration.prev_crch, n.Registration.crch],
   );
 const poolEdges = (nodes: Node[]) =>
   nodes.flatMap((n): Edge[] =>
-    "Head" in n
-      ? [[null, n.Head.next_pool]]
+    "Tail" in n
+      ? [[n.Tail.prev_pool, null]]
       : "Registration" in n && n.Registration.active
-        ? [[n.Registration.pool_id, n.Registration.next_pool]]
+        ? [[n.Registration.prev_pool, n.Registration.pool_id]]
         : [],
   );
 
@@ -369,9 +511,13 @@ const poolEdges = (nodes: Node[]) =>
  * sorted list whose other nodes it cannot see, so the links after must be sorted, give each key at
  * most one link in and one out, and start and end where the links before did.
  */
-const intact = (before: Edge[], after: Edge[]) => {
-  const from = (es: Edge[]) => es.map(([f]) => f ?? "head");
-  const to = (es: Edge[]) => es.map(([, t]) => t);
+const intact = (
+  below: (a: Hex, b: Hex) => boolean,
+  before: Edge[],
+  after: Edge[],
+) => {
+  const links = (es: Edge[]) => es.map(([link]) => link);
+  const keys = (es: Edge[]) => es.map(([, key]) => key ?? "tail");
   const unique = (xs: string[]) => new Set(xs).size === xs.length;
   const outside = (xs: string[], ys: string[]) =>
     xs
@@ -379,24 +525,25 @@ const intact = (before: Edge[], after: Edge[]) => {
       .sort()
       .join();
   return (
-    unique(from(after)) &&
-    unique(to(after)) &&
-    after.every(([f, t]) => f === null || t === "" || f < t) &&
-    outside(from(before), to(before)) === outside(from(after), to(after)) &&
-    outside(to(before), from(before)) === outside(to(after), from(after))
+    unique(links(after)) &&
+    unique(keys(after)) &&
+    after.every(([link, key]) => key === null || below(link, key)) &&
+    outside(links(before), keys(before)) ===
+      outside(links(after), keys(after)) &&
+    outside(keys(before), links(before)) === outside(keys(after), links(after))
   );
 };
 
 const id = (n: Node) =>
-  "Head" in n
-    ? "head"
+  "Tail" in n
+    ? "tail"
     : "Reserved" in n
       ? n.Reserved.crch
       : n.Registration.crch;
 /** A node's kind and fields, with `fixed_cost` as a number so "0" and "00" compare equal. */
 const fields = (n: Node): [string, Record<string, unknown>] =>
-  "Head" in n
-    ? ["Head", n.Head]
+  "Tail" in n
+    ? ["Tail", n.Tail]
     : "Reserved" in n
       ? ["Reserved", n.Reserved]
       : [
@@ -431,12 +578,12 @@ export type RegistrationRedeemer =
   | "Deactivate";
 
 /**
- * night_registration, rules 9 and 10, in the withdrawal pattern (user decision 11-17): every
+ * night_registration, rules 9 and 10, in the withdrawal pattern (MIP #421 ab25a20d, rule 10): every
  * registration transaction withdraws from Script(night_registration), and that withdrawal's
  * redeemer names the action, each with one transaction shape. The spend and the mint only check the
- * withdrawal; the publish purpose accepts only the plain registration of the credential. `redeemer`
- * is null when the transaction has no withdrawal from the script. The MIP has no gate or
- * certificate rule for night_registration yet, so these fail rule 10 (Changes).
+ * withdrawal; the publish purpose accepts only the plain registration of the credential.
+ * `redeemer` is null when the transaction has no withdrawal from the script. Gate and certificate
+ * failures are rule 10, which names them.
  */
 export function checkRegistration(
   tx: Tx<Node>,
@@ -448,10 +595,12 @@ export function checkRegistration(
     same(o.address.payment, { Script: k.script_hash });
   const hasToken = (v: Value) =>
     v.assets.some((a) => a.policy === k.script_hash);
-  const spent = tx.inputs
+  const spentOutputs = tx.inputs
     .map((i) => i.output)
-    .filter((o) => atAddress(o) && hasToken(o.value))
-    .flatMap((o) => (o.datum === null ? [] : [o.datum]));
+    .filter((o) => atAddress(o) && hasToken(o.value));
+  const spent = spentOutputs.flatMap((o) =>
+    o.datum === null ? [] : [o.datum],
+  );
   const created = tx.outputs.filter((o) => hasToken(o.value));
   const nodes = created.flatMap((o) => (o.datum === null ? [] : [o.datum]));
   const mint = tx.mint.filter((a) => a.policy === k.script_hash);
@@ -489,8 +638,9 @@ export function checkRegistration(
   }
 
   // Rule 9: a node is at the address with ADA, one token with the empty name, an inline Node datum
-  // and nothing else, and a Registration's fixed fields have their lengths. Nothing inside keys,
-  // signatures or attributes is checked: Midnight validates them (user decision 11-14).
+  // and nothing else, and an active Registration's fixed fields hold their lengths and range. No
+  // length is checked for crch or crch_signature, and nothing inside keys, signatures or
+  // attributes: Midnight validates them.
   if (
     created.some(
       (o) =>
@@ -505,36 +655,55 @@ export function checkRegistration(
   // without the token fails (user decision 11-17).
   if (tx.outputs.some((o) => atAddress(o) && !hasToken(o.value))) failed.add(9);
   for (const n of nodes) {
+    // Rule 9: a node's datum with both links "" holds at most NODE_DATUM_MAX bytes.
+    if (unlinkedSize(n) > BigInt(k.node_datum_max)) failed.add(9);
     if (!("Registration" in n)) continue;
     const r = n.Registration;
     if (
-      bytes(r.crch) !== 32 ||
-      (r.active &&
-        (bytes(r.crch_signature) !== 64 ||
-          bytes(r.pool_id) !== 28 ||
-          bytes(hashOf(r.owner)) !== 28 ||
-          bytes(r.reward_address) !== 32 ||
-          BigInt(r.fixed_cost) < 0n))
+      r.active &&
+      (bytes(r.pool_id) !== 28 ||
+        bytes(hashOf(r.owner)) !== 28 ||
+        bytes(r.reward_address) !== 32 ||
+        BigInt(r.fixed_cost) < 0n ||
+        BigInt(r.fixed_cost) > 2n ** 128n - 1n)
     )
       failed.add(9);
   }
   // Rule 9: no node is removed and both lists stay whole.
   if (!spent.every((s) => nodes.some((n) => id(n) === id(s)))) failed.add(9);
-  const empty: Edge[] = [[null, ""]];
+  const empty: Edge[] = [["", null]];
   if (
-    !intact(redeemer === "Init" ? empty : crchEdges(spent), crchEdges(nodes)) ||
-    !intact(redeemer === "Init" ? empty : poolEdges(spent), poolEdges(nodes))
+    !intact(
+      crchBelow,
+      redeemer === "Init" ? empty : crchEdges(spent),
+      crchEdges(nodes),
+    ) ||
+    !intact(
+      poolBelow,
+      redeemer === "Init" ? empty : poolEdges(spent),
+      poolEdges(nodes),
+    )
   )
     failed.add(9);
+  /** Rule 10: a spent node comes back with no less ADA. */
+  const keepsAda = (s: Output<Node>) => {
+    const after = created.find(
+      (o) =>
+        o.datum !== null && s.datum !== null && id(o.datum) === id(s.datum),
+    );
+    return (
+      after === undefined ||
+      BigInt(after.value.lovelace) >= BigInt(s.value.lovelace)
+    );
+  };
 
   if (redeemer === "Init") {
-    // Rule 9: the initialization spends the initialization UTxO and creates the head at outputs[0]
-    // and the Reserved nodes at outputs[1..N] in crch order, minting one token each, and nothing else
-    // (user decision 11-17). Which crch the Reserved nodes hold is left to whoever builds the
-    // transaction (the CLI reads the permissioned candidates from the federated-ops data); the
-    // script's one parameter is its initialization UTxO, so it checks only order and node shape
-    // (user decision 11-14).
-    const [head, ...reserved] = nodes;
+    // Rule 9: the initialization spends the initialization UTxO and its first outputs are the
+    // Reserved nodes in ascending crch order and then the Tail, minting one token each, and nothing
+    // else. Which crch the Reserved nodes hold is left to whoever builds the transaction; the
+    // script's one parameter is its initialization UTxO, so it checks only order and node shape.
+    const tail = nodes[nodes.length - 1];
+    const reserved = nodes.slice(0, -1);
     if (
       !tx.inputs.some(
         (i) => i.ref.tx === k.init_utxo.tx && i.ref.index === k.init_utxo.index,
@@ -542,10 +711,11 @@ export function checkRegistration(
       spent.length > 0 ||
       nodes.length !== created.length ||
       tx.outputs.slice(0, created.length).some((o) => !hasToken(o.value)) ||
-      head === undefined ||
-      !("Head" in head) ||
+      tail === undefined ||
+      !("Tail" in tail) ||
       !reserved.every(
-        (n, i) => "Reserved" in n && (i === 0 || id(reserved[i - 1]) < id(n)),
+        (n, i) =>
+          "Reserved" in n && (i === 0 || crchBelow(id(reserved[i - 1]), id(n))),
       ) ||
       !single(mint, BigInt(created.length))
     )
@@ -553,13 +723,14 @@ export function checkRegistration(
     return verdict(failed);
   }
   const fresh = nodes.filter((n) => !spent.some((s) => id(s) === id(n)));
-  // Rule 9: nothing but the initialization creates the head or a Reserved node.
+  // Rule 9: nothing but the initialization creates the Tail or a Reserved node.
   if (fresh.some((n) => !("Registration" in n))) failed.add(9);
   const cold = (pool_id: Hex) => tx.extra_signatories.includes(pool_id);
 
   if (redeemer === "CreateTwoAnchors" || redeemer === "CreateOneAnchor") {
     // Create: one new active Registration under the cold key, with a delegation to its pool; the
-    // spent nodes change only their links, and an inactive one only its crch link.
+    // anchors change only their links, an inactive one or a Reserved node only its crch link, and
+    // keep their ADA.
     const twoAnchors = redeemer === "CreateTwoAnchors";
     const [n] = fresh;
     if (!single(mint, 1n) || fresh.length !== 1) failed.add(10);
@@ -576,6 +747,7 @@ export function checkRegistration(
     )
       failed.add(10);
     if (
+      !spentOutputs.every(keepsAda) ||
       !spent.every((s) => {
         const after = nodes.find((m) => id(m) === id(s));
         return (
@@ -583,18 +755,18 @@ export function checkRegistration(
           sameExcept(
             s,
             after,
-            "Head" in s || ("Registration" in s && s.Registration.active)
-              ? ["next_crch", "next_pool"]
-              : ["next_crch"],
+            "Tail" in s || ("Registration" in s && s.Registration.active)
+              ? ["prev_crch", "prev_pool"]
+              : ["prev_crch"],
           )
         );
       })
     )
       failed.add(10);
-    // Rule 10 (user decisions 2026-11-13, 11-14 and 11-17, MIP edit pending): the transaction's
-    // first outputs are the new node, its crch anchor with next_crch pointing at it, then, for
-    // CreateTwoAnchors, its pool anchor with next_pool pointing at it; for CreateOneAnchor the one
-    // anchor carries both links. The spent anchors may come in any order.
+    // Rule 10: the transaction's first outputs are the new node, its crch anchor (the node after it
+    // in the crch list) with prev_crch now the new crch, then, for CreateTwoAnchors, its pool anchor
+    // with prev_pool now the new pool_id; for CreateOneAnchor the one anchor carries both links.
+    // The spent anchors may come in any order.
     const [first, crchAnchor, poolAnchor, ...rest] = nodes;
     const poolKey =
       n !== undefined && "Registration" in n ? n.Registration.pool_id : null;
@@ -605,23 +777,19 @@ export function checkRegistration(
       (poolAnchor !== undefined) !== twoAnchors ||
       tx.outputs.slice(0, created.length).some((o) => !hasToken(o.value)) ||
       crchAnchor === undefined ||
-      crchEdges([crchAnchor])[0][1] !== id(n) ||
+      crchEdges([crchAnchor])[0][0] !== id(n) ||
       rest.length > 0 ||
       (poolKey === null
         ? poolAnchor !== undefined
         : !poolEdges([poolAnchor ?? crchAnchor]).some(
-            ([, next]) => next === poolKey,
+            ([link]) => link === poolKey,
           ))
     )
       failed.add(10);
   } else if (redeemer === "Update") {
     // Update: one active node keeps its crch, crch_signature, pool_id and links; the owner or the
     // cold key signs, and the cold key alone changes the owner. It spends one node, mints nothing,
-    // and the updated node is the transaction's first output (user decisions 11-14 and 11-17). Its
-    // ADA may rise, never fall (user decision 11-14).
-    const [spentOutput] = tx.inputs
-      .map((i) => i.output)
-      .filter((o) => atAddress(o) && hasToken(o.value));
+    // the updated node is the transaction's first output, and its ADA may rise, never fall.
     const [s] = spent;
     const [after] = nodes;
     if (
@@ -629,7 +797,7 @@ export function checkRegistration(
       mint.length > 0 ||
       nodes.length !== 1 ||
       tx.outputs[0] !== created[0] ||
-      BigInt(created[0].value.lovelace) < BigInt(spentOutput.value.lovelace) ||
+      !spentOutputs.every(keepsAda) ||
       !("Registration" in s) ||
       !s.Registration.active ||
       !("Registration" in after) ||
@@ -658,9 +826,10 @@ export function checkRegistration(
     }
   } else {
     // Deactivate, under the cold key: the target leaves the pool list for good and keeps only its
-    // crch and crch link; its pool-list predecessor changes only its pool link. It spends those two
-    // nodes and mints nothing; the transaction's first outputs are the deactivated node, then the
-    // predecessor (user decisions 2026-11-13, 11-14 and 11-17); the inputs may come in any order.
+    // crch and crch link; its pool anchor, the node after it in the pool list, takes the target's
+    // old prev_pool, changes nothing else and keeps its ADA. It spends those two nodes and mints
+    // nothing; the transaction's first outputs are the deactivated node, then the pool anchor; the
+    // inputs may come in any order.
     const target = spent.find(
       (s) =>
         "Registration" in s &&
@@ -668,10 +837,11 @@ export function checkRegistration(
         spent.some(
           (p) =>
             p !== s &&
-            poolEdges([p]).some(([, next]) => next === s.Registration.pool_id),
+            poolEdges([p]).some(([link]) => link === s.Registration.pool_id),
         ),
     );
     const before = spent.find((s) => s !== target);
+    const beforeOutput = spentOutputs.find((o) => o.datum === before);
     const targetAfter = nodes.find((n) => target && id(n) === id(target));
     const beforeAfter = nodes.find((n) => before && id(n) === id(before));
     if (
@@ -684,6 +854,8 @@ export function checkRegistration(
       beforeAfter === undefined ||
       nodes.length !== 2 ||
       tx.outputs.slice(0, created.length).some((o) => !hasToken(o.value)) ||
+      beforeOutput === undefined ||
+      !keepsAda(beforeOutput) ||
       nodes[0] !== targetAfter ||
       nodes[1] !== beforeAfter ||
       !("Registration" in targetAfter) ||
@@ -692,7 +864,7 @@ export function checkRegistration(
           Registration: {
             ...target.Registration,
             pool_id: "",
-            next_pool: "",
+            prev_pool: "",
             owner: { VerificationKey: "" },
             crch_signature: "",
             keys: [],
@@ -706,7 +878,7 @@ export function checkRegistration(
         targetAfter,
         [],
       ) ||
-      !sameExcept(before, beforeAfter, ["next_pool"]) ||
+      !sameExcept(before, beforeAfter, ["prev_pool"]) ||
       !cold(target.Registration.pool_id)
     )
       failed.add(10);

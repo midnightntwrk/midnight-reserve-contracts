@@ -210,13 +210,13 @@ describe("night_registration and night_staking on the ledger", () => {
       );
       await emulator.expectScriptFailure(combined, refusal("Publish"));
 
-      // Diagram 6: the Init spends the seed and creates the Head alone.
+      // Diagram 6: the Init spends the seed and creates the Tail alone.
       const seed = TransactionUnspentOutput.fromCore([
         { index: 0, txId: TransactionId(ONE_SHOT_TX) },
         { address: wallet, value: { coins: 10_000_000n } },
       ]);
       emulator.addUtxo(seed);
-      const head: Node = { Head: { next_crch: "", next_pool: "" } };
+      const tail: Node = { Tail: { prev_crch: "", prev_pool: "" } };
       await emulator.expectValidTransaction(
         blaze,
         blaze
@@ -229,16 +229,16 @@ describe("night_registration and night_staking on the ledger", () => {
           )
           .addWithdrawal(rewardAccount(registration), 0n, INIT)
           .provideScript(registration)
-          .addOutput(nodeOutput(3_000_000n, head)),
+          .addOutput(nodeOutput(3_000_000n, tail)),
       );
 
-      // Diagram 7b: the Head anchors the new node in both lists.
+      // Diagram 7b: the Tail anchors the new last node in both lists.
       const active: Registration = {
         active: true,
-        crch: "cc".repeat(32),
-        next_crch: "",
+        crch: "cc".repeat(33),
+        prev_crch: "",
         pool_id: coldKey,
-        next_pool: "",
+        prev_pool: "",
         owner: { VerificationKey: coldKey },
         crch_signature: "dd".repeat(64),
         keys: [],
@@ -247,8 +247,8 @@ describe("night_registration and night_staking on the ledger", () => {
         fixed_cost: "0",
         attributes: [],
       };
-      const relinkedHead: Node = {
-        Head: { next_crch: active.crch, next_pool: coldKey },
+      const relinkedTail: Node = {
+        Tail: { prev_crch: active.crch, prev_pool: coldKey },
       };
       await emulator.expectValidTransaction(
         blaze,
@@ -258,7 +258,7 @@ describe("night_registration and night_staking on the ledger", () => {
             await utxoWithDatum(
               blaze,
               registration,
-              PlutusData.fromCore(nodeDatum(head)),
+              PlutusData.fromCore(nodeDatum(tail)),
             ),
             ANY,
           )
@@ -279,7 +279,7 @@ describe("night_registration and night_staking on the ledger", () => {
           .addWithdrawal(rewardAccount(registration), 0n, CREATE_ONE_ANCHOR)
           .provideScript(registration)
           .addOutput(nodeOutput(3_000_000n, { Registration: active }))
-          .addOutput(nodeOutput(3_000_000n, relinkedHead)),
+          .addOutput(nodeOutput(3_000_000n, relinkedTail)),
       );
 
       // Diagram 8: the owner changes fixed_cost.
@@ -424,15 +424,15 @@ describe("night_registration and night_staking on the ledger", () => {
         (await unlock()).addWithdrawal(rewardAccount(staking), 0n, UNLOCK),
       );
 
-      // Diagram 9: the pool leaves the pool list; the Head is its anchor. Without the
-      // withdrawal, night_registration's spend gate refuses it: the node and the Head are the
+      // Diagram 9: the pool leaves the pool list; the Tail is its pool anchor. Without the
+      // withdrawal, night_registration's spend gate refuses it: the node and the Tail are the
       // only script inputs, and the gate returns false with no withdrawal from
       // night_registration.
       const cleared: Registration = {
         ...updated,
         active: false,
         pool_id: "",
-        next_pool: "",
+        prev_pool: "",
         owner: { VerificationKey: "" },
         crch_signature: "",
         reward_address: "",
@@ -446,7 +446,7 @@ describe("night_registration and night_staking on the ledger", () => {
             await utxoWithDatum(
               blaze,
               registration,
-              PlutusData.fromCore(nodeDatum(relinkedHead)),
+              PlutusData.fromCore(nodeDatum(relinkedTail)),
             ),
             ANY,
           )
@@ -455,7 +455,7 @@ describe("night_registration and night_staking on the ledger", () => {
           .addOutput(nodeOutput(2_000_000n, { Registration: cleared }))
           .addOutput(
             nodeOutput(3_000_000n, {
-              Head: { next_crch: active.crch, next_pool: "" },
+              Tail: { prev_crch: active.crch, prev_pool: "" },
             }),
           );
       await emulator.expectScriptFailure(

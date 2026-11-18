@@ -1,6 +1,6 @@
 {
   "contract": "night_staking",
-  "mip": "midnight-improvement-proposals PR #419, head 81d68c99",
+  "mip": "midnight-improvement-proposals PR #421, head ab25a20d",
   "constants": {
     "script_hash": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
     "cnight_policy": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
@@ -72,9 +72,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -232,9 +232,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -391,9 +391,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -551,9 +551,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -709,9 +709,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -869,9 +869,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -1028,9 +1028,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -1188,9 +1188,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -1348,9 +1348,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -1507,9 +1507,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -1686,9 +1686,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -1859,9 +1859,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -2032,9 +2032,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -2205,9 +2205,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -2452,9 +2452,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -2643,9 +2643,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -2809,9 +2809,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -3007,9 +3007,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -3186,9 +3186,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -3358,9 +3358,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -3535,9 +3535,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -3828,9 +3828,9 @@
                 "Registration": {
                   "active": false,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": ""
                   },
@@ -3991,9 +3991,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -4158,9 +4158,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -4331,9 +4331,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -4504,9 +4504,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -4657,9 +4657,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -4816,9 +4816,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -4977,9 +4977,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -5138,9 +5138,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -5298,9 +5298,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -5458,9 +5458,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -5618,9 +5618,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -5782,9 +5782,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -6049,9 +6049,9 @@
                 "Registration": {
                   "active": false,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": ""
                   },
@@ -6199,9 +6199,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -6353,9 +6353,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -6513,9 +6513,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -6673,9 +6673,9 @@
                 "Registration": {
                   "active": false,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -6833,9 +6833,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -7031,9 +7031,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -7203,9 +7203,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -7230,6 +7230,125 @@
             }
           }
         ],
+        "outputs": [
+          {
+            "address": {
+              "payment": {
+                "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+              },
+              "stake": null
+            },
+            "value": {
+              "lovelace": "2000000",
+              "assets": [
+                {
+                  "policy": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+                  "name": "",
+                  "quantity": "1"
+                },
+                {
+                  "policy": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+                  "name": "4e49474854",
+                  "quantity": "1000000000"
+                }
+              ]
+            },
+            "datum": {
+              "owner": {
+                "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+              },
+              "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+              "reward_address": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+              "return_address": {
+                "payment": {
+                  "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                },
+                "stake": null
+              },
+              "unbond_at": null,
+              "attributes": []
+            }
+          }
+        ],
+        "mint": [],
+        "withdrawals": [
+          {
+            "credential": {
+              "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+            },
+            "amount": "0"
+          }
+        ],
+        "certificates": [],
+        "voters": [],
+        "guardrails": [],
+        "extra_signatories": [
+          "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+        ],
+        "validity": {
+          "lower": "1800000000000",
+          "upper": "1800000600000"
+        }
+      },
+      "expected": {
+        "result": "accept"
+      }
+    },
+    {
+      "name": "update: keeps pool_id with no registration reference",
+      "source": {
+        "line": 517,
+        "text": "Registration reference: ... an Update that changes pool_id without the new pool's node rejected; an Update that keeps pool_id without any reference input accepted."
+      },
+      "redeemer": "Update",
+      "tx": {
+        "inputs": [
+          {
+            "ref": {
+              "tx": "0202020202020202020202020202020202020202020202020202020202020202",
+              "index": 0
+            },
+            "output": {
+              "address": {
+                "payment": {
+                  "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+                },
+                "stake": null
+              },
+              "value": {
+                "lovelace": "2000000",
+                "assets": [
+                  {
+                    "policy": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+                    "name": "",
+                    "quantity": "1"
+                  },
+                  {
+                    "policy": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+                    "name": "4e49474854",
+                    "quantity": "1000000000"
+                  }
+                ]
+              },
+              "datum": {
+                "owner": {
+                  "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                },
+                "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+                "reward_address": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+                "return_address": {
+                  "payment": {
+                    "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                  },
+                  "stake": null
+                },
+                "unbond_at": null,
+                "attributes": []
+              }
+            }
+          }
+        ],
+        "reference_inputs": [],
         "outputs": [
           {
             "address": {
@@ -7375,9 +7494,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -7558,9 +7677,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -7750,9 +7869,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -7942,9 +8061,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -8116,9 +8235,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -8294,9 +8413,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -8466,9 +8585,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -8641,9 +8760,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -8815,9 +8934,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -8988,9 +9107,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -9161,9 +9280,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -9334,9 +9453,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -9567,9 +9686,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -9729,9 +9848,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -9902,9 +10021,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -9992,8 +10111,8 @@
     {
       "name": "unbond: unbond_at one millisecond below the validity upper bound",
       "source": {
-        "line": null,
-        "text": "user decision 11-14: bounds include their edges; no upper bound, no Unbond; no lower bound, no Unlock of a lock with cNIGHT"
+        "line": 513,
+        "text": "Unbond and Unlock: an Unbond whose unbond_at is below the validity upper bound rejected, equal to it accepted and above it rejected ... an Unbond that also changes owner ... rejected ... an Unlock of a lock without cNIGHT accepted at once, before and after an Unbond."
       },
       "redeemer": "Unbond",
       "tx": {
@@ -10112,8 +10231,8 @@
     {
       "name": "unbond: unbond_at at the validity upper bound",
       "source": {
-        "line": null,
-        "text": "user decision 11-14: bounds include their edges; no upper bound, no Unbond; no lower bound, no Unlock of a lock with cNIGHT"
+        "line": 513,
+        "text": "Unbond and Unlock: an Unbond whose unbond_at is below the validity upper bound rejected, equal to it accepted and above it rejected ... an Unbond that also changes owner ... rejected ... an Unlock of a lock without cNIGHT accepted at once, before and after an Unbond."
       },
       "redeemer": "Unbond",
       "tx": {
@@ -10226,6 +10345,245 @@
       },
       "expected": {
         "result": "accept"
+      }
+    },
+    {
+      "name": "unbond: without the owner's signature",
+      "source": {
+        "line": 514,
+        "text": "Authorization and token: a Lock, an Update, an Unbond and an Unlock without the owner's authorization, each rejected"
+      },
+      "redeemer": "Unbond",
+      "tx": {
+        "inputs": [
+          {
+            "ref": {
+              "tx": "0202020202020202020202020202020202020202020202020202020202020202",
+              "index": 0
+            },
+            "output": {
+              "address": {
+                "payment": {
+                  "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+                },
+                "stake": null
+              },
+              "value": {
+                "lovelace": "2000000",
+                "assets": [
+                  {
+                    "policy": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+                    "name": "",
+                    "quantity": "1"
+                  },
+                  {
+                    "policy": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+                    "name": "4e49474854",
+                    "quantity": "1000000000"
+                  }
+                ]
+              },
+              "datum": {
+                "owner": {
+                  "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                },
+                "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+                "reward_address": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+                "return_address": {
+                  "payment": {
+                    "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                  },
+                  "stake": null
+                },
+                "unbond_at": null,
+                "attributes": []
+              }
+            }
+          }
+        ],
+        "reference_inputs": [],
+        "outputs": [
+          {
+            "address": {
+              "payment": {
+                "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+              },
+              "stake": null
+            },
+            "value": {
+              "lovelace": "2000000",
+              "assets": [
+                {
+                  "policy": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+                  "name": "",
+                  "quantity": "1"
+                },
+                {
+                  "policy": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+                  "name": "4e49474854",
+                  "quantity": "1000000000"
+                }
+              ]
+            },
+            "datum": {
+              "owner": {
+                "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+              },
+              "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+              "reward_address": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+              "return_address": {
+                "payment": {
+                  "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                },
+                "stake": null
+              },
+              "unbond_at": "1800000600000",
+              "attributes": []
+            }
+          }
+        ],
+        "mint": [],
+        "withdrawals": [
+          {
+            "credential": {
+              "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+            },
+            "amount": "0"
+          }
+        ],
+        "certificates": [],
+        "voters": [],
+        "guardrails": [],
+        "extra_signatories": [],
+        "validity": {
+          "lower": "1800000000000",
+          "upper": "1800000600000"
+        }
+      },
+      "expected": {
+        "result": "reject",
+        "rules": [5]
+      }
+    },
+    {
+      "name": "unbond: also changes owner",
+      "source": {
+        "line": 513,
+        "text": "Unbond and Unlock: an Unbond whose unbond_at is below the validity upper bound rejected, equal to it accepted and above it rejected ... an Unbond that also changes owner ... rejected ... an Unlock of a lock without cNIGHT accepted at once, before and after an Unbond."
+      },
+      "redeemer": "Unbond",
+      "tx": {
+        "inputs": [
+          {
+            "ref": {
+              "tx": "0202020202020202020202020202020202020202020202020202020202020202",
+              "index": 0
+            },
+            "output": {
+              "address": {
+                "payment": {
+                  "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+                },
+                "stake": null
+              },
+              "value": {
+                "lovelace": "2000000",
+                "assets": [
+                  {
+                    "policy": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+                    "name": "",
+                    "quantity": "1"
+                  },
+                  {
+                    "policy": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+                    "name": "4e49474854",
+                    "quantity": "1000000000"
+                  }
+                ]
+              },
+              "datum": {
+                "owner": {
+                  "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                },
+                "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+                "reward_address": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+                "return_address": {
+                  "payment": {
+                    "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                  },
+                  "stake": null
+                },
+                "unbond_at": null,
+                "attributes": []
+              }
+            }
+          }
+        ],
+        "reference_inputs": [],
+        "outputs": [
+          {
+            "address": {
+              "payment": {
+                "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+              },
+              "stake": null
+            },
+            "value": {
+              "lovelace": "2000000",
+              "assets": [
+                {
+                  "policy": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+                  "name": "",
+                  "quantity": "1"
+                },
+                {
+                  "policy": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+                  "name": "4e49474854",
+                  "quantity": "1000000000"
+                }
+              ]
+            },
+            "datum": {
+              "owner": {
+                "VerificationKey": "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c"
+              },
+              "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+              "reward_address": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+              "return_address": {
+                "payment": {
+                  "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                },
+                "stake": null
+              },
+              "unbond_at": "1800000600000",
+              "attributes": []
+            }
+          }
+        ],
+        "mint": [],
+        "withdrawals": [
+          {
+            "credential": {
+              "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+            },
+            "amount": "0"
+          }
+        ],
+        "certificates": [],
+        "voters": [],
+        "guardrails": [],
+        "extra_signatories": [
+          "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+          "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c"
+        ],
+        "validity": {
+          "lower": "1800000000000",
+          "upper": "1800000600000"
+        }
+      },
+      "expected": {
+        "result": "reject",
+        "rules": [3]
       }
     },
     {
@@ -10883,8 +11241,8 @@
     {
       "name": "unbond: unbond_at above the validity upper bound",
       "source": {
-        "line": 473,
-        "text": "Unbond and Remove: an Update that sets `unbond_at` below the validity upper bound rejected and at or above it accepted; an Update that changes a set `unbond_at` rejected; a Remove of a lock with cNIGHT and no unbond rejected, one slot before `UNBONDING_DELAY` rejected and one slot after accepted; a Remove of a lock without cNIGHT accepted at once."
+        "line": 513,
+        "text": "Unbond and Unlock: an Unbond whose unbond_at is below the validity upper bound rejected, equal to it accepted and above it rejected ... an Unbond that also changes owner ... rejected ... an Unlock of a lock without cNIGHT accepted at once, before and after an Unbond."
       },
       "redeemer": "Unbond",
       "tx": {
@@ -10996,14 +11354,15 @@
         }
       },
       "expected": {
-        "result": "accept"
+        "result": "reject",
+        "rules": [3]
       }
     },
     {
       "name": "unbond: no validity upper bound",
       "source": {
-        "line": null,
-        "text": "user decision 11-14: bounds include their edges; no upper bound, no Unbond; no lower bound, no Unlock of a lock with cNIGHT"
+        "line": 513,
+        "text": "Unbond and Unlock: an Unbond whose unbond_at is below the validity upper bound rejected, equal to it accepted and above it rejected ... an Unbond that also changes owner ... rejected ... an Unlock of a lock without cNIGHT accepted at once, before and after an Unbond."
       },
       "redeemer": "Unbond",
       "tx": {
@@ -11320,9 +11679,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -13819,6 +14178,101 @@
       }
     },
     {
+      "name": "unlock: lock without cNIGHT, after an Unbond",
+      "source": {
+        "line": 513,
+        "text": "Unbond and Unlock: an Unbond whose unbond_at is below the validity upper bound rejected, equal to it accepted and above it rejected ... an Unbond that also changes owner ... rejected ... an Unlock of a lock without cNIGHT accepted at once, before and after an Unbond."
+      },
+      "redeemer": "Unlock",
+      "tx": {
+        "inputs": [
+          {
+            "ref": {
+              "tx": "0303030303030303030303030303030303030303030303030303030303030303",
+              "index": 0
+            },
+            "output": {
+              "address": {
+                "payment": {
+                  "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+                },
+                "stake": null
+              },
+              "value": {
+                "lovelace": "2000000",
+                "assets": [
+                  {
+                    "policy": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+                    "name": "",
+                    "quantity": "1"
+                  }
+                ]
+              },
+              "datum": {
+                "owner": {
+                  "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                },
+                "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+                "reward_address": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+                "return_address": {
+                  "payment": {
+                    "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                  },
+                  "stake": null
+                },
+                "unbond_at": "1800000000000",
+                "attributes": []
+              }
+            }
+          }
+        ],
+        "reference_inputs": [],
+        "outputs": [
+          {
+            "address": {
+              "payment": {
+                "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+              },
+              "stake": null
+            },
+            "value": {
+              "lovelace": "2000000",
+              "assets": []
+            },
+            "datum": null
+          }
+        ],
+        "mint": [
+          {
+            "policy": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+            "name": "",
+            "quantity": "-1"
+          }
+        ],
+        "withdrawals": [
+          {
+            "credential": {
+              "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+            },
+            "amount": "0"
+          }
+        ],
+        "certificates": [],
+        "voters": [],
+        "guardrails": [],
+        "extra_signatories": [
+          "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+        ],
+        "validity": {
+          "lower": "1801728001000",
+          "upper": "1801728601000"
+        }
+      },
+      "expected": {
+        "result": "accept"
+      }
+    },
+    {
       "name": "lock: without the owner's signature",
       "source": {
         "line": 474,
@@ -13880,9 +14334,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -14038,9 +14492,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -14217,9 +14671,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -14474,9 +14928,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -14633,9 +15087,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -14815,9 +15269,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -14991,9 +15445,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -15274,9 +15728,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -15429,9 +15883,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -15999,9 +16453,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -16146,9 +16600,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -16318,9 +16772,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -16553,9 +17007,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -17059,9 +17513,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -17218,9 +17672,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -17397,9 +17851,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -17551,9 +18005,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -17716,9 +18170,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -17982,9 +18436,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -18163,9 +18617,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -18570,9 +19024,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -18951,9 +19405,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -19338,9 +19792,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -19517,9 +19971,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -19778,9 +20232,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -19957,9 +20411,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -20275,9 +20729,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -20454,9 +20908,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -20905,9 +21359,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
@@ -21097,9 +21551,9 @@
                 "Registration": {
                   "active": true,
                   "crch": "2020202020202020202020202020202020202020202020202020202020202020",
-                  "next_crch": "",
+                  "prev_crch": "",
                   "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
-                  "next_pool": "",
+                  "prev_pool": "",
                   "owner": {
                     "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
                   },
