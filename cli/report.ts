@@ -15,7 +15,7 @@ import {
   type NetworkId,
   type TransactionUnspentOutput,
 } from "@blaze-cardano/core";
-import { Effect, FileSystem, Option, Result } from "effect";
+import { Clock, Effect, FileSystem, Option, Result } from "effect";
 import { Provider } from "./chain";
 import { type Environment, environmentOf } from "./config";
 import {
@@ -290,6 +290,7 @@ const enrichContract = (contract: ContractInfo, twoStage: boolean) =>
 const addressReport = (
   network: string,
   contracts: readonly ContractOnChainInfo[],
+  generated: string,
 ): string => {
   const mainTrack = contracts.filter((c) =>
     MAIN_TRACK_COMPONENTS.has(c.component),
@@ -298,7 +299,7 @@ const addressReport = (
     `# Contract Address Report`,
     ``,
     `**Network:** ${network}`,
-    `**Generated:** ${new Date().toISOString()}`,
+    `**Generated:** ${generated}`,
     `**Contracts:** ${mainTrack.length}`,
     ``,
     `---`,
@@ -405,7 +406,14 @@ export const infoProgram = (input: {
       yield* writeReport(jsonPath, JSON.stringify(enriched, null, 2));
       yield* output.log(`\nJSON saved to ${jsonPath}`);
       const mdPath = resolve(outputDir, "address-report.md");
-      yield* writeReport(mdPath, addressReport(network, enriched));
+      yield* writeReport(
+        mdPath,
+        addressReport(
+          network,
+          enriched,
+          new Date(yield* Clock.currentTimeMillis).toISOString(),
+        ),
+      );
       yield* output.log(`Markdown report saved to ${mdPath}`);
       return enriched;
     }
@@ -763,13 +771,14 @@ export const verifyProgram = (input: { readonly network: Environment }) =>
     const results = sections.flatMap((s) => s.results);
     const failed = results.filter((r) => !r.passed).length;
     const reportPath = resolve(`release/${network}`, "verification-report.md");
+    const date = new Date(yield* Clock.currentTimeMillis).toISOString();
     yield* writeReport(
       reportPath,
       [
         "# Deployment Verification Report",
         "",
         `**Network:** ${network}`,
-        `**Date:** ${new Date().toISOString()}`,
+        `**Date:** ${date}`,
         `**Result:** ${failed === 0 ? "ALL CHECKS PASSED" : `${failed} CHECK(S) FAILED`}`,
         `**Summary:** ${results.length - failed} passed, ${failed} failed, ${results.length} total`,
         "",
