@@ -211,6 +211,14 @@ export const conway = <D>(
       ).toBech32() as Cardano.PaymentAddress,
       value: { coins: BigInt(o.value.lovelace), assets },
       datum: o.datum === null ? undefined : encode(o.datum),
+      scriptReference:
+        o.reference_script === undefined
+          ? undefined
+          : {
+              __type: Cardano.ScriptType.Native,
+              kind: Cardano.NativeScriptKind.RequireSignature,
+              keyHash: Ed25519KeyHashHex(o.reference_script),
+            },
     });
   };
   const input = <E>(i: Input<E>) =>

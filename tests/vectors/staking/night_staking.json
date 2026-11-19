@@ -6926,6 +6926,162 @@
       }
     },
     {
+      "name": "lock: a reference script on the lock",
+      "source": {
+        "line": null,
+        "text": "user decision 11-19: a lock and a node carry no reference script"
+      },
+      "redeemer": "Lock",
+      "tx": {
+        "inputs": [
+          {
+            "ref": {
+              "tx": "0101010101010101010101010101010101010101010101010101010101010101",
+              "index": 0
+            },
+            "output": {
+              "address": {
+                "payment": {
+                  "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                },
+                "stake": null
+              },
+              "value": {
+                "lovelace": "20000000",
+                "assets": [
+                  {
+                    "policy": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+                    "name": "4e49474854",
+                    "quantity": "5000000000"
+                  }
+                ]
+              },
+              "datum": null
+            }
+          }
+        ],
+        "reference_inputs": [
+          {
+            "ref": {
+              "tx": "7777777777777777777777777777777777777777777777777777777777777777",
+              "index": 0
+            },
+            "output": {
+              "address": {
+                "payment": {
+                  "Script": "7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e"
+                },
+                "stake": null
+              },
+              "value": {
+                "lovelace": "1500000",
+                "assets": [
+                  {
+                    "policy": "7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e",
+                    "name": "",
+                    "quantity": "1"
+                  }
+                ]
+              },
+              "datum": {
+                "Registration": {
+                  "active": true,
+                  "crch": "2020202020202020202020202020202020202020202020202020202020202020",
+                  "prev_crch": "",
+                  "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+                  "prev_pool": "",
+                  "owner": {
+                    "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
+                  },
+                  "crch_signature": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+                  "keys": [
+                    [
+                      "61757261",
+                      "e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1"
+                    ]
+                  ],
+                  "signatures": [
+                    [
+                      "61757261",
+                      "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
+                    ]
+                  ],
+                  "reward_address": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+                  "fixed_cost": "340000000",
+                  "attributes": []
+                }
+              }
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "address": {
+              "payment": {
+                "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+              },
+              "stake": null
+            },
+            "value": {
+              "lovelace": "2000000",
+              "assets": [
+                {
+                  "policy": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+                  "name": "",
+                  "quantity": "1"
+                }
+              ]
+            },
+            "datum": {
+              "owner": {
+                "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+              },
+              "pool_id": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+              "reward_address": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+              "return_address": {
+                "payment": {
+                  "VerificationKey": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+                },
+                "stake": null
+              },
+              "unbond_at": null,
+              "attributes": []
+            },
+            "reference_script": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+          }
+        ],
+        "mint": [
+          {
+            "policy": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+            "name": "",
+            "quantity": "1"
+          }
+        ],
+        "withdrawals": [
+          {
+            "credential": {
+              "Script": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+            },
+            "amount": "0"
+          }
+        ],
+        "certificates": [],
+        "voters": [],
+        "guardrails": [],
+        "extra_signatories": [
+          "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+        ],
+        "validity": {
+          "lower": null,
+          "upper": null
+        }
+      },
+      "expected": {
+        "result": "reject",
+        "rules": [2]
+      }
+    },
+    {
       "name": "update: adds cNIGHT",
       "source": {
         "line": 472,
