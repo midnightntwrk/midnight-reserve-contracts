@@ -57,7 +57,11 @@ apply RecordUpdate ─► write the file (signed with Keys when asked) ─► su
 
 The runtime edge (`main.ts`): `NodeRuntime.runMain`, `NodeServices.layer`,
 `FetchHttpClient.layer`, and the process environment with `.env` as the
-fallback. Help is effect/cli's own.
+fallback. `LOG_LEVEL` (an Effect level name in any case, or the Effect 3 CLI's `Warning` and `OFF`; Info when unset)
+sets the minimum log level, and logs (`Effect.log*`) go to stderr, so stdout
+carries only what `Output` prints (`info --format json`); a bad `LOG_LEVEL`
+is a `ConfigError` that fails every command, reported like any other. Help is
+effect/cli's own.
 
 ## Which contracts a command reads
 

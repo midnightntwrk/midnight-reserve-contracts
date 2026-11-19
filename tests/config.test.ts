@@ -3,7 +3,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { afterAll, afterEach, describe, expect, it } from "@effect/vitest";
-import { Config, ConfigProvider, Effect, Layer, Option } from "effect";
+import { Config, ConfigProvider, Console, Effect, Layer, Option } from "effect";
 import {
   DeployerAddress,
   ENVIRONMENTS,
@@ -12,6 +12,7 @@ import {
   environmentOf,
   envOr,
   initialTermsAndConditions,
+  loggingLayer,
   newSigners,
   parseNetworkConfig,
   permissionedCandidates,
@@ -534,5 +535,79 @@ describe("envOr", () => {
           key: "SIMPLE_TX_COUNT",
         });
       }),
+  );
+});
+
+/** Log a warning, an info and a debug line under `loggingLayer` with `values` as the environment; what a recording Console received on stdout (log) and on stderr (error). */
+const logged = (values: Record<string, string>) =>
+  Effect.gen(function* () {
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const recording = {
+      ...console,
+      log: (...args: unknown[]) => void stdout.push(args.join(" ")),
+      error: (...args: unknown[]) => void stderr.push(args.join(" ")),
+    };
+    yield* Effect.gen(function* () {
+      yield* Effect.logWarning("a warning");
+      yield* Effect.logInfo("an info");
+      yield* Effect.logDebug("a debug");
+    }).pipe(
+      Effect.provide(
+        Layer.provide(
+          loggingLayer,
+          ConfigProvider.layer(ConfigProvider.fromUnknown(values)),
+        ),
+      ),
+      Effect.provideService(Console.Console, recording),
+    );
+    return { stdout, stderr };
+  });
+
+describe("loggingLayer", () => {
+  it.live("logs go to stderr, never stdout, from Info up by default", () =>
+    Effect.gen(function* () {
+      for (const values of [{}, { LOG_LEVEL: "" }] as Record<
+        string,
+        string
+      >[]) {
+        const { stdout, stderr } = yield* logged(values);
+        expect(stdout).toEqual([]);
+        expect(stderr).toHaveLength(2);
+        expect(stderr[0]).toContain("WARN");
+        expect(stderr[0]).toContain("a warning");
+        expect(stderr[1]).toContain("INFO");
+      }
+    }),
+  );
+
+  it.live("LOG_LEVEL sets the minimum level, in any case", () =>
+    Effect.gen(function* () {
+      const warn = yield* logged({ LOG_LEVEL: "warn" });
+      expect(warn.stderr).toHaveLength(1);
+      expect(warn.stdout).toEqual([]);
+      const debug = yield* logged({ LOG_LEVEL: "DEBUG" });
+      expect(debug.stderr).toHaveLength(3);
+      expect(debug.stdout).toEqual([]);
+      const none = yield* logged({ LOG_LEVEL: "None" });
+      expect(none).toEqual({ stdout: [], stderr: [] });
+    }),
+  );
+
+  it.live("the Effect 3 CLI's Warning and OFF still work", () =>
+    Effect.gen(function* () {
+      const warning = yield* logged({ LOG_LEVEL: "Warning" });
+      expect(warning.stderr).toHaveLength(1);
+      const off = yield* logged({ LOG_LEVEL: "OFF" });
+      expect(off).toEqual({ stdout: [], stderr: [] });
+    }),
+  );
+
+  it.live("a bad LOG_LEVEL is a ConfigError naming the variable", () =>
+    Effect.gen(function* () {
+      const error = yield* Effect.flip(logged({ LOG_LEVEL: "loud" }));
+      expect(error).toMatchObject({ _tag: "ConfigError", key: "LOG_LEVEL" });
+      expect(error.reason).toContain("'loud' is not a log level");
+    }),
   );
 });

@@ -575,3 +575,11 @@ Commit 13 (LEAD, 11-17):
   `deployed-scripts/`, and the command table of all 23 commands; Maestro
   and the unknown-environment fallback are gone (neither exists).
 - CLAUDE.md's Additional Docs point at cli.md and the runbook.
+
+Fix 1, row 44 (LOG_LEVEL):
+
+- `LOG_LEVEL` takes Effect 4's level names (`All`, `Fatal`, `Error`, `Warn`,
+  `Info`, `Debug`, `Trace`, `None`) in any case; the reference's Effect 3
+  name `Warning` is not one of them. Logs go to stderr through Effect 4's
+  default logger (`Logger.LogToStderr`), not the reference's pretty-on-a-TTY
+  and logfmt-otherwise pair; the layer is `loggingLayer` in `config.ts`.

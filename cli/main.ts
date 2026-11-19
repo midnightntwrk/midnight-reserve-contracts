@@ -10,7 +10,7 @@ import { Command } from "effect/cli";
 import { FetchHttpClient } from "effect/http";
 import packageJson from "../package.json" with { type: "json" };
 import { commands } from "./commands";
-import { DeployedScripts, envLayer } from "./config";
+import { DeployedScripts, envLayer, loggingLayer } from "./config";
 import { isCliError, renderError } from "./errors";
 import { Keys } from "./keys";
 import { Output } from "./output";
@@ -26,6 +26,13 @@ Command.run(root, { version: packageJson.version }).pipe(
   // The root alone has printed its help, which is not a failure; a parse error has printed its help with the error.
   Effect.catchTag("ShowHelp", (error) =>
     error.errors.length === 0 ? Effect.void : Effect.fail(error),
+  ),
+  // The platform, the process environment with .env as the fallback, and the logging it sets (LOG_LEVEL, logs on stderr). Inside the failure report, so a bad LOG_LEVEL is reported.
+  Effect.provide(
+    Layer.provideMerge(
+      loggingLayer,
+      Layer.provideMerge(envLayer(".env"), NodeServices.layer),
+    ),
   ),
   // Report a failure once: a CliError through Output, the defects as Cause.pretty, an interrupt alone as its line.
   Effect.tapCause((cause) =>
@@ -48,7 +55,6 @@ Command.run(root, { version: packageJson.version }).pipe(
   ),
   Effect.provide(
     Layer.mergeAll(
-      Layer.provideMerge(envLayer(".env"), NodeServices.layer),
       FetchHttpClient.layer,
       Keys.layer,
       Output.layer,

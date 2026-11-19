@@ -20,8 +20,11 @@ import {
   Effect,
   FileSystem,
   Layer,
+  Logger,
+  LogLevel,
   Option,
   Redacted,
+  References,
   Result,
 } from "effect";
 import * as TOML from "toml";
@@ -330,6 +333,40 @@ export const envOr = <A>(
         ),
     }),
   );
+
+/**
+ * The logging the runtime edge installs: logs on stderr, so stdout carries
+ * only a command's own output (`info --format json`), from the level of
+ * LOG_LEVEL up (an Effect level name in any case, plus the Effect 3 CLI's
+ * `Warning` and `OFF`; Info when unset). A bad LOG_LEVEL is a ConfigError, so
+ * it fails every command. Read through the fiber's ConfigProvider.
+ */
+export const loggingLayer = Layer.unwrap(
+  Effect.map(
+    envOr(
+      "LOG_LEVEL",
+      (text) => {
+        const lower = text.toLowerCase();
+        const wanted =
+          lower === "warning" ? "warn" : lower === "off" ? "none" : lower;
+        const level = LogLevel.values.find(
+          (candidate) => candidate.toLowerCase() === wanted,
+        );
+        return level === undefined
+          ? Result.fail(
+              `'${text}' is not a log level (${LogLevel.values.join(", ")})`,
+            )
+          : Result.succeed(level);
+      },
+      "Info",
+    ),
+    (level) =>
+      Layer.mergeAll(
+        Layer.succeed(References.MinimumLogLevel)(level),
+        Layer.succeed(Logger.LogToStderr)(true),
+      ),
+  ),
+);
 
 /** An environment variable that must be set and not empty. */
 export const requiredString = (
