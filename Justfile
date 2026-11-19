@@ -17,6 +17,10 @@ check: aiken-check
     vp exec tsc --noEmit
 
 
+test *args:
+    vp test {{args}}
+
+
 lint:
     vp lint
 

@@ -212,12 +212,13 @@ The reserve's staging track works. `reserve_logic_v2` reads its test hashes from
 ## The audit map
 
 - **Audit status:** nothing v2 was audited.
-- **Edit policy** (CLAUDE.md, "Audited Aiken Files"):
-  - Files that existed at commit `ca38d87` are immutable. `lib/auth/staging.ak` is the one exception and may be edited. `validators/registered_candidate.ak` was deleted on the user's explicit go (11-17): night_registration replaces it.
-  - The `_v2` suffix marks a new version of an audited original with the same name (e.g. `validators/reserve_v2.ak` next to `validators/reserve.ak`); new modules get plain names (e.g. `lib/logic/reserve.ak`). New types for the audited logic go in `lib/logic/types_v2.ak`.
+- **Edit policy** (AGENTS.md, "Mainnet Aiken Files"):
+  - Files that existed at commit `ca38d87` and compile into a script deployed on mainnet are immutable; AGENTS.md lists them. `lib/auth/staging.ak` is the one exception and may be edited. `validators/registered_candidate.ak` was deleted on the user's explicit go (11-17): night_registration replaces it.
+  - Files from `ca38d87` that never ran on mainnet may be edited (user decision, 11-19): `validators/committee_bridge.ak`, `lib/bridge/*.ak`, `lib/logic/next_version.ak`, `validators/test_cnight_no_audit.ak` and the `*.test.ak` files. None of them is in the audit's file list (`docs/audits/2026-01-08-txpipe-upgradable-contracts.pdf`, section 2), which names 17 files, all on mainnet.
+  - `validators/validator_types.ak` may be updated in place too (user decision, 11-19): its `z_*` validators always fail and only export types to the blueprint for off-chain code. `lib/logic/types.ak` stays immutable; its new types go in `lib/logic/types_v2.ak`.
+  - The `_v2` suffix marks a new version of an immutable original with the same name (e.g. `validators/reserve_v2.ak` next to `validators/reserve.ak`); new modules get plain names (e.g. `lib/logic/reserve.ak`). New types for the immutable logic go in `lib/logic/types_v2.ak`.
   - New helpers next to the audited `lib/utils.ak` go in `lib/utils_v2.ak`. The staking contracts and reserve v2 take only types, constructors and the `to_dict |> to_pairs` exact-value pattern from the stdlib; their other list work goes through `lib/utils.ak`, `lib/utils_v2.ak` and builtins (user decision, 11-18).
   - The post-audit staging files, `validators/staging_*.ak` and `lib/forever/staging.ak`, are freely editable.
-  - `lib/logic/next_version.ak` is unaudited, but it existed at `ca38d87`, so it is immutable too.
 
 Editing any validator changes its script hash. Deployed hashes live in `deployed-scripts/<env>/plutus.json`, and `build --from-deployed` builds against them (`cli/contracts/build.ts:610-687`).
 
