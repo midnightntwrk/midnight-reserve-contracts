@@ -12,8 +12,17 @@ export type Address = { payment: Credential; stake: Credential | null };
 export type Asset = { policy: Hex; name: Hex; quantity: string };
 export type Value = { lovelace: string; assets: Asset[] };
 export type OutRef = { tx: Hex; index: number };
-/** `datum` is the inline datum, or null when the output has none of the contract's type. */
-export type Output<D> = { address: Address; value: Value; datum: D | null };
+/**
+ * `datum` is the inline datum, or null when the output has none of the contract's type.
+ * `reference_script`, when present, is a key hash: the output carries the native script that
+ * requires that key's signature, standing for any reference script.
+ */
+export type Output<D> = {
+  address: Address;
+  value: Value;
+  datum: D | null;
+  reference_script?: Hex;
+};
 export type Input<D> = { ref: OutRef; output: Output<D> };
 /** `pool` null is a vote-only delegation. */
 export type Certificate =
@@ -225,12 +234,16 @@ export function checkStaking(
   const [input] = ins;
   const [output] = outs;
 
-  /** Rule 2, Output; rule 3 lets `unbond_at` be Some. `attributes` is not checked (user decision 2026-11-13). */
+  /**
+   * Rule 2, Output; rule 3 lets `unbond_at` be Some. `attributes` is not checked (user decision
+   * 2026-11-13). A lock carries no reference script (user decision 11-19).
+   */
   const lockOk = (o: Output<DelegationLock>, unbond: boolean) => {
     const d = o.datum;
     return (
       d !== null &&
       o.address.stake === null &&
+      o.reference_script === undefined &&
       bytes(hashOf(d.owner)) === 28 &&
       !same(d.owner, self) &&
       bytes(d.pool_id) === 28 &&
@@ -638,14 +651,15 @@ export function checkRegistration(
   }
 
   // Rule 9: a node is at the address with ADA, one token with the empty name, an inline Node datum
-  // and nothing else, and an active Registration's fixed fields hold their lengths and range. No
-  // length is checked for crch or crch_signature, and nothing inside keys, signatures or
-  // attributes: Midnight validates them.
+  // and no reference script (user decision 11-19), and nothing else, and an active Registration's
+  // fixed fields hold their lengths and range. No length is checked for crch or crch_signature,
+  // and nothing inside keys, signatures or attributes: Midnight validates them.
   if (
     created.some(
       (o) =>
         !atAddress(o) ||
         o.address.stake !== null ||
+        o.reference_script !== undefined ||
         o.datum === null ||
         !single(o.value.assets, 1n),
     )

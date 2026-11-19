@@ -14812,6 +14812,170 @@
       }
     },
     {
+      "name": "update: a reference script on the node",
+      "source": {
+        "line": null,
+        "text": "user decision 11-19: a lock and a node carry no reference script"
+      },
+      "redeemer": "Update",
+      "tx": {
+        "inputs": [
+          {
+            "ref": {
+              "tx": "3131313131313131313131313131313131313131313131313131313131313131",
+              "index": 0
+            },
+            "output": {
+              "address": {
+                "payment": {
+                  "Script": "7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e"
+                },
+                "stake": null
+              },
+              "value": {
+                "lovelace": "1500000",
+                "assets": [
+                  {
+                    "policy": "7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e",
+                    "name": "",
+                    "quantity": "1"
+                  }
+                ]
+              },
+              "datum": {
+                "Registration": {
+                  "active": true,
+                  "crch": "202020202020202020202020202020202020202020202020202020202020202020",
+                  "prev_crch": "101010101010101010101010101010101010101010101010101010101010101010",
+                  "pool_id": "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2",
+                  "prev_pool": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+                  "owner": {
+                    "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
+                  },
+                  "crch_signature": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+                  "keys": [
+                    [
+                      "61757261",
+                      "e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1"
+                    ],
+                    [
+                      "6772616e",
+                      "e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3"
+                    ]
+                  ],
+                  "signatures": [
+                    [
+                      "61757261",
+                      "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
+                    ],
+                    [
+                      "6772616e",
+                      "e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4"
+                    ]
+                  ],
+                  "reward_address": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+                  "fixed_cost": "340000000",
+                  "attributes": []
+                }
+              }
+            }
+          },
+          {
+            "ref": {
+              "tx": "0101010101010101010101010101010101010101010101010101010101010101",
+              "index": 0
+            },
+            "output": {
+              "address": {
+                "payment": {
+                  "VerificationKey": "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c"
+                },
+                "stake": null
+              },
+              "value": {
+                "lovelace": "20000000",
+                "assets": []
+              },
+              "datum": null
+            }
+          }
+        ],
+        "reference_inputs": [],
+        "outputs": [
+          {
+            "address": {
+              "payment": {
+                "Script": "7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e"
+              },
+              "stake": null
+            },
+            "value": {
+              "lovelace": "1500000",
+              "assets": [
+                {
+                  "policy": "7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e",
+                  "name": "",
+                  "quantity": "1"
+                }
+              ]
+            },
+            "datum": {
+              "Registration": {
+                "active": true,
+                "crch": "202020202020202020202020202020202020202020202020202020202020202020",
+                "prev_crch": "101010101010101010101010101010101010101010101010101010101010101010",
+                "pool_id": "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2",
+                "prev_pool": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+                "owner": {
+                  "VerificationKey": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d"
+                },
+                "crch_signature": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+                "keys": [
+                  [
+                    "61757261",
+                    "e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5"
+                  ]
+                ],
+                "signatures": [
+                  [
+                    "61757261",
+                    "e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6"
+                  ]
+                ],
+                "reward_address": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+                "fixed_cost": "340000000",
+                "attributes": []
+              }
+            },
+            "reference_script": "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2"
+          }
+        ],
+        "mint": [],
+        "withdrawals": [
+          {
+            "credential": {
+              "Script": "7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e"
+            },
+            "amount": "0"
+          }
+        ],
+        "certificates": [],
+        "voters": [],
+        "guardrails": [],
+        "extra_signatories": [
+          "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2"
+        ],
+        "validity": {
+          "lower": null,
+          "upper": null
+        }
+      },
+      "expected": {
+        "result": "reject",
+        "rules": [9]
+      }
+    },
+    {
       "name": "update: without the owner's authorization or the cold key",
       "source": {
         "line": 521,
