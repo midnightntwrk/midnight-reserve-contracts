@@ -13,7 +13,7 @@ const RUNNERS = [
   "runCallback",
 ];
 
-/** Bun left the project (plans/effect4 D7): neither the CLI nor the tests may reach it. */
+/** Bun left the project (docs/architecture/cli.md): neither the CLI nor the tests may reach it. */
 const NO_BUN = {
   group: ["bun", "bun:*", "@effect/platform-bun", "@effect/platform-bun/*"],
   message:
@@ -36,7 +36,7 @@ const NO_FILES_OR_PROCESSES = [
   message: "Files go through FileSystem, processes through ChildProcess.",
 }));
 
-/** Blaze's sdk and tx packages are used only by tx.ts, in compile (plans/effect4/00-index.md). */
+/** Blaze's sdk and tx packages are used only by tx.ts, in compile (docs/architecture/cli.md). */
 const NO_BLAZE = ["@blaze-cardano/sdk", "@blaze-cardano/tx"].map((name) => ({
   name,
   message:
@@ -92,7 +92,7 @@ const within = (module: string, ...scopes: string[]) =>
   scopes.some((scope) => module === scope || module.startsWith(`${scope}/`));
 
 /**
- * The dependency rules of plans/effect4/00-index.md. `forbids(from, to)` is true when module
+ * The dependency rules of docs/architecture/cli.md. `forbids(from, to)` is true when module
  * `from` must not import module `to` (both as paths under cli/ without extension). An "only
  * imported by" rule forbids every importer outside its list. A rule may name a module that
  * does not exist yet; it applies from the commit that adds it.

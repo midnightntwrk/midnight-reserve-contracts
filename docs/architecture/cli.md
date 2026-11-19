@@ -53,7 +53,8 @@ apply RecordUpdate ─► write the file (signed with Keys when asked) ─► su
 | `Keys` | signing keys, read only by `signing.ts` and `main.ts` |
 | `Provider` | named reads, parameters, submit, isConfirmed over Blockfrost, Kupmios or the emulator; credentials stay in `chain.ts` |
 | `ContractResolver` | the build output and the deployed record behind the source rule below; never builds |
-| `Output` | every printed line |
+| `DeployedScripts` | where the environment's record lives (`deployed-scripts/<env>/`) |
+| `Output` | every line a command prints; logs go to stderr, outside it |
 
 The runtime edge (`main.ts`): `NodeRuntime.runMain`, `NodeServices.layer`,
 `FetchHttpClient.layer`, and the process environment with `.env` as the
@@ -102,8 +103,8 @@ leaves no file to sign.
 
 | File | Holds |
 |---|---|
-| `main.ts` | argv, the command tree, layers, runMain |
-| `commands.ts` | every Command: its flags, parsed at the boundary, and its program |
+| `main.ts` | argv, the command tree, the runtime edge's layers, runMain |
+| `commands.ts` | every Command: its flags, parsed at the boundary, its program, and the service layers that program needs |
 | `input.ts`, `errors.ts`, `output.ts` | boundary parsers and brands; tagged errors and their text; Output |
 | `config.ts` | Profile, DeployerAddress, the environment values commands read |
 | `keys.ts` | Keys |
@@ -135,6 +136,8 @@ canonical form. In `cli/` and `tests/`: no Bun.
 | `contracts/snapshot-write.ts` | imported only by `deploy.ts` and `governance/two-stage.ts` |
 | `contracts/snapshot-read.ts` | imported only by `contracts/**` |
 | `contracts/build.ts` | imported only by `commands.ts` and `contracts/snapshot-write.ts` |
+| `contracts/snapshot-read.ts`, `contracts/snapshot-write.ts` | import no `output` |
+| `ProviderConfig` | named by no module but `chain.ts` |
 | `@blaze-cardano/sdk`, `@blaze-cardano/tx` | imported only by `tx.ts` |
 
 ## Tests
@@ -156,7 +159,7 @@ to a network is manual QA. The layers, and what exists of each, are in
 
 ## Toolchain
 
-Node (pinned in `package.json` `devEngines`), pnpm, Vite+: `vp install`,
+Node (the version in `package.json` `devEngines`, not enforced), pnpm, Vite+: `vp install`,
 `vp test` (vitest with `@effect/vitest`), `vp check` (oxlint, oxfmt),
 `vp exec tsc --noEmit` (TypeScript 6). Dependencies change through
 `vp add` / `vp remove`, never by editing versions in `package.json`; a

@@ -41,7 +41,7 @@ flowchart LR
 | L3 ledger acceptance | build the transaction and apply it on the Blaze emulator, phase 1 and phase 2 | the emulator ledger | builders in 9 files; command programs in 6 |
 | L4 budgets | size and ex-unit snapshot per command at its largest shape, failing over the protocol limits | protocol parameters | planned, not built |
 | L5 independent references | TS references for MIP rules, golden vectors shared with Aiken | an independent implementation | committee bridge, on its branch only |
-| L6 manual QA | build-only on preview; submits only on a local devnet; never automated against a public network | the real ledger | by hand; no devnet tooling in the repository |
+| L6 manual QA | builds on preview, and submits on preview by hand with the user's go for each transaction (#128's live QA, 11-17); never automated against a public network | the real ledger | by hand; no devnet tooling in the repository |
 
 ### L1 contracts
 
@@ -104,7 +104,7 @@ Staking gets one later.
 
 ### L6 manual QA
 
-- **Build-only on preview.** `just build preview` builds against the preview profile (`Justfile:6-7`).
+- **Preview.** `just build preview` builds against the preview profile (`Justfile:6-7`). #128's live QA (11-17) deployed and ran the commands on preview, each submission with the user's go, then restored the preview record.
 - **Submitting.**
   - In the CLI the only submit path is `Provider.submit` (`cli/chain.ts:351-352`), reached through `submitTransaction` (`cli/signing.ts:355`) from `sign-and-submit` and `combine-signatures` (`cli/signing.ts:534`, `:694`). CLAUDE.md forbids running either without asking.
   - `pi-code/test-plan` also submits to a real network (`pi-code/test-plan/lib/provider.ts:1175`). In its non-interactive mode it auto-confirms each submission when no recorded answer exists (`:1145-1153`).
