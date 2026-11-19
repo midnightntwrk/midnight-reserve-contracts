@@ -263,4 +263,4 @@ Every spend of the reserve forever NFT or of the reserve's NIGHT runs `reserve_f
 
 ## Not drawn
 
-- PR 406's funding pool with `max_fee` (Transaction fees and release liveness): deferred to its own script (`plans/staking/01-reserve-release.md`).
+- PR 406's funding pool with `max_fee` (Transaction fees and release liveness): deferred to its own script.

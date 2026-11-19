@@ -58,7 +58,7 @@ flowchart LR
 
   No Aiken test module covers gov auth, the thresholds, the permissioned or T&C validators, cNIGHT minting, the v2 logic or the staging forever validators. The v2 logic runs only at L3: the federated-ops v2 migration (`tests/operations.test.ts`) and stages and promotes of v2 logic hashes (`tests/upgrade.test.ts`).
 - **No property tests.** The only dependency is `aiken-lang/stdlib` (`aiken.toml:13-16`); `aiken-lang/fuzz` is absent.
-- **No mutation table.** `docs/governance/validators.md` states constraints as tagged rules (e.g. `MS-1`), with no "Fail if" clauses (`grep -c 'Fail if'` gives 0), and nothing records mutation runs against them. The method is recorded once, on `staking/aiken`: one clause disabled per `aiken check` run on a scratch copy, 50 mutants, 49 killed, the survivor an equivalent mutant (`plans/staking/01-reserve-release.md:89-91`).
+- **No mutation table.** `docs/governance/validators.md` states constraints as tagged rules (e.g. `MS-1`), with no "Fail if" clauses (`grep -c 'Fail if'` gives 0), and nothing records mutation runs against them. The method was run once, on an earlier `reserve_logic_v2` (local bookmark `staking/aiken`, not pushed): one clause disabled per `aiken check` run on a scratch copy, 50 mutants, 49 killed, the survivor an equivalent mutant.
 
 ### L2 pure goldens
 
