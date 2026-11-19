@@ -75,7 +75,7 @@ encoding = "hex"
 # night_staking reads the registration set at this script hash (rule 2, Output). A placeholder
 # until night_registration is built; its build writes the real hash here.
 [config.default.night_registration_hash]
-bytes = "48e5c37239a6d1e39e34216b732dc372282505eab36af46671bffc58"
+bytes = "ed24681400946a5f7521ae77e837c0f6b6abd66e41f5fce4b2fa5169"
 encoding = "hex"
 
 [config.default.reserve_logic_v2_init_one_shot_hash]

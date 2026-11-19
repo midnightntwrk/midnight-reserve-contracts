@@ -868,6 +868,70 @@ test create_node_without_inline_datum() fail {
   )
 }
 
+// Rule 9: a node holds no reference script.
+
+test init_node_with_reference_script() fail {
+  expect [first, ..rest] = init_nodes()
+  mints(
+    init_tx(
+      [Output { ..first, reference_script: Some(owner_script) }, ..rest],
+      3,
+    ),
+  )
+}
+
+test create_node_with_reference_script() fail {
+  let tx = create_7b()
+  expect [new, ..rest] = tx.outputs
+  mints(
+    Transaction {
+      ..tx,
+      outputs: [Output { ..new, reference_script: Some(owner_script) }, ..rest],
+    },
+  )
+}
+
+test create_anchor_with_reference_script() fail {
+  let tx = create_7b()
+  expect [new, anchor, ..rest] = tx.outputs
+  mints(
+    Transaction {
+      ..tx,
+      outputs: [
+        new,
+        Output { ..anchor, reference_script: Some(owner_script) },
+        ..rest
+      ],
+    },
+  )
+}
+
+test update_node_with_reference_script() fail {
+  let tx = update_tx(changed, 1_500_000, owner_key)
+  expect [node, ..rest] = tx.outputs
+  spends(
+    Transaction {
+      ..tx,
+      outputs: [Output { ..node, reference_script: Some(owner_script) }, ..rest],
+    },
+  )
+}
+
+test deactivate_node_with_reference_script() fail {
+  spends(
+    deactivate_tx(
+      [
+        Output {
+          ..node_output(1_000_000, registration(cleared)),
+          reference_script: Some(owner_script),
+        },
+        node_output(1_500_000, anchor_after),
+        change,
+      ],
+    ),
+  )
+}
+
 // Rule 9: crch and crch_signature are bytes of any length, and the crch list keeps a crch
 // from being empty.
 
@@ -974,6 +1038,27 @@ test create_pool_id_27_bytes() fail {
         DelegateCredential {
           credential: VerificationKey(staker),
           delegate: DelegateBlockProduction(short),
+        },
+      ],
+    },
+  )
+}
+
+test create_pool_id_29_bytes() fail {
+  // A 29-byte cold key hash that signs and is delegated to.
+  let long = #"b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0"
+  mints(
+    Transaction {
+      ..create_tx(
+        [node_input(0, tail_before)],
+        registration(Fields { ..active, pool_id: long }),
+        [node_output(1_500_000, Tail { prev_crch: crch_b, prev_pool: long })],
+      ),
+      extra_signatories: [long],
+      certificates: [
+        DelegateCredential {
+          credential: VerificationKey(staker),
+          delegate: DelegateBlockProduction(long),
         },
       ],
     },

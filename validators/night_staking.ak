@@ -325,6 +325,7 @@ fn lock_output(
   // Rule 2, Output.
   expect and {
       output.address.stake_credential == None,
+      output.reference_script == None,
       ada >= config.lock_deposit_lovelace,
       builtin.length_of_bytearray(owner_hash) == 28,
       lock.owner != Script(own_hash),

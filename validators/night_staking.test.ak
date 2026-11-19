@@ -1188,6 +1188,38 @@ test update_address_with_stake_part() fail {
   )
 }
 
+// A lock holds no reference script (rule 2).
+
+test lock_with_reference_script() fail {
+  let output = lock_output(deposit, 0, staking)
+  withdraw(
+    lock_tx(
+      Output { ..output, reference_script: Some(foreign) },
+      assets.from_asset(own, "", 1),
+    ),
+  )
+}
+
+test update_with_reference_script() fail {
+  let output = lock_output(deposit, 1_000, staking)
+  withdraw(
+    update_tx(
+      lock_input(deposit, 1_000, staking),
+      Output { ..output, reference_script: Some(foreign) },
+    ),
+  )
+}
+
+test unbond_with_reference_script() fail {
+  let output = lock_output(deposit, 1_000, unbonding)
+  withdraw(
+    unbond_tx(
+      lock_input(deposit, 1_000, staking),
+      Output { ..output, reference_script: Some(foreign) },
+    ),
+  )
+}
+
 // Shape (rule 7).
 
 test two_locks_spent() fail {

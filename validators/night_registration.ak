@@ -428,6 +428,7 @@ fn node_output(output: Output, own_hash: PolicyId) -> Node {
 
   expect and {
       output.address == Address(Script(own_hash), None),
+      output.reference_script == None,
       is_singleton(output.value, own_hash, ""),
       {
         let unlinked_datum: Data = unlinked(node)
