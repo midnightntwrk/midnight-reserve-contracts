@@ -1,0 +1,74 @@
+{
+  "spends": [
+    {
+      "utxo": [
+        {
+          "index": 0,
+          "txId": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "address": "addr_test1vr84zzv6wnd6n0a7a6k0myhufy2wuzxyk6m20896rvz46ucdqcy8t",
+          "value": {
+            "coins": "20000000"
+          }
+        }
+      ],
+      "redeemer": null
+    }
+  ],
+  "references": [],
+  "scripts": [],
+  "mints": [
+    {
+      "policy": "4f98d95cefa16e3e4a3e6237273cd0bb53025116aee791fa94f856d5",
+      "assets": [
+        [
+          "",
+          "1"
+        ]
+      ],
+      "redeemer": "00"
+    }
+  ],
+  "outputs": [
+    {
+      "address": "addr_test1wp8e3k2ua7sku0j28e3rwfeu6za4xqj3z6hw0y06jnu9d4g8dqywe",
+      "value": {
+        "assets": [
+          [
+            "4f98d95cefa16e3e4a3e6237273cd0bb53025116aee791fa94f856d5",
+            "1"
+          ]
+        ],
+        "coins": "1043020"
+      },
+      "datum": {
+        "cbor": "d8799f0000ff",
+        "constructor": "0",
+        "fields": {
+          "cbor": "9f0000ff",
+          "items": [
+            "0",
+            "0"
+          ]
+        }
+      }
+    }
+  ],
+  "withdrawals": [],
+  "registrations": [],
+  "collateral": [
+    [
+      {
+        "index": 14,
+        "txId": "000000000000000000000000000000000000000000000000000000000000000f"
+      },
+      {
+        "address": "addr_test1vr84zzv6wnd6n0a7a6k0myhufy2wuzxyk6m20896rvz46ucdqcy8t",
+        "value": {
+          "coins": "20000000"
+        }
+      }
+    ]
+  ]
+}

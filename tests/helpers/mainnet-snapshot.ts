@@ -11,7 +11,9 @@ import {
   type Script,
 } from "@blaze-cardano/core";
 import { parse } from "@blaze-cardano/data";
-import { loadAikenConfig } from "../../cli-yargs/lib/config";
+import { readFileSync } from "fs";
+import { Effect } from "effect";
+import * as Config from "../../cli/config";
 import * as Contracts from "../../deployed-scripts/mainnet/contract_blueprint";
 import { MAIN_TOKEN_HEX, STAGING_TOKEN_HEX } from "./upgrade";
 
@@ -77,7 +79,7 @@ function toValue(amounts: SnapshotAmount[]) {
 
 function snapshotToUtxo(
   snapshot: SnapshotUtxo,
-  address: PaymentAddress | string = snapshot.address,
+  address: string = snapshot.address,
 ): TransactionUnspentOutput {
   return TransactionUnspentOutput.fromCore([
     {
@@ -85,10 +87,7 @@ function snapshotToUtxo(
       index: snapshot.tx_index,
     },
     {
-      address:
-        typeof address === "string"
-          ? PaymentAddress(address)
-          : PaymentAddress(address),
+      address: PaymentAddress(address),
       value: toValue(snapshot.amount),
       ...(snapshot.inline_datum
         ? {
@@ -442,20 +441,6 @@ export const liveMultisigStates: {
   ) as unknown as Contracts.VersionedMultisig,
 };
 
-export const liveThresholds: {
-  main: Contracts.MultisigThreshold;
-  staging: Contracts.MultisigThreshold;
-} = {
-  main: parseInlineDatum(
-    mainnetSnapshotUtxos.mainGovThreshold,
-    Contracts.MultisigThreshold,
-  ) as unknown as Contracts.MultisigThreshold,
-  staging: parseInlineDatum(
-    mainnetSnapshotUtxos.stagingGovThreshold,
-    Contracts.MultisigThreshold,
-  ) as unknown as Contracts.MultisigThreshold,
-};
-
 export const liveUpgradeStates: {
   council: { main: Contracts.UpgradeState; staging: Contracts.UpgradeState };
   reserve: { main: Contracts.UpgradeState; staging: Contracts.UpgradeState };
@@ -504,10 +489,10 @@ export const liveUpgradeStates: {
   },
 };
 
-const aikenConfig = loadAikenConfig("mainnet");
-export const cnightAssetId = AssetId(
-  aikenConfig.cnight_policy +
-    Buffer.from(aikenConfig.cnight_name).toString("hex"),
+export const cnightAssetId = Config.cnightAssetId(
+  Effect.runSync(
+    Config.parseNetworkConfig("mainnet", readFileSync("aiken.toml", "utf-8")),
+  ),
 );
 
 export const mainnetReviewRefs = Object.fromEntries(

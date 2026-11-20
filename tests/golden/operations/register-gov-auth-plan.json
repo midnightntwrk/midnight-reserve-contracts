@@ -1,0 +1,13 @@
+{
+  "spends": [],
+  "references": [],
+  "scripts": [],
+  "mints": [],
+  "outputs": [],
+  "withdrawals": [],
+  "registrations": [
+    "c1a040f730cb7e6f540f65e052a21d55a563f28736a5685dea5eda94",
+    "d9d4b82b1a21cae880a064ecf72b3ddb4a863f2c43e764f4d742386f"
+  ],
+  "collateral": []
+}

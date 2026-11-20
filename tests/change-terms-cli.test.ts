@@ -23,7 +23,7 @@ import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import type { Blaze, Provider, Wallet } from "@blaze-cardano/sdk";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
-import { beforeEach, describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "vite-plus/test";
 
 describe("Change Terms and Conditions", () => {
   const amount = 100_000_000n;
@@ -984,13 +984,13 @@ describe("Change Terms and Conditions", () => {
 
       const txBuilder = buildChangeTermsTx(blaze, addr, deps, badHash, newUrl);
 
-      try {
-        await emulator.expectValidTransaction(blaze, txBuilder);
-        throw new Error("Should have failed");
-      } catch (e) {
-        const msg = String(e);
-        expect(msg).toContain("Validator returned false");
-      }
+      const failure = await emulator
+        .expectValidTransaction(blaze, txBuilder)
+        .then(
+          () => "built",
+          (e: unknown) => String(e),
+        );
+      expect(failure).toContain("Validator returned false");
     });
   });
 });

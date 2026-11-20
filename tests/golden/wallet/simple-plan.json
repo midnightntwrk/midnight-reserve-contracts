@@ -1,0 +1,29 @@
+{
+  "spends": [],
+  "references": [],
+  "scripts": [],
+  "mints": [],
+  "outputs": [
+    {
+      "address": "addr_test1vqcgtlp39ecr6dxq7jq58fagr0384fpuk0u8mcd3dyqr2lg4dkvv3",
+      "value": {
+        "coins": "5000000"
+      }
+    },
+    {
+      "address": "addr_test1vqcgtlp39ecr6dxq7jq58fagr0384fpuk0u8mcd3dyqr2lg4dkvv3",
+      "value": {
+        "coins": "5000000"
+      }
+    },
+    {
+      "address": "addr_test1vqcgtlp39ecr6dxq7jq58fagr0384fpuk0u8mcd3dyqr2lg4dkvv3",
+      "value": {
+        "coins": "5000000"
+      }
+    }
+  ],
+  "withdrawals": [],
+  "registrations": [],
+  "collateral": []
+}

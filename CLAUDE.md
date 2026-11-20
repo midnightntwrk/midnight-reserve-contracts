@@ -5,7 +5,7 @@ Midnight governance smart contracts on Cardano (Aiken validators + TypeScript CL
 ## Pre-Commit (Required)
 
 ```bash
-just fmt && just build && just check && bun test
+just fmt && just build && just check && vp test
 ```
 
 ## VCS
@@ -45,8 +45,8 @@ Architecture patterns derived from:
 
 ## Additional Docs
 
-- [Architecture & Workspace Structure](.claude/docs/architecture.md)
-- [Code Conventions](.claude/docs/code-conventions.md)
-- [Testing](.claude/docs/testing.md)
-- [Live Deployment Runbook](.claude/docs/live-deployment.md)
+- [CLI architecture](docs/architecture/cli.md) - flow, services, contract sources, record, layout, dependency rules, tests
+- [Contracts architecture](docs/architecture/contracts.md) - component pattern, upgrade lifecycle, audit map, hash pinning, known issues
+- [Testing architecture](docs/architecture/testing.md) - test layers, rules, what exists today
+- [Live deployment runbook](docs/governance/runbook.md)
 - [docs/governance/](docs/governance/) - validator constraints, transactions, upgrade flow

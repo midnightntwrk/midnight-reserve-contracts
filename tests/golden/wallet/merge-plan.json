@@ -1,0 +1,210 @@
+{
+  "spends": [
+    {
+      "utxo": [
+        {
+          "index": 0,
+          "txId": "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"
+        },
+        {
+          "address": "addr_test1wrtrj6s4c3hw3rf43aajy25xcx7jl6kt26k65dmd6qjt8qssunxkc",
+          "value": {
+            "assets": [
+              [
+                "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af14e49474854",
+                "1"
+              ]
+            ],
+            "coins": "5000000"
+          },
+          "datum": {
+            "cbor": "d8799f0000ff",
+            "constructor": "0",
+            "fields": {
+              "cbor": "9f0000ff",
+              "items": [
+                "0",
+                "0"
+              ]
+            }
+          }
+        }
+      ],
+      "redeemer": "00"
+    },
+    {
+      "utxo": [
+        {
+          "index": 1,
+          "txId": "c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2"
+        },
+        {
+          "address": "addr_test1wrtrj6s4c3hw3rf43aajy25xcx7jl6kt26k65dmd6qjt8qssunxkc",
+          "value": {
+            "assets": [
+              [
+                "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af14e49474854",
+                "2"
+              ]
+            ],
+            "coins": "7000000"
+          },
+          "datum": {
+            "cbor": "d8799f0000ff",
+            "constructor": "0",
+            "fields": {
+              "cbor": "9f0000ff",
+              "items": [
+                "0",
+                "0"
+              ]
+            }
+          }
+        }
+      ],
+      "redeemer": "00"
+    },
+    {
+      "utxo": [
+        {
+          "index": 0,
+          "txId": "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
+        },
+        {
+          "address": "addr_test1vr84zzv6wnd6n0a7a6k0myhufy2wuzxyk6m20896rvz46ucdqcy8t",
+          "value": {
+            "coins": "100000000"
+          }
+        }
+      ],
+      "redeemer": null
+    }
+  ],
+  "references": [
+    [
+      {
+        "index": 0,
+        "txId": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0"
+      },
+      {
+        "address": "addr_test1wqzzl0hz2t6vnrr4pkg7hv6d5p50gkrjy5myqcfntxrqqlghe46gu",
+        "value": {
+          "assets": [
+            [
+              "042fbee252f4c98c750d91ebb34da068f4587225364061335986007d6d61696e",
+              "1"
+            ]
+          ],
+          "coins": "5000000"
+        },
+        "datum": {
+          "cbor": "9f581c61f9a11179a3832f6aa9b880f47b317c4c9687d88cdedef6073b35c140581cc1a040f730cb7e6f540f65e052a21d55a563f28736a5685dea5eda94400000ff",
+          "items": [
+            {
+              "0": 97,
+              "1": 249,
+              "2": 161,
+              "3": 17,
+              "4": 121,
+              "5": 163,
+              "6": 131,
+              "7": 47,
+              "8": 106,
+              "9": 169,
+              "10": 184,
+              "11": 128,
+              "12": 244,
+              "13": 123,
+              "14": 49,
+              "15": 124,
+              "16": 76,
+              "17": 150,
+              "18": 135,
+              "19": 216,
+              "20": 140,
+              "21": 222,
+              "22": 222,
+              "23": 246,
+              "24": 7,
+              "25": 59,
+              "26": 53,
+              "27": 193
+            },
+            {},
+            {
+              "0": 193,
+              "1": 160,
+              "2": 64,
+              "3": 247,
+              "4": 48,
+              "5": 203,
+              "6": 126,
+              "7": 111,
+              "8": 84,
+              "9": 15,
+              "10": 101,
+              "11": 224,
+              "12": 82,
+              "13": 162,
+              "14": 29,
+              "15": 85,
+              "16": 165,
+              "17": 99,
+              "18": 242,
+              "19": 135,
+              "20": 54,
+              "21": 165,
+              "22": 104,
+              "23": 93,
+              "24": 234,
+              "25": 94,
+              "26": 218,
+              "27": 148
+            },
+            {},
+            "0",
+            "0"
+          ]
+        }
+      }
+    ]
+  ],
+  "scripts": [
+    "d6396a15c46ee88d358f7b222a86c1bd2feacb56adaa376dd024b382"
+  ],
+  "mints": [],
+  "outputs": [
+    {
+      "address": "addr_test1wrtrj6s4c3hw3rf43aajy25xcx7jl6kt26k65dmd6qjt8qssunxkc",
+      "value": {
+        "assets": [
+          [
+            "d2dbff622e509dda256fedbd31ef6e9fd98ed49ad91d5c0e07f68af14e49474854",
+            "3"
+          ]
+        ],
+        "coins": "12000000"
+      },
+      "datum": {
+        "cbor": "d8799f0000ff",
+        "constructor": "0",
+        "fields": {
+          "cbor": "9f0000ff",
+          "items": [
+            "0",
+            "0"
+          ]
+        }
+      }
+    }
+  ],
+  "withdrawals": [
+    {
+      "rewardAccount": "stake_test17pslngg30x3cxtm24xugparmx97ye958mzxdahhkquantsg2l2q0r",
+      "script": "61f9a11179a3832f6aa9b880f47b317c4c9687d88cdedef6073b35c1",
+      "redeemer": "00"
+    }
+  ],
+  "registrations": [],
+  "collateral": []
+}

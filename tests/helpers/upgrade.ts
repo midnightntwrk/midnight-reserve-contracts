@@ -17,7 +17,7 @@ import {
 import { serialize } from "@blaze-cardano/data";
 import type { Emulator } from "@blaze-cardano/emulator";
 import * as Contracts from "../../deployed-scripts/mainnet/contract_blueprint";
-import { expect } from "bun:test";
+import { expect } from "vite-plus/test";
 
 export const MAIN_TOKEN_HEX = toHex(new TextEncoder().encode("main"));
 export const STAGING_TOKEN_HEX = toHex(new TextEncoder().encode("staging"));

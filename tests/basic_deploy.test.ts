@@ -12,7 +12,7 @@ import {
 import { serialize } from "@blaze-cardano/data";
 import { Emulator } from "@blaze-cardano/emulator";
 import * as Contracts from "../deployed-scripts/mainnet/contract_blueprint";
-import { beforeEach, describe, test } from "bun:test";
+import { beforeEach, describe, test } from "vite-plus/test";
 import {
   addFundingUtxo,
   createContracts,
