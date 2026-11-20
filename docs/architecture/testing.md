@@ -58,7 +58,7 @@ flowchart LR
 
   No Aiken test module covers gov auth, the thresholds, the permissioned or T&C validators, cNIGHT minting, the v2 logic or the staging forever validators. The v2 logic runs only at L3: the federated-ops v2 migration (`tests/operations.test.ts`) and stages and promotes of v2 logic hashes (`tests/upgrade.test.ts`).
 - **No property tests.** The only dependency is `aiken-lang/stdlib` (`aiken.toml:13-16`); `aiken-lang/fuzz` is absent.
-- **No mutation table.** `docs/governance/validators.md` states constraints as tagged rules (e.g. `MS-1`), with no "Fail if" clauses (`grep -c 'Fail if'` gives 0), and nothing records mutation runs against them. The method is recorded once, on `staking/aiken`: one clause disabled per `aiken check` run on a scratch copy, 50 mutants, 49 killed, the survivor an equivalent mutant (`plans/staking/01-reserve-release.md:89-91`).
+- **No mutation table.** `docs/governance/validators.md` states constraints as tagged rules (e.g. `MS-1`), with no "Fail if" clauses (`grep -c 'Fail if'` gives 0), and nothing records mutation runs against them. The method was run once, on an earlier `reserve_logic_v2` (local bookmark `staking/aiken`, not pushed): one clause disabled per `aiken check` run on a scratch copy, 50 mutants, 49 killed, the survivor an equivalent mutant.
 
 ### L2 pure goldens
 
@@ -83,7 +83,7 @@ Planning is a pure function of the input and a frozen PlanningContext, so a test
 - **Mainnet scripts.** `tests/mainnet_merge_transactions.test.ts` and the "Mainnet snapshot upgrade transactions" of `tests/upgrade.test.ts` run against the deployed mainnet scripts and snapshot UTxOs (`tests/helpers/mainnet-snapshot.ts`).
 - **Parameters.** Tests construct `new Emulator([])`, which uses Blaze's hard-coded parameters, `maxTxSize: 16384` (`node_modules/@blaze-cardano/core/dist/index.mjs:351`).
 - **Function-level unit tests.** The other files call parsers, codecs and services directly: `build` 23 (one runs the standard build on a scratch copy), `chain` 16, `config` 46, `datum` 18, `generate-key` 4, `input` 11, `report` 26, `resolver` 29, `snapshot` 22, `tx` 12 (tests per file).
-- **Build first.** Tests read the build output: 24 files under `tests/` reference `contract_blueprint*` or `plutus*.json`. Run `just build` before `vp test`, and again after any validator or `aiken.toml` change; the gate does both, in that order.
+- **Build first.** Tests read the build output: 24 files under `tests/` reference `contract_blueprint*` or `plutus*.json`. Run `just build` before `just test`, and again after any validator or `aiken.toml` change; the gate does both, in that order.
 
 ### L4 budgets
 
@@ -100,22 +100,22 @@ The committee bridge has one, on bookmark `bridge/aiken` (also on `feat/committe
 - the Aiken fixtures that consume them, `lib/fixtures/bridge/vectors.ak`;
 - the plan, `plans/bridge/05-ts-reference-vectors.md`.
 
-Staking gets one later.
+Staking: TS reference and emulator tests: follow-up PR (bookmark `staking/ts-tests`). On `staking/contracts` the staking and reserve v2 contracts are tested by their Aiken modules only.
 
 ### L6 manual QA
 
 - **Preview.** `just build preview` builds against the preview profile (`Justfile:6-7`). #128's live QA (11-17) deployed and ran the commands on preview, each submission with the user's go, then restored the preview record.
 - **Submitting.**
-  - In the CLI the only submit path is `Provider.submit` (`cli/chain.ts:351-352`), reached through `submitTransaction` (`cli/signing.ts:355`) from `sign-and-submit` and `combine-signatures` (`cli/signing.ts:534`, `:694`). CLAUDE.md forbids running either without asking.
+  - In the CLI the only submit path is `Provider.submit` (`cli/chain.ts:351-352`), reached through `submitTransaction` (`cli/signing.ts:355`) from `sign-and-submit` and `combine-signatures` (`cli/signing.ts:534`, `:694`). AGENTS.md forbids running either without asking.
   - `pi-code/test-plan` also submits to a real network (`pi-code/test-plan/lib/provider.ts:1175`). In its non-interactive mode it auto-confirms each submission when no recorded answer exists (`:1145-1153`).
 - **Local devnet.** `just private-net-up` is on bookmark `beefy-mip-corrections` (its `Justfile:55`, `plans/bridge/07-private-network.md`), not here.
-- `pi-code/test-plan` is an interactive journey runner (`pi-code/test-plan/README.md`). Neither `vp test` nor CI runs it.
+- `pi-code/test-plan` is an interactive journey runner (`pi-code/test-plan/README.md`). Neither `just test` nor CI runs it.
 
 ## Running
 
 ```bash
-just fmt && just build && just check && vp test   # the gate (CLAUDE.md)
-vp test tests/basic_deploy.test.ts                 # one file
+just fmt && just build && just check && just test   # the gate (AGENTS.md)
+just test tests/basic_deploy.test.ts                 # one file
 ```
 
-`just check` runs `aiken check -S -t verbose`, `vp check` (oxlint, oxfmt) and `vp exec tsc --noEmit` (`Justfile:10-17`). CI runs `aiken fmt --check`, `aiken check` and `aiken build` on aiken v1.1.21, then `setup-vp` with `vp install --frozen-lockfile`, `vp check`, `vp exec tsc --noEmit` and `vp test` (`.github/workflows/continuous-integration.yml:13-27`).
+`just check` runs `aiken check -S -t verbose`, `vp check` (oxlint, oxfmt) and `vp exec tsc --noEmit` (`Justfile:10-17`); `just test` runs `vp test` (`Justfile:20-21`). CI runs `aiken fmt --check`, `aiken check` and `aiken build` on aiken v1.1.21, then `setup-vp` with `vp install --frozen-lockfile`, `vp check`, `vp exec tsc --noEmit` and `vp test` (`.github/workflows/continuous-integration.yml:13-27`).

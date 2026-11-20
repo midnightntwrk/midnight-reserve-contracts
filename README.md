@@ -11,7 +11,7 @@ Requires [Aiken](https://aiken-lang.org), [just](https://just.systems) and
 vp install                  # dependencies
 just build                  # compile the contracts: plutus.json, contract_blueprint.ts
 just check                  # Aiken tests, lint, type check
-vp test                     # TypeScript tests over the Blaze emulator
+just test                   # TypeScript tests over the Blaze emulator
 just cli --help             # the commands; just cli <command> --help for one
 ```
 
@@ -42,7 +42,7 @@ transactions `TECH_AUTH_PRIVATE_KEYS` and `COUNCIL_PRIVATE_KEYS`).
 - [`docs/governance/transactions.md`](docs/governance/transactions.md) - transaction construction by operation
 - [`docs/governance/upgrade.md`](docs/governance/upgrade.md) - Forever/Two-Stage upgrade flow
 - [`docs/governance/transaction-identification.md`](docs/governance/transaction-identification.md) - CIP-20 metadata for governance transactions
-- [`CLAUDE.md`](CLAUDE.md) - development guidelines and audit boundaries
+- [`AGENTS.md`](AGENTS.md) - development guidelines and the immutable mainnet files
 
 ## CLI Commands
 

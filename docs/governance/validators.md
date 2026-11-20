@@ -988,10 +988,10 @@ These validators maintain the BEEFY-backed committee bridge state used for commi
 
 The following validators are simple utilities that don't participate in the Forever/Two-Stage/Logic governance pattern. They are documented here for completeness but are out-of-scope for detailed constraint tracking.
 
-- `registered_candidate`
+- `registered_candidate` (removed 11-17; night_registration replaces it. The deployment records under `deployed-scripts/` and `release/`, `plutus-preprod.deployed.json`, and main's network builds `plutus.json` and `plutus-<network>.json` with their bindings still name it until the next build for that network)
   A basic signer-check spending validator for key-controlled UTxOs.
   - Datum: A `VerificationKeyHash` identifying the authorized signer
-  - Spending: Succeeds only when the datum's key hash appears in `extra_signatories`
-  - Other purposes: Rejected (validator fails on minting, withdrawing, etc.)
+  - Spending: Succeeded only when the datum's key hash appeared in `extra_signatories`
+  - Other purposes: Rejected (validator failed on minting, withdrawing, etc.)
   - Not used by governance CLI commands or integration tests
   - No config parameters or NFT-gated state
