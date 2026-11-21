@@ -212,6 +212,7 @@ Every spend of the reserve forever NFT or of the reserve's NIGHT runs `reserve_f
 - Rule 8: the reserve's ADA does not fall, and no reserve value reaches the submitter.
 - The transaction spends one NIGHT input (user review).
 - Output order (user decision, 11-17): the contract checks the first three outputs by position: the ICS output, then the reserve NIGHT output back at reserve_forever, then the state output. Change and any other outputs follow; none of them may sit at the ICS or at reserve_forever.
+- The state output, in every action, and the reserve NIGHT output carry no reference script (user decision, 11-21).
 
 ### 14. Pause releases
 

@@ -207,6 +207,7 @@ pub fn reserve_release(
       and {
         is_singleton(state_out.value, forever, ""),
         state_out.address == forever_address,
+        state_out.reference_script == None,
         state_out_lovelace >= state_in_lovelace,
         when action is {
           // Init ignores the state input's datum. It runs once per track
@@ -350,6 +351,7 @@ pub fn reserve_release(
               ),
               // Rule 8
               night_out.address == forever_address,
+              night_out.reference_script == None,
               night_out_lovelace >= night_in_lovelace,
               when night_out.datum is {
                 DatumHash(_) -> False

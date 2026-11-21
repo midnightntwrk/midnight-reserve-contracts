@@ -762,6 +762,23 @@ test d12_init_state_output_foreign_token() fail {
   )
 }
 
+/// The state output carries a reference script (user decision, 11-21).
+test d12_init_state_output_reference_script() fail {
+  withdraw(
+    Transaction {
+      ..init_main_tx(),
+      outputs: [
+        Output {
+          ..state(reserve, initial_state()),
+          reference_script: Some(other_hash),
+        },
+        wallet(from_lovelace(2_000_000) |> add(logic_hash, "staging", 1)),
+      ],
+    },
+    Init,
+  )
+}
+
 /// The forever NFT goes to a wallet, and an ADA-only placeholder with the
 /// state datum stays at the forever address.
 test d12_init_state_output_to_wallet() fail {
@@ -1601,6 +1618,26 @@ test d13_rule8_state_output_foreign_token() fail {
   )
 }
 
+/// A Reserve output carries a reference script (user decision, 11-21).
+test d13_rule8_state_output_reference_script() fail {
+  release_with(
+    Output { ..state(reserve, s1), reference_script: Some(other_hash) },
+    night_utxo(reserve, night, c0 - d0),
+    ics_out(ics, night, d0),
+  )
+}
+
+test d13_rule8_night_output_reference_script() fail {
+  release_with(
+    state(reserve, s1),
+    Output {
+      ..night_utxo(reserve, night, c0 - d0),
+      reference_script: Some(other_hash),
+    },
+    ics_out(ics, night, d0),
+  )
+}
+
 /// The forever NFT goes to a wallet, and an ADA-only placeholder with the
 /// state datum takes the state's place.
 test d13_release_state_output_to_wallet() fail {
@@ -1649,6 +1686,18 @@ fn pause_tx(before: Bool, after: Bool) -> Transaction {
 
 test d14_pause_ok() {
   withdraw(pause_tx(False, True), Pause)
+}
+
+test d14_pause_state_output_reference_script() fail {
+  let tx = pause_tx(False, True)
+  expect [state_out] = tx.outputs
+  withdraw(
+    Transaction {
+      ..tx,
+      outputs: [Output { ..state_out, reference_script: Some(other_hash) }],
+    },
+    Pause,
+  )
 }
 
 /// Diagram 14: the state output comes first.
