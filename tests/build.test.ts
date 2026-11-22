@@ -124,6 +124,11 @@ describe("staleDependency", () => {
       validator("permissioned.tech_auth_logic.else", "", "00bb00"),
       validator("permissioned.federated_ops_logic.else", "", "00cc00"),
       validator("gov_auth.main_gov_auth.else", "", "00dd00"),
+      validator("night_registration.night_registration.else", "1a", ""),
+      validator("night_staking.night_staking.else", "", "001a00"),
+      validator("gov_auth.staging_gov_auth.else", "ee", ""),
+      validator("reserve_v2.reserve_staging_params.else", "ff", "00ee00"),
+      validator("reserve_v2.reserve_logic_v2.else", "", "00ff00"),
     ],
     definitions: {},
   };
@@ -265,9 +270,9 @@ describe("build --from-deployed", () => {
     pinnedMappings(plutus, new Set()).map((m) => [m.tomlKey, m.hash]),
   );
 
-  it("pins the 18 core hashes a full record has, with their deployed hashes", () => {
+  it("pins the 19 hashes a full record has, night_registration's included, with their deployed hashes", () => {
     const pinned = pinnedMappings(plutus, new Set());
-    expect(pinned).toHaveLength(18);
+    expect(pinned).toHaveLength(19);
     expect(
       pinned.find((m) => m.tomlKey === "reserve_two_stage_hash")?.hash,
     ).toBe(
@@ -286,12 +291,12 @@ describe("build --from-deployed", () => {
       ),
     });
     expect(keys).not.toContain("terms_and_conditions_threshold_hash");
-    expect(keys).toHaveLength(17);
+    expect(keys).toHaveLength(18);
   });
 
   it("the validators of the named components are compiled from new", () => {
     const keys = tomlKeys(new Set(DEPLOY_COMPONENT_VALIDATORS.reserve));
-    expect(keys).toHaveLength(16);
+    expect(keys).toHaveLength(17);
     expect(keys).not.toContain("reserve_two_stage_hash");
     expect(keys).not.toContain("reserve_forever_hash");
   });

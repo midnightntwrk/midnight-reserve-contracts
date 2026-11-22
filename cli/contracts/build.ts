@@ -118,6 +118,12 @@ const FOREVER: readonly ValidatorMapping[] = [
     title: "cnight_minting.cnight_mint_forever.else",
     tomlKey: "cnight_minting_forever_hash",
   },
+  // Not a forever validator: night_staking embeds night_registration's hash (rule 2, Output),
+  // and this phase sets it before the final compilation.
+  {
+    title: "night_registration.night_registration.else",
+    tomlKey: "night_registration_hash",
+  },
 ];
 
 const THRESHOLDS: readonly ValidatorMapping[] = [
@@ -147,7 +153,19 @@ const THRESHOLDS: readonly ValidatorMapping[] = [
   },
 ];
 
-/** Logic validators that must embed specific threshold hashes. */
+/** staging_gov_auth, whose hash reserve_staging_params compiles in. */
+const STAGING_GOV_AUTH: ValidatorMapping = {
+  title: "gov_auth.staging_gov_auth.else",
+  tomlKey: "staging_gov_auth_hash",
+};
+
+/** reserve_staging_params, whose hash reserve_logic_v2 compiles in. */
+const RESERVE_STAGING_PARAMS: ValidatorMapping = {
+  title: "reserve_v2.reserve_staging_params.else",
+  tomlKey: "reserve_staging_params_hash",
+};
+
+/** Validators that must embed the final hash of another validator. */
 const LOGIC_DEPENDENCIES = [
   {
     logicValidator: "permissioned.council_logic.else",
@@ -164,6 +182,18 @@ const LOGIC_DEPENDENCIES = [
   {
     logicValidator: "gov_auth.main_gov_auth.else",
     dependencyValidator: "thresholds.main_gov_threshold.else",
+  },
+  {
+    logicValidator: "night_staking.night_staking.else",
+    dependencyValidator: "night_registration.night_registration.else",
+  },
+  {
+    logicValidator: "reserve_v2.reserve_staging_params.else",
+    dependencyValidator: "gov_auth.staging_gov_auth.else",
+  },
+  {
+    logicValidator: "reserve_v2.reserve_logic_v2.else",
+    dependencyValidator: "reserve_v2.reserve_staging_params.else",
   },
 ] as const;
 
@@ -485,14 +515,18 @@ const finalCompile = (build: Build, attempts: Ref.Ref<number>) =>
     yield* updateHashes(build, blueprint, TWO_STAGE);
     yield* updateHashes(build, blueprint, FOREVER);
     yield* updateHashes(build, blueprint, THRESHOLDS);
+    yield* updateHashes(build, blueprint, [
+      STAGING_GOV_AUTH,
+      RESERVE_STAGING_PARAMS,
+    ]);
     yield* output.log(
-      "Verifying logic validators reference updated threshold hashes...",
+      "Verifying logic validators reference updated dependency hashes...",
     );
     const stale = staleDependency(blueprint);
     if (Option.isSome(stale)) {
       return yield* new AikenBuildError({
         phase: VERIFY_PHASE,
-        reason: `Logic validators still reference stale threshold hashes: ${stale.value}`,
+        reason: `Logic validators still reference stale dependency hashes: ${stale.value}`,
       });
     }
   });
@@ -548,6 +582,14 @@ const buildStandard = (build: Build) =>
     const thresholdsAgain = yield* compile(build, "Threshold Validators (2)");
     yield* keepsPins(build.pins, thresholdsAgain);
     yield* updateHashes(build, thresholdsAgain, THRESHOLDS);
+
+    yield* output.log("Phase 4: Setting up staging_gov_auth...");
+    const govAuth = yield* compile(build, "Staging Gov Auth");
+    yield* updateHashes(build, govAuth, [STAGING_GOV_AUTH]);
+
+    yield* output.log("Phase 5: Setting up reserve_staging_params...");
+    const stagingParams = yield* compile(build, "Reserve Staging Params");
+    yield* updateHashes(build, stagingParams, [RESERVE_STAGING_PARAMS]);
 
     yield* output.log("Final compilation...");
     const attempts = yield* Ref.make(0);

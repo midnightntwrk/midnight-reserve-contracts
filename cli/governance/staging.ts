@@ -63,11 +63,10 @@ import {
 } from "../tx";
 import { mainUtxoAt, upgradeScripts, upgradeStateAt } from "./two-stage";
 
-/** The validators with a v2 logic track. */
+/** The validators with a v2 logic track. reserve_logic_v2 mints no StagingState: its staging track reads reserve_staging_params (user decision, 11-14). */
 export const V2_TRACK_VALIDATORS = [
   "tech-auth",
   "council",
-  "reserve",
   "ics",
   "federated-ops",
   "terms-and-conditions",
@@ -106,17 +105,6 @@ const V2_TRACKS: Record<
     v2LogicClasses: [
       "PermissionedV2CouncilLogicV2Else",
       "PermissionedCouncilLogicV2Else",
-    ],
-  },
-  reserve: {
-    oneShot: (c) => [
-      c.reserve_logic_v2_one_shot_hash,
-      c.reserve_logic_v2_one_shot_index,
-    ],
-    stagingForever: (i) => i.reserveStagingForever,
-    v2LogicClasses: [
-      "ReserveV2ReserveLogicV2Else",
-      "ReserveReserveLogicV2Else",
     ],
   },
   ics: {

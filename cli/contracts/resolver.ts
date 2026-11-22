@@ -122,7 +122,6 @@ const REQUIRED = {
     "TermsAndConditionsTermsAndConditionsTwoStageUpgradeElse",
   termsAndConditionsLogic: "TermsAndConditionsTermsAndConditionsLogicElse",
   termsAndConditionsThreshold: "ThresholdsTermsAndConditionsThresholdElse",
-  registeredCandidate: "RegisteredCandidateRegisteredCandidateElse",
   cnightGeneratesDust: "CnightGeneratesDustCnightGeneratesDustElse",
 } as const;
 
@@ -140,6 +139,8 @@ const OPTIONAL = {
   cnightMintTwoStage: "CnightMintingCnightMintTwoStageUpgradeElse",
   cnightMintForever: "CnightMintingCnightMintForeverElse",
   cnightMintLogic: "CnightMintingCnightMintLogicElse",
+  // Deleted on the user's go (11-17); only the deployed records still have it.
+  registeredCandidate: "RegisteredCandidateRegisteredCandidateElse",
 } as const;
 
 /** Every contract instance of a blueprint. */
